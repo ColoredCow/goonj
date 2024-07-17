@@ -18,4 +18,10 @@ class CRM_Goonjcustom_Upgrader extends CRM_Extension_Upgrader_Base {
     $this->executeSqlFile('sql/insertGoonjCustomActions.sql');
     return TRUE;
   }
+
+  public function upgrade_1002(): bool {
+    $this->ctx->log->info('Applying update 1002');
+    $this->executeSqlFile('sql/populateInductionSummaryCustomFieldAction.sql');
+    return TRUE;
+  }
 }
