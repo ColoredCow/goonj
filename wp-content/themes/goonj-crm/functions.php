@@ -66,3 +66,13 @@ add_action('login_form_rp', 'goonj_custom_reset_password_form');
 function goonj_custom_reset_password_form() {
     get_template_part('templates/password-reset');
 }
+
+add_filter('login_message', 'goonj_custom_reset_password_messagee');
+function goonj_custom_reset_password_messagee($message) {
+    if (isset($_GET['action']) && $_GET['action'] === 'resetpass' && !isset($_GET['error'])) {
+        $message = '<div class="custom-reset-message">';
+        $message .= '<p>Your password has been resetfdsa. <a href="' . esc_url(wp_login_url()) . '">Log in sd</a></p>';
+        $message .= '</div>';
+    }
+    return $message;
+}
