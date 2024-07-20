@@ -125,6 +125,40 @@ function goonjcustom_civicrm_buildForm( $formName, $form ) {
 					$form->removeElement( $field );
 				}
 			}
+
+			// Adding JavaScript to alert a sample message
+            CRM_Core_Region::instance('page-body')->add(array(
+                'script' => "
+                    CRM.$(function($) {
+                        // Function to update the visibility and required state of the custom group
+                        function updateCustomGroupVisibility() {
+                            var selectedText = $('#status_id').find('option:selected').text();
+                            var customGroup = $('.custom-group-Induction_Optional_Fields_On_Status');
+                            // var inputs = customGroup.find('input');
+                            // var selects = customGroup.find('select');
+
+                            if (selectedText === 'Completed') {
+                                customGroup.show();
+                                // inputs.prop('required', true); // Make inputs required
+                                // selects.prop('required', true); // Make selects required
+                            } else {
+                                customGroup.hide();
+                                // inputs.prop('required', false); // Remove required attribute from inputs
+                                // selects.prop('required', false); // Remove required attribute from selects
+                            }
+                        }
+
+                        // // Bind the function to the change event of the select field
+                        $('#status_id').change(function() {
+						var selectedValue = $(this).val();
+                            updateCustomGroupVisibility();
+                        });
+
+                        // Initial check to show/hide the custom group and update required constraints
+                        setTimeout(updateCustomGroupVisibility, 500);
+                    });
+                ",
+            ));
 		}
 	}
 }
