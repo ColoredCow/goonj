@@ -66,3 +66,25 @@ add_action('login_form_rp', 'goonj_custom_reset_password_form');
 function goonj_custom_reset_password_form() {
     get_template_part('templates/password-reset');
 }
+
+add_filter('login_message', 'goonj_custom_reset_password_messagee');
+function goonj_custom_reset_password_messagee() {
+    if (isset($_GET['action']) && $_GET['action'] === 'resetpass' && !isset($_GET['error'])) {
+        get_template_part('templates/password-confirmation');
+    }
+
+}
+
+add_action( 'login_head', 'custom_login_header_image' );
+function custom_login_header_image() {
+    ?>
+    <style type="text/css">
+        .login h1 a {
+            background-image: url('<?php echo get_stylesheet_directory_uri(); ?>/images/goonj-logo.png');
+            width: 150px;
+            background-size: contain;
+            padding-bottom: 100px;
+        }
+    </style>
+    <?php
+}
