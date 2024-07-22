@@ -145,7 +145,7 @@ function goonjcustom_civicrm_buildForm( $formName, $form ) {
                             updateCustomGroupVisibility();
                         });
 
-                        // Initial check to show/hide the custom group and update required constraints
+                        // It takes time to load the form fields so adding a delay to run the js once form is loaded.
                         setTimeout(updateCustomGroupVisibility, 500);
                     });
                 ",
