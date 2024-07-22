@@ -130,25 +130,18 @@ function goonjcustom_civicrm_buildForm( $formName, $form ) {
             CRM_Core_Region::instance('page-body')->add(array(
                 'script' => "
                     CRM.$(function($) {
-                        // Function to update the visibility and required state of the custom group
                         function updateCustomGroupVisibility() {
                             var selectedText = $('#status_id').find('option:selected').text();
                             var customGroup = $('.custom-group-Induction_Optional_Fields_On_Status');
-                            // var inputs = customGroup.find('input');
-                            // var selects = customGroup.find('select');
 
                             if (selectedText === 'Completed') {
                                 customGroup.show();
-                                // inputs.prop('required', true); // Make inputs required
-                                // selects.prop('required', true); // Make selects required
+								// TODO - need to add logic to handle required fields
                             } else {
                                 customGroup.hide();
-                                // inputs.prop('required', false); // Remove required attribute from inputs
-                                // selects.prop('required', false); // Remove required attribute from selects
+								// TODO - need to add logic to handle required fields
                             }
                         }
-
-                        // // Bind the function to the change event of the select field
                         $('#status_id').change(function() {
 						var selectedValue = $(this).val();
                             updateCustomGroupVisibility();
