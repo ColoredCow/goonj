@@ -132,7 +132,7 @@ function goonjcustom_civicrm_buildForm( $formName, $form ) {
                     CRM.$(function($) {
                         function updateCustomGroupVisibility() {
                             var selectedText = $('#status_id').find('option:selected').text();
-                            var customGroup = $('.custom-group-Induction_Optional_Fields_On_Status');
+                            var customGroup = $('.custom-group-INDUCTION_DETAILS');
 
                             if (selectedText === 'Completed') {
                                 customGroup.show();
