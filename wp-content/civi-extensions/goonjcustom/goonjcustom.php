@@ -142,7 +142,7 @@ function goonjcustom_civicrm_buildForm( $formName, $form ) {
                             }
                         }
                         $('#status_id').change(function() {
-						var selectedValue = $(this).val();
+							var selectedValue = $(this).val();
                             updateCustomGroupVisibility();
                         });
 
