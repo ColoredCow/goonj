@@ -1,0 +1,2 @@
+INSERT INTO civirule_action (name, label, class_name, is_active) 
+VALUES("populate_induction_summary_for_contact", "Populate Induction Summary For Contact", "CRM_Goonjcustom_CivirulesAction_PopulateInductionSummaryForContact", 1);

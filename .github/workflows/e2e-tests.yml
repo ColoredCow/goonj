@@ -4,6 +4,8 @@ on:
     types: [ labeled ]
     branches:
       - main
+  schedule:
+    - cron: '0 22 * * 1-6'
 
 jobs:
   checkout-and-test:

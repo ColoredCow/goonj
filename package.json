@@ -11,6 +11,7 @@
   "author": "coloredcow",
   "license": "AGPL",
   "devDependencies": {
+    "@faker-js/faker": "^8.4.1",
     "@playwright/test": "^1.45.0",
     "@types/node": "^20.14.9",
     "dotenv": "^16.4.5"
