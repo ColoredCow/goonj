@@ -135,10 +135,10 @@ function goonjcustom_civicrm_buildForm( $formName, $form ) {
 
                             if (selectedText === 'Completed') {
                                 customGroup.show();
-								// TODO - need to add logic to handle required fields
+                                // TODO - need to add logic to handle required fields
                             } else {
                                 customGroup.hide();
-								// TODO - need to add logic to handle required fields
+                                // TODO - need to add logic to handle required fields
                             }
                         }
                         $('#status_id').change(function() {
