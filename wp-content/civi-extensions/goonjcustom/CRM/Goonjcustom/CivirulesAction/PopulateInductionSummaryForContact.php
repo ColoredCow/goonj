@@ -1,7 +1,7 @@
 <?php
 class CRM_Goonjcustom_CivirulesAction_PopulateInductionSummaryForContact extends CRM_Civirules_Action
 {
-	public function fetchCustomFieldsInGroup($customGroupId)
+	private function fetchCustomFieldsInGroup($customGroupId)
 	{
 		$params = [
 			'sequential' => 1,
@@ -17,7 +17,7 @@ class CRM_Goonjcustom_CivirulesAction_PopulateInductionSummaryForContact extends
 		return $result['values'];
 	}
 
-	public function fetchCustomGroupByName($customGroupName)
+	private function fetchCustomGroupByName($customGroupName)
 	{
 		$params = [
 			'sequential' => 1,
@@ -58,12 +58,6 @@ class CRM_Goonjcustom_CivirulesAction_PopulateInductionSummaryForContact extends
 		}
 
 		$customFields = $this->fetchCustomFieldsInGroup($customGroup['id']);
-
-		// Get the activity details including status, date, assignee, and location.
-		$activity = civicrm_api3('Activity', 'getsingle', [
-			'id' => $activityId,
-			'return' => ['details', 'status_id', 'activity_date_time', 'location', 'target_contact_id'],
-		]);
 
 		// Get the activity details including status, date, assignee, and location.
 		$activity = civicrm_api3('Activity', 'getsingle', [
