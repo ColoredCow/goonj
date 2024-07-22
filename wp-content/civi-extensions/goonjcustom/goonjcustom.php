@@ -126,7 +126,6 @@ function goonjcustom_civicrm_buildForm( $formName, $form ) {
 				}
 			}
 
-			// Adding JavaScript to alert a sample message
             CRM_Core_Region::instance('page-body')->add(array(
                 'script' => "
                     CRM.$(function($) {
