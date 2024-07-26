@@ -1,4 +1,6 @@
 <?php
+use \Firebase\JWT\JWT;
+use \Firebase\JWT\Key;
 
 add_action('wp_enqueue_scripts', 'goonj_enqueue_scripts');
 function goonj_enqueue_scripts() {
@@ -173,11 +175,49 @@ function goonj_handle_user_identification_form() {
         }
 
         // If we are here, then it means the user exists as an inducted volunteer.
-        wp_redirect(get_home_url() . "/collection-camp-form/?user_id=" . $contact['id'] );
+        $token = [
+            'exp' => time() + 3600,  // Expiration time
+            'contact_id' => $contact['id']
+        ];
+        $jwt = JWT::encode($token, JWT_SECRET_KEY, 'HS256');
+
+        wp_redirect(get_home_url() . "/collection-camp-form/?token=" . $jwt );
         exit;
     } catch (CiviCRM_API3_Exception $e) {
         $error = $e->getMessage();
         echo "API error: $error";
+    }
+}
+
+// Handle token decoding
+add_action('template_redirect', 'goonj_handle_collection_camp_form');
+function goonj_handle_collection_camp_form() {
+    if (isset($_GET['token'])) {
+        $token = $_GET['token'];
+        $decoded = decode_jwt($token);
+
+        if (isset($decoded['error'])) {
+            echo "Error decoding token: " . $decoded['error'];
+            exit;
+        }
+
+        // Extract contact ID from the decoded token
+        $contact_id = $decoded['contact_id'] ?? null;
+        if ($contact_id) {
+            echo "Contact ID: " . $contact_id;
+        } else {
+            echo "No contact ID found in the token.";
+        }
+    }
+}
+
+function decode_jwt($jwt) {
+    try {
+        // Decode without specifying key ID, just the key
+        $decoded = JWT::decode($jwt, new Key(JWT_SECRET_KEY, 'HS256'));
+        return (array) $decoded;
+    } catch (Exception $e) {
+        return ['error' => $e->getMessage()];
     }
 }
 
