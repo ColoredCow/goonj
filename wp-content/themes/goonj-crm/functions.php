@@ -173,7 +173,7 @@ function goonj_handle_user_identification_form() {
         }
 
         // If we are here, then it means the user exists as an inducted volunteer.
-        wp_redirect(get_home_url() . "/collection-camp-form/?user_id=" . $contact['id'] );
+        wp_redirect(get_home_url() . "/collection-camp-form/#?Collection_Camp_Intent.Contact_Id=" . $contact['id'] );
         exit;
     } catch (CiviCRM_API3_Exception $e) {
         $error = $e->getMessage();
