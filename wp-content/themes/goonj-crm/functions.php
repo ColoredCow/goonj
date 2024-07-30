@@ -103,6 +103,8 @@ function goonj_check_user_action() {
         if ($_GET['message'] === 'waiting-induction') {
             $message = '<p class="fw-600 fz-16 mb-6">Your induction is pending</p>
                         <p class="fw-400 fz-16 mt-0 mb-24">Just one more step to go before you can start your collection camp. Please finish your induction to move forward.</p>';
+        } elseif ($_GET['message'] === 'phone-error') {
+            $message = '<p class="fw-600 fz-16 mb-6">Phone number must be at least 10 digits long.</p>';
         }
     }
 
@@ -124,6 +126,13 @@ function goonj_handle_user_identification_form() {
 
     if ( empty( $phone ) || empty( $email ) ) {
         return;
+    }
+
+    if ( !preg_match('/^\d{10,}$/', $phone) ) {
+        $message_key = 'phone-error';
+        $redirect_url = add_query_arg('message', $message_key, wp_get_referer());
+        wp_redirect($redirect_url);
+        exit;
     }
 
     try {

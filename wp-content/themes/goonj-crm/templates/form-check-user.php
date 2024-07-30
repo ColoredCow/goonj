@@ -1,18 +1,18 @@
 <?php
 /**
- * Theme file to Design User Identification form
+ * Template for User Identification Form
  */
 
-// Retrieve the message from the global variable
+// Retrieve the message from the query variable
 $message = get_query_var('goonj_pending_induction_message', '');
 ?>
 
 <div class="text-center">
 	<form class="logged-out wp-block-loginout" action="<?php echo home_url(); ?>" method="POST">
 		<?php if ($message) : ?>
-				<div class="message">
-					<?php echo $message; ?>
-				</div>
+			<div class="message">
+				<?php echo $message; ?>
+			</div>
 		<?php endif; ?>
 		<input type="hidden" name="action" value="goonj-check-user" />
 		<div class="d-grid">
