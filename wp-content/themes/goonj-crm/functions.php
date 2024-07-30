@@ -132,7 +132,13 @@ function goonj_handle_user_identification_form() {
         ]);
 
         $foundContacts = $contactResult['values'];
-        // If the user does not exist in the Goonj database then
+
+        // Filter contacts to get those with the 'Volunteer' contact subtype
+        $volunteerContacts = array_filter($foundContacts, function($contact) {
+            return is_array($contact['contact_sub_type']) && in_array('Volunteer', $contact['contact_sub_type']);
+        });
+
+        // If the user does not exist in the Goonj database and dont have Volunteer contact type then
         // redirect to the volunteer registration form.
         $volunteer_registration_form_path = sprintf(
             '/volunteer-registration/#?email=%1$s&phone=%2$s',
@@ -141,7 +147,7 @@ function goonj_handle_user_identification_form() {
         );
 
 
-        if ( empty( $foundContacts ) ) {
+        if ( empty( $volunteerContacts ) ) {
             // We are currently hardcoding the path of the volunteer registration page.
             // If this path changes, then this code needs to be updated.
             wp_redirect( $volunteer_registration_form_path );
@@ -150,25 +156,27 @@ function goonj_handle_user_identification_form() {
 
         $contact = $foundContacts[0];
 
-        // If we are here, then it means the contact of type "Individual" exists.
-        // We need to now check if the contact sub_type is "Volunteer".
-        // If the Individual is not a Volunteer, then again we redirect it to
-        // volunteer registration form.
-        if ( ! in_array( 'Volunteer', $contact['contact_sub_type'] ) ) {
-            wp_redirect( $volunteer_registration_form_path );
-            exit;
-        }
-
         // If we are here, then it means Volunteer exists in our system.
         // Now we need to check if the volunteer is inducted or not.
         // If the volunteer is not inducted,
         //   1. Trigger an email for Induction 
         //   2. Change volunteer status to "Waiting for Induction"
         if ( ! goonj_is_volunteer_inducted( $contact ) ) {
-            // Use CiviCRM email API to send the induction email.
-            // Use CiviCRM contact API to update the contact status (custom data).
-            // Redirect back to the same page with a message.
-            wp_redirect( wp_get_referer() . '?message=waiting-induction' );
+            $referer_url = wp_get_referer();
+            $parsed_url = parse_url($referer_url);
+            $query_params = [];
+            
+            // If there is a query string, parse it
+            if (isset($parsed_url['query'])) {
+                parse_str($parsed_url['query'], $query_params);
+            }
+
+            // Set the message parameter
+            $query_params['message'] = 'waiting-induction';
+
+            // Build and redirect to the new URL
+            $redirect_url = $parsed_url['path'] . '?' . http_build_query($query_params);
+            wp_redirect($redirect_url);
             exit;
         }
 
