@@ -191,7 +191,43 @@ function goonj_handle_user_identification_form() {
         }
 
         // If we are here, then it means the user exists as an inducted volunteer.
-        wp_redirect(get_home_url() . "/collection-camp-form/#?source_contact_id=" . $contact['id'] );
+        // Fetch the most recent collection camp activity based on the creation date
+        $collectionCampResult = civicrm_api3('Activity', 'get', [
+            'sequential' => 1,
+            'return' => [
+                'Collection_Camp_Intent.District',
+                'Collection_Camp_Intent.State',
+                'Collection_Camp_Intent.Start_Date',
+                'Collection_Camp_Intent.End_Date',
+                'Collection_Camp_Intent.Location_Area_of_camp',
+                'created_date'
+            ],
+            'contact_id' => $contact['id'],
+            'activity_type_id' => ['IN' => [61]], // ID for "Collection Camp Intent"
+            'status_id' => ['IN' => [10]], // Status ID for "Under Authorization"
+            'is_test' => 0,
+            'is_deleted' => 0,
+            'order_by' => 'created_date DESC', // Order by creation date to get the most recent first
+            'limit' => 1,
+        ]);
+
+        // Most recent camp data
+		$recentCamp = end($collectionCampResult['values']);
+
+        if ($recentCamp) {
+            $redirect_url = get_home_url() . "/collection-camp-form/#?" . http_build_query([
+                'source_contact_id' => $contact['id'],
+                'Collection_Camp_Intent.District' => $recentCamp['custom_72'] ?? '',
+                'Collection_Camp_Intent.State' => $recentCamp['custom_71'] ?? '',
+                'Collection_Camp_Intent.Start_Date' => $recentCamp['custom_73'] ?? '',
+                'Collection_Camp_Intent.End_Date' => $recentCamp['custom_74'] ?? '',
+                'Collection_Camp_Intent.Location_Area_of_camp' => $recentCamp['custom_69'] ?? '',
+				'custom-message' => 'past-collection-data'
+            ]);
+        } else {
+            $redirect_url = get_home_url() . "/collection-camp-form/#?source_contact_id=" . $contact['id'];
+        }
+        wp_redirect($redirect_url);
         exit;
     } catch (CiviCRM_API3_Exception $e) {
         $error = $e->getMessage();
