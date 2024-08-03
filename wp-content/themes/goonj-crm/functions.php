@@ -222,7 +222,7 @@ function goonj_handle_user_identification_form() {
                 'Collection_Camp_Intent.Start_Date' => $recentCamp['custom_73'] ?? '',
                 'Collection_Camp_Intent.End_Date' => $recentCamp['custom_74'] ?? '',
                 'Collection_Camp_Intent.Location_Area_of_camp' => $recentCamp['custom_69'] ?? '',
-				'custom-message' => 'past-collection-data'
+				'message' => 'past-collection-data'
             ]);
         } else {
             $redirect_url = get_home_url() . "/collection-camp-form/#?source_contact_id=" . $contact['id'];

@@ -3,7 +3,6 @@ document.addEventListener('DOMContentLoaded', function () {
 	var params = new URLSearchParams(hash);
 	var message = params.get('message');
 
-	console.log(params)
 	if (message) {
 		var messageDiv = document.getElementById('custom-message');
 		if (messageDiv) {
