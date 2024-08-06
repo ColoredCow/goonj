@@ -11,12 +11,14 @@ $queryParams = [
 	'Collection_Camp_Intent.State' => $recentCampData['custom_71'] ?? '',
 	'Collection_Camp_Intent.Start_Date' => $recentCampData['custom_73'] ?? '',
 	'Collection_Camp_Intent.End_Date' => $recentCampData['custom_74'] ?? '',
-	'Collection_Camp_Intent.Location_Area_of_camp' => $recentCampData['custom_69'] ?? ''
+	'Collection_Camp_Intent.Location_Area_of_camp' => $recentCampData['custom_69'] ?? '',
+	'message' => 'collection-camp-page'
 ];
 
 $redirectUrl = $redirectBaseUrl . http_build_query($queryParams);
 $noDetailsRedirectUrl = get_home_url() . "/collection-camp-form/#?" . http_build_query([
-	'source_contact_id' => $contactId
+	'source_contact_id' => $contactId,
+	'message' => 'collection-camp-page'
 ]);
 
 ?>
