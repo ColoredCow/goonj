@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', function () {
 			} else if (message === 'collection-camp-page') {
 				messageDiv.innerHTML = `
 					<div class="w-520 mt-30">
-						<p class="fw-600 fz-16 mb-11">Goonj Collection Camp</p>
+						<p class="fw-400 fz-20 mb-11">Goonj Collection Camp</p>
 						<p class="fw-400 fz-16 mt-0 mb-24">Please provide the details related to the collection camp you want to organize. These details will be sent to Goonj for authorization.</p>
 					</div>
 				`;
