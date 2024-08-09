@@ -9,8 +9,6 @@ $queryParams = [
 	'source_contact_id' => $recentCampData['source_contact_id'] ?? '',
 	'Collection_Camp_Intent.District' => $recentCampData['custom_72'] ?? '',
 	'Collection_Camp_Intent.State' => $recentCampData['custom_71'] ?? '',
-	'Collection_Camp_Intent.Start_Date' => $recentCampData['custom_73'] ?? '',
-	'Collection_Camp_Intent.End_Date' => $recentCampData['custom_74'] ?? '',
 	'Collection_Camp_Intent.Location_Area_of_camp' => $recentCampData['custom_69'] ?? ''
 ];
 
