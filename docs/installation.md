@@ -52,6 +52,7 @@ First we will setup a WordPress site on top of which we will setup CiviCRM. For 
    ```sh
    wp config create --dbname=goonj --dbuser=root --dbpass=
    ```
+   If you see an error try to pass host as well 
 
 1. Install WordPress and create admin
    ```sh
