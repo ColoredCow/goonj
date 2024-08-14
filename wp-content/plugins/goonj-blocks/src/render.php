@@ -18,6 +18,12 @@ $register_link = sprintf(
 	'/individual-registration-with-volunteer-option/#?Source_Tracking.Event=%s',
 	$action_target['id'],
 );
+error_log("Material Contribution Link: ");
+$material_contribution_link = sprintf(
+	'/collection-camp-contribution/#?Source_Tracking.Event=%s',
+	$action_target['id'],
+);
+error_log("Material Contribution Link: " . $material_contribution_link);
 
 if ( in_array( $target, array( 'collection-camp', 'dropping-center' ) ) ) :
 	$start_date = new DateTime( $action_target['start_date'] );
@@ -42,7 +48,7 @@ if ( in_array( $target, array( 'collection-camp', 'dropping-center' ) ) ) :
 		<a href="<?php echo esc_url( $register_link ); ?>" class="wp-block-gb-action-button">
 			<?php esc_html_e( 'Register', 'goonj-blocks' ); ?>
 		</a>
-		<a href="" class="wp-block-gb-action-button">
+		<a href="<?php echo esc_url( $material_contribution_link ); ?>" class="wp-block-gb-action-button">
 			<?php esc_html_e( 'Material Contribution', 'goonj-blocks' ); ?>
 		</a>
 		<a href="" class="wp-block-gb-action-button">
