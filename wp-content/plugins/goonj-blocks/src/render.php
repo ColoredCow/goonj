@@ -18,12 +18,11 @@ $register_link = sprintf(
 	'/individual-registration-with-volunteer-option/#?Source_Tracking.Event=%s',
 	$action_target['id'],
 );
-error_log("Material Contribution Link: ");
+
 $material_contribution_link = sprintf(
 	'/collection-camp-contribution/#?Source_Tracking.Event=%s',
 	$action_target['id'],
 );
-error_log("Material Contribution Link: " . $material_contribution_link);
 
 if ( in_array( $target, array( 'collection-camp', 'dropping-center' ) ) ) :
 	$start_date = new DateTime( $action_target['start_date'] );
