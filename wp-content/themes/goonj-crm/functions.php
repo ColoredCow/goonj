@@ -163,7 +163,7 @@ function goonj_check_user_action() {
 
 add_action('wp', 'goonj_handle_user_identification_form');
 function goonj_handle_user_identification_form() {
-	if ( ! isset( $_POST['action'] ) || $_POST['action'] !== 'goonj-check-user' ) {
+	if ( ! isset( $_POST['action'] ) || ( $_POST['action'] !== 'goonj-check-user' && $_POST['action'] !== 'goonj-camp-contribution' ) ) {
 		return;
 	}
 
@@ -197,6 +197,18 @@ function goonj_handle_user_identification_form() {
 			'not-inducted-volunteer',
 			'9'
 		);
+
+		$individual_volunteer_registration_form_path = sprintf(
+			'/individual-registration-with-volunteer-option/#?email=%s&phone=%s&message=%s&Volunteer_fields.Which_activities_are_you_interested_in_=%s',
+			$email,
+			$phone,
+			'not-inducted-volunteer',
+			'9'
+		);
+		if($_POST['action'] === 'goonj-camp-contribution' && empty( $foundContacts ) ){
+			wp_redirect( $individual_volunteer_registration_form_path );
+			exit;
+		}
 
 		if ( empty( $foundContacts ) ) {
 			// We are currently hardcoding the path of the volunteer registration page.
