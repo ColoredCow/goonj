@@ -199,7 +199,7 @@ function goonj_handle_user_identification_form() {
 		);
 
 		$individual_volunteer_registration_form_path = sprintf(
-			'/individual-registration-with-volunteer-option/#?email=%s&phone=%s&message=%s&Volunteer_fields.Which_activities_are_you_interested_in_=%s',
+			'/register-with-volunteer-field-optional/#?email=%s&phone=%s&message=%s&Volunteer_fields.Which_activities_are_you_interested_in_=%s',
 			$email,
 			$phone,
 			'not-inducted-volunteer',
