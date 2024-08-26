@@ -338,26 +338,26 @@
           args: args,
           values: data}
         ).then(function(response) {
-          submissionResponse = response;
-          if (ctrl.fileUploader.getNotUploadedItems().length) {
-            _.each(ctrl.fileUploader.getNotUploadedItems(), function(file) {
-              file.formData.push({
-                params: JSON.stringify(_.extend({
-                  token: response[0].token,
-                  name: ctrl.getFormMeta().name
-                }, file.crmApiParams()))
+            submissionResponse = response;
+            if (ctrl.fileUploader.getNotUploadedItems().length) {
+              _.each(ctrl.fileUploader.getNotUploadedItems(), function(file) {
+                file.formData.push({
+                  params: JSON.stringify(_.extend({
+                        token: response[0].token,
+                        name: ctrl.getFormMeta().name
+                      }, file.crmApiParams()))
+                });
               });
-            });
-            ctrl.fileUploader.uploadAll();
-          } else {
-            postProcess();
-          }
-        })
-        .catch(function(error) {
-          status.reject();
-          $element.unblock();
-          CRM.alert(error.error_message || '', ts('Form Error'));
-        });
+              ctrl.fileUploader.uploadAll();
+            } else {
+              postProcess();
+            }
+          })
+          .catch(function(error) {
+            status.reject();
+            $element.unblock();
+            CRM.alert(error.error_message || '', ts('Form Error'));
+          });
       };
     }
   });
