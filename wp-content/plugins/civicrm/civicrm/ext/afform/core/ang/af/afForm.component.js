@@ -264,12 +264,67 @@
 
       function disableForm(errorMsg) {
         $('af-form[ng-form="' + ctrl.getFormMeta().name + '"]')
-          .addClass('disabled')
-          .find('button[ng-click="afform.submit()"]').prop('disabled', true);
-        CRM.alert(errorMsg, ts('Sorry'), 'error');
+          .addClass("disabled")
+          .find('button[ng-click="afform.submit()"]')
+          .prop("disabled", true);
+        CRM.alert(errorMsg, ts("Sorry"), "error");
+      }
+      // NOTE: This function currently provides basic validation for email, phone number, and postal code fields.
+      // For now, we have implemented these simple checks to meet current project requirements.
+      // In the future, we need to change this.
+      function customValidateFields() {
+        var isValid = true;
+        var errorMessage = "";
+
+        // Email validation
+        var emailField = $element.find("input[type='email']");
+        if (emailField.length) {
+          var emailValue = emailField.val();
+          var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailPattern.test(emailValue)) {
+            errorMessage +=
+              "Invalid email address. Please enter a valid email.\n";
+            isValid = false;
+          }
+        }
+
+        // Phone number validation
+        var phoneNumberField = $element.find(
+          "af-field[name='phone'] input[type='text']"
+        );
+        if (phoneNumberField.length) {
+          var phoneNumberValue = phoneNumberField.val();
+          var phonePattern = /^\d{10}$/;
+          if (!phonePattern.test(phoneNumberValue)) {
+            errorMessage += "Please enter a valid 10-digit mobile number.\n";
+            isValid = false;
+          }
+        }
+
+        // Postal code validation
+        var postalCodeField = $element.find(
+          "af-field[name='postal_code'] input[type='text']"
+        );
+        if (postalCodeField.length) {
+          var postalCodeValue = postalCodeField.val();
+          var postalCodePattern = /^\d{6}$/;
+          if (!postalCodePattern.test(postalCodeValue)) {
+            errorMessage += "Please enter a valid 6-digit postal code.\n";
+            isValid = false;
+          }
+        }
+
+        if (!isValid) {
+          CRM.alert(errorMessage, ts("Form Error"));
+        }
+
+        return isValid;
       }
 
-      this.submit = function() {
+      this.submit = function () {
+        if (!customValidateFields()) {
+          return;
+        }
         // validate required fields on the form
         if (!ctrl.ngForm.$valid || !validateFileFields()) {
           CRM.alert(ts('Please fill all required fields.'), ts('Form Error'));
@@ -283,26 +338,26 @@
           args: args,
           values: data}
         ).then(function(response) {
-          submissionResponse = response;
-          if (ctrl.fileUploader.getNotUploadedItems().length) {
-            _.each(ctrl.fileUploader.getNotUploadedItems(), function(file) {
-              file.formData.push({
-                params: JSON.stringify(_.extend({
-                  token: response[0].token,
-                  name: ctrl.getFormMeta().name
-                }, file.crmApiParams()))
+            submissionResponse = response;
+            if (ctrl.fileUploader.getNotUploadedItems().length) {
+              _.each(ctrl.fileUploader.getNotUploadedItems(), function(file) {
+                file.formData.push({
+                  params: JSON.stringify(_.extend({
+                        token: response[0].token,
+                        name: ctrl.getFormMeta().name
+                      }, file.crmApiParams()))
+                });
               });
-            });
-            ctrl.fileUploader.uploadAll();
-          } else {
-            postProcess();
-          }
-        })
-        .catch(function(error) {
-          status.reject();
-          $element.unblock();
-          CRM.alert(error.error_message || '', ts('Form Error'));
-        });
+              ctrl.fileUploader.uploadAll();
+            } else {
+              postProcess();
+            }
+          })
+          .catch(function(error) {
+            status.reject();
+            $element.unblock();
+            CRM.alert(error.error_message || '', ts('Form Error'));
+          });
       };
     }
   });
