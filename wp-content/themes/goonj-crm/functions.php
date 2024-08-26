@@ -40,6 +40,18 @@ function goonj_theme_setup() {
 }
 
 
+function enqueue_custom_validation_script() {
+	wp_enqueue_script(
+		'custom_validation-handler-script',
+		get_stylesheet_directory_uri() . '/custom_validation-handler.js',
+		array(),
+		null,
+		true
+	);
+}
+add_action('wp_enqueue_scripts', 'enqueue_custom_validation_script');
+
+
 
 add_action('template_redirect', 'goonj_redirect_logged_in_user_to_civi_dashboard');
 function goonj_redirect_logged_in_user_to_civi_dashboard() {
