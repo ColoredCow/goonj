@@ -39,20 +39,6 @@ function goonj_theme_setup() {
 	add_editor_style('style.css');
 }
 
-
-function enqueue_custom_validation_script() {
-	wp_enqueue_script(
-		'custom_validation-handler-script',
-		get_stylesheet_directory_uri() . '/custom_validation-handler.js',
-		array(),
-		null,
-		true
-	);
-}
-add_action('wp_enqueue_scripts', 'enqueue_custom_validation_script');
-
-
-
 add_action('template_redirect', 'goonj_redirect_logged_in_user_to_civi_dashboard');
 function goonj_redirect_logged_in_user_to_civi_dashboard() {
 	if (is_user_logged_in() && is_front_page()) {
@@ -128,9 +114,49 @@ add_shortcode( 'goonj_check_user_form', 'goonj_check_user_action' );
 
 function goonj_check_user_action($atts)
 {
+    ob_start();
+    $message = '';
+    if (isset($_GET['message'])) {
+        if ($_GET['message'] === 'waiting-induction') {
+            $message = '
+				<p class="fw-600 fz-20 mb-6">Your induction is pending</p>
+				<p class="fw-400 fz-16 mt-0 mb-24">
+					We noticed that you\'ve already submitted your volunteer registration form. Just one more step to go before you can start your collection camp. Please finish your induction to move forward.
+				</p>
+				<div class="contact-info">
+				<div class="contact-item">
+					<img src="' . get_template_directory_uri() . '/images/email-icon.png" alt="Email Icon" class="icon">
+					<a href="mailto:mail@goonj.org" class="contact-link">mail@goonj.org</a>
+				</div>
+				<div class="contact-item">
+					<img src="' . get_template_directory_uri() . '/images/phone-icon.png" alt="Phone Icon" class="icon">
+					<a href="tel:01141401216" class="contact-link">011-41401216</a>
+				</div>
+			</div>';
+        }
+    }
+
+    // Pass the message to the template
+    set_query_var('goonj_pending_induction_message', $message);
     get_template_part('templates/form', 'check-user', [ 'purpose' => $atts['purpose'] ]);
     return ob_get_clean();
 
+    ob_start();
+    $message = '';
+    if (isset($_GET['message'])) {
+        if ($_GET['message'] === 'waiting-induction') {
+            $message = '<p class="fw-600 fz-16 mb-6">Your induction is pending</p>
+						<p class="fw-400 fz-16 mt-0 mb-24">Just one more step to go before you can start your collection camp. Please finish your induction to move forward.</p>
+						<p class="fw-400 fz-16 mt-0 mb-24">
+							Please reach out to <a href="mailto:mail@goonj.org">mail@goonj.org</a> in case there are any queries.
+						</p>';
+        }
+    }
+
+    // Pass the message to the template
+    set_query_var('goonj_pending_induction_message', $message);
+	get_template_part( 'templates/form', 'check-user' );
+    return ob_get_clean();
 }
 
 
@@ -194,22 +220,11 @@ function goonj_handle_user_identification_form() {
             $target_id,
         );
 
-		$dropping_center_volunteer_registration_form_path = sprintf(
-			'/volunteer-registration/#?email=%s&phone=%s&message=%s',
-			$email,
-			$phone,
-			'not-inducted-for-dropping-center'
-		);
-
         if (empty($foundContacts)) {
             if ($purpose == 'material-contribution') {
                 wp_redirect($individual_volunteer_registration_form_path);
                 exit;
             }
-			if ($purpose == 'dropping-center') {
-				wp_redirect($dropping_center_volunteer_registration_form_path);
-				exit;
-			}
             // We are currently hardcoding the path of the volunteer registration page.
             // If this path changes, then this code needs to be updated.
             wp_redirect($volunteer_registration_form_path);
@@ -235,10 +250,20 @@ function goonj_handle_user_identification_form() {
 		//   1. Trigger an email for Induction
 		//   2. Change volunteer status to "Waiting for Induction"
 		if ( ! goonj_is_volunteer_inducted( $foundContacts ) ) {
-			$redirect_url = ($purpose === 'dropping-center')
-            ? home_url('/dropping-centre-waiting-induction/')
-            : home_url('/collection-camp-waiting-induction/');
-	
+			$referer_url = wp_get_referer();
+			$parsed_url = parse_url($referer_url);
+			$query_params = [];
+
+			// If there is a query string, parse it
+			if (isset($parsed_url['query'])) {
+				parse_str($parsed_url['query'], $query_params);
+			}
+
+			// Set the message parameter
+			$query_params['message'] = 'waiting-induction';
+
+			// Build and redirect to the new URL
+			$redirect_url = $parsed_url['path'] . '?' . http_build_query($query_params);
 			wp_redirect($redirect_url);
 			exit;
 		}
@@ -247,16 +272,12 @@ function goonj_handle_user_identification_form() {
 		// Fetch the most recent collection camp activity based on the creation date
 		$collectionCampResult = \Civi\Api4\EckEntity::get('Collection_Camp', FALSE)
 		->addSelect('*', 'custom.*')
-		->addWhere('Collection_Camp_Core_Details.Contact_Id', '=', $foundContacts['id'])
+		->addWhere('Status.Contact_Id', '=', $foundContacts['id'])
 		->addWhere('subtype', '=', 4) // Collection Camp subtype
 		->addOrderBy('created_date', 'DESC')
 		->setLimit(1)
 		->execute();
 
-		if ($purpose === 'dropping-center') {
-			wp_redirect(get_home_url() . "/dropping-center/#?Collection_Camp_Core_Details.Contact_Id=" . $foundContacts['id']);
-			exit;
-		}
 
 		// Recent camp data
 		$recentCamp = $collectionCampResult->first() ?? null;
@@ -269,10 +290,10 @@ function goonj_handle_user_identification_form() {
 			$_SESSION['displayName'] = $display_name;
 			$_SESSION['contactNumber'] = $phone;
 
-			wp_redirect(get_home_url() . "/collection-camp-in-past/#?Collection_Camp_Core_Details.Contact_Id=" . $foundContacts['id'] . '&message=past-collection-data' );
+			wp_redirect(get_home_url() . "/collection-camp-in-past/#?Status.Contact_Id=" . $foundContacts['id'] . '&message=past-collection-data' );
 			exit;
 		} else {
-			$redirect_url = get_home_url() . "/collection-camp-intent/#?Collection_Camp_Core_Details.Contact_Id=" . $foundContacts['id'] . '&message=collection-camp-page&Collection_Camp_Intent_Details.Name=' . $display_name . '&Collection_Camp_Intent_Details.Contact_Number='. $phone;
+			$redirect_url = get_home_url() . "/collection-camp-intent/#?Status.Contact_Id=" . $foundContacts['id'] . '&message=collection-camp-page&Collection_Camp_Intent_Details.Name=' . $display_name . '&Collection_Camp_Intent_Details.Contact_Number='. $phone;
 		}
 		wp_redirect($redirect_url);
 		exit;
