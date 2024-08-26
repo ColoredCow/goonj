@@ -384,20 +384,18 @@ function goonj_check_action_target_exists() {
 
 	$is_404 = false;
 
-	$event_fields = array(
+	$entity_fields = array(
 		'id',
 		'title',
-		'summary',
-		'description',
-		'start_date',
-		'end_date',
+		'Collection_Camp_Intent_Details.Start_Date',
+		'Collection_Camp_Intent_Details.End_Date',
 	);
 
 	switch ( $target ) {
 		case 'collection-camp':
-			$result = \Civi\Api4\Event::get( false )
+			$result = \Civi\Api4\EckEntity::get('Collection_Camp', TRUE)
 				->selectRowCount()
-				->addSelect( ...$event_fields )
+				->addSelect( ...$entity_fields )
 				->addWhere( 'id', '=', $id )
 				->setLimit( 1 )
 				->execute();

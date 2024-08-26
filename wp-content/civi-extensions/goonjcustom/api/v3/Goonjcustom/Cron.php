@@ -1,38 +1,51 @@
 <?php
 
 /**
+ * @file
+ */
+
+/**
  * Civirules.Cron API specification (optional)
  * This is used for documentation and validation.
  *
- * @param array $spec description of fields supported by this API call
+ * @param array $spec
+ *   description of fields supported by this API call
  *
  * @return void
  */
-function _civicrm_api3_goonjcustom_cron_spec(&$spec)
-{
-  //there are no parameters for the civirules cron
+
+use Civi\Api4\Activity;
+use Civi\Api4\Contact;
+
+/**
+ *
+ */
+function _civicrm_api3_goonjcustom_cron_spec(&$spec) {
+  // There are no parameters for the civirules cron.
 }
 
 /**
- * Civirules.Cron API
+ * Civirules.Cron API.
  *
  * @param array $params
  *
  * @return array API result descriptor
+ *
  * @see civicrm_api3_create_success
  * @see civicrm_api3_create_error
+ *
  * @throws \CRM_Core_Exception
  */
-function civicrm_api3_goonjcustom_cron($params)
-{
+function civicrm_api3_goonjcustom_cron($params) {
   $returnValues = [];
 
   try {
-    $assigneeRecordTypeId = 1;  // Activity Assignees
+    // Activity Assignees.
+    $assigneeRecordTypeId = 1;
     $startOfDay = new DateTime('today midnight');
     $endOfDay = new DateTime('tomorrow midnight -1 second');
 
-    $activityAssignees = \Civi\Api4\Activity::get(TRUE)
+    $activityAssignees = Activity::get(TRUE)
       ->addSelect('target_contact_id', 'activity_contact.contact_id', 'activity_date_time')
       ->addJoin('ActivityContact AS activity_contact', 'LEFT', ['activity_contact.record_type_id', '=', $assigneeRecordTypeId])
       ->addWhere('activity_type_id:name', '=', 'Induction')
@@ -48,23 +61,22 @@ function civicrm_api3_goonjcustom_cron($params)
       $targetContactId = $activity['target_contact_id'][0];
       $activityDateTime = $activity['activity_date_time'];
 
-
-      // Get details for the assignee contact
-      $assigneeDetails = \Civi\Api4\Contact::get(TRUE)
+      // Get details for the assignee contact.
+      $assigneeDetails = Contact::get(TRUE)
         ->addSelect('email.email', 'display_name')
         ->addJoin('Email AS email', 'LEFT')
         ->addWhere('id', '=', $assigneeContactId)
         ->execute();
 
-      // Get details for the target contact
-      $volunteerDetails = \Civi\Api4\Contact::get(TRUE)
+      // Get details for the target contact.
+      $volunteerDetails = Contact::get(TRUE)
         ->addSelect('email.email', 'phone.phone', 'display_name')
         ->addJoin('Email AS email', 'LEFT')
         ->addJoin('Phone AS phone', 'LEFT')
         ->addWhere('id', '=', $targetContactId)
         ->execute();
 
-      // If the contact_id is not in the grouped results, initialize it
+      // If the contact_id is not in the grouped results, initialize it.
       if (!isset($groupedResults[$assigneeContactId])) {
         $groupedResults[$assigneeContactId] = [
           'activity_contact.contact_id' => $assigneeContactId,
@@ -83,10 +95,10 @@ function civicrm_api3_goonjcustom_cron($params)
       ];
     }
 
-    // Convert the grouped results to a list of arrays
+    // Convert the grouped results to a list of arrays.
     $inductionConductors = array_values($groupedResults);
 
-    list($defaultFromName, $defaultFromEmail) = CRM_Core_BAO_Domain::getNameAndEmail();
+    [$defaultFromName, $defaultFromEmail] = CRM_Core_BAO_Domain::getNameAndEmail();
     $from = "\"$defaultFromName\" <$defaultFromEmail>";
 
     foreach ($inductionConductors as $assignee) {
@@ -104,16 +116,21 @@ function civicrm_api3_goonjcustom_cron($params)
 
       try {
         $result = CRM_Utils_Mail::send($mailParams);
-      } catch (CiviCRM_API3_Exception $e) {
+      }
+      catch (CiviCRM_API3_Exception $e) {
         error_log('Goonj Cron Job: API error - ' . $e->getMessage());
       }
     }
-  } catch (CiviCRM_API3_Exception $e) {
+  }
+  catch (CiviCRM_API3_Exception $e) {
     error_log('Goonj Cron Job: API error - ' . $e->getMessage());
   }
   return civicrm_api3_create_success($returnValues, $params, 'Goonjcustom', 'cron');
 }
 
+/**
+ *
+ */
 function goonjcustom_get_induction_scheduled_email_html($assignee) {
   $assigneeContactId = $assignee['activity_contact.contact_id'];
   $assigneeName = $assignee['assignee_display_name'];
@@ -128,7 +145,7 @@ function goonjcustom_get_induction_scheduled_email_html($assignee) {
     $formattedDateTime = new DateTime($activityDateTime);
     $inductionTime = $formattedDateTime->format('F jS, Y g:i A');
 
-    // Append each volunteer's details to the email body
+    // Append each volunteer's details to the email body.
     $volunteerDetailsHtml .= "
     <li><strong>Name:</strong> $volunteerName<br>
       <strong>Email:</strong> {$target['email']}<br>

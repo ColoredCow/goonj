@@ -261,54 +261,27 @@ function goonjcustom_civicrm_pageRun(&$page) {
   );
 }
 
-/**
- *
- */
 function goonjcustom_civicrm_tabset($tabsetName, &$tabs, $context) {
-  if ($tabsetName !== 'civicrm/event/manage' || empty($context)) {
+  if ($tabsetName !== 'civicrm/eck/entity' || empty($context)) {
     return;
   }
 
-  $eventID = $context['event_id'];
+  $entityID = $context['entity_id'];
 
   $url = CRM_Utils_System::url(
-        'civicrm/event/manage/qr',
-        "reset=1&snippet=5&force=1&id=$eventID&action=update&component=event"
+        'civicrm/eck/entity/qr',
+        "reset=1&snippet=5&force=1&id=$entityID&action=update"
   );
 
-  $intentId = Event::get(FALSE)
-    ->addSelect('*', 'Event_Volunteers.Collection_Camp_Intent')
-    ->addWhere('id', '=', $eventID)
-    ->setLimit(1)
-    ->execute();
-
-  $collectionCampIntentId = $intentId->first()['Event_Volunteers.Collection_Camp_Intent'] ?? NULL;
-  $collectionCampEventTypeId = $intentId->first()['event_type_id'] ?? NULL;
-
-  // URL for the Intent tab.
-  $intentUrl = CRM_Utils_System::url(
-        "/wp-admin/admin.php?page=CiviCRM&q=civicrm%2Factivity%2Fadd&reset=1&type=Event&subType=$collectionCampEventTypeId&action=view&id=$collectionCampIntentId"
+  // URL for the Contribution tab.
+  $contributionUrl = CRM_Utils_System::url(
+        "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fcollection-camp%2Fmaterial-contributions",
   );
 
-  $tabsToRemove = [
-    'event' => [
-      'manage' => [
-        'fee',
-        'registration',
-        'friend',
-        'pcp',
-      ],
-    ],
-  ];
-
-  foreach ($tabsToRemove['event']['manage'] as $toRemove) {
-    unset($tabs[$toRemove]);
-  }
-
-  // Add the Intent tab.
-  $tabs['intent'] = [
-    'title' => ts('Intent'),
-    'link' => $intentUrl,
+  // Add the Contribution tab.
+  $tabs['contribution'] = [
+    'title' => ts('Contribution'),
+    'link' => $contributionUrl,
     'valid' => 1,
     'active' => 1,
     'current' => FALSE,
@@ -322,43 +295,5 @@ function goonjcustom_civicrm_tabset($tabsetName, &$tabs, $context) {
     'active' => 1,
     'current' => FALSE,
   ];
-  // Hide the Intent fields by adding JavaScript specifically to the Intent page.
-  if ((isset($_GET['selectedChild']) && $_GET['selectedChild'] === 'intent') || (isset($_GET['action']) && $_GET['action'] === 'update' && isset($_GET['component']) && $_GET['component'] === 'event')) {
-    CRM_Core_Region::instance('page-footer')->add(
-    [
-      'script' => '
-				(function($) {
-					$(document).ajaxComplete(function(event, xhr, settings) {
-						var urlParams = new URLSearchParams(settings.url);
-						var currentUrl = window.location.href;
-						var isEventSubType = urlParams.get("subType") === "7";
 
-						if (isEventSubType) {
-							var fieldsToHide = [
-								".crm-activity-form-block-target_contact_id",
-								".crm-activity-form-block-assignee_contact_id",
-								".crm-activity-form-block-engagement_level",
-								".crm-activity-form-block-duration",
-								".crm-activity-form-block-details",
-								".crm-activity-form-block-priority_id",
-								".crm-activity-form-block-subject",
-								".crm-activity-form-block-location",
-								".crm-activity-form-block-status_id",
-								".crm-activity-form-block-activity_date_time",
-								".crm-activity-form-block-activity_date_time",
-								".crm-accordion-bold summary",
-								".crm-activity-form-block-source_contact_id",
-								".crm-activity-form-block-campaign_id"
-							];
-
-							fieldsToHide.forEach(function(field) {
-								$(field).css("display", "none");
-							});
-						}
-					});
-				})(CRM.$);
-				',
-    ]
-    );
-  }
 }

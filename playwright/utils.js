@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test';
 import { faker } from '@faker-js/faker/locale/en_IN'; // Import the Indian locale directly
-import { VolunteerRegistrationPage } from '../play-wright/pages/volunteer-registration.page';
-import { SearchContactsPage } from '../play-wright/pages/search-contact.page';
+import { VolunteerRegistrationPage } from '../playwright/pages/volunteer-registration.page';
+import { SearchContactsPage } from '../playwright/pages/search-contact.page';
 
 // Helper function to generate an Indian mobile number
 const generateIndianMobileNumber = () => {
