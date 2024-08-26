@@ -358,6 +358,7 @@
           $element.unblock();
           CRM.alert(error.error_message || '', ts('Form Error'));
         });
+      };
     }
   });
 })(angular, CRM.$, CRM._);
