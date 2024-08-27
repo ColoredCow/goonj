@@ -93,6 +93,7 @@ function civirules_civicrm_managed(&$entities) {
   CRM_Civirules_Utils_Upgrader::insertTriggersFromJson(E::path('sql/triggers.json'));
   CRM_Civirules_Utils_Upgrader::insertActionsFromJson(E::path('sql/actions.json'));
   CRM_Civirules_Utils_Upgrader::insertConditionsFromJson(E::path('sql/conditions.json'));
+  CRM_Civirules_Utils_Upgrader::insertTriggersFromJson(E::path('civirules/triggers.json'));
 }
 
 /**
