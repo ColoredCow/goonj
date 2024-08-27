@@ -182,6 +182,13 @@ function goonj_handle_user_identification_form() {
 			'not-inducted-for-dropping-center'
 		);
 
+		$institute_registration_individual_signup_form_path = sprintf(
+			'/institute-registration/individual-sign-up/#?email=%s&phone=%s&Source_Tracking.Event=%s',
+			$email,
+			$phone,
+			$target_id,
+		);
+
 		if ( empty( $found_contacts ) ) {
 			switch ( $purpose ) {
 				// Contact does not exist and the purpose is to do material contribution.
@@ -199,7 +206,7 @@ function goonj_handle_user_identification_form() {
 				// Contact does not exist and the purpose is to register an institute.
 				// Redirect to individual registration.
 				case 'institute-registration':
-					$redirect_url = $individual_registration_form_path;
+					$redirect_url = $institute_registration_individual_signup_form_path;
 					break;
 
 				// Contact does not exist and the purpose is not defined.
@@ -228,7 +235,7 @@ function goonj_handle_user_identification_form() {
 
 		if ( 'institute-registration' === $purpose ) {
 			$institute_registration_form_path = sprintf(
-				'/institute-registration/#?email=%s&phone=%s',
+				'/institute-registration/sign-up/#?email=%s&phone=%s',
 				$email,
 				$phone,
 			);
@@ -251,7 +258,7 @@ function goonj_handle_user_identification_form() {
 		//   2. Change volunteer status to "Waiting for Induction"
 		if ( ! goonj_is_volunteer_inducted( $found_contacts ) ) {
 			$redirect_url = ($purpose === 'dropping-center')
-			? home_url('/dropping-centre-waiting-induction/')
+			? home_url('/dropping-centre/waiting-induction/')
 			: home_url('/collection-camp/waiting-induction/');
 	
 			wp_redirect($redirect_url);
@@ -269,7 +276,7 @@ function goonj_handle_user_identification_form() {
 		->execute();
 
 		if ($purpose === 'dropping-center') {
-			wp_redirect(get_home_url() . "/dropping-center/#?Collection_Camp_Core_Details.Contact_Id=" . $found_contacts['id']);
+			wp_redirect(get_home_url() . "/dropping-center/location/#?Collection_Camp_Core_Details.Contact_Id=" . $found_contacts['id']);
 			exit;
 		}
 
@@ -332,7 +339,7 @@ function goonj_custom_rewrite_rules() {
 	);
 
 	add_rewrite_rule(
-		'^actions/dropping-center/([0-9]+)/?',
+		'^actions/dropping-center/location/([0-9]+)/?',
 		'index.php?pagename=actions&target=dropping-center&id=$matches[1]',
 		'top'
 	);
