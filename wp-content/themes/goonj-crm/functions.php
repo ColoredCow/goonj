@@ -182,6 +182,12 @@ function goonj_handle_user_identification_form() {
 			'not-inducted-for-dropping-center'
 		);
 
+		$individual_registration_form_path = sprintf(
+			'/individual-institute-registration/#?email=%s&phone=%s',
+			$email,
+			$phone,
+		);
+
 		if ( empty( $found_contacts ) ) {
 			switch ( $purpose ) {
 				// Contact does not exist and the purpose is to do material contribution.
