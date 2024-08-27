@@ -2,25 +2,25 @@
 	{
 	  "name": "new_collection_camp",
 	  "label": "Collection Camp is added",
-	  "object_name": "Collection_Camp",
+	  "object_name": "EckEntityType",
 	  "op": "create",
-	  "class_name": "CRM_goonjcustom_Civirules_CollectionCampTrigger",
+	  "class_name": "CRM_GoonjCustom_Civirules_CollectionCampTrigger",
 	  "cron": "0"
 	},
 	{
 	  "name": "changed_collection_camp",
 	  "label": "Collection Camp is changed",
-	  "object_name": "Collection_Camp",
+	  "object_name": "EckEntityType",
 	  "op": "edit",
-	  "class_name": "CRM_goonjcustom_Civirules_CollectionCampTrigger",
+	  "class_name": "CRM_GoonjCustom_Civirules_CollectionCampTrigger",
 	  "cron": "0"
 	},
 	{
 	  "name": "deleted_collection_camp",
 	  "label": "Collection Camp is deleted",
-	  "object_name": "Collection_Camp",
+	  "object_name": "EckEntityType",
 	  "op": "delete",
-	  "class_name": "CRM_goonjcustom_Civirules_CollectionCampTrigger",
+	  "class_name": "CRM_GoonjCustom_Civirules_CollectionCampTrigger",
 	  "cron": "0"
 	}
   ]
