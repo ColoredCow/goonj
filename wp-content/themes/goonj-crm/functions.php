@@ -182,8 +182,8 @@ function goonj_handle_user_identification_form() {
 			'not-inducted-for-dropping-center'
 		);
 
-		$institute_registration_individual_signup_form_path = sprintf(
-			'/institute-registration/individual-sign-up/#?email=%s&phone=%s&Source_Tracking.Event=%s',
+		$individual_signup_form_path = sprintf(
+			'/individual-sign-up/#?email=%s&phone=%s&Source_Tracking.Event=%s',
 			$email,
 			$phone,
 			$target_id,
@@ -206,7 +206,7 @@ function goonj_handle_user_identification_form() {
 				// Contact does not exist and the purpose is to register an institute.
 				// Redirect to individual registration.
 				case 'institute-registration':
-					$redirect_url = $institute_registration_individual_signup_form_path;
+					$redirect_url = $individual_signup_form_path;
 					break;
 
 				// Contact does not exist and the purpose is not defined.
@@ -339,7 +339,7 @@ function goonj_custom_rewrite_rules() {
 	);
 
 	add_rewrite_rule(
-		'^actions/dropping-center/location/([0-9]+)/?',
+		'^actions/dropping-center/([0-9]+)/?',
 		'index.php?pagename=actions&target=dropping-center&id=$matches[1]',
 		'top'
 	);
