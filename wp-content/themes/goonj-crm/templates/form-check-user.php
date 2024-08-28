@@ -5,7 +5,7 @@
 
 $purpose = $args['purpose'];
 $target_id = get_query_var('target_id', '');
-$is_material_contribution = $purpose !== 'material-contribution';
+$is_purpose_requiring_email = !in_array($purpose, ['material-contribution', 'goonj-office-visit']);
 ?>
 
 <div class="text-center w-xl-520 m-auto">
@@ -15,8 +15,8 @@ $is_material_contribution = $purpose !== 'material-contribution';
         <input type="hidden" name="purpose" value="<?php echo esc_attr($purpose); ?>" />
         <input type="hidden" name="target_id" value="<?php echo esc_attr($target_id); ?>" />
             <div class="d-grid">
-                <label class="font-sans" for="email">Email <?php if ($is_material_contribution) : ?><span class="required-indicator">*</span><?php endif; ?></label>
-                <input type="email" id="email" name="email" <?php echo $is_material_contribution ? 'required' : ''; ?> value="<?php echo isset($_POST['email']) ? esc_attr(sanitize_email($_POST['email'])) : ''; ?>">
+                <label class="font-sans" for="email">Email <?php if ($is_purpose_requiring_email) : ?><span class="required-indicator">*</span><?php endif; ?></label>
+                <input type="email" id="email" name="email" <?php echo $is_purpose_requiring_email ? 'required' : ''; ?> value="<?php echo isset($_POST['email']) ? esc_attr(sanitize_email($_POST['email'])) : ''; ?>">
             </div>
             <br>
             <div class="d-grid">

@@ -135,9 +135,9 @@ function goonj_handle_user_identification_form() {
 	$email = $_POST['email'] ?? '';
 	$phone = $_POST['phone'] ?? '';
 
-	$is_material_contribution = $purpose !== 'material-contribution';
+	$is_purpose_requiring_email = !in_array($purpose, ['material-contribution', 'goonj-office-visit']);
 
-	if ( empty( $phone ) || ( $is_material_contribution && empty( $email ) ) ) {
+	if ( empty( $phone ) || ( $is_purpose_requiring_email && empty( $email ) ) ) {
 		return;
 	}
 
@@ -181,6 +181,8 @@ function goonj_handle_user_identification_form() {
 			$phone,
 			'not-inducted-for-dropping-center'
 		);
+		var_dump($purpose);
+		die;
 
 		if ( empty( $found_contacts ) ) {
 			switch ( $purpose ) {
@@ -198,7 +200,7 @@ function goonj_handle_user_identification_form() {
 
 				// Contact does not exist and the purpose is to register an institute.
 				// Redirect to individual registration.
-				case 'institute-registration':
+				case 'institute-registration'  || 'goonj-office-visit':
 					$redirect_url = $individual_registration_form_path;
 					break;
 
