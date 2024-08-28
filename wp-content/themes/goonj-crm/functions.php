@@ -181,8 +181,6 @@ function goonj_handle_user_identification_form() {
 			$phone,
 			'not-inducted-for-dropping-center'
 		);
-		var_dump($purpose);
-		die;
 
 		if ( empty( $found_contacts ) ) {
 			switch ( $purpose ) {
@@ -235,6 +233,16 @@ function goonj_handle_user_identification_form() {
 				$phone,
 			);
 			wp_redirect( $institute_registration_form_path );
+			exit;
+		}
+
+		if ( 'goonj-office-visit' === $purpose ) {
+			$office_visit_activity_form_path = sprintf(
+				'office-visit/activity-form/#?email=%s&phone=%s',
+				$email,
+				$phone,
+			);
+			wp_redirect( $office_visit_activity_form_path );
 			exit;
 		}
 
