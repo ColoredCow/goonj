@@ -26,6 +26,6 @@ class GoonjUniqueUserValidation extends AutoSubscriber implements EventSubscribe
    */
   public static function onAfformValidate(AfformValidateEvent $event) {
     \Civi::log()->info('Validation event triggered');
-    $event->setError('The field "some_field" cannot be empty'); 
+    $event->setError('The field cannot be empty'); 
     }
   }
