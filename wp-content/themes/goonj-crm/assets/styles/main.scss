@@ -380,3 +380,27 @@ form input {
 .af-container .af-container .af-text {
   margin-left: 10px !important;
 }
+[af-fieldset="Individual1"] .af-title,
+[af-fieldset="Individual2"] .af-title,
+[af-fieldset="Individual3"] .af-title,
+[af-fieldset="Individual4"] .af-title,
+[af-fieldset="Individual5"] .af-title {
+    font-weight: 400;
+    font-size: 16px !important;
+    margin-left: 10px;
+    text-transform: uppercase;
+    padding-top: 20px !important;
+    color: #000000 !important;
+}
+
+.align-items-center {
+  align-items: center;
+}
+
+.d-flex{
+  display: flex;
+}
+
+.justify-content-center{
+  justify-content: center;
+}

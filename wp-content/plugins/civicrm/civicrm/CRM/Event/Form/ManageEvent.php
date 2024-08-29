@@ -442,7 +442,6 @@ class CRM_Event_Form_ManageEvent extends CRM_Core_Form {
       $tabs['reminder'] = ['title' => ts('Schedule Reminders'), 'class' => 'livePage'] + $default;
     }
 
-    $tabs['friend'] = ['title' => ts('Tell a Friend')] + $default;
     $tabs['pcp'] = ['title' => ts('Personal Campaigns')] + $default;
     $tabs['repeat'] = ['title' => ts('Repeat')] + $default;
 
@@ -481,9 +480,6 @@ WHERE      e.id = %1
       }
       if (!$dao->is_monetary) {
         $tabs['fee']['valid'] = FALSE;
-      }
-      if (!$dao->is_active) {
-        $tabs['friend']['valid'] = FALSE;
       }
       if (!$dao->is_pcp) {
         $tabs['pcp']['valid'] = FALSE;

@@ -116,64 +116,24 @@ add_shortcode( 'goonj_check_user_form', 'goonj_check_user_action' );
 
 function goonj_check_user_action($atts)
 {
-    ob_start();
-    $message = '';
-    if (isset($_GET['message'])) {
-        if ($_GET['message'] === 'waiting-induction') {
-            $message = '
-				<p class="fw-600 fz-20 mb-6">Your induction is pending</p>
-				<p class="fw-400 fz-16 mt-0 mb-24">
-					We noticed that you\'ve already submitted your volunteer registration form. Just one more step to go before you can start your collection camp. Please finish your induction to move forward.
-				</p>
-				<div class="contact-info">
-				<div class="contact-item">
-					<img src="' . get_template_directory_uri() . '/images/email-icon.png" alt="Email Icon" class="icon">
-					<a href="mailto:mail@goonj.org" class="contact-link">mail@goonj.org</a>
-				</div>
-				<div class="contact-item">
-					<img src="' . get_template_directory_uri() . '/images/phone-icon.png" alt="Phone Icon" class="icon">
-					<a href="tel:01141401216" class="contact-link">011-41401216</a>
-				</div>
-			</div>';
-        }
-    }
+	get_template_part('templates/form', 'check-user', [ 'purpose' => $atts['purpose'] ]);
+	return ob_get_clean();
 
-    // Pass the message to the template
-    set_query_var('goonj_pending_induction_message', $message);
-    get_template_part('templates/form', 'check-user', [ 'purpose' => $atts['purpose'] ]);
-    return ob_get_clean();
-
-    ob_start();
-    $message = '';
-    if (isset($_GET['message'])) {
-        if ($_GET['message'] === 'waiting-induction') {
-            $message = '<p class="fw-600 fz-16 mb-6">Your induction is pending</p>
-						<p class="fw-400 fz-16 mt-0 mb-24">Just one more step to go before you can start your collection camp. Please finish your induction to move forward.</p>
-						<p class="fw-400 fz-16 mt-0 mb-24">
-							Please reach out to <a href="mailto:mail@goonj.org">mail@goonj.org</a> in case there are any queries.
-						</p>';
-        }
-    }
-
-    // Pass the message to the template
-    set_query_var('goonj_pending_induction_message', $message);
-	get_template_part( 'templates/form', 'check-user' );
-    return ob_get_clean();
 }
 
 
 add_action('wp', 'goonj_handle_user_identification_form');
 function goonj_handle_user_identification_form() {
 	if ( ! isset( $_POST['action'] ) || ( $_POST['action'] !== 'goonj-check-user' ) ) {
-        return;
-    }
+		return;
+	}
 
-    $purpose = $_POST['purpose'] ?? 'collection-camp-intent';
-    $target_id = $_POST['target_id'] ?? '';
+	$purpose = $_POST['purpose'] ?? 'collection-camp-intent';
+	$target_id = $_POST['target_id'] ?? '';
 
-    // Retrieve the email and phone number from the POST data
-    $email = $_POST['email'] ?? '';
-    $phone = $_POST['phone'] ?? '';
+	// Retrieve the email and phone number from the POST data
+	$email = $_POST['email'] ?? '';
+	$phone = $_POST['phone'] ?? '';
 
 	$is_material_contribution = $purpose !== 'material-contribution';
 
@@ -181,8 +141,8 @@ function goonj_handle_user_identification_form() {
 		return;
 	}
 
-    try {
-        // Find the contact ID based on email and phone number
+	try {
+		// Find the contact ID based on email and phone number
 		$query = \Civi\Api4\Contact::get(FALSE)
 			->addSelect('id', 'contact_sub_type', 'display_name')
 			->addWhere('phone_primary.phone', '=', $phone)
@@ -196,50 +156,88 @@ function goonj_handle_user_identification_form() {
 		// Execute the query with a limit of 1
 		$contactResult = $query->setLimit(1)->execute();
 
-        $foundContacts = $contactResult->first() ?? null;
+		$found_contacts = $contactResult->first() ?? null;
 
-        // If the user does not exist in the Goonj database
-        // redirect to the volunteer registration form.
-        $volunteer_registration_form_path = sprintf(
-            '/volunteer-registration/#?email=%s&phone=%s&message=%s&Volunteer_fields.Which_activities_are_you_interested_in_=%s',
-            $email,
-            $phone,
-            'not-inducted-volunteer',
-            '9'
-        );
+		// If the user does not exist in the Goonj database
+		// redirect to the volunteer registration form.
+		$volunteer_registration_form_path = sprintf(
+			'/volunteer-registration/#?email=%s&phone=%s&message=%s&Volunteer_fields.Which_activities_are_you_interested_in_=%s',
+			$email,
+			$phone,
+			'not-inducted-volunteer',
+			'9', // Activity to create collection camp.
+		);
 
-        $individual_volunteer_registration_form_path = sprintf(
-            '/individual-registration-with-volunteer-option/#?email=%s&phone=%s&Source_Tracking.Event=%s',
-            $email,
-            $phone,
-            $target_id,
-        );
+		$individual_volunteer_registration_form_path = sprintf(
+			'/individual-registration-with-volunteer-option/#?email=%s&phone=%s&Source_Tracking.Event=%s',
+			$email,
+			$phone,
+			$target_id,
+		);
 
-        $material_contribution_form_path = sprintf(
-            '/material-contribution/#?email=%s&phone=%s&Source_Tracking.Event=%s',
-            $email,
-            $phone,
-            $target_id,
-        );
+		$dropping_center_volunteer_registration_form_path = sprintf(
+			'/volunteer-registration/#?email=%s&phone=%s&message=%s',
+			$email,
+			$phone,
+			'not-inducted-for-dropping-center'
+		);
 
-        if (empty($foundContacts)) {
-            if ($purpose == 'material-contribution') {
-                wp_redirect($individual_volunteer_registration_form_path);
-                exit;
-            }
-            // We are currently hardcoding the path of the volunteer registration page.
-            // If this path changes, then this code needs to be updated.
-            wp_redirect($volunteer_registration_form_path);
-            exit;
-        }
+		if ( empty( $found_contacts ) ) {
+			switch ( $purpose ) {
+				// Contact does not exist and the purpose is to do material contribution.
+				// Redirect to individual registration with option for volunteering.
+				case 'material-contribution':
+					$redirect_url = $individual_volunteer_registration_form_path;
+					break;
 
-		if ( $foundContacts && $purpose == 'material-contribution' ) {
-			wp_redirect($material_contribution_form_path);
+				// Contact does not exist and the purpose is to create a dropping center.
+				// Redirect to volunteer registration.
+				case 'dropping-center':
+					$redirect_url = $dropping_center_volunteer_registration_form_path;
+					break;
+
+				// Contact does not exist and the purpose is to register an institute.
+				// Redirect to individual registration.
+				case 'institute-registration':
+					$redirect_url = $individual_registration_form_path;
+					break;
+
+				// Contact does not exist and the purpose is not defined.
+				// Redirect to volunteer registration with collection camp activity selected.
+				default:
+					$redirect_url = $volunteer_registration_form_path;
+					break;
+			}
+
+			wp_redirect( $redirect_url );
 			exit;
 		}
 
-		$contactId = $foundContacts['id'];
-		$contactSubType = $foundContacts['contact_sub_type'] ?? []; 
+		// If we are here, then it means for sure that the contact exists.
+
+		if ( 'material-contribution' === $purpose ) {
+			$material_contribution_form_path = sprintf(
+				'/material-contribution/#?email=%s&phone=%s&Source_Tracking.Event=%s',
+				$email,
+				$phone,
+				$target_id,
+			);
+			wp_redirect( $material_contribution_form_path );
+			exit;
+		}
+
+		if ( 'institute-registration' === $purpose ) {
+			$institute_registration_form_path = sprintf(
+				'/institute-registration/#?email=%s&phone=%s',
+				$email,
+				$phone,
+			);
+			wp_redirect( $institute_registration_form_path );
+			exit;
+		}
+
+		$contactId = $found_contacts['id'];
+		$contactSubType = $found_contacts['contact_sub_type'] ?? []; 
 		// Check if the contact is a volunteer
 		if ( empty( $contactSubType ) || !in_array( 'Volunteer', $contactSubType ) ) {
 			wp_redirect('/volunteer-form/#?Individual1=' . $contactId . '&message=individual-user');
@@ -251,52 +249,45 @@ function goonj_handle_user_identification_form() {
 		// If the volunteer is not inducted,
 		//   1. Trigger an email for Induction
 		//   2. Change volunteer status to "Waiting for Induction"
-		if ( ! goonj_is_volunteer_inducted( $foundContacts ) ) {
-			$referer_url = wp_get_referer();
-			$parsed_url = parse_url($referer_url);
-			$query_params = [];
-
-			// If there is a query string, parse it
-			if (isset($parsed_url['query'])) {
-				parse_str($parsed_url['query'], $query_params);
-			}
-
-			// Set the message parameter
-			$query_params['message'] = 'waiting-induction';
-
-			// Build and redirect to the new URL
-			$redirect_url = $parsed_url['path'] . '?' . http_build_query($query_params);
+		if ( ! goonj_is_volunteer_inducted( $found_contacts ) ) {
+			$redirect_url = ($purpose === 'dropping-center')
+			? home_url('/dropping-centre-waiting-induction/')
+			: home_url('/collection-camp/waiting-induction/');
+	
 			wp_redirect($redirect_url);
 			exit;
 		}
 
 		// If we are here, then it means the user exists as an inducted volunteer.
 		// Fetch the most recent collection camp activity based on the creation date
-		$collectionCampResult = \Civi\Api4\Activity::get(FALSE)
-		->addSelect('custom.*', 'source_contact_id')
-		->addWhere('activity_type_id', '=', 61) // ID for "Collection Camp Intent"
-		->addWhere('status_id', '=', 10) // Status ID for "Under Authorization"
-		->addWhere('source_contact_id', '=', $foundContacts['id'])
+		$collectionCampResult = \Civi\Api4\EckEntity::get('Collection_Camp', FALSE)
+		->addSelect('*', 'custom.*')
+		->addWhere('Collection_Camp_Core_Details.Contact_Id', '=', $found_contacts['id'])
+		->addWhere('subtype', '=', 4) // Collection Camp subtype
 		->addOrderBy('created_date', 'DESC')
 		->setLimit(1)
 		->execute();
 
+		if ($purpose === 'dropping-center') {
+			wp_redirect(get_home_url() . "/dropping-center/#?Collection_Camp_Core_Details.Contact_Id=" . $found_contacts['id']);
+			exit;
+		}
 
 		// Recent camp data
 		$recentCamp = $collectionCampResult->first() ?? null;
-		$display_name = $foundContacts['display_name'];
+		$display_name = $found_contacts['display_name'];
 
 		if (!empty($recentCamp)) {
 			// Save the recentCamp data to the session
 			$_SESSION['recentCampData'] = $recentCamp;
-			$_SESSION['contactId'] = $foundContacts['id'];
+			$_SESSION['contactId'] = $found_contacts['id'];
 			$_SESSION['displayName'] = $display_name;
 			$_SESSION['contactNumber'] = $phone;
 
-			wp_redirect(get_home_url() . "/collection-camp-in-past/#?source_contact_id=" . $foundContacts['id'] . '&message=past-collection-data' );
+			wp_redirect(get_home_url() . "/collection-camp/choose-from-past/#?Collection_Camp_Core_Details.Contact_Id=" . $found_contacts['id'] . '&message=past-collection-data' );
 			exit;
 		} else {
-			$redirect_url = get_home_url() . "/collection-camp-form/#?source_contact_id=" . $foundContacts['id'] . '&message=collection-camp-page&Collection_Camp_Intent.Name=' . $display_name . '&Collection_Camp_Intent.Contact_Number='. $phone;
+			$redirect_url = get_home_url() . "/collection-camp/intent/#?Collection_Camp_Core_Details.Contact_Id=" . $found_contacts['id'] . '&message=collection-camp-page&Collection_Camp_Intent_Details.Name=' . $display_name . '&Collection_Camp_Intent_Details.Contact_Number='. $phone;
 		}
 		wp_redirect($redirect_url);
 		exit;
@@ -355,10 +346,10 @@ function goonj_custom_rewrite_rules() {
 
 add_filter( 'query_vars', 'goonj_query_vars' );
 function goonj_query_vars( $vars ) {
-    $vars[] = 'target';
-    $vars[] = 'id';
-    $vars[] = 'target_id';
-    return $vars;
+	$vars[] = 'target';
+	$vars[] = 'id';
+	$vars[] = 'target_id';
+	return $vars;
 }
 
 add_action( 'template_redirect', 'goonj_check_action_target_exists' );
@@ -383,20 +374,18 @@ function goonj_check_action_target_exists() {
 
 	$is_404 = false;
 
-	$event_fields = array(
+	$entity_fields = array(
 		'id',
 		'title',
-		'summary',
-		'description',
-		'start_date',
-		'end_date',
+		'Collection_Camp_Intent_Details.Start_Date',
+		'Collection_Camp_Intent_Details.End_Date',
 	);
 
 	switch ( $target ) {
 		case 'collection-camp':
-			$result = \Civi\Api4\Event::get( false )
+			$result = \Civi\Api4\EckEntity::get('Collection_Camp', TRUE)
 				->selectRowCount()
-				->addSelect( ...$event_fields )
+				->addSelect( ...$entity_fields )
 				->addWhere( 'id', '=', $id )
 				->setLimit( 1 )
 				->execute();
