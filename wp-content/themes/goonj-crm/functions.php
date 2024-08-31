@@ -198,10 +198,24 @@ function goonj_handle_user_identification_form() {
 
 				// Contact does not exist and the purpose is to register an institute.
 				// Redirect to individual registration.
-				case 'institute-registration'  || 'goonj-office-visit':
+				case 'institute-registration':
+					$individual_registration_form_path = sprintf(
+						'/individual-registration-with-volunteer-option/#?email=%s&phone=%s',
+						$email,
+						$phone,
+					);
 					$redirect_url = $individual_registration_form_path;
 					break;
 
+				case 'goonj-office-visit':
+					$pu_visit_individual_registration_form_path = sprintf(
+						'/office-visit/individual-registration/#?email=%s&phone=%s&target_id=%s',
+						$email,
+						$phone,
+						$target_id,
+					);
+					$redirect_url = $pu_visit_individual_registration_form_path;
+					break;
 				// Contact does not exist and the purpose is not defined.
 				// Redirect to volunteer registration with collection camp activity selected.
 				default:
@@ -410,7 +424,17 @@ function goonj_check_action_target_exists() {
 			// TBA.
 			break;
 		case 'processing-center':
-			// TBA.
+			$result = \Civi\Api4\Organization::get(TRUE)
+			->addSelect('id', 'organization_name', 'contact_sub_type', 'address_primary.state_province_id:label')
+			->addWhere('id', '=', $id)
+			->setLimit(1)
+			->execute();
+
+			if ( empty( $result ) ) {
+				$is_404 = true;
+			} else {
+				$wp_query->set( 'action_target', $result->first() );
+			}
 			break;
 		default:
 			$is_404 = true;
