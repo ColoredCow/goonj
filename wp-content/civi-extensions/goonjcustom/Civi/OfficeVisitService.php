@@ -66,7 +66,7 @@ class OfficeVisitService extends AutoSubscriber {
     $params = [
       'source_contact_id' => 0,
       'Office_Visit.Goonj_Processing_Center' => 0,
-    ]
+    ];
 
     // Using the $form object, can we retrieve the value of "source_contact_id" & "Individual_fields.Source_Processing_Center"
     // If we are able retrieve this value, then we can do the following:
