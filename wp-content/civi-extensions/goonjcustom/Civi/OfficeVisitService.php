@@ -15,7 +15,7 @@ class OfficeVisitService extends AutoSubscriber {
    */
   public static function getSubscribedEvents() {
     return [
-      '&civicrm_postProcess' => 'addOfficeIdQueryParam',
+      '&hook_civicrm_postProcess' => 'addOfficeIdQueryParam',
     ];
   }
 
