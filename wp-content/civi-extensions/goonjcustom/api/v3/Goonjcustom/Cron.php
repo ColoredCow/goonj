@@ -46,7 +46,7 @@ function civicrm_api3_goonjcustom_cron($params) {
     $endOfDay = new DateTime('tomorrow midnight -1 second');
 
     $activityAssignees = Activity::get(TRUE)
-      ->addSelect('target_contact_id', 'activity_contact.contact_id', 'activity_date_time')
+      ->addSelect('target_contact_id', 'Induction_Fields.Assign', 'activity_date_time')
       ->addJoin('ActivityContact AS activity_contact', 'LEFT', ['activity_contact.record_type_id', '=', $assigneeRecordTypeId])
       ->addWhere('activity_type_id:name', '=', 'Induction')
       ->addWhere('status_id:name', '=', 'Scheduled')
@@ -57,7 +57,7 @@ function civicrm_api3_goonjcustom_cron($params) {
     $groupedResults = [];
 
     foreach ($activityAssignees as $activity) {
-      $assigneeContactId = $activity['activity_contact.contact_id'];
+      $assigneeContactId = $activity['Induction_Fields.Assign'];
       $targetContactId = $activity['target_contact_id'][0];
       $activityDateTime = $activity['activity_date_time'];
 
@@ -79,7 +79,7 @@ function civicrm_api3_goonjcustom_cron($params) {
       // If the contact_id is not in the grouped results, initialize it.
       if (!isset($groupedResults[$assigneeContactId])) {
         $groupedResults[$assigneeContactId] = [
-          'activity_contact.contact_id' => $assigneeContactId,
+          'Induction_Fields.Assign' => $assigneeContactId,
           'assignee_display_name' => $assigneeDetails[0]['display_name'],
           'assignee_email' => $assigneeDetails[0]['email.email'],
           'target_contact_details' => [],
@@ -132,7 +132,7 @@ function civicrm_api3_goonjcustom_cron($params) {
  *
  */
 function goonjcustom_get_induction_scheduled_email_html($assignee) {
-  $assigneeContactId = $assignee['activity_contact.contact_id'];
+  $assigneeContactId = $assignee['Induction_Fields.Assign'];
   $assigneeName = $assignee['assignee_display_name'];
   $assigneeEmail = $assignee['assignee_email'];
 
