@@ -40,7 +40,6 @@ function goonj_theme_setup() {
 }
 
 
-
 add_action('template_redirect', 'goonj_redirect_logged_in_user_to_civi_dashboard');
 function goonj_redirect_logged_in_user_to_civi_dashboard() {
 	if (is_user_logged_in() && is_front_page()) {
@@ -186,9 +185,11 @@ function goonj_handle_user_identification_form() {
 			$email,
 			$phone,
 		);
+		$action_target_id = isset($_SESSION['action_target_id']) ? $_SESSION['action_target_id'] : '';
+
 		$registration_url = sprintf(
 			'/individual-registration-with-volunteer-option/#?Source_Tracking.Event=%s',
-			$action_target['id']
+			$action_target_id
 		);
 
 		if ( empty( $found_contacts ) ) {

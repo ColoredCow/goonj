@@ -14,12 +14,13 @@ $headings = array(
 
 $heading_text = $headings[ $target ];
 
+$_SESSION['action_target_id'] = $action_target['id'];
+
 $register_link = sprintf(
     '%s/registration-landing-page/?Source_Tracking.Event=%s',
     home_url(),
-    $action_target['id']
+    $_SESSION['action_target_id']
 );
-
 
 $material_contribution_link = sprintf(
 	'/collection-camp-contribution?target_id=%s',
