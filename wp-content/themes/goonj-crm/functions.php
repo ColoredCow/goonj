@@ -186,6 +186,10 @@ function goonj_handle_user_identification_form() {
 			$email,
 			$phone,
 		);
+		$registration_url = sprintf(
+			'/individual-registration-with-volunteer-option/#?Source_Tracking.Event=%s',
+			$action_target['id']
+		);
 
 		if ( empty( $found_contacts ) ) {
 			switch ( $purpose ) {
@@ -193,6 +197,9 @@ function goonj_handle_user_identification_form() {
 				// Redirect to individual registration with option for volunteering.
 				case 'material-contribution':
 					$redirect_url = $individual_volunteer_registration_form_path;
+					break;
+				case 'registration-form':
+					$redirect_url = $registration_url;
 					break;
 
 				// Contact does not exist and the purpose is to create a dropping center.
