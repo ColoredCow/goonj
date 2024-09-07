@@ -1,28 +1,28 @@
-name: staging-deployment
-on:
-  push:
-    branches: main
+# name: staging-deployment
+# on:
+#   push:
+#     branches: main
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
+# jobs:
+#   deploy:
+#     runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v4
 
-      - name: SSH and deploy
-        uses: appleboy/ssh-action@master
-        env:
-          SSH_BUILD_DIRECTORY: ${{ secrets.SSH_BUILD_DIRECTORY }}
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: SSH_BUILD_DIRECTORY
-          script: |
-            cd $SSH_BUILD_DIRECTORY
-            git checkout -f main
-            git pull origin main
-            wp theme activate goonj-crm
-            ./wp-content/uploads/cv ext:upgrade-db
+#       - name: SSH and deploy
+#         uses: appleboy/ssh-action@master
+#         env:
+#           SSH_BUILD_DIRECTORY: ${{ secrets.SSH_BUILD_DIRECTORY }}
+#         with:
+#           host: ${{ secrets.SSH_HOST }}
+#           username: ${{ secrets.SSH_USERNAME }}
+#           key: ${{ secrets.SSH_PRIVATE_KEY }}
+#           envs: SSH_BUILD_DIRECTORY
+#           script: |
+#             cd $SSH_BUILD_DIRECTORY
+#             git checkout -f main
+#             git pull origin main
+#             wp theme activate goonj-crm
+#             ./wp-content/uploads/cv ext:upgrade-db
