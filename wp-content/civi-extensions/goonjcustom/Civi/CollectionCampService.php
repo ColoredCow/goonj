@@ -292,7 +292,7 @@ class CollectionCampService extends AutoSubscriber {
 			$templateIds = self::getMessageTemplateIDs();
 			$collectionCampAuthorizedTemplateId = $templateIds['collectionCampAuthorizedTemplateId'];
 			$droppingCenterUnAuthorizedTemplateId = $templateIds['droppingCenterAuthorizedTemplateId'];
-			$templateId = $subType == 4 ? $collectionCampAuthorizedTemplateId : ($subType == 5 ? $droppingCenterUnAuthorizedTemplateId : NULL);
+			$templateId = $subType == 1 ? $collectionCampAuthorizedTemplateId : ($subType == 2 ? $droppingCenterUnAuthorizedTemplateId : NULL);
 
       if (!$templateId) {
         return;
@@ -321,7 +321,7 @@ class CollectionCampService extends AutoSubscriber {
 			$templateIds = self::getMessageTemplateIDs();
 			$collectionCampAuthorizedTemplateId = $templateIds['collectionCampUnAuthorizedTemplateId'];
 			$droppingCenterUnAuthorizedTemplateId = $templateIds['droppingCenterUnAuthorizedTemplateId'];
-			$templateId = $subType == 4 ? $collectionCampAuthorizedTemplateId : ($subType == 5 ? $droppingCenterUnAuthorizedTemplateId : NULL);
+			$templateId = $subType == 1 ? $collectionCampAuthorizedTemplateId : ($subType == 2 ? $droppingCenterUnAuthorizedTemplateId : NULL);
 
       if (!$templateId) {
         return;
