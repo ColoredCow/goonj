@@ -120,18 +120,24 @@ class InductionService extends AutoSubscriber {
   }
 
   /**
-   * Calculate next Monday's date and time (11:00 AM)
+   * Get placeholder time for induction activity.
    *
-   * @return string The formatted date and time for next Monday at 11 AM
+   * Calculate the date and time 3 days from today at 11:00 AM.
+   * If the resulting date is on a weekend (Saturday or Sunday), adjust to the next Monday at 11:00 AM.
+   *
+   * @return string The formatted date and time for 3 days later or the next Monday at 11 AM.
    */
   private static function getPlaceholderActivityDate() {
     $date = new \DateTime();
+    $date->modify('+3 days');
     $dayOfWeek = $date->format('N');
 
-    if ($dayOfWeek !== '1') {
+    // If the resulting day is Saturday (6) or Sunday (7), move to next Monday.
+    if ($dayOfWeek >= 6) {
       $date->modify('next monday');
     }
 
+    // Set the time to 11:00 AM.
     $date->setTime(11, 0);
 
     return $date->format('Y-m-d H:i:s');

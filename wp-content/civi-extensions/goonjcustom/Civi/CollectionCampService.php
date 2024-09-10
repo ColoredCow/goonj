@@ -25,7 +25,7 @@ class CollectionCampService extends AutoSubscriber {
   const UNAUTHORIZED_TEMPLATE_ID_COLLECTION_CAMP = 69;
   const UNAUTHORIZED_TEMPLATE_ID_DROPPING_CENTER = 68;
   const FALLBACK_OFFICE_NAME = 'Delhi';
-  const RELATIONSHIP_TYPE_NAME = 'Collection Camp Coordinator is';
+  const RELATIONSHIP_TYPE_NAME = 'Collection Camp Coordinator of';
 
   private static $individualId = NULL;
 
