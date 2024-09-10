@@ -20,10 +20,6 @@ use Civi\Core\Service\AutoSubscriber;
  */
 class CollectionCampService extends AutoSubscriber {
 
-  const AUTHORIZED_TEMPLATE_ID_COLLECTION_CAMP = 78;
-  const AUTHORIZED_TEMPLATE_ID_DROPPING_CENTER = 83;
-  const UNAUTHORIZED_TEMPLATE_ID_COLLECTION_CAMP = 77;
-  const UNAUTHORIZED_TEMPLATE_ID_DROPPING_CENTER = 82;
   const FALLBACK_OFFICE_NAME = 'Delhi';
   const RELATIONSHIP_TYPE_NAME = 'Collection Camp Coordinator of';
 
@@ -293,7 +289,10 @@ class CollectionCampService extends AutoSubscriber {
   private static function sendAuthorizationEmail($contactId, $subType) {
     try {
       // Determine the template based on dynamic subtype.
-      $templateId = $subType == 4 ? self::AUTHORIZED_TEMPLATE_ID_COLLECTION_CAMP : ($subType == 5 ? self::AUTHORIZED_TEMPLATE_ID_DROPPING_CENTER : NULL);
+			$templateIds = self::getMessageTemplateIDs();
+			$collectionCampAuthorizedTemplateId = $templateIds['collectionCampAuthorizedTemplateId'];
+			$droppingCenterUnAuthorizedTemplateId = $templateIds['droppingCenterAuthorizedTemplateId'];
+			$templateId = $subType == 4 ? $collectionCampAuthorizedTemplateId : ($subType == 5 ? $droppingCenterUnAuthorizedTemplateId : NULL);
 
       if (!$templateId) {
         return;
@@ -319,7 +318,10 @@ class CollectionCampService extends AutoSubscriber {
   private static function sendUnAuthorizationEmail($contactId, $subType) {
     try {
       // Determine the template based on dynamic subtype.
-      $templateId = $subType == 4 ? self::UNAUTHORIZED_TEMPLATE_ID_COLLECTION_CAMP : ($subType == 5 ? self::UNAUTHORIZED_TEMPLATE_ID_DROPPING_CENTER : NULL);
+			$templateIds = self::getMessageTemplateIDs();
+			$collectionCampAuthorizedTemplateId = $templateIds['collectionCampUnAuthorizedTemplateId'];
+			$droppingCenterUnAuthorizedTemplateId = $templateIds['droppingCenterUnAuthorizedTemplateId'];
+			$templateId = $subType == 4 ? $collectionCampAuthorizedTemplateId : ($subType == 5 ? $droppingCenterUnAuthorizedTemplateId : NULL);
 
       if (!$templateId) {
         return;
@@ -648,5 +650,38 @@ class CollectionCampService extends AutoSubscriber {
     $options = $stateOptions;
 
   }
+
+	public static function getMessageTemplateIDs() {
+		$messageTemplates = \Civi\Api4\MessageTemplate::get(TRUE)
+				->addSelect('id', 'msg_title')
+				->execute();
+		
+		$collectionCampAuthorizedTemplateId = null;
+		$collectionCampUnAuthorizedTemplateId = null;
+		$droppingCenterAuthorizedTemplateId = null;
+		$droppingCenterUnAuthorizedTemplateId = null;
+		
+		foreach ($messageTemplates as $messageTemplate) {
+				if ($messageTemplate['msg_title'] === 'Collection Camp Authorized Email To User') {
+						$collectionCampAuthorizedTemplateId = $messageTemplate['id'];
+				}
+				if ($messageTemplate['msg_title'] === 'Trigger UnAuthorized Email for Collection Camp to User') {
+						$collectionCampUnAuthorizedTemplateId = $messageTemplate['id'];
+				}
+				if ($messageTemplate['msg_title'] === 'Trigger UnAuthorized Email for dropping center to User') {
+						$droppingCenterUnAuthorizedTemplateId = $messageTemplate['id'];
+				}
+				if ($messageTemplate['msg_title'] === 'Dropping Center Authorized Email To User') {
+						$droppingCenterAuthorizedTemplateId = $messageTemplate['id'];
+				}
+		}
+		
+		return [
+				'collectionCampAuthorizedTemplateId' => $collectionCampAuthorizedTemplateId,
+				'collectionCampUnAuthorizedTemplateId' => $collectionCampUnAuthorizedTemplateId,
+				'droppingCenterAuthorizedTemplateId' => $droppingCenterAuthorizedTemplateId,
+				'droppingCenterUnAuthorizedTemplateId' => $droppingCenterUnAuthorizedTemplateId,
+		];
+	}
 
 }
