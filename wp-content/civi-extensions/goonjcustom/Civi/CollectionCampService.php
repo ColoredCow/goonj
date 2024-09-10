@@ -283,6 +283,10 @@ class CollectionCampService extends AutoSubscriber {
 
 		$collectionCampSubtype = $collectionCampOptionValues->first()['value'];
 		$droppingCenterSubtype = $droppingCenterOptionValues->first()['value'];
+		\Civi::log()->info('temssssp', ['temsssssp', $contactId,
+		'subType'=> $subType,
+	'collectionCampSubtype'=> $collectionCampSubtype,
+'droppingCenterSubtype'=> $droppingCenterSubtype]);
 		// Check for status change.
 		if ($currentStatus !== $newStatus) {
 			if ($newStatus === 'authorized') {
@@ -300,10 +304,15 @@ class CollectionCampService extends AutoSubscriber {
 	private static function sendAuthorizationEmail($contactId, $subType, $collectionCampSubtype, $droppingCenterSubtype) {
 		try {
 			// Determine the template based on dynamic subtype.
-
+			\Civi::log()->info('temp', ['temp', $contactId,
+		'subType'=> $subType,
+	'collectionCampSubtype'=> $collectionCampSubtype,
+'droppingCenterSubtype'=> $droppingCenterSubtype]);
+			$templateIds = self::getMessageTemplateIDs();
 			$collectionCampAuthorizedTemplateId = $templateIds['collectionCampAuthorizedTemplateId'];
 			$droppingCenterAuthorizedTemplateId = $templateIds['droppingCenterAuthorizedTemplateId'];
 			$templateId = $subType ==  $collectionCampSubtype ? $collectionCampAuthorizedTemplateId : ($subType == $droppingCenterSubtype ? $droppingCenterAuthorizedTemplateId : NULL);
+			\Civi::log()->info('tempsass', ['tempasds', $templateId]);
 
 			if (!$templateId) {
 				return;
@@ -333,6 +342,7 @@ class CollectionCampService extends AutoSubscriber {
 			$collectionCampUnAuthorizedTemplateId = $templateIds['collectionCampUnAuthorizedTemplateId'];
 			$droppingCenterUnAuthorizedTemplateId = $templateIds['droppingCenterUnAuthorizedTemplateId'];
 			$templateId = $subType == $collectionCampSubtype ? $collectionCampUnAuthorizedTemplateId : ($subType == $droppingCenterSubtype ? $droppingCenterUnAuthorizedTemplateId : NULL);
+			\Civi::log()->info('temp', ['temp', $templateId]);
 
 			if (!$templateId) {
 				return;
@@ -697,7 +707,7 @@ class CollectionCampService extends AutoSubscriber {
 		];
 	}
 
-	public static function sendAdminNotificationForCollectionCamp($contactId) {
+	public static function sendAdminNotificatationForCollectionCamp($contactId) {
 		try {
 			$templateId = 76;
 	
