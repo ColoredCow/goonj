@@ -272,13 +272,24 @@ class CollectionCampService extends AutoSubscriber {
 		$currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
 		$contactId = $currentCollectionCamp['Collection_Camp_Core_Details.Contact_Id'];
 
+		$collectionCampOptionValues = \Civi\Api4\OptionValue::get(FALSE)
+			->addWhere('option_group_id:label', '=', 'ECK Subtypes')
+			->addWhere('label', '=', 'Collection Camp')
+			->execute();
+		$droppingCenterOptionValues = \Civi\Api4\OptionValue::get(FALSE)
+			->addWhere('option_group_id:label', '=', 'ECK Subtypes')
+			->addWhere('label', '=', 'Dropping Center')
+			->execute();
+
+		$collectionCampSubtype = $collectionCampOptionValues->first()['value'];
+		$droppingCenterSubtype = $droppingCenterOptionValues->first()['value'];
 		// Check for status change.
 		if ($currentStatus !== $newStatus) {
 			if ($newStatus === 'authorized') {
-				self::sendAuthorizationEmail($contactId, $subType);
+				self::sendAuthorizationEmail($contactId, $subType, $collectionCampSubtype, $droppingCenterSubtype );
 			}
 			elseif ($newStatus === 'unauthorized') {
-				self::sendUnAuthorizationEmail($contactId, $subType);
+				self::sendUnAuthorizationEmail($contactId, $subType, $collectionCampSubtype, $droppingCenterSubtype );
 			}
 		}
 	}
@@ -286,13 +297,13 @@ class CollectionCampService extends AutoSubscriber {
 	/**
 	 * Send Authorization Email to contact.
 	 */
-	private static function sendAuthorizationEmail($contactId, $subType) {
+	private static function sendAuthorizationEmail($contactId, $subType, $collectionCampSubtype, $droppingCenterSubtype) {
 		try {
 			// Determine the template based on dynamic subtype.
-			$templateIds = self::getMessageTemplateIDs();
+
 			$collectionCampAuthorizedTemplateId = $templateIds['collectionCampAuthorizedTemplateId'];
-			$droppingCenterUnAuthorizedTemplateId = $templateIds['droppingCenterAuthorizedTemplateId'];
-			$templateId = $subType == 1 ? $collectionCampAuthorizedTemplateId : ($subType == 2 ? $droppingCenterUnAuthorizedTemplateId : NULL);
+			$droppingCenterAuthorizedTemplateId = $templateIds['droppingCenterAuthorizedTemplateId'];
+			$templateId = $subType ==  $collectionCampSubtype ? $collectionCampAuthorizedTemplateId : ($subType == $droppingCenterSubtype ? $droppingCenterAuthorizedTemplateId : NULL);
 
 			if (!$templateId) {
 				return;
@@ -315,13 +326,13 @@ class CollectionCampService extends AutoSubscriber {
 	/**
 	 * Send UnAuthorization Email to contact.
 	 */
-	private static function sendUnAuthorizationEmail($contactId, $subType) {
+	private static function sendUnAuthorizationEmail($contactId, $subType, $collectionCampSubtype, $droppingCenterSubtype) {
 		try {
 			// Determine the template based on dynamic subtype.
 			$templateIds = self::getMessageTemplateIDs();
-			$collectionCampAuthorizedTemplateId = $templateIds['collectionCampUnAuthorizedTemplateId'];
+			$collectionCampUnAuthorizedTemplateId = $templateIds['collectionCampUnAuthorizedTemplateId'];
 			$droppingCenterUnAuthorizedTemplateId = $templateIds['droppingCenterUnAuthorizedTemplateId'];
-			$templateId = $subType == 1 ? $collectionCampAuthorizedTemplateId : ($subType == 2 ? $droppingCenterUnAuthorizedTemplateId : NULL);
+			$templateId = $subType == $collectionCampSubtype ? $collectionCampUnAuthorizedTemplateId : ($subType == $droppingCenterSubtype ? $droppingCenterUnAuthorizedTemplateId : NULL);
 
 			if (!$templateId) {
 				return;
@@ -547,6 +558,8 @@ class CollectionCampService extends AutoSubscriber {
 			->addWhere('id', '=', $collectionCampId)
 			->execute();
 
+		self::sendAdminNotificatationForCollectionCamp($coordinatorId);
+
 		return TRUE;
 
 	}
@@ -684,4 +697,23 @@ class CollectionCampService extends AutoSubscriber {
 		];
 	}
 
+	public static function sendAdminNotificationForCollectionCamp($contactId) {
+		try {
+			$templateId = 76;
+	
+			// Set up email parameters
+			$emailParams = [
+				'contact_id' => $contactId,
+				'template_id' => $templateId,
+			];
+	
+			// Send email using CiviCRM API
+			$result = civicrm_api3('Email', 'send', $emailParams);
+		} catch (\CiviCRM_API3_Exception $ex) {
+			// Log the exception for debugging
+			\Civi::log()->error("Exception caught while sending unauthorized email: " . $ex->getMessage());
+			error_log("Exception caught while sending unauthorized email: " . $ex->getMessage());
+		}
+	}
+	
 }
