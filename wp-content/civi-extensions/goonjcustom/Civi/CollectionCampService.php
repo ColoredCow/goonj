@@ -334,7 +334,6 @@ class CollectionCampService extends AutoSubscriber {
       $collectionCampUnAuthorizedTemplateId = $templateIds['collectionCampUnAuthorizedTemplateId'];
       $droppingCenterUnAuthorizedTemplateId = $templateIds['droppingCenterUnAuthorizedTemplateId'];
       $templateId = $subType == $collectionCampSubtype ? $collectionCampUnAuthorizedTemplateId : ($subType == $droppingCenterSubtype ? $droppingCenterUnAuthorizedTemplateId : NULL);
-      \Civi::log()->info('temp', ['temp', $templateId]);
 
       if (!$templateId) {
         return;
