@@ -301,16 +301,10 @@ class CollectionCampService extends AutoSubscriber {
   private static function sendAuthorizationEmail($contactId, $subType, $collectionCampSubtype, $droppingCenterSubtype) {
     try {
       // Determine the template based on dynamic subtype.
-      \Civi::log()->info('temp', ['temp', $contactId,
-        'subType' => $subType,
-        'collectionCampSubtype' => $collectionCampSubtype,
-        'droppingCenterSubtype' => $droppingCenterSubtype,
-      ]);
       $templateIds = self::getMessageTemplateIDs();
       $collectionCampAuthorizedTemplateId = $templateIds['collectionCampAuthorizedTemplateId'];
       $droppingCenterAuthorizedTemplateId = $templateIds['droppingCenterAuthorizedTemplateId'];
       $templateId = $subType == $collectionCampSubtype ? $collectionCampAuthorizedTemplateId : ($subType == $droppingCenterSubtype ? $droppingCenterAuthorizedTemplateId : NULL);
-      \Civi::log()->info('tempsass', ['tempasds', $templateId]);
 
       if (!$templateId) {
         return;
