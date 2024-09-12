@@ -6,6 +6,7 @@ require_once __DIR__ . '/../../../../wp-content/civi-extensions/goonjcustom/vend
 
 use chillerlan\QRCode\QRCode;
 use chillerlan\QRCode\QROptions;
+use Civi\Api4\Activity;
 use Civi\Api4\Contact;
 use Civi\Api4\CustomField;
 use Civi\Api4\EckEntity;
@@ -37,6 +38,7 @@ class CollectionCampService extends AutoSubscriber {
       ],
       '&hook_civicrm_pre' => [
               ['generateCollectionCampQr'],
+              ['linkCollectionCampToContact'],
       ],
       '&hook_civicrm_custom' => [
         ['setOfficeDetails'],
@@ -446,6 +448,57 @@ class CollectionCampService extends AutoSubscriber {
   }
 
   /**
+   * This hook is called after the database write on a custom table.
+   *
+   * @param string $op
+   *   The type of operation being performed.
+   * @param string $objectName
+   *   The custom group ID.
+   * @param int $objectId
+   *   The entityID of the row in the custom table.
+   * @param object $objectRef
+   *   The parameters that were sent into the calling function.
+   */
+  public static function linkInductionWithCollectionCamp($op, $groupID, $entityID, &$params) {
+    if ($op !== 'create') {
+      return;
+    }
+
+    if (!($contactId = self::findCollectionCampInitiatorContact($params))) {
+      return;
+    }
+
+    $collectionCampId = $contactId['entity_id'];
+
+    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect('Collection_Camp_Core_Details.Contact_Id', 'custom.*')
+      ->addWhere('id', '=', $collectionCampId)
+      ->execute()->single();
+
+    $contactId = $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
+
+    $optionValue = OptionValue::get(TRUE)
+      ->addWhere('option_group_id:name', '=', 'activity_type')
+      ->addWhere('label', '=', 'Induction')
+      ->execute()->single();
+
+    $activityTypeId = $optionValue['value'];
+
+    $induction = Activity::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('target_contact_id', '=', $contactId)
+      ->addWhere('activity_type_id', '=', $activityTypeId)
+      ->execute()->single();
+
+    $inductionId = $induction['id'];
+
+    EckEntity::update('Collection_Camp', FALSE)
+      ->addValue('Collection_Camp_Intent_Details.Initiator_Induction_Id', $inductionId)
+      ->addWhere('id', '=', $collectionCampId)
+      ->execute();
+  }
+
+  /**
    *
    */
   private static function findStateField(array $array) {
@@ -476,6 +529,38 @@ class CollectionCampService extends AutoSubscriber {
       ));
 
     return $stateItemIndex !== FALSE ? $filteredItems[$stateItemIndex] : FALSE;
+  }
+
+  /**
+   *
+   */
+  private static function findCollectionCampInitiatorContact(array $array) {
+    $filteredItems = array_filter($array, fn($item) => $item['entity_table'] === 'civicrm_eck_collection_camp');
+
+    if (empty($filteredItems)) {
+      return FALSE;
+    }
+
+    $collectionCampContactId = CustomField::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('name', '=', 'Contact_Id')
+      ->addWhere('custom_group_id:name', '=', 'Collection_Camp_Core_Details')
+      ->execute()
+      ->first();
+
+    if (!$collectionCampContactId) {
+      return FALSE;
+    }
+
+    $contactFieldId = $collectionCampContactId['id'];
+
+    $contactItemIndex = array_search(TRUE, array_map(fn($item) =>
+        $item['entity_table'] === 'civicrm_eck_collection_camp' &&
+        $item['custom_field_id'] == $contactFieldId,
+        $filteredItems
+    ));
+
+    return $contactItemIndex !== FALSE ? $filteredItems[$contactItemIndex] : FALSE;
   }
 
   /**

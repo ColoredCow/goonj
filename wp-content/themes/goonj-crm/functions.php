@@ -372,11 +372,18 @@ function goonj_handle_user_identification_form() {
 }
 
 function goonj_is_volunteer_inducted( $volunteer ) {
+	$optionValue = \Civi\Api4\OptionValue::get(TRUE)
+	->addWhere('option_group_id:name', '=', 'activity_type')
+	->addWhere('label', '=', 'Induction')
+	->execute()->single();
+
+	$activityTypeId = $optionValue['value'];
+
 	$activityResult = \Civi\Api4\Activity::get(FALSE)
 	->addSelect('id')
 	->addWhere('target_contact_id', '=', $volunteer['id'])
-	->addWhere('activity_type_id', '=', 57) // hardcode ID of activity type "Induction"
-	->addWhere('status_id', '=', 2) // hardcode ID of activity status "Completed"
+	->addWhere('activity_type_id', '=', $activityTypeId)
+	->addWhere('status_id:label', 'IN', ['Completed', 'Unknown'])
 	->setLimit(1)
 	->execute();
 
