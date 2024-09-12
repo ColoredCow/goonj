@@ -265,17 +265,28 @@ class CollectionCampService extends AutoSubscriber {
     $currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
     $contactId = $currentCollectionCamp['Collection_Camp_Core_Details.Contact_Id'];
 
-    $collectionCampOptionValues = OptionValue::get(FALSE)
-      ->addWhere('option_group_id:label', '=', 'ECK Subtypes')
-      ->addWhere('label', '=', 'Collection Camp')
-      ->execute();
-    $droppingCenterOptionValues = OptionValue::get(FALSE)
-      ->addWhere('option_group_id:label', '=', 'ECK Subtypes')
-      ->addWhere('label', '=', 'Dropping Center')
-      ->execute();
+    $optionValues = OptionValue::get(FALSE)
+    ->addWhere('option_group_id:label', '=', 'ECK Subtypes')
+    ->execute();
 
-    $collectionCampSubtype = $collectionCampOptionValues->first()['value'];
-    $droppingCenterSubtype = $droppingCenterOptionValues->first()['value'];
+    $collectionCampSubtype = null;
+    $droppingCenterSubtype = null;
+
+    foreach ($optionValues as $optionValue) {
+        switch ($optionValue['label']) {
+            case 'Collection Camp':
+                $collectionCampSubtype = $optionValue['value'];
+                break;
+            case 'Dropping Center':
+                $droppingCenterSubtype = $optionValue['value'];
+                break;
+        }
+
+        if ($collectionCampSubtype !== null && $droppingCenterSubtype !== null) {
+            break;
+        }
+    }
+
     // Check for status change.
     if ($currentStatus !== $newStatus) {
       if ($newStatus === 'authorized') {
