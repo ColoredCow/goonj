@@ -267,6 +267,7 @@ class CollectionCampService extends AutoSubscriber {
 
     $optionValues = OptionValue::get(FALSE)
     ->addWhere('option_group_id:label', '=', 'ECK Subtypes')
+    ->addWhere('label', 'IN', ['Collection Camp', 'Dropping Center'])
     ->execute();
 
     $collectionCampSubtype = null;
