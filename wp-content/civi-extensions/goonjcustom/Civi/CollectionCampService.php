@@ -192,16 +192,8 @@ class CollectionCampService extends AutoSubscriber {
       // Fetch the event code.
       $eventCode = $config['event_codes'][$currentTitle] ?? 'UNKNOWN';
 
-      // Count existing camps for the state and year with the same event code.
-      $existingCamps = EckEntity::get('Collection_Camp', FALSE)
-        ->addSelect('title')
-        ->addWhere('title', 'LIKE', "$year/$stateCode/$eventCode/%")
-        ->execute();
-
-      $serialNumber = sprintf('%03d', $existingCamps->count() + 1);
-
-      // Modify the title to include the year, state code, event code, and serial number.
-      $newTitle = $year . '/' . $stateCode . '/' . $eventCode . '/' . $serialNumber;
+      // Modify the title to include the year, state code, event code, and camp Id.
+      $newTitle = $year . '/' . $stateCode . '/' . $eventCode . '/' . $campId;
       $collectionCampData['title'] = $newTitle;
 
       // Save the updated title back to the Collection Camp entity.

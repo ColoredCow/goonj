@@ -322,10 +322,17 @@ function goonj_handle_user_identification_form() {
 
 		// If we are here, then it means the user exists as an inducted volunteer.
 		// Fetch the most recent collection camp activity based on the creation date
+		$optionValues = \Civi\Api4\OptionValue::get(FALSE)
+		->addWhere('option_group_id:label', '=', 'ECK Subtypes')
+		->addWhere('label', '=', 'Collection Camp')
+		->execute();
+
+		$collectionCampSubtype = $optionValues->first()['value'];
+
 		$collectionCampResult = \Civi\Api4\EckEntity::get('Collection_Camp', FALSE)
 		->addSelect('*', 'custom.*')
 		->addWhere('Collection_Camp_Core_Details.Contact_Id', '=', $found_contacts['id'])
-		->addWhere('subtype', '=', 1) // Collection Camp subtype
+		->addWhere('subtype', '=', $collectionCampSubtype) // Collection Camp subtype
 		->addOrderBy('created_date', 'DESC')
 		->setLimit(1)
 		->execute();
