@@ -12,7 +12,6 @@ use Civi\Api4\EckEntity;
 use Civi\Api4\Group;
 use Civi\Api4\GroupContact;
 use Civi\Api4\MessageTemplate;
-use Civi\Api4\OptionValue;
 use Civi\Api4\Relationship;
 use Civi\Api4\StateProvince;
 use Civi\Core\Service\AutoSubscriber;
@@ -37,10 +36,12 @@ class CollectionCampService extends AutoSubscriber {
               ['assignChapterGroupToIndividual'],
       ],
       '&hook_civicrm_pre' => [
-              ['handleAuthorizationEmails'],
               ['generateCollectionCampQr'],
       ],
-      '&hook_civicrm_custom' => 'setOfficeDetails',
+      '&hook_civicrm_custom' => [
+        ['setOfficeDetails'],
+        ['sendNotificationToUrbanOpsTeam'],
+      ],
       '&hook_civicrm_fieldOptions' => 'setIndianStateOptions',
     ];
   }
@@ -230,131 +231,6 @@ class CollectionCampService extends AutoSubscriber {
       return $collectionCampData['Dropping_Centre.State'] ?? NULL;
     }
     return $collectionCampData['Collection_Camp_Intent_Details.State'] ?? NULL;
-  }
-
-  /**
-   * This hook is called after a db write on entities.
-   *
-   * @param string $op
-   *   The type of operation being performed.
-   * @param string $objectName
-   *   The name of the object.
-   * @param int $objectId
-   *   The unique identifier for the object.
-   * @param object $objectRef
-   *   The reference to the object.
-   */
-  public static function handleAuthorizationEmails(string $op, string $objectName, $objectId, &$objectRef) {
-    if ($objectName != 'Eck_Collection_Camp' || !$objectId) {
-      return;
-    }
-
-    $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
-    $subType = $objectRef['subtype'] ?? '';
-
-    if (!$newStatus) {
-      return;
-    }
-
-    $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id')
-      ->addWhere('id', '=', $objectId)
-      ->execute();
-
-    $currentCollectionCamp = $collectionCamps->first();
-    $currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
-    $contactId = $currentCollectionCamp['Collection_Camp_Core_Details.Contact_Id'];
-
-    $optionValues = OptionValue::get(FALSE)
-    ->addWhere('option_group_id:label', '=', 'ECK Subtypes')
-    ->addWhere('label', 'IN', ['Collection Camp', 'Dropping Center'])
-    ->execute();
-
-    $collectionCampSubtype = null;
-    $droppingCenterSubtype = null;
-
-    foreach ($optionValues as $optionValue) {
-        switch ($optionValue['label']) {
-            case 'Collection Camp':
-                $collectionCampSubtype = $optionValue['value'];
-                break;
-            case 'Dropping Center':
-                $droppingCenterSubtype = $optionValue['value'];
-                break;
-        }
-
-        if ($collectionCampSubtype !== null && $droppingCenterSubtype !== null) {
-            break;
-        }
-    }
-
-    // Check for status change.
-    if ($currentStatus !== $newStatus) {
-      if ($newStatus === 'authorized') {
-        self::sendAuthorizationEmail($contactId, $subType, $collectionCampSubtype, $droppingCenterSubtype);
-      }
-      elseif ($newStatus === 'unauthorized') {
-        self::sendUnAuthorizationEmail($contactId, $subType, $collectionCampSubtype, $droppingCenterSubtype);
-      }
-    }
-  }
-
-  /**
-   * Send Authorization Email to contact.
-   */
-  private static function sendAuthorizationEmail($contactId, $subType, $collectionCampSubtype, $droppingCenterSubtype) {
-    try {
-      // Determine the template based on dynamic subtype.
-      $templateIds = self::getMessageTemplateIDs();
-      $collectionCampAuthorizedTemplateId = $templateIds['collectionCampAuthorizedTemplateId'];
-      $droppingCenterAuthorizedTemplateId = $templateIds['droppingCenterAuthorizedTemplateId'];
-      $templateId = $subType == $collectionCampSubtype ? $collectionCampAuthorizedTemplateId : ($subType == $droppingCenterSubtype ? $droppingCenterAuthorizedTemplateId : NULL);
-
-      if (!$templateId) {
-        return;
-      }
-
-      $emailParams = [
-        'contact_id' => $contactId,
-        // Template ID for the authorization email.
-        'template_id' => $templateId,
-      ];
-
-      $result = civicrm_api3('Email', 'send', $emailParams);
-
-    }
-    catch (\CiviCRM_API3_Exception $ex) {
-      error_log("Exception caught while sending authorization email: " . $ex->getMessage());
-    }
-  }
-
-  /**
-   * Send UnAuthorization Email to contact.
-   */
-  private static function sendUnAuthorizationEmail($contactId, $subType, $collectionCampSubtype, $droppingCenterSubtype) {
-    try {
-      // Determine the template based on dynamic subtype.
-      $templateIds = self::getMessageTemplateIDs();
-      $collectionCampUnAuthorizedTemplateId = $templateIds['collectionCampUnAuthorizedTemplateId'];
-      $droppingCenterUnAuthorizedTemplateId = $templateIds['droppingCenterUnAuthorizedTemplateId'];
-      $templateId = $subType == $collectionCampSubtype ? $collectionCampUnAuthorizedTemplateId : ($subType == $droppingCenterSubtype ? $droppingCenterUnAuthorizedTemplateId : NULL);
-
-      if (!$templateId) {
-        return;
-      }
-
-      $emailParams = [
-        'contact_id' => $contactId,
-        // Template ID for the unauthorization email.
-        'template_id' => $templateId,
-      ];
-
-      $result = civicrm_api3('Email', 'send', $emailParams);
-
-    }
-    catch (\CiviCRM_API3_Exception $ex) {
-      error_log("Exception caught while sending unauthorization email: " . $ex->getMessage());
-    }
   }
 
   /**
@@ -671,59 +547,79 @@ class CollectionCampService extends AutoSubscriber {
   }
 
   /**
+   * This hook is called after the database write on a custom table.
    *
+   * @param string $op
+   *   The type of operation being performed.
+   * @param string $objectName
+   *   The custom group ID.
+   * @param int $objectId
+   *   The entityID of the row in the custom table.
+   * @param object $objectRef
+   *   The parameters that were sent into the calling function.
    */
-  public static function getMessageTemplateIDs() {
-    $messageTemplates = MessageTemplate::get(TRUE)
-      ->addSelect('id', 'msg_title')
-      ->execute();
-
-    $collectionCampAuthorizedTemplateId = NULL;
-    $collectionCampUnAuthorizedTemplateId = NULL;
-    $droppingCenterAuthorizedTemplateId = NULL;
-    $droppingCenterUnAuthorizedTemplateId = NULL;
-
-    foreach ($messageTemplates as $messageTemplate) {
-      if ($messageTemplate['msg_title'] === 'Collection Camp Authorized Email To User') {
-        $collectionCampAuthorizedTemplateId = $messageTemplate['id'];
-      }
-      if ($messageTemplate['msg_title'] === 'Trigger UnAuthorized Email for Collection Camp to User') {
-        $collectionCampUnAuthorizedTemplateId = $messageTemplate['id'];
-      }
-      if ($messageTemplate['msg_title'] === 'Trigger UnAuthorized Email for dropping center to User') {
-        $droppingCenterUnAuthorizedTemplateId = $messageTemplate['id'];
-      }
-      if ($messageTemplate['msg_title'] === 'Dropping Center Authorized Email To User') {
-        $droppingCenterAuthorizedTemplateId = $messageTemplate['id'];
-      }
-
-      if ($messageTemplate['msg_title'] === 'Notify Urban Ops Team after collection camp form submission') {
-        $adminNotificationTemplateId = $messageTemplate['id'];
-      }
-
+  public static function sendNotificationToUrbanOpsTeam($op, $groupID, $entityID, &$params) {
+    if ($op !== 'create') {
+      return;
     }
 
-    return [
-      'collectionCampAuthorizedTemplateId' => $collectionCampAuthorizedTemplateId,
-      'collectionCampUnAuthorizedTemplateId' => $collectionCampUnAuthorizedTemplateId,
-      'droppingCenterAuthorizedTemplateId' => $droppingCenterAuthorizedTemplateId,
-      'droppingCenterUnAuthorizedTemplateId' => $droppingCenterUnAuthorizedTemplateId,
-      'adminNotificationColletionCampTemplateId' => $adminNotificationTemplateId,
-    ];
+    if (!($stateField = self::findStateField($params))) {
+      return;
+    }
+
+    $stateId = $stateField['value'];
+
+    if (!$stateId) {
+      \CRM_Core_Error::debug_log_message('Cannot assign Goonj Office to collection camp: ' . $collectionCamp['id']);
+      \CRM_Core_Error::debug_log_message('No state provided on the intent for collection camp: ' . $collectionCamp['id']);
+      return FALSE;
+    }
+
+    $officesFound = Contact::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('contact_type', '=', 'Organization')
+      ->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_Office')
+      ->addWhere('Goonj_Office_Details.Collection_Camp_Catchment', 'CONTAINS', $stateId)
+      ->execute();
+
+    $stateOffice = $officesFound->first();
+
+    // If no state office is found, assign the fallback state office.
+    if (!$stateOffice) {
+      $stateOffice = self::getFallbackOffice();
+    }
+
+    $stateOfficeId = $stateOffice['id'];
+
+    $coordinators = Relationship::get(FALSE)
+      ->addWhere('contact_id_b', '=', $stateOfficeId)
+      ->addWhere('relationship_type_id:name', '=', self::RELATIONSHIP_TYPE_NAME)
+      ->addWhere('is_current', '=', TRUE)
+      ->execute()->single();
+
+    // $coordinators->first();
+    $coordinatorId = $coordinator['contact_id_a'];
+
+    self::sendAdminNotificatationForCollectionCamp($coordinatorId);
+
+    return TRUE;
+
   }
 
   /**
-   *
+   * Send Notification Email to Urban Ops Team for collection camp registered.
    */
   public static function sendAdminNotificatationForCollectionCamp($contactId) {
     try {
-      $templateIds = self::getMessageTemplateIDs();
-      $adminNotificationColletionCampTemplateId = $templateIds['adminNotificationColletionCampTemplateId'];
-
+      $messageTemplates = MessageTemplate::get(TRUE)
+        ->addSelect('id', 'msg_title')
+        ->addWhere('msg_title', '=', 'Notify Urban Ops Team after collection camp form submission')
+        ->execute()->single();
+      $templateId = $messageTemplates['id'];
       // Set up email parameters.
       $emailParams = [
         'contact_id' => $contactId,
-        'template_id' => $adminNotificationColletionCampTemplateId,
+        'template_id' => $templateId,
       ];
 
       // Send email using CiviCRM API.
@@ -731,8 +627,8 @@ class CollectionCampService extends AutoSubscriber {
     }
     catch (\CiviCRM_API3_Exception $ex) {
       // Log the exception for debugging.
-      \Civi::log()->error("Exception caught while sending unauthorized email: " . $ex->getMessage());
-      error_log("Exception caught while sending unauthorized email: " . $ex->getMessage());
+      \Civi::log()->error("Exception caught while sending urban ops notification email: " . $ex->getMessage());
+      error_log("Exception caught while sending urban ops notification email: " . $ex->getMessage());
     }
   }
 
