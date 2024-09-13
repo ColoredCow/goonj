@@ -416,3 +416,108 @@ function goonj_collection_camp_past_data() {
 	get_template_part( 'templates/collection-camp-data' );
 	return ob_get_clean();
 }
+
+	// temp function for induction import
+	function create_civicrm_activities() {
+		$wp_user_id = get_current_user_id();
+		$current_contact_id = CRM_Core_BAO_UFMatch::getContactId($wp_user_id);
+	
+		$query = "SELECT * FROM collection_camp_volunteer_induction_data order by id limit 1";
+		// $query = "SELECT * FROM collection_camp_volunteer_induction_data order by id limit 199 offset 1";
+		// $query = "SELECT * FROM collection_camp_volunteer_induction_data order by id limit 200 offset 200";
+		// $query = "SELECT * FROM collection_camp_volunteer_induction_data order by id limit 200 offset 400";
+		// $query = "SELECT * FROM collection_camp_volunteer_induction_data order by id limit 200 offset 600";
+		// $query = "SELECT * FROM collection_camp_volunteer_induction_data order by id limit 200 offset 800";
+		// $query = "SELECT * FROM collection_camp_volunteer_induction_data order by id limit 200 offset 1000";
+		// $query = "SELECT * FROM collection_camp_volunteer_induction_data order by id limit 200 offset 1200";
+		// $query = "SELECT * FROM collection_camp_volunteer_induction_data order by id limit 200 offset 1400";
+		// $query = "SELECT * FROM collection_camp_volunteer_induction_data order by id limit 200 offset 1600";
+		// $query = "SELECT * FROM collection_camp_volunteer_induction_data order by id limit 200 offset 1800";
+		// $query = "SELECT * FROM collection_camp_volunteer_induction_data order by id limit 200 offset 2000";
+		// $query = "SELECT * FROM collection_camp_volunteer_induction_data order by id limit 200 offset 2200";
+		// $query = "SELECT * FROM collection_camp_volunteer_induction_data order by id limit 200 offset 2400";
+		// $query = "SELECT * FROM collection_camp_volunteer_induction_data order by id limit 200 offset 2600";
+
+		// Use CiviCRM's DAO to fetch results
+		$dao = CRM_Core_DAO::executeQuery($query);
+		if ($dao->N) {
+			while ($dao->fetch()) {
+				// error_log('Error current_contact_id: ' . print_r($dao, true));
+				// error_log('Error creating activity: ' . print_r($dao, true));
+				// exit;
+				$activity_type_id = $dao->activity_type_id;
+				$activity_date_time = $dao->activity_date_time;
+				$details = $dao->details;
+				$status_id = $dao->status_id;
+				$created_date = $dao->created_date;
+				$source_contact_id = $dao->source_contact_id;
+				$assignee_contact_id = $dao->assignee_contact_id;
+				$induction_mode = $dao->induction_field_mode;
+				$target_contact_id = $dao->target_contact_id;
+				$induction_assign_id = $dao->induction_field_assignee;
+				$induction_fields_goonj_office = $dao->induction_fields_goonj_office;
+	
+				// Create the activity using civicrm_api4
+				try {
+					$result = \Civi\Api4\Activity::create(TRUE)
+						->addValue('source_contact_id', $source_contact_id)
+						->addValue('target_contact_id', [
+							$target_contact_id
+						])
+						->addValue('Induction_Fields.Assign', $induction_assign_id)
+						->addValue('Induction_Fields.Mode', $induction_mode)
+						->addValue('Induction_Fields.Goonj_Office', $induction_fields_goonj_office)
+						->addValue('status_id', $status_id)
+						->addValue('activity_type_id', $activity_type_id)
+						->addValue('activity_date_time', $activity_date_time)
+						->addValue('details', $details)
+						->addValue('created_date', $created_date)
+						->addValue('assignee_contact_id', [
+							$assignee_contact_id
+						])
+						->addValue('subject', 'Volunteer Induction')
+						->execute();
+				} catch (Exception $e) {
+					error_log('Error creating activity: ' . $e->getMessage());
+				}
+			}
+		} else {
+			error_log('No data found for activity creation.');
+		}
+	}
+	
+	add_action('admin_menu', function() {
+		// Add a new top-level menu for creating activities
+		add_menu_page(
+			'Create Activities Induction',      // Page title
+			'Create Activities Induction',      // Menu title
+			'manage_options',         // Capability required to access this menu
+			'create-activities',      // Menu slug
+			'create_activities_page'  // Callback function to display the content
+		);
+	});
+	
+	// Callback function to display the admin page content
+	function create_activities_page() {
+		// Check if the user has permission to access this page
+		if (!current_user_can('manage_options')) {
+			return;
+		}
+	
+		// Check if the form has been submitted
+		if (isset($_POST['create_activities'])) {
+			create_civicrm_activities(); // Call your function to create activities
+			echo '<div class="updated"><p>Activities created successfully!</p></div>'; // Success message
+		}
+	
+		// Display the form to trigger the activity creation
+		?>
+		<div class="wrap">
+			<h1>Create CiviCRM Activities</h1>
+			<form method="post">
+				<input type="submit" name="create_activities" class="button button-primary" value="Import Induction" />
+			</form>
+		</div>
+		<?php
+	}
+	
