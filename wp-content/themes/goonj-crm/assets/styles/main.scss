@@ -365,7 +365,7 @@ form input {
   color: #D64631;
   margin-top: 2px;
   font-size: 0.875rem;
-  font-family: 'Open Sans', sans-serif;
+  font-family: Open Sans !important;
 }
 
 .input-error {
@@ -404,10 +404,6 @@ form input {
 
 .justify-content-center{
   justify-content: center;
-}
-
-.font-family {
-  font-family: 'Open Sans', sans-serif;
 }
 
 .border-radius {

@@ -40,7 +40,6 @@ function goonj_theme_setup() {
 }
 
 
-
 add_action('template_redirect', 'goonj_redirect_logged_in_user_to_civi_dashboard');
 function goonj_redirect_logged_in_user_to_civi_dashboard() {
 	if (is_user_logged_in() && is_front_page()) {
@@ -135,7 +134,7 @@ function goonj_handle_user_identification_form() {
 	$email = $_POST['email'] ?? '';
 	$phone = $_POST['phone'] ?? '';
 
-	$is_purpose_requiring_email = !in_array($purpose, ['material-contribution', 'processing-center-office-visit', 'processing-center-material-contribution']);
+	$is_purpose_requiring_email = !in_array($purpose, ['material-contribution', 'processing-center-office-visit', 'processing-center-material-contribution', 'collection-camp']);
 
 	if ( empty( $phone ) || ( $is_purpose_requiring_email && empty( $email ) ) ) {
 		return;
@@ -186,6 +185,8 @@ function goonj_handle_user_identification_form() {
 			$email,
 			$phone,
 		);
+		
+		$action_target_id = isset($_SESSION['action_target_id']) ? $_SESSION['action_target_id'] : '';
 
 		if ( empty( $found_contacts ) ) {
 			switch ( $purpose ) {
@@ -193,6 +194,15 @@ function goonj_handle_user_identification_form() {
 				// Redirect to individual registration with option for volunteering.
 				case 'material-contribution':
 					$redirect_url = $individual_volunteer_registration_form_path;
+					break;
+				case 'collection-camp':
+					$registration_url = sprintf(
+						'/individual-registration-with-volunteer-option/#?email=%s&phone=%s&Source_Tracking.Event=%s',
+						$email,
+						$phone,
+						$action_target_id
+					);
+					$redirect_url = $registration_url;
 					break;
 
 				// Contact does not exist and the purpose is to create a dropping center.

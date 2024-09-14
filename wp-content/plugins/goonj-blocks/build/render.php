@@ -14,9 +14,12 @@ $headings = array(
 
 $heading_text = $headings[ $target ];
 
+$_SESSION['action_target_id'] = $action_target['id'];
+
 $register_link = sprintf(
-	'/individual-registration-with-volunteer-option/#?Source_Tracking.Event=%s',
-	$action_target['id'],
+    '%s/registration-landing-page/?Source_Tracking.Event=%s',
+    home_url(),
+    $_SESSION['action_target_id']
 );
 
 $material_contribution_link = sprintf(
@@ -35,8 +38,8 @@ $pu_material_contribution_check_link = sprintf(
 );
 
 if ( in_array( $target, array( 'collection-camp', 'dropping-center' ) ) ) :
-	$start_date = new DateTime( $action_target['Collection_Camp_Intent_Details.Start_Date'] );
-	$end_date   = new DateTime( $action_target['Collection_Camp_Intent_Details.End_Date'] );
+	$start_date = new DateTime( $action_target['start_date'] );
+	$end_date   = new DateTime( $action_target['end_date'] );
 	?>
 	<div class="wp-block-gb-heading-wrapper">
 		<h2 class="wp-block-gb-heading"><?php echo esc_html($heading_text); ?></h2>
