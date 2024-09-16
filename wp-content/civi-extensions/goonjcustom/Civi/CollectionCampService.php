@@ -480,18 +480,24 @@ class CollectionCampService extends AutoSubscriber {
     if ($op !== 'create') {
       return;
     }
-  
-    $contactId = self::findCollectionCampInitiatorContact($params);
-    if (!$contactId) {
+
+    if (!($contactId = self::findCollectionCampInitiatorContact($params))) {
       return;
     }
-  
+
     $collectionCampId = $contactId['entity_id'];
-    $collectionCamp = self::getCollectionCampData($collectionCampId);
-    
+
+    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect('Collection_Camp_Core_Details.Contact_Id', 'custom.*')
+      ->addWhere('id', '=', $collectionCampId)
+      ->execute()->single();
+
+    $contactId = $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
+
     $activityTypeId = self::getActivityTypeId('Induction');
+
     $inductionId = self::getInductionActivityId($collectionCamp['Collection_Camp_Core_Details.Contact_Id'], $activityTypeId);
-  
+
     self::updateCollectionCampDetails($collectionCampId, [
       'Collection_Camp_Intent_Details.Initiator_Induction_Id' => $inductionId
     ]);
