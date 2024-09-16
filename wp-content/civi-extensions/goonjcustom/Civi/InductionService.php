@@ -26,6 +26,7 @@ class InductionService extends AutoSubscriber {
       '&hook_civicrm_post' => [
             ['volunteerCreated'],
             ['createInductionForVolunteer'],
+            ['sendAdminNotificatationForVolunteerSignup'],
       ],
     ];
   }
@@ -176,11 +177,10 @@ class InductionService extends AutoSubscriber {
    */
   public static function sendAdminNotificatation($contactId) {
     try {
-      $messageTemplates = MessageTemplate::get(TRUE)
+      $templateId = MessageTemplate::get(TRUE)
         ->addWhere('msg_title', '=', 'Admin volunteer sign up')
-        ->execute();
+        ->execute()->single()['id'];
 
-      $templateId = $messageTemplates->first()['id'];
       $emailParams = [
         'contact_id' => $contactId,
         'template_id' => $templateId,
