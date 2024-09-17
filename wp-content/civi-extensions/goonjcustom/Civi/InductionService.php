@@ -4,6 +4,7 @@ namespace Civi;
 
 use Civi\Api4\Activity;
 use Civi\Api4\Contact;
+use Civi\Api4\CustomField;
 use Civi\Api4\MessageTemplate;
 use Civi\Api4\Relationship;
 use Civi\Core\Service\AutoSubscriber;
@@ -17,6 +18,7 @@ class InductionService extends AutoSubscriber {
   const RELATIONSHIP_TYPE_NAME = 'Induction Coordinator of';
 
   private static $volunteerId = NULL;
+  private static $volunteerInductionAssigneeEmail = NULL;
 
   /**
    *
@@ -27,6 +29,10 @@ class InductionService extends AutoSubscriber {
             ['volunteerCreated'],
             ['createInductionForVolunteer'],
             ['sendAdminNotificatationForVolunteerSignup'],
+            ['sendInductionEmailToVolunteer'],
+      ],
+      '&hook_civicrm_custom' => [
+        ['volunteerInductionAssignee'],
       ],
     ];
   }
@@ -191,6 +197,100 @@ class InductionService extends AutoSubscriber {
     catch (\CiviCRM_API3_Exception $ex) {
       error_log("Exception caught while sending notification email: " . $ex->getMessage());
     }
+  }
+
+     /* This hook is called after the database write on a custom table.
+   *
+   * @param string $op
+   *   The type of operation being performed.
+   * @param string $objectName
+   *   The custom group ID.
+   * @param int $objectId
+   *   The entityID of the row in the custom table.
+   * @param object $objectRef
+   *   The parameters that were sent into the calling function.
+   */
+  public static function volunteerInductionAssignee($op, $groupID, $entityID, &$params) {
+    if ($op !== 'create') {
+      return;
+    }
+
+    if (!($inductionsFields = self::findInductionOfficeFields($params))) {
+      return;
+    }
+
+    $assignee = Contact::get(TRUE)
+      ->addSelect('email.email')
+      ->addJoin('Email AS email', 'LEFT')
+      ->addWhere('id', '=', $inductionsFields['Assign']['value'])
+      ->addWhere('email.is_primary', '=', TRUE)
+      ->setLimit(1)
+      ->execute()->single();
+
+    self::$volunteerInductionAssigneeEmail = $assignee['email.email'];
+
+  }
+
+  /**
+   *
+   */
+  private static function findInductionOfficeFields(array $array) {
+    $filteredItems = array_filter($array, fn($item) => $item['entity_table'] === 'civicrm_activity');
+
+    if (empty($filteredItems)) {
+      return FALSE;
+    }
+
+    $inductionOfficeFields = CustomField::get(FALSE)
+      ->addSelect('name')
+      ->addWhere('custom_group_id:name', '=', 'Induction_Fields')
+      ->addWhere('name', 'IN', ['Goonj_Office', 'Assign'])
+      ->execute();
+
+    if ($inductionOfficeFields->count() === 0) {
+      return FALSE;
+    }
+
+    $inductionOfficeFieldValues = [];
+
+    foreach ($inductionOfficeFields as $field) {
+      $fieldIndex = array_search(TRUE, array_map(fn($item) =>
+      $item['entity_table'] === 'civicrm_activity' &&
+      $item['custom_field_id'] == $field['id'],
+      $filteredItems
+      ));
+
+      $inductionOfficeFieldValues[$field['name']] = $fieldIndex !== FALSE ? $filteredItems[$fieldIndex] : FALSE;
+    }
+
+    return $inductionOfficeFieldValues;
+  }
+
+  /**
+   *
+   */
+  public static function sendInductionEmailToVolunteer(string $op, string $objectName, int $objectId, &$objectRef) {
+    if ($op !== 'create' || $objectName !== 'Email' || !$objectId) {
+      return;
+    }
+
+    if ($objectRef->contact_id !== self::$volunteerId) {
+      return;
+    }
+
+    $template = MessageTemplate::get(FALSE)
+      ->addWhere('msg_title', 'LIKE', 'New_Volunteer_Registration%')
+      ->setLimit(1)
+      ->execute()->single();
+
+    $emailParams = [
+      'contact_id' => self::$volunteerId,
+      'template_id' => $template['id'],
+      'cc' => self::$volunteerInductionAssigneeEmail,
+    ];
+
+    $result = civicrm_api3('Email', 'send', $emailParams);
+
   }
 
 }
