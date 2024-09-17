@@ -43,11 +43,25 @@ class CollectionBaseService extends AutoSubscriber {
     $contributionUrl = \CRM_Utils_System::url(
           "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fcollection-camp%2Fmaterial-contributions",
     );
+    
+    // URL for the Add Contribution tab.
+    $addContributionUrl = \CRM_Utils_System::url(
+      "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fadmin%2Fmaterial-contribution%2Fcreate",
+    );
+
 
     // Add the Contribution tab.
     $tabs['contribution'] = [
       'title' => ts('Contribution'),
       'link' => $contributionUrl,
+      'valid' => 1,
+      'active' => 1,
+      'current' => FALSE,
+    ];
+        // Add the Contribution tab.
+    $tabs['Add Contibution'] = [
+      'title' => ts('Add Contribution'),
+      'link' => $addContributionUrl,
       'valid' => 1,
       'active' => 1,
       'current' => FALSE,
