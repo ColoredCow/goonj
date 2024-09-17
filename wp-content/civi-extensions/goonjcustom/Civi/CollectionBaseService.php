@@ -60,7 +60,7 @@ class CollectionBaseService extends AutoSubscriber {
     ];
     
     // Add the Contribution tab.
-    $tabs['Add Contibution'] = [
+    $tabs['Add Contribution'] = [
       'title' => ts('Add Contribution'),
       'link' => $addContributionUrl,
       'valid' => 1,
