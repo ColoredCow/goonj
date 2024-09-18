@@ -321,16 +321,21 @@
         var errorMessage = '';
         var isValid = true;
 
-        // Check if End is in the past
-        if (startDate < today) {
-            errorMessage += `Collection Camp Start Date ${startDateValue} cannot be in the past.\n`;
-            isValid = false;
+        // Check if the start date is in the past or today
+        if (startDate <= today) {
+          errorMessage += `Collections cannot start (${startDateValue}) today or in the past.\n`;
+          isValid = false;
         }
-        
+        // Check if the end date is in the past, today
+        if (endDate <= today) {
+          errorMessage += `Collections cannot end ( ${endDateValue}) today or in the past.\n`;
+          isValid = false;
+          }
+          
         // Check if End Date is before Start Date
         if (endDate < startDate) {
-            errorMessage += `Collection Camp End Date ${endDateValue} cannot be before Start Date.\n`;
-            isValid = false;
+          errorMessage += `Collections cannot end (${endDateValue}) before start (${startDateValue}).\n`;
+          isValid = false;
         }
     }
 
