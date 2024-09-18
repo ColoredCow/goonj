@@ -44,10 +44,24 @@ class CollectionBaseService extends AutoSubscriber {
           "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fcollection-camp%2Fmaterial-contributions",
     );
 
+    // URL for the Logistics tab.
+    $logisticsUrl = \CRM_Utils_System::url(
+          "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Flogistics-coordination#",
+    );
+
     // Add the Contribution tab.
     $tabs['contribution'] = [
       'title' => ts('Contribution'),
       'link' => $contributionUrl,
+      'valid' => 1,
+      'active' => 1,
+      'current' => FALSE,
+    ];
+
+    // Add the Logistics tab.
+    $tabs['logistics'] = [
+      'title' => ts('Logistics Coordination'),
+      'link' => $logisticsUrl,
       'valid' => 1,
       'active' => 1,
       'current' => FALSE,
