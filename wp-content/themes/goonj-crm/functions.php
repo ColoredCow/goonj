@@ -135,7 +135,7 @@ function goonj_handle_user_identification_form() {
 	$email = $_POST['email'] ?? '';
 	$phone = $_POST['phone'] ?? '';
 
-	$is_purpose_requiring_email = !in_array($purpose, ['material-contribution', 'processing-center-office-visit', 'processing-center-material-contribution']);
+	$is_purpose_requiring_email = !in_array($purpose, ['material-contribution', 'processing-center-office-visit', 'processing-center-material-contribution', 'institute-registration']);
 
 	if ( empty( $phone ) || ( $is_purpose_requiring_email && empty( $email ) ) ) {
 		return;
@@ -204,6 +204,11 @@ function goonj_handle_user_identification_form() {
 				// Contact does not exist and the purpose is to register an institute.
 				// Redirect to individual registration.
 				case 'institute-registration':
+					$individual_registration_form_path = sprintf(
+						'/insititute-registration/individual-sign-up/#?email=%s&phone=%s',
+						$email,
+						$phone,
+					);
 					$redirect_url = $individual_registration_form_path;
 					break;
 
@@ -262,7 +267,7 @@ function goonj_handle_user_identification_form() {
 
 		if ( 'institute-registration' === $purpose ) {
 			$institute_registration_form_path = sprintf(
-				'/institute-registration/#?email=%s&phone=%s',
+				'/institute-registration/sign-up/#?email=%s&phone=%s',
 				$email,
 				$phone,
 			);
