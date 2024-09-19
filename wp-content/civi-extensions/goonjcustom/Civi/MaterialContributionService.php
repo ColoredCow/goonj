@@ -9,7 +9,6 @@ use Civi\Core\Service\AutoSubscriber;
  *
  */
 class MaterialContributionService extends AutoSubscriber {
-
   // See: CiviCRM > Administer > Communications > Schedule Reminders.
   const CONTRIBUTION_RECEIPT_REMINDER_ID = 6;
 
@@ -40,7 +39,7 @@ class MaterialContributionService extends AutoSubscriber {
 
     // Hack: Retrieve the most recent "Material Contribution" activity for this contact.
     $activities = Activity::get(TRUE)
-      ->addSelect('*', 'contact.display_name')
+      ->addSelect('*', 'contact.display_name', 'Material_Contribution.Delivered_By', 'Material_Contribution.Delivered_By_Contact')
       ->addJoin('ActivityContact AS activity_contact', 'LEFT')
       ->addJoin('Contact AS contact', 'LEFT')
       ->addWhere('source_contact_id', '=', $params['contactId'])
@@ -52,11 +51,52 @@ class MaterialContributionService extends AutoSubscriber {
 
     $contribution = $activities->first();
 
+    $contactData = civicrm_api4('Contact', 'get', [
+      'select' => [
+        'email_primary.email',
+        'phone_primary.phone',
+      ],
+      'where' => [
+              ['id', '=', $params['contactId']],
+      ],
+      'limit' => 1,
+    ]);
+
+    $activityData = civicrm_api4('Activity', 'get', [
+      'select' => [
+        'Material_Contribution.Collection_Camp',
+      ],
+      'where' => [
+              ['id', '=', $contribution['id']],
+      ],
+      'limit' => 1,
+    ]);
+
+    $activity = $activityData[0] ?? [];
+
+    $collectionCampData = civicrm_api4('Eck_Collection_Camp', 'get', [
+      'select' => [
+        'Collection_Camp_Intent_Details.Location_Area_of_camp',
+      ],
+      'where' => [
+              ['id', '=', $activity['Material_Contribution.Collection_Camp']],
+      ],
+      'limit' => 1,
+    ]);
+
+    $collectionCamp = $collectionCampData[0] ?? [];
+
+    $locationAreaOfCamp = $collectionCamp['Collection_Camp_Intent_Details.Location_Area_of_camp'] ?? 'N/A';
+
+    $contactDataArray = $contactData[0] ?? [];
+    $email = $contactDataArray['email_primary.email'] ?? 'N/A';
+    $phone = $contactDataArray['phone_primary.phone'] ?? 'N/A';
+
     if (!$contribution) {
       return;
     }
 
-    $html = self::generateContributionReceiptHtml($contribution);
+    $html = self::generateContributionReceiptHtml($contribution, $email, $phone, $locationAreaOfCamp);
     $fileName = 'material_contribution_' . $contribution['id'] . '.pdf';
     $params['attachments'][] = \CRM_Utils_Mail::appendPDF($fileName, $html);
   }
@@ -70,78 +110,142 @@ class MaterialContributionService extends AutoSubscriber {
    * @return string
    *   The generated HTML.
    */
-  private static function generateContributionReceiptHtml($activity) {
-    // Format the activity date.
+  private static function generateContributionReceiptHtml($activity, $email, $phone, $locationAreaOfCamp) {
     $activityDate = date("F j, Y", strtotime($activity['activity_date_time']));
 
-    // Start building the HTML.
-    $html = '<html><body>';
+    $baseDir = plugin_dir_path(__FILE__) . '../../../themes/goonj-crm/';
 
-    // Header: Material Receipt#<activity_id> (left) | Goonj address (right)
-    $html .= '<table width="100%" cellpadding="0" cellspacing="0" style="border: none;">';
-    $html .= '<tr>';
-    $html .= '<td style="text-align: left; vertical-align: top;">Material Receipt#' . $activity['id'] . '</td>';
-    $html .= '<td style="text-align: right; vertical-align: top;">Goonj, C-544, Pocket C, Sarita Vihar, Delhi, India</td>';
-    $html .= '</tr>';
-    $html .= '</table>';
+    $paths = [
+      'logo' => $baseDir . 'images/goonj-logo.png',
+      'qrCode' => $baseDir . 'images/qr-code.png',
+      'callIcon' => $baseDir . 'Icon/call.png',
+      'domainIcon' => $baseDir . 'Icon/domain.png',
+      'emailIcon' => $baseDir . 'Icon/email.png',
+      'facebookIcon' => $baseDir . 'Icon/facebook.webp',
+      'instagramIcon' => $baseDir . 'Icon/instagram.png',
+      'twitterIcon' => $baseDir . 'Icon/twitter.webp',
+      'youtubeIcon' => $baseDir . 'Icon/youtube.webp',
+    ];
 
-    // Line breaks.
-    $html .= '<br><br><br>';
+    $imageData = array_map(fn ($path) => base64_encode(file_get_contents($path)), $paths);
 
-    // Appreciation message.
-    $html .= '<div style="font-weight: bold; font-style: italic;">';
-    $html .= '"We appreciate your contribution of pre used/new material. Goonj makes sure that the material reaches people with dignity and care."';
-    $html .= '</div>';
+    $html = <<<HTML
+    <html>
+      <body style="font-family: Arial, sans-serif;">
+        <div style="text-align: center; margin-bottom: 16px;">
+          <img src="data:image/png;base64,{$imageData['logo']}" alt="Goonj Logo" style="width: 100px; height: 90px;">
+        </div>
+        
+        <div style="width: 100%; font-size: 14px;">
+          <div style="float: left; text-align: left;">
+            Material Receipt# {$activity['id']}
+          </div>
+          <div style="float: right; text-align: right;">
+            Goonj, C-544, Pocket C, Sarita Vihar, Delhi, India
+          </div>
+        </div>
+        <br><br>
+        <div style="font-weight: bold; font-style: italic; margin-top: 22px; margin-bottom: 22px;">
+          "We appreciate your contribution of pre-used/new material. Goonj makes sure that the material reaches people with dignity and care."
+        </div>
+        <table border="1" cellpadding="10" cellspacing="0" style="width: 100%; border-collapse: collapse;">
+          <style>
+            .table-header {
+              background-color: #f2f2f2;
+              text-align: left;
+              font-weight: bold;
+            }
+          </style>
+          <!-- Table rows for each item -->
+          <tr>
+            <td class="table-header">Description of Material</td>
+            <td style="text-align: center;">{$activity['subject']}</td>
+          </tr>
+          <tr>
+            <td class="table-header">Received On</td>
+            <td style="text-align: center;">{$activityDate}</td>
+          </tr>
+          <tr>
+            <td class="table-header">From</td>
+            <td style="text-align: center;">{$activity['contact.display_name']}</td>
+          </tr>
+          <tr>
+            <td class="table-header">Address</td>
+            <td style="text-align: center;">{$locationAreaOfCamp}</td>
+          </tr>
+          <tr>
+            <td class="table-header">Email</td>
+            <td style="text-align: center;">{$email}</td>
+          </tr>
+          <tr>
+            <td class="table-header">Phone</td>
+            <td style="text-align: center;">{$phone}</td>
+          </tr>
+          <tr>
+            <td class="table-header">Delivered by (Name & contact no.)</td>
+            <td style="text-align: center;">
+            {$activity['Material_Contribution.Delivered_By']}<br>
+            {$activity['Material_Contribution.Delivered_By_Contact']}
+          </td>
+        </tr>
 
-    // Line breaks.
-    $html .= '<br><br><br>';
-
-    // Start of the table.
-    $html .= '<table border="1" cellpadding="5" cellspacing="0" style="width: 100%; border-collapse: collapse;">';
-
-    // Table rows.
-    $html .= '<tr>';
-    $html .= '<td>Description of Material</td>';
-    $html .= '<td>' . $activity['subject'] . '</td>';
-    $html .= '</tr>';
-
-    $html .= '<tr>';
-    $html .= '<td>Received On</td>';
-    $html .= '<td>' . $activityDate . '</td>';
-    $html .= '</tr>';
-
-    $html .= '<tr>';
-    $html .= '<td>From</td>';
-    $html .= '<td>' . $activity['contact.display_name'] . '</td>';
-    $html .= '</tr>';
-
-    $html .= '<tr>';
-    $html .= '<td>Address</td>';
-    $html .= '<td>B-38, Sarita Vihar, Delhi, Sarita Vihar, DELHI, 110076, India(TODO)</td>';
-    $html .= '</tr>';
-
-    $html .= '<tr>';
-    $html .= '<td>Email</td>';
-    $html .= '<td>' . $activity['contact.display_name'] . '(TODO)</td>';
-    $html .= '</tr>';
-
-    $html .= '<tr>';
-    $html .= '<td>Phone</td>';
-    // Hardcoded phone number.
-    $html .= '<td>9876543210 (TODO)</td>';
-    $html .= '</tr>';
-
-    $html .= '<tr>';
-    $html .= '<td>Delivered by (Name & contact no.)</td>';
-    // Hardcoded delivery details.
-    $html .= '<td>Self (TODO)</td>';
-    $html .= '</tr>';
-
-    // End of the table.
-    $html .= '</table>';
-
-    // End the HTML document.
-    $html .= '</body></html>';
+        </table>
+    
+        <div style="text-align: right; margin-top: 20px;">
+          Team Goonj
+        </div>
+        <div style="width: 100%; margin-top: 28px;">
+          <div style="float: left; width: 60%; font-size: 14px;">
+            <ul>
+              <li>Join us, by encouraging your friends, relatives, colleagues, and neighbours to join the journey as all of us have a lot to give.</li>
+              <li style="margin-top: 8px;">
+                <strong>With Material Money Matter!</strong> Your monetary contribution is needed too for sorting, packing, transportation to implementation.(Financial contributions are tax-exempted u/s 80G of IT Act)
+              </li>
+            </ul>
+          </div>
+          <div style="float: right; width: 40%; text-align: right; font-size: 14px; font-style: italic;">
+            To pay, scan the code on<br> your Paytm App.<br>
+            <img src="data:image/png;base64,{$imageData['qrCode']}" alt="QR Code" style="width: 80px; height: 70px;">
+          </div>
+        </div>
+        <div style="clear: both; margin-top: 20px;"></div>
+    
+        <div style="width: 100%; margin-top: 15px; background-color: #f2f2f2; padding: 20px; font-weight: 300; color: #000000">
+          <div style="font-size: 14px; margin-bottom: 20px;">
+            <div style="position: relative; height: 24px;">
+              <div style="font-size: 14px; float: left; color:">
+                Goonj, C-544, 1st Floor, C-Pocket, Sarita Vihar, New<br>
+                Delhi-110076
+              </div>
+              <div style="font-size: 14px; float: right;">
+                <img src="data:image/png;base64,{$imageData['callIcon']}" alt="Phone" style="width: 16px; height: 16px; margin-right: 5px;">
+                011-26972351/41401216
+              </div>
+            </div>
+          </div>
+    
+          <div style="font-size: 14px; margin-bottom: 20px;">
+              <div style="font-size: 14px;">
+                <img src="data:image/png;base64,{$imageData['emailIcon']}" alt="Email" style="width: 16px; height: 16px; float: left; display: inline;">
+                <span style="display: inline; margin-left: 0;">mail@goonj.org</span>
+              </div>
+              <div style="font-size: 14px; float: right;">
+                <img src="data:image/png;base64,{$imageData['domainIcon']}" alt="Website" style="width: 16px; height: 16px; margin-right: 5px;">
+                <span style="display: inline; margin-left: 0;">www.goonj.org</span>
+              </div>
+          </div>
+    
+          <!-- Social Media Icons -->
+          <div style="text-align: center; width: 100%; margin-top: 28px;">
+            <a href="https://www.facebook.com/goonj.org" target="_blank"><img src="data:image/webp;base64,{$imageData['facebookIcon']}" alt="Facebook" style="width: 24px; height: 24px; margin-right: 10px;"></a>
+            <a href="https://www.instagram.com/goonj/" target="_blank"><img src="data:image/webp;base64,{$imageData['instagramIcon']}" alt="Instagram" style="width: 24px; height: 24px; margin-right: 10px;"></a>
+            <a href="https://x.com/goonj" target="_blank"><img src="data:image/webp;base64,{$imageData['twitterIcon']}" alt="Twitter" style="width: 24px; height: 24px; margin-right: 10px;"></a>
+            <a href="https://www.youtube.com/channel/UCCq8iYlmjT7rrgPI1VHzIHg" target="_blank"><img src="data:image/webp;base64,{$imageData['youtubeIcon']}" alt="YouTube" style="width: 24px; height: 24px; margin-right: 10px;"></a>
+          </div>
+        </div>
+      </body>
+    </html>
+    HTML;
 
     return $html;
   }

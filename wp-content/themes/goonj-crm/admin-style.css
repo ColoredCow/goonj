@@ -10,3 +10,6 @@
 #wpbody .wpbody-content #crm-container .crm-accordion-header:not(.crm-master-accordion-header)+.crm-accordion-body, .crm-container .crm-accordion-bold>.crm-accordion-body {
     box-shadow: none !important;
 }
+.crm-contact-actions-list-inner .crm-contact_activities-list .crm-activity-type_4 {
+    display: none !important;
+}

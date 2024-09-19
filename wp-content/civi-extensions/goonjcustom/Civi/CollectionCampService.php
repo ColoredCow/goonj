@@ -32,13 +32,14 @@ class CollectionCampService extends AutoSubscriber {
   public static function getSubscribedEvents() {
     return [
       '&hook_civicrm_post' => [
-        ['generateCollectionCampCode'],
         ['individualCreated'],
         ['assignChapterGroupToIndividual'],
+        ['reGenerateCollectionCampQr'],
       ],
       '&hook_civicrm_pre' => [
         ['generateCollectionCampQr'],
         ['linkCollectionCampToContact'],
+        ['generateCollectionCampCode'],
       ],
       '&hook_civicrm_custom' => [
         ['setOfficeDetails'],
@@ -116,94 +117,90 @@ class CollectionCampService extends AutoSubscriber {
    * @param object $objectRef
    *   The reference to the object.
    */
-  public static function generateCollectionCampCode(string $op, string $objectName, int $objectId, &$objectRef) {
-    // Check if the object name is 'AfformSubmission'.
-    if ($objectName !== 'AfformSubmission') {
+  public static function generateCollectionCampCode(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($objectName != 'Eck_Collection_Camp') {
       return;
     }
 
-    // Extract the 'data' field.
-    $data = $objectRef->data;
-    $decodedData = json_decode($data, TRUE);
+    $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
 
-    // Check if 'Eck_Collection_Camp1' exists.
-    $collectionCampEntries = $decodedData['Eck_Collection_Camp1'] ?? [];
-    if (empty($collectionCampEntries)) {
+    if (!$newStatus) {
       return;
     }
 
-    foreach ($collectionCampEntries as $entry) {
-      $collectionCampData = $entry['fields'] ?? NULL;
+    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id', 'title')
+      ->addWhere('id', '=', $objectId)
+      ->execute()->single();
 
-      // Access the subtype.
-      $subtypeId = $collectionCampData['subtype'] ?? NULL;
-      if ($subtypeId === NULL) {
-        continue;
+    $currentStatus = $collectionCamp['Collection_Camp_Core_Details.Status'];
+
+    // Check for status change.
+    if ($currentStatus !== $newStatus) {
+      if ($newStatus === 'authorized') {
+        // Access the subtype.
+        $subtypeId = $objectRef['subtype'] ?? NULL;
+        if ($subtypeId === NULL) {
+          return;
+        }
+
+        // Access the id within the decoded data.
+        $campId = $objectRef['id'] ?? NULL;
+        if ($campId === NULL) {
+          return;
+        }
+
+        // Fetch the collection camp details.
+        $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+          ->addWhere('id', '=', $campId)
+          ->execute()->single();
+
+        $collectionCampsCreatedDate = $collectionCamp['created_date'] ?? NULL;
+
+        // Get the year.
+        $year = date('Y', strtotime($collectionCampsCreatedDate));
+
+        // Fetch the state ID.
+        $stateId = self::getStateIdForSubtype($objectRef, $subtypeId);
+
+        if (!$stateId) {
+          return;
+        }
+
+        // Fetch the state abbreviation.
+        $stateProvince = StateProvince::get(FALSE)
+          ->addWhere('id', '=', $stateId)
+          ->execute()->single();
+
+        if (empty($stateProvince)) {
+          return;
+        }
+
+        $stateAbbreviation = $stateProvince['abbreviation'] ?? NULL;
+        if (!$stateAbbreviation) {
+          return;
+        }
+
+        // Fetch the Goonj-specific state code.
+        $config = self::getConfig();
+        $stateCode = $config['state_codes'][$stateAbbreviation] ?? 'UNKNOWN';
+
+        // Get the current event title.
+        $currentTitle = $objectRef['title'] ?? 'Collection Camp';
+
+        // Fetch the event code.
+        $eventCode = $config['event_codes'][$currentTitle] ?? 'UNKNOWN';
+
+        // Modify the title to include the year, state code, event code, and camp Id.
+        $newTitle = $year . '/' . $stateCode . '/' . $eventCode . '/' . $campId;
+        $objectRef['title'] = $newTitle;
+
+        // Save the updated title back to the Collection Camp entity.
+        EckEntity::update('Collection_Camp')
+          ->addWhere('id', '=', $campId)
+          ->addValue('title', $newTitle)
+          ->execute();
       }
-
-      // Access the id within the decoded data.
-      $campId = $collectionCampData['id'] ?? NULL;
-      if ($campId === NULL) {
-        continue;
-      }
-
-      // Fetch the collection camp details.
-      $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
-        ->addWhere('id', '=', $campId)
-        ->setLimit(1)
-        ->execute();
-
-      if (empty($collectionCamps)) {
-        continue;
-      }
-
-      $collectionCampsCreatedDate = $collectionCamps->first()['created_date'] ?? NULL;
-
-      // Get the year.
-      $year = date('Y', strtotime($collectionCampsCreatedDate));
-
-      // Fetch the state ID.
-      $stateId = self::getStateIdForSubtype($collectionCampData, $subtypeId);
-
-      if (!$stateId) {
-        continue;
-      }
-
-      // Fetch the state abbreviation.
-      $stateProvinces = StateProvince::get(FALSE)
-        ->addWhere('id', '=', $stateId)
-        ->setLimit(1)
-        ->execute();
-
-      if (empty($stateProvinces)) {
-        continue;
-      }
-
-      $stateAbbreviation = $stateProvinces->first()['abbreviation'] ?? NULL;
-
-      if (!$stateAbbreviation) {
-        continue;
-      }
-
-      // Fetch the Goonj-specific state code.
-      $config = self::getConfig();
-      $stateCode = $config['state_codes'][$stateAbbreviation] ?? 'UNKNOWN';
-
-      // Get the current event title.
-      $currentTitle = $collectionCampData['title'] ?? 'Collection Camp';
-
-      // Fetch the event code.
-      $eventCode = $config['event_codes'][$currentTitle] ?? 'UNKNOWN';
-
-      // Modify the title to include the year, state code, event code, and camp Id.
-      $newTitle = $year . '/' . $stateCode . '/' . $eventCode . '/' . $campId;
-      $collectionCampData['title'] = $newTitle;
-
-      // Save the updated title back to the Collection Camp entity.
-      EckEntity::update('Collection_Camp')
-        ->addWhere('id', '=', $campId)
-        ->addValue('title', $newTitle)
-        ->execute();
     }
   }
 
@@ -227,12 +224,19 @@ class CollectionCampService extends AutoSubscriber {
   /**
    *
    */
-  public static function getStateIdForSubtype(array $collectionCampData, int $subtypeId): ?int {
+  public static function getStateIdForSubtype(array $objectRef, int $subtypeId): ?int {
+    $optionValue = OptionValue::get(TRUE)
+      ->addSelect('value')
+      ->addWhere('option_group_id:name', '=', 'eck_sub_types')
+      ->addWhere('grouping', '=', 'Collection_Camp')
+      ->addWhere('name', '=', 'Dropping_Center')
+      ->execute()->single();
+
     // Subtype for 'Dropping Centre'.
-    if ($subtypeId === 5) {
-      return $collectionCampData['Dropping_Centre.State'] ?? NULL;
+    if ($subtypeId === $optionValue['value']) {
+      return $objectRef['Dropping_Centre.State'] ?? NULL;
     }
-    return $collectionCampData['Collection_Camp_Intent_Details.State'] ?? NULL;
+    return $objectRef['Collection_Camp_Intent_Details.State'] ?? NULL;
   }
 
   /**
@@ -433,6 +437,41 @@ class CollectionCampService extends AutoSubscriber {
     }
 
     return TRUE;
+  }
+
+  /**
+   * This hook is called after a db write on entities.
+   *
+   * @param string $op
+   *   The type of operation being performed.
+   * @param string $objectName
+   *   The name of the object.
+   * @param int $objectId
+   *   The unique identifier for the object.
+   * @param object $objectRef
+   *   The reference to the object.
+   */
+  public static function reGenerateCollectionCampQr(string $op, string $objectName, int $objectId, &$objectRef) {
+    // Check if the object name is 'Eck_Collection_Camp'.
+    if ($objectName !== 'Eck_Collection_Camp' || !$objectRef->id) {
+      return;
+    }
+
+    $collectionCampId = $objectRef->id ?? NULL;
+    $collectionCamp = EckEntity::get('Collection_Camp', TRUE)
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_QR_Code.QR_Code')
+      ->addWhere('id', '=', $collectionCampId)
+      ->execute()->single();
+
+    $status = $collectionCamp['Collection_Camp_Core_Details.Status'];
+    $collectionCampQr = $collectionCamp['Collection_Camp_QR_Code.QR_Code'];
+
+    if ($status !== 'authorized' || $collectionCampQr !== NULL) {
+      return;
+    }
+
+    self::generateQrCode($collectionCampId);
+
   }
 
   /**
