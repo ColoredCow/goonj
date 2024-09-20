@@ -195,7 +195,7 @@ class InductionService extends AutoSubscriber {
       return;
     }
 
-    $assignee = Contact::get(TRUE)
+    $assignee = Contact::get(FALSE)
       ->addSelect('email.email')
       ->addJoin('Email AS email', 'LEFT')
       ->addWhere('id', '=', $inductionsFields['Assign']['value'])
