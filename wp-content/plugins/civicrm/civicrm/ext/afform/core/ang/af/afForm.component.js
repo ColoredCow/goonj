@@ -292,7 +292,7 @@
           }
           
         // Phone number validation
-        var phoneNumberField = $element.find("af-field[name='phone'] input[type='text']");
+        var phoneNumberField = $element.find("af-field[name='phone'] input[type='text'], af-field[name='Material_Contribution.Delivered_By_Contact'] input[type='text']");
         if (phoneNumberField.length) {
             var phoneNumberValue = phoneNumberField.val().trim();
             if (phoneNumberValue !== "") {

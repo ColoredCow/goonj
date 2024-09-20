@@ -54,6 +54,7 @@ add_filter( 'query_vars', 'gb_goonj_blocks_query_vars' );
 function gb_goonj_blocks_query_vars( $vars ) {
 	$vars[] = 'target';
 	$vars[] = 'id';
+	$vars[] = 'source';
 	return $vars;
 }
 

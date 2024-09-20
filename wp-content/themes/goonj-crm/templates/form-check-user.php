@@ -5,6 +5,8 @@
 
 $purpose = $args['purpose'];
 $target_id = get_query_var('target_id', '');
+$source = get_query_var('source', '');
+
 $is_purpose_requiring_email = !in_array($purpose, ['material-contribution', 'processing-center-office-visit', 'processing-center-material-contribution']);
 ?>
 
@@ -14,6 +16,7 @@ $is_purpose_requiring_email = !in_array($purpose, ['material-contribution', 'pro
         <input type="hidden" name="action" value="goonj-check-user" />
         <input type="hidden" name="purpose" value="<?php echo esc_attr($purpose); ?>" />
         <input type="hidden" name="target_id" value="<?php echo esc_attr($target_id); ?>" />
+        <input type="hidden" name="source" value="<?php echo esc_attr($source); ?>" />
             <div class="d-grid">
                 <label class="font-sans" for="email">Email <?php if ($is_purpose_requiring_email) : ?><span class="required-indicator">*</span><?php endif; ?></label>
                 <input type="email" id="email" name="email" <?php echo $is_purpose_requiring_email ? 'required' : ''; ?> value="<?php echo isset($_POST['email']) ? esc_attr(sanitize_email($_POST['email'])) : ''; ?>">

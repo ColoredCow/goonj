@@ -101,7 +101,6 @@ class CollectionBaseService extends AutoSubscriber {
       $teamGroupContact = $teamGroupContacts->first();
 
       if (!$teamGroupContact) {
-        \Civi::log()->debug('no chapter team group found for user: ' . $userId);
         // @todo we should handle it in a better way.
         // if there is no chapter assigned to the contact
         // then ideally she should not see any collection camp which

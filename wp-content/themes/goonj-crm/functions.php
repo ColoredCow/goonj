@@ -130,6 +130,8 @@ function goonj_handle_user_identification_form() {
 
 	$purpose = $_POST['purpose'] ?? 'collection-camp-intent';
 	$target_id = $_POST['target_id'] ?? '';
+	$source = $_POST['source'] ?? '';
+
 
 	// Retrieve the email and phone number from the POST data
 	$email = $_POST['email'] ?? '';
@@ -192,6 +194,12 @@ function goonj_handle_user_identification_form() {
 				// Contact does not exist and the purpose is to do material contribution.
 				// Redirect to individual registration with option for volunteering.
 				case 'material-contribution':
+					$individual_volunteer_registration_form_path = sprintf(
+						'/individual-registration-with-volunteer-option/#?email=%s&phone=%s&source=%s',
+						$email,
+						$phone,
+						$source,
+					);
 					$redirect_url = $individual_volunteer_registration_form_path;
 					break;
 

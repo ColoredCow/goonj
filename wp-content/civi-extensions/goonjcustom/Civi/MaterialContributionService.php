@@ -133,7 +133,7 @@ class MaterialContributionService extends AutoSubscriber {
     <html>
       <body style="font-family: Arial, sans-serif;">
         <div style="text-align: center; margin-bottom: 16px;">
-          <img src="data:image/png;base64,{$imageData['logo']}" alt="Goonj Logo" style="width: 100px; height: 90px;">
+          <img src="data:image/png;base64,{$imageData['logo']}" alt="Goonj Logo" style="width: 95px; height: 80px;">
         </div>
         
         <div style="width: 100%; font-size: 14px;">
@@ -145,20 +145,19 @@ class MaterialContributionService extends AutoSubscriber {
           </div>
         </div>
         <br><br>
-        <div style="font-weight: bold; font-style: italic; margin-top: 22px; margin-bottom: 22px;">
+        <div style="font-weight: bold; font-style: italic; margin-top: 6px; margin-bottom: 6px;">
           "We appreciate your contribution of pre-used/new material. Goonj makes sure that the material reaches people with dignity and care."
         </div>
         <table border="1" cellpadding="10" cellspacing="0" style="width: 100%; border-collapse: collapse;">
           <style>
             .table-header {
-              background-color: #f2f2f2;
               text-align: left;
               font-weight: bold;
             }
           </style>
           <!-- Table rows for each item -->
           <tr>
-            <td class="table-header">Description of Material</td>
+            <td class="table-header">Description of Material *</td>
             <td style="text-align: center;">{$activity['subject']}</td>
           </tr>
           <tr>
@@ -190,27 +189,23 @@ class MaterialContributionService extends AutoSubscriber {
         </tr>
 
         </table>
-    
-        <div style="text-align: right; margin-top: 20px;">
+        <div style="text-align: right; font-size: 14px;">
           Team Goonj
         </div>
-        <div style="width: 100%; margin-top: 28px;">
-          <div style="float: left; width: 60%; font-size: 14px;">
-            <ul>
-              <li>Join us, by encouraging your friends, relatives, colleagues, and neighbours to join the journey as all of us have a lot to give.</li>
-              <li style="margin-top: 8px;">
-                <strong>With Material Money Matter!</strong> Your monetary contribution is needed too for sorting, packing, transportation to implementation.(Financial contributions are tax-exempted u/s 80G of IT Act)
-              </li>
-            </ul>
-          </div>
-          <div style="float: right; width: 40%; text-align: right; font-size: 14px; font-style: italic;">
-            To pay, scan the code on<br> your Paytm App.<br>
-            <img src="data:image/png;base64,{$imageData['qrCode']}" alt="QR Code" style="width: 80px; height: 70px;">
-          </div>
+        <div style="width: 100%; margin-top: 16px;">
+        <div style="float: left; width: 60%; font-size: 14px;">
+        <p>Join us, by encouraging your friends, relatives, colleagues, and neighbours to join the journey as all of us have a lot to give.</p>
+        <p style="margin-top: 8px;">
+        <strong>With Material Money Matter!</strong> Your monetary contribution is needed too for sorting, packing, transportation to implementation. (Financial contributions are tax-exempted u/s 80G of IT Act)
+      </p>
+      <p style="margin-top: 10px; font-size: 12px; float: left">* The received material holds 'No Commercial Value' for Goonj.</p>
+    </div>
+    <div style="float: right; width: 40%; text-align: right; font-size: 12px; font-style: italic;">
+    <p>To contribute, please scan the code.</p>
+    <img src="data:image/png;base64,{$imageData['qrCode']}" alt="QR Code" style="width: 80px; height: 70px; margin-top: 2px"></div>
         </div>
         <div style="clear: both; margin-top: 20px;"></div>
-    
-        <div style="width: 100%; margin-top: 15px; background-color: #f2f2f2; padding: 20px; font-weight: 300; color: #000000">
+        <div style="width: 100%; margin-top: 15px; background-color: #f2f2f2; padding: 16px; font-weight: 300; color: #000000">
           <div style="font-size: 14px; margin-bottom: 20px;">
             <div style="position: relative; height: 24px;">
               <div style="font-size: 14px; float: left; color:">
@@ -243,6 +238,7 @@ class MaterialContributionService extends AutoSubscriber {
             <a href="https://www.youtube.com/channel/UCCq8iYlmjT7rrgPI1VHzIHg" target="_blank"><img src="data:image/webp;base64,{$imageData['youtubeIcon']}" alt="YouTube" style="width: 24px; height: 24px; margin-right: 10px;"></a>
           </div>
         </div>
+        <p style="margin-bottom: 2px; text-align: center; font-size: 12px;">* This is a computer generated receipt, signature is not required.</p>
       </body>
     </html>
     HTML;
