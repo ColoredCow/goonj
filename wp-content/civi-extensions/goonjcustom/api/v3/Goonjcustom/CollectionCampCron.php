@@ -106,7 +106,7 @@ function goonjcustom_collection_camp_email_html($contactName, $collectionCampId,
   $homeUrl = get_home_url();
   // Construct the full URLs for the forms.
   $campVehicleDispatchFormUrl = $homeUrl . '/camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id=' . $collectionCampId . '&Camp_Vehicle_Dispatch.Filled_by=' . $recipientId . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice;
-  $campOutcomeFormUrl = $homeUrl . '/camp-outcome-form/';
+  $campOutcomeFormUrl = $homeUrl . '/camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $recipientId;
   $html = "
       <p>Dear $contactName,</p>
       <p>You have been selected as the Goonj user to attend the camp.</p>
