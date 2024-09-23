@@ -57,7 +57,21 @@ class CollectionBaseService extends AutoSubscriber {
     // URL for the camp outcome tab.
     $campOutcome = \CRM_Utils_System::url(
       "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fadmin-camp-outcome-form",
-    );    
+    );
+
+    // URL for the event volunteer tab.
+    $eventVolunteersUrl = \CRM_Utils_System::url(
+      "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fevent-volunteer",
+    );
+
+    // Add the event volunteer tab.
+    $tabs['eventVolunteers'] = [
+      'title' => ts('Event Volunteers'),
+      'link' => $eventVolunteersUrl,
+      'valid' => 1,
+      'active' => 1,
+      'current' => FALSE,
+    ];
 
     // Add the Contribution tab.
     $tabs['contribution'] = [
