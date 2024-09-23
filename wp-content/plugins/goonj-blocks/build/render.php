@@ -20,8 +20,9 @@ $register_link = sprintf(
 );
 
 $material_contribution_link = sprintf(
-	'/collection-camp-contribution?source=%s',
+	'/collection-camp-contribution?source=%s&target_id=%s',
 	$action_target['title'],
+	$action_target['id'],
 );
 
 $pu_visit_check_link = sprintf(
