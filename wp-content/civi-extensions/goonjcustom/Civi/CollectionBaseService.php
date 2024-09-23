@@ -19,6 +19,10 @@ class CollectionBaseService extends AutoSubscriber {
   const INTENT_CUSTOM_GROUP_NAME = 'Collection_Camp_Intent_Details';
 
   private static $stateCustomFieldDbDetails = [];
+  private static $initiatorId = NULL;
+  private static $currentStatus = NULL;
+  private static $newStatus = NULL;
+  private static $subType = Null;
 
   /**
    *
@@ -28,9 +32,7 @@ class CollectionBaseService extends AutoSubscriber {
       '&hook_civicrm_tabset' => 'collectionBaseTabset',
       '&hook_civicrm_selectWhereClause' => 'aclCollectionCamp',
       '&hook_civicrm_pre' => 'handleAuthorizationEmails',
-      // '&hook_civicrm_custom' => [
-      //   ['volunteerInductionAssignee'],
-      // ],
+      // '&hook_civicrm_post' => 'getPosterDetails',
     ];
   }
 
@@ -211,13 +213,14 @@ class CollectionBaseService extends AutoSubscriber {
    *   The reference to the object.
    */
   public static function handleAuthorizationEmails(string $op, string $objectName, $objectId, &$objectRef) {
-    \Civi::log()->info('debugging1', ['debugging1'=>$op, 'onjectname'=>$objectName, 'objectId'=>$objectId, 'ref'=>$objectRef ]);
+
+
     if ($objectName != 'Eck_Collection_Camp' || !$objectId) {
       return;
     }
 
-    $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
-    $subType = $objectRef['subtype'] ?? '';
+    self::$newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
+    self::$subType = $objectRef['subtype'] ?? '';
 
     if (!$newStatus) {
       return;
@@ -227,24 +230,39 @@ class CollectionBaseService extends AutoSubscriber {
       ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id', 'Collection_Camp_Core_Details.Poster')
       ->addWhere('id', '=', $objectId)
       ->execute()->single();
-    \Civi::log()->info('currentCollectionCamp',['currentCollectionCamp'=>$currentCollectionCamp]);
-    $currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
-    $initiatorId = $currentCollectionCamp['Collection_Camp_Core_Details.Contact_Id'];
-    $posterId = $currentCollectionCamp['Collection_Camp_Core_Details.Poster'];
+    // \Civi::log()->info('currentCollectionCamp',['currentCollectionCamp'=>$currentCollectionCamp]);
+    self::$currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
+    self::$initiatorId = $currentCollectionCamp['Collection_Camp_Core_Details.Contact_Id'];
 
+    if (!empty($objectRef['Collection_Camp_Core_Details.Poster'])) {
+      \Civi::log()->info('debugging1', ['debugging1'=>$op, 'onjectname'=>$objectName, 'objectId'=>$objectId, 'ref'=>$objectRef ]);
+        $fileId = $objectRef['Collection_Camp_Core_Details.Poster']?? '';  // This gives you the file ID (90)
+        
+        // Further checking if the file details exist in the custom array
+        if (!empty($objectRef['custom'][337])) {// This gives you the actual file name
+            
+            \Civi::log()->info('Poster File Details', [
+                'file_id' => $fileId,
+                'file_name' => $fileName,
+            ]);
+        } else {
+            \Civi::log()->info('Poster details not found in custom array');
+        }
+    } else {
+        \Civi::log()->info('Collection_Camp_Core_Details.Poster not set in ref');
+    }
     // Check for status change.
-    if ($currentStatus !== $newStatus) {
-      self::sendAuthorizationEmail($initiatorId, $objectRef, $newStatus, $posterId);
+    if (self::$currentStatus !== self::$newStatus) {
+      self::sendAuthorizationEmail(self::$initiatorId, self::$subType, $newStatus, $fileId);
     }
   }
 
   /**
    * Send Authorization Email to contact.
    */
-  private static function sendAuthorizationEmail($initiatorId, $collectionCampPre, $status, $posterId) {
+  private static function sendAuthorizationEmail($initiatorId, $subType, $status, $posterId) {
     \Civi::log()->info('collectionCampPre',['collectionCampPre'=>$collectionCampPre, 'poster'=>$posterId]);
     try {
-      $subtype = $collectionCampPre['subtype'];
 
       $templateId = self::getMessageTemplateId($subtype, $status);
 
@@ -296,7 +314,36 @@ class CollectionBaseService extends AutoSubscriber {
     return $messageTemplate['id'];
   }
 
-  // public static function getPosterDetails($op, $groupID, $entityID, &$params){
-  //   \Civi::log()->info('debugging2', ['debugging2'=>$op, 'groupId'=>$groupID, 'entityId'=>$entityID, 'params'=>$params]);
+/**
+ * Implements hook_civicrm_post().
+ *
+ * This hook will be triggered after the file is saved.
+ *
+ * @param string $op
+ *   The type of operation being performed (e.g., 'create', 'edit', 'delete').
+ * @param string $objectName
+ *   The name of the entity (e.g., 'File').
+ * @param int $objectId
+ *   The unique ID of the entity being modified.
+ * @param array $params
+ *   Array of parameters for the entity.
+ */
+public static function getPosterDetails($op, $objectName, $objectId, &$objectRef) {
+  \Civi::log()->info('op',['op'=>$op, 'objectName'=>$objectName, 'objectId' =>$objectId, 'objectref'=>$objectRef]);
+  // Check if the entity being processed is a File and it's created.
+  // if ($objectName == 'File' && $op == 'create') {
+  //   // Fetch the file details.
+  //   $fileDetails = civicrm_api3('File', 'get', [
+  //     'sequential' => 1,
+  //     'id' => $objectId,
+  //   ]);
+
+  //   if (!empty($fileDetails['values'])) {
+  //     $file = $fileDetails['values'][0];
+
+  //     // Now you can send the email with the file as an attachment.
+  //     sendAuthorizationEmailWithAttachment($file);
+  //   }
   // }
+}
 }
