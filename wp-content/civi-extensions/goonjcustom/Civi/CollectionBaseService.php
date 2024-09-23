@@ -28,6 +28,9 @@ class CollectionBaseService extends AutoSubscriber {
       '&hook_civicrm_tabset' => 'collectionBaseTabset',
       '&hook_civicrm_selectWhereClause' => 'aclCollectionCamp',
       '&hook_civicrm_pre' => 'handleAuthorizationEmails',
+      // '&hook_civicrm_custom' => [
+      //   ['volunteerInductionAssignee'],
+      // ],
     ];
   }
 
@@ -208,6 +211,7 @@ class CollectionBaseService extends AutoSubscriber {
    *   The reference to the object.
    */
   public static function handleAuthorizationEmails(string $op, string $objectName, $objectId, &$objectRef) {
+    \Civi::log()->info('debugging1', ['debugging1'=>$op, 'onjectname'=>$objectName, 'objectId'=>$objectId, 'ref'=>$objectRef ]);
     if ($objectName != 'Eck_Collection_Camp' || !$objectId) {
       return;
     }
@@ -220,23 +224,25 @@ class CollectionBaseService extends AutoSubscriber {
     }
 
     $currentCollectionCamp = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id')
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id', 'Collection_Camp_Core_Details.Poster')
       ->addWhere('id', '=', $objectId)
       ->execute()->single();
-
+    \Civi::log()->info('currentCollectionCamp',['currentCollectionCamp'=>$currentCollectionCamp]);
     $currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
     $initiatorId = $currentCollectionCamp['Collection_Camp_Core_Details.Contact_Id'];
+    $posterId = $currentCollectionCamp['Collection_Camp_Core_Details.Poster'];
 
     // Check for status change.
     if ($currentStatus !== $newStatus) {
-      self::sendAuthorizationEmail($initiatorId, $objectRef, $newStatus);
+      self::sendAuthorizationEmail($initiatorId, $objectRef, $newStatus, $posterId);
     }
   }
 
   /**
    * Send Authorization Email to contact.
    */
-  private static function sendAuthorizationEmail($initiatorId, $collectionCampPre, $status) {
+  private static function sendAuthorizationEmail($initiatorId, $collectionCampPre, $status, $posterId) {
+    \Civi::log()->info('collectionCampPre',['collectionCampPre'=>$collectionCampPre, 'poster'=>$posterId]);
     try {
       $subtype = $collectionCampPre['subtype'];
 
@@ -290,4 +296,7 @@ class CollectionBaseService extends AutoSubscriber {
     return $messageTemplate['id'];
   }
 
+  // public static function getPosterDetails($op, $groupID, $entityID, &$params){
+  //   \Civi::log()->info('debugging2', ['debugging2'=>$op, 'groupId'=>$groupID, 'entityId'=>$entityID, 'params'=>$params]);
+  // }
 }
