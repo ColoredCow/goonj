@@ -54,7 +54,7 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
   $todayFormatted = $today->format('Y-m-d');
 
   $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
-    ->addSelect('Logistics_Coordination.Camp_to_be_attended_by', 'Collection_Camp_Intent_Details.End_Date')
+    ->addSelect('Logistics_Coordination.Camp_to_be_attended_by', 'Collection_Camp_Intent_Details.End_Date', 'Logistics_Coordination.Email_Sent')
     ->addWhere('subtype', '=', $collectionCampSubtype)
     ->addWhere('Collection_Camp_Intent_Details.End_Date', '<=', $endOfDay)
     ->addWhere('Logistics_Coordination.Camp_to_be_attended_by', 'IS NOT EMPTY')
@@ -65,6 +65,12 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
     $endDate = new DateTime($camp['Collection_Camp_Intent_Details.End_Date']);
     $collectionCampId = $camp['id'];
     $endDateFormatted = $endDate->format('Y-m-d');
+    $emailSentFlag = $camp['Logistics_Coordination.Email_Sent'];
+    // Check if the email was already sent.
+    if ($emailSentFlag == 1) {
+      // Skip sending email if it has already been sent for this camp.
+      continue;
+    }
     $collectionCamp = EckEntity::get('Collection_Camp', TRUE)
       ->addSelect('Collection_Camp_Intent_Details.Goonj_Office', 'Collection_Camp_Core_Details.Contact_Id')
       ->addWhere('id', '=', $collectionCampId)
@@ -126,8 +132,19 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
         // 'messageTemplateID' => 76, // Uncomment if using a message template
       ];
       $result = CRM_Utils_Mail::send($mailParams);
+
+      if ($result) {
+        // Collect the camp ID.
+        $campIdsToUpdate[] = $collectionCampId;
+
+        $results = EckEntity::update('Collection_Camp', TRUE)
+          ->addValue('Logistics_Coordination.Email_Sent', 1)
+          ->addWhere('id', '=', $collectionCampId)
+          ->execute();
+      }
     }
   }
+
   return civicrm_api3_create_success($returnValues, $params, 'Goonjcustom', 'collection_camp_cron');
 }
 
