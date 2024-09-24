@@ -9,10 +9,23 @@ use Civi\Core\Service\AutoSubscriber;
  *
  */
 class MaterialContributionService extends AutoSubscriber {
-  // See: CiviCRM > Administer > Communications > Schedule Reminders.
-  const CONTRIBUTION_RECEIPT_REMINDER_ID = 6;
-
   const ACTIVITY_SOURCE_RECORD_TYPE_ID = 2;
+
+  /**
+   * Fetch the Material Contribution Receipt Reminder ID.
+   */
+  public static function getContributionReceiptReminderId() {
+    try {
+      $materialContributionReceiptReminder = \Civi\Api4\ActionSchedule::get(TRUE)
+        ->addWhere('name', '=', 'Material_Contribution_Receipt')
+        ->execute()->single();
+          
+      return $materialContributionReceiptReminder['id'];
+    } catch (\Exception $e) {
+      \CRM_Core_Error::debug_log_message('Error fetching Contribution Receipt Reminder ID: ' . $e->getMessage());
+      return NULL;
+    }
+  }
 
   /**
    *
@@ -32,8 +45,9 @@ class MaterialContributionService extends AutoSubscriber {
     }
 
     $reminderId = (int) $params['entity_id'];
+    $contributionReceiptReminderId = self::getContributionReceiptReminderId();
 
-    if ($context !== 'singleEmail' || $reminderId !== self::CONTRIBUTION_RECEIPT_REMINDER_ID) {
+    if ($context !== 'singleEmail' || $reminderId !== $contributionReceiptReminderId) {
       return;
     }
 

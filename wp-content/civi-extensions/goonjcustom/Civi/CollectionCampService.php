@@ -6,6 +6,7 @@ require_once __DIR__ . '/../../../../wp-content/civi-extensions/goonjcustom/vend
 
 use chillerlan\QRCode\QRCode;
 use chillerlan\QRCode\QROptions;
+use Civi\Afform\Event\AfformSubmitEvent;
 use Civi\Api4\Activity;
 use Civi\Api4\Contact;
 use Civi\Api4\CustomField;
@@ -15,6 +16,7 @@ use Civi\Api4\GroupContact;
 use Civi\Api4\OptionValue;
 use Civi\Api4\Relationship;
 use Civi\Api4\StateProvince;
+use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
 
 /**
@@ -23,8 +25,10 @@ use Civi\Core\Service\AutoSubscriber;
 class CollectionCampService extends AutoSubscriber {
   const FALLBACK_OFFICE_NAME = 'Delhi';
   const RELATIONSHIP_TYPE_NAME = 'Collection Camp Coordinator of';
+  const COLLECTION_CAMP_INTENT_FB_NAME = 'afformCollectionCampIntentDetails';
 
   private static $individualId = NULL;
+  private static $collectionCampAddress = NULL;
 
   /**
    *
@@ -46,7 +50,73 @@ class CollectionCampService extends AutoSubscriber {
         ['linkInductionWithCollectionCamp'],
       ],
       '&hook_civicrm_fieldOptions' => 'setIndianStateOptions',
+      'civi.afform.submit' => [
+        ['setCollectionCampAddress', 9],
+        ['setEventVolunteersAddress', 8],
+      ],
     ];
+  }
+
+  /**
+   *
+   */
+  public static function setCollectionCampAddress(AfformSubmitEvent $event) {
+    $afform = $event->getAfform();
+    $formName = $afform['name'];
+
+    if ($formName !== self::COLLECTION_CAMP_INTENT_FB_NAME) {
+      return;
+    }
+
+    $entityType = $event->getEntityType();
+
+    if ($entityType !== 'Eck_Collection_Camp') {
+      return;
+    }
+
+    $records = $event->records;
+
+    foreach ($records as $record) {
+      $fields = $record['fields'];
+
+      self::$collectionCampAddress = [
+        'location_type_id' => 3,
+        'state_province_id' => $fields['Collection_Camp_Intent_Details.State'],
+      // India.
+        'country_id' => 1101,
+        'street_address' => $fields['Collection_Camp_Intent_Details.Location_Area_of_camp'],
+        'city' => $fields['Collection_Camp_Intent_Details.City'],
+        'postal_code' => $fields['Collection_Camp_Intent_Details.Pin_Code'],
+        'is_primary' => 1,
+      ];
+    }
+  }
+
+  /**
+   *
+   */
+  public static function setEventVolunteersAddress(AfformSubmitEvent $event) {
+    $afform = $event->getAfform();
+    $formName = $afform['name'];
+
+    if ($formName !== self::COLLECTION_CAMP_INTENT_FB_NAME) {
+      return;
+    }
+
+    $entityType = $event->getEntityType();
+
+    if (!CoreUtil::isContact($entityType)) {
+      return;
+    }
+
+    foreach ($event->records as $index => $contact) {
+      if (empty($contact['fields'])) {
+        continue;
+      }
+
+      $event->records[$index]['joins']['Address'][] = self::$collectionCampAddress;
+    }
+
   }
 
   /**
