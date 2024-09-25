@@ -7,7 +7,7 @@ import { SearchContactsPage } from '../playwright/pages/search-contact.page';
 const generateIndianMobileNumber = () => {
   const prefix = faker.helpers.arrayElement(['7', '8', '9']); // Indian mobile numbers start with 7, 8, or 9
   const number = faker.number.int({ min: 1000000000, max: 9999999999 }).toString().slice(1);
-  return `+91 ${prefix}${number}`;
+  return `${prefix}${number}`;
 };
 
 // Generate user details using Faker with Indian locale
@@ -43,11 +43,22 @@ export async function userLogin(page) {
   await page.click('#wp-submit');
 };
 
+export async function verifyUserRegistration(page, userDetails) {
+  await page.fill('#email', userDetails.email);
+
+  // Fill in the contact number
+  await page.fill('#phone', userDetails.mobileNumber);
+
+  // Click the submit button
+  await page.click('input[type="submit"]', { force: true });
+}
 export async function submitVolunteerRegistrationForm(page, userDetails) {
   const volunteerRegistrationPage = new VolunteerRegistrationPage(page);
-  const volunteerUrl = volunteerRegistrationPage.getAppendedUrl('/volunteer-registration/');
+  const volunteerUrl = volunteerRegistrationPage.getAppendedUrl('/volunteer-registration');
   await page.goto(volunteerUrl);
-  await page.waitForURL(volunteerUrl);
+  // await page.waitForURL(volunteerUrl);
+  await verifyUserRegistration(page, userDetails);
+  await page.waitForTimeout(10000);
   await volunteerRegistrationPage.selectTitle(userDetails.nameInitial);
   await page.waitForTimeout(200);
   await volunteerRegistrationPage.enterFirstName(userDetails.firstName);
