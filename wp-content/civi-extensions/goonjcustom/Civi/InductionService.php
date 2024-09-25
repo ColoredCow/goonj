@@ -75,6 +75,11 @@ class InductionService extends AutoSubscriber {
    * Common logic for creating an induction.
    */
   private static function createInduction($contactId) {
+    if (self::inductionExists($contactId)) {
+      \Civi::log()->info('Induction already exists for contact', ['id' => $contactId]);
+      return FALSE;
+    }
+
     $contact = Contact::get(TRUE)
       ->addSelect('address.state_province_id')
       ->addJoin('Address AS address', 'LEFT')
@@ -181,6 +186,11 @@ class InductionService extends AutoSubscriber {
    * Common logic to send an email.
    */
   private static function sendInductionEmail($contactId) {
+    if (self::emailAlreadySent($contactId)) {
+      \Civi::log()->info('Induction email already sent for contact', ['id' => $contactId]);
+      return FALSE;
+    }
+
     $template = MessageTemplate::get(FALSE)
       ->addWhere('msg_title', 'LIKE', 'New_Volunteer_Registration%')
       ->setLimit(1)
@@ -308,6 +318,36 @@ class InductionService extends AutoSubscriber {
     }
 
     return $inductionOfficeFieldValues;
+  }
+
+  /**
+   * Check if induction activity already exists for the contact.
+   */
+  private static function inductionExists($contactId) {
+    $inductionActivity = Activity::get(FALSE)
+      ->addWhere('activity_type_id:name', '=', self::INDUCTION_ACTIVITY_TYPE_NAME)
+      ->addWhere('status_id:name', '!=', 'Cancelled')
+      ->addWhere('target_contact_id', '=', $contactId)
+      ->setLimit(1)
+      ->execute();
+
+    return $inductionActivity->count() > 0;
+  }
+
+  /**
+   * Check if induction email has already been sent.
+   * Adjust the logic based on actual email activity type.
+   */
+  private static function emailAlreadySent($contactId) {
+    \Civi::log()->info('contact', ['contact' => $contactId]);
+    $volunteerEmailActivity = Activity::get(FALSE)
+      ->addWhere('activity_type_id:name', '=', 'Email')
+      ->addWhere('subject', 'LIKE', '%Volunteering with Goonj%')
+      ->addWhere('target_contact_id', '=', $contactId)
+      ->setLimit(1)
+      ->execute();
+
+    return $volunteerEmailActivity->count() > 0;
   }
 
 }
