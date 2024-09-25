@@ -28,7 +28,9 @@ class InductionService extends AutoSubscriber {
       '&hook_civicrm_post' => [
             ['volunteerCreated'],
             ['createInductionForVolunteer'],
+            ['createInductionForIndividual'],
             ['sendInductionEmailToVolunteer'],
+            ['sendInductionEmailToIndividual']
       ],
       '&hook_civicrm_custom' => [
         ['volunteerInductionAssignee'],
@@ -265,6 +267,133 @@ class InductionService extends AutoSubscriber {
 
     $emailParams = [
       'contact_id' => self::$volunteerId,
+      'template_id' => $template['id'],
+      'cc' => self::$volunteerInductionAssigneeEmail,
+    ];
+
+    $result = civicrm_api3('Email', 'send', $emailParams);
+
+  }
+
+    /**
+   *
+   */
+  public static function createInductionForIndividual(string $op, string $objectName, int $objectId, &$objectRef) {
+    \Civi::log()->info('debug before', ['op'=>$op, 'objecname'=>$objectName, 'objectId'=>$objectId, 'objectRef'=>$objectRef]);
+    if ($op !== 'edit' || $objectName !== 'Individual') {
+      return FALSE;
+    }
+    \Civi::log()->info('debug after', ['op'=>$op, 'objecname'=>$objectName, 'objectId'=>$objectId, 'objectRef'=>$objectRef]);
+    \Civi::log()->info('Address created: ', [
+      'id' => $objectId,
+      'volunteer' => self::$volunteerId,
+      'contactId' => $objectRef->contact_id,
+      'isPrimary' => $objectRef->is_primary,
+    ]);
+
+    $contacts = Contact::get(TRUE)
+      ->addSelect('address.state_province_id')
+      ->addJoin('Address AS address', 'LEFT')
+      ->addWhere('id', '=', $objectId)
+      ->execute()->single();
+
+    $stateId = $contacts['address.state_province_id'];
+    if(!$stateId){
+      return FALSE;
+    }
+
+    $officesFound = Contact::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('contact_type', '=', 'Organization')
+      ->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_Office')
+      ->addWhere('Goonj_Office_Details.Induction_Catchment', 'CONTAINS', $stateId)
+      ->execute();
+
+    $office = $officesFound->first();
+
+
+    $officeId = $office['id'];
+
+    $coordinators = Relationship::get(FALSE)
+      ->addWhere('contact_id_b', '=', $officeId)
+      ->addWhere('relationship_type_id:name', '=', self::RELATIONSHIP_TYPE_NAME)
+      ->execute();
+
+    $coordinatorCount = $coordinators->count();
+
+    if ($coordinatorCount > 1) {
+      $randomIndex = rand(0, $coordinatorCount - 1);
+      $coordinator = $coordinators->itemAt($randomIndex);
+    }
+    else {
+      $coordinator = $coordinators->first();
+    }
+
+    $coordinatorId = $coordinator['contact_id_a'];
+
+    $session = \CRM_Core_Session::singleton();
+    $currentUserId = $session->get('userID') ?: $objectId;
+
+    $sourceContactId = $currentUserId;
+    $targetContactId = ($currentUserId === $objectId) ? $currentUserId : $objectId;
+
+    $placeholderActivityDate = self::getPlaceholderActivityDate();
+
+    \Civi::log()->info('Before induction activity create: ', [
+      'id' => $objectId,
+      'source' => $sourceContactId,
+      'target' => $targetContactId,
+      'coordinator' => $coordinatorId,
+      'officeId' => $officeId,
+    ]);
+
+    Activity::create(FALSE)
+      ->addValue('activity_type_id:name', self::INDUCTION_ACTIVITY_TYPE_NAME)
+      ->addValue('status_id:name', self::INDUCTION_DEFAULT_STATUS_NAME)
+      ->addValue('source_contact_id', $sourceContactId)
+      ->addValue('target_contact_id', $targetContactId)
+      ->addValue('Induction_Fields.Assign', $coordinatorId)
+      ->addValue('activity_date_time', $placeholderActivityDate)
+      ->addValue('Induction_Fields.Goonj_Office', $officeId)
+      ->execute();
+  }
+
+
+
+  /**
+   *
+   */
+  public static function sendInductionEmailToIndividual(string $op, string $objectName, int $objectId, &$objectRef) {
+    if ($op !== 'edit' || $objectName !== 'Individual') {
+      return FALSE;
+    }
+    $contacts = Contact::get(TRUE)
+      ->addSelect('address.state_province_id')
+      ->addJoin('Address AS address', 'LEFT')
+      ->addWhere('id', '=', $objectId)
+      ->execute()->single();
+
+    $stateId = $contacts['address.state_province_id'];
+    if(!$stateId){
+      return FALSE;
+    }
+    $activities = Activity::get(FALSE)
+      ->addSelect('activity_type_id:label')
+      ->addWhere('target_contact_id', '=', $objectId)
+      ->execute();
+    \Civi::log()->info('activities', ['activites'=>$activities]);
+    foreach($activities as $activitie){
+      if($activitie['activity_type_id:label'] === 'Email'){
+        return FALSE;
+      }
+    }
+    $template = MessageTemplate::get(FALSE)
+      ->addWhere('msg_title', 'LIKE', 'New_Volunteer_Registration%')
+      ->setLimit(1)
+      ->execute()->single();
+
+    $emailParams = [
+      'contact_id' => $objectId,
       'template_id' => $template['id'],
       'cc' => self::$volunteerInductionAssigneeEmail,
     ];
