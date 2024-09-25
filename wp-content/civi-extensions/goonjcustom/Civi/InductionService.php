@@ -339,7 +339,7 @@ class InductionService extends AutoSubscriber {
    * Adjust the logic based on actual email activity type.
    */
   private static function emailAlreadySent($contactId) {
-    \Civi::log()->info('contact', ['contact' => $contactId]);
+
     $volunteerEmailActivity = Activity::get(FALSE)
       ->addWhere('activity_type_id:name', '=', 'Email')
       ->addWhere('subject', 'LIKE', '%Volunteering with Goonj%')
