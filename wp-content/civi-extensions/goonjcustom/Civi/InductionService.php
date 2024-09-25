@@ -28,9 +28,9 @@ class InductionService extends AutoSubscriber {
       '&hook_civicrm_post' => [
             ['volunteerCreated'],
             ['createInductionForVolunteer'],
-            ['createInductionForIndividual'],
+            ['createVolunteerInductionOnTransition'],
             ['sendInductionEmailToVolunteer'],
-            ['sendInductionEmailToIndividual'],
+            ['sendInductionEmailOnTransition'],
       ],
       '&hook_civicrm_custom' => [
         ['volunteerInductionAssignee'],
@@ -139,7 +139,7 @@ class InductionService extends AutoSubscriber {
   /**
    * Handles induction creation for an individual.
    */
-  public static function createInductionForIndividual(string $op, string $objectName, int $objectId, &$objectRef) {
+  public static function createVolunteerInductionOnTransition(string $op, string $objectName, int $objectId, &$objectRef) {
     if ($op !== 'edit' || $objectName !== 'Individual') {
       return FALSE;
     }
@@ -224,7 +224,7 @@ class InductionService extends AutoSubscriber {
   /**
    * Handles sending induction email to an individual.
    */
-  public static function sendInductionEmailToIndividual(string $op, string $objectName, int $objectId, &$objectRef) {
+  public static function sendInductionEmailOnTransition(string $op, string $objectName, int $objectId, &$objectRef) {
     if ($op !== 'edit' || $objectName !== 'Individual') {
       return;
     }
