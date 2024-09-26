@@ -80,7 +80,7 @@ class InductionService extends AutoSubscriber {
       return FALSE;
     }
 
-    $contact = Contact::get(TRUE)
+    $contact = Contact::get(FALSE)
       ->addSelect('address.state_province_id')
       ->addJoin('Address AS address', 'LEFT')
       ->addWhere('id', '=', $contactId)
