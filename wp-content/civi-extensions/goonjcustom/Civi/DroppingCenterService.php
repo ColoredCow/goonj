@@ -47,6 +47,10 @@ class DroppingCenterService extends AutoSubscriber {
       "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fdropping-center%2Flogistics-coordination",
     );
 
+    $outcome = \CRM_Utils_System::url(
+      "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fdropping-center-outcome",
+    );
+
     // Add the Status tab.
     $tabs['status'] = [
       'title' => ts('Status'),
@@ -65,7 +69,7 @@ class DroppingCenterService extends AutoSubscriber {
       'current' => FALSE,
     ];
 
-     // Add the Donation Box/Register Tracking tab.
+    // Add the Donation Box/Register Tracking tab.
     $tabs['donation tracking'] = [
       'title' => ts('Donation Tracking'),
       'link' => $donationTrackingUrl,
@@ -78,6 +82,15 @@ class DroppingCenterService extends AutoSubscriber {
     $tabs['logistics coordination'] = [
       'title' => ts('Logistics Coordination'),
       'link' => $logisticsCoordinationUrl,
+      'valid' => 1,
+      'active' => 1,
+      'current' => FALSE,
+    ];
+
+    // Add the outcome tab.
+    $tabs['outcome'] = [
+      'title' => ts('Outcome'),
+      'link' => $outcome,
       'valid' => 1,
       'active' => 1,
       'current' => FALSE,

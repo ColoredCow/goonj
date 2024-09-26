@@ -317,7 +317,7 @@ function goonj_handle_user_identification_form() {
 		//   2. Change volunteer status to "Waiting for Induction"
 		if ( ! goonj_is_volunteer_inducted( $found_contacts ) ) {
 			if ($purpose === 'dropping-center') {
-				$redirect_url = home_url('/dropping-centre-waiting-induction/');
+				$redirect_url = home_url('/dropping-center/waiting-induction/');
 			} elseif ($purpose === 'volunteer-registration') {
 				$redirect_url = home_url('/volunteer-registration/waiting-induction/');
 			} else {

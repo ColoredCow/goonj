@@ -66,10 +66,23 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
     $collectionCampId = $camp['id'];
     $endDateFormatted = $endDate->format('Y-m-d');
     $collectionCamp = EckEntity::get('Collection_Camp', TRUE)
-      ->addSelect('Collection_Camp_Intent_Details.Goonj_Office')
+      ->addSelect('Collection_Camp_Intent_Details.Goonj_Office', 'Collection_Camp_Core_Details.Contact_Id')
       ->addWhere('id', '=', $collectionCampId)
       ->execute()->single();
     $collectionCampGoonjOffice = $collectionCamp['Collection_Camp_Intent_Details.Goonj_Office'];
+    $initiatorId = $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
+
+    $initiatorEmail = Email::get(TRUE)
+      ->addWhere('contact_id', '=', $initiatorId)
+      ->execute()->single();
+
+    $contactEmailId = $initiatorEmail['email'];
+
+    $initiator = Contact::get(TRUE)
+      ->addWhere('id', '=', $initiatorId)
+      ->execute()->single();
+
+    $organizingContactName = $initiator['display_name'];
 
     $email = Email::get(TRUE)
       ->addWhere('contact_id', '=', $recipientId)
@@ -83,7 +96,26 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
 
     $contactName = $contact['display_name'];
 
+    $fromEmail = OptionValue::get(FALSE)
+    ->addSelect('label')
+    ->addWhere('option_group_id:name', '=', 'from_email_address')
+    ->addWhere('is_default', '=', TRUE)
+    ->execute()->single();
+
     // Only send the email if the end date is exactly today.
+    if ($endDateFormatted <= $todayFormatted) {
+      $mailParams = [
+        'subject' => 'Volunteer Feedback Form',
+        'from' => $fromEmail['label'],
+        'toEmail' => $contactEmailId,
+        'replyTo' => $fromEmail['label'],
+        'html' => goonjcustom_collection_camp_volunteer_feedback_email_html($organizingContactName, $collectionCampId),
+        // 'messageTemplateID' => 76, // Uncomment if using a message template
+      ];
+      $result = CRM_Utils_Mail::send($mailParams);
+    }
+
+    // Only send the email if the end date is lower than today.
     if ($endDateFormatted <= $todayFormatted) {
       $mailParams = [
         'subject' => 'Collections Completion Notification',
@@ -103,9 +135,9 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
  *
  */
 function goonjcustom_collection_camp_email_html($contactName, $collectionCampId, $recipientId, $collectionCampGoonjOffice) {
-  $homeUrl = get_home_url();
+  $homeUrl = \CRM_Utils_System::baseCMSURL();
   // Construct the full URLs for the forms.
-  $campVehicleDispatchFormUrl = $homeUrl . '/camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id=' . $collectionCampId . '&Camp_Vehicle_Dispatch.Filled_by=' . $recipientId . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice;
+  $campVehicleDispatchFormUrl = $homeUrl . 'camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id=' . $collectionCampId . '&Camp_Vehicle_Dispatch.Filled_by=' . $recipientId . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice;
   $campOutcomeFormUrl = $homeUrl . '/camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $recipientId;
   $html = "
       <p>Dear $contactName,</p>
@@ -114,6 +146,24 @@ function goonjcustom_collection_camp_email_html($contactName, $collectionCampId,
       <ul>
         <li><a href=\"$campVehicleDispatchFormUrl\">Camp Vehicle Dispatch Form</a></li>
         <li><a href=\"$campOutcomeFormUrl\">Camp Outcome Form</a></li>
+      </ul>
+      <p>Warm regards,</p>";
+  return $html;
+}
+
+/**
+ *
+ */
+function goonjcustom_collection_camp_volunteer_feedback_email_html($organizingContactName, $collectionCampId) {
+  $homeUrl = \CRM_Utils_System::baseCMSURL();
+  // URL for the volunteer feedback form.
+  $campVolunteerFeedback = $homeUrl . 'volunteer-camp-feedback/#?Eck_Collection_Camp1=' . $collectionCampId;
+  $html = "
+      <p>Dear $organizingContactName,</p>
+      <p>Thank you for successfully completing your Collection Camp.</p>
+      <p>We would appreciate your feedback. Please use the link below to fill out the Volunteer Camp Feedback Form:</p>
+      <ul>
+        <li><a href=\"$campVolunteerFeedback\">Volunteer Camp Feedback Form</a></li>
       </ul>
       <p>Warm regards,</p>";
   return $html;

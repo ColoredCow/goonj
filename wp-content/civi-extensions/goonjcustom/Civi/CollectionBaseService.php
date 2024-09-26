@@ -24,6 +24,7 @@ class CollectionBaseService extends AutoSubscriber {
   private static $collectionAuthorized = NULL;
   private static $collectionAuthorizedStatus = NULL;
   private static $authorizationEmailQueued = NULL;
+  private static $generatePosterRequest = NULL;
 
   /**
    *
@@ -32,9 +33,145 @@ class CollectionBaseService extends AutoSubscriber {
     return [
       '&hook_civicrm_tabset' => 'collectionBaseTabset',
       '&hook_civicrm_selectWhereClause' => 'aclCollectionCamp',
-      '&hook_civicrm_pre' => 'handleAuthorizationEmails',
-      '&hook_civicrm_post' => 'handleAuthorizationEmailsPost',
+      '&hook_civicrm_pre' => [['handleAuthorizationEmails'], ['checkIfPosterNeedsToBeGenerated']],
+      '&hook_civicrm_post' => [['handleAuthorizationEmailsPost'], ['maybeGeneratePoster']],
     ];
+  }
+
+  /**
+   *
+   */
+  public static function checkIfPosterNeedsToBeGenerated($op, $objectName, $id, &$params) {
+    if ($objectName !== 'Eck_Collection_Camp' || $op !== 'edit') {
+      return;
+    }
+
+    if (!($messageTemplateId = $params['Collection_Camp_Core_Details.Poster_Template'])) {
+      return;
+    }
+
+    $currentCollectionSource = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect('Collection_Camp_Core_Details.Poster',)
+      ->addWhere('id', '=', $id)
+      ->execute()->single();
+
+    $posterExists = !is_null($currentCollectionSource['Collection_Camp_Core_Details.Poster']);
+
+    if ($posterExists) {
+      return;
+    }
+
+    self::$generatePosterRequest = [
+      'collectionSourceId' => $currentCollectionSource['id'],
+      'messageTemplateId' => $messageTemplateId,
+    ];
+
+  }
+
+  /**
+   *
+   */
+  public static function maybeGeneratePoster(string $op, string $objectName, int $objectId, &$objectRef) {
+    if (!self::$generatePosterRequest || $objectName !== 'Eck_Collection_Camp' || $op !== 'edit') {
+      return;
+    }
+
+    $collectionSourceId = self::$generatePosterRequest['collectionSourceId'];
+    $messageTemplateId = self::$generatePosterRequest['messageTemplateId'];
+
+    $messageTemplate = MessageTemplate::get(FALSE)
+      ->addWhere('id', '=', $messageTemplateId)
+      ->execute()->single();
+    $html = $messageTemplate['msg_html'];
+
+    // Regular expression to find <style>...</style> and replace it with {literal}<style>...</style>{/literal}.
+    $pattern = '/<style\b[^>]*>(.*?)<\/style>/is';
+    $replacement = '{literal}<style>$1</style>{/literal}';
+
+    // Perform the replacement.
+    $modifiedHtml = preg_replace($pattern, $replacement, $html);
+
+    $pattern = '/<script\b[^>]*>(.*?)<\/script>/is';
+    $replacement = '{literal}<script>$1</script>{/literal}';
+
+    $modifiedHtml = preg_replace($pattern, $replacement, $modifiedHtml);
+
+    $rendered = \CRM_Core_TokenSmarty::render(
+    ['html' => $modifiedHtml],
+    ['collectionSourceId' => $collectionSourceId],
+    );
+
+    $baseFileName = "poster_{$collectionSourceId}.png";
+    $fileName = \CRM_Utils_File::makeFileName($baseFileName);
+    $tempFilePath = \CRM_Utils_File::tempnam($baseFileName);
+
+    $posterGenerated = self::html2image($rendered['html'], $tempFilePath);
+
+    if (!$posterGenerated) {
+      \Civi::log()->info('There was an error generating the poster!');
+      return;
+    }
+
+    try {
+      $posterField = CustomField::get(FALSE)
+        ->addSelect('id')
+        ->addWhere('custom_group_id:name', '=', 'Collection_Camp_Core_Details')
+        ->addWhere('name', '=', 'poster')
+        ->execute()->single();
+    }
+    catch (\Exception $ex) {
+      \CRM_Core_Error::debug_log_message('Cannot find field to save poster for collection camp ID ' . $collectionSourceId);
+      return FALSE;
+    }
+
+    $posterFieldId = 'custom_' . $posterField['id'];
+
+    // Save the poster image as an attachment linked to the collection camp.
+    $params = [
+      'entity_id' => $collectionSourceId,
+      'name' => $fileName,
+      'mime_type' => 'image/png',
+      'field_name' => $posterFieldId,
+      'options' => [
+        'move-file' => $tempFilePath,
+      ],
+    ];
+
+    $result = civicrm_api3('Attachment', 'create', $params);
+    if (empty($result['id'])) {
+      \CRM_Core_Error::debug_log_message('Failed to upload poster image for collection camp ID ' . $collectionSourceId);
+      return FALSE;
+    }
+  }
+
+  /**
+   *
+   */
+  public static function html2image($htmlContent, $outputPath) {
+    $nodePath = NODE_PATH;
+    $puppeteerJsPath = escapeshellarg(\CRM_Goonjcustom_ExtensionUtil::path('/js/puppeteer.js'));
+    $htmlContent = escapeshellarg($htmlContent);
+
+    $command = "$nodePath $puppeteerJsPath $htmlContent $outputPath";
+
+    \Civi::log()->debug("Running command: $command");
+
+    exec($command, $output, $returnCode);
+
+    \Civi::log()->debug('Command result', [
+      'output' => $output,
+      'returnCode' => $returnCode,
+    ]
+    );
+
+    if ($returnCode === 0) {
+      \Civi::log()->info("Poster image successfully created at: $outputPath");
+      return TRUE;
+    }
+    else {
+      \Civi::log()->debug("Failed to generate poster image, return code: $returnCode");
+      return FALSE;
+    }
   }
 
   /**
@@ -53,6 +190,16 @@ class CollectionBaseService extends AutoSubscriber {
     // URL for the event volunteer tab.
     $eventVolunteersUrl = \CRM_Utils_System::url(
       "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fevent-volunteer",
+    );
+    
+     // URL for the Dispatch tab.
+     $vehicleDispatch = \CRM_Utils_System::url(
+      "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fcamp-vehicle-dispatch-data",
+    );
+
+     // URL for the material dispatch authorizationtab.
+     $materialAuthorization = \CRM_Utils_System::url(
+      "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Facknowledgement-for-logistics-data",
     );
 
     // Add the event volunteer tab.
@@ -73,6 +220,23 @@ class CollectionBaseService extends AutoSubscriber {
       'current' => FALSE,
     ];
 
+     // Add the vehicle dispatch tab.
+     $tabs['vehicleDispatch'] = [
+      'title' => ts('Dispatch'),
+      'link' => $vehicleDispatch,
+      'valid' => 1,
+      'active' => 1,
+      'current' => FALSE,
+    ];
+
+     // Add the material dispatch authorization tab.
+     $tabs['materialAuthorization'] = [
+      'title' => ts('Material Authorization'),
+      'link' => $materialAuthorization,
+      'valid' => 1,
+      'active' => 1,
+      'current' => FALSE,
+    ];
   }
 
   /**
