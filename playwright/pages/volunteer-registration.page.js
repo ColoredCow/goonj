@@ -11,17 +11,7 @@ exports.VolunteerRegistrationPage =  class VolunteerRegistrationPage {
     this.streetAddress = page.locator('input[id^="street-address-"]');
     this.cityName = page.locator('input[id^="city-"]')
     this.postalCode = page.locator('input[id^="postal-code-"]')
-    // this.profession = page.locator('input[id^="volunteer-fields-profession-"]')
     this.otherSkills = page.locator('input[id^="volunteer-fields-others-skills-"]')
-    // this.firstNameField = page.locator('input#first-name-2')
-    // this.lastNameField = page.locator('input#last-name-3');
-    // this.emailField = page.locator('input#email-4');
-    // this.mobileNumberField = page.locator('input#phone-6');
-    // this.streetAddress = page.locator('input#street-address-10');
-    // this.cityName = page.locator('input#city-14');
-    // this.postalCode = page.locator('input#postal-code-15');
-    // this.profession = page.locator('input#volunteer-fields-profession-21')
-    // this.otherSkills = page.locator('input#volunteer-fields-others-skills-19')
   }
   
   async enterFirstName(firstName) {
@@ -54,11 +44,6 @@ exports.VolunteerRegistrationPage =  class VolunteerRegistrationPage {
     await this.cityName.fill(cityName)
   }
 
-  // async enterProfession(profession)
-  // {
-  //   await this.profession.fill(profession)
-  // }
-
   async selectDropdownOption(dropdownSelector, inputField, option) {
     await this.page.click(dropdownSelector);
     await this.page.waitForTimeout(1000)
@@ -87,7 +72,7 @@ exports.VolunteerRegistrationPage =  class VolunteerRegistrationPage {
   }
 
   async selectProfession(profession) {
-    await this.selectDropdownOption('#s2id_autogen5', '#s2id_autogen5', profession);
+    await this.selectDropdownOption('#select2-chosen-5', '#s2id_autogen5_search', profession);
   }
  
   async selectActivityInterested(activity) {

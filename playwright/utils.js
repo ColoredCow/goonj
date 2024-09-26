@@ -56,7 +56,6 @@ export async function submitVolunteerRegistrationForm(page, userDetails) {
   const volunteerRegistrationPage = new VolunteerRegistrationPage(page);
   const volunteerUrl = volunteerRegistrationPage.getAppendedUrl('/volunteer-registration');
   await page.goto(volunteerUrl);
-  // await page.waitForURL(volunteerUrl);
   await verifyUserExist(page, userDetails);
   // await page.waitForTimeout(10000);
   await volunteerRegistrationPage.enterFirstName(userDetails.firstName);
@@ -75,7 +74,7 @@ export async function submitVolunteerRegistrationForm(page, userDetails) {
   await volunteerRegistrationPage.enterCityName(userDetails.cityName);
   await page.waitForTimeout(200);
   await volunteerRegistrationPage.enterPostalCode(userDetails.postalCode);
-  // await volunteerRegistrationPage.selectProfession(userDetails.profession);
+  await volunteerRegistrationPage.selectProfession(userDetails.profession);
   await volunteerRegistrationPage.selectActivityInterested(userDetails.activityInterested);
   await volunteerRegistrationPage.selectVolunteerMotivation(userDetails.volunteerMotivation);
   await volunteerRegistrationPage.selectVoluntarySkills(userDetails.voluntarySkills);
