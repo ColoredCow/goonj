@@ -101,18 +101,15 @@ class CollectionBaseService extends AutoSubscriber {
     ['collectionSourceId' => $collectionSourceId],
     );
 
-    $baseFileName = "poster_{$collectionSourceId}.pdf";
+    $baseFileName = "poster_{$collectionSourceId}.png";
     $fileName = \CRM_Utils_File::makeFileName($baseFileName);
     $tempFilePath = \CRM_Utils_File::tempnam($baseFileName);
 
-    $numBytes = file_put_contents(
-      $tempFilePath,
-      \CRM_Utils_PDF_Utils::html2pdf($rendered, $fileName, TRUE)
-    );
+    $posterGenerated = self::html2image($rendered['html'], $tempFilePath);
 
-    if (!$numBytes) {
-      \CRM_Core_Error::debug_log_message('Failed to write poster PDF to temporary file for collection source ID ' . $collectionSourceId);
-      return FALSE;
+    if (!$posterGenerated) {
+      \Civi::log()->info('There was an error generating the poster!');
+      return;
     }
 
     try {
@@ -129,11 +126,11 @@ class CollectionBaseService extends AutoSubscriber {
 
     $posterFieldId = 'custom_' . $posterField['id'];
 
-    // Save the QR code as an attachment linked to the collection camp.
+    // Save the poster image as an attachment linked to the collection camp.
     $params = [
       'entity_id' => $collectionSourceId,
       'name' => $fileName,
-      'mime_type' => 'application/pdf',
+      'mime_type' => 'image/png',
       'field_name' => $posterFieldId,
       'options' => [
         'move-file' => $tempFilePath,
@@ -141,9 +138,38 @@ class CollectionBaseService extends AutoSubscriber {
     ];
 
     $result = civicrm_api3('Attachment', 'create', $params);
-
     if (empty($result['id'])) {
-      \CRM_Core_Error::debug_log_message('Failed to upload poster PDF for collection camp ID ' . $collectionSourceId);
+      \CRM_Core_Error::debug_log_message('Failed to upload poster image for collection camp ID ' . $collectionSourceId);
+      return FALSE;
+    }
+  }
+
+  /**
+   *
+   */
+  public static function html2image($htmlContent, $outputPath) {
+    $nodePath = NODE_PATH;
+    $puppeteerJsPath = escapeshellarg(\CRM_Goonjcustom_ExtensionUtil::path('/js/puppeteer.js'));
+    $htmlContent = escapeshellarg($htmlContent);
+
+    $command = "$nodePath $puppeteerJsPath $htmlContent $outputPath";
+
+    \Civi::log()->debug("Running command: $command");
+
+    exec($command, $output, $returnCode);
+
+    \Civi::log()->debug('Command result', [
+      'output' => $output,
+      'returnCode' => $returnCode,
+    ]
+    );
+
+    if ($returnCode === 0) {
+      \Civi::log()->info("Poster image successfully created at: $outputPath");
+      return TRUE;
+    }
+    else {
+      \Civi::log()->debug("Failed to generate poster image, return code: $returnCode");
       return FALSE;
     }
   }
@@ -165,6 +191,16 @@ class CollectionBaseService extends AutoSubscriber {
     $eventVolunteersUrl = \CRM_Utils_System::url(
       "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fevent-volunteer",
     );
+    
+     // URL for the Dispatch tab.
+     $vehicleDispatch = \CRM_Utils_System::url(
+      "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fcamp-vehicle-dispatch-data",
+    );
+
+     // URL for the material dispatch authorizationtab.
+     $materialAuthorization = \CRM_Utils_System::url(
+      "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Facknowledgement-for-logistics-data",
+    );
 
     // Add the event volunteer tab.
     $tabs['eventVolunteers'] = [
@@ -179,6 +215,24 @@ class CollectionBaseService extends AutoSubscriber {
     $tabs['contribution'] = [
       'title' => ts('Material Contribution'),
       'link' => $contributionUrl,
+      'valid' => 1,
+      'active' => 1,
+      'current' => FALSE,
+    ];
+
+     // Add the vehicle dispatch tab.
+     $tabs['vehicleDispatch'] = [
+      'title' => ts('Dispatch'),
+      'link' => $vehicleDispatch,
+      'valid' => 1,
+      'active' => 1,
+      'current' => FALSE,
+    ];
+
+     // Add the material dispatch authorization tab.
+     $tabs['materialAuthorization'] = [
+      'title' => ts('Material Authorization'),
+      'link' => $materialAuthorization,
       'valid' => 1,
       'active' => 1,
       'current' => FALSE,

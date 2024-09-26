@@ -77,20 +77,9 @@ class CollectionCampService extends AutoSubscriber {
       "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Flogistics-coordination#",
     );
 
-    // URL for the Dispatch tab.
-    $vehicleDispatch = \CRM_Utils_System::url(
-      "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fcamp-vehicle-dispatch-data",
-    );
-
     // URL for the camp outcome tab.
     $campOutcome = \CRM_Utils_System::url(
       "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fadmin-camp-outcome-form",
-    );
-
-    // URL for the material dispatch authorizationtab.
-    $materialAuthorization = \CRM_Utils_System::url(
-      "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Facknowledgement-for-logistics-data",
-    // URL for the camp volunteer feedback tab.
     );
 
     $campFeedback = \CRM_Utils_System::url(
@@ -106,28 +95,10 @@ class CollectionCampService extends AutoSubscriber {
       'current' => FALSE,
     ];
 
-    // Add the vehicle dispatch tab.
-    $tabs['vehicleDispatch'] = [
-      'title' => ts('Dispatch'),
-      'link' => $vehicleDispatch,
-      'valid' => 1,
-      'active' => 1,
-      'current' => FALSE,
-    ];
-
     // Add the camp outcome tab.
     $tabs['campOutcome'] = [
       'title' => ts('Camp Outcome'),
       'link' => $campOutcome,
-      'valid' => 1,
-      'active' => 1,
-      'current' => FALSE,
-    ];
-
-    // Add the material dispatch authorization tab.
-    $tabs['materialAuthorization'] = [
-      'title' => ts('Material Authorization'),
-      'link' => $materialAuthorization,
       'valid' => 1,
       'active' => 1,
       'current' => FALSE,
