@@ -51,6 +51,10 @@ class DroppingCenterService extends AutoSubscriber {
       "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fdropping-center-outcome",
     );
 
+    $sendDispatchEmail = \CRM_Utils_System::url(
+      "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fmaterial-dispatch-send-email"
+    );
+
     // Add the Status tab.
     $tabs['status'] = [
       'title' => ts('Status'),
@@ -91,6 +95,15 @@ class DroppingCenterService extends AutoSubscriber {
     $tabs['outcome'] = [
       'title' => ts('Outcome'),
       'link' => $outcome,
+      'valid' => 1,
+      'active' => 1,
+      'current' => FALSE,
+    ];
+
+    // Add the material dispatch send email tab.
+    $tabs['send dispatch email'] = [
+      'title' => ts('Send Dispatch Email'),
+      'link' => $sendDispatchEmail,
       'valid' => 1,
       'active' => 1,
       'current' => FALSE,
