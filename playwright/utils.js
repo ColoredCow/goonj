@@ -22,14 +22,15 @@ export const userDetails = {
   streetAddress: faker.location.streetAddress(),
   cityName: faker.location.city(),
   postalCode: faker.location.zipCode('######'), // Indian postal code format
-//   state: faker.location.state(), //form was not having certain states in dropdwon
-  state: 'Haryana',
+  state: faker.helpers.arrayElement(['Haryana', 'Delhi', 'Uttar Pradesh', 'Tamil Nadu']),
   activityInterested: faker.helpers.arrayElement(['Organise fundraising activities to support Goonj’s initiatives.', 'Hold Chuppi Todo Baithak’s to generate awareness on Menstruation']), 
   voluntarySkills: faker.helpers.arrayElement(['Marketing', 'Content Writing']), 
   // otherSkills: faker.helpers.arrayElement(['Research', 'Content Writing']),
   volunteerMotivation: faker.helpers.arrayElement(['Learn new skills', 'Use my skills']),
   volunteerHours: faker.helpers.arrayElement(['2 to 6 hours daily', '2 to 6 hours weekly', '2 to 6 hours monthly']),
   profession: faker.helpers.arrayElement(['Homemaker', 'Government Employee']),
+  contactMethod: faker.helpers.arrayElement(['Whatsapp', 'Mail', 'Both']),
+  referralSource: faker.helpers.arrayElement(['Newspaper', 'Website', 'Social media']),
 };
 
 export async function userLogin(page) {
@@ -57,11 +58,9 @@ export async function submitVolunteerRegistrationForm(page, userDetails) {
   const volunteerUrl = volunteerRegistrationPage.getAppendedUrl('/volunteer-registration');
   await page.goto(volunteerUrl);
   await verifyUserExist(page, userDetails);
-  // await page.waitForTimeout(10000);
   await volunteerRegistrationPage.enterFirstName(userDetails.firstName);
   await page.waitForTimeout(200);
   await volunteerRegistrationPage.enterLastName(userDetails.lastName);
-  await page.waitForTimeout(200);
   // await volunteerRegistrationPage.enterEmail(userDetails.email); //email autofill 
   // await page.waitForTimeout(200);
   // await volunteerRegistrationPage.selectCountry(userDetails.country); //country is autoseleced as india
@@ -70,17 +69,15 @@ export async function submitVolunteerRegistrationForm(page, userDetails) {
   await volunteerRegistrationPage.selectGender(userDetails.gender);
   await volunteerRegistrationPage.enterStreetAddress(userDetails.streetAddress);
   await volunteerRegistrationPage.selectState(userDetails.state);
-  await page.waitForTimeout(200);
   await volunteerRegistrationPage.enterCityName(userDetails.cityName);
-  await page.waitForTimeout(200);
   await volunteerRegistrationPage.enterPostalCode(userDetails.postalCode);
   await volunteerRegistrationPage.selectProfession(userDetails.profession);
   await volunteerRegistrationPage.selectActivityInterested(userDetails.activityInterested);
   await volunteerRegistrationPage.selectVolunteerMotivation(userDetails.volunteerMotivation);
   await volunteerRegistrationPage.selectVoluntarySkills(userDetails.voluntarySkills);
-  // await volunteerRegistrationPage.enterOtherSkills(userDetails.otherSkills);
   await volunteerRegistrationPage.selectVolunteerHours(userDetails.volunteerHours);
-  await page.waitForTimeout(400);
+  await volunteerRegistrationPage.selectContactMethod(userDetails.contactMethod);
+  await volunteerRegistrationPage.selectReferralSource(userDetails.referralSource);
   await volunteerRegistrationPage.clickSubmitButton();
   await page.waitForTimeout(2000); // added wait as page was taking time to load
 };

@@ -8,10 +8,12 @@ exports.VolunteerRegistrationPage =  class VolunteerRegistrationPage {
     this.lastNameField = page.locator('input[id^="last-name-"]');
     this.emailField = page.locator('input[id^="email-"]');
     this.mobileNumberField = page.locator('input#phone-5');
-    this.streetAddress = page.locator('input[id^="street-address-"]');
-    this.cityName = page.locator('input[id^="city-"]')
-    this.postalCode = page.locator('input[id^="postal-code-"]')
-    this.otherSkills = page.locator('input[id^="volunteer-fields-others-skills-"]')
+    this.streetAddressField = page.locator('input[id^="street-address-"]');
+    this.cityNameField  = page.locator('input[id^="city-"]')
+    this.postalCodeField  = page.locator('input[id^="postal-code-"]')
+    this.otherSkillsField  = page.locator('input[id^="volunteer-fields-others-skills-"]')
+    this.healthIssuesField  = page.locator('input[id^="volunteer-fields-health-issue-if-any-"]')
+    this.commentsField = page.locator('input[id^="volunteer-fields-any-comment-"]')
   }
   
   async enterFirstName(firstName) {
@@ -31,17 +33,27 @@ exports.VolunteerRegistrationPage =  class VolunteerRegistrationPage {
 
   async enterStreetAddress(streetAddress)
   {
-    await this.streetAddress.fill(streetAddress)
+    await this.streetAddressField.fill(streetAddress)
   }
 
   async enterPostalCode(postalCode)
   {
-    await this.postalCode.fill(postalCode)
+    await this.postalCodeField.fill(postalCode)
   }
 
   async enterCityName(cityName)
   {
-    await this.cityName.fill(cityName)
+    await this.cityNameField.fill(cityName)
+  }
+
+  async enterHealthIssues(healthIssues)
+  {
+    await this.healthIssuesField.fill(healthIssues)
+  }
+
+  async enterComments(comments)
+  {
+    await this.commentsField.fill(comments)
   }
 
   async selectDropdownOption(dropdownSelector, inputField, option) {
@@ -52,11 +64,6 @@ exports.VolunteerRegistrationPage =  class VolunteerRegistrationPage {
     const optionSelector = `.select2-result-label:text("${option}")`;
     await this.page.click(optionSelector);
     await this.page.keyboard.press('Tab');
-  }
-
-  // Need to add the selector passed on selectDropdownOption to class IndividualRegistrationPage
-  async selectTitle(title) {
-    await this.selectDropdownOption('#select2-chosen-2', '#s2id_autogen2_search', title);
   }
 
   async selectCountry(country) {
@@ -90,7 +97,15 @@ exports.VolunteerRegistrationPage =  class VolunteerRegistrationPage {
   async selectVolunteerHours(hours) {
     await this.selectDropdownOption('#select2-chosen-9', '#s2id_autogen9_search', hours);
   }
+
+  async selectContactMethod(method){
+    await this.selectDropdownOption('#select2-chosen-10', '#s2id_autogen10_search', method);
+  }
   
+  async selectReferralSource(source){
+    await this.selectDropdownOption('#select2-chosen-11', '#s2id_autogen11_search', source);
+  }
+
   async selectAndClearDropdownOption(dropdownSelector, inputField, option) {
     const closeIconSelector = `${dropdownSelector} + abbr.select2-search-choice-close`;
     await this.selectDropdownOption(dropdownSelector, inputField, option);
