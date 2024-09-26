@@ -4,15 +4,24 @@ exports.VolunteerRegistrationPage =  class VolunteerRegistrationPage {
   constructor(page) {
     this.page = page;
     this.url = process.env.BASE_URL_USER_SITE;
-    this.firstNameField = page.locator('input#first-name-2')
-    this.lastNameField = page.locator('input#last-name-3');
-    this.emailField = page.locator('input#email-4');
-    this.mobileNumberField = page.locator('input#phone-6');
-    this.streetAddress = page.locator('input#street-address-10');
-    this.cityName = page.locator('input#city-14');
-    this.postalCode = page.locator('input#postal-code-15');
-    this.profession = page.locator('input#volunteer-fields-profession-21')
-    this.otherSkills = page.locator('input#volunteer-fields-others-skills-19')
+    this.firstNameField = page.locator('input[id^="first-name-"]');
+    this.lastNameField = page.locator('input[id^="last-name-"]');
+    this.emailField = page.locator('input[id^="email-"]');
+    this.mobileNumberField = page.locator('input#phone-5');
+    this.streetAddress = page.locator('input[id^="street-address-"]');
+    this.cityName = page.locator('input[id^="city-"]')
+    this.postalCode = page.locator('input[id^="postal-code-"]')
+    // this.profession = page.locator('input[id^="volunteer-fields-profession-"]')
+    this.otherSkills = page.locator('input[id^="volunteer-fields-others-skills-"]')
+    // this.firstNameField = page.locator('input#first-name-2')
+    // this.lastNameField = page.locator('input#last-name-3');
+    // this.emailField = page.locator('input#email-4');
+    // this.mobileNumberField = page.locator('input#phone-6');
+    // this.streetAddress = page.locator('input#street-address-10');
+    // this.cityName = page.locator('input#city-14');
+    // this.postalCode = page.locator('input#postal-code-15');
+    // this.profession = page.locator('input#volunteer-fields-profession-21')
+    // this.otherSkills = page.locator('input#volunteer-fields-others-skills-19')
   }
   
   async enterFirstName(firstName) {
@@ -45,10 +54,10 @@ exports.VolunteerRegistrationPage =  class VolunteerRegistrationPage {
     await this.cityName.fill(cityName)
   }
 
-  async enterProfession(profession)
-  {
-    await this.profession.fill(profession)
-  }
+  // async enterProfession(profession)
+  // {
+  //   await this.profession.fill(profession)
+  // }
 
   async selectDropdownOption(dropdownSelector, inputField, option) {
     await this.page.click(dropdownSelector);
@@ -66,31 +75,35 @@ exports.VolunteerRegistrationPage =  class VolunteerRegistrationPage {
   }
 
   async selectCountry(country) {
-    await this.selectDropdownOption('#select2-chosen-4', '#s2id_autogen4_search', country);
+    await this.selectDropdownOption('#select2-chosen-3', '#s2id_autogen3_search', country);
   }
 
   async selectGender(gender) {
-    await this.selectDropdownOption('#select2-chosen-3', '#s2id_autogen3_search', gender);
+    await this.selectDropdownOption('#select2-chosen-2', '#s2id_autogen2_search', gender);
   }
 
   async selectState(state) {
     await this.selectDropdownOption('#select2-chosen-1', '#s2id_autogen1_search', state);
   }
 
+  async selectProfession(profession) {
+    await this.selectDropdownOption('#s2id_autogen5', '#s2id_autogen5', profession);
+  }
+ 
   async selectActivityInterested(activity) {
-    await this.selectDropdownOption('#s2id_autogen5', '#s2id_autogen5', activity);
+    await this.selectDropdownOption('#s2id_autogen6', '#s2id_autogen6', activity);
   }
 
   async selectVoluntarySkills(skill) {
-    await this.selectDropdownOption('#s2id_autogen7', '#s2id_autogen7', skill);
+    await this.selectDropdownOption('#s2id_autogen8', '#s2id_autogen8', skill);
   }
 
   async selectVolunteerMotivation(motivation) {
-    await this.selectDropdownOption('#s2id_autogen6', '#s2id_autogen6', motivation);
+    await this.selectDropdownOption('#s2id_autogen7', '#s2id_autogen7', motivation);
   }
 
   async selectVolunteerHours(hours) {
-    await this.selectDropdownOption('#select2-chosen-8', '#s2id_autogen8_search', hours);
+    await this.selectDropdownOption('#select2-chosen-9', '#s2id_autogen9_search', hours);
   }
   
   async selectAndClearDropdownOption(dropdownSelector, inputField, option) {
