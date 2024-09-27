@@ -2,7 +2,7 @@ import { expect } from '@playwright/test';
 import { faker } from '@faker-js/faker/locale/en_IN'; // Import the Indian locale directly
 import { VolunteerRegistrationPage } from '../playwright/pages/volunteer-registration.page';
 import { SearchContactsPage } from '../playwright/pages/search-contact.page';
-
+import { AdminHomePage } from '../playwright/pages/admin-home.page';
 // Helper function to generate an Indian mobile number
 const generateIndianMobileNumber = () => {
   const prefix = faker.helpers.arrayElement(['7', '8', '9']); // Indian mobile numbers start with 7, 8, or 9
@@ -46,13 +46,12 @@ export async function userLogin(page) {
 
 export async function verifyUserExist(page, userDetails) {
   await page.fill('#email', userDetails.email);
-
   // Fill in the contact number
   await page.fill('#phone', userDetails.mobileNumber);
-
   // Click the submit button
   await page.click('input[type="submit"]', { force: true });
 }
+
 export async function submitVolunteerRegistrationForm(page, userDetails) {
   const volunteerRegistrationPage = new VolunteerRegistrationPage(page);
   const volunteerUrl = volunteerRegistrationPage.getAppendedUrl('/volunteer-registration');
@@ -61,10 +60,11 @@ export async function submitVolunteerRegistrationForm(page, userDetails) {
   await volunteerRegistrationPage.enterFirstName(userDetails.firstName);
   await page.waitForTimeout(200);
   await volunteerRegistrationPage.enterLastName(userDetails.lastName);
-  // await volunteerRegistrationPage.enterEmail(userDetails.email); //email autofill 
+  // commenting below code as email, mobile number and country are autofill
+  // await volunteerRegistrationPage.enterEmail(userDetails.email); 
   // await page.waitForTimeout(200);
-  // await volunteerRegistrationPage.selectCountry(userDetails.country); //country is autoseleced as india
-  // await volunteerRegistrationPage.enterMobileNumber(userDetails.mobileNumber); //mobile  autofill 
+  // await volunteerRegistrationPage.selectCountry(userDetails.country); 
+  // await volunteerRegistrationPage.enterMobileNumber(userDetails.mobileNumber);
   // await page.waitForTimeout(200);
   await volunteerRegistrationPage.selectGender(userDetails.gender);
   await volunteerRegistrationPage.enterStreetAddress(userDetails.streetAddress);
@@ -98,4 +98,23 @@ export async function searchAndVerifyContact(page, userDetails, contactType) {
   const emailAddress = await emailLocator.innerText();
   const userEmailAddress = userDetails.email.toLowerCase()
   expect(emailAddress).toContain(userEmailAddress);
+}
+
+
+export async function verifyVolunteerByStatus(page, userDetails, status) {
+  const emailInputField = '#contact-email-contact-id-01-email-1'
+  const adminHomePage = new AdminHomePage(page);
+  let userEmailAddress = userDetails.email.toLowerCase()
+  let userContactNumber = userDetails.mobileNumber
+  await adminHomePage.clickVolunteerSubOption(status)
+  await page.fill(emailInputField, userEmailAddress)
+  await page.press(emailInputField, 'Enter')
+  await page.waitForTimeout(2000)
+  const emailSelector = 'td[data-field-name=""] span.ng-binding.ng-scope';
+  const userData = await page.$$eval(emailSelector, nodes =>
+    nodes.map(n => n.innerText.trim())
+  );
+  expect(userData).toContain(userEmailAddress)
+  expect(userData).toContain(userContactNumber)
+
 }
