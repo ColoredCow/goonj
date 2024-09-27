@@ -269,7 +269,7 @@ class InductionService extends AutoSubscriber {
       return;
     }
 
-    if (!$inductionFields['Assign']) {
+    if (!$inductionsFields['Assign']) {
       return;
     }
 
