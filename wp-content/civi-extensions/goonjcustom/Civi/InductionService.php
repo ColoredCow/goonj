@@ -134,7 +134,7 @@ class InductionService extends AutoSubscriber {
     $stateId = $objectRef->state_province_id;
 
     if (!$stateId) {
-      \Civi::log() - info('state not found', ['VolunteerId' => self::$volunteerId]);
+      \Civi::log()->info('state not found', ['VolunteerId' => self::$volunteerId]);
     }
     self::createInduction(self::$volunteerId, $stateId);
   }
