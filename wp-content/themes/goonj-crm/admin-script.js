@@ -7,9 +7,31 @@ setTimeout(function() {
     style.textContent = `
         @font-face {
             font-family: 'Proxima Nova';
-            src: url('/wp-content/themes/goonj-crm/fonts/Proxima%20Nova%20Regular.otf') format('otf');
+            src: url('/wp-content/themes/goonj-crm/fonts/Proxima Nova Regular.otf') format('opentype');
             font-weight: normal;
             font-style: normal;
+        }
+        @font-face {
+            font-family: 'Proxima Nova';
+            src: url('/wp-content/themes/goonj-crm/fonts/Proxima Nova Bold.otf') format('opentype');
+            font-weight: bold;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'Proxima Nova';
+            src: url('/wp-content/themes/goonj-crm/fonts/Proxima Nova Regular Italic.otf') format('opentype');
+            font-weight: normal;
+            font-style: italic;
+        }
+        @font-face {
+            font-family: 'Proxima Nova';
+            src: url('/wp-content/themes/goonj-crm/fonts/Proxima Nova Bold Italic.otf') format('opentype');
+            font-weight: bold;
+            font-style: italic;
+        }
+
+        p, span, button, a {
+            font-family: 'Proxima Nova', sans-serif !important;
         }
     `;
     iframeDoc.head.appendChild(style);
