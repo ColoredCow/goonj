@@ -135,9 +135,9 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
       if ($endDateFormatted <= $todayFormatted) {
         $mailParams = [
           'subject' => 'Collections Completion Notification',
-          'from' => 'urban.ops@goonj.org',
+          'from' => $fromEmail['label'],
           'toEmail' => $emailId,
-          'replyTo' => 'urban.ops@goonj.org',
+          'replyTo' => $fromEmail['label'],
           'html' => goonjcustom_collection_camp_email_html($contactName, $collectionCampId, $recipientId, $collectionCampGoonjOffice),
         // 'messageTemplateID' => 76, // Uncomment if using a message template
         ];
