@@ -19,15 +19,15 @@ class InductionService extends AutoSubscriber {
 
   private static $volunteerId = NULL;
   private static $volunteerInductionAssigneeEmail = NULL;
-  private static $transitionedVolunteerId = Null;
+  private static $transitionedVolunteerId = NULL;
 
   /**
    *
    */
   public static function getSubscribedEvents() {
     return [
-      '&hook_civicrm_pre'=>[
-        ['hasIndividualChangedToVolunteer']
+      '&hook_civicrm_pre' => [
+        ['hasIndividualChangedToVolunteer'],
       ],
       '&hook_civicrm_post' => [
             ['volunteerCreated'],
@@ -133,20 +133,10 @@ class InductionService extends AutoSubscriber {
 
     $stateId = $objectRef->state_province_id;
 
-    if(!$stateId){
-      \Civi::log()-info('state not found', ['VolunteerId'=>self::$volunteerId]);
+    if (!$stateId) {
+      \Civi::log() - info('state not found', ['VolunteerId' => self::$volunteerId]);
     }
     self::createInduction(self::$volunteerId, $stateId);
-  }
-
-  /**
-   * Handles induction creation for an individual.
-   */
-  public static function createVolunteerInductionOnTransition(string $op, string $objectName, int $objectId, &$objectRef) {
-    if ($op !== 'edit' || $objectName !== 'Individual') {
-      return FALSE;
-    }
-    self::createInduction($objectId);
   }
 
   /**
@@ -228,10 +218,10 @@ class InductionService extends AutoSubscriber {
    * Handles sending induction email to an individual.
    */
   public static function sendInductionEmailForTransitionedVolunteer(string $op, string $objectName, int $objectId, &$objectRef) {
-    if ($op !== 'edit' || $objectName !== 'Individual' || (int)self::$transitionedVolunteerId !== (int)$objectRef->id) {
+    if ($op !== 'edit' || $objectName !== 'Individual' || (int) self::$transitionedVolunteerId !== (int) $objectRef->id) {
       return FALSE;
     }
-    \Civi::log()->info('Comparing IDs', ['transitionedVolunteerId' => self::$transitionedVolunteerId, 'objectRefId' => $objectRef->id]);
+
     self::sendInductionEmail(self::$transitionedVolunteerId);
   }
 
@@ -329,7 +319,7 @@ class InductionService extends AutoSubscriber {
   private static function inductionExists($contactId) {
     $inductionActivity = Activity::get(FALSE)
       ->addWhere('activity_type_id:name', '=', self::INDUCTION_ACTIVITY_TYPE_NAME)
-      ->addWhere('status_id:name', 'IN', ['Scheduled','Completed', 'To be scheduled', 'Cancelled']) //add more status
+      ->addWhere('status_id:name', 'IN', ['Scheduled', 'Completed', 'To be scheduled', 'Cancelled'])
       ->addWhere('target_contact_id', '=', $contactId)
       ->setLimit(1)
       ->execute();
@@ -353,54 +343,54 @@ class InductionService extends AutoSubscriber {
     return $volunteerEmailActivity->count() > 0;
   }
 
-  public static function hasIndividualChangedToVolunteer($op, $objectName, $id, &$params){
+  /**
+   *
+   */
+  public static function hasIndividualChangedToVolunteer($op, $objectName, $id, &$params) {
     if ($op !== 'edit' || $objectName !== 'Individual') {
       return FALSE;
     }
-    \Civi::log()->info('hastranstioned', ['op'=>$op, 'objectName'=>$objectName, 'id'=>$id, 'params'=>$params]);
-    $newSubtypes = $params['contact_sub_type'];
-    \Civi::log()->info('newsubtypes', ['newSubtypes'=>$newSubtypes] );
 
-    // Check if "Volunteer" is present in the contact_sub_type array
+    $newSubtypes = $params['contact_sub_type'];
+
+    // Check if "Volunteer" is present in the contact_sub_type array.
     if (!in_array('Volunteer', $newSubtypes)) {
-        \Civi::log()->info('Volunteer not found in subtypes, returning.');
-        return; // Exit the function if "Volunteer" is not present
+      \Civi::log()->info('Volunteer not found in subtypes, returning.');
+      // Exit the function if "Volunteer" is not present.
+      return;
     }
 
-    // Proceed with the rest of your logic if "Volunteer" is present
-    \Civi::log()->info('Volunteer found in subtypes, proceeding with the process.');
     $contacts = Contact::get(FALSE)
       ->addSelect('contact_sub_type')
       ->addWhere('id', '=', $id)
       ->execute()->single();
-    \Civi::log()->info('contacts', ['op'=>$contacts]);
-    if($contacts['contact_sub_type' === 'Volunteer']){
+
+    if ($contacts['contact_sub_type' === 'Volunteer']) {
       return;
     }
     self::$transitionedVolunteerId = $contacts['id'];
-    \Civi::log()->info('contacts', ['self::$transitionedVolunteerId'=>self::$transitionedVolunteerId]);
-
   }
 
-  public static function createInductionForTransitionedVolunteer (string $op, string $objectName, int $objectId, &$objectRef) {
-    \Civi::log()->info('opppp', ['op'=>$op, 'objectName'=>$objectName, 'objectId'=>$objectId, 'objectrEF'=>$objectRef, self::$transitionedVolunteerId, $objectRef->id,'check'=>$op !== 'edit' || $objectName !== 'Individual' || self::$transitionedVolunteerId !== $objectRef->id]);
-    if ($op !== 'edit' || $objectName !== 'Individual' || (int)self::$transitionedVolunteerId !== (int)$objectRef->id) {
+  /**
+   *
+   */
+  public static function createInductionForTransitionedVolunteer(string $op, string $objectName, int $objectId, &$objectRef) {
+
+    if ($op !== 'edit' || $objectName !== 'Individual' || (int) self::$transitionedVolunteerId !== (int) $objectRef->id) {
       return FALSE;
     }
-  
-    \Civi::log()->info('Comparing IDs', ['transitionedVolunteerId' => self::$transitionedVolunteerId, 'objectRefId' => $objectRef->id]);
 
     $contact = Contact::get(FALSE)
-    ->addSelect('address.state_province_id')
-    ->addJoin('Address AS address', 'LEFT')
-    ->addWhere('id', '=', $objectId)
-    ->execute()->single();
+      ->addSelect('address.state_province_id')
+      ->addJoin('Address AS address', 'LEFT')
+      ->addWhere('id', '=', $objectId)
+      ->execute()->single();
 
     $stateId = $contact['address.state_province_id'];
     if (!$stateId) {
       return FALSE;
     }
-    \Civi::log()->info('check3',['self::$transitionedVolunteerId'=>self::$transitionedVolunteerId, $stateId]);
+
     self::createInduction(self::$transitionedVolunteerId, $stateId);
   }
 
