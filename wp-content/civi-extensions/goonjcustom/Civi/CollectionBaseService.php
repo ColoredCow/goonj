@@ -33,8 +33,14 @@ class CollectionBaseService extends AutoSubscriber {
     return [
       '&hook_civicrm_tabset' => 'collectionBaseTabset',
       '&hook_civicrm_selectWhereClause' => 'aclCollectionCamp',
-      '&hook_civicrm_pre' => [['handleAuthorizationEmails'], ['checkIfPosterNeedsToBeGenerated']],
-      '&hook_civicrm_post' => [['handleAuthorizationEmailsPost'], ['maybeGeneratePoster']],
+      '&hook_civicrm_pre' => [
+        ['handleAuthorizationEmails'],
+        ['checkIfPosterNeedsToBeGenerated'],
+      ],
+      '&hook_civicrm_post' => [
+        ['maybeGeneratePoster', 20],
+        ['handleAuthorizationEmailsPost', 10],
+      ],
     ];
   }
 
@@ -51,7 +57,7 @@ class CollectionBaseService extends AutoSubscriber {
     }
 
     $currentCollectionSource = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Collection_Camp_Core_Details.Poster',)
+      ->addSelect('custom.*')
       ->addWhere('id', '=', $id)
       ->execute()->single();
 
@@ -64,6 +70,7 @@ class CollectionBaseService extends AutoSubscriber {
     self::$generatePosterRequest = [
       'collectionSourceId' => $currentCollectionSource['id'],
       'messageTemplateId' => $messageTemplateId,
+      'customData' => $params,
     ];
 
   }
@@ -98,7 +105,10 @@ class CollectionBaseService extends AutoSubscriber {
 
     $rendered = \CRM_Core_TokenSmarty::render(
     ['html' => $modifiedHtml],
-    ['collectionSourceId' => $collectionSourceId],
+    [
+      'collectionSourceId' => $collectionSourceId,
+      'collectionSourceCustomData' => self::$generatePosterRequest['customData'],
+    ],
     );
 
     $baseFileName = "poster_{$collectionSourceId}.png";
@@ -154,15 +164,7 @@ class CollectionBaseService extends AutoSubscriber {
 
     $command = "$nodePath $puppeteerJsPath $htmlContent $outputPath";
 
-    \Civi::log()->debug("Running command: $command");
-
     exec($command, $output, $returnCode);
-
-    \Civi::log()->debug('Command result', [
-      'output' => $output,
-      'returnCode' => $returnCode,
-    ]
-    );
 
     if ($returnCode === 0) {
       \Civi::log()->info("Poster image successfully created at: $outputPath");
@@ -191,14 +193,14 @@ class CollectionBaseService extends AutoSubscriber {
     $eventVolunteersUrl = \CRM_Utils_System::url(
       "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fevent-volunteer",
     );
-    
-     // URL for the Dispatch tab.
-     $vehicleDispatch = \CRM_Utils_System::url(
+
+    // URL for the Dispatch tab.
+    $vehicleDispatch = \CRM_Utils_System::url(
       "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fcamp-vehicle-dispatch-data",
     );
 
-     // URL for the material dispatch authorizationtab.
-     $materialAuthorization = \CRM_Utils_System::url(
+    // URL for the material dispatch authorizationtab.
+    $materialAuthorization = \CRM_Utils_System::url(
       "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Facknowledgement-for-logistics-data",
     );
 
@@ -220,8 +222,8 @@ class CollectionBaseService extends AutoSubscriber {
       'current' => FALSE,
     ];
 
-     // Add the vehicle dispatch tab.
-     $tabs['vehicleDispatch'] = [
+    // Add the vehicle dispatch tab.
+    $tabs['vehicleDispatch'] = [
       'title' => ts('Dispatch'),
       'link' => $vehicleDispatch,
       'valid' => 1,
@@ -229,8 +231,8 @@ class CollectionBaseService extends AutoSubscriber {
       'current' => FALSE,
     ];
 
-     // Add the material dispatch authorization tab.
-     $tabs['materialAuthorization'] = [
+    // Add the material dispatch authorization tab.
+    $tabs['materialAuthorization'] = [
       'title' => ts('Material Authorization'),
       'link' => $materialAuthorization,
       'valid' => 1,

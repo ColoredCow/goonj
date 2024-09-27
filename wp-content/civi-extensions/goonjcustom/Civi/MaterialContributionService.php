@@ -130,6 +130,9 @@ class MaterialContributionService extends AutoSubscriber {
     $activityDate = date("F j, Y", strtotime($activity['activity_date_time']));
 
     $baseDir = plugin_dir_path(__FILE__) . '../../../themes/goonj-crm/';
+    $deliveredBy = empty($activity['Material_Contribution.Delivered_By']) ? $activity['contact.display_name'] : $activity['Material_Contribution.Delivered_By'];
+
+    $deliveredByContact = empty($activity['Material_Contribution.Delivered_By_Contact']) ? $phone : $activity['Material_Contribution.Delivered_By_Contact'];
 
     $paths = [
       'logo' => $baseDir . 'images/goonj-logo.png',
@@ -154,7 +157,7 @@ class MaterialContributionService extends AutoSubscriber {
         
         <div style="width: 100%; font-size: 14px;">
           <div style="float: left; text-align: left;">
-            Material Receipt# {$activity['id']}
+            Material Acknowledgment# {$activity['id']}
           </div>
           <div style="float: right; text-align: right;">
             Goonj, C-544, Pocket C, Sarita Vihar, Delhi, India
@@ -185,7 +188,7 @@ class MaterialContributionService extends AutoSubscriber {
             <td style="text-align: center;">{$activity['contact.display_name']}</td>
           </tr>
           <tr>
-            <td class="table-header">Address</td>
+            <td class="table-header">City</td>
             <td style="text-align: center;">{$locationAreaOfCamp}</td>
           </tr>
           <tr>
@@ -199,8 +202,8 @@ class MaterialContributionService extends AutoSubscriber {
           <tr>
             <td class="table-header">Delivered by (Name & contact no.)</td>
             <td style="text-align: center;">
-            {$activity['Material_Contribution.Delivered_By']}<br>
-            {$activity['Material_Contribution.Delivered_By_Contact']}
+            {$deliveredBy}<br>
+            {$deliveredByContact}
           </td>
         </tr>
 
@@ -212,9 +215,9 @@ class MaterialContributionService extends AutoSubscriber {
         <div style="float: left; width: 60%; font-size: 14px;">
         <p>Join us, by encouraging your friends, relatives, colleagues, and neighbours to join the journey as all of us have a lot to give.</p>
         <p style="margin-top: 8px;">
-        <strong>With Material Money Matter!</strong> Your monetary contribution is needed too for sorting, packing, transportation to implementation. (Financial contributions are tax-exempted u/s 80G of IT Act)
+        <strong>With Material Money Matters</strong> Your monetary contribution is needed too for sorting, packing, transportation to implementation. (Financial contributions are tax-exempted u/s 80G of IT Act)
       </p>
-      <p style="margin-top: 10px; font-size: 12px; float: left">* The received material holds 'No Commercial Value' for Goonj.</p>
+      <p style="margin-top: 10px; font-size: 12px; float: left">* Received material has 'No Commercial Value' for Goonj.</p>
     </div>
     <div style="float: right; width: 40%; text-align: right; font-size: 12px; font-style: italic;">
     <p>To contribute, please scan the code.</p>
@@ -225,8 +228,8 @@ class MaterialContributionService extends AutoSubscriber {
           <div style="font-size: 14px; margin-bottom: 20px;">
             <div style="position: relative; height: 24px;">
               <div style="font-size: 14px; float: left; color:">
-                Goonj, C-544, 1st Floor, C-Pocket, Sarita Vihar, New<br>
-                Delhi-110076
+                Goonj, C-544, 1st Floor, C-Pocket, Sarita Vihar,<br>
+                New Delhi-110076
               </div>
               <div style="font-size: 14px; float: right;">
                 <img src="data:image/png;base64,{$imageData['callIcon']}" alt="Phone" style="width: 16px; height: 16px; margin-right: 5px;">
@@ -235,12 +238,10 @@ class MaterialContributionService extends AutoSubscriber {
             </div>
           </div>
     
-          <div style="font-size: 14px; margin-bottom: 20px;">
+          <div style="text-align: center; width: 100%; font-size: 14px; margin-bottom: 20px;">
               <div style="font-size: 14px;">
-                <img src="data:image/png;base64,{$imageData['emailIcon']}" alt="Email" style="width: 16px; height: 16px; float: left; display: inline;">
+                <img src="data:image/png;base64,{$imageData['emailIcon']}" alt="Email" style="width: 16px; height: 16px; display: inline;">
                 <span style="display: inline; margin-left: 0;">mail@goonj.org</span>
-              </div>
-              <div style="font-size: 14px; float: right;">
                 <img src="data:image/png;base64,{$imageData['domainIcon']}" alt="Website" style="width: 16px; height: 16px; margin-right: 5px;">
                 <span style="display: inline; margin-left: 0;">www.goonj.org</span>
               </div>
