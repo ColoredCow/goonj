@@ -20,6 +20,7 @@ function civicrm_api3_goonjcustom_dropping_center_cron($params) {
     $cashContributionByTrackingId = [];
     $productSaleAmountByTrackingId = [];
     $footfallByTrackingId = [];
+    $vehicleByTrackingId = [];
 
     // Loop through the result set
     foreach ($collectionCamps as $camp) {
@@ -41,6 +42,7 @@ function civicrm_api3_goonjcustom_dropping_center_cron($params) {
         // Add to Product_Sale_Amount_GBG_ sum for this tracking ID
         if (isset($camp['Donation_Box_Register_Tracking.Product_Sale_Amount_GBG_']) && $camp['Donation_Box_Register_Tracking.Product_Sale_Amount_GBG_'] !== null) {
             $productSaleAmountByTrackingId[$trackingId] += (float) $camp['Donation_Box_Register_Tracking.Product_Sale_Amount_GBG_'];
+            error_log("productSaleAmountByTrackingId : $productSaleAmountByTrackingId, Result: " . print_r($productSaleAmountByTrackingId, TRUE));
         }
 
         // Get Material Contribution activities count based on tracking ID
@@ -52,8 +54,19 @@ function civicrm_api3_goonjcustom_dropping_center_cron($params) {
             ],
             'checkPermissions' => TRUE,
         ]);
-
         $footfallByTrackingId[$trackingId] = count($activities);
+
+        $collectionSourceVehicleDispatches = civicrm_api4('Eck_Collection_Source_Vehicle_Dispatch', 'get', [
+            'select' => [
+              'Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id',
+            ],
+            'where' => [
+              ['Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id', '=',  $trackingId],
+            ],
+            'checkPermissions' => TRUE,
+          ]);
+
+        $vehicleByTrackingId[$trackingId] = count($collectionSourceVehicleDispatches);
     }
 
     $returnValues['cashContributionByTrackingId'] = $cashContributionByTrackingId;
@@ -78,12 +91,12 @@ function civicrm_api3_goonjcustom_dropping_center_cron($params) {
     foreach ($productSaleAmountByTrackingId as $trackingId => $productSaleSum) {
         $results = civicrm_api4('Eck_Collection_Camp', 'update', [
             'values' => [
-                'Dropping_Center_Outcome.Product_Sale_Amount_GBG_Total' => $productSaleSum,
+                'Dropping_Center_Outcome.Product_Sale_Amount_GBG_' => $productSaleSum,
             ],
             'where' => [
-                ['Dropping_Centre.Donation_Tracking_Id', '=', $trackingId],
+                ['id', '=', $trackingId],
             ],
-            'checkPermissions' => TRUE,
+            'checkPermissions' => FALSE,
         ]);
 
         error_log("Updated Product Sale Amount for Tracking ID: $trackingId, Result: " . print_r($results, TRUE));
@@ -104,6 +117,38 @@ function civicrm_api3_goonjcustom_dropping_center_cron($params) {
         // Log results for debugging
         error_log("Updated Footfall for Tracking ID: $trackingId, Result: " . print_r($results, TRUE));
     }
+
+        // Update Footfall Count based on Material Contribution activities
+    foreach ($footfallByTrackingId as $trackingId => $vehicleCount) {
+        $results = civicrm_api4('Eck_Collection_Camp', 'update', [
+            'values' => [
+                'Dropping_Center_Outcome.Footfall_at_the_center' => $vehicleCount,
+            ],
+            'where' => [
+                ['id', '=', $trackingId],
+            ],
+            'checkPermissions' => TRUE,
+        ]);
+
+        // Log results for debugging
+        error_log("Updated Footfall for Tracking ID: $trackingId, Result: " . print_r($results, TRUE));
+    }
+
+        // Update Footfall Count based on Material Contribution activities
+        foreach ($vehicleByTrackingId as $trackingId => $footfallCount) {
+            $results = civicrm_api4('Eck_Collection_Camp', 'update', [
+                'values' => [
+                  'Dropping_Center_Outcome.Total_no_of_vehicle_material_collected' => 1,
+                ],
+                'where' => [
+                  ['id', '=', $trackingId],
+                ],
+                'checkPermissions' => TRUE,
+              ]);
+    
+            // Log results for debugging
+            error_log("Updated vehicleByTrackingId for Tracking ID: $trackingId, Result: " . print_r($results, TRUE));
+        }
 
     return civicrm_api3_create_success($returnValues, $params, 'Goonjcustom', 'dropping_center_cron');
 }
