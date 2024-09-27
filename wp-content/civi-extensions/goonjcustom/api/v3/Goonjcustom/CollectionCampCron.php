@@ -65,8 +65,8 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
     $endDate = new DateTime($camp['Collection_Camp_Intent_Details.End_Date']);
     $collectionCampId = $camp['id'];
     $endDateFormatted = $endDate->format('Y-m-d');
-    $emailSentFlag = $camp['Logistics_Coordination.Email_Sent'];
-    $feedbackEmailSentFlag = $camp['Logistics_Coordination.Feedback_Email_Sent'];
+    $logisticEmailSent = $camp['Logistics_Coordination.Email_Sent'];
+    $feedbackEmailSent = $camp['Logistics_Coordination.Feedback_Email_Sent'];
 
     $collectionCamp = EckEntity::get('Collection_Camp', TRUE)
       ->addSelect('Collection_Camp_Intent_Details.Goonj_Office', 'Collection_Camp_Core_Details.Contact_Id')
@@ -105,7 +105,7 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
       ->addWhere('is_default', '=', TRUE)
       ->execute()->single();
 
-    if ($feedbackEmailSentFlag !== 1) {
+    if (!$feedbackEmailSent) {
       // Only send the email if the end date is lower than today.
       if ($endDateFormatted <= $todayFormatted) {
         $mailParams = [
@@ -122,7 +122,7 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
           // Collect the initiator ID.
           $initiatorIdsToUpdate[] = $initiatorId;
 
-          $results = EckEntity::update('Collection_Camp', TRUE)
+          EckEntity::update('Collection_Camp', TRUE)
             ->addValue('Logistics_Coordination.Feedback_Email_Sent', 1)
             ->addWhere('Collection_Camp_Core_Details.Contact_Id', '=', $initiatorId)
             ->execute();
@@ -130,7 +130,7 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
       }
     }
 
-    if ($emailSentFlag !== 1) {
+    if (!$logisticEmailSent) {
       // Only send the email if the end date is lower than today.
       if ($endDateFormatted <= $todayFormatted) {
         $mailParams = [
@@ -147,7 +147,7 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
           // Collect the camp ID.
           $campIdsToUpdate[] = $collectionCampId;
 
-          $results = EckEntity::update('Collection_Camp', TRUE)
+          EckEntity::update('Collection_Camp', TRUE)
             ->addValue('Logistics_Coordination.Email_Sent', 1)
             ->addWhere('id', '=', $collectionCampId)
             ->execute();
