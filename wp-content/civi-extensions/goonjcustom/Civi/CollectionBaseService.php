@@ -27,7 +27,7 @@ class CollectionBaseService extends AutoSubscriber {
     return [
       '&hook_civicrm_tabset' => 'collectionBaseTabset',
       '&hook_civicrm_selectWhereClause' => 'aclCollectionCamp',
-      '&hook_civicrm_pre' => 'handleAuthorizationEmails',
+      // '&hook_civicrm_pre' => 'handleAuthorizationEmails',
     ];
   }
 
