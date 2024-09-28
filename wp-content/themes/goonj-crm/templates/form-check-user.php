@@ -27,7 +27,7 @@ $is_purpose_requiring_email = !in_array($purpose, ['material-contribution', 'pro
                 <input type="tel" id="phone" name="phone" required value="<?php echo isset($_POST['phone']) ? esc_attr(sanitize_text_field($_POST['phone'])) : ''; ?>">
             </div>
             <br>
-            <p class="login-submit">
+            <p class="login-submit" data-test=submitButton>
                 <input type="submit" class="button button-primary w-100p" value="Continue">
             </p>
     </form>

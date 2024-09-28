@@ -1,11 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { userDetails, userLogin, submitVolunteerRegistrationForm, searchAndVerifyContact  } from '../utils.js';
+import { userDetails, userLogin, submitVolunteerRegistrationForm, verifyVolunteerByStatus  } from '../utils.js';
 
 test('submit the volunteer registration form and confirm on admin', async ({ page }) => {
-  // const searchContactsPage = new SearchContactsPage (page);
-  const contactType = 'Individual'
+  const status = 'New Signups'
   await submitVolunteerRegistrationForm(page, userDetails);
   await page.waitForTimeout(2000)
   await userLogin(page);
-  await searchAndVerifyContact(page, userDetails, contactType)
+  await verifyVolunteerByStatus(page, userDetails, status)
 });
