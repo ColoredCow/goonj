@@ -952,7 +952,7 @@ class CollectionCampService extends AutoSubscriber {
 
     $collectionCampId = $collectionSourceVehicleDispatch['Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id'];
 
-    $collectionCamp = \Civi\Api4\EckEntity::get('Collection_Camp', FALSE)
+    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
       ->addSelect('title')
       ->addWhere('id', '=', $collectionCampId)
       ->execute()->single();
