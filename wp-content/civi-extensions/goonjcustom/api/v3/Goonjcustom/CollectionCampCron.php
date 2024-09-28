@@ -135,7 +135,7 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
         'from' => 'urban.ops@goonj.org',
         'toEmail' => $emailId,
         'replyTo' => 'urban.ops@goonj.org',
-        'html' => goonjcustom_collection_camp_email_html($contactName, $collectionCampId, $recipientId, $collectionCampGoonjOffice, $contributorCount),
+        'html' => goonjcustom_collection_camp_email_html($contactName, $collectionCampId, $recipientId, $collectionCampGoonjOffice),
         // 'messageTemplateID' => 76, // Uncomment if using a message template
       ];
       $result = CRM_Utils_Mail::send($mailParams);
@@ -147,11 +147,11 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
 /**
  *
  */
-function goonjcustom_collection_camp_email_html($contactName, $collectionCampId, $recipientId, $collectionCampGoonjOffice, $contributorCount) {
+function goonjcustom_collection_camp_email_html($contactName, $collectionCampId, $recipientId, $collectionCampGoonjOffice) {
   $homeUrl = \CRM_Utils_System::baseCMSURL();
   // Construct the full URLs for the forms.
   $campVehicleDispatchFormUrl = $homeUrl . 'camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id=' . $collectionCampId . '&Camp_Vehicle_Dispatch.Filled_by=' . $recipientId . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice;
-  $campOutcomeFormUrl = $homeUrl . '/camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $recipientId . '&Camp_Outcome.Number_of_Contributors=' . $contributorCount;
+  $campOutcomeFormUrl = $homeUrl . '/camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $recipientId;
   $html = "
       <p>Dear $contactName,</p>
       <p>You have been selected as the Goonj user to attend the camp.</p>
