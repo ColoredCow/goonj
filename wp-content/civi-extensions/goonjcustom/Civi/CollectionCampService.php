@@ -987,7 +987,7 @@ class CollectionCampService extends AutoSubscriber {
 
     // Email to material management team member.
     $mailParams = [
-      'subject' => $campTitle,
+      'subject' => 'Material Dispatch Confirmation for Collection Camp: ' . $campTitle,
       'from' => $fromEmail['label'],
       'toEmail' => $mmtEmail,
       'replyTo' => $fromEmail['label'],
