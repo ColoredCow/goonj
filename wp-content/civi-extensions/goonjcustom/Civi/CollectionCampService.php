@@ -952,6 +952,13 @@ class CollectionCampService extends AutoSubscriber {
 
     $collectionCampId = $collectionSourceVehicleDispatch['Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id'];
 
+    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect('title')
+      ->addWhere('id', '=', $collectionCampId)
+      ->execute()->single();
+
+    $campTitle = $collectionCamp['title'];
+
     $coordinators = Relationship::get(FALSE)
       ->addWhere('contact_id_b', '=', $goonjFieldId)
       ->addWhere('relationship_type_id:name', '=', self::MATERIAL_RELATIONSHIP_TYPE_NAME)
@@ -980,7 +987,7 @@ class CollectionCampService extends AutoSubscriber {
 
     // Email to material management team member.
     $mailParams = [
-      'subject' => 'New Entry For Matrial Dispatch Notification',
+      'subject' => 'Material Dispatch Confirmation for Collection Camp: ' . $campTitle,
       'from' => $fromEmail['label'],
       'toEmail' => $mmtEmail,
       'replyTo' => $fromEmail['label'],
