@@ -159,7 +159,7 @@ class CRM_Goonjcustom_Token_CollectionCamp extends AbstractTokenSubscriber {
         fn ($volunteer) => sprintf('%1$s (%2$s)', $volunteer['first_name'], $volunteer['phone.phone']), $volunteers->jsonSerialize()
     );
 
-    return join(', ', $volunteersWithPhone);
+    return join(',', $volunteersWithPhone);
   }
 
   /**
