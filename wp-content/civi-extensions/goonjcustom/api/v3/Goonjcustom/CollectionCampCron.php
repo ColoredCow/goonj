@@ -4,6 +4,7 @@
  * @file
  */
 
+use Civi\Api4\Activity;
 use Civi\Api4\Contact;
 use Civi\Api4\EckEntity;
 use Civi\Api4\Email;
@@ -97,10 +98,10 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
     $contactName = $contact['display_name'];
 
     $fromEmail = OptionValue::get(FALSE)
-    ->addSelect('label')
-    ->addWhere('option_group_id:name', '=', 'from_email_address')
-    ->addWhere('is_default', '=', TRUE)
-    ->execute()->single();
+      ->addSelect('label')
+      ->addWhere('option_group_id:name', '=', 'from_email_address')
+      ->addWhere('is_default', '=', TRUE)
+      ->execute()->single();
 
     // Only send the email if the end date is exactly today.
     if ($endDateFormatted <= $todayFormatted) {
@@ -115,6 +116,18 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
       $result = CRM_Utils_Mail::send($mailParams);
     }
 
+    $activities = Activity::get(FALSE)
+      ->addSelect('id', 'subject')
+      ->addWhere('Material_Contribution.Collection_Camp', '=', $collectionCampId)
+      ->execute();
+
+    $contributorCount = count($activities);
+
+    $results = EckEntity::update('Collection_Camp', FALSE)
+      ->addValue('Camp_Outcome.Number_of_Contributors', $contributorCount)
+      ->addWhere('id', '=', $collectionCampId)
+      ->execute();
+
     // Only send the email if the end date is lower than today.
     if ($endDateFormatted <= $todayFormatted) {
       $mailParams = [
@@ -122,7 +135,7 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
         'from' => 'urban.ops@goonj.org',
         'toEmail' => $emailId,
         'replyTo' => 'urban.ops@goonj.org',
-        'html' => goonjcustom_collection_camp_email_html($contactName, $collectionCampId, $recipientId, $collectionCampGoonjOffice),
+        'html' => goonjcustom_collection_camp_email_html($contactName, $collectionCampId, $recipientId, $collectionCampGoonjOffice, $contributorCount),
         // 'messageTemplateID' => 76, // Uncomment if using a message template
       ];
       $result = CRM_Utils_Mail::send($mailParams);
@@ -134,11 +147,11 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
 /**
  *
  */
-function goonjcustom_collection_camp_email_html($contactName, $collectionCampId, $recipientId, $collectionCampGoonjOffice) {
+function goonjcustom_collection_camp_email_html($contactName, $collectionCampId, $recipientId, $collectionCampGoonjOffice, $contributorCount) {
   $homeUrl = \CRM_Utils_System::baseCMSURL();
   // Construct the full URLs for the forms.
   $campVehicleDispatchFormUrl = $homeUrl . 'camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id=' . $collectionCampId . '&Camp_Vehicle_Dispatch.Filled_by=' . $recipientId . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice;
-  $campOutcomeFormUrl = $homeUrl . '/camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $recipientId;
+  $campOutcomeFormUrl = $homeUrl . '/camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $recipientId . '&Camp_Outcome.Number_of_Contributors=' . $contributorCount;
   $html = "
       <p>Dear $contactName,</p>
       <p>You have been selected as the Goonj user to attend the camp.</p>
