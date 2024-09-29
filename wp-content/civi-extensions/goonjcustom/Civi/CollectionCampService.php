@@ -507,18 +507,19 @@ class CollectionCampService extends AutoSubscriber {
     }
 
     $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
-      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id')
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id', 'subtype:name')
       ->addWhere('id', '=', $objectId)
       ->execute();
 
     $currentCollectionCamp = $collectionCamps->first();
     $currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
     $collectionCampId = $currentCollectionCamp['id'];
-
+    $collectionCampSubtype = $currentCollectionCamp['subtype:name'];
+    
     // Check for status change.
     if ($currentStatus !== $newStatus) {
       if ($newStatus === 'authorized') {
-        self::generateQrCode($collectionCampId);
+        self::generateQrCode($collectionCampId, $collectionCampSubtype);
       }
     }
   }
@@ -526,11 +527,16 @@ class CollectionCampService extends AutoSubscriber {
   /**
    *
    */
-  public static function generateQrCode($collectionCampId) {
+  public static function generateQrCode($collectionCampId, $collectionCampSubtype) {
 
     try {
       $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
-      $url = "{$baseUrl}actions/collection-camp/{$collectionCampId}";
+      
+      if ($collectionCampSubtype === 'Dropping_Center') {
+        $url = "{$baseUrl}actions/dropping-center/{$collectionCampId}";
+      } else {
+        $url = "{$baseUrl}actions/collection-camp/{$collectionCampId}";
+      }
 
       $options = new QROptions([
         'version'    => 5,

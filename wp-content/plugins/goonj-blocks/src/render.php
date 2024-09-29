@@ -25,6 +25,12 @@ $material_contribution_link = sprintf(
 	$action_target['id'],
 );
 
+$dropping_center_material_contribution_link = sprintf(
+	'/dropping-center-contribution?source=%s&target_id=%s',
+	$action_target['title'],
+	$action_target['id'],
+);
+
 $pu_visit_check_link = sprintf(
 	'/processing-center/office-visit/?target_id=%s',
 	$action_target['id']
@@ -36,10 +42,18 @@ $pu_material_contribution_check_link = sprintf(
 );
 
 if ( in_array( $target, array( 'collection-camp', 'dropping-center' ) ) ) :
-	$start_date = new DateTime( $action_target['Collection_Camp_Intent_Details.Start_Date'] );
-	$end_date   = new DateTime( $action_target['Collection_Camp_Intent_Details.End_Date'] );
-	$address = $action_target['Collection_Camp_Intent_Details.Location_Area_of_camp'];
-
+    if ( 'dropping-center' === $target ) {
+        $start_date = new DateTime( $action_target['Dropping_Centre.Start_Time'] );
+        $end_date   = new DateTime( $action_target['Dropping_Centre.End_Time'] );
+        $address    = $action_target['Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_'];
+		$contribution_link = $dropping_center_material_contribution_link;
+    } else {
+        $start_date = new DateTime( $action_target['Collection_Camp_Intent_Details.Start_Date'] );
+        $end_date   = new DateTime( $action_target['Collection_Camp_Intent_Details.End_Date'] );
+        $address    = $action_target['Collection_Camp_Intent_Details.Location_Area_of_camp'];
+		$contribution_link = $material_contribution_link;
+    }
+    ?>
 	?>
 	<div class="wp-block-gb-heading-wrapper">
 		<h2 class="wp-block-gb-heading"><?php echo esc_html($heading_text); ?></h2>
@@ -64,7 +78,7 @@ if ( in_array( $target, array( 'collection-camp', 'dropping-center' ) ) ) :
 		<a href="<?php echo esc_url( $register_link ); ?>" class="wp-block-gb-action-button">
 			<?php esc_html_e( 'Volunteer with Goonj', 'goonj-blocks' ); ?>
 		</a>
-		<a href="<?php echo esc_url( $material_contribution_link ); ?>" class="wp-block-gb-action-button">
+		<a href="<?php echo esc_url( $contribution_link ); ?>" class="wp-block-gb-action-button">
 			<?php esc_html_e( 'Record your Material Contribution', 'goonj-blocks' ); ?>
 		</a>
 	</div>
