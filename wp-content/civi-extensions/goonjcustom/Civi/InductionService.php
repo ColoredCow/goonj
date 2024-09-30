@@ -61,6 +61,8 @@ class InductionService extends AutoSubscriber {
       return FALSE;
     }
 
+    // The ASCII control character \x01 represents the "Start of Header".
+    // It is used to separate values internally by CiviCRM for multiple subtypes.
     $subtypes = explode("\x01", $subTypes);
     $subtypes = array_filter($subtypes);
 
@@ -84,17 +86,15 @@ class InductionService extends AutoSubscriber {
       return FALSE;
     }
 
-    if (!$stateId) {
-      return FALSE;
-    }
-
     $office = self::findOfficeForState($stateId);
     if (!$office) {
+      \Civi::log()->info('Cannot find office for: ' . $stateId);
       return FALSE;
     }
 
     $coordinatorId = self::findCoordinatorForOffice($office['id']);
     if (!$coordinatorId) {
+      \Civi::log()->info('Cannot found induction coordinator for office:', ['id' => $office['id']]);
       return FALSE;
     }
 
@@ -103,12 +103,6 @@ class InductionService extends AutoSubscriber {
 
     $placeholderActivityDate = self::getPlaceholderActivityDate();
 
-    \Civi::log()->info('Before induction activity create: ', [
-      'source' => $sourceContactId,
-      'target' => $targetContactId,
-      'coordinator' => $coordinatorId,
-      'officeId' => $office['id'],
-    ]);
 
     Activity::create(FALSE)
       ->addValue('activity_type_id:name', self::INDUCTION_ACTIVITY_TYPE_NAME)
@@ -134,7 +128,8 @@ class InductionService extends AutoSubscriber {
     $stateId = $objectRef->state_province_id;
 
     if (!$stateId) {
-      \Civi::log()->info('state not found', ['VolunteerId' => self::$volunteerId]);
+      \Civi::log()->info('state not found', ['VolunteerId' => self::$volunteerId, 'stateId'=>$stateId]);
+      return FALSE;
     }
     self::createInduction(self::$volunteerId, $stateId);
   }
@@ -227,6 +222,10 @@ class InductionService extends AutoSubscriber {
 
   /**
    * Get placeholder time for induction activity.
+   * Calculate the date and time 3 days from today at 11:00 AM.
+   * If the resulting date is on a weekend (Saturday or Sunday), adjust to the next Monday at 11:00 AM.
+   *
+   * @return string The formatted date and time for 3 days later or the next Monday at 11 AM.
    */
   private static function getPlaceholderActivityDate() {
     $date = new \DateTime();
@@ -388,6 +387,7 @@ class InductionService extends AutoSubscriber {
 
     $stateId = $contact['address.state_province_id'];
     if (!$stateId) {
+      \Civi::log()->info(['State not found :', ['contactId'=>$contact['id'], 'StateId'=>$stateId]]);
       return FALSE;
     }
 
