@@ -61,6 +61,12 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
     ->addWhere('Logistics_Coordination.Camp_to_be_attended_by', 'IS NOT EMPTY')
     ->execute();
 
+  $fromEmail = OptionValue::get(FALSE)
+    ->addSelect('label')
+    ->addWhere('option_group_id:name', '=', 'from_email_address')
+    ->addWhere('is_default', '=', TRUE)
+    ->execute()->single();
+
   foreach ($collectionCamps as $camp) {
     try {
       $recipientId = $camp['Logistics_Coordination.Camp_to_be_attended_by'];
@@ -101,12 +107,6 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
 
       $contactName = $contact['display_name'];
 
-      $fromEmail = OptionValue::get(FALSE)
-        ->addSelect('label')
-        ->addWhere('option_group_id:name', '=', 'from_email_address')
-        ->addWhere('is_default', '=', TRUE)
-        ->execute()->single();
-
       // Send email if the end date is today or earlier.
       if ($endDateFormatted <= $todayFormatted) {
         $mailParams = [
@@ -145,7 +145,7 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
       }
     }
     catch (Exception $e) {
-      error_log("Error processing camp ID $collectionCampId: " . $e->getMessage());
+      \Civi::log()->info("Error processing camp ID $collectionCampId: " . $e->getMessage());
     }
   }
 
