@@ -4,6 +4,7 @@
  * @file
  */
 
+use Civi\Api4\Activity;
 use Civi\Api4\Contact;
 use Civi\Api4\EckEntity;
 use Civi\Api4\Email;
@@ -97,10 +98,10 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
     $contactName = $contact['display_name'];
 
     $fromEmail = OptionValue::get(FALSE)
-    ->addSelect('label')
-    ->addWhere('option_group_id:name', '=', 'from_email_address')
-    ->addWhere('is_default', '=', TRUE)
-    ->execute()->single();
+      ->addSelect('label')
+      ->addWhere('option_group_id:name', '=', 'from_email_address')
+      ->addWhere('is_default', '=', TRUE)
+      ->execute()->single();
 
     // Only send the email if the end date is exactly today.
     if ($endDateFormatted <= $todayFormatted) {
@@ -114,6 +115,18 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
       ];
       $result = CRM_Utils_Mail::send($mailParams);
     }
+
+    $activities = Activity::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('Material_Contribution.Collection_Camp', '=', $collectionCampId)
+      ->execute();
+
+    $contributorCount = count($activities);
+
+    $results = EckEntity::update('Collection_Camp', FALSE)
+      ->addValue('Camp_Outcome.Number_of_Contributors', $contributorCount)
+      ->addWhere('id', '=', $collectionCampId)
+      ->execute();
 
     // Only send the email if the end date is lower than today.
     if ($endDateFormatted <= $todayFormatted) {
