@@ -11,6 +11,7 @@ use Civi\Api4\Activity;
 use Civi\Api4\Contact;
 use Civi\Api4\CustomField;
 use Civi\Api4\EckEntity;
+use Civi\Api4\Email;
 use Civi\Api4\Group;
 use Civi\Api4\GroupContact;
 use Civi\Api4\OptionValue;
@@ -26,6 +27,9 @@ class CollectionCampService extends AutoSubscriber {
   const FALLBACK_OFFICE_NAME = 'Delhi';
   const RELATIONSHIP_TYPE_NAME = 'Collection Camp Coordinator of';
   const COLLECTION_CAMP_INTENT_FB_NAME = 'afformCollectionCampIntentDetails';
+  const ENTITY_NAME = 'Collection_Camp';
+  const ENTITY_SUBTYPE_NAME = 'Collection_Camp';
+  const MATERIAL_RELATIONSHIP_TYPE_NAME = 'Material Management Team of';
 
   private static $individualId = NULL;
   private static $collectionCampAddress = NULL;
@@ -44,17 +48,123 @@ class CollectionCampService extends AutoSubscriber {
         ['generateCollectionCampQr'],
         ['linkCollectionCampToContact'],
         ['generateCollectionCampCode'],
+        ['createActivityForCollectionCamp'],
       ],
       '&hook_civicrm_custom' => [
         ['setOfficeDetails'],
         ['linkInductionWithCollectionCamp'],
+        ['mailNotificationToMmt'],
+
       ],
       '&hook_civicrm_fieldOptions' => 'setIndianStateOptions',
       'civi.afform.submit' => [
         ['setCollectionCampAddress', 9],
         ['setEventVolunteersAddress', 8],
       ],
+      '&hook_civicrm_tabset' => 'collectionCampTabset',
     ];
+  }
+
+  /**
+   *
+   */
+  public static function collectionCampTabset($tabsetName, &$tabs, $context) {
+    if (!self::isViewingCollectionCamp($tabsetName, $context)) {
+      return;
+    }
+
+    // URL for the Logistics tab.
+    // $logisticsUrl = \CRM_Utils_System::url(
+    //   "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Flogistics-coordination#",
+    // );
+
+    // URL for the camp outcome tab.
+    $campOutcome = \CRM_Utils_System::url(
+      "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fadmin-camp-outcome-form",
+    );
+
+    $campFeedback = \CRM_Utils_System::url(
+      "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Freview-volunteer-camp-feedback",
+    );
+
+    // Add the camp activities tab.
+    $tabs['activities'] = [
+      'id' => 'activities',
+      'title' => ts('Activities'),
+      'is_active' => 1,
+      'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      'module' => 'afsearchCollectionCampActivity',
+      'directive' => 'afsearch-collection-camp-activity',
+    ];
+
+    // // Add the Logistics tab.
+    // $tabs['logistics'] = [
+    //   'title' => ts('Logistics'),
+    //   'link' => $logisticsUrl,
+    //   'valid' => 1,
+    //   'active' => 1,
+    //   'current' => FALSE,
+    // ];
+
+    // Add the camp outcome tab.
+    $tabs['campOutcome'] = [
+      'title' => ts('Camp Outcome'),
+      'link' => $campOutcome,
+      'valid' => 1,
+      'active' => 1,
+      'current' => FALSE,
+    ];
+
+    // Add the camp volunteer feedback tab.
+    $tabs['campFeedback'] = [
+      'title' => ts('Volunteer Feedback'),
+      'link' => $campFeedback,
+      'valid' => 1,
+      'active' => 1,
+      'current' => FALSE,
+    ];
+
+    \Civi::service('angularjs.loader')->addModules('afsearchCollectionCampActivity');
+  }
+
+
+  /**
+   *
+   */
+  private static function isViewingCollectionCamp($tabsetName, $context) {
+    if ($tabsetName !== 'civicrm/eck/entity' || empty($context) || $context['entity_type']['name'] !== self::ENTITY_NAME) {
+      return FALSE;
+    }
+
+    $entityId = $context['entity_id'];
+
+    $entityResults = EckEntity::get(self::ENTITY_NAME, TRUE)
+      ->addWhere('id', '=', $entityId)
+      ->execute();
+
+    $entity = $entityResults->first();
+
+    $entitySubtypeValue = $entity['subtype'];
+
+    $subtypeResults = OptionValue::get(TRUE)
+      ->addSelect('name')
+      ->addWhere('grouping', '=', self::ENTITY_NAME)
+      ->addWhere('value', '=', $entitySubtypeValue)
+      ->execute();
+
+    $subtype = $subtypeResults->first();
+
+    if (!$subtype) {
+      return FALSE;
+    }
+
+    $subtypeName = $subtype['name'];
+
+    if ($subtypeName !== self::ENTITY_SUBTYPE_NAME) {
+      return FALSE;
+    }
+
+    return TRUE;
   }
 
   /**
@@ -303,7 +413,7 @@ class CollectionCampService extends AutoSubscriber {
       ->execute()->single();
 
     // Subtype for 'Dropping Centre'.
-    if ($subtypeId === $optionValue['value']) {
+    if ($subtypeId == $optionValue['value']) {
       return $objectRef['Dropping_Centre.State'] ?? NULL;
     }
     return $objectRef['Collection_Camp_Intent_Details.State'] ?? NULL;
@@ -808,6 +918,216 @@ class CollectionCampService extends AutoSubscriber {
 
     $options = $stateOptions;
 
+  }
+
+  /**
+   * This hook is called after the database write on a custom table.
+   *
+   * @param string $op
+   *   The type of operation being performed.
+   * @param string $objectName
+   *   The custom group ID.
+   * @param int $objectId
+   *   The entityID of the row in the custom table.
+   * @param object $objectRef
+   *   The parameters that were sent into the calling function.
+   */
+  public static function mailNotificationToMmt($op, $groupID, $entityID, &$params) {
+    if ($op !== 'create') {
+      return;
+    }
+
+    if (!($goonjField = self::findOfficeId($params))) {
+      return;
+    }
+
+    $goonjFieldId = $goonjField['value'];
+    $vehicleDispatchId = $goonjField['entity_id'];
+
+    $collectionSourceVehicleDispatch = EckEntity::get('Collection_Source_Vehicle_Dispatch', FALSE)
+      ->addSelect('Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id')
+      ->addWhere('id', '=', $vehicleDispatchId)
+      ->execute()->first();
+
+    $collectionCampId = $collectionSourceVehicleDispatch['Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id'];
+
+    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect('Collection_Camp_Intent_Details.Location_Area_of_camp', 'title')
+      ->addWhere('id', '=', $collectionCampId)
+      ->execute()->single();
+
+    $campCode = $collectionCamp['title'];
+    $campAddress = $collectionCamp['Collection_Camp_Intent_Details.Location_Area_of_camp'];
+
+    $coordinators = Relationship::get(FALSE)
+      ->addWhere('contact_id_b', '=', $goonjFieldId)
+      ->addWhere('relationship_type_id:name', '=', self::MATERIAL_RELATIONSHIP_TYPE_NAME)
+      ->addWhere('is_current', '=', TRUE)
+      ->execute()->first();
+
+    $mmtId = $coordinators['contact_id_a'];
+
+    if (empty($mmtId)) {
+      return;
+    }
+
+    $email = Email::get(FALSE)
+      ->addSelect('email', 'contact_id.display_name')
+      ->addWhere('contact_id', '=', $mmtId)
+      ->execute()->single();
+
+    $mmtEmail = $email['email'];
+    $contactName = $email['contact_id.display_name'];
+
+    $fromEmail = OptionValue::get(FALSE)
+      ->addSelect('label')
+      ->addWhere('option_group_id:name', '=', 'from_email_address')
+      ->addWhere('is_default', '=', TRUE)
+      ->execute()->single();
+
+    // Email to material management team member.
+    $mailParams = [
+      'subject' => 'Material Acknowledgement for Camp: ' . $campCode . ' at ' . $campAddress,
+      'from' => $fromEmail['label'],
+      'toEmail' => $mmtEmail,
+      'replyTo' => $fromEmail['label'],
+      'html' => self::goonjcustom_material_management_email_html($mmtId, $contactName, $collectionCampId, $campCode, $campAddress),
+        // 'messageTemplateID' => 76, // Uncomment if using a message template
+    ];
+    \CRM_Utils_Mail::send($mailParams);
+
+    $updateMmtId = EckEntity::update('Collection_Source_Vehicle_Dispatch', FALSE)
+      ->addValue('Acknowledgement_For_Logistics.Filled_by', $mmtId)
+      ->addWhere('Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id', '=', $collectionCampId)
+      ->execute();
+
+  }
+
+  /**
+   *
+   */
+  public static function goonjcustom_material_management_email_html($mmtId, $contactName, $collectionCampId, $campCode, $campAddress) {
+    $homeUrl = \CRM_Utils_System::baseCMSURL();
+    $materialdispatchUrl = $homeUrl . 'wp-admin/admin.php?page=CiviCRM&q=civicrm%2Feck%2Fentity&reset=1&type=Collection_Camp&id=' . $collectionCampId . '&selectedChild=materialAuthorization#?intent_id=' . $collectionCampId . '&Camp_Vehicle_Dispatch.Filled_by=' . $mmtId;
+
+    $html = "
+    <p>Dear MMT team,</p>
+    <p>This is to inform you that a vehicle has been sent from camp <strong>$campCode</strong> at <strong>$campAddress</strong>.</p>
+    <p>Kindly acknowledge the details by clicking on this form <a href=\"$materialdispatchUrl\"> Link </a> when it is received at the center.</p>
+    <p>Warm regards,<br>Urban Relations Team</p>";
+
+    return $html;
+  }
+
+  /**
+   *
+   */
+  private static function findOfficeId(array $array) {
+    $filteredItems = array_filter($array, fn($item) => $item['entity_table'] === 'civicrm_eck_collection_source_vehicle_dispatch');
+
+    if (empty($filteredItems)) {
+      return FALSE;
+    }
+
+    $goonjOfficeId = CustomField::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('custom_group_id:name', '=', 'Camp_Vehicle_Dispatch')
+      ->addWhere('name', '=', 'To_which_PU_Center_material_is_being_sent')
+      ->execute()
+      ->first();
+
+    if (!$goonjOfficeId) {
+      return FALSE;
+    }
+
+    $goonjOfficeFieldId = $goonjOfficeId['id'];
+
+    $goonjOfficeIndex = array_search(TRUE, array_map(fn($item) =>
+        $item['entity_table'] === 'civicrm_eck_collection_source_vehicle_dispatch' &&
+        $item['custom_field_id'] == $goonjOfficeFieldId,
+        $filteredItems
+    ));
+
+    return $goonjOfficeIndex !== FALSE ? $filteredItems[$goonjOfficeIndex] : FALSE;
+  }
+
+  /**
+   * This hook is called after a db write on entities.
+   *
+   * @param string $op
+   *   The type of operation being performed.
+   * @param string $objectName
+   *   The name of the object.
+   * @param int $objectId
+   *   The unique identifier for the object.
+   * @param object $objectRef
+   *   The reference to the object.
+   */
+  public static function createActivityForCollectionCamp(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($objectName != 'Eck_Collection_Camp') {
+      return;
+    }
+
+    $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
+
+    if (!$newStatus || !$objectId) {
+      return;
+    }
+
+    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id', 'title')
+      ->addWhere('id', '=', $objectId)
+      ->execute()->single();
+
+    $currentStatus = $collectionCamp['Collection_Camp_Core_Details.Status'];
+
+    if ($currentStatus === $newStatus || $newStatus !== 'authorized') {
+      return;
+    }
+
+    // Check for status change.
+    // Access the id within the decoded data.
+    $campId = $objectRef['id'];
+
+    if ($campId === NULL) {
+      return;
+    }
+
+    $activities = $objectRef['Collection_Camp_Intent_Details.Here_are_some_activities_to_pick_from_but_feel_free_to_invent_yo'];
+    $startDate = $objectRef['Collection_Camp_Intent_Details.Start_Date'];
+    $endDate = $objectRef['Collection_Camp_Intent_Details.End_Date'];
+    $initiator = $objectRef['Collection_Camp_Core_Details.Contact_Id'];
+
+    foreach ($activities as $activityName) {
+      // Check if the activity is 'Others'.
+      if ($activityName == 'Others') {
+        $otherActivity = $objectRef['Collection_Camp_Intent_Details.Other_activity'] ?? '';
+        if ($otherActivity) {
+          // Use the 'Other_activity' field as the title.
+          $activityName = $otherActivity;
+        }
+        else {
+          continue;
+        }
+      }
+
+      $optionValue = OptionValue::get(TRUE)
+        ->addSelect('value')
+        ->addWhere('option_group_id:name', '=', 'eck_sub_types')
+        ->addWhere('grouping', '=', 'Collection_Camp_Activity')
+        ->addWhere('name', '=', 'Collection_Camp')
+        ->execute()->single();
+
+      $results = EckEntity::create('Collection_Camp_Activity', TRUE)
+        ->addValue('title', $activityName)
+        ->addValue('subtype', $optionValue['value'])
+        ->addValue('Collection_Camp_Activity.Collection_Camp_Id', $campId)
+        ->addValue('Collection_Camp_Activity.Start_Date', $startDate)
+        ->addValue('Collection_Camp_Activity.End_Date', $endDate)
+        ->addValue('Collection_Camp_Activity.Organizing_Person', $initiator)
+        ->execute();
+
+    }
   }
 
 }

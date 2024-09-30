@@ -31,6 +31,13 @@ function goonj_enqueue_admin_scripts() {
 		array(),
 		wp_get_theme()->get('Version')
 	);
+	wp_enqueue_script(
+		'goonj-admin-script',
+		get_template_directory_uri() . '/admin-script.js',
+		array('jquery'),
+		wp_get_theme()->get('Version'),
+		true
+	);
 }
 
 
@@ -303,7 +310,7 @@ function goonj_handle_user_identification_form() {
 		}
 
 		$contactId = $found_contacts['id'];
-		$contactSubType = $found_contacts['contact_sub_type'] ?? []; 
+		$contactSubType = $found_contacts['contact_sub_type'] ?? [];
 		// Check if the contact is a volunteer
 		if ( empty( $contactSubType ) || !in_array( 'Volunteer', $contactSubType ) ) {
 			wp_redirect('/volunteer-form/#?Individual1=' . $contactId . '&message=individual-user');
@@ -317,7 +324,7 @@ function goonj_handle_user_identification_form() {
 		//   2. Change volunteer status to "Waiting for Induction"
 		if ( ! goonj_is_volunteer_inducted( $found_contacts ) ) {
 			if ($purpose === 'dropping-center') {
-				$redirect_url = home_url('/dropping-centre-waiting-induction/');
+				$redirect_url = home_url('/dropping-center/waiting-induction/');
 			} elseif ($purpose === 'volunteer-registration') {
 				$redirect_url = home_url('/volunteer-registration/waiting-induction/');
 			} else {
