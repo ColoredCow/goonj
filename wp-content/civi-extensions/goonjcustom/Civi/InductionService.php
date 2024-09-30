@@ -257,18 +257,18 @@ class InductionService extends AutoSubscriber {
       return;
     }
 
-    if (!($inductionsFields = self::findInductionOfficeFields($params))) {
+    if (!($inductionFields = self::findInductionOfficeFields($params))) {
       return;
     }
 
-    if (!$inductionsFields['Assign']) {
+    if (!$inductionFields['Assign']) {
       return;
     }
 
     $assignee = Contact::get(FALSE)
       ->addSelect('email.email')
       ->addJoin('Email AS email', 'LEFT')
-      ->addWhere('id', '=', $inductionsFields['Assign']['value'])
+      ->addWhere('id', '=', $inductionFields['Assign']['value'])
       ->addWhere('email.is_primary', '=', TRUE)
       ->setLimit(1)
       ->execute()->single();
