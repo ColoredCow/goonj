@@ -62,85 +62,93 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
     ->execute();
 
   foreach ($collectionCamps as $camp) {
-    $recipientId = $camp['Logistics_Coordination.Camp_to_be_attended_by'];
-    $endDate = new DateTime($camp['Collection_Camp_Intent_Details.End_Date']);
-    $collectionCampId = $camp['id'];
-    $endDateFormatted = $endDate->format('Y-m-d');
-    $collectionCamp = EckEntity::get('Collection_Camp', TRUE)
-      ->addSelect('Collection_Camp_Intent_Details.Goonj_Office', 'Collection_Camp_Core_Details.Contact_Id')
-      ->addWhere('id', '=', $collectionCampId)
-      ->execute()->single();
-    $collectionCampGoonjOffice = $collectionCamp['Collection_Camp_Intent_Details.Goonj_Office'];
-    $initiatorId = $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
+    try {
+      $recipientId = $camp['Logistics_Coordination.Camp_to_be_attended_by'];
+      $endDate = new DateTime($camp['Collection_Camp_Intent_Details.End_Date']);
+      $collectionCampId = $camp['id'];
+      $endDateFormatted = $endDate->format('Y-m-d');
 
-    $initiatorEmail = Email::get(TRUE)
-      ->addWhere('contact_id', '=', $initiatorId)
-      ->execute()->single();
+      $collectionCamp = EckEntity::get('Collection_Camp', TRUE)
+        ->addSelect('Collection_Camp_Intent_Details.Goonj_Office', 'Collection_Camp_Core_Details.Contact_Id')
+        ->addWhere('id', '=', $collectionCampId)
+        ->execute()->single();
 
-    $contactEmailId = $initiatorEmail['email'];
+      $collectionCampGoonjOffice = $collectionCamp['Collection_Camp_Intent_Details.Goonj_Office'];
+      $initiatorId = $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
 
-    $initiator = Contact::get(TRUE)
-      ->addWhere('id', '=', $initiatorId)
-      ->execute()->single();
+      // Get initiator email.
+      $initiatorEmail = Email::get(TRUE)
+        ->addWhere('contact_id', '=', $initiatorId)
+        ->execute()->single();
 
-    $organizingContactName = $initiator['display_name'];
+      $contactEmailId = $initiatorEmail['email'];
 
-    $email = Email::get(TRUE)
-      ->addWhere('contact_id', '=', $recipientId)
-      ->execute()->single();
+      $initiator = Contact::get(TRUE)
+        ->addWhere('id', '=', $initiatorId)
+        ->execute()->single();
+      $organizingContactName = $initiator['display_name'];
 
-    $emailId = $email['email'];
+      // Get recipient email.
+      $email = Email::get(TRUE)
+        ->addWhere('contact_id', '=', $recipientId)
+        ->execute()->single();
 
-    $contact = Contact::get(TRUE)
-      ->addWhere('id', '=', $recipientId)
-      ->execute()->single();
+      $emailId = $email['email'];
 
-    $contactName = $contact['display_name'];
+      $contact = Contact::get(TRUE)
+        ->addWhere('id', '=', $recipientId)
+        ->execute()->single();
 
-    $fromEmail = OptionValue::get(FALSE)
-      ->addSelect('label')
-      ->addWhere('option_group_id:name', '=', 'from_email_address')
-      ->addWhere('is_default', '=', TRUE)
-      ->execute()->single();
+      $contactName = $contact['display_name'];
 
-    // Only send the email if the end date is exactly today.
-    if ($endDateFormatted <= $todayFormatted) {
-      $mailParams = [
-        'subject' => 'Volunteer Feedback Form',
-        'from' => $fromEmail['label'],
-        'toEmail' => $contactEmailId,
-        'replyTo' => $fromEmail['label'],
-        'html' => goonjcustom_collection_camp_volunteer_feedback_email_html($organizingContactName, $collectionCampId),
-        // 'messageTemplateID' => 76, // Uncomment if using a message template
-      ];
-      $result = CRM_Utils_Mail::send($mailParams);
+      $fromEmail = OptionValue::get(FALSE)
+        ->addSelect('label')
+        ->addWhere('option_group_id:name', '=', 'from_email_address')
+        ->addWhere('is_default', '=', TRUE)
+        ->execute()->single();
+
+      // Send email if the end date is today or earlier.
+      if ($endDateFormatted <= $todayFormatted) {
+        $mailParams = [
+          'subject' => 'Volunteer Feedback Form',
+          'from' => $fromEmail['label'],
+          'toEmail' => $contactEmailId,
+          'replyTo' => $fromEmail['label'],
+          'html' => goonjcustom_collection_camp_volunteer_feedback_email_html($organizingContactName, $collectionCampId),
+        ];
+        $result = CRM_Utils_Mail::send($mailParams);
+      }
+
+      // Process activities.
+      $activities = Activity::get(FALSE)
+        ->addSelect('id')
+        ->addWhere('Material_Contribution.Collection_Camp', '=', $collectionCampId)
+        ->execute();
+
+      $contributorCount = count($activities);
+
+      $results = EckEntity::update('Collection_Camp', FALSE)
+        ->addValue('Camp_Outcome.Number_of_Contributors', $contributorCount)
+        ->addWhere('id', '=', $collectionCampId)
+        ->execute();
+
+      // Send completion notification.
+      if ($endDateFormatted <= $todayFormatted) {
+        $mailParams = [
+          'subject' => 'Collections Completion Notification',
+          'from' => 'urban.ops@goonj.org',
+          'toEmail' => $emailId,
+          'replyTo' => 'urban.ops@goonj.org',
+          'html' => goonjcustom_collection_camp_email_html($contactName, $collectionCampId, $recipientId, $collectionCampGoonjOffice),
+        ];
+        $result = CRM_Utils_Mail::send($mailParams);
+      }
     }
-
-    $activities = Activity::get(FALSE)
-      ->addSelect('id')
-      ->addWhere('Material_Contribution.Collection_Camp', '=', $collectionCampId)
-      ->execute();
-
-    $contributorCount = count($activities);
-
-    $results = EckEntity::update('Collection_Camp', FALSE)
-      ->addValue('Camp_Outcome.Number_of_Contributors', $contributorCount)
-      ->addWhere('id', '=', $collectionCampId)
-      ->execute();
-
-    // Only send the email if the end date is lower than today.
-    if ($endDateFormatted <= $todayFormatted) {
-      $mailParams = [
-        'subject' => 'Collections Completion Notification',
-        'from' => 'urban.ops@goonj.org',
-        'toEmail' => $emailId,
-        'replyTo' => 'urban.ops@goonj.org',
-        'html' => goonjcustom_collection_camp_email_html($contactName, $collectionCampId, $recipientId, $collectionCampGoonjOffice),
-        // 'messageTemplateID' => 76, // Uncomment if using a message template
-      ];
-      $result = CRM_Utils_Mail::send($mailParams);
+    catch (Exception $e) {
+      error_log("Error processing camp ID $collectionCampId: " . $e->getMessage());
     }
   }
+
   return civicrm_api3_create_success($returnValues, $params, 'Goonjcustom', 'collection_camp_cron');
 }
 
