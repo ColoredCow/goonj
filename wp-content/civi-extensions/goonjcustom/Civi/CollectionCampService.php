@@ -74,9 +74,9 @@ class CollectionCampService extends AutoSubscriber {
     }
 
     // URL for the Logistics tab.
-    $logisticsUrl = \CRM_Utils_System::url(
-      "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Flogistics-coordination#",
-    );
+    // $logisticsUrl = \CRM_Utils_System::url(
+    //   "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Flogistics-coordination#",
+    // );
 
     // URL for the camp outcome tab.
     $campOutcome = \CRM_Utils_System::url(
@@ -100,14 +100,14 @@ class CollectionCampService extends AutoSubscriber {
       'current' => FALSE,
     ];
 
-    // Add the Logistics tab.
-    $tabs['logistics'] = [
-      'title' => ts('Logistics'),
-      'link' => $logisticsUrl,
-      'valid' => 1,
-      'active' => 1,
-      'current' => FALSE,
-    ];
+    // // Add the Logistics tab.
+    // $tabs['logistics'] = [
+    //   'title' => ts('Logistics'),
+    //   'link' => $logisticsUrl,
+    //   'valid' => 1,
+    //   'active' => 1,
+    //   'current' => FALSE,
+    // ];
 
     // Add the camp outcome tab.
     $tabs['campOutcome'] = [
