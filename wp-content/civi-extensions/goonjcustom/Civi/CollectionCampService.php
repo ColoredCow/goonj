@@ -953,11 +953,12 @@ class CollectionCampService extends AutoSubscriber {
     $collectionCampId = $collectionSourceVehicleDispatch['Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id'];
 
     $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('title')
+      ->addSelect('Collection_Camp_Intent_Details.Location_Area_of_camp', 'title')
       ->addWhere('id', '=', $collectionCampId)
       ->execute()->single();
 
-    $campTitle = $collectionCamp['title'];
+    $campCode = $collectionCamp['title'];
+    $campAddress = $collectionCamp['Collection_Camp_Intent_Details.Location_Area_of_camp'];
 
     $coordinators = Relationship::get(FALSE)
       ->addWhere('contact_id_b', '=', $goonjFieldId)
@@ -987,11 +988,11 @@ class CollectionCampService extends AutoSubscriber {
 
     // Email to material management team member.
     $mailParams = [
-      'subject' => 'Material Dispatch Confirmation for Collection Camp: ' . $campTitle,
+      'subject' => 'Material Acknowledgement for Camp: ' . $campCode . ' at ' . $campAddress,
       'from' => $fromEmail['label'],
       'toEmail' => $mmtEmail,
       'replyTo' => $fromEmail['label'],
-      'html' => self::goonjcustom_material_management_email_html($mmtId, $contactName, $collectionCampId),
+      'html' => self::goonjcustom_material_management_email_html($mmtId, $contactName, $collectionCampId, $campCode, $campAddress),
         // 'messageTemplateID' => 76, // Uncomment if using a message template
     ];
     \CRM_Utils_Mail::send($mailParams);
@@ -1006,18 +1007,15 @@ class CollectionCampService extends AutoSubscriber {
   /**
    *
    */
-  public static function goonjcustom_material_management_email_html($mmtId, $contactName, $collectionCampId) {
+  public static function goonjcustom_material_management_email_html($mmtId, $contactName, $collectionCampId, $campCode, $campAddress) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
     $materialdispatchUrl = $homeUrl . 'wp-admin/admin.php?page=CiviCRM&q=civicrm%2Feck%2Fentity&reset=1&type=Collection_Camp&id=' . $collectionCampId . '&selectedChild=materialAuthorization#?intent_id=' . $collectionCampId . '&Camp_Vehicle_Dispatch.Filled_by=' . $mmtId;
 
     $html = "
-    <p>Dear $contactName,</p>
-    <p>A new entry of camp vehicle dispatch form is submitted.</p>
-    <p>Please acknowledge the form from CRM.</p>
-    <ul>
-      <li><a href=\"$materialdispatchUrl\">Material Dispatch Authorization</a></li>
-    </ul>
-    <p>Warm regards,</p>";
+    <p>Dear MMT team,</p>
+    <p>This is to inform you that a vehicle has been sent from camp <strong>$campCode</strong> at <strong>$campAddress</strong>.</p>
+    <p>Kindly acknowledge the details by clicking on this form <a href=\"$materialdispatchUrl\"> Link </a> when it is received at the center.</p>
+    <p>Warm regards,<br>Urban Relations Team</p>";
 
     return $html;
   }

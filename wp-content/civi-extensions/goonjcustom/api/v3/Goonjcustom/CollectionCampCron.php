@@ -75,12 +75,14 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
       $endDateFormatted = $endDate->format('Y-m-d');
 
       $collectionCamp = EckEntity::get('Collection_Camp', TRUE)
-        ->addSelect('Collection_Camp_Intent_Details.Goonj_Office', 'Collection_Camp_Core_Details.Contact_Id')
+        ->addSelect('Collection_Camp_Intent_Details.Goonj_Office', 'Collection_Camp_Core_Details.Contact_Id', 'Collection_Camp_Intent_Details.Location_Area_of_camp', 'title')
         ->addWhere('id', '=', $collectionCampId)
         ->execute()->single();
 
       $collectionCampGoonjOffice = $collectionCamp['Collection_Camp_Intent_Details.Goonj_Office'];
       $initiatorId = $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
+      $campAddress = $collectionCamp['Collection_Camp_Intent_Details.Location_Area_of_camp'];
+      $campCode = $collectionCamp['title'];
 
       // Get initiator email.
       $initiatorEmail = Email::get(TRUE)
@@ -110,11 +112,11 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
       // Send email if the end date is today or earlier.
       if ($endDateFormatted <= $todayFormatted) {
         $mailParams = [
-          'subject' => 'Volunteer Feedback Form',
+          'subject' => 'Thank You for Organizing the Camp! Share Your Feedback.',
           'from' => $fromEmail['label'],
           'toEmail' => $contactEmailId,
           'replyTo' => $fromEmail['label'],
-          'html' => goonjcustom_collection_camp_volunteer_feedback_email_html($organizingContactName, $collectionCampId),
+          'html' => goonjcustom_collection_camp_volunteer_feedback_email_html($organizingContactName, $collectionCampId, $campAddress),
         ];
         $result = CRM_Utils_Mail::send($mailParams);
       }
@@ -135,11 +137,11 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
       // Send completion notification.
       if ($endDateFormatted <= $todayFormatted) {
         $mailParams = [
-          'subject' => 'Collections Completion Notification',
+          'subject' => 'Collection Camp Completion Notification: ' . $campCode . ' at ' . $campAddress,
           'from' => 'urban.ops@goonj.org',
           'toEmail' => $emailId,
           'replyTo' => 'urban.ops@goonj.org',
-          'html' => goonjcustom_collection_camp_email_html($contactName, $collectionCampId, $recipientId, $collectionCampGoonjOffice),
+          'html' => goonjcustom_collection_camp_email_html($contactName, $collectionCampId, $recipientId, $collectionCampGoonjOffice, $campCode, $campAddress),
         ];
         $result = CRM_Utils_Mail::send($mailParams);
       }
@@ -155,37 +157,44 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
 /**
  *
  */
-function goonjcustom_collection_camp_email_html($contactName, $collectionCampId, $recipientId, $collectionCampGoonjOffice) {
+function goonjcustom_collection_camp_email_html($contactName, $collectionCampId, $recipientId, $collectionCampGoonjOffice, $campCode, $campAddress) {
   $homeUrl = \CRM_Utils_System::baseCMSURL();
   // Construct the full URLs for the forms.
   $campVehicleDispatchFormUrl = $homeUrl . 'camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id=' . $collectionCampId . '&Camp_Vehicle_Dispatch.Filled_by=' . $recipientId . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice;
   $campOutcomeFormUrl = $homeUrl . '/camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $recipientId;
+
   $html = "
       <p>Dear $contactName,</p>
-      <p>You have been selected as the Goonj user to attend the camp.</p>
-      <p>Today the event has ended. Please find below the links for the Camp Vehicle Dispatch Form and the Camp Outcome Form:</p>
-      <ul>
-        <li><a href=\"$campVehicleDispatchFormUrl\">Camp Vehicle Dispatch Form</a></li>
-        <li><a href=\"$campOutcomeFormUrl\">Camp Outcome Form</a></li>
-      </ul>
-      <p>Warm regards,</p>";
+      <p>Thank you for attending the camp <strong>$campCode</strong> at <strong>$campAddress</strong>. There are two forms that require your attention during and after the camp:</p>
+      <ol>
+          <li><a href=\"$campVehicleDispatchFormUrl\">Dispatch Form</a><br>
+          Please complete this form from the camp location once the vehicle is being loaded and ready for dispatch to the Goonj's processing center.</li>
+          <li><a href=\"$campOutcomeFormUrl\">Camp Outcome Form</a><br>
+          This feedback form should be filled out after the camp/drive ends, once you have an overview of the event's outcomes.</li>
+      </ol>
+      <p>We appreciate your cooperation.</p>
+      <p>Warm Regards,<br>Urban Relations Team</p>";
+
   return $html;
 }
 
 /**
  *
  */
-function goonjcustom_collection_camp_volunteer_feedback_email_html($organizingContactName, $collectionCampId) {
+function goonjcustom_collection_camp_volunteer_feedback_email_html($organizingContactName, $collectionCampId, $campAddress) {
   $homeUrl = \CRM_Utils_System::baseCMSURL();
+
   // URL for the volunteer feedback form.
   $campVolunteerFeedback = $homeUrl . 'volunteer-camp-feedback/#?Eck_Collection_Camp1=' . $collectionCampId;
+
   $html = "
       <p>Dear $organizingContactName,</p>
-      <p>Thank you for successfully completing your Collection Camp.</p>
-      <p>We would appreciate your feedback. Please use the link below to fill out the Volunteer Camp Feedback Form:</p>
-      <ul>
-        <li><a href=\"$campVolunteerFeedback\">Volunteer Camp Feedback Form</a></li>
-      </ul>
-      <p>Warm regards,</p>";
+      <p>Thank you for stepping up and organising the recent collection drive at <strong>$campAddress</strong>! Your time, effort, and enthusiasm made all the difference, and we hope that it was a meaningful effort for you as well.</p>
+      <p>To help us improve, we’d love to hear your thoughts and experiences. Kindly take a few minutes to fill out our feedback form. Your input will be valuable to us:</p>
+      <p><a href=\"$campVolunteerFeedback\">Feedback Form Link</a></p>
+      <p>Feel free to share any highlights, suggestions, or challenges you faced. We're eager to learn how we can make it better together!</p>
+      <p>We look forward to continuing this journey together!</p>
+      <p>Warm Regards,<br>Team Goonj</p>";
+
   return $html;
 }
