@@ -75,12 +75,13 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
       $endDateFormatted = $endDate->format('Y-m-d');
 
       $collectionCamp = EckEntity::get('Collection_Camp', TRUE)
-        ->addSelect('Collection_Camp_Intent_Details.Goonj_Office', 'Collection_Camp_Core_Details.Contact_Id')
+        ->addSelect('Collection_Camp_Intent_Details.Goonj_Office', 'Collection_Camp_Core_Details.Contact_Id', 'Collection_Camp_Intent_Details.Location_Area_of_camp')
         ->addWhere('id', '=', $collectionCampId)
         ->execute()->single();
 
       $collectionCampGoonjOffice = $collectionCamp['Collection_Camp_Intent_Details.Goonj_Office'];
       $initiatorId = $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
+      $campAddress = $collectionCamp['Collection_Camp_Intent_Details.Location_Area_of_camp'];
 
       // Get initiator email.
       $initiatorEmail = Email::get(TRUE)
@@ -114,7 +115,7 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
           'from' => $fromEmail['label'],
           'toEmail' => $contactEmailId,
           'replyTo' => $fromEmail['label'],
-          'html' => goonjcustom_collection_camp_volunteer_feedback_email_html($organizingContactName, $collectionCampId),
+          'html' => goonjcustom_collection_camp_volunteer_feedback_email_html($organizingContactName, $collectionCampId, $campAddress),
         ];
         $result = CRM_Utils_Mail::send($mailParams);
       }
@@ -179,7 +180,7 @@ function goonjcustom_collection_camp_email_html($contactName, $collectionCampId,
 /**
  *
  */
-function goonjcustom_collection_camp_volunteer_feedback_email_html($organizingContactName, $collectionCampId) {
+function goonjcustom_collection_camp_volunteer_feedback_email_html($organizingContactName, $collectionCampId, $campAddress) {
   $homeUrl = \CRM_Utils_System::baseCMSURL();
 
   // URL for the volunteer feedback form.
@@ -187,11 +188,11 @@ function goonjcustom_collection_camp_volunteer_feedback_email_html($organizingCo
 
   $html = "
       <p>Dear $organizingContactName,</p>
-      <p>Thank you for stepping up and organising the recent collection drive! Your time, effort, and enthusiasm made all the difference and we hope that it was meaningful effort for you as well.</p>
-      <p>To help us improve, we’d love to hear your thoughts and experiences.Kindly take a few minutes to fill out our feedback form. Your input will be valuable to us.</p>
+      <p>Thank you for stepping up and organising the recent collection drive at <strong>$campAddress</strong>! Your time, effort, and enthusiasm made all the difference, and we hope that it was a meaningful effort for you as well.</p>
+      <p>To help us improve, we’d love to hear your thoughts and experiences. Kindly take a few minutes to fill out our feedback form. Your input will be valuable to us:</p>
       <p><a href=\"$campVolunteerFeedback\">Feedback Form Link</a></p>
-      <p>Feel free to share any highlights, suggestions, or challenges you faced. We're eager to learn how we can make it better together !</p>
-      <p>We look forward to continuing this journey together !</p>
+      <p>Feel free to share any highlights, suggestions, or challenges you faced. We're eager to learn how we can make it better together!</p>
+      <p>We look forward to continuing this journey together!</p>
       <p>Warm Regards,<br>Team Goonj</p>";
 
   return $html;
