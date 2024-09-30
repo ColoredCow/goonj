@@ -135,7 +135,7 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
       // Send completion notification.
       if ($endDateFormatted <= $todayFormatted) {
         $mailParams = [
-          'subject' => 'Collections Completion Notification',
+          'subject' => 'Important Forms to Complete During and After the Camp',
           'from' => 'urban.ops@goonj.org',
           'toEmail' => $emailId,
           'replyTo' => 'urban.ops@goonj.org',
@@ -160,15 +160,19 @@ function goonjcustom_collection_camp_email_html($contactName, $collectionCampId,
   // Construct the full URLs for the forms.
   $campVehicleDispatchFormUrl = $homeUrl . 'camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id=' . $collectionCampId . '&Camp_Vehicle_Dispatch.Filled_by=' . $recipientId . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice;
   $campOutcomeFormUrl = $homeUrl . '/camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $recipientId;
+
   $html = "
       <p>Dear $contactName,</p>
-      <p>You have been selected as the Goonj user to attend the camp.</p>
-      <p>Today the event has ended. Please find below the links for the Camp Vehicle Dispatch Form and the Camp Outcome Form:</p>
-      <ul>
-        <li><a href=\"$campVehicleDispatchFormUrl\">Camp Vehicle Dispatch Form</a></li>
-        <li><a href=\"$campOutcomeFormUrl\">Camp Outcome Form</a></li>
-      </ul>
-      <p>Warm regards,</p>";
+      <p>Thank you for attending the camp. There are two forms that require your attention during and after the camp:</p>
+      <ol>
+        <li>Dispatch Form – <a href=\"$campVehicleDispatchFormUrl\">[link]</a><br>
+        Please complete this form from the camp location once the vehicle is being loaded and ready for dispatch to the Goonj's processing center.</li>
+        <li>Camp Outcome Form – <a href=\"$campOutcomeFormUrl\">[link]</a><br>
+        This feedback form should be filled out after the camp/drive ends, once you have an overview of the event's outcomes.</li>
+      </ol>
+      <p>We appreciate your cooperation.</p>
+      <p>Warm Regards,<br>Urban Relations Team</p>";
+
   return $html;
 }
 
