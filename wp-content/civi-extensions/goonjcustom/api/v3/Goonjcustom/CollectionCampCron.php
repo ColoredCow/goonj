@@ -167,9 +167,9 @@ function goonjcustom_collection_camp_email_html($contactName, $collectionCampId,
       <p>Dear $contactName,</p>
       <p>Thank you for attending the camp <strong>$campCode</strong> at <strong>$campAddress</strong>. There are two forms that require your attention during and after the camp:</p>
       <ol>
-          <li>Dispatch Form – <a href=\"$campVehicleDispatchFormUrl\">[link]</a><br>
+          <li><a href=\"$campVehicleDispatchFormUrl\">Dispatch Form</a><br>
           Please complete this form from the camp location once the vehicle is being loaded and ready for dispatch to the Goonj's processing center.</li>
-          <li>Camp Outcome Form – <a href=\"$campOutcomeFormUrl\">[link]</a><br>
+          <li><a href=\"$campOutcomeFormUrl\">Camp Outcome Form</a><br>
           This feedback form should be filled out after the camp/drive ends, once you have an overview of the event's outcomes.</li>
       </ol>
       <p>We appreciate your cooperation.</p>
