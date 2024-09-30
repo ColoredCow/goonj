@@ -57,3 +57,13 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }, 1000);
 });
+
+setTimeout(function() {
+	const labels = document.querySelectorAll('label.crm-af-field-label');
+  
+	labels.forEach((label) => {
+	  if (label.textContent.trim() === 'Existing Collection Source Vehicle Dispatch') {
+		label.closest('af-field').style.display = 'none';
+	  }
+	});
+  }, 1000); // Longer delay to allow for dynamic rendering
