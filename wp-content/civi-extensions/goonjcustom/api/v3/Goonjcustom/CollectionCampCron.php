@@ -111,7 +111,7 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
       // Send email if the end date is today or earlier.
       if ($endDateFormatted <= $todayFormatted) {
         $mailParams = [
-          'subject' => 'Your Feedback and experience on the recent collection camp',
+          'subject' => 'Thank You for Organizing the Camp! Share Your Feedback.',
           'from' => $fromEmail['label'],
           'toEmail' => $contactEmailId,
           'replyTo' => $fromEmail['label'],
