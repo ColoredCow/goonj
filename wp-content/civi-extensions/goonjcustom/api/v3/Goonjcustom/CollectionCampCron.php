@@ -117,7 +117,7 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
     }
 
     $activities = Activity::get(FALSE)
-      ->addSelect('id', 'subject')
+      ->addSelect('id')
       ->addWhere('Material_Contribution.Collection_Camp', '=', $collectionCampId)
       ->execute();
 
