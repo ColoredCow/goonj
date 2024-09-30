@@ -75,13 +75,14 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
       $endDateFormatted = $endDate->format('Y-m-d');
 
       $collectionCamp = EckEntity::get('Collection_Camp', TRUE)
-        ->addSelect('Collection_Camp_Intent_Details.Goonj_Office', 'Collection_Camp_Core_Details.Contact_Id', 'Collection_Camp_Intent_Details.Location_Area_of_camp')
+        ->addSelect('Collection_Camp_Intent_Details.Goonj_Office', 'Collection_Camp_Core_Details.Contact_Id', 'Collection_Camp_Intent_Details.Location_Area_of_camp', 'title')
         ->addWhere('id', '=', $collectionCampId)
         ->execute()->single();
 
       $collectionCampGoonjOffice = $collectionCamp['Collection_Camp_Intent_Details.Goonj_Office'];
       $initiatorId = $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
       $campAddress = $collectionCamp['Collection_Camp_Intent_Details.Location_Area_of_camp'];
+      $campCode = $collectionCamp['title'];
 
       // Get initiator email.
       $initiatorEmail = Email::get(TRUE)
@@ -136,11 +137,11 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
       // Send completion notification.
       if ($endDateFormatted <= $todayFormatted) {
         $mailParams = [
-          'subject' => 'Important Forms to Complete During and After the Camp',
+          'subject' => 'Collection Camp Completion Notification: ' . $campCode . ' at ' . $campAddress,
           'from' => 'urban.ops@goonj.org',
           'toEmail' => $emailId,
           'replyTo' => 'urban.ops@goonj.org',
-          'html' => goonjcustom_collection_camp_email_html($contactName, $collectionCampId, $recipientId, $collectionCampGoonjOffice),
+          'html' => goonjcustom_collection_camp_email_html($contactName, $collectionCampId, $recipientId, $collectionCampGoonjOffice, $campCode, $campAddress),
         ];
         $result = CRM_Utils_Mail::send($mailParams);
       }
@@ -156,7 +157,7 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
 /**
  *
  */
-function goonjcustom_collection_camp_email_html($contactName, $collectionCampId, $recipientId, $collectionCampGoonjOffice) {
+function goonjcustom_collection_camp_email_html($contactName, $collectionCampId, $recipientId, $collectionCampGoonjOffice, $campCode, $campAddress) {
   $homeUrl = \CRM_Utils_System::baseCMSURL();
   // Construct the full URLs for the forms.
   $campVehicleDispatchFormUrl = $homeUrl . 'camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id=' . $collectionCampId . '&Camp_Vehicle_Dispatch.Filled_by=' . $recipientId . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice;
@@ -164,12 +165,12 @@ function goonjcustom_collection_camp_email_html($contactName, $collectionCampId,
 
   $html = "
       <p>Dear $contactName,</p>
-      <p>Thank you for attending the camp. There are two forms that require your attention during and after the camp:</p>
+      <p>Thank you for attending the camp <strong>$campCode</strong> at <strong>$campAddress</strong>. There are two forms that require your attention during and after the camp:</p>
       <ol>
-        <li>Dispatch Form – <a href=\"$campVehicleDispatchFormUrl\">[link]</a><br>
-        Please complete this form from the camp location once the vehicle is being loaded and ready for dispatch to the Goonj's processing center.</li>
-        <li>Camp Outcome Form – <a href=\"$campOutcomeFormUrl\">[link]</a><br>
-        This feedback form should be filled out after the camp/drive ends, once you have an overview of the event's outcomes.</li>
+          <li>Dispatch Form – <a href=\"$campVehicleDispatchFormUrl\">[link]</a><br>
+          Please complete this form from the camp location once the vehicle is being loaded and ready for dispatch to the Goonj's processing center.</li>
+          <li>Camp Outcome Form – <a href=\"$campOutcomeFormUrl\">[link]</a><br>
+          This feedback form should be filled out after the camp/drive ends, once you have an overview of the event's outcomes.</li>
       </ol>
       <p>We appreciate your cooperation.</p>
       <p>Warm Regards,<br>Urban Relations Team</p>";
