@@ -87,17 +87,14 @@ class CollectionCampService extends AutoSubscriber {
       "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Freview-volunteer-camp-feedback",
     );
 
-    $activities = \CRM_Utils_System::url(
-      "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fcollection-camp-activity-view",
-    );
-
     // Add the camp activities tab.
     $tabs['activities'] = [
+      'id' => 'activities',
       'title' => ts('Activities'),
-      'link' => $activities,
-      'valid' => 1,
-      'active' => 1,
-      'current' => FALSE,
+      'is_active' => 1,
+      'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      'module' => 'afsearchCollectionCampActivity',
+      'directive' => 'afsearch-collection-camp-activity',
     ];
 
     // // Add the Logistics tab.
@@ -127,7 +124,9 @@ class CollectionCampService extends AutoSubscriber {
       'current' => FALSE,
     ];
 
+    \Civi::service('angularjs.loader')->addModules('afsearchCollectionCampActivity');
   }
+
 
   /**
    *
