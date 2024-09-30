@@ -110,7 +110,7 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
       // Send email if the end date is today or earlier.
       if ($endDateFormatted <= $todayFormatted) {
         $mailParams = [
-          'subject' => 'Volunteer Feedback Form',
+          'subject' => 'Your Feedback and experience on the recent collection camp',
           'from' => $fromEmail['label'],
           'toEmail' => $contactEmailId,
           'replyTo' => $fromEmail['label'],
@@ -181,15 +181,18 @@ function goonjcustom_collection_camp_email_html($contactName, $collectionCampId,
  */
 function goonjcustom_collection_camp_volunteer_feedback_email_html($organizingContactName, $collectionCampId) {
   $homeUrl = \CRM_Utils_System::baseCMSURL();
+
   // URL for the volunteer feedback form.
   $campVolunteerFeedback = $homeUrl . 'volunteer-camp-feedback/#?Eck_Collection_Camp1=' . $collectionCampId;
+
   $html = "
       <p>Dear $organizingContactName,</p>
-      <p>Thank you for successfully completing your Collection Camp.</p>
-      <p>We would appreciate your feedback. Please use the link below to fill out the Volunteer Camp Feedback Form:</p>
-      <ul>
-        <li><a href=\"$campVolunteerFeedback\">Volunteer Camp Feedback Form</a></li>
-      </ul>
-      <p>Warm regards,</p>";
+      <p>Thank you for stepping up and organising the recent collection drive! Your time, effort, and enthusiasm made all the difference and we hope that it was meaningful effort for you as well.</p>
+      <p>To help us improve, we’d love to hear your thoughts and experiences.Kindly take a few minutes to fill out our feedback form. Your input will be valuable to us.</p>
+      <p><a href=\"$campVolunteerFeedback\">Feedback Form Link</a></p>
+      <p>Feel free to share any highlights, suggestions, or challenges you faced. We're eager to learn how we can make it better together !</p>
+      <p>We look forward to continuing this journey together !</p>
+      <p>Warm Regards,<br>Team Goonj</p>";
+
   return $html;
 }
