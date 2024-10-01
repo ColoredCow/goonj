@@ -61,12 +61,8 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
     ->addWhere('Logistics_Coordination.Camp_to_be_attended_by', 'IS NOT EMPTY')
     ->execute();
 
-  $fromEmail = OptionValue::get(FALSE)
-    ->addSelect('label')
-    ->addWhere('option_group_id:name', '=', 'from_email_address')
-    ->addWhere('is_default', '=', TRUE)
-    ->execute()->single();
-
+  [$defaultFromName, $defaultFromEmail] = CRM_Core_BAO_Domain::getNameAndEmail();
+  $from = "\"$defaultFromName\" <$defaultFromEmail>";
   foreach ($collectionCamps as $camp) {
     try {
       $recipientId = $camp['Logistics_Coordination.Camp_to_be_attended_by'];
@@ -113,9 +109,9 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
       if ($endDateFormatted <= $todayFormatted) {
         $mailParams = [
           'subject' => 'Thank You for Organizing the Camp! Share Your Feedback.',
-          'from' => $fromEmail['label'],
+          'from' => $from,
           'toEmail' => $contactEmailId,
-          'replyTo' => $fromEmail['label'],
+          'replyTo' => $from,
           'html' => goonjcustom_collection_camp_volunteer_feedback_email_html($organizingContactName, $collectionCampId, $campAddress),
         ];
         $result = CRM_Utils_Mail::send($mailParams);
@@ -160,7 +156,7 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
 function goonjcustom_collection_camp_email_html($contactName, $collectionCampId, $recipientId, $collectionCampGoonjOffice, $campCode, $campAddress) {
   $homeUrl = \CRM_Utils_System::baseCMSURL();
   // Construct the full URLs for the forms.
-  $campVehicleDispatchFormUrl = $homeUrl . 'camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id=' . $collectionCampId . '&Camp_Vehicle_Dispatch.Filled_by=' . $recipientId . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice;
+  $campVehicleDispatchFormUrl = $homeUrl . 'camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id=' . $collectionCampId . '&Camp_Vehicle_Dispatch.Filled_by=' . $recipientId . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice . '&Camp_Vehicle_Dispatch.Collection_Camp_Code=' . $campCode . '&Camp_Vehicle_Dispatch.Collection_Camp_Address=' . $campAddress;
   $campOutcomeFormUrl = $homeUrl . '/camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $recipientId;
 
   $html = "
