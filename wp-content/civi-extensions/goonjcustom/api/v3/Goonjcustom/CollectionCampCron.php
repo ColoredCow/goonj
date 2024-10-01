@@ -56,6 +56,7 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
 
   $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
     ->addSelect('Logistics_Coordination.Camp_to_be_attended_by', 'Collection_Camp_Intent_Details.End_Date', 'Logistics_Coordination.Email_Sent', 'Logistics_Coordination.Feedback_Email_Sent')
+    ->addWhere('Collection_Camp_Core_Details.Status', '=', 'authorized')
     ->addWhere('subtype', '=', $collectionCampSubtype)
     ->addWhere('Collection_Camp_Intent_Details.End_Date', '<=', $endOfDay)
     ->execute();
