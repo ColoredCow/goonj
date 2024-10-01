@@ -169,7 +169,7 @@ function goonjcustom_collection_camp_email_html($contactName, $collectionCampId,
   $homeUrl = \CRM_Utils_System::baseCMSURL();
   // Construct the full URLs for the forms.
   $campVehicleDispatchFormUrl = $homeUrl . 'camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id=' . $collectionCampId . '&Camp_Vehicle_Dispatch.Filled_by=' . $recipientId . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice . '&Camp_Vehicle_Dispatch.Collection_Camp_Code=' . $campCode . '&Camp_Vehicle_Dispatch.Collection_Camp_Address=' . $campAddress;
-  $campOutcomeFormUrl = $homeUrl . '/camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $recipientId . '&Camp_Outcome.Collection_Camp_Code=' . $campCode . '&Camp_Outcome.Collection_Camp_Address=' . $campAddress;
+  $campOutcomeFormUrl = $homeUrl . '/camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $recipientId;
 
   $html = "
       <p>Dear $contactName,</p>
@@ -193,7 +193,7 @@ function goonjcustom_collection_camp_volunteer_feedback_email_html($organizingCo
   $homeUrl = \CRM_Utils_System::baseCMSURL();
 
   // URL for the volunteer feedback form.
-  $campVolunteerFeedback = $homeUrl . 'volunteer-camp-feedback/#?Eck_Collection_Camp1=' . $collectionCampId . '&Volunteer_Camp_Feedback.Collection_Camp_Code=' . $campCode . '&Volunteer_Camp_Feedback.Collection_Camp_Address=' . $campAddress;
+  $campVolunteerFeedback = $homeUrl . 'volunteer-camp-feedback/#?Eck_Collection_Camp1=' . $collectionCampId;
 
   $html = "
       <p>Dear $organizingContactName,</p>
