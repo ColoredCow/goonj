@@ -431,3 +431,25 @@ function goonj_collection_camp_past_data() {
 	get_template_part( 'templates/collection-camp-data' );
 	return ob_get_clean();
 }
+
+add_filter('login_message', 'goonj_custom_reset_password_messagee');
+function goonj_custom_reset_password_messagee() {
+    if (isset($_GET['action']) && $_GET['action'] === 'resetpass' && !isset($_GET['error'])) {
+        get_template_part('templates/password-confirmation');
+    }
+
+}
+
+add_action( 'login_head', 'custom_login_header_image' );
+function custom_login_header_image() {
+    ?>
+    <style type="text/css">
+        .login h1 a {
+            background-image: url('<?php echo get_stylesheet_directory_uri(); ?>/images/goonj-logo.png');
+            width: 150px;
+            background-size: contain;
+            padding-bottom: 100px;
+        }
+    </style>
+    <?php
+}

@@ -1,10 +1,14 @@
 <?php
 /**
- * Theme file to Redesign Password Reset User Interface
+ * Theme file to Redesign Password Reset User Interface.
  */
 ?>
 <link rel="stylesheet" href="<?php echo get_template_directory_uri(); ?>/assets/password-reset.css">
-
+<style>
+#login {
+	display: none;
+}
+</style>
 <?php
 list( $rp_path ) = explode( '?', wp_unslash( $_SERVER['REQUEST_URI'] ) );
 $rp_cookie       = 'wp-resetpass-' . COOKIEHASH;
