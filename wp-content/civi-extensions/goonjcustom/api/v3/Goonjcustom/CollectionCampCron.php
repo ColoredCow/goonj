@@ -160,8 +160,8 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
 function goonjcustom_collection_camp_email_html($contactName, $collectionCampId, $recipientId, $collectionCampGoonjOffice, $campCode, $campAddress) {
   $homeUrl = \CRM_Utils_System::baseCMSURL();
   // Construct the full URLs for the forms.
-  $campVehicleDispatchFormUrl = $homeUrl . 'camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id=' . $collectionCampId . '&Camp_Vehicle_Dispatch.Filled_by=' . $recipientId . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice;
-  $campOutcomeFormUrl = $homeUrl . '/camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $recipientId;
+  $campVehicleDispatchFormUrl = $homeUrl . 'camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id=' . $collectionCampId . '&Camp_Vehicle_Dispatch.Filled_by=' . $recipientId . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice . '&Camp_Vehicle_Dispatch.Collection_Camp_Code=' . $campCode . '&Camp_Vehicle_Dispatch.Collection_Camp_Address=' . $campAddress;
+  $campOutcomeFormUrl = $homeUrl . '/camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $recipientId . '&Camp_Outcome.Collection_Camp_Code=' . $campCode . '&Camp_Outcome.Collection_Camp_Address=' . $campAddress;
 
   $html = "
       <p>Dear $contactName,</p>
