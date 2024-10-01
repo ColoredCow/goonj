@@ -18,13 +18,14 @@ test('check mandatory field validation for registration form fields', async ({ p
   await volunteerRegistrationPage.fillAndClearField('enterStreetAddress', userDetails.streetAddress);
   await volunteerRegistrationPage.fillAndClearField('enterCityName', userDetails.cityName);
   await volunteerRegistrationPage.fillAndClearField('enterPostalCode', userDetails.postalCode);
-  await volunteerRegistrationPage.selectCountry(userDetails.country) // Selecting country first so that states options can be selected
+  await volunteerRegistrationPage.selectProfessionAndClear(userDetails.profession);
   await volunteerRegistrationPage.selectStateAndClear(userDetails.state);
-  await volunteerRegistrationPage.selectCountryAndClear(userDetails.country);
   await volunteerRegistrationPage.selectActivityInterestedAndClear(userDetails.activityInterested);
   await volunteerRegistrationPage.selectVolunteerMotivationAndClear(userDetails.volunteerMotivation);
   await volunteerRegistrationPage.selectVoluntarySkillsAndClear(userDetails.voluntarySkills);
-  await volunteerRegistrationPage.fillAndClearField('enterOtherSkills', userDetails.otherSkills);
   await volunteerRegistrationPage.selectVolunteerHoursAndClear(userDetails.volunteerHours)
-  await volunteerRegistrationPage.fillAndClearField('enterProfession', userDetails.profession);
+  await volunteerRegistrationPage.selectContactMethodAndClear(userDetails.contactMethod)
+  await volunteerRegistrationPage.selectReferralSourceAndClear(userDetails.referralSource)
+  await volunteerRegistrationPage.fillAndClearField('enterHealthIssues', userDetails.mobileNumber);
+  await volunteerRegistrationPage.fillAndClearField('enterComments', userDetails.comments);
 });

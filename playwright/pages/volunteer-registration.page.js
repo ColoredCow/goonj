@@ -132,6 +132,10 @@ exports.VolunteerRegistrationPage =  class VolunteerRegistrationPage {
     await this.selectAndClearDropdownOption('#select2-chosen-1', '#s2id_autogen1_search', state);
   }
 
+  async selectProfessionAndClear(profession) {
+    await this.selectAndClearDropdownOption('#select2-chosen-5', '#s2id_autogen5_search', profession);
+  }
+
   async selectActivityInterestedAndClear(activity) {
     await this.selectAndClearMultipleDropdownOption('#s2id_autogen6', '#s2id_autogen6', activity);
   }
@@ -148,6 +152,16 @@ exports.VolunteerRegistrationPage =  class VolunteerRegistrationPage {
     await this.selectAndClearDropdownOption('#select2-chosen-9', '#s2id_autogen9_search', hours);
   }
 
+
+  async selectContactMethodAndClear(method) {
+    await this.selectAndClearDropdownOption('#select2-chosen-10', '#s2id_autogen10_search', method);
+  }
+
+
+  async selectReferralSourceAndClear(source){
+    await this.selectAndClearDropdownOption('#select2-chosen-11', '#s2id_autogen11_search', source);
+  }
+  
   async selectRadioButton(buttonOption) {
     // Find the label with the specific text and click the associated radio button
     const labelSelector = `label:has-text("${buttonOption}")`;
