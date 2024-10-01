@@ -195,16 +195,16 @@ class CollectionBaseService extends AutoSubscriber {
         'module' => 'afsearchCollectionCampMaterialContributions',
         'directive' => 'afsearch-collection-camp-material-contributions',
       ],
-      // 'vehicleDispatch' => [
-      //   'title' => ts('Dispatch'),
-      //   'module' => 'afsearchCampVehicleDispatchData',
-      //   'directive' => 'afsearch-camp-vehicle-dispatch-data',
-      // ],
-      // 'materialAuthorization' => [
-      //   'title' => ts('Material Authorization'),
-      //   'module' => 'afsearchAcknowledgementForLogisticsData',
-      //   'directive' => 'afsearch-acknowledgement-for-logistics-data',
-      // ],
+      'vehicleDispatch' => [
+        'title' => ts('Dispatch'),
+        'module' => 'afsearchCampVehicleDispatchData',
+        'directive' => 'afsearch-camp-vehicle-dispatch-data',
+      ],
+      'materialAuthorization' => [
+        'title' => ts('Material Authorization'),
+        'module' => 'afsearchAcknowledgementForLogisticsData',
+        'directive' => 'afsearch-acknowledgement-for-logistics-data',
+      ],
     ];
 
     foreach ($tabConfigs as $key => $config) {
