@@ -198,10 +198,11 @@ function goonj_handle_user_identification_form() {
 				// Redirect to individual registration with option for volunteering.
 				case 'material-contribution':
 					$individual_volunteer_registration_form_path = sprintf(
-						'/individual-registration-with-volunteer-option/#?email=%s&phone=%s&source=%s',
+						'/individual-registration-with-volunteer-option/#?email=%s&phone=%s&source=%s&Individual_fields.Creation_Flow=%s',
 						$email,
 						$phone,
 						$source,
+						'material-contribution',
 					);
 					$redirect_url = $individual_volunteer_registration_form_path;
 					break;
@@ -426,4 +427,63 @@ function goonj_collection_camp_past_data() {
 	ob_start();
 	get_template_part( 'templates/collection-camp-data' );
 	return ob_get_clean();
+}
+
+add_action( 'template_redirect', 'goonj_redirect_after_individual_creation' );
+function goonj_redirect_after_individual_creation() {
+	if (
+		! isset( $_GET['goonjAction'] ) ||
+		$_GET['goonjAction'] !== 'individualCreated' ||
+		! isset( $_GET['individualId'] )
+	) {
+		return;
+	}
+
+	$individual = \Civi\Api4\Contact::get( false )
+		->addSelect( 'source', 'Individual_fields.Creation_Flow', 'email.email', 'phone.phone' )
+		->addJoin( 'Email AS email', 'LEFT' )
+		->addJoin( 'Phone AS phone', 'LEFT' )
+		->addWhere( 'email.is_primary', '=', true )
+		->addWhere( 'phone.is_primary', '=', true )
+		->addWhere( 'id', '=', absint( $_GET['individualId'] ) )
+		->setLimit( 1 )
+		->execute()->single();
+
+	$creationFlow = $individual['Individual_fields.Creation_Flow'];
+	$source = $individual['source'];
+
+	if ( ! $source ) {
+		return;
+	}
+
+	$redirectPath = '';
+
+	switch ( $creationFlow ) {
+		case 'material-contribution':
+			// If the individual was created while in the process of material contribution,
+			// then we need to find out from WHERE was she trying to contribute.
+
+			// First, we check if the source of Individual is Colllection Camp (or Dropping Center).
+			$collectionCamp = \Civi\Api4\EckEntity::get( 'Collection_Camp', false )
+				->addWhere( 'title', '=', $source )
+				->setLimit( 1 )
+				->execute()->first();
+
+			if ( ! empty( $collectionCamp['id'] ) ) {
+				$redirectPath = sprintf(
+					'/material-contribution/#?email=%s&phone=%s&Material_Contribution.Collection_Camp=%s&source_contact_id=%s',
+					$individual['email.email'],
+					$individual['phone.phone'],
+					$collectionCamp['id'],
+					$individual['id']
+				);
+				break;
+			}
+	}
+
+	if ( empty( $redirectPath ) ) {
+		return;
+	}
+
+	wp_safe_redirect( $redirectPath );
 }
