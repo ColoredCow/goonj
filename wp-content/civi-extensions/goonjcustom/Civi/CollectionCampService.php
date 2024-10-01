@@ -127,7 +127,6 @@ class CollectionCampService extends AutoSubscriber {
     \Civi::service('angularjs.loader')->addModules('afsearchCollectionCampActivity');
   }
 
-
   /**
    *
    */
@@ -964,6 +963,19 @@ class CollectionCampService extends AutoSubscriber {
       ->addWhere('relationship_type_id:name', '=', self::MATERIAL_RELATIONSHIP_TYPE_NAME)
       ->addWhere('is_current', '=', TRUE)
       ->execute()->first();
+
+    $mmtId = $coordinators['contact_id_a'];
+
+    if (empty($mmtId)) {
+      return;
+    }
+
+    $email = Email::get(FALSE)
+      ->addSelect('email')
+      ->addWhere('contact_id', '=', $mmtId)
+      ->execute()->single();
+
+    $mmtEmail = $email['email'];
 
     $fromEmail = OptionValue::get(FALSE)
       ->addSelect('label')
