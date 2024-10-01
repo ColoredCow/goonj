@@ -58,12 +58,19 @@ document.addEventListener("DOMContentLoaded", function () {
   }, 1000);
 });
 
-setTimeout(function() {
+function hideLabel() {
 	const labels = document.querySelectorAll('label.crm-af-field-label');
-  
-	labels.forEach((label) => {
-	  if (label.textContent.trim() === 'Existing Collection Source Vehicle Dispatch') {
-		label.closest('af-field').style.display = 'none';
-	  }
+	const labelFound = Array.from(labels).some((label) => {
+		if (label.textContent.trim() === 'Existing Collection Source Vehicle Dispatch') {
+			label.closest('af-field').style.display = 'none';
+			return true;
+		}
 	});
-  }, 1000);
+
+	// If not found, try again after a short delay
+	if (!labelFound) {
+		setTimeout(hideLabel, 100);
+	}
+}
+
+hideLabel();
