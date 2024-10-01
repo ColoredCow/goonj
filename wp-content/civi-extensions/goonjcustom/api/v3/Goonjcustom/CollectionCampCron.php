@@ -55,7 +55,7 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
   $todayFormatted = $today->format('Y-m-d');
 
   $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
-    ->addSelect('Logistics_Coordination.Camp_to_be_attended_by', 'Collection_Camp_Intent_Details.End_Date')
+    ->addSelect('Logistics_Coordination.Camp_to_be_attended_by', 'Collection_Camp_Intent_Details.End_Date', 'Logistics_Coordination.Email_Sent', 'Logistics_Coordination.Feedback_Email_Sent')
     ->addWhere('subtype', '=', $collectionCampSubtype)
     ->addWhere('Collection_Camp_Intent_Details.End_Date', '<=', $endOfDay)
     ->addWhere('Logistics_Coordination.Camp_to_be_attended_by', 'IS NOT EMPTY')
@@ -70,6 +70,8 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
       $endDate = new DateTime($camp['Collection_Camp_Intent_Details.End_Date']);
       $collectionCampId = $camp['id'];
       $endDateFormatted = $endDate->format('Y-m-d');
+      $logisticEmailSent = $camp['Logistics_Coordination.Email_Sent'];
+      $feedbackEmailSent = $camp['Logistics_Coordination.Feedback_Email_Sent'];
 
       $collectionCamp = EckEntity::get('Collection_Camp', TRUE)
         ->addSelect('Collection_Camp_Intent_Details.Goonj_Office', 'Collection_Camp_Core_Details.Contact_Id', 'Collection_Camp_Intent_Details.Location_Area_of_camp', 'title')
@@ -107,7 +109,7 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
       $contactName = $contact['display_name'];
 
       // Send email if the end date is today or earlier.
-      if ($endDateFormatted <= $todayFormatted) {
+      if (!$feedbackEmailSent && $endDateFormatted <= $todayFormatted) {
         $mailParams = [
           'subject' => 'Thank You for Organizing the Camp! Share Your Feedback.',
           'from' => $from,
@@ -115,7 +117,14 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
           'replyTo' => $from,
           'html' => goonjcustom_collection_camp_volunteer_feedback_email_html($organizingContactName, $collectionCampId, $campAddress),
         ];
-        $result = CRM_Utils_Mail::send($mailParams);
+        $feedbackEmailSendResult = CRM_Utils_Mail::send($mailParams);
+
+        if ($feedbackEmailSendResult) {
+          EckEntity::update('Collection_Camp', TRUE)
+            ->addValue('Logistics_Coordination.Feedback_Email_Sent', 1)
+            ->addWhere('id', '=', $collectionCampId)
+            ->execute();
+        }
       }
 
       // Process activities.
@@ -132,7 +141,7 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
         ->execute();
 
       // Send completion notification.
-      if ($endDateFormatted <= $todayFormatted) {
+      if (!$logisticEmailSent && $endDateFormatted <= $todayFormatted) {
         $mailParams = [
           'subject' => 'Collection Camp Completion Notification: ' . $campCode . ' at ' . $campAddress,
           'from' => $from,
@@ -140,7 +149,14 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
           'replyTo' => $from,
           'html' => goonjcustom_collection_camp_email_html($contactName, $collectionCampId, $recipientId, $collectionCampGoonjOffice, $campCode, $campAddress),
         ];
-        $result = CRM_Utils_Mail::send($mailParams);
+        $completionEmailSendResult = CRM_Utils_Mail::send($mailParams);
+
+        if ($completionEmailSendResult) {
+          EckEntity::update('Collection_Camp', TRUE)
+            ->addValue('Logistics_Coordination.Email_Sent', 1)
+            ->addWhere('id', '=', $collectionCampId)
+            ->execute();
+        }
       }
     }
     catch (Exception $e) {
