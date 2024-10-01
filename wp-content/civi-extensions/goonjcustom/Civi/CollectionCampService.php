@@ -965,20 +965,6 @@ class CollectionCampService extends AutoSubscriber {
       ->addWhere('is_current', '=', TRUE)
       ->execute()->first();
 
-    $mmtId = $coordinators['contact_id_a'];
-
-    if (empty($mmtId)) {
-      return;
-    }
-
-    $email = Email::get(FALSE)
-      ->addSelect('email', 'contact_id.display_name')
-      ->addWhere('contact_id', '=', $mmtId)
-      ->execute()->single();
-
-    $mmtEmail = $email['email'];
-    $contactName = $email['contact_id.display_name'];
-
     $fromEmail = OptionValue::get(FALSE)
       ->addSelect('label')
       ->addWhere('option_group_id:name', '=', 'from_email_address')
@@ -991,7 +977,7 @@ class CollectionCampService extends AutoSubscriber {
       'from' => $fromEmail['label'],
       'toEmail' => $mmtEmail,
       'replyTo' => $fromEmail['label'],
-      'html' => self::goonjcustom_material_management_email_html($mmtId, $contactName, $collectionCampId, $campCode, $campAddress, $vehicleDispatchId),
+      'html' => self::goonjcustom_material_management_email_html($collectionCampId, $campCode, $campAddress, $vehicleDispatchId),
         // 'messageTemplateID' => 76, // Uncomment if using a message template
     ];
     \CRM_Utils_Mail::send($mailParams);
@@ -1006,9 +992,9 @@ class CollectionCampService extends AutoSubscriber {
   /**
    *
    */
-  public static function goonjcustom_material_management_email_html($mmtId, $contactName, $collectionCampId, $campCode, $campAddress, $vehicleDispatchId) {
+  public static function goonjcustom_material_management_email_html($collectionCampId, $campCode, $campAddress, $vehicleDispatchId) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
-    $materialdispatchUrl = $homeUrl . 'acknowledgement-form-for-logistics/#?Eck_Collection_Source_Vehicle_Dispatch1=' . $vehicleDispatchId .'&Acknowledgement_For_Logistics.Filled_by=' . $mmtId . '&Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id=' . $collectionCampId . '&id=' . $vehicleDispatchId;
+    $materialdispatchUrl = $homeUrl . 'acknowledgement-form-for-logistics/#?Eck_Collection_Source_Vehicle_Dispatch1=' . $vehicleDispatchId . '&Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id=' . $collectionCampId . '&id=' . $vehicleDispatchId;
     $html = "
     <p>Dear MMT team,</p>
     <p>This is to inform you that a vehicle has been sent from camp <strong>$campCode</strong> at <strong>$campAddress</strong>.</p>
