@@ -1,5 +1,5 @@
 import { test } from '@playwright/test';
-import { userDetails } from '../utils.js';
+import { userDetails, verifyUserExist } from '../utils.js';
 import { VolunteerRegistrationPage} from '../pages/volunteer-registration.page.js'
 
 
@@ -8,6 +8,7 @@ test('check mandatory field validation for registration form fields', async ({ p
   const volunteerPageUrl  = volunteerRegistrationPage.getAppendedUrl('/volunteer-registration/');
   await page.goto(volunteerPageUrl);
   await page.waitForURL(volunteerPageUrl);
+  await verifyUserExist(page, userDetails);
   await volunteerRegistrationPage.handleDialogMessage('Please fill all required fields.'); // Registering dialog message 
   await volunteerRegistrationPage.fillAndClearField('enterFirstName', userDetails.firstName);
   await volunteerRegistrationPage.fillAndClearField('enterLastName', userDetails.lastName);
