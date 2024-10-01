@@ -1008,7 +1008,7 @@ class CollectionCampService extends AutoSubscriber {
    */
   public static function goonjcustom_material_management_email_html($mmtId, $contactName, $collectionCampId, $campCode, $campAddress, $vehicleDispatchId) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
-    $materialdispatchUrl = $homeUrl . 'acknowledgement-form-for-logistics/#?Acknowledgement_For_Logistics.Filled_by=' . $mmtId . '&Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id=' . $collectionCampId . '&id=' . $vehicleDispatchId;
+    $materialdispatchUrl = $homeUrl . 'acknowledgement-form-for-logistics/#?Acknowledgement_For_Logistics.Filled_by=' . $mmtId . '&Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id=' . $collectionCampId . '&id=' . $vehicleDispatchId . '&Acknowledgement_For_Logistics.Collection_Camp_Code=' . $campCode . '&Acknowledgement_For_Logistics.Collection_Camp_Address=' . $campAddress;
     $html = "
     <p>Dear MMT team,</p>
     <p>This is to inform you that a vehicle has been sent from camp <strong>$campCode</strong> at <strong>$campAddress</strong>.</p>
