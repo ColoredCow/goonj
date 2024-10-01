@@ -63,6 +63,7 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
 
   [$defaultFromName, $defaultFromEmail] = CRM_Core_BAO_Domain::getNameAndEmail();
   $from = "\"$defaultFromName\" <$defaultFromEmail>";
+
   foreach ($collectionCamps as $camp) {
     try {
       $recipientId = $camp['Logistics_Coordination.Camp_to_be_attended_by'];
@@ -134,9 +135,9 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
       if ($endDateFormatted <= $todayFormatted) {
         $mailParams = [
           'subject' => 'Collection Camp Completion Notification: ' . $campCode . ' at ' . $campAddress,
-          'from' => 'urban.ops@goonj.org',
+          'from' => $from,
           'toEmail' => $emailId,
-          'replyTo' => 'urban.ops@goonj.org',
+          'replyTo' => $from,
           'html' => goonjcustom_collection_camp_email_html($contactName, $collectionCampId, $recipientId, $collectionCampGoonjOffice, $campCode, $campAddress),
         ];
         $result = CRM_Utils_Mail::send($mailParams);
