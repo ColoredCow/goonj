@@ -66,4 +66,4 @@ setTimeout(function() {
 		label.closest('af-field').style.display = 'none';
 	  }
 	});
-  }, 1000); // Longer delay to allow for dynamic rendering
+  }, 1000);
