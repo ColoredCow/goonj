@@ -74,55 +74,55 @@ class CollectionCampService extends AutoSubscriber {
     }
 
     // URL for the Logistics tab.
-    // $logisticsUrl = \CRM_Utils_System::url(
-    //   "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Flogistics-coordination#",
-    // );
+    $logisticsUrl = \CRM_Utils_System::url(
+      "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Flogistics-coordination#",
+    );
 
     // URL for the camp outcome tab.
-    // $campOutcome = \CRM_Utils_System::url(
-    //   "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fadmin-camp-outcome-form",
-    // );
+    $campOutcome = \CRM_Utils_System::url(
+      "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fadmin-camp-outcome-form",
+    );
 
-    // $campFeedback = \CRM_Utils_System::url(
-    //   "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Freview-volunteer-camp-feedback",
-    // );
+    $campFeedback = \CRM_Utils_System::url(
+      "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Freview-volunteer-camp-feedback",
+    );
 
     // Add the camp activities tab.
-    // $tabs['activities'] = [
-    //   'id' => 'activities',
-    //   'title' => ts('Activities'),
-    //   'is_active' => 1,
-    //   'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-    //   'module' => 'afsearchCollectionCampActivity',
-    //   'directive' => 'afsearch-collection-camp-activity',
-    // ];
+    $tabs['activities'] = [
+      'id' => 'activities',
+      'title' => ts('Activities'),
+      'is_active' => 1,
+      'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      'module' => 'afsearchCollectionCampActivity',
+      'directive' => 'afsearch-collection-camp-activity',
+    ];
 
     // // Add the Logistics tab.
-    // $tabs['logistics'] = [
-    //   'title' => ts('Logistics'),
-    //   'link' => $logisticsUrl,
-    //   'valid' => 1,
-    //   'active' => 1,
-    //   'current' => FALSE,
-    // ];
+    $tabs['logistics'] = [
+      'title' => ts('Logistics'),
+      'link' => $logisticsUrl,
+      'valid' => 1,
+      'active' => 1,
+      'current' => FALSE,
+    ];
 
     // Add the camp outcome tab.
-    // $tabs['campOutcome'] = [
-    //   'title' => ts('Camp Outcome'),
-    //   'link' => $campOutcome,
-    //   'valid' => 1,
-    //   'active' => 1,
-    //   'current' => FALSE,
-    // ];
+    $tabs['campOutcome'] = [
+      'title' => ts('Camp Outcome'),
+      'link' => $campOutcome,
+      'valid' => 1,
+      'active' => 1,
+      'current' => FALSE,
+    ];
 
     // Add the camp volunteer feedback tab.
-    // $tabs['campFeedback'] = [
-    //   'title' => ts('Volunteer Feedback'),
-    //   'link' => $campFeedback,
-    //   'valid' => 1,
-    //   'active' => 1,
-    //   'current' => FALSE,
-    // ];
+    $tabs['campFeedback'] = [
+      'title' => ts('Volunteer Feedback'),
+      'link' => $campFeedback,
+      'valid' => 1,
+      'active' => 1,
+      'current' => FALSE,
+    ];
 
     \Civi::service('angularjs.loader')->addModules('afsearchCollectionCampActivity');
   }
