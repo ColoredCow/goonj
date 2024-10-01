@@ -198,10 +198,11 @@ function goonj_handle_user_identification_form() {
 				// Redirect to individual registration with option for volunteering.
 				case 'material-contribution':
 					$individual_volunteer_registration_form_path = sprintf(
-						'/individual-registration-with-volunteer-option/#?email=%s&phone=%s&source=%s',
+						'/individual-registration-with-volunteer-option/#?email=%s&phone=%s&source=%s&Individual_fields.Creation_Flow=%s',
 						$email,
 						$phone,
 						$source,
+						'material-contribution',
 					);
 					$redirect_url = $individual_volunteer_registration_form_path;
 					break;
