@@ -134,6 +134,14 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
         ->addWhere('id', '=', $collectionCampId)
         ->execute();
 
+      $results = EckEntity::update('Collection_Camp', FALSE)
+        ->addValue('Camp_Outcome.Collection_Camp_Code', $campCode)
+        ->addValue('Volunteer_Camp_Feedback.Collection_Camp_Code', $campCode)
+        ->addValue('Camp_Outcome.Collection_Camp_Address', $campAddress)
+        ->addValue('Volunteer_Camp_Feedback.Collection_Camp_Address', $campAddress)
+        ->addWhere('id', '=', $collectionCampId)
+        ->execute();
+
       // Send completion notification.
       if ($endDateFormatted <= $todayFormatted) {
         $mailParams = [
