@@ -56,9 +56,9 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
 
   $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
     ->addSelect('Logistics_Coordination.Camp_to_be_attended_by', 'Collection_Camp_Intent_Details.End_Date', 'Logistics_Coordination.Email_Sent', 'Logistics_Coordination.Feedback_Email_Sent')
+    ->addWhere('Collection_Camp_Core_Details.Status', '=', 'authorized')
     ->addWhere('subtype', '=', $collectionCampSubtype)
     ->addWhere('Collection_Camp_Intent_Details.End_Date', '<=', $endOfDay)
-    ->addWhere('Logistics_Coordination.Camp_to_be_attended_by', 'IS NOT EMPTY')
     ->execute();
 
   [$defaultFromName, $defaultFromEmail] = CRM_Core_BAO_Domain::getNameAndEmail();
@@ -95,19 +95,6 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
         ->execute()->single();
       $organizingContactName = $initiator['display_name'];
 
-      // Get recipient email.
-      $email = Email::get(TRUE)
-        ->addWhere('contact_id', '=', $recipientId)
-        ->execute()->single();
-
-      $emailId = $email['email'];
-
-      $contact = Contact::get(TRUE)
-        ->addWhere('id', '=', $recipientId)
-        ->execute()->single();
-
-      $contactName = $contact['display_name'];
-
       // Send email if the end date is today or earlier.
       if (!$feedbackEmailSent && $endDateFormatted <= $todayFormatted) {
         $mailParams = [
@@ -141,7 +128,19 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
         ->execute();
 
       // Send completion notification.
-      if (!$logisticEmailSent && $endDateFormatted <= $todayFormatted) {
+      if (!$logisticEmailSent && $recipientId && $endDateFormatted <= $todayFormatted) {
+        // Get recipient email.
+        $email = Email::get(TRUE)
+          ->addWhere('contact_id', '=', $recipientId)
+          ->execute()->single();
+
+        $emailId = $email['email'];
+
+        $contact = Contact::get(TRUE)
+          ->addWhere('id', '=', $recipientId)
+          ->execute()->single();
+
+        $contactName = $contact['display_name'];
         $mailParams = [
           'subject' => 'Collection Camp Completion Notification: ' . $campCode . ' at ' . $campAddress,
           'from' => $from,
