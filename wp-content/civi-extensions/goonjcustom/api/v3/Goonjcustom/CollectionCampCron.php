@@ -94,19 +94,6 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
         ->execute()->single();
       $organizingContactName = $initiator['display_name'];
 
-      // Get recipient email.
-      $email = Email::get(TRUE)
-        ->addWhere('contact_id', '=', $recipientId)
-        ->execute()->single();
-
-      $emailId = $email['email'];
-
-      $contact = Contact::get(TRUE)
-        ->addWhere('id', '=', $recipientId)
-        ->execute()->single();
-
-      $contactName = $contact['display_name'];
-
       // Send email if the end date is today or earlier.
       if (!$feedbackEmailSent && $endDateFormatted <= $todayFormatted) {
         $mailParams = [
@@ -141,6 +128,18 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
 
       // Send completion notification.
       if (!$logisticEmailSent && $recipientId && $endDateFormatted <= $todayFormatted) {
+        // Get recipient email.
+        $email = Email::get(TRUE)
+          ->addWhere('contact_id', '=', $recipientId)
+          ->execute()->single();
+
+        $emailId = $email['email'];
+
+        $contact = Contact::get(TRUE)
+          ->addWhere('id', '=', $recipientId)
+          ->execute()->single();
+
+        $contactName = $contact['display_name'];
         $mailParams = [
           'subject' => 'Collection Camp Completion Notification: ' . $campCode . ' at ' . $campAddress,
           'from' => $from,
