@@ -429,12 +429,12 @@ function goonj_collection_camp_past_data() {
 	return ob_get_clean();
 }
 
-add_action( 'template_redirect', 'goonj_redirect_after_individual_cration' );
-function goonj_redirect_after_individual_cration() {
+add_action( 'template_redirect', 'goonj_redirect_after_individual_creation' );
+function goonj_redirect_after_individual_creation() {
 	if (
-		! isset( $_REQUEST['goonjAction'] ) ||
-		$_REQUEST['goonjAction'] !== 'individualCreated' ||
-		! isset( $_REQUEST['individualId'] )
+		! isset( $_GET['goonjAction'] ) ||
+		$_GET['goonjAction'] !== 'individualCreated' ||
+		! isset( $_GET['individualId'] )
 	) {
 		return;
 	}
@@ -445,7 +445,7 @@ function goonj_redirect_after_individual_cration() {
 		->addJoin( 'Phone AS phone', 'LEFT' )
 		->addWhere( 'email.is_primary', '=', true )
 		->addWhere( 'phone.is_primary', '=', true )
-		->addWhere( 'id', '=', absint( $_REQUEST['individualId'] ) )
+		->addWhere( 'id', '=', absint( $_GET['individualId'] ) )
 		->setLimit( 1 )
 		->execute()->single();
 
@@ -455,6 +455,8 @@ function goonj_redirect_after_individual_cration() {
 	if ( ! $source ) {
 		return;
 	}
+
+	$redirectPath = '';
 
 	switch ( $creationFlow ) {
 		case 'material-contribution':
