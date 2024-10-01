@@ -80,7 +80,7 @@ class CollectionCampService extends AutoSubscriber {
 
     // URL for the camp outcome tab.
     $campOutcome = \CRM_Utils_System::url(
-      "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fadmin-camp-outcome-form",
+      "/wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fadmin-camp-outcome-detail-view",
     );
 
     $campFeedback = \CRM_Utils_System::url(
