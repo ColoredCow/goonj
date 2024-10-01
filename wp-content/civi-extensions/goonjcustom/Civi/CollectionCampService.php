@@ -991,7 +991,7 @@ class CollectionCampService extends AutoSubscriber {
       'from' => $fromEmail['label'],
       'toEmail' => $mmtEmail,
       'replyTo' => $fromEmail['label'],
-      'html' => self::goonjcustom_material_management_email_html($mmtId, $contactName, $collectionCampId, $campCode, $campAddress),
+      'html' => self::goonjcustom_material_management_email_html($mmtId, $contactName, $collectionCampId, $campCode, $campAddress, $vehicleDispatchId),
         // 'messageTemplateID' => 76, // Uncomment if using a message template
     ];
     \CRM_Utils_Mail::send($mailParams);
@@ -1006,10 +1006,9 @@ class CollectionCampService extends AutoSubscriber {
   /**
    *
    */
-  public static function goonjcustom_material_management_email_html($mmtId, $contactName, $collectionCampId, $campCode, $campAddress) {
+  public static function goonjcustom_material_management_email_html($mmtId, $contactName, $collectionCampId, $campCode, $campAddress, $vehicleDispatchId) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
-    $materialdispatchUrl = $homeUrl . 'wp-admin/admin.php?page=CiviCRM&q=civicrm%2Feck%2Fentity&reset=1&type=Collection_Camp&id=' . $collectionCampId . '&selectedChild=materialAuthorization#?intent_id=' . $collectionCampId . '&Camp_Vehicle_Dispatch.Filled_by=' . $mmtId;
-
+    $materialdispatchUrl = $homeUrl . 'acknowledgement-form-for-logistics/#?Eck_Collection_Source_Vehicle_Dispatch1=' . $vehicleDispatchId .'&Acknowledgement_For_Logistics.Filled_by=' . $mmtId . '&Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id=' . $collectionCampId . '&id=' . $vehicleDispatchId;
     $html = "
     <p>Dear MMT team,</p>
     <p>This is to inform you that a vehicle has been sent from camp <strong>$campCode</strong> at <strong>$campAddress</strong>.</p>
