@@ -116,7 +116,7 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
           'from' => $fromEmail['label'],
           'toEmail' => $contactEmailId,
           'replyTo' => $fromEmail['label'],
-          'html' => goonjcustom_collection_camp_volunteer_feedback_email_html($organizingContactName, $collectionCampId, $campAddress, $campCode),
+          'html' => goonjcustom_collection_camp_volunteer_feedback_email_html($organizingContactName, $collectionCampId, $campAddress),
         ];
         $result = CRM_Utils_Mail::send($mailParams);
       }
@@ -189,7 +189,7 @@ function goonjcustom_collection_camp_email_html($contactName, $collectionCampId,
 /**
  *
  */
-function goonjcustom_collection_camp_volunteer_feedback_email_html($organizingContactName, $collectionCampId, $campAddress, $campCode) {
+function goonjcustom_collection_camp_volunteer_feedback_email_html($organizingContactName, $collectionCampId, $campAddress) {
   $homeUrl = \CRM_Utils_System::baseCMSURL();
 
   // URL for the volunteer feedback form.
