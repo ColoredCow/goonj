@@ -58,19 +58,3 @@ document.addEventListener("DOMContentLoaded", function () {
   }, 1000);
 });
 
-function hideLabel() {
-	const labels = document.querySelectorAll('label.crm-af-field-label');
-	const labelFound = Array.from(labels).some((label) => {
-		if (label.textContent.trim() === 'Existing Collection Source Vehicle Dispatch') {
-			label.closest('af-field').style.display = 'none';
-			return true;
-		}
-	});
-
-	// If not found, try again after a short delay
-	if (!labelFound) {
-		setTimeout(hideLabel, 100);
-	}
-}
-
-hideLabel();
