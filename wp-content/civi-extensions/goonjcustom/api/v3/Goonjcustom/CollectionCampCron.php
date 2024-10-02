@@ -69,7 +69,7 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
       $logisticEmailSent = $camp['Logistics_Coordination.Email_Sent'];
 
       $collectionCamp = EckEntity::get('Collection_Camp', TRUE)
-        ->addSelect('Collection_Camp_Intent_Details.Goonj_Office', 'Collection_Camp_Intent_Details.Location_Area_of_camp', 'title')
+        ->addSelect('Collection_Camp_Intent_Details.Goonj_Office', 'Collection_Camp_Intent_Details.Location_Area_of_camp', 'title', 'Collection_Camp_Core_Details.Contact_Id')
         ->addWhere('id', '=', $collectionCampId)
         ->execute()->single();
 
