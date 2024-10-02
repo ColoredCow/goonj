@@ -14,7 +14,7 @@ use Civi\Api4\OptionValue;
  */
 
 /**
- * Goonjcustom.CollectionCampCron API specification (optional)
+ * Goonjcustom.VolunteerFeedbackCollectionCampCron API specification (optional)
  * This is used for documentation and validation.
  *
  * @param array $spec
