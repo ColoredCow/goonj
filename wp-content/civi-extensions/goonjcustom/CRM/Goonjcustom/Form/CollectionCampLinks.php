@@ -10,11 +10,6 @@
 /**
  *
  */
-
-
-/**
- *
- */
 class CRM_Goonjcustom_Form_CollectionCampLinks extends CRM_Core_Form {
 
   /**
