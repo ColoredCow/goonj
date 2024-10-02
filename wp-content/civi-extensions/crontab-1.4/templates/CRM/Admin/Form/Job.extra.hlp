@@ -1,0 +1,6 @@
+{htxt id="id-crontab_offset"}
+    <p>{ts}We are using Linux Cron tab like format to run the cron job on specific time, but this not actual crontab, we are totally rely on CiviCRM Job, CiviCRM job may be executed by crontab like feature.{/ts}</p>
+    <p>{ts}We may running CiviCRM job every 5 or 10 minutes. But this will not be get executed on set schedueld time. So we have to give some relaxation using this margin setting.{/ts}</p>
+    <p>{ts}Provide margin in number of minutes based on what is crontab frequence of main civicrm Job. If empty we will use 5 minute as default margin.{/ts}</p>
+    <p>{ts}So using these setting, when civicrm run the job we allow to run this schedueld job before or after said time in 'Adavnce Run frequency'.{/ts}</p>
+{/htxt}

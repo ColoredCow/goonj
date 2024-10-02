@@ -1,0 +1,28 @@
+diff --git a/src/Cron/CronExpression.php b/src/Cron/CronExpression.php
+index d69b415..d40e27a 100644
+--- a/src/Cron/CronExpression.php
++++ b/src/Cron/CronExpression.php
+@@ -274,10 +274,11 @@ class CronExpression
+      * seconds are irrelevant, and should be called once per minute.
+      *
+      * @param string|\DateTime $currentTime Relative calculation date
++     * @param string|\Integer $offset Offset time to consider job eligible
+      *
+      * @return bool Returns TRUE if the cron is due to run or FALSE if not
+      */
+-    public function isDue($currentTime = 'now')
++    public function isDue($currentTime = 'now', $offset = 5)
+     {
+         if ('now' === $currentTime) {
+             $currentDate = date('Y-m-d H:i');
+@@ -301,7 +302,9 @@ class CronExpression
+         }
+ 
+         try {
+-            return $this->getNextRunDate($currentDate, 0, true)->getTimestamp() == $currentTime;
++            $getTimestamp = $this->getNextRunDate($currentDate, 0, true)->getTimestamp();
++            $previousGetTimestamp = $this->getPreviousRunDate($currentDate, 0, true)->getTimestamp();
++            return  $getTimestamp >= $currentTime && (($getTimestamp - $currentTime) <= ($offset * 60) || ($currentTime - $previousGetTimestamp) <= ($offset * 60)) ;
+         } catch (Exception $e) {
+             return false;
+         }
