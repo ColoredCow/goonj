@@ -74,6 +74,7 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
         ->execute()->single();
 
       $collectionCampGoonjOffice = $collectionCamp['Collection_Camp_Intent_Details.Goonj_Office'];
+      $initiatorId = $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
       $campAddress = $collectionCamp['Collection_Camp_Intent_Details.Location_Area_of_camp'];
       $campCode = $collectionCamp['title'];
 
