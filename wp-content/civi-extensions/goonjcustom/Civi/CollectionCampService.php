@@ -88,15 +88,15 @@ class CollectionCampService extends AutoSubscriber {
       ],
       'campOutcome' => [
         'title' => ts('Camp Outcome'),
-        'module' => 'afformAdminCampOutcomeForm',
-        'directive' => 'afform-admin-Camp-outcome-form',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCampService.tpl',
+        'module' => 'afsearchCampOutcome',
+        'directive' => 'afsearch-camp-outcome',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
       ],
       'campFeedback' => [
         'title' => ts('Volunteer Feedback'),
-        'module' => 'afformReviewVolunteerCampFeedback',
-        'directive' => 'afform-review-volunteer-camp-feedback',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCampService.tpl',
+        'module' => 'afsearchVolunteerFeedback',
+        'directive' => 'afsearch-volunteer-feedback',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
       ],
     ];
 
