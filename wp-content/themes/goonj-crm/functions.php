@@ -442,7 +442,7 @@ function goonj_redirect_after_individual_creation() {
 	) {
 		return;
 	}
-	\Civi::log()->info('check',['cjec']);
+
 	$individual = \Civi\Api4\Contact::get( false )
 		->addSelect( 'source', 'Individual_fields.Creation_Flow', 'email.email', 'phone.phone', 'Individual_fields.Source_Processing_Center' )
 		->addJoin( 'Email AS email', 'LEFT' )
@@ -452,13 +452,10 @@ function goonj_redirect_after_individual_creation() {
 		->addWhere( 'id', '=', absint( $_GET['individualId'] ) )
 		->setLimit( 1 )
 		->execute()->single();
-	\Civi::log()->info('check2',['cjec2'=>$individual]);
+
 	$creationFlow = $individual['Individual_fields.Creation_Flow'];
 	$source = $individual['source'];
 	$sourceProcessingCenter = $individual['Individual_fields.Source_Processing_Center'];
-	// var_dump($creationFlow);
-	// var_dump($source);
-	// die;
 
 	if ( ! $source ) {
 		return;
