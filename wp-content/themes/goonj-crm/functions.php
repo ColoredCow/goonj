@@ -223,9 +223,11 @@ function goonj_handle_user_identification_form() {
 				// redirect to individual registration
 				case 'processing-center-material-contribution':
 					$individual_registration_form_path = sprintf(
-						'/processing-center/material-contribution/individual-registration/#?email=%s&phone=%s&target_id=%s',
+						'/processing-center/material-contribution/individual-registration/#?email=%s&phone=%s&source=%s&Individual_fields.Creation_Flow=%s&Individual_fields.Source_Processing_Center=%s',
 						$email,
 						$phone,
+						'pu-visit-contribution',
+						'office-visit-contribution',
 						$target_id,
 					);
 					$redirect_url = $individual_registration_form_path;
@@ -235,9 +237,11 @@ function goonj_handle_user_identification_form() {
 				// redirect to individual registration
 				case 'processing-center-office-visit':
 					$individual_registration_form_path = sprintf(
-						'/processing-center/office-visit/individual-registration/#?email=%s&phone=%s&target_id=%s',
+						'/processing-center/office-visit/individual-registration/#?email=%s&phone=%s&source=%s&Individual_fields.Creation_Flow=%s&Individual_fields.Source_Processing_Center=%s',
 						$email,
 						$phone,
+						'pu-visit',
+						'office-visit',
 						$target_id,
 					);
 					$redirect_url = $individual_registration_form_path;
@@ -440,7 +444,7 @@ function goonj_redirect_after_individual_creation() {
 	}
 
 	$individual = \Civi\Api4\Contact::get( false )
-		->addSelect( 'source', 'Individual_fields.Creation_Flow', 'email.email', 'phone.phone' )
+		->addSelect( 'source', 'Individual_fields.Creation_Flow', 'email.email', 'phone.phone', 'Individual_fields.Source_Processing_Center' )
 		->addJoin( 'Email AS email', 'LEFT' )
 		->addJoin( 'Phone AS phone', 'LEFT' )
 		->addWhere( 'email.is_primary', '=', true )
@@ -451,6 +455,7 @@ function goonj_redirect_after_individual_creation() {
 
 	$creationFlow = $individual['Individual_fields.Creation_Flow'];
 	$source = $individual['source'];
+	$sourceProcessingCenter = $individual['Individual_fields.Source_Processing_Center'];
 
 	if ( ! $source ) {
 		return;
@@ -479,6 +484,24 @@ function goonj_redirect_after_individual_creation() {
 				);
 				break;
 			}
+		case 'office-visit':
+			$redirectPath = sprintf(
+				'/processing-center/office-visit/details/#?email=%s&phone=%s&Office_Visit.Goonj_Processing_Center=%s&source_contact_id=%s',
+				$email,
+				$phone,
+				$sourceProcessingCenter,
+				$individual['id']
+			);
+			break;
+		case 'office-visit-contribution':
+			$redirectPath = sprintf(
+				'/processing-center/material-contribution/details/#?email=%s&phone=%s&Material_Contribution.Goonj_Office=%s&source_contact_id=%s',
+				$email,
+				$phone,
+				$sourceProcessingCenter,
+				$individual['id']
+			);
+			break;
 	}
 
 	if ( empty( $redirectPath ) ) {
