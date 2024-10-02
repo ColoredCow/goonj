@@ -239,7 +239,7 @@ function goonj_handle_user_identification_form() {
 						$email,
 						$phone,
 						'pu-visit',
-						'office-visit2',
+						'office-visit',
 						$target_id,
 					);
 					$redirect_url = $individual_registration_form_path;
@@ -442,7 +442,7 @@ function goonj_redirect_after_individual_creation() {
 	}
 	\Civi::log()->info('check',['cjec']);
 	$individual = \Civi\Api4\Contact::get( false )
-		->addSelect( 'source', 'Individual_fields.Creation_Flow', 'email.email', 'phone.phone' )
+		->addSelect( 'source', 'Individual_fields.Creation_Flow', 'email.email', 'phone.phone', 'Individual_fields.Source_Processing_Center' )
 		->addJoin( 'Email AS email', 'LEFT' )
 		->addJoin( 'Phone AS phone', 'LEFT' )
 		->addWhere( 'email.is_primary', '=', true )
@@ -453,9 +453,10 @@ function goonj_redirect_after_individual_creation() {
 	\Civi::log()->info('check2',['cjec2'=>$individual]);
 	$creationFlow = $individual['Individual_fields.Creation_Flow'];
 	$source = $individual['source'];
-	var_dump($creationFlow);
-	var_dump($source);
-	die;
+	$sourceProcessingCenter = $individual['Individual_fields.Source_Processing_Center'];
+	// var_dump($creationFlow);
+	// var_dump($source);
+	// die;
 
 	if ( ! $source ) {
 		return;
@@ -484,6 +485,16 @@ function goonj_redirect_after_individual_creation() {
 				);
 				break;
 			}
+		case 'office-visit':
+			$redirectPath = sprintf(
+				'/processing-center/office-visit/details/#?email=%s&phone=%s&Office_Visit.Goonj_Processing_Center=%s&source_contact_id=%s',
+				$email,
+				$phone,
+				$sourceProcessingCenter,
+				$individual['id']
+			);
+			break;
+
 	}
 
 	if ( empty( $redirectPath ) ) {
