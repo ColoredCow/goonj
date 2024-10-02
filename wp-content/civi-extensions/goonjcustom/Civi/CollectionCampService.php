@@ -4,8 +4,6 @@ namespace Civi;
 
 require_once __DIR__ . '/../../../../wp-content/civi-extensions/goonjcustom/vendor/autoload.php';
 
-use chillerlan\QRCode\QRCode;
-use chillerlan\QRCode\QROptions;
 use Civi\Afform\Event\AfformSubmitEvent;
 use Civi\Api4\Activity;
 use Civi\Api4\Contact;
@@ -19,6 +17,8 @@ use Civi\Api4\Relationship;
 use Civi\Api4\StateProvince;
 use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
+use chillerlan\QRCode\QRCode;
+use chillerlan\QRCode\QROptions;
 
 /**
  *
