@@ -103,7 +103,6 @@ class InductionService extends AutoSubscriber {
 
     $placeholderActivityDate = self::getPlaceholderActivityDate();
 
-
     Activity::create(FALSE)
       ->addValue('activity_type_id:name', self::INDUCTION_ACTIVITY_TYPE_NAME)
       ->addValue('status_id:name', self::INDUCTION_DEFAULT_STATUS_NAME)
@@ -128,7 +127,7 @@ class InductionService extends AutoSubscriber {
     $stateId = $objectRef->state_province_id;
 
     if (!$stateId) {
-      \Civi::log()->info('state not found', ['VolunteerId' => self::$volunteerId, 'stateId'=>$stateId]);
+      \Civi::log()->info('state not found', ['VolunteerId' => self::$volunteerId, 'stateId' => $stateId]);
       return FALSE;
     }
     self::createInduction(self::$volunteerId, $stateId);
@@ -387,7 +386,7 @@ class InductionService extends AutoSubscriber {
 
     $stateId = $contact['address.state_province_id'];
     if (!$stateId) {
-      \Civi::log()->info(['State not found :', ['contactId'=>$contact['id'], 'StateId'=>$stateId]]);
+      \Civi::log()->info(['State not found :', ['contactId' => $contact['id'], 'StateId' => $stateId]]);
       return FALSE;
     }
 
