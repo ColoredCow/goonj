@@ -6,4 +6,10 @@
     <title>Manage_Event_Qr</title>
     <access_arguments>access CiviCRM</access_arguments>
   </item>
+  <item>
+    <path>civicrm/collectioncamp/links</path>
+    <page_callback>CRM_Goonjcustom_Form_CollectionCampLinks</page_callback>
+    <title>CollectionCampLinks</title>
+    <access_arguments>access CiviCRM</access_arguments>
+  </item>
 </menu>
