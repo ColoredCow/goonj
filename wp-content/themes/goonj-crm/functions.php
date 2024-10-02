@@ -193,6 +193,14 @@ function goonj_handle_user_identification_form() {
 		);
 
 		if ( empty( $found_contacts ) ) {
+			$organizationName = null;
+			// If the purpose requires fetching the organization name,
+			if ( in_array( $purpose, [ 'processing-center-material-contribution', 'processing-center-office-visit' ] ) ) {
+				$organizationName = \Civi\Api4\Organization::get(FALSE)
+				->addSelect('display_name')
+				->addWhere('id', '=', $target_id)
+				->execute()->single();
+			}
 			switch ( $purpose ) {
 				// Contact does not exist and the purpose is to do material contribution.
 				// Redirect to individual registration with option for volunteering.
@@ -226,7 +234,7 @@ function goonj_handle_user_identification_form() {
 						'/processing-center/material-contribution/individual-registration/#?email=%s&phone=%s&source=%s&Individual_fields.Creation_Flow=%s&Individual_fields.Source_Processing_Center=%s',
 						$email,
 						$phone,
-						'pu-visit-contribution',
+						$organizationName['display_name'],
 						'office-visit-contribution',
 						$target_id,
 					);
@@ -240,7 +248,7 @@ function goonj_handle_user_identification_form() {
 						'/processing-center/office-visit/individual-registration/#?email=%s&phone=%s&source=%s&Individual_fields.Creation_Flow=%s&Individual_fields.Source_Processing_Center=%s',
 						$email,
 						$phone,
-						'pu-visit',
+						$organizationName['display_name'],
 						'office-visit',
 						$target_id,
 					);
@@ -485,6 +493,7 @@ function goonj_redirect_after_individual_creation() {
 				break;
 			}
 		case 'office-visit':
+			$sourceProcessingCenter = $individual['Individual_fields.Source_Processing_Center'];
 			$redirectPath = sprintf(
 				'/processing-center/office-visit/details/#?email=%s&phone=%s&Office_Visit.Goonj_Processing_Center=%s&source_contact_id=%s',
 				$email,
@@ -494,6 +503,7 @@ function goonj_redirect_after_individual_creation() {
 			);
 			break;
 		case 'office-visit-contribution':
+			$sourceProcessingCenter = $individual['Individual_fields.Source_Processing_Center'];
 			$redirectPath = sprintf(
 				'/processing-center/material-contribution/details/#?email=%s&phone=%s&Material_Contribution.Goonj_Office=%s&source_contact_id=%s',
 				$email,
