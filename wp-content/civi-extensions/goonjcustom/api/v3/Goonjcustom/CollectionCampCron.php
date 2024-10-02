@@ -54,6 +54,7 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
     ->addWhere('Collection_Camp_Core_Details.Status', '=', 'authorized')
     ->addWhere('subtype', '=', $collectionCampSubtype)
     ->addWhere('Collection_Camp_Intent_Details.End_Date', '<=', $endOfDay)
+    ->addWhere('Logistics_Coordination.Camp_to_be_attended_by', 'IS NOT EMPTY')
     ->execute();
 
   [$defaultFromName, $defaultFromEmail] = CRM_Core_BAO_Domain::getNameAndEmail();
@@ -90,7 +91,7 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
         ->execute();
 
       // Send completion notification.
-      if (!$logisticEmailSent && $campAttendedById && $endDateFormatted <= $todayFormatted) {
+      if (!$logisticEmailSent && $endDateFormatted <= $todayFormatted) {
         // Get recipient email and name.
         $campAttendedBy = Contact::get(TRUE)
           ->addSelect('email.email', 'display_name')
