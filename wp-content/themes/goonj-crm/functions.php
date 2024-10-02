@@ -223,9 +223,11 @@ function goonj_handle_user_identification_form() {
 				// redirect to individual registration
 				case 'processing-center-material-contribution':
 					$individual_registration_form_path = sprintf(
-						'/processing-center/material-contribution/individual-registration/#?email=%s&phone=%s&target_id=%s',
+						'/processing-center/material-contribution/individual-registration/#?email=%s&phone=%s&source=%s&Individual_fields.Creation_Flow=%s&Individual_fields.Source_Processing_Center=%s',
 						$email,
 						$phone,
+						'pu-visit-contribution',
+						'office-visit-contribution',
 						$target_id,
 					);
 					$redirect_url = $individual_registration_form_path;
@@ -494,7 +496,15 @@ function goonj_redirect_after_individual_creation() {
 				$individual['id']
 			);
 			break;
-
+		case 'office-visit-contribution':
+			$redirectPath = sprintf(
+				'/processing-center/material-contribution/details/#?email=%s&phone=%s&Material_Contribution.Goonj_Office=%s&source_contact_id=%s',
+				$email,
+				$phone,
+				$sourceProcessingCenter,
+				$individual['id']
+			);
+			break;
 	}
 
 	if ( empty( $redirectPath ) ) {
