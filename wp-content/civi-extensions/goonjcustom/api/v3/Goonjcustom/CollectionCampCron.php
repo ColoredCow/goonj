@@ -55,17 +55,14 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
   $todayFormatted = $today->format('Y-m-d');
 
   $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
-    ->addSelect('Logistics_Coordination.Camp_to_be_attended_by', 'Collection_Camp_Intent_Details.End_Date')
+    ->addSelect('Logistics_Coordination.Camp_to_be_attended_by', 'Collection_Camp_Intent_Details.End_Date', 'Logistics_Coordination.Email_Sent', 'Logistics_Coordination.Feedback_Email_Sent')
+    ->addWhere('Collection_Camp_Core_Details.Status', '=', 'authorized')
     ->addWhere('subtype', '=', $collectionCampSubtype)
     ->addWhere('Collection_Camp_Intent_Details.End_Date', '<=', $endOfDay)
-    ->addWhere('Logistics_Coordination.Camp_to_be_attended_by', 'IS NOT EMPTY')
     ->execute();
 
-  $fromEmail = OptionValue::get(FALSE)
-    ->addSelect('label')
-    ->addWhere('option_group_id:name', '=', 'from_email_address')
-    ->addWhere('is_default', '=', TRUE)
-    ->execute()->single();
+  [$defaultFromName, $defaultFromEmail] = CRM_Core_BAO_Domain::getNameAndEmail();
+  $from = "\"$defaultFromName\" <$defaultFromEmail>";
 
   foreach ($collectionCamps as $camp) {
     try {
@@ -73,14 +70,18 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
       $endDate = new DateTime($camp['Collection_Camp_Intent_Details.End_Date']);
       $collectionCampId = $camp['id'];
       $endDateFormatted = $endDate->format('Y-m-d');
+      $logisticEmailSent = $camp['Logistics_Coordination.Email_Sent'];
+      $feedbackEmailSent = $camp['Logistics_Coordination.Feedback_Email_Sent'];
 
       $collectionCamp = EckEntity::get('Collection_Camp', TRUE)
-        ->addSelect('Collection_Camp_Intent_Details.Goonj_Office', 'Collection_Camp_Core_Details.Contact_Id')
+        ->addSelect('Collection_Camp_Intent_Details.Goonj_Office', 'Collection_Camp_Core_Details.Contact_Id', 'Collection_Camp_Intent_Details.Location_Area_of_camp', 'title')
         ->addWhere('id', '=', $collectionCampId)
         ->execute()->single();
 
       $collectionCampGoonjOffice = $collectionCamp['Collection_Camp_Intent_Details.Goonj_Office'];
       $initiatorId = $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
+      $campAddress = $collectionCamp['Collection_Camp_Intent_Details.Location_Area_of_camp'];
+      $campCode = $collectionCamp['title'];
 
       // Get initiator email.
       $initiatorEmail = Email::get(TRUE)
@@ -94,29 +95,23 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
         ->execute()->single();
       $organizingContactName = $initiator['display_name'];
 
-      // Get recipient email.
-      $email = Email::get(TRUE)
-        ->addWhere('contact_id', '=', $recipientId)
-        ->execute()->single();
-
-      $emailId = $email['email'];
-
-      $contact = Contact::get(TRUE)
-        ->addWhere('id', '=', $recipientId)
-        ->execute()->single();
-
-      $contactName = $contact['display_name'];
-
       // Send email if the end date is today or earlier.
-      if ($endDateFormatted <= $todayFormatted) {
+      if (!$feedbackEmailSent && $endDateFormatted <= $todayFormatted) {
         $mailParams = [
-          'subject' => 'Volunteer Feedback Form',
-          'from' => $fromEmail['label'],
+          'subject' => 'Thank You for Organizing the Camp! Share Your Feedback.',
+          'from' => $from,
           'toEmail' => $contactEmailId,
-          'replyTo' => $fromEmail['label'],
-          'html' => goonjcustom_collection_camp_volunteer_feedback_email_html($organizingContactName, $collectionCampId),
+          'replyTo' => $from,
+          'html' => goonjcustom_collection_camp_volunteer_feedback_email_html($organizingContactName, $collectionCampId, $campAddress),
         ];
-        $result = CRM_Utils_Mail::send($mailParams);
+        $feedbackEmailSendResult = CRM_Utils_Mail::send($mailParams);
+
+        if ($feedbackEmailSendResult) {
+          EckEntity::update('Collection_Camp', TRUE)
+            ->addValue('Logistics_Coordination.Feedback_Email_Sent', 1)
+            ->addWhere('id', '=', $collectionCampId)
+            ->execute();
+        }
       }
 
       // Process activities.
@@ -133,15 +128,34 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
         ->execute();
 
       // Send completion notification.
-      if ($endDateFormatted <= $todayFormatted) {
+      if (!$logisticEmailSent && $recipientId && $endDateFormatted <= $todayFormatted) {
+        // Get recipient email.
+        $email = Email::get(TRUE)
+          ->addWhere('contact_id', '=', $recipientId)
+          ->execute()->single();
+
+        $emailId = $email['email'];
+
+        $contact = Contact::get(TRUE)
+          ->addWhere('id', '=', $recipientId)
+          ->execute()->single();
+
+        $contactName = $contact['display_name'];
         $mailParams = [
-          'subject' => 'Collections Completion Notification',
-          'from' => 'urban.ops@goonj.org',
+          'subject' => 'Collection Camp Completion Notification: ' . $campCode . ' at ' . $campAddress,
+          'from' => $from,
           'toEmail' => $emailId,
-          'replyTo' => 'urban.ops@goonj.org',
-          'html' => goonjcustom_collection_camp_email_html($contactName, $collectionCampId, $recipientId, $collectionCampGoonjOffice),
+          'replyTo' => $from,
+          'html' => goonjcustom_collection_camp_email_html($contactName, $collectionCampId, $recipientId, $collectionCampGoonjOffice, $campCode, $campAddress),
         ];
-        $result = CRM_Utils_Mail::send($mailParams);
+        $completionEmailSendResult = CRM_Utils_Mail::send($mailParams);
+
+        if ($completionEmailSendResult) {
+          EckEntity::update('Collection_Camp', TRUE)
+            ->addValue('Logistics_Coordination.Email_Sent', 1)
+            ->addWhere('id', '=', $collectionCampId)
+            ->execute();
+        }
       }
     }
     catch (Exception $e) {
@@ -155,37 +169,44 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
 /**
  *
  */
-function goonjcustom_collection_camp_email_html($contactName, $collectionCampId, $recipientId, $collectionCampGoonjOffice) {
+function goonjcustom_collection_camp_email_html($contactName, $collectionCampId, $recipientId, $collectionCampGoonjOffice, $campCode, $campAddress) {
   $homeUrl = \CRM_Utils_System::baseCMSURL();
   // Construct the full URLs for the forms.
-  $campVehicleDispatchFormUrl = $homeUrl . 'camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id=' . $collectionCampId . '&Camp_Vehicle_Dispatch.Filled_by=' . $recipientId . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice;
+  $campVehicleDispatchFormUrl = $homeUrl . 'camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id=' . $collectionCampId . '&Camp_Vehicle_Dispatch.Filled_by=' . $recipientId . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice . '&Camp_Vehicle_Dispatch.Collection_Camp_Code=' . $campCode . '&Camp_Vehicle_Dispatch.Collection_Camp_Address=' . $campAddress;
   $campOutcomeFormUrl = $homeUrl . '/camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $recipientId;
+
   $html = "
       <p>Dear $contactName,</p>
-      <p>You have been selected as the Goonj user to attend the camp.</p>
-      <p>Today the event has ended. Please find below the links for the Camp Vehicle Dispatch Form and the Camp Outcome Form:</p>
-      <ul>
-        <li><a href=\"$campVehicleDispatchFormUrl\">Camp Vehicle Dispatch Form</a></li>
-        <li><a href=\"$campOutcomeFormUrl\">Camp Outcome Form</a></li>
-      </ul>
-      <p>Warm regards,</p>";
+      <p>Thank you for attending the camp <strong>$campCode</strong> at <strong>$campAddress</strong>. There are two forms that require your attention during and after the camp:</p>
+      <ol>
+          <li><a href=\"$campVehicleDispatchFormUrl\">Dispatch Form</a><br>
+          Please complete this form from the camp location once the vehicle is being loaded and ready for dispatch to the Goonj's processing center.</li>
+          <li><a href=\"$campOutcomeFormUrl\">Camp Outcome Form</a><br>
+          This feedback form should be filled out after the camp/drive ends, once you have an overview of the event's outcomes.</li>
+      </ol>
+      <p>We appreciate your cooperation.</p>
+      <p>Warm Regards,<br>Urban Relations Team</p>";
+
   return $html;
 }
 
 /**
  *
  */
-function goonjcustom_collection_camp_volunteer_feedback_email_html($organizingContactName, $collectionCampId) {
+function goonjcustom_collection_camp_volunteer_feedback_email_html($organizingContactName, $collectionCampId, $campAddress) {
   $homeUrl = \CRM_Utils_System::baseCMSURL();
+
   // URL for the volunteer feedback form.
   $campVolunteerFeedback = $homeUrl . 'volunteer-camp-feedback/#?Eck_Collection_Camp1=' . $collectionCampId;
+
   $html = "
       <p>Dear $organizingContactName,</p>
-      <p>Thank you for successfully completing your Collection Camp.</p>
-      <p>We would appreciate your feedback. Please use the link below to fill out the Volunteer Camp Feedback Form:</p>
-      <ul>
-        <li><a href=\"$campVolunteerFeedback\">Volunteer Camp Feedback Form</a></li>
-      </ul>
-      <p>Warm regards,</p>";
+      <p>Thank you for stepping up and organising the recent collection drive at <strong>$campAddress</strong>! Your time, effort, and enthusiasm made all the difference, and we hope that it was a meaningful effort for you as well.</p>
+      <p>To help us improve, we’d love to hear your thoughts and experiences. Kindly take a few minutes to fill out our feedback form. Your input will be valuable to us:</p>
+      <p><a href=\"$campVolunteerFeedback\">Feedback Form Link</a></p>
+      <p>Feel free to share any highlights, suggestions, or challenges you faced. We're eager to learn how we can make it better together!</p>
+      <p>We look forward to continuing this journey together!</p>
+      <p>Warm Regards,<br>Team Goonj</p>";
+
   return $html;
 }

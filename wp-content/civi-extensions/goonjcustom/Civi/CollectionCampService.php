@@ -87,27 +87,24 @@ class CollectionCampService extends AutoSubscriber {
       "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Freview-volunteer-camp-feedback",
     );
 
-    $activities = \CRM_Utils_System::url(
-      "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fcollection-camp-activity-view",
-    );
-
     // Add the camp activities tab.
     $tabs['activities'] = [
+      'id' => 'activities',
       'title' => ts('Activities'),
-      'link' => $activities,
+      'is_active' => 1,
+      'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      'module' => 'afsearchCollectionCampActivity',
+      'directive' => 'afsearch-collection-camp-activity',
+    ];
+
+    // // Add the Logistics tab.
+    $tabs['logistics'] = [
+      'title' => ts('Logistics'),
+      'link' => $logisticsUrl,
       'valid' => 1,
       'active' => 1,
       'current' => FALSE,
     ];
-
-    // Add the Logistics tab.
-    // $tabs['logistics'] = [
-    //   'title' => ts('Logistics'),
-    //   'link' => $logisticsUrl,
-    //   'valid' => 1,
-    //   'active' => 1,
-    //   'current' => FALSE,
-    // ];
 
     // Add the camp outcome tab.
     $tabs['campOutcome'] = [
@@ -127,6 +124,7 @@ class CollectionCampService extends AutoSubscriber {
       'current' => FALSE,
     ];
 
+    \Civi::service('angularjs.loader')->addModules('afsearchCollectionCampActivity');
   }
 
   /**
@@ -953,11 +951,12 @@ class CollectionCampService extends AutoSubscriber {
     $collectionCampId = $collectionSourceVehicleDispatch['Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id'];
 
     $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('title')
+      ->addSelect('Collection_Camp_Intent_Details.Location_Area_of_camp', 'title')
       ->addWhere('id', '=', $collectionCampId)
       ->execute()->single();
 
-    $campTitle = $collectionCamp['title'];
+    $campCode = $collectionCamp['title'];
+    $campAddress = $collectionCamp['Collection_Camp_Intent_Details.Location_Area_of_camp'];
 
     $coordinators = Relationship::get(FALSE)
       ->addWhere('contact_id_b', '=', $goonjFieldId)
@@ -972,12 +971,11 @@ class CollectionCampService extends AutoSubscriber {
     }
 
     $email = Email::get(FALSE)
-      ->addSelect('email', 'contact_id.display_name')
+      ->addSelect('email')
       ->addWhere('contact_id', '=', $mmtId)
       ->execute()->single();
 
     $mmtEmail = $email['email'];
-    $contactName = $email['contact_id.display_name'];
 
     $fromEmail = OptionValue::get(FALSE)
       ->addSelect('label')
@@ -987,11 +985,11 @@ class CollectionCampService extends AutoSubscriber {
 
     // Email to material management team member.
     $mailParams = [
-      'subject' => 'Material Dispatch Confirmation for Collection Camp: ' . $campTitle,
+      'subject' => 'Material Acknowledgement for Camp: ' . $campCode . ' at ' . $campAddress,
       'from' => $fromEmail['label'],
       'toEmail' => $mmtEmail,
       'replyTo' => $fromEmail['label'],
-      'html' => self::goonjcustom_material_management_email_html($mmtId, $contactName, $collectionCampId),
+      'html' => self::goonjcustom_material_management_email_html($collectionCampId, $campCode, $campAddress, $vehicleDispatchId),
         // 'messageTemplateID' => 76, // Uncomment if using a message template
     ];
     \CRM_Utils_Mail::send($mailParams);
@@ -1006,18 +1004,14 @@ class CollectionCampService extends AutoSubscriber {
   /**
    *
    */
-  public static function goonjcustom_material_management_email_html($mmtId, $contactName, $collectionCampId) {
+  public static function goonjcustom_material_management_email_html($collectionCampId, $campCode, $campAddress, $vehicleDispatchId) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
-    $materialdispatchUrl = $homeUrl . 'wp-admin/admin.php?page=CiviCRM&q=civicrm%2Feck%2Fentity&reset=1&type=Collection_Camp&id=' . $collectionCampId . '&selectedChild=materialAuthorization#?intent_id=' . $collectionCampId . '&Camp_Vehicle_Dispatch.Filled_by=' . $mmtId;
-
+    $materialdispatchUrl = $homeUrl . 'acknowledgement-form-for-logistics/#?Eck_Collection_Source_Vehicle_Dispatch1=' . $vehicleDispatchId . '&Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id=' . $collectionCampId . '&id=' . $vehicleDispatchId;
     $html = "
-    <p>Dear $contactName,</p>
-    <p>A new entry of camp vehicle dispatch form is submitted.</p>
-    <p>Please acknowledge the form from CRM.</p>
-    <ul>
-      <li><a href=\"$materialdispatchUrl\">Material Dispatch Authorization</a></li>
-    </ul>
-    <p>Warm regards,</p>";
+    <p>Dear MMT team,</p>
+    <p>This is to inform you that a vehicle has been sent from camp <strong>$campCode</strong> at <strong>$campAddress</strong>.</p>
+    <p>Kindly acknowledge the details by clicking on this form <a href=\"$materialdispatchUrl\"> Link </a> when it is received at the center.</p>
+    <p>Warm regards,<br>Urban Relations Team</p>";
 
     return $html;
   }

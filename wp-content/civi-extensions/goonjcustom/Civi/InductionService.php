@@ -350,7 +350,7 @@ class InductionService extends AutoSubscriber {
       return FALSE;
     }
 
-    $newSubtypes = $params['contact_sub_type'];
+    $newSubtypes = $params['contact_sub_type'] ?? [];
 
     // Check if "Volunteer" is present in the contact_sub_type array.
     if (!in_array('Volunteer', $newSubtypes)) {
