@@ -10,6 +10,12 @@
 /**
  *
  */
+
+use Civi\Api4\EckEntity;
+
+/**
+ *
+ */
 class CRM_Goonjcustom_Form_CollectionCampLinks extends CRM_Core_Form {
 
   /**
@@ -74,13 +80,21 @@ class CRM_Goonjcustom_Form_CollectionCampLinks extends CRM_Core_Form {
   public function generateLinks($contactId): void {
 
     Civi::log()->debug('Contact Id: ' . $contactId);
+    $collectionCamp = EckEntity::get('Collection_Camp', TRUE)
+      ->addSelect('Collection_Camp_Intent_Details.Location_Area_of_camp', 'title')
+      ->addWhere('id', '=', $this->_collectionCampId)
+      ->execute()->single();
+
+    $campAddress = $collectionCamp['Collection_Camp_Intent_Details.Location_Area_of_camp'];
+    $campCode = $collectionCamp['title'];
+
     // Generate collection camp links.
     $links = [
       [
         'label' => 'Vehicle Dispatch',
         'url' => self::createUrl(
                 '/camp-vehicle-dispatch-form',
-                "Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id={$this->_collectionCampId}&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent={$this->_processingCenterId}&Camp_Vehicle_Dispatch.Filled_by={$contactId}",
+                "Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id={$this->_collectionCampId}&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent={$this->_processingCenterId}&Camp_Vehicle_Dispatch.Filled_by={$contactId}&Camp_Vehicle_Dispatch.Collection_Camp_Code={$campCode}&Camp_Vehicle_Dispatch.Collection_Camp_Address={$campAddress}",
                 $contactId
         ),
       ],
