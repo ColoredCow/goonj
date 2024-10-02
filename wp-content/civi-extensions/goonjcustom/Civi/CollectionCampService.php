@@ -95,7 +95,7 @@ class CollectionCampService extends AutoSubscriber {
       'campFeedback' => [
         'title' => ts('Volunteer Feedback'),
         'module' => 'afsearchVolunteerFeedback',
-        'directive' => 'afsearch-Volunteer-feedback',
+        'directive' => 'afsearch-volunteer-feedback',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
       ],
     ];
