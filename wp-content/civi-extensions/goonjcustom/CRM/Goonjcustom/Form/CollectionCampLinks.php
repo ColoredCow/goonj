@@ -78,11 +78,11 @@ class CRM_Goonjcustom_Form_CollectionCampLinks extends CRM_Core_Form {
     $links = [
         [
           'label' => 'Vehicle Dispatch',
-          'url' => self::createUrl('civicrm/camp-vehicle-dispatch-form', "Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id={$this->_collectionCampId}&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent={$this->_processingCenterId}", $contactId),
+          'url' => self::createUrl('/camp-vehicle-dispatch-form', "Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id={$this->_collectionCampId}&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent={$this->_processingCenterId}", $contactId),
         ],
         [
           'label' => 'Camp Outcome',
-          'url' => self::createUrl('civicrm/camp-outcome-form', "Eck_Collection_Camp1={$this->_collectionCampId}", $contactId),
+          'url' => self::createUrl('/camp-outcome-form', "Eck_Collection_Camp1={$this->_collectionCampId}", $contactId),
         ],
     ];
 
