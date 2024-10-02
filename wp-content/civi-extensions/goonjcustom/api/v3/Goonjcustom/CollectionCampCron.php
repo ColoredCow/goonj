@@ -10,10 +10,6 @@ use Civi\Api4\EckEntity;
 use Civi\Api4\OptionValue;
 
 /**
- * @file
- */
-
-/**
  * Goonjcustom.CollectionCampCron API specification (optional)
  * This is used for documentation and validation.
  *
