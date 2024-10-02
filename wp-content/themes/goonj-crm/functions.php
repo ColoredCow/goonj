@@ -463,6 +463,7 @@ function goonj_redirect_after_individual_creation() {
 
 	$creationFlow = $individual['Individual_fields.Creation_Flow'];
 	$source = $individual['source'];
+	$sourceProcessingCenter = $individual['Individual_fields.Source_Processing_Center'];
 
 	if ( ! $source ) {
 		return;
