@@ -76,14 +76,22 @@ class CRM_Goonjcustom_Form_CollectionCampLinks extends CRM_Core_Form {
     Civi::log()->debug('Contact Id: ' . $contactId);
     // Generate collection camp links.
     $links = [
-        [
-          'label' => 'Vehicle Dispatch',
-          'url' => self::createUrl('/camp-vehicle-dispatch-form', "Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id={$this->_collectionCampId}&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent={$this->_processingCenterId}", $contactId),
-        ],
-        [
-          'label' => 'Camp Outcome',
-          'url' => self::createUrl('/camp-outcome-form', "Eck_Collection_Camp1={$this->_collectionCampId}", $contactId),
-        ],
+      [
+        'label' => 'Vehicle Dispatch',
+        'url' => self::createUrl(
+                '/camp-vehicle-dispatch-form',
+                "Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id={$this->_collectionCampId}&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent={$this->_processingCenterId}&Camp_Vehicle_Dispatch.Filled_by={$this->_contactId}",
+                $contactId
+        ),
+      ],
+      [
+        'label' => 'Camp Outcome',
+        'url' => self::createUrl(
+                '/camp-outcome-form',
+                "Eck_Collection_Camp1={$this->_collectionCampId}&Camp_Outcome.Filled_By={$this->_contactId}",
+                $contactId
+        ),
+      ],
     ];
 
     $this->assign('collectionCampLinks', $links);
