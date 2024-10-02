@@ -78,14 +78,14 @@ function civicrm_api3_goonjcustom_volunteer_feedback_collection_camp_cron($param
       $campAddress = $collectionCamp['Collection_Camp_Intent_Details.Location_Area_of_camp'];
 
       // Get recipient email and name.
-      $contact = Contact::get(TRUE)
+      $campAttendedBy = Contact::get(TRUE)
         ->addSelect('email.email', 'display_name')
         ->addJoin('Email AS email', 'LEFT')
         ->addWhere('id', '=', $initiatorId)
         ->execute()->single();
 
-      $contactEmailId = $contact['email.email'];
-      $organizingContactName = $contact['display_name'];
+      $contactEmailId = $campAttendedBy['email.email'];
+      $organizingContactName = $campAttendedBy['display_name'];
 
       // Send email if the end date is today or earlier.
       if (!$feedbackEmailSent && $endDateFormatted <= $todayFormatted) {

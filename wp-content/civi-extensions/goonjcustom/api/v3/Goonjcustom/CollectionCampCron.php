@@ -65,7 +65,7 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
 
   foreach ($collectionCamps as $camp) {
     try {
-      $recipientId = $camp['Logistics_Coordination.Camp_to_be_attended_by'];
+      $campAttendedById = $camp['Logistics_Coordination.Camp_to_be_attended_by'];
       $endDate = new DateTime($camp['Collection_Camp_Intent_Details.End_Date']);
       $collectionCampId = $camp['id'];
       $endDateFormatted = $endDate->format('Y-m-d');
@@ -94,23 +94,23 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
         ->execute();
 
       // Send completion notification.
-      if (!$logisticEmailSent && $recipientId && $endDateFormatted <= $todayFormatted) {
+      if (!$logisticEmailSent && $campAttendedById && $endDateFormatted <= $todayFormatted) {
         // Get recipient email and name.
-        $contact = Contact::get(TRUE)
+        $campAttendedBy = Contact::get(TRUE)
           ->addSelect('email.email', 'display_name')
           ->addJoin('Email AS email', 'LEFT')
           ->addWhere('id', '=', $initiatorId)
           ->execute()->single();
 
-        $emailId = $contact['email.email'];
-        $contactName = $contact['display_name'];
+        $emailId = $campAttendedBy['email.email'];
+        $contactName = $campAttendedBy['display_name'];
 
         $mailParams = [
           'subject' => 'Collection Camp Completion Notification: ' . $campCode . ' at ' . $campAddress,
           'from' => $from,
           'toEmail' => $emailId,
           'replyTo' => $from,
-          'html' => goonjcustom_collection_camp_email_html($contactName, $collectionCampId, $recipientId, $collectionCampGoonjOffice, $campCode, $campAddress),
+          'html' => goonjcustom_collection_camp_email_html($contactName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress),
         ];
         $completionEmailSendResult = CRM_Utils_Mail::send($mailParams);
 
@@ -133,11 +133,11 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
 /**
  *
  */
-function goonjcustom_collection_camp_email_html($contactName, $collectionCampId, $recipientId, $collectionCampGoonjOffice, $campCode, $campAddress) {
+function goonjcustom_collection_camp_email_html($contactName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress) {
   $homeUrl = \CRM_Utils_System::baseCMSURL();
   // Construct the full URLs for the forms.
-  $campVehicleDispatchFormUrl = $homeUrl . 'camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id=' . $collectionCampId . '&Camp_Vehicle_Dispatch.Filled_by=' . $recipientId . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice . '&Camp_Vehicle_Dispatch.Collection_Camp_Code=' . $campCode . '&Camp_Vehicle_Dispatch.Collection_Camp_Address=' . $campAddress;
-  $campOutcomeFormUrl = $homeUrl . '/camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $recipientId;
+  $campVehicleDispatchFormUrl = $homeUrl . 'camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id=' . $collectionCampId . '&Camp_Vehicle_Dispatch.Filled_by=' . $campAttendedById . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice . '&Camp_Vehicle_Dispatch.Collection_Camp_Code=' . $campCode . '&Camp_Vehicle_Dispatch.Collection_Camp_Address=' . $campAddress;
+  $campOutcomeFormUrl = $homeUrl . '/camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $campAttendedById;
 
   $html = "
       <p>Dear $contactName,</p>
