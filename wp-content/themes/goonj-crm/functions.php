@@ -226,7 +226,7 @@ function goonj_handle_user_identification_form() {
 						'/processing-center/material-contribution/individual-registration/#?email=%s&phone=%s&source=%s&Individual_fields.Creation_Flow=%s&Individual_fields.Source_Processing_Center=%s',
 						$email,
 						$phone,
-						'pu-visit-contribution',
+						'Processing Center Material Contribution',
 						'office-visit-contribution',
 						$target_id,
 					);
@@ -240,7 +240,7 @@ function goonj_handle_user_identification_form() {
 						'/processing-center/office-visit/individual-registration/#?email=%s&phone=%s&source=%s&Individual_fields.Creation_Flow=%s&Individual_fields.Source_Processing_Center=%s',
 						$email,
 						$phone,
-						'pu-visit',
+						'Processing Center Visit',
 						'office-visit',
 						$target_id,
 					);
