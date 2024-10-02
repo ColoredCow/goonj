@@ -4,8 +4,6 @@ namespace Civi;
 
 require_once __DIR__ . '/../../../../wp-content/civi-extensions/goonjcustom/vendor/autoload.php';
 
-use chillerlan\QRCode\QRCode;
-use chillerlan\QRCode\QROptions;
 use Civi\Afform\Event\AfformSubmitEvent;
 use Civi\Api4\Activity;
 use Civi\Api4\Contact;
@@ -19,6 +17,8 @@ use Civi\Api4\Relationship;
 use Civi\Api4\StateProvince;
 use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
+use chillerlan\QRCode\QRCode;
+use chillerlan\QRCode\QROptions;
 
 /**
  *
@@ -73,58 +73,45 @@ class CollectionCampService extends AutoSubscriber {
       return;
     }
 
-    // URL for the Logistics tab.
-    $logisticsUrl = \CRM_Utils_System::url(
-      "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Flogistics-coordination#",
-    );
-
-    // URL for the camp outcome tab.
-    $campOutcome = \CRM_Utils_System::url(
-      "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fadmin-camp-outcome-form",
-    );
-
-    $campFeedback = \CRM_Utils_System::url(
-      "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Freview-volunteer-camp-feedback",
-    );
-
-    // Add the camp activities tab.
-    $tabs['activities'] = [
-      'id' => 'activities',
-      'title' => ts('Activities'),
-      'is_active' => 1,
-      'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-      'module' => 'afsearchCollectionCampActivity',
-      'directive' => 'afsearch-collection-camp-activity',
+    $tabConfigs = [
+      'activities' => [
+        'title' => ts('Activities'),
+        'module' => 'afsearchCollectionCampActivity',
+        'directive' => 'afsearch-collection-camp-activity',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      ],
+      'logistics' => [
+        'title' => ts('Logistics'),
+        'module' => 'afformLogisticsCoordination',
+        'directive' => 'afform-logistics-coordination',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCampService.tpl',
+      ],
+      'campOutcome' => [
+        'title' => ts('Camp Outcome'),
+        'module' => 'afformAdminCampOutcomeForm',
+        'directive' => 'afform-admin-Camp-outcome-form',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCampService.tpl',
+      ],
+      'campFeedback' => [
+        'title' => ts('Volunteer Feedback'),
+        'module' => 'afformReviewVolunteerCampFeedback',
+        'directive' => 'afform-review-volunteer-camp-feedback',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCampService.tpl',
+      ],
     ];
 
-    // // Add the Logistics tab.
-    $tabs['logistics'] = [
-      'title' => ts('Logistics'),
-      'link' => $logisticsUrl,
-      'valid' => 1,
-      'active' => 1,
-      'current' => FALSE,
-    ];
+    foreach ($tabConfigs as $key => $config) {
+      $tabs[$key] = [
+        'id' => $key,
+        'title' => $config['title'],
+        'is_active' => 1,
+        'template' => $config['template'],
+        'module' => $config['module'],
+        'directive' => $config['directive'],
+      ];
 
-    // Add the camp outcome tab.
-    $tabs['campOutcome'] = [
-      'title' => ts('Camp Outcome'),
-      'link' => $campOutcome,
-      'valid' => 1,
-      'active' => 1,
-      'current' => FALSE,
-    ];
-
-    // Add the camp volunteer feedback tab.
-    $tabs['campFeedback'] = [
-      'title' => ts('Volunteer Feedback'),
-      'link' => $campFeedback,
-      'valid' => 1,
-      'active' => 1,
-      'current' => FALSE,
-    ];
-
-    \Civi::service('angularjs.loader')->addModules('afsearchCollectionCampActivity');
+      \Civi::service('angularjs.loader')->addModules($config['module']);
+    }
   }
 
   /**
