@@ -483,17 +483,20 @@ class CollectionBaseService extends AutoSubscriber {
 
       $posterFileId = $collectionSource['Collection_Camp_Core_Details.Poster'];
 
-      $file = File::get(FALSE)
-        ->addWhere('id', '=', $posterFileId)
-        ->execute()->single();
+      if ($posterFileId) {
+        $file = File::get(FALSE)
+          ->addWhere('id', '=', $posterFileId)
+          ->execute()->single();
 
-      $config = \CRM_Core_Config::singleton();
-      $filePath = $config->customFileUploadDir . $file['uri'];
-      $emailParams['attachments'][] = [
-        'fullPath' => $filePath,
-        'mime_type' => $file['mime_type'],
-        'cleanName' => $file['uri'],
-      ];
+        $config = \CRM_Core_Config::singleton();
+        $filePath = $config->customFileUploadDir . $file['uri'];
+        $emailParams['attachments'][] = [
+          'fullPath' => $filePath,
+          'mime_type' => $file['mime_type'],
+          'cleanName' => $file['uri'],
+        ];
+      }
+
     }
 
     return $emailParams;
