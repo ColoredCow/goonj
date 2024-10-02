@@ -7,7 +7,6 @@
 use Civi\Api4\Activity;
 use Civi\Api4\Contact;
 use Civi\Api4\EckEntity;
-use Civi\Api4\Email;
 use Civi\Api4\OptionValue;
 
 /**
@@ -96,18 +95,16 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
 
       // Send completion notification.
       if (!$logisticEmailSent && $recipientId && $endDateFormatted <= $todayFormatted) {
-        // Get recipient email.
-        $email = Email::get(TRUE)
-          ->addWhere('contact_id', '=', $recipientId)
-          ->execute()->single();
-
-        $emailId = $email['email'];
-
+        // Get recipient email and name.
         $contact = Contact::get(TRUE)
-          ->addWhere('id', '=', $recipientId)
+          ->addSelect('email.email', 'display_name')
+          ->addJoin('Email AS email', 'LEFT')
+          ->addWhere('id', '=', $initiatorId)
           ->execute()->single();
 
+        $emailId = $contact['email.email'];
         $contactName = $contact['display_name'];
+
         $mailParams = [
           'subject' => 'Collection Camp Completion Notification: ' . $campCode . ' at ' . $campAddress,
           'from' => $from,

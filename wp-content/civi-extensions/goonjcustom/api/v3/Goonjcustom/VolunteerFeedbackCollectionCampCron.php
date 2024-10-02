@@ -6,7 +6,6 @@
 
 use Civi\Api4\Contact;
 use Civi\Api4\EckEntity;
-use Civi\Api4\Email;
 use Civi\Api4\OptionValue;
 
 /**
@@ -78,17 +77,15 @@ function civicrm_api3_goonjcustom_volunteer_feedback_collection_camp_cron($param
       $initiatorId = $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
       $campAddress = $collectionCamp['Collection_Camp_Intent_Details.Location_Area_of_camp'];
 
-      // Get initiator email.
-      $initiatorEmail = Email::get(TRUE)
-        ->addWhere('contact_id', '=', $initiatorId)
-        ->execute()->single();
-
-      $contactEmailId = $initiatorEmail['email'];
-
-      $initiator = Contact::get(TRUE)
+      // Get recipient email and name.
+      $contact = Contact::get(TRUE)
+        ->addSelect('email.email', 'display_name')
+        ->addJoin('Email AS email', 'LEFT')
         ->addWhere('id', '=', $initiatorId)
         ->execute()->single();
-      $organizingContactName = $initiator['display_name'];
+
+      $contactEmailId = $contact['email.email'];
+      $organizingContactName = $contact['display_name'];
 
       // Send email if the end date is today or earlier.
       if (!$feedbackEmailSent && $endDateFormatted <= $todayFormatted) {
