@@ -49,7 +49,7 @@ function civicrm_api3_goonjcustom_volunteer_feedback_collection_camp_cron($param
   $todayFormatted = $today->format('Y-m-d');
 
   $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
-    ->addSelect('Collection_Camp_Intent_Details.End_Date', 'Logistics_Coordination.Feedback_Email_Sent')
+    ->addSelect('Collection_Camp_Intent_Details.End_Date', 'Logistics_Coordination.Feedback_Email_Sent', 'Collection_Camp_Core_Details.Contact_Id', 'Collection_Camp_Intent_Details.Location_Area_of_camp')
     ->addWhere('Collection_Camp_Core_Details.Status', '=', 'authorized')
     ->addWhere('subtype', '=', $collectionCampSubtype)
     ->addWhere('Collection_Camp_Intent_Details.End_Date', '<=', $endOfDay)
@@ -64,14 +64,8 @@ function civicrm_api3_goonjcustom_volunteer_feedback_collection_camp_cron($param
       $collectionCampId = $camp['id'];
       $endDateFormatted = $endDate->format('Y-m-d');
       $feedbackEmailSent = $camp['Logistics_Coordination.Feedback_Email_Sent'];
-
-      $collectionCamp = EckEntity::get('Collection_Camp', TRUE)
-        ->addSelect('Collection_Camp_Core_Details.Contact_Id', 'Collection_Camp_Intent_Details.Location_Area_of_camp')
-        ->addWhere('id', '=', $collectionCampId)
-        ->execute()->single();
-
-      $initiatorId = $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
-      $campAddress = $collectionCamp['Collection_Camp_Intent_Details.Location_Area_of_camp'];
+      $initiatorId = $camp['Collection_Camp_Core_Details.Contact_Id'];
+      $campAddress = $camp['Collection_Camp_Intent_Details.Location_Area_of_camp'];
 
       // Get recipient email and name.
       $campAttendedBy = Contact::get(TRUE)
