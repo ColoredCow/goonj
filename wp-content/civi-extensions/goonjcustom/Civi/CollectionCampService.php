@@ -74,12 +74,12 @@ class CollectionCampService extends AutoSubscriber {
     }
 
     $tabConfigs = [
-      'activities' => [
-        'title' => ts('Activities'),
-        'module' => 'afsearchCollectionCampActivity',
-        'directive' => 'afsearch-collection-camp-activity',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-      ],
+      // 'activities' => [
+      //   'title' => ts('Activities'),
+      //   'module' => 'afsearchCollectionCampActivity',
+      //   'directive' => 'afsearch-collection-camp-activity',
+      //   'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      // ],
       'logistics' => [
         'title' => ts('Logistics'),
         'module' => 'afformLogisticsCoordination',
