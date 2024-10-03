@@ -84,7 +84,10 @@ function civicrm_api3_goonjcustom_update_scheduled_time_cron($params) {
 
   }
   catch (Exception $e) {
-    \Civi::log()->info("Error is there: " . $e->getMessage());
+    \Civi::log()->error('Error in Goonjcustom.UpdateScheduledTimeCron job: {error}', [
+      'error' => $e->getMessage(),
+      'trace' => $e->getTraceAsString(),
+    ]);
   }
 
   return civicrm_api3_create_success($returnValues, $params, 'Goonjcustom', 'update_scheduled_time_cron');
