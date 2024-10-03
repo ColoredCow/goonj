@@ -981,10 +981,6 @@ class CollectionCampService extends AutoSubscriber {
     ];
     \CRM_Utils_Mail::send($mailParams);
 
-    $updateMmtId = EckEntity::update('Collection_Source_Vehicle_Dispatch', FALSE)
-      ->addWhere('Camp_Vehicle_Dispatch.Collection_Camp', '=', $collectionCampId)
-      ->execute();
-
   }
 
   /**
