@@ -35,7 +35,6 @@ function civicrm_api3_goonjcustom_update_scheduled_time_cron($params) {
   $returnValues = [];
   try {
     $currentDate = new DateTime();
-    $formattedToday = $currentDate->format('Y-m-d H:i:s');
     // Set time to 10:00 AM.
     $currentDate->setTime(10, 0, 0);
     $todayDateTimeForLogistics = $currentDate->format('Y-m-d H:i:s');
@@ -60,24 +59,18 @@ function civicrm_api3_goonjcustom_update_scheduled_time_cron($params) {
 
     $volunteerScheduledRunDate = $feedbackJob['scheduled_run_date'];
 
-    if ($formattedToday > $logisticScheduledRunDate && $logisticScheduledRunDate != $todayDateTimeForLogistics) {
-      $nextScheduledDate = new DateTime();
-      // Set time to 10:00 AM.
-      $nextScheduledDate->setTime(10, 0, 0);
-
+    // Update the scheduled run time for logistics mail
+    if ($logisticScheduledRunDate != $todayDateTimeForLogistics) {
       $results = Job::update(TRUE)
-        ->addValue('scheduled_run_date', $nextScheduledDate->format('Y-m-d H:i:s'))
+        ->addValue('scheduled_run_date', $todayDateTimeForLogistics)
         ->addWhere('api_action', '=', 'collection_camp_cron')
         ->execute();
     }
 
-    if ($formattedToday > $volunteerScheduledRunDate && $volunteerScheduledRunDate != $todayDateTimeForFeedback) {
-      $nextScheduledDate = new DateTime();
-      // Set time to 10:00 AM.
-      $nextScheduledDate->setTime(14, 0, 0);
-
+    // Update the scheduled run time for volunteer feedback mail
+    if ($volunteerScheduledRunDate != $todayDateTimeForFeedback) {
       $results = Job::update(TRUE)
-        ->addValue('scheduled_run_date', $nextScheduledDate->format('Y-m-d H:i:s'))
+        ->addValue('scheduled_run_date', $todayDateTimeForFeedback)
         ->addWhere('api_action', '=', 'volunteer_feedback_collection_camp_cron')
         ->execute();
     }
