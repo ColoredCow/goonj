@@ -104,7 +104,7 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
         $contactName = $campAttendedBy['display_name'];
 
         $mailParams = [
-          'subject' => 'Collection Camp Completion Notification: ' . $campCode . ' at ' . $campAddress,
+          'subject' => 'Collection Camp Notification: ' . $campCode . ' at ' . $campAddress,
           'from' => $from,
           'toEmail' => $emailId,
           'replyTo' => $from,
