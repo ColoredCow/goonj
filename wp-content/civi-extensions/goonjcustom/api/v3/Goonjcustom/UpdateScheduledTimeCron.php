@@ -36,7 +36,6 @@ function civicrm_api3_goonjcustom_update_scheduled_time_cron($params) {
   try {
     $currentDate = new DateTime();
     $formattedToday = $currentDate->format('Y-m-d H:i:s');
-    $todayDate = $currentDate->format('Y-m-d');
 
     // Fetch the scheduled run date.
     $jobs = Job::get(TRUE)
@@ -47,11 +46,6 @@ function civicrm_api3_goonjcustom_update_scheduled_time_cron($params) {
     $scheduledRunDate = $jobs['scheduled_run_date'];
     // Convert it to a DateTime object.
     $scheduledDateTime = new DateTime($scheduledRunDate);
-    $scheduledDate = $scheduledDateTime->format('Y-m-d');
-
-    if ($todayDate == $scheduledDate) {
-      return;
-    }
 
     if ($formattedToday > $scheduledRunDate) {
       $nextScheduledDate = new DateTime();
