@@ -34,12 +34,12 @@ class CollectionBaseService extends AutoSubscriber {
       '&hook_civicrm_tabset' => 'collectionBaseTabset',
       '&hook_civicrm_selectWhereClause' => 'aclCollectionCamp',
       '&hook_civicrm_pre' => [
-        ['handleAuthorizationEmails'],
+        // ['handleAuthorizationEmails'],
         ['checkIfPosterNeedsToBeGenerated'],
       ],
       '&hook_civicrm_post' => [
         ['maybeGeneratePoster', 20],
-        ['handleAuthorizationEmailsPost', 10],
+        // ['handleAuthorizationEmailsPost', 10],
       ],
     ];
   }
