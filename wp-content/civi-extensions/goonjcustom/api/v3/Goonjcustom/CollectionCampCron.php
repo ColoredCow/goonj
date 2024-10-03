@@ -57,6 +57,9 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
     ->addWhere('Logistics_Coordination.Camp_to_be_attended_by', 'IS NOT EMPTY')
     ->execute();
 
+
+error_log("collectionCamps: " . print_r($collectionCamps, TRUE));
+
   [$defaultFromName, $defaultFromEmail] = CRM_Core_BAO_Domain::getNameAndEmail();
   $from = "\"$defaultFromName\" <$defaultFromEmail>";
 

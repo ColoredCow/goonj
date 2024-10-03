@@ -931,11 +931,11 @@ class CollectionCampService extends AutoSubscriber {
     $vehicleDispatchId = $goonjField['entity_id'];
 
     $collectionSourceVehicleDispatch = EckEntity::get('Collection_Source_Vehicle_Dispatch', FALSE)
-      ->addSelect('Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id')
+      ->addSelect('Camp_Vehicle_Dispatch.Collection_Camp')
       ->addWhere('id', '=', $vehicleDispatchId)
       ->execute()->first();
 
-    $collectionCampId = $collectionSourceVehicleDispatch['Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id'];
+    $collectionCampId = $collectionSourceVehicleDispatch['Camp_Vehicle_Dispatch.Collection_Camp'];
 
     $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
       ->addSelect('Collection_Camp_Intent_Details.Location_Area_of_camp', 'title')
@@ -982,8 +982,7 @@ class CollectionCampService extends AutoSubscriber {
     \CRM_Utils_Mail::send($mailParams);
 
     $updateMmtId = EckEntity::update('Collection_Source_Vehicle_Dispatch', FALSE)
-      ->addValue('Acknowledgement_For_Logistics.Filled_by', $mmtId)
-      ->addWhere('Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id', '=', $collectionCampId)
+      ->addWhere('Camp_Vehicle_Dispatch.Collection_Camp', '=', $collectionCampId)
       ->execute();
 
   }
@@ -993,7 +992,7 @@ class CollectionCampService extends AutoSubscriber {
    */
   public static function goonjcustom_material_management_email_html($collectionCampId, $campCode, $campAddress, $vehicleDispatchId) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
-    $materialdispatchUrl = $homeUrl . 'acknowledgement-form-for-logistics/#?Eck_Collection_Source_Vehicle_Dispatch1=' . $vehicleDispatchId . '&Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id=' . $collectionCampId . '&id=' . $vehicleDispatchId . '&Eck_Collection_Camp1=' . $collectionCampId;
+    $materialdispatchUrl = $homeUrl . 'acknowledgement-form-for-logistics/#?Eck_Collection_Source_Vehicle_Dispatch1=' . $vehicleDispatchId . '&Camp_Vehicle_Dispatch.Collection_Camp=' . $collectionCampId . '&id=' . $vehicleDispatchId . '&Eck_Collection_Camp1=' . $collectionCampId;
     $html = "
     <p>Dear MMT team,</p>
     <p>This is to inform you that a vehicle has been sent from camp <strong>$campCode</strong> at <strong>$campAddress</strong>.</p>
