@@ -50,10 +50,10 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
   $todayFormatted = $today->format('Y-m-d');
 
   $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
-    ->addSelect('Logistics_Coordination.Camp_to_be_attended_by', 'Collection_Camp_Intent_Details.End_Date', 'Logistics_Coordination.Email_Sent')
+    ->addSelect('Logistics_Coordination.Camp_to_be_attended_by', 'Collection_Camp_Intent_Details.Start_Date', 'Logistics_Coordination.Email_Sent')
     ->addWhere('Collection_Camp_Core_Details.Status', '=', 'authorized')
     ->addWhere('subtype', '=', $collectionCampSubtype)
-    ->addWhere('Collection_Camp_Intent_Details.End_Date', '<=', $endOfDay)
+    ->addWhere('Collection_Camp_Intent_Details.Start_Date', '<=', $endOfDay)
     ->addWhere('Logistics_Coordination.Camp_to_be_attended_by', 'IS NOT EMPTY')
     ->execute();
 
@@ -63,9 +63,9 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
   foreach ($collectionCamps as $camp) {
     try {
       $campAttendedById = $camp['Logistics_Coordination.Camp_to_be_attended_by'];
-      $endDate = new DateTime($camp['Collection_Camp_Intent_Details.End_Date']);
+      $startDate = new DateTime($camp['Collection_Camp_Intent_Details.Start_Date']);
       $collectionCampId = $camp['id'];
-      $endDateFormatted = $endDate->format('Y-m-d');
+      $startDateFormatted = $startDate->format('Y-m-d');
       $logisticEmailSent = $camp['Logistics_Coordination.Email_Sent'];
 
       $collectionCamp = EckEntity::get('Collection_Camp', TRUE)
@@ -92,7 +92,7 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
         ->execute();
 
       // Send completion notification.
-      if (!$logisticEmailSent && $endDateFormatted <= $todayFormatted) {
+      if (!$logisticEmailSent && $startDateFormatted <= $todayFormatted) {
         // Get recipient email and name.
         $campAttendedBy = Contact::get(TRUE)
           ->addSelect('email.email', 'display_name')
