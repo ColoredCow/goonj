@@ -59,7 +59,7 @@ function civicrm_api3_goonjcustom_update_scheduled_time_cron($params) {
 
     $volunteerScheduledRunDate = $feedbackJob['scheduled_run_date'];
 
-    // Update the scheduled run time for logistics mail
+    // Update the scheduled run time for logistics mail.
     if ($logisticScheduledRunDate != $todayDateTimeForLogistics) {
       $results = Job::update(TRUE)
         ->addValue('scheduled_run_date', $todayDateTimeForLogistics)
@@ -67,7 +67,7 @@ function civicrm_api3_goonjcustom_update_scheduled_time_cron($params) {
         ->execute();
     }
 
-    // Update the scheduled run time for volunteer feedback mail
+    // Update the scheduled run time for volunteer feedback mail.
     if ($volunteerScheduledRunDate != $todayDateTimeForFeedback) {
       $results = Job::update(TRUE)
         ->addValue('scheduled_run_date', $todayDateTimeForFeedback)
