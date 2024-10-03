@@ -1,0 +1,9 @@
+ALTER TABLE civicrm_job DROP COLUMN crontab_apply;
+ALTER TABLE civicrm_job DROP COLUMN crontab_frequency;
+ALTER TABLE civicrm_job DROP COLUMN crontab_offset;
+ALTER TABLE civicrm_job DROP COLUMN crontab_hour_range;
+ALTER TABLE civicrm_job DROP COLUMN crontab_day_range;
+ALTER TABLE civicrm_job DROP COLUMN crontab_date_time_start;
+ALTER TABLE civicrm_job DROP COLUMN crontab_date_time_end;
+ALTER TABLE civicrm_job DROP COLUMN crontab_time_from;
+ALTER TABLE civicrm_job DROP COLUMN crontab_time_to;

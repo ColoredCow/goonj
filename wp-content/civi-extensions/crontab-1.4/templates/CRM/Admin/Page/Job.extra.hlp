@@ -1,0 +1,30 @@
+{htxt id="id-crontab_offset"}
+    <p>{ts}We are using Linux Cron tab like format to run the cron job on specific time, but this is not actual crontab, we are totally relying on CiviCRM Job, CiviCRM job may be executed by crontab like feature.{/ts}</p>
+    <p>{ts}We may run a CiviCRM job every 5 or 10 minutes. But this will not be executed on set scheduled time. So we have to give some relaxation using this margin setting.{/ts}</p>
+    <p>{ts}Provide margin in number of minutes based on what is crontab frequency of main civicrm Job. If empty we will use 5 minute as the default margin.{/ts}</p>
+    <p>{ts}So using these settings, when civicrm runs the job we allow it to run this scheduled job before or after said time in 'Advance Run frequency'.{/ts}</p>
+{/htxt}
+
+{htxt id="id-crontab_hour_range"}
+    <p>{ts}If you want to use the hours range to execute scheduled jobs for a specific period then select plain hours numbers continuously and then check this box.{/ts}</p>
+    <p>{ts}Example : Run scheduled jobs every 10 minutes from midnight to morning 7 AM. The final crontab expression is like '*/10 0-7 * * *'. If you do not select this range checkbox then the scheduled job will execute every 10 minutes for the entire day then it also runs every hour from midnight to 7 AM morning, the expression is like '*/10 0,1,2,3,4,5,6,7 * * *'.{/ts}</p>
+{/htxt}
+
+{htxt id="id-crontab_day_range"}
+    <p>{ts}If you want to use the multiple days to execute scheduled jobs for a specific day range then select plain days numbers continuously and then check this box.{/ts}</p>
+    <p>{ts}Example : Run scheduled job 1st seven days of month , final crontab expression is like '*/10 * 1-7 * *'.{/ts}</p>
+{/htxt}
+
+{htxt id="id-crontab_date_time_start"}
+    <p>{ts}Set a start date to run scheduled jobs. Scheduled jobs only execute if the current date is greater than the set start date.{/ts}</p>
+{/htxt}
+
+{htxt id="id-crontab_date_time_end"}
+    <p>{ts}Set an end date to run scheduled jobs. Scheduled jobs only execute if the current date is less than the set end date, you can keep it open ended by not setting an end date.{/ts}</p>
+{/htxt}
+
+{htxt id="id-crontab_time_from"}
+    <p>{ts}Set Active From - Active To time, within this time scheduled job run irrespective of what you set to run every 30 min for the entire day.{/ts}</p>
+    <p>{ts}Example 1: Run a job only between 09:00 AM - 12:00 PM{/ts}</p>
+    <p>{ts}Example 2: Run a job only between 10:00 PM - 06:00 AM{/ts}</p>
+{/htxt}
