@@ -50,7 +50,6 @@ function civicrm_api3_goonjcustom_update_scheduled_time_cron($params) {
     $scheduledDate = $scheduledDateTime->format('Y-m-d');
 
     if ($todayDate == $scheduledDate) {
-      error_log("Hello");
       return;
     }
 
