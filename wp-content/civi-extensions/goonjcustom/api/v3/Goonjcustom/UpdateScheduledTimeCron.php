@@ -7,7 +7,7 @@
 use Civi\Api4\Job;
 
 /**
- * Goonjcustom.CollectionCampCron API specification (optional)
+ * Goonjcustom.UpdateScheduledTimeCron API specification (optional)
  * This is used for documentation and validation.
  *
  * @param array $spec
@@ -20,7 +20,7 @@ function _civicrm_api3_goonjcustom_update_scheduled_time_cron_spec(&$spec) {
 }
 
 /**
- * Goonjcustom.CollectionCampCron API.
+ * Goonjcustom.UpdateScheduledTimeCron API.
  *
  * @param array $params
  *
