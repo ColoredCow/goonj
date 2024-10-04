@@ -421,6 +421,38 @@ function goonj_custom_message_placeholder() {
 }
 add_shortcode( 'goonj_volunteer_message', 'goonj_custom_message_placeholder' );
 
+function dynamic_button_shortcode() {
+	// Get the individual ID from the URL parameters
+	$individualId = isset($_GET['individualId']) ? sanitize_text_field($_GET['individualId']) : '';
+
+	// Create the base URL for the volunteer form
+	$base_url = home_url('/volunteer-form/#');
+
+	// Construct the dynamic button URL with parameters
+	$button_url = esc_url($base_url . "?Individual1=$individualId&message=individual-user");
+
+	// Return the button HTML
+	return '
+		<div>
+			<p class="has-text-align-center">
+				<mark style="background-color:rgba(0, 0, 0, 0);color:#d64631" class="has-inline-color">
+					<strong>Thank you for your contribution</strong>
+				</mark>
+			</p>
+		</div>
+		<div style="display: flex; justify-content: center; align-items: center; border-style:none; border-width:0px; border-radius:5px;">
+			<a class="wp-block-button__link has-white-color has-vivid-red-background-color has-text-color has-background has-link-color wp-element-button" 
+			   href="' . $button_url . '" 
+			   style="border-style:none;border-width:0px;border-radius:5px">
+			   Join Us as a Volunteer (If not a Volunteer)
+			</a>
+		</div>';
+}
+
+add_shortcode('dynamic_button', 'dynamic_button_shortcode');
+
+
+
 function goonj_collection_camp_landing_page() {
 	ob_start();
 	get_template_part( 'templates/collection-landing-page' );
