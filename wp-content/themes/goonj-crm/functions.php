@@ -452,7 +452,7 @@ function render_volunteer_button() {
 		return;
 	}
 	// Create the base URL for the volunteer form
-	$base_url = home_url('/volunteer-form/');
+	$base_url = home_url('/material-contribution/volunteer-signup/');
 
 	$button_url = esc_url(
 		add_query_arg(
@@ -508,29 +508,34 @@ function goonj_redirect_after_individual_creation() {
 	) {
 		return;
 	}
-
-	$individual = \Civi\Api4\Contact::get( false )
-		->addSelect( 'source', 'Individual_fields.Creation_Flow', 'email.email', 'phone.phone', 'Individual_fields.Source_Processing_Center' )
-		->addJoin( 'Email AS email', 'LEFT' )
-		->addJoin( 'Phone AS phone', 'LEFT' )
-		->addWhere( 'email.is_primary', '=', true )
-		->addWhere( 'phone.is_primary', '=', true )
-		->addWhere( 'id', '=', absint( $_GET['individualId'] ) )
-		->setLimit( 1 )
+	\Civi::log()->info('checking');
+	\Civi::log()->info('checking');
+	$individual = \Civi\Api4\Contact::get(false)
+		->addSelect('source', 'Individual_fields.Creation_Flow', 'email.email', 'phone.phone', 'Individual_fields.Source_Processing_Center')
+		->addJoin('Email AS email', 'LEFT')
+		->addJoin('Phone AS phone', 'LEFT')
+		->addWhere('phone.is_primary', '=', true) // Keep the phone condition
+		->addWhere('id', '=', absint($_GET['individualId'])) // Ensure individual ID is valid
+		->setLimit(1)
 		->execute()->single();
 
+	\Civi::log()->info('checking2', ['individual'=>$individual]);
+	
+
+	
 	$creationFlow = $individual['Individual_fields.Creation_Flow'];
 	$source = $individual['source'];
 	$sourceProcessingCenter = $individual['Individual_fields.Source_Processing_Center'];
+	\Civi::log()->info('checking3');
 
-	if ( ! $source ) {
-		return;
-	}
-
+	\Civi::log()->info('checking4',['creationFlow'=>$creationFlow]);
 	$redirectPath = '';
 
 	switch ( $creationFlow ) {
 		case 'material-contribution':
+			if ( ! $source ) {
+				return;
+			}
 			// If the individual was created while in the process of material contribution,
 			// then we need to find out from WHERE was she trying to contribute.
 
