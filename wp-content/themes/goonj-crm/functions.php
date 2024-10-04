@@ -419,6 +419,7 @@ function goonj_is_volunteer_inducted( $volunteer ) {
 function goonj_custom_message_placeholder() {
 	return '<div id="custom-message" class="ml-24"></div>';
 }
+
 add_shortcode( 'goonj_volunteer_message', 'goonj_custom_message_placeholder' );
 
 function render_volunteer_button() {
@@ -444,12 +445,12 @@ function render_volunteer_button() {
 	->addWhere('id', '=', $individualId)
 	->execute();
 
-    $contactSubTypes = $contacts[0]['contact_sub_type'] ?? null;
+	$contactSubTypes = $contacts[0]['contact_sub_type'] ?? null;
 
-    // Check if contact_sub_type is not null or empty and contains 'Volunteer'
-    if (!empty($contactSubTypes) && in_array('Volunteer', $contactSubTypes)) {
-        return;
-    }
+	// Check if contact_sub_type is not null or empty and contains 'Volunteer'
+	if (!empty($contactSubTypes) && in_array('Volunteer', $contactSubTypes)) {
+		return;
+	}
 	// Create the base URL for the volunteer form
 	$base_url = home_url('/volunteer-form/');
 
