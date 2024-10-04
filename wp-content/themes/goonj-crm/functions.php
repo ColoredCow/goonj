@@ -421,9 +421,22 @@ function goonj_custom_message_placeholder() {
 }
 add_shortcode( 'goonj_volunteer_message', 'goonj_custom_message_placeholder' );
 
-function dynamic_button_shortcode() {
+function render_volunteer_button() {
+
 	// Get the individual ID from the URL parameters
-	$individualId = isset($_GET['individualId']) ? sanitize_text_field($_GET['individualId']) : '';
+	$activityId = isset($_GET['activityId']) ? sanitize_text_field($_GET['activityId']) : '';
+
+	$activities = \Civi\Api4\Activity::get(FALSE)
+	->addSelect('source_contact_id')
+	->addJoin('ActivityContact AS activity_contact', 'LEFT')
+	->addWhere('id', '=', $activityId)
+	->addWhere('activity_type_id:label', '=', 'Material Contribution')
+	->execute()->single();
+	if (empty($activities)) {
+		return;
+	}
+	$individualId = $activities['source_contact_id'];
+	\Civi::log()->info('activityId',['activityId'=>$individualId]);
 
 	// Create the base URL for the volunteer form
 	$base_url = home_url('/volunteer-form/#');
@@ -433,13 +446,6 @@ function dynamic_button_shortcode() {
 
 	// Return the button HTML
 	return '
-		<div>
-			<p class="has-text-align-center">
-				<mark style="background-color:rgba(0, 0, 0, 0);color:#d64631" class="has-inline-color">
-					<strong>Thank you for your contribution</strong>
-				</mark>
-			</p>
-		</div>
 		<div style="display: flex; justify-content: center; align-items: center; border-style:none; border-width:0px; border-radius:5px;">
 			<a class="wp-block-button__link has-white-color has-vivid-red-background-color has-text-color has-background has-link-color wp-element-button" 
 			   href="' . $button_url . '" 
@@ -449,7 +455,7 @@ function dynamic_button_shortcode() {
 		</div>';
 }
 
-add_shortcode('dynamic_button', 'dynamic_button_shortcode');
+add_shortcode('goonj_volunteer_registration_button', 'render_volunteer_button');
 
 
 
