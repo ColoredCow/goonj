@@ -68,7 +68,7 @@ function updateJobScheduledTime($apiAction, $scheduledRunDate) {
   $scheduledRunDateFromDb = $job['scheduled_run_date'];
 
   // Update the scheduled run time if it differs from the current value.
-  if ($scheduledRunDateFromDb != $scheduledRunDate) {
+  if ($scheduledRunDateFromDb !== $scheduledRunDate) {
     Job::update(TRUE)
       ->addValue('scheduled_run_date', $scheduledRunDate)
       ->addWhere('api_action', '=', $apiAction)
