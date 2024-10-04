@@ -423,7 +423,7 @@ add_shortcode( 'goonj_volunteer_message', 'goonj_custom_message_placeholder' );
 
 function render_volunteer_button() {
 
-	// Get the individual ID from the URL parameters
+	// Get the activity ID from the URL parameters
 	$activityId = isset($_GET['activityId']) ? sanitize_text_field($_GET['activityId']) : '';
 
 	$activities = \Civi\Api4\Activity::get(FALSE)
@@ -436,8 +436,17 @@ function render_volunteer_button() {
 		return;
 	}
 	$individualId = $activities['source_contact_id'];
-	\Civi::log()->info('activityId',['activityId'=>$individualId]);
 
+	$contacts = \Civi\Api4\Contact::get(FALSE)
+	->addSelect('contact_sub_type')
+	->addWhere('id', '=', $individualId)
+	->execute();
+
+	$contactSubTypes = $contacts[0]['contact_sub_type'];
+
+    if (in_array('Volunteer', $contactSubTypes)) {
+        return; // Exit or return early if the contact is a volunteer
+    }
 	// Create the base URL for the volunteer form
 	$base_url = home_url('/volunteer-form/#');
 
