@@ -79,7 +79,7 @@ class CRM_Goonjcustom_Form_CollectionCampLinks extends CRM_Core_Form {
         'label' => 'Vehicle Dispatch',
         'url' => self::createUrl(
                 '/camp-vehicle-dispatch-form',
-                "Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id={$this->_collectionCampId}&Eck_Collection_Camp1={$this->_collectionCampId}&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent={$this->_processingCenterId}&Camp_Vehicle_Dispatch.Filled_by={$contactId}",
+                "Camp_Vehicle_Dispatch.Collection_Camp={$this->_collectionCampId}&Eck_Collection_Camp1={$this->_collectionCampId}&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent={$this->_processingCenterId}&Camp_Vehicle_Dispatch.Filled_by={$contactId}",
                 $contactId
         ),
       ],
