@@ -432,9 +432,11 @@ function render_volunteer_button() {
 	->addWhere('id', '=', $activityId)
 	->addWhere('activity_type_id:label', '=', 'Material Contribution')
 	->execute()->single();
+
 	if (empty($activities)) {
 		return;
 	}
+
 	$individualId = $activities['source_contact_id'];
 
 	$contacts = \Civi\Api4\Contact::get(FALSE)
@@ -442,16 +444,24 @@ function render_volunteer_button() {
 	->addWhere('id', '=', $individualId)
 	->execute();
 
-	$contactSubTypes = $contacts[0]['contact_sub_type'];
+    $contactSubTypes = $contacts[0]['contact_sub_type'] ?? null;
 
-    if (in_array('Volunteer', $contactSubTypes)) {
-        return; // Exit or return early if the contact is a volunteer
+    // Check if contact_sub_type is not null or empty and contains 'Volunteer'
+    if (!empty($contactSubTypes) && in_array('Volunteer', $contactSubTypes)) {
+        return;
     }
 	// Create the base URL for the volunteer form
-	$base_url = home_url('/volunteer-form/#');
+	$base_url = home_url('/volunteer-form/');
 
-	// Construct the dynamic button URL with parameters
-	$button_url = esc_url($base_url . "?Individual1=$individualId&message=individual-user");
+	$button_url = esc_url(
+		add_query_arg(
+			array(
+				'Individual1' => $individualId,
+				'message' => 'individual-user'
+			),
+			$base_url
+		)
+	);	
 
 	// Return the button HTML
 	return '
