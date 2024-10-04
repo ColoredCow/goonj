@@ -163,6 +163,7 @@ class CollectionBaseService extends AutoSubscriber {
     $htmlContent = escapeshellarg($htmlContent);
 
     $command = "$nodePath $puppeteerJsPath $htmlContent $outputPath";
+    \Civi::log()->info("posterCommand: $command");
 
     exec($command, $output, $returnCode);
 
