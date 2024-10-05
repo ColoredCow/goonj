@@ -452,10 +452,10 @@ function render_volunteer_button() {
 		return;
 	}
 	// Create the base URL for the volunteer form
-	$base_url = home_url('/material-contribution/volunteer-signup/');
+	$baseUrl = home_url('/material-contribution/volunteer-signup/');
 
-	$button_url = esc_url(
-		$base_url . '#?' . http_build_query(array(
+	$buttonUrl = esc_url(
+		$baseUrl . '#?' . http_build_query(array(
 			'Individual1' => $individualId,
 			'message' => 'individual-user'
 		))
@@ -465,7 +465,7 @@ function render_volunteer_button() {
 	return '
 		<div style="display: flex; justify-content: center; align-items: center; border-style:none; border-width:0px; border-radius:5px;">
 			<a class="wp-block-button__link has-white-color has-vivid-red-background-color has-text-color has-background has-link-color wp-element-button" 
-			   href="' . $button_url . '" 
+			   href="' . $buttonUrl . '" 
 			   style="border-style:none;border-width:0px;border-radius:5px">
 			   Join Us as a Volunteer (If not a Volunteer)
 			</a>
