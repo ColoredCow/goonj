@@ -505,8 +505,7 @@ function goonj_redirect_after_individual_creation() {
 	) {
 		return;
 	}
-	\Civi::log()->info('checking');
-	\Civi::log()->info('checking');
+
 	$individual = \Civi\Api4\Contact::get(false)
 		->addSelect('source', 'Individual_fields.Creation_Flow', 'email.email', 'phone.phone', 'Individual_fields.Source_Processing_Center')
 		->addJoin('Email AS email', 'LEFT')
@@ -516,16 +515,10 @@ function goonj_redirect_after_individual_creation() {
 		->setLimit(1)
 		->execute()->single();
 
-	\Civi::log()->info('checking2', ['individual'=>$individual]);
-	
-
-	
 	$creationFlow = $individual['Individual_fields.Creation_Flow'];
 	$source = $individual['source'];
 	$sourceProcessingCenter = $individual['Individual_fields.Source_Processing_Center'];
-	\Civi::log()->info('checking3');
 
-	\Civi::log()->info('checking4',['creationFlow'=>$creationFlow]);
 	$redirectPath = '';
 
 	switch ( $creationFlow ) {
