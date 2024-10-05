@@ -419,7 +419,62 @@ function goonj_is_volunteer_inducted( $volunteer ) {
 function goonj_custom_message_placeholder() {
 	return '<div id="custom-message" class="ml-24"></div>';
 }
+
 add_shortcode( 'goonj_volunteer_message', 'goonj_custom_message_placeholder' );
+
+function render_volunteer_button() {
+
+	// Get the activity ID from the URL parameters
+	$activityId = isset($_GET['activityId']) ? sanitize_text_field($_GET['activityId']) : '';
+
+	$activities = \Civi\Api4\Activity::get(FALSE)
+	->addSelect('source_contact_id')
+	->addJoin('ActivityContact AS activity_contact', 'LEFT')
+	->addWhere('id', '=', $activityId)
+	->addWhere('activity_type_id:label', '=', 'Material Contribution')
+	->execute()->single();
+
+	if (empty($activities)) {
+		return;
+	}
+
+	$individualId = $activities['source_contact_id'];
+
+	$contacts = \Civi\Api4\Contact::get(FALSE)
+	->addSelect('contact_sub_type')
+	->addWhere('id', '=', $individualId)
+	->execute();
+
+	$contactSubTypes = $contacts[0]['contact_sub_type'] ?? null;
+
+	// Check if contact_sub_type is not null or empty and contains 'Volunteer'
+	if (!empty($contactSubTypes) && in_array('Volunteer', $contactSubTypes)) {
+		return;
+	}
+	// Create the base URL for the volunteer form
+	$baseUrl = home_url('/material-contribution/volunteer-signup/');
+
+	$buttonUrl = esc_url(
+		$baseUrl . '#?' . http_build_query(array(
+			'Individual1' => $individualId,
+			'message' => 'individual-user'
+		))
+	);
+
+	// Return the button HTML
+	return '
+		<div style="display: flex; justify-content: center; align-items: center; border-style:none; border-width:0px; border-radius:5px;">
+			<a class="wp-block-button__link has-white-color has-vivid-red-background-color has-text-color has-background has-link-color wp-element-button" 
+			   href="' . $buttonUrl . '" 
+			   style="border-style:none;border-width:0px;border-radius:5px">
+			   Join Us as a Volunteer (If not a Volunteer)
+			</a>
+		</div>';
+}
+
+add_shortcode('goonj_volunteer_registration_button', 'render_volunteer_button');
+
+
 
 function goonj_collection_camp_landing_page() {
 	ob_start();
@@ -451,28 +506,26 @@ function goonj_redirect_after_individual_creation() {
 		return;
 	}
 
-	$individual = \Civi\Api4\Contact::get( false )
-		->addSelect( 'source', 'Individual_fields.Creation_Flow', 'email.email', 'phone.phone', 'Individual_fields.Source_Processing_Center' )
-		->addJoin( 'Email AS email', 'LEFT' )
-		->addJoin( 'Phone AS phone', 'LEFT' )
-		->addWhere( 'email.is_primary', '=', true )
-		->addWhere( 'phone.is_primary', '=', true )
-		->addWhere( 'id', '=', absint( $_GET['individualId'] ) )
-		->setLimit( 1 )
+	$individual = \Civi\Api4\Contact::get(false)
+		->addSelect('source', 'Individual_fields.Creation_Flow', 'email.email', 'phone.phone', 'Individual_fields.Source_Processing_Center')
+		->addJoin('Email AS email', 'LEFT')
+		->addJoin('Phone AS phone', 'LEFT')
+		->addWhere('phone.is_primary', '=', true) // Keep the phone condition
+		->addWhere('id', '=', absint($_GET['individualId'])) // Ensure individual ID is valid
+		->setLimit(1)
 		->execute()->single();
 
 	$creationFlow = $individual['Individual_fields.Creation_Flow'];
 	$source = $individual['source'];
 	$sourceProcessingCenter = $individual['Individual_fields.Source_Processing_Center'];
 
-	if ( ! $source ) {
-		return;
-	}
-
 	$redirectPath = '';
 
 	switch ( $creationFlow ) {
 		case 'material-contribution':
+			if ( ! $source ) {
+				return;
+			}
 			// If the individual was created while in the process of material contribution,
 			// then we need to find out from WHERE was she trying to contribute.
 
