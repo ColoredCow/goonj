@@ -452,11 +452,7 @@ function goonj_redirect_after_individual_creation() {
 	}
 
 	$individual = \Civi\Api4\Contact::get( false )
-		->addSelect( 'source', 'Individual_fields.Creation_Flow', 'email.email', 'phone.phone', 'Individual_fields.Source_Processing_Center' )
-		->addJoin( 'Email AS email', 'LEFT' )
-		->addJoin( 'Phone AS phone', 'LEFT' )
-		->addWhere( 'email.is_primary', '=', true )
-		->addWhere( 'phone.is_primary', '=', true )
+		->addSelect( 'source', 'Individual_fields.Creation_Flow', 'Individual_fields.Source_Processing_Center' )
 		->addWhere( 'id', '=', absint( $_GET['individualId'] ) )
 		->setLimit( 1 )
 		->execute()->single();
@@ -484,9 +480,7 @@ function goonj_redirect_after_individual_creation() {
 
 			if ( ! empty( $collectionCamp['id'] ) ) {
 				$redirectPath = sprintf(
-					'/material-contribution/#?email=%s&phone=%s&Material_Contribution.Collection_Camp=%s&source_contact_id=%s',
-					$individual['email.email'],
-					$individual['phone.phone'],
+					'/material-contribution/#?Material_Contribution.Collection_Camp=%s&source_contact_id=%s',
 					$collectionCamp['id'],
 					$individual['id']
 				);
@@ -495,9 +489,7 @@ function goonj_redirect_after_individual_creation() {
 		case 'office-visit':
 			$sourceProcessingCenter = $individual['Individual_fields.Source_Processing_Center'];
 			$redirectPath = sprintf(
-				'/processing-center/office-visit/details/#?email=%s&phone=%s&Office_Visit.Goonj_Processing_Center=%s&source_contact_id=%s',
-				$email,
-				$phone,
+				'/processing-center/office-visit/details/#?Office_Visit.Goonj_Processing_Center=%s&source_contact_id=%s',
 				$sourceProcessingCenter,
 				$individual['id']
 			);
@@ -505,9 +497,7 @@ function goonj_redirect_after_individual_creation() {
 		case 'office-visit-contribution':
 			$sourceProcessingCenter = $individual['Individual_fields.Source_Processing_Center'];
 			$redirectPath = sprintf(
-				'/processing-center/material-contribution/details/#?email=%s&phone=%s&Material_Contribution.Goonj_Office=%s&source_contact_id=%s',
-				$email,
-				$phone,
+				'/processing-center/material-contribution/details/#?Material_Contribution.Goonj_Office=%s&source_contact_id=%s',
 				$sourceProcessingCenter,
 				$individual['id']
 			);
