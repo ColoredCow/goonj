@@ -455,14 +455,11 @@ function render_volunteer_button() {
 	$base_url = home_url('/material-contribution/volunteer-signup/');
 
 	$button_url = esc_url(
-		add_query_arg(
-			array(
-				'Individual1' => $individualId,
-				'message' => 'individual-user'
-			),
-			$base_url
-		)
-	);	
+		$base_url . '#?' . http_build_query(array(
+			'Individual1' => $individualId,
+			'message' => 'individual-user'
+		))
+	);
 
 	// Return the button HTML
 	return '
