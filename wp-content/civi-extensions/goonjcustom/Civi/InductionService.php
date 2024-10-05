@@ -19,16 +19,22 @@ class InductionService extends AutoSubscriber {
 
   private static $volunteerId = NULL;
   private static $volunteerInductionAssigneeEmail = NULL;
+  private static $transitionedVolunteerId = NULL;
 
   /**
    *
    */
   public static function getSubscribedEvents() {
     return [
+      '&hook_civicrm_pre' => [
+        ['hasIndividualChangedToVolunteer'],
+      ],
       '&hook_civicrm_post' => [
             ['volunteerCreated'],
             ['createInductionForVolunteer'],
+            ['createInductionForTransitionedVolunteer'],
             ['sendInductionEmailToVolunteer'],
+            ['sendInductionEmailForTransitionedVolunteer'],
       ],
       '&hook_civicrm_custom' => [
         ['volunteerInductionAssignee'],
@@ -69,75 +75,33 @@ class InductionService extends AutoSubscriber {
     \Civi::log()->info('Volunteer set: ', [
       'id' => self::$volunteerId,
     ]);
-
   }
 
   /**
-   *
+   * Common logic for creating an induction.
    */
-  public static function createInductionForVolunteer(string $op, string $objectName, int $objectId, &$objectRef) {
-    if ($op !== 'create' || $objectName !== 'Address') {
+  private static function createInduction(int $contactId, int $stateId) {
+    if (self::inductionExists($contactId)) {
+      \Civi::log()->info('Induction already exists for contact', ['id' => $contactId]);
       return FALSE;
     }
 
-    \Civi::log()->info('Address created: ', [
-      'id' => $objectId,
-      'volunteer' => self::$volunteerId,
-      'contactId' => $objectRef->contact_id,
-      'isPrimary' => $objectRef->is_primary,
-    ]);
-
-    if (self::$volunteerId !== $objectRef->contact_id || !$objectRef->is_primary) {
+    $office = self::findOfficeForState($stateId);
+    if (!$office) {
+      \Civi::log()->info('Cannot find office for: ' . $stateId);
       return FALSE;
     }
 
-    $stateId = $objectRef->state_province_id;
-
-    $officesFound = Contact::get(FALSE)
-      ->addSelect('id')
-      ->addWhere('contact_type', '=', 'Organization')
-      ->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_Office')
-      ->addWhere('Goonj_Office_Details.Induction_Catchment', 'CONTAINS', $stateId)
-      ->execute();
-
-    $office = $officesFound->first();
-
-    // @todo Implement fallback office logic here.
-    $officeId = $office['id'];
-
-    $coordinators = Relationship::get(FALSE)
-      ->addWhere('contact_id_b', '=', $officeId)
-      ->addWhere('relationship_type_id:name', '=', self::RELATIONSHIP_TYPE_NAME)
-      ->execute();
-
-    $coordinatorCount = $coordinators->count();
-
-    // @todo Implement fallback coordinator logic here.
-    if ($coordinatorCount > 1) {
-      $randomIndex = rand(0, $coordinatorCount - 1);
-      $coordinator = $coordinators->itemAt($randomIndex);
-    }
-    else {
-      $coordinator = $coordinators->first();
+    $coordinatorId = self::findCoordinatorForOffice($office['id']);
+    if (!$coordinatorId) {
+      \Civi::log()->info('Cannot found induction coordinator for office:', ['id' => $office['id']]);
+      return FALSE;
     }
 
-    $coordinatorId = $coordinator['contact_id_a'];
-
-    $session = \CRM_Core_Session::singleton();
-    $currentUserId = $session->get('userID') ?: self::$volunteerId;
-
-    $sourceContactId = $currentUserId;
-    $targetContactId = ($currentUserId === self::$volunteerId) ? $currentUserId : [self::$volunteerId];
+    $sourceContactId = self::getCurrentUserOrVolunteer($contactId);
+    $targetContactId = ($sourceContactId === $contactId) ? $contactId : $contactId;
 
     $placeholderActivityDate = self::getPlaceholderActivityDate();
-
-    \Civi::log()->info('Before induction activity create: ', [
-      'id' => $objectId,
-      'source' => $sourceContactId,
-      'target' => $targetContactId,
-      'coordinator' => $coordinatorId,
-      'officeId' => $officeId,
-    ]);
 
     Activity::create(FALSE)
       ->addValue('activity_type_id:name', self::INDUCTION_ACTIVITY_TYPE_NAME)
@@ -146,13 +110,117 @@ class InductionService extends AutoSubscriber {
       ->addValue('target_contact_id', $targetContactId)
       ->addValue('Induction_Fields.Assign', $coordinatorId)
       ->addValue('activity_date_time', $placeholderActivityDate)
-      ->addValue('Induction_Fields.Goonj_Office', $officeId)
+      ->addValue('Induction_Fields.Goonj_Office', $office['id'])
       ->execute();
+
+    return TRUE;
+  }
+
+  /**
+   * Handles induction creation for a volunteer.
+   */
+  public static function createInductionForVolunteer(string $op, string $objectName, int $objectId, &$objectRef) {
+    if ($op !== 'create' || $objectName !== 'Address' || self::$volunteerId !== $objectRef->contact_id || !$objectRef->is_primary) {
+      return FALSE;
+    }
+
+    $stateId = $objectRef->state_province_id;
+
+    if (!$stateId) {
+      \Civi::log()->info('state not found', ['VolunteerId' => self::$volunteerId, 'stateId' => $stateId]);
+      return FALSE;
+    }
+    self::createInduction(self::$volunteerId, $stateId);
+  }
+
+  /**
+   * Get the current user ID or volunteer ID.
+   */
+  private static function getCurrentUserOrVolunteer($volunteerId) {
+    $session = \CRM_Core_Session::singleton();
+    return $session->get('userID') ?: $volunteerId;
+  }
+
+  /**
+   * Find office based on state.
+   */
+  private static function findOfficeForState($stateId) {
+    return Contact::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('contact_type', '=', 'Organization')
+      ->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_Office')
+      ->addWhere('Goonj_Office_Details.Induction_Catchment', 'CONTAINS', $stateId)
+      ->execute()->first();
+  }
+
+  /**
+   * Find coordinator for office.
+   */
+  private static function findCoordinatorForOffice($officeId) {
+    $coordinators = Relationship::get(FALSE)
+      ->addWhere('contact_id_b', '=', $officeId)
+      ->addWhere('relationship_type_id:name', '=', self::RELATIONSHIP_TYPE_NAME)
+      ->execute();
+
+    $coordinatorCount = $coordinators->count();
+
+    return $coordinatorCount > 1
+      ? $coordinators->itemAt(rand(0, $coordinatorCount - 1))['contact_id_a']
+      : $coordinators->first()['contact_id_a'];
+  }
+
+  /**
+   * Common logic to send an email.
+   */
+  private static function sendInductionEmail($contactId) {
+    if (self::emailAlreadySent($contactId)) {
+      \Civi::log()->info('Induction email already sent for contact', ['id' => $contactId]);
+      return FALSE;
+    }
+
+    $template = MessageTemplate::get(FALSE)
+      ->addWhere('msg_title', 'LIKE', 'New_Volunteer_Registration%')
+      ->setLimit(1)
+      ->execute()->single();
+
+    if (!$template) {
+      return FALSE;
+    }
+
+    $emailParams = [
+      'contact_id' => $contactId,
+      'template_id' => $template['id'],
+      'cc' => self::$volunteerInductionAssigneeEmail,
+    ];
+
+    civicrm_api3('Email', 'send', $emailParams);
+    return TRUE;
+  }
+
+  /**
+   * Handles sending induction email to a volunteer.
+   */
+  public static function sendInductionEmailToVolunteer(string $op, string $objectName, int $objectId, &$objectRef) {
+    if ($op !== 'create' || $objectName !== 'Email' || !$objectId || $objectRef->contact_id !== self::$volunteerId) {
+      return;
+    }
+
+    self::sendInductionEmail(self::$volunteerId);
+  }
+
+  /**
+   * Handles sending induction email to an individual.
+   */
+  public static function sendInductionEmailForTransitionedVolunteer(string $op, string $objectName, int $objectId, &$objectRef) {
+    if ($op !== 'edit' || $objectName !== 'Individual' || (int) self::$transitionedVolunteerId !== (int) $objectRef->id) {
+      return FALSE;
+    }
+
+    self::sendInductionEmail(self::$transitionedVolunteerId);
   }
 
   /**
    * Get placeholder time for induction activity.
-   *
    * Calculate the date and time 3 days from today at 11:00 AM.
    * If the resulting date is on a weekend (Saturday or Sunday), adjust to the next Monday at 11:00 AM.
    *
@@ -163,14 +231,11 @@ class InductionService extends AutoSubscriber {
     $date->modify('+3 days');
     $dayOfWeek = $date->format('N');
 
-    // If the resulting day is Saturday (6) or Sunday (7), move to next Monday.
     if ($dayOfWeek >= 6) {
       $date->modify('next monday');
     }
 
-    // Set the time to 11:00 AM.
     $date->setTime(11, 0);
-
     return $date->format('Y-m-d H:i:s');
   }
 
@@ -191,7 +256,7 @@ class InductionService extends AutoSubscriber {
       return;
     }
 
-    if (!($inductionsFields = self::findInductionOfficeFields($params))) {
+    if (!($inductionFields = self::findInductionOfficeFields($params))) {
       return;
     }
 
@@ -202,7 +267,7 @@ class InductionService extends AutoSubscriber {
     $assignee = Contact::get(FALSE)
       ->addSelect('email.email')
       ->addJoin('Email AS email', 'LEFT')
-      ->addWhere('id', '=', $inductionsFields['Assign']['value'])
+      ->addWhere('id', '=', $inductionFields['Assign']['value'])
       ->addWhere('email.is_primary', '=', TRUE)
       ->setLimit(1)
       ->execute()->single();
@@ -247,30 +312,85 @@ class InductionService extends AutoSubscriber {
   }
 
   /**
+   * Check if induction activity already exists for the contact.
+   */
+  private static function inductionExists($contactId) {
+    $inductionActivity = Activity::get(FALSE)
+      ->addWhere('activity_type_id:name', '=', self::INDUCTION_ACTIVITY_TYPE_NAME)
+      ->addWhere('status_id:name', 'IN', ['Scheduled', 'Completed', 'To be scheduled', 'Cancelled'])
+      ->addWhere('target_contact_id', '=', $contactId)
+      ->setLimit(1)
+      ->execute();
+
+    return $inductionActivity->count() > 0;
+  }
+
+  /**
+   * Check if induction email has already been sent.
+   * Adjust the logic based on actual email activity type.
+   */
+  private static function emailAlreadySent($contactId) {
+
+    $volunteerEmailActivity = Activity::get(FALSE)
+      ->addWhere('activity_type_id:name', '=', 'Email')
+      ->addWhere('subject', 'LIKE', '%Volunteering with Goonj%')
+      ->addWhere('target_contact_id', '=', $contactId)
+      ->setLimit(1)
+      ->execute();
+
+    return $volunteerEmailActivity->count() > 0;
+  }
+
+  /**
    *
    */
-  public static function sendInductionEmailToVolunteer(string $op, string $objectName, int $objectId, &$objectRef) {
-    if ($op !== 'create' || $objectName !== 'Email' || !$objectId) {
+  public static function hasIndividualChangedToVolunteer($op, $objectName, $id, &$params) {
+    if ($op !== 'edit' || $objectName !== 'Individual') {
+      return FALSE;
+    }
+
+    $newSubtypes = $params['contact_sub_type'] ?? [];
+
+    // Check if "Volunteer" is present in the contact_sub_type array.
+    if (!in_array('Volunteer', $newSubtypes)) {
+      \Civi::log()->info('Volunteer not found in subtypes, returning.');
+      // Exit the function if "Volunteer" is not present.
       return;
     }
 
-    if ($objectRef->contact_id !== self::$volunteerId) {
-      return;
-    }
-
-    $template = MessageTemplate::get(FALSE)
-      ->addWhere('msg_title', 'LIKE', 'New_Volunteer_Registration%')
-      ->setLimit(1)
+    $contacts = Contact::get(FALSE)
+      ->addSelect('contact_sub_type')
+      ->addWhere('id', '=', $id)
       ->execute()->single();
 
-    $emailParams = [
-      'contact_id' => self::$volunteerId,
-      'template_id' => $template['id'],
-      'cc' => self::$volunteerInductionAssigneeEmail,
-    ];
+    if ($contacts['contact_sub_type' === 'Volunteer']) {
+      return;
+    }
+    self::$transitionedVolunteerId = $contacts['id'];
+  }
 
-    $result = civicrm_api3('Email', 'send', $emailParams);
+  /**
+   *
+   */
+  public static function createInductionForTransitionedVolunteer(string $op, string $objectName, int $objectId, &$objectRef) {
 
+    if ($op !== 'edit' || $objectName !== 'Individual' || (int) self::$transitionedVolunteerId !== (int) $objectRef->id) {
+      return FALSE;
+    }
+
+    $contact = Contact::get(FALSE)
+      ->addSelect('address.state_province_id')
+      ->addJoin('Address AS address', 'LEFT')
+      ->addWhere('id', '=', $objectId)
+      ->execute()->single();
+
+    $stateId = $contact['address.state_province_id'];
+    if (!$stateId) {
+      \Civi::log()->info(['State not found :', ['contactId' => $contact['id'], 'StateId' => $stateId]]);
+      return FALSE;
+    }
+
+    self::createInduction(self::$transitionedVolunteerId, $stateId);
   }
 
 }

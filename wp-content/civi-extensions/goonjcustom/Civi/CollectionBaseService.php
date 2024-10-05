@@ -34,12 +34,12 @@ class CollectionBaseService extends AutoSubscriber {
       '&hook_civicrm_tabset' => 'collectionBaseTabset',
       '&hook_civicrm_selectWhereClause' => 'aclCollectionCamp',
       '&hook_civicrm_pre' => [
-        ['handleAuthorizationEmails'],
+        // ['handleAuthorizationEmails'],
         ['checkIfPosterNeedsToBeGenerated'],
       ],
       '&hook_civicrm_post' => [
         ['maybeGeneratePoster', 20],
-        ['handleAuthorizationEmailsPost', 10],
+        // ['handleAuthorizationEmailsPost', 10],
       ],
     ];
   }
@@ -184,61 +184,41 @@ class CollectionBaseService extends AutoSubscriber {
       return;
     }
 
-    // URL for the Contribution tab.
-    $contributionUrl = \CRM_Utils_System::url(
-          "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fcollection-camp%2Fmaterial-contributions",
-    );
-
-    // URL for the event volunteer tab.
-    $eventVolunteersUrl = \CRM_Utils_System::url(
-      "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fevent-volunteer",
-    );
-
-    // URL for the Dispatch tab.
-    $vehicleDispatch = \CRM_Utils_System::url(
-      "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fcamp-vehicle-dispatch-data",
-    );
-
-    // URL for the material dispatch authorizationtab.
-    $materialAuthorization = \CRM_Utils_System::url(
-      "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Facknowledgement-for-logistics-data",
-    );
-
-    // Add the event volunteer tab.
-    $tabs['eventVolunteers'] = [
-      'title' => ts('Event Volunteers'),
-      'link' => $eventVolunteersUrl,
-      'valid' => 1,
-      'active' => 1,
-      'current' => FALSE,
+    $tabConfigs = [
+      'eventVolunteers' => [
+        'title' => ts('Event Volunteers'),
+        'module' => 'afsearchEventVolunteer',
+        'directive' => 'afsearch-event-volunteer',
+      ],
+      'materialContribution' => [
+        'title' => ts('Material Contribution'),
+        'module' => 'afsearchCollectionCampMaterialContributions',
+        'directive' => 'afsearch-collection-camp-material-contributions',
+      ],
+      'vehicleDispatch' => [
+        'title' => ts('Dispatch'),
+        'module' => 'afsearchCampVehicleDispatchData',
+        'directive' => 'afsearch-camp-vehicle-dispatch-data',
+      ],
+      'materialAuthorization' => [
+        'title' => ts('Material Authorization'),
+        'module' => 'afsearchAcknowledgementForLogisticsData',
+        'directive' => 'afsearch-acknowledgement-for-logistics-data',
+      ],
     ];
 
-    // Add the Contribution tab.
-    $tabs['contribution'] = [
-      'title' => ts('Material Contribution'),
-      'link' => $contributionUrl,
-      'valid' => 1,
-      'active' => 1,
-      'current' => FALSE,
-    ];
+    foreach ($tabConfigs as $key => $config) {
+      $tabs[$key] = [
+        'id' => $key,
+        'title' => $config['title'],
+        'is_active' => 1,
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'module' => $config['module'],
+        'directive' => $config['directive'],
+      ];
 
-    // Add the vehicle dispatch tab.
-    $tabs['vehicleDispatch'] = [
-      'title' => ts('Dispatch'),
-      'link' => $vehicleDispatch,
-      'valid' => 1,
-      'active' => 1,
-      'current' => FALSE,
-    ];
-
-    // Add the material dispatch authorization tab.
-    $tabs['materialAuthorization'] = [
-      'title' => ts('Material Authorization'),
-      'link' => $materialAuthorization,
-      'valid' => 1,
-      'active' => 1,
-      'current' => FALSE,
-    ];
+      \Civi::service('angularjs.loader')->addModules($config['module']);
+    }
   }
 
   /**
@@ -503,17 +483,20 @@ class CollectionBaseService extends AutoSubscriber {
 
       $posterFileId = $collectionSource['Collection_Camp_Core_Details.Poster'];
 
-      $file = File::get(FALSE)
-        ->addWhere('id', '=', $posterFileId)
-        ->execute()->single();
+      if ($posterFileId) {
+        $file = File::get(FALSE)
+          ->addWhere('id', '=', $posterFileId)
+          ->execute()->single();
 
-      $config = \CRM_Core_Config::singleton();
-      $filePath = $config->customFileUploadDir . $file['uri'];
-      $emailParams['attachments'][] = [
-        'fullPath' => $filePath,
-        'mime_type' => $file['mime_type'],
-        'cleanName' => $file['uri'],
-      ];
+        $config = \CRM_Core_Config::singleton();
+        $filePath = $config->customFileUploadDir . $file['uri'];
+        $emailParams['attachments'][] = [
+          'fullPath' => $filePath,
+          'mime_type' => $file['mime_type'],
+          'cleanName' => $file['uri'],
+        ];
+      }
+
     }
 
     return $emailParams;
