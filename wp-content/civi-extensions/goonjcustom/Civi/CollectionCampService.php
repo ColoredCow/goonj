@@ -1114,45 +1114,51 @@ class CollectionCampService extends AutoSubscriber {
    *
    */
   public static function sendLogisticsEmail($collectionCamp) {
-    $campId = $collectionCamp['id'];
-    $campCode = $collectionCamp['title'];
-    $campOffice = $collectionCamp['Collection_Camp_Intent_Details.Goonj_Office'];
-    $campAddress = $collectionCamp['Collection_Camp_Intent_Details.Location_Area_of_camp'];
-    $campAttendedById = $collectionCamp['Logistics_Coordination.Camp_to_be_attended_by'];
-    $logisticEmailSent = $collectionCamp['Logistics_Coordination.Email_Sent'];
+    try {
+      $campId = $collectionCamp['id'];
+      $campCode = $collectionCamp['title'];
+      $campOffice = $collectionCamp['Collection_Camp_Intent_Details.Goonj_Office'];
+      $campAddress = $collectionCamp['Collection_Camp_Intent_Details.Location_Area_of_camp'];
+      $campAttendedById = $collectionCamp['Logistics_Coordination.Camp_to_be_attended_by'];
+      $logisticEmailSent = $collectionCamp['Logistics_Coordination.Email_Sent'];
 
-    $startDate = new DateTime($collectionCamp['Collection_Camp_Intent_Details.Start_Date']);
-    $startDateFormatted = $startDate->format('Y-m-d');
+      $startDate = new DateTime($collectionCamp['Collection_Camp_Intent_Details.Start_Date']);
+      $startDateFormatted = $startDate->format('Y-m-d');
 
-    $today = new DateTime();
-    $today->setTime(23, 59, 59);
-    $todayFormatted = $today->format('Y-m-d');
+      $today = new DateTime();
+      $today->setTime(23, 59, 59);
+      $todayFormatted = $today->format('Y-m-d');
 
-    if (!$logisticEmailSent && $startDateFormatted <= $todayFormatted) {
-      $campAttendedBy = Contact::get(FALSE)
-        ->addSelect('email.email', 'display_name')
-        ->addJoin('Email AS email', 'LEFT')
-        ->addWhere('id', '=', $campAttendedById)
-        ->execute()->single();
+      if (!$logisticEmailSent && $startDateFormatted <= $todayFormatted) {
+        $campAttendedBy = Contact::get(FALSE)
+          ->addSelect('email.email', 'display_name')
+          ->addJoin('Email AS email', 'LEFT')
+          ->addWhere('id', '=', $campAttendedById)
+          ->execute()->single();
 
-      $emailId = $campAttendedBy['email.email'];
-      $contactName = $campAttendedBy['display_name'];
+        $emailId = $campAttendedBy['email.email'];
+        $contactName = $campAttendedBy['display_name'];
 
-      $mailParams = [
-        'subject' => 'Collection Camp Notification: ' . $campCode . ' at ' . $campAddress,
-        'from' => $from,
-        'toEmail' => $emailId,
-        'replyTo' => $from,
-        'html' => self::getLogisticsEmailHtml($contactName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress),
-      ];
-      $emailSendResult = CRM_Utils_Mail::send($mailParams);
+        $mailParams = [
+          'subject' => 'Collection Camp Notification: ' . $campCode . ' at ' . $campAddress,
+          'from' => $from,
+          'toEmail' => $emailId,
+          'replyTo' => $from,
+          'html' => self::getLogisticsEmailHtml($contactName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress),
+        ];
+        $emailSendResult = \CRM_Utils_Mail::send($mailParams);
 
-      if ($emailSendResult) {
-        EckEntity::update('Collection_Camp', TRUE)
-          ->addValue('Logistics_Coordination.Email_Sent', 1)
-          ->addWhere('id', '=', $collectionCampId)
-          ->execute();
+        if ($emailSendResult) {
+          \Civi::log()->info("Logistics email sent for collection camp: $campId");
+          EckEntity::update('Collection_Camp', FALSE)
+            ->addValue('Logistics_Coordination.Email_Sent', 1)
+            ->addWhere('id', '=', $collectionCampId)
+            ->execute();
+        }
       }
+    }
+    catch (\Exception $e) {
+      \Civi::log()->error('Error in sendLogisticsEmail: ' . $e->getMessage());
     }
 
   }
