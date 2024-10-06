@@ -33,6 +33,7 @@ class CollectionCampService extends AutoSubscriber {
 
   private static $individualId = NULL;
   private static $collectionCampAddress = NULL;
+  private static $fromAddress = NULL;
 
   /**
    *
@@ -1142,11 +1143,11 @@ class CollectionCampService extends AutoSubscriber {
         'from' => $from,
         'toEmail' => $emailId,
         'replyTo' => $from,
-        'html' => goonjcustom_collection_camp_email_html($contactName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress),
+        'html' => self::getLogisticsEmailHtml($contactName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress),
       ];
-      $completionEmailSendResult = CRM_Utils_Mail::send($mailParams);
+      $emailSendResult = CRM_Utils_Mail::send($mailParams);
 
-      if ($completionEmailSendResult) {
+      if ($emailSendResult) {
         EckEntity::update('Collection_Camp', TRUE)
           ->addValue('Logistics_Coordination.Email_Sent', 1)
           ->addWhere('id', '=', $collectionCampId)
@@ -1154,6 +1155,41 @@ class CollectionCampService extends AutoSubscriber {
       }
     }
 
+  }
+
+  /**
+   *
+   */
+  private static function getLogisticsEmailHtml($contactName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress) {
+    $homeUrl = \CRM_Utils_System::baseCMSURL();
+    // Construct the full URLs for the forms.
+    $campVehicleDispatchFormUrl = $homeUrl . 'camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp=' . $collectionCampId . '&Camp_Vehicle_Dispatch.Filled_by=' . $campAttendedById . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice . '&Eck_Collection_Camp1=' . $collectionCampId;
+    $campOutcomeFormUrl = $homeUrl . '/camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $campAttendedById;
+
+    $html = "
+      <p>Dear $contactName,</p>
+      <p>Thank you for attending the camp <strong>$campCode</strong> at <strong>$campAddress</strong>. There are two forms that require your attention during and after the camp:</p>
+      <ol>
+          <li><a href=\"$campVehicleDispatchFormUrl\">Dispatch Form</a><br>
+          Please complete this form from the camp location once the vehicle is being loaded and ready for dispatch to the Goonj's processing center.</li>
+          <li><a href=\"$campOutcomeFormUrl\">Camp Outcome Form</a><br>
+          This feedback form should be filled out after the camp/drive ends, once you have an overview of the event's outcomes.</li>
+      </ol>
+      <p>We appreciate your cooperation.</p>
+      <p>Warm Regards,<br>Urban Relations Team</p>";
+
+    return $html;
+  }
+
+  /**
+   *
+   */
+  private static function getFromAddress() {
+    if (!self::$fromAddress) {
+      [$defaultFromName, $defaultFromEmail] = \CRM_Core_BAO_Domain::getNameAndEmail();
+      self::$fromAddress = "\"$defaultFromName\" <$defaultFromEmail>";
+    }
+    return self::$fromAddress;
   }
 
   /**
