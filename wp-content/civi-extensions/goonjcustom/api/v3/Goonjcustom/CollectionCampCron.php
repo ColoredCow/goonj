@@ -6,6 +6,7 @@
 
 use Civi\Api4\EckEntity;
 use Civi\Api4\OptionValue;
+use Civi\CollectionCampService;
 
 /**
  * Goonjcustom.CollectionCampCron API specification (optional)
@@ -42,7 +43,8 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
     ->execute()->single();
 
   $collectionCampSubtype = $optionValues['value'];
-  $endOfDay = $today->format('Y-m-d H:i:s');
+  $today = new DateTimeImmutable();
+  $endOfDay = $today->setTime(23, 59, 59)->format('Y-m-d H:i:s');
 
   $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
     ->addSelect(
@@ -69,7 +71,7 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
       CollectionCampService::updateContributorCount($camp);
 
     }
-    catch (Exception $e) {
+    catch (\Exception $e) {
       \Civi::log()->info('Error processing camp', [
         'id' => $camp['id'],
         'error' => $e->getMessage(),
