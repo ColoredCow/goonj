@@ -46,7 +46,7 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
   $today = new DateTimeImmutable();
   $endOfDay = $today->setTime(23, 59, 59)->format('Y-m-d H:i:s');
 
-  $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
+  $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
     ->addSelect(
       'title',
       'Logistics_Coordination.Camp_to_be_attended_by',
@@ -67,6 +67,7 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
     ->execute();
 
   foreach ($collectionCamps as $camp) {
+
     try {
       CollectionCampService::sendLogisticsEmail($camp);
       CollectionCampService::updateContributorCount($camp);
