@@ -71,7 +71,7 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
     }
     catch (Exception $e) {
       \Civi::log()->info('Error processing camp', [
-        'id' => $id,
+        'id' => $camp['id'],
         'error' => $e->getMessage(),
       ]);
     }

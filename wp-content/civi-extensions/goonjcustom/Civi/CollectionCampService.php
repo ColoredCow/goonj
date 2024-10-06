@@ -1195,17 +1195,17 @@ class CollectionCampService extends AutoSubscriber {
   /**
    *
    */
-  public static function updateContributorCount($collecitonCamp) {
+  public static function updateContributorCount($collectionCamp) {
     $activities = Activity::get(FALSE)
       ->addSelect('id')
-      ->addWhere('Material_Contribution.Collection_Camp', '=', $collecitonCamp['id'])
+      ->addWhere('Material_Contribution.Collection_Camp', '=', $collectionCamp['id'])
       ->execute();
 
     $contributorCount = count($activities);
 
     EckEntity::update('Collection_Camp', FALSE)
       ->addValue('Camp_Outcome.Number_of_Contributors', $contributorCount)
-      ->addWhere('id', '=', $collecitonCamp['id'])
+      ->addWhere('id', '=', $collectionCamp['id'])
       ->execute();
   }
 
