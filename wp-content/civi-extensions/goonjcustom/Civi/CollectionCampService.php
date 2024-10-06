@@ -1123,29 +1123,32 @@ class CollectionCampService extends AutoSubscriber {
       $logisticEmailSent = $collectionCamp['Logistics_Coordination.Email_Sent'];
 
       $startDate = new \DateTime($collectionCamp['Collection_Camp_Intent_Details.Start_Date']);
-      $startDateFormatted = $startDate->format('Y-m-d');
 
       $today = new \DateTimeImmutable();
-      $today->setTime(23, 59, 59);
-      $todayFormatted = $today->format('Y-m-d');
+      $endOfToday = $today->setTime(23, 59, 59);
 
-      if (!$logisticEmailSent && $startDateFormatted <= $todayFormatted) {
+      if (!$logisticEmailSent && $startDate <= $endOfToday) {
         $campAttendedBy = Contact::get(FALSE)
           ->addSelect('email.email', 'display_name')
           ->addJoin('Email AS email', 'LEFT')
           ->addWhere('id', '=', $campAttendedById)
           ->execute()->single();
 
-        $emailId = $campAttendedBy['email.email'];
+        $attendeeEmail = $campAttendedBy['email.email'];
         $attendeeName = $campAttendedBy['display_name'];
+
+        if (!$attendeeEmail) {
+          throw new \Exception('Attendee email missing');
+        }
 
         $mailParams = [
           'subject' => 'Collection Camp Notification: ' . $campCode . ' at ' . $campAddress,
           'from' => self::getFromAddress(),
-          'toEmail' => $emailId,
+          'toEmail' => $attendeeEmail,
           'replyTo' => self::getFromAddress(),
           'html' => self::getLogisticsEmailHtml($attendeeName, $campId, $campAttendedById, $campOffice, $campCode, $campAddress),
         ];
+
         $emailSendResult = \CRM_Utils_Mail::send($mailParams);
 
         if ($emailSendResult) {
@@ -1158,7 +1161,7 @@ class CollectionCampService extends AutoSubscriber {
       }
     }
     catch (\Exception $e) {
-      \Civi::log()->error('Error in sendLogisticsEmail: ' . $e->getMessage());
+      \Civi::log()->error("Error in sendLogisticsEmail for $campId " . $e->getMessage());
     }
 
   }
