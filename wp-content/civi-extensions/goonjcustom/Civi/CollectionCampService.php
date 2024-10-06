@@ -1109,4 +1109,68 @@ class CollectionCampService extends AutoSubscriber {
     }
   }
 
+  /**
+   *
+   */
+  public static function sendLogisticsEmail($collectionCamp) {
+    $campId = $collectionCamp['id'];
+    $campCode = $collectionCamp['title'];
+    $campOffice = $collectionCamp['Collection_Camp_Intent_Details.Goonj_Office'];
+    $campAddress = $collectionCamp['Collection_Camp_Intent_Details.Location_Area_of_camp'];
+    $campAttendedById = $collectionCamp['Logistics_Coordination.Camp_to_be_attended_by'];
+    $logisticEmailSent = $collectionCamp['Logistics_Coordination.Email_Sent'];
+
+    $startDate = new DateTime($collectionCamp['Collection_Camp_Intent_Details.Start_Date']);
+    $startDateFormatted = $startDate->format('Y-m-d');
+
+    $today = new DateTime();
+    $today->setTime(23, 59, 59);
+    $todayFormatted = $today->format('Y-m-d');
+
+    if (!$logisticEmailSent && $startDateFormatted <= $todayFormatted) {
+      $campAttendedBy = Contact::get(FALSE)
+        ->addSelect('email.email', 'display_name')
+        ->addJoin('Email AS email', 'LEFT')
+        ->addWhere('id', '=', $campAttendedById)
+        ->execute()->single();
+
+      $emailId = $campAttendedBy['email.email'];
+      $contactName = $campAttendedBy['display_name'];
+
+      $mailParams = [
+        'subject' => 'Collection Camp Notification: ' . $campCode . ' at ' . $campAddress,
+        'from' => $from,
+        'toEmail' => $emailId,
+        'replyTo' => $from,
+        'html' => goonjcustom_collection_camp_email_html($contactName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress),
+      ];
+      $completionEmailSendResult = CRM_Utils_Mail::send($mailParams);
+
+      if ($completionEmailSendResult) {
+        EckEntity::update('Collection_Camp', TRUE)
+          ->addValue('Logistics_Coordination.Email_Sent', 1)
+          ->addWhere('id', '=', $collectionCampId)
+          ->execute();
+      }
+    }
+
+  }
+
+  /**
+   *
+   */
+  public static function updateContributorCount($collecitonCamp) {
+    $activities = Activity::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('Material_Contribution.Collection_Camp', '=', $collecitonCamp['id'])
+      ->execute();
+
+    $contributorCount = count($activities);
+
+    EckEntity::update('Collection_Camp', FALSE)
+      ->addValue('Camp_Outcome.Number_of_Contributors', $contributorCount)
+      ->addWhere('id', '=', $collecitonCamp['id'])
+      ->execute();
+  }
+
 }
