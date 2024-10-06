@@ -48,7 +48,8 @@ function civicrm_api3_goonjcustom_update_scheduled_time_cron($params) {
     updateJobScheduledTime('collection_camp_cron', $todayDateTimeForLogistics);
     updateJobScheduledTime('volunteer_feedback_collection_camp_cron', $todayDateTimeForFeedback);
 
-  } catch (Exception $e) {
+  }
+  catch (Exception $e) {
     \Civi::log()->error('Error in Goonjcustom.UpdateScheduledTimeCron job: {error}', [
       'error' => $e->getMessage(),
       'trace' => $e->getTraceAsString(),
@@ -58,6 +59,9 @@ function civicrm_api3_goonjcustom_update_scheduled_time_cron($params) {
   return civicrm_api3_create_success($returnValues, $params, 'Goonjcustom', 'update_scheduled_time_cron');
 }
 
+/**
+ *
+ */
 function updateJobScheduledTime($apiAction, $scheduledRunDate) {
   // Fetch the scheduled run date.
   $job = Job::get(TRUE)
