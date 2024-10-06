@@ -1122,10 +1122,10 @@ class CollectionCampService extends AutoSubscriber {
       $campAttendedById = $collectionCamp['Logistics_Coordination.Camp_to_be_attended_by'];
       $logisticEmailSent = $collectionCamp['Logistics_Coordination.Email_Sent'];
 
-      $startDate = new DateTime($collectionCamp['Collection_Camp_Intent_Details.Start_Date']);
+      $startDate = new \DateTime($collectionCamp['Collection_Camp_Intent_Details.Start_Date']);
       $startDateFormatted = $startDate->format('Y-m-d');
 
-      $today = new DateTime();
+      $today = new \DateTimeImmutable();
       $today->setTime(23, 59, 59);
       $todayFormatted = $today->format('Y-m-d');
 
@@ -1137,14 +1137,14 @@ class CollectionCampService extends AutoSubscriber {
           ->execute()->single();
 
         $emailId = $campAttendedBy['email.email'];
-        $contactName = $campAttendedBy['display_name'];
+        $attendeeName = $campAttendedBy['display_name'];
 
         $mailParams = [
           'subject' => 'Collection Camp Notification: ' . $campCode . ' at ' . $campAddress,
-          'from' => $from,
+          'from' => self::getFromAddress(),
           'toEmail' => $emailId,
-          'replyTo' => $from,
-          'html' => self::getLogisticsEmailHtml($contactName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress),
+          'replyTo' => self::getFromAddress(),
+          'html' => self::getLogisticsEmailHtml($attendeeName, $campId, $campAttendedById, $campOffice, $campCode, $campAddress),
         ];
         $emailSendResult = \CRM_Utils_Mail::send($mailParams);
 
@@ -1152,7 +1152,7 @@ class CollectionCampService extends AutoSubscriber {
           \Civi::log()->info("Logistics email sent for collection camp: $campId");
           EckEntity::update('Collection_Camp', FALSE)
             ->addValue('Logistics_Coordination.Email_Sent', 1)
-            ->addWhere('id', '=', $collectionCampId)
+            ->addWhere('id', '=', $campId)
             ->execute();
         }
       }
