@@ -4,8 +4,6 @@
  * @file
  */
 
-use Civi\Api4\Activity;
-use Civi\Api4\Contact;
 use Civi\Api4\EckEntity;
 use Civi\Api4\OptionValue;
 
@@ -44,13 +42,18 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
     ->execute()->single();
 
   $collectionCampSubtype = $optionValues['value'];
-  $today = new DateTime();
-  $today->setTime(23, 59, 59);
   $endOfDay = $today->format('Y-m-d H:i:s');
-  $todayFormatted = $today->format('Y-m-d');
 
   $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
-    ->addSelect('Logistics_Coordination.Camp_to_be_attended_by', 'Collection_Camp_Intent_Details.Start_Date', 'Logistics_Coordination.Email_Sent')
+    ->addSelect(
+      'title',
+      'Logistics_Coordination.Camp_to_be_attended_by',
+      'Collection_Camp_Intent_Details.Start_Date',
+      'Logistics_Coordination.Email_Sent',
+      'Collection_Camp_Intent_Details.Goonj_Office',
+      'Collection_Camp_Intent_Details.Location_Area_of_camp',
+      'Collection_Camp_Core_Details.Contact_Id',
+    )
     ->addWhere('Collection_Camp_Core_Details.Status', '=', 'authorized')
     ->addWhere('subtype', '=', $collectionCampSubtype)
     ->addWhere('Collection_Camp_Intent_Details.Start_Date', '<=', $endOfDay)
@@ -62,66 +65,15 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
 
   foreach ($collectionCamps as $camp) {
     try {
-      $campAttendedById = $camp['Logistics_Coordination.Camp_to_be_attended_by'];
-      $startDate = new DateTime($camp['Collection_Camp_Intent_Details.Start_Date']);
-      $collectionCampId = $camp['id'];
-      $startDateFormatted = $startDate->format('Y-m-d');
-      $logisticEmailSent = $camp['Logistics_Coordination.Email_Sent'];
+      CollectionCampService::sendLogisticsEmail($camp);
+      CollectionCampService::updateContributorCount($camp);
 
-      $collectionCamp = EckEntity::get('Collection_Camp', TRUE)
-        ->addSelect('Collection_Camp_Intent_Details.Goonj_Office', 'Collection_Camp_Intent_Details.Location_Area_of_camp', 'title', 'Collection_Camp_Core_Details.Contact_Id')
-        ->addWhere('id', '=', $collectionCampId)
-        ->execute()->single();
-
-      $collectionCampGoonjOffice = $collectionCamp['Collection_Camp_Intent_Details.Goonj_Office'];
-      $initiatorId = $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
-      $campAddress = $collectionCamp['Collection_Camp_Intent_Details.Location_Area_of_camp'];
-      $campCode = $collectionCamp['title'];
-
-      // Process activities.
-      $activities = Activity::get(FALSE)
-        ->addSelect('id')
-        ->addWhere('Material_Contribution.Collection_Camp', '=', $collectionCampId)
-        ->execute();
-
-      $contributorCount = count($activities);
-
-      $results = EckEntity::update('Collection_Camp', FALSE)
-        ->addValue('Camp_Outcome.Number_of_Contributors', $contributorCount)
-        ->addWhere('id', '=', $collectionCampId)
-        ->execute();
-
-      // Send completion notification.
-      if (!$logisticEmailSent && $startDateFormatted <= $todayFormatted) {
-        // Get recipient email and name.
-        $campAttendedBy = Contact::get(TRUE)
-          ->addSelect('email.email', 'display_name')
-          ->addJoin('Email AS email', 'LEFT')
-          ->addWhere('id', '=', $initiatorId)
-          ->execute()->single();
-
-        $emailId = $campAttendedBy['email.email'];
-        $contactName = $campAttendedBy['display_name'];
-
-        $mailParams = [
-          'subject' => 'Collection Camp Notification: ' . $campCode . ' at ' . $campAddress,
-          'from' => $from,
-          'toEmail' => $emailId,
-          'replyTo' => $from,
-          'html' => goonjcustom_collection_camp_email_html($contactName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress),
-        ];
-        $completionEmailSendResult = CRM_Utils_Mail::send($mailParams);
-
-        if ($completionEmailSendResult) {
-          EckEntity::update('Collection_Camp', TRUE)
-            ->addValue('Logistics_Coordination.Email_Sent', 1)
-            ->addWhere('id', '=', $collectionCampId)
-            ->execute();
-        }
-      }
     }
     catch (Exception $e) {
-      \Civi::log()->info("Error processing camp ID $collectionCampId: " . $e->getMessage());
+      \Civi::log()->info('Error processing camp', [
+        'id' => $id,
+        'error' => $e->getMessage(),
+      ]);
     }
   }
 
