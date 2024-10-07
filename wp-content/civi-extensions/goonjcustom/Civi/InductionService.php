@@ -222,7 +222,7 @@ class InductionService extends AutoSubscriber {
       ->addWhere('activity_type_id:label', '=', 'Material Contribution')
       ->execute();
 
-    if ($isMaterialContributionActivityDone->count()) {
+    if ($isMaterialContributionActivityDone->count() > 0) {
       return;
     }
 
