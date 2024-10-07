@@ -452,7 +452,7 @@ function render_volunteer_button() {
 		return;
 	}
 	// Create the base URL for the volunteer form
-	$baseUrl = home_url('/volunteer-form/form-with-details/');
+	$baseUrl = home_url('/volunteer-registration/form-with-details/');
 
 	$buttonUrl = esc_url(
 		$baseUrl . '#?' . http_build_query(array(
