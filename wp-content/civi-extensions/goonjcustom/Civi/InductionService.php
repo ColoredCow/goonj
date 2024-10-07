@@ -216,16 +216,6 @@ class InductionService extends AutoSubscriber {
       return FALSE;
     }
 
-    // Prevent volunteer email activity for new users who contribute.
-    $isMaterialContributionActivityDone = Activity::get(FALSE)
-      ->addWhere('source_contact_id', '=', self::$transitionedVolunteerId)
-      ->addWhere('activity_type_id:label', '=', 'Material Contribution')
-      ->execute();
-
-    if ($isMaterialContributionActivityDone->count() > 0) {
-      return;
-    }
-
     self::sendInductionEmail(self::$transitionedVolunteerId);
   }
 
