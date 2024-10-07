@@ -50,7 +50,7 @@ class DroppingCenterService extends AutoSubscriber {
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
       ],
       'logisticsCoordination' => [
-        'title' => ts('Logistics Coordination'),
+        'title' => ts('Logistics'),
         'module' => 'afsearchDroppingCenterLogisticsCoordination',
         'directive' => 'afsearch-dropping-center-logistics-coordination',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
