@@ -149,14 +149,14 @@ class CRM_Goonjcustom_Token_CollectionCamp extends AbstractTokenSubscriber {
     $volunteerIds = array_merge([$initiatorId], $volunteeringActivities->column('activity_contact.contact_id'));
 
     $volunteers = Contact::get(FALSE)
-      ->addSelect('phone.phone', 'first_name')
+      ->addSelect('phone.phone', 'display_name')
       ->addJoin('Phone AS phone', 'LEFT')
       ->addWhere('phone.is_primary', '=', TRUE)
       ->addWhere('id', 'IN', $volunteerIds)
       ->execute();
 
     $volunteersWithPhone = array_map(
-        fn ($volunteer) => sprintf('%1$s (%2$s)', $volunteer['first_name'], $volunteer['phone.phone']), $volunteers->jsonSerialize()
+        fn ($volunteer) => sprintf('%1$s (%2$s)', $volunteer['display_name'], $volunteer['phone.phone']), $volunteers->jsonSerialize()
     );
 
     return join(',', $volunteersWithPhone);

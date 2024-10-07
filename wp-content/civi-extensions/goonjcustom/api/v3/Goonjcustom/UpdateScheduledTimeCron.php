@@ -44,11 +44,15 @@ function civicrm_api3_goonjcustom_update_scheduled_time_cron($params) {
     $twoPmDateTime->setTime(14, 0, 0);
     $todayDateTimeForFeedback = $twoPmDateTime->format('Y-m-d H:i:s');
 
+    error_log("todayDateTimeForFeedback: " . print_r($todayDateTimeForFeedback, TRUE));
+    error_log('todayDateTimeForLogistics: ' . print_r($todayDateTimeForLogistics, TRUE));
+
     // Update scheduled run time for logistics and volunteer feedback.
     updateJobScheduledTime('collection_camp_cron', $todayDateTimeForLogistics);
     updateJobScheduledTime('volunteer_feedback_collection_camp_cron', $todayDateTimeForFeedback);
 
-  } catch (Exception $e) {
+  }
+  catch (Exception $e) {
     \Civi::log()->error('Error in Goonjcustom.UpdateScheduledTimeCron job: {error}', [
       'error' => $e->getMessage(),
       'trace' => $e->getTraceAsString(),
@@ -58,20 +62,35 @@ function civicrm_api3_goonjcustom_update_scheduled_time_cron($params) {
   return civicrm_api3_create_success($returnValues, $params, 'Goonjcustom', 'update_scheduled_time_cron');
 }
 
+/**
+ *
+ */
 function updateJobScheduledTime($apiAction, $scheduledRunDate) {
+  error_log('apiAction1: ' . print_r($apiAction, TRUE));
+  error_log('scheduledRunDate1: ' . print_r($scheduledRunDate, TRUE));
+
   // Fetch the scheduled run date.
   $job = Job::get(TRUE)
     ->addSelect('scheduled_run_date')
     ->addWhere('api_action', '=', $apiAction)
     ->execute()->single();
+  error_log('job: ' . print_r($job, TRUE));
 
   $scheduledRunDateFromDb = $job['scheduled_run_date'];
+  error_log('scheduledRunDateFromDb: ' . print_r($scheduledRunDateFromDb, TRUE));
 
   // Update the scheduled run time if it differs from the current value.
   if ($scheduledRunDateFromDb !== $scheduledRunDate) {
+    error_log('scheduledRunDateFromDb: ' . print_r($scheduledRunDateFromDb, TRUE));
+    error_log('scheduledRunDate: ' . print_r($scheduledRunDate, TRUE));
+
     Job::update(TRUE)
       ->addValue('scheduled_run_date', $scheduledRunDate)
       ->addWhere('api_action', '=', $apiAction)
       ->execute();
   }
+
+  error_log('scheduledRunDatescheduledRunDate: ' . print_r($scheduledRunDate, TRUE));
+  error_log('apiAction: ' . print_r($apiAction, TRUE));
+
 }
