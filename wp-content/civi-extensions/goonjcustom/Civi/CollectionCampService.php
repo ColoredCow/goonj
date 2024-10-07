@@ -83,9 +83,9 @@ class CollectionCampService extends AutoSubscriber {
       // ],
       'logistics' => [
         'title' => ts('Logistics'),
-        'module' => 'afformLogisticsCoordination',
-        'directive' => 'afform-logistics-coordination',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCampService.tpl',
+        'module' => 'afsearchCollectionCampLogistics',
+        'directive' => 'afsearch-collection-camp-logistics',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
       ],
       'campOutcome' => [
         'title' => ts('Camp Outcome'),
