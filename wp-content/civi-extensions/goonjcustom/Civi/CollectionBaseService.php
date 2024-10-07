@@ -48,13 +48,11 @@ class CollectionBaseService extends AutoSubscriber {
    *
    */
   public static function checkIfPosterNeedsToBeGenerated($op, $objectName, $id, &$params) {
-    if ($objectName !== 'Eck_Collection_Camp' || $op !== 'edit') {
+    if ($objectName !== 'Eck_Collection_Camp' || $op !== 'edit' || !isset($params['Collection_Camp_Core_Details.Poster_Template'])) {
       return;
     }
 
-    if (!($messageTemplateId = $params['Collection_Camp_Core_Details.Poster_Template'])) {
-      return;
-    }
+    $messageTemplateId = $params['Collection_Camp_Core_Details.Poster_Template'];
 
     $currentCollectionSource = EckEntity::get('Collection_Camp', FALSE)
       ->addSelect('custom.*')

@@ -33,6 +33,7 @@ class CollectionCampService extends AutoSubscriber {
 
   private static $individualId = NULL;
   private static $collectionCampAddress = NULL;
+  private static $fromAddress = NULL;
 
   /**
    *
@@ -1107,6 +1108,114 @@ class CollectionCampService extends AutoSubscriber {
         ->execute();
 
     }
+  }
+
+  /**
+   *
+   */
+  public static function sendLogisticsEmail($collectionCamp) {
+    try {
+      $campId = $collectionCamp['id'];
+      $campCode = $collectionCamp['title'];
+      $campOffice = $collectionCamp['Collection_Camp_Intent_Details.Goonj_Office'];
+      $campAddress = $collectionCamp['Collection_Camp_Intent_Details.Location_Area_of_camp'];
+      $campAttendedById = $collectionCamp['Logistics_Coordination.Camp_to_be_attended_by'];
+      $logisticEmailSent = $collectionCamp['Logistics_Coordination.Email_Sent'];
+
+      $startDate = new \DateTime($collectionCamp['Collection_Camp_Intent_Details.Start_Date']);
+
+      $today = new \DateTimeImmutable();
+      $endOfToday = $today->setTime(23, 59, 59);
+
+      if (!$logisticEmailSent && $startDate <= $endOfToday) {
+        $campAttendedBy = Contact::get(FALSE)
+          ->addSelect('email.email', 'display_name')
+          ->addJoin('Email AS email', 'LEFT')
+          ->addWhere('id', '=', $campAttendedById)
+          ->execute()->single();
+
+        $attendeeEmail = $campAttendedBy['email.email'];
+        $attendeeName = $campAttendedBy['display_name'];
+
+        if (!$attendeeEmail) {
+          throw new \Exception('Attendee email missing');
+        }
+
+        $mailParams = [
+          'subject' => 'Collection Camp Notification: ' . $campCode . ' at ' . $campAddress,
+          'from' => self::getFromAddress(),
+          'toEmail' => $attendeeEmail,
+          'replyTo' => self::getFromAddress(),
+          'html' => self::getLogisticsEmailHtml($attendeeName, $campId, $campAttendedById, $campOffice, $campCode, $campAddress),
+        ];
+
+        $emailSendResult = \CRM_Utils_Mail::send($mailParams);
+
+        if ($emailSendResult) {
+          \Civi::log()->info("Logistics email sent for collection camp: $campId");
+          EckEntity::update('Collection_Camp', FALSE)
+            ->addValue('Logistics_Coordination.Email_Sent', 1)
+            ->addWhere('id', '=', $campId)
+            ->execute();
+        }
+      }
+    }
+    catch (\Exception $e) {
+      \Civi::log()->error("Error in sendLogisticsEmail for $campId " . $e->getMessage());
+    }
+
+  }
+
+  /**
+   *
+   */
+  private static function getLogisticsEmailHtml($contactName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress) {
+    $homeUrl = \CRM_Utils_System::baseCMSURL();
+    // Construct the full URLs for the forms.
+    $campVehicleDispatchFormUrl = $homeUrl . 'camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp=' . $collectionCampId . '&Camp_Vehicle_Dispatch.Filled_by=' . $campAttendedById . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice . '&Eck_Collection_Camp1=' . $collectionCampId;
+    $campOutcomeFormUrl = $homeUrl . '/camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $campAttendedById;
+
+    $html = "
+      <p>Dear $contactName,</p>
+      <p>Thank you for attending the camp <strong>$campCode</strong> at <strong>$campAddress</strong>. There are two forms that require your attention during and after the camp:</p>
+      <ol>
+          <li><a href=\"$campVehicleDispatchFormUrl\">Dispatch Form</a><br>
+          Please complete this form from the camp location once the vehicle is being loaded and ready for dispatch to the Goonj's processing center.</li>
+          <li><a href=\"$campOutcomeFormUrl\">Camp Outcome Form</a><br>
+          This feedback form should be filled out after the camp/drive ends, once you have an overview of the event's outcomes.</li>
+      </ol>
+      <p>We appreciate your cooperation.</p>
+      <p>Warm Regards,<br>Urban Relations Team</p>";
+
+    return $html;
+  }
+
+  /**
+   *
+   */
+  private static function getFromAddress() {
+    if (!self::$fromAddress) {
+      [$defaultFromName, $defaultFromEmail] = \CRM_Core_BAO_Domain::getNameAndEmail();
+      self::$fromAddress = "\"$defaultFromName\" <$defaultFromEmail>";
+    }
+    return self::$fromAddress;
+  }
+
+  /**
+   *
+   */
+  public static function updateContributorCount($collectionCamp) {
+    $activities = Activity::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('Material_Contribution.Collection_Camp', '=', $collectionCamp['id'])
+      ->execute();
+
+    $contributorCount = count($activities);
+
+    EckEntity::update('Collection_Camp', FALSE)
+      ->addValue('Camp_Outcome.Number_of_Contributors', $contributorCount)
+      ->addWhere('id', '=', $collectionCamp['id'])
+      ->execute();
   }
 
 }
