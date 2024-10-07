@@ -422,57 +422,54 @@ function goonj_custom_message_placeholder() {
 
 add_shortcode( 'goonj_volunteer_message', 'goonj_custom_message_placeholder' );
 
-function render_volunteer_button() {
+function goonj_contribution_volunteer_signup_button() {
+    // Get the activity ID from the URL parameters
+    $activityId = isset($_GET['activityId']) ? sanitize_text_field($_GET['activityId']) : '';
 
-	// Get the activity ID from the URL parameters
-	$activityId = isset($_GET['activityId']) ? sanitize_text_field($_GET['activityId']) : '';
+    $activities = \Civi\Api4\Activity::get(FALSE)
+        ->addSelect('source_contact_id')
+        ->addJoin('ActivityContact AS activity_contact', 'LEFT')
+        ->addWhere('id', '=', $activityId)
+        ->addWhere('activity_type_id:label', '=', 'Material Contribution')
+        ->execute()->single();
 
-	$activities = \Civi\Api4\Activity::get(FALSE)
-	->addSelect('source_contact_id')
-	->addJoin('ActivityContact AS activity_contact', 'LEFT')
-	->addWhere('id', '=', $activityId)
-	->addWhere('activity_type_id:label', '=', 'Material Contribution')
-	->execute()->single();
+    if (empty($activities)) {
+        return;
+    }
 
-	if (empty($activities)) {
-		return;
-	}
+    $individualId = $activities['source_contact_id'];
 
-	$individualId = $activities['source_contact_id'];
+    $contacts = \Civi\Api4\Contact::get(FALSE)
+        ->addSelect('contact_sub_type')
+        ->addWhere('id', '=', $individualId)
+        ->execute();
 
-	$contacts = \Civi\Api4\Contact::get(FALSE)
-	->addSelect('contact_sub_type')
-	->addWhere('id', '=', $individualId)
-	->execute();
+    $contactSubTypes = $contacts[0]['contact_sub_type'] ?? null;
 
-	$contactSubTypes = $contacts[0]['contact_sub_type'] ?? null;
+    // Check if contact_sub_type is not null or empty and contains 'Volunteer'
+    if (!empty($contactSubTypes) && in_array('Volunteer', $contactSubTypes)) {
+        return;
+    }
 
-	// Check if contact_sub_type is not null or empty and contains 'Volunteer'
-	if (!empty($contactSubTypes) && in_array('Volunteer', $contactSubTypes)) {
-		return;
-	}
-	// Create the base URL for the volunteer form
-	$baseUrl = home_url('/volunteer-registration/form-with-details/');
+    $redirectPath = '/volunteer-registration/form-with-details/';
 
-	$buttonUrl = esc_url(
-		$baseUrl . '#?' . http_build_query(array(
-			'Individual1' => $individualId,
-			'message' => 'individual-user'
-		))
-	);
+    $redirectPathWithParams = $redirectPath . '#?' . http_build_query(array(
+        'Individual1' => $individualId,
+        'message' => 'individual-user'
+    ));
 
-	// Return the button HTML
-	return '
-		<div style="display: flex; justify-content: center; align-items: center; border-style:none; border-width:0px; border-radius:5px;">
-			<a class="wp-block-button__link has-white-color has-vivid-red-background-color has-text-color has-background has-link-color wp-element-button" 
-			   href="' . $buttonUrl . '" 
-			   style="border-style:none;border-width:0px;border-radius:5px">
-			   Wish to Volunteer ?
-			</a>
-		</div>';
+    // Return the button HTML
+    return '
+        <div style="display: flex; justify-content: center; align-items: center; border-style:none; border-width:0px; border-radius:5px;">
+            <a class="wp-block-button__link has-white-color has-vivid-red-background-color has-text-color has-background has-link-color wp-element-button" 
+               href="' . esc_url($redirectPathWithParams) . '" 
+               style="border-style:none;border-width:0px;border-radius:5px">
+               Wish to Volunteer?
+            </a>
+        </div>';
 }
 
-add_shortcode('goonj_volunteer_registration_button', 'render_volunteer_button');
+add_shortcode('goonj_contribution_volunteer_signup_button', 'goonj_contribution_volunteer_signup_button');
 
 
 
