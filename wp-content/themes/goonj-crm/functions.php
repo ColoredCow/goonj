@@ -467,7 +467,7 @@ function render_volunteer_button() {
 			<a class="wp-block-button__link has-white-color has-vivid-red-background-color has-text-color has-background has-link-color wp-element-button" 
 			   href="' . $buttonUrl . '" 
 			   style="border-style:none;border-width:0px;border-radius:5px">
-			   Join Us as a Volunteer (If not a Volunteer)
+			   Wish to Volunteer ?
 			</a>
 		</div>';
 }
