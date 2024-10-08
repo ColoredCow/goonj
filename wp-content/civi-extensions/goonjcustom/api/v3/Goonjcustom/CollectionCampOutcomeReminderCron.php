@@ -43,7 +43,7 @@ function civicrm_api3_goonjcustom_collection_camp_outcome_reminder_cron($params)
       'Logistics_Coordination.Camp_to_be_attended_by',
       'Collection_Camp_Intent_Details.End_Date',
       'Camp_Outcome.Last_Reminder_Sent',
-      'Outcome_Form.Submitted'
+      'Camp_Outcome.Rate_the_camp'
     )
     ->addWhere('Camp_Outcome.Rate_the_camp', 'IS NULL')
     ->addWhere('Collection_Camp_Core_Details.Status', '=', 'authorized')
@@ -63,21 +63,24 @@ function civicrm_api3_goonjcustom_collection_camp_outcome_reminder_cron($params)
       // Calculate hours since last reminder was sent (if any)
       $hoursSinceLastReminder = $lastReminderSent ? ($today->diff($lastReminderSent)->h + ($today->diff($lastReminderSent)->days * 24)) : NULL;
 
-      // Send the first reminder after 48 hours of camp end.
-      if ($hoursSinceCampEnd >= 48 && (!$lastReminderSent || $hoursSinceLastReminder >= 24)) {
-        // Send the reminder email.
-        sendOutcomeReminderEmail($campAttendedById);
+      // Check if the outcome form is not filled and send the first reminder after 48 hours of camp end.
+      if ($hoursSinceCampEnd >= 48) {
+        // Send the reminder email if the form is still not filled.
+        if ($lastReminderSent === NULL || $hoursSinceLastReminder >= 24) {
+          // Send the reminder email.
+          sendOutcomeReminderEmail($campAttendedById);
 
-        // Update the Last_Reminder_Sent field in the database.
-        EckEntity::get('Collection_Camp', TRUE)
-          ->addWhere('id', '=', $camp['id'])
-          ->addValue('Camp_Outcome.Last_Reminder_Sent', $today->format('Y-m-d H:i:s'))
-          ->execute();
+          // Update the Last_Reminder_Sent field in the database.
+          EckEntity::get('Collection_Camp', TRUE)
+            ->addWhere('id', '=', $camp['id'])
+            ->addValue('Camp_Outcome.Last_Reminder_Sent', $today->format('Y-m-d H:i:s'))
+            ->execute();
 
-        $returnValues[] = [
-          'camp_id' => $camp['id'],
-          'message' => 'Reminder sent to camp attendee.',
-        ];
+          $returnValues[] = [
+            'camp_id' => $camp['id'],
+            'message' => 'Reminder sent to camp attendee.',
+          ];
+        }
       }
     }
     catch (\Exception $e) {
