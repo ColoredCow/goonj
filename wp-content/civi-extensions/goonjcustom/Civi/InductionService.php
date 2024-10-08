@@ -196,21 +196,7 @@ class InductionService extends AutoSubscriber {
       'cc' => self::$volunteerInductionAssigneeEmail,
     ];
 
-    // Fetch contact's email.
-    $contacts = Contact::get(FALSE)
-      ->addSelect('email.email')
-      ->addJoin('Email AS email', 'LEFT')
-      ->addWhere('id', '=', $volunteerId)
-      ->execute()->single();
-
-    $email = $contacts['email.email'];
-
-    if (empty($email)) {
-      self::queueInductionEmail($emailParams);
-      return TRUE;
-    }
-
-    civicrm_api3('Email', 'send', $emailParams);
+    self::queueInductionEmail($emailParams);
     return TRUE;
   }
 
