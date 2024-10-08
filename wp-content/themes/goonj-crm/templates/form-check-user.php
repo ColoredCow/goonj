@@ -2,12 +2,13 @@
 /**
  * Theme file to Design User Identification form
  */
+require_once 'Constants.php';
 
 $purpose = $args['purpose'];
 $target_id = get_query_var('target_id', '');
 $source = get_query_var('source', '');
 
-$is_purpose_requiring_email = !in_array($purpose, ['material-contribution', 'processing-center-office-visit', 'processing-center-material-contribution', 'dropping-center-contribution']);
+$is_purpose_requiring_email = !in_array($purpose, PURPOSES_NOT_REQUIRING_EMAIL);
 ?>
 
 <div class="text-center w-xl-520 m-auto">
