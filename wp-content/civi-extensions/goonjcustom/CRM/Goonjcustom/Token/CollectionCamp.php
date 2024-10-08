@@ -153,13 +153,20 @@ class CRM_Goonjcustom_Token_CollectionCamp extends AbstractTokenSubscriber {
       ->addJoin('Phone AS phone', 'LEFT')
       ->addWhere('phone.is_primary', '=', TRUE)
       ->addWhere('id', 'IN', $volunteerIds)
+      ->addOrderBy('created_date', 'ASC')
       ->execute();
 
+    $volunteersArray = $volunteers->jsonSerialize();
+
+    usort($volunteersArray, function($a, $b) use ($volunteerIds) {
+        return array_search($a['id'], $volunteerIds) - array_search($b['id'], $volunteerIds);
+    });
+
     $volunteersWithPhone = array_map(
-        fn ($volunteer) => sprintf('%1$s (%2$s)', $volunteer['display_name'], $volunteer['phone.phone']), $volunteers->jsonSerialize()
+        fn ($volunteer) => sprintf('%1$s (%2$s)', $volunteer['display_name'], $volunteer['phone.phone']), $volunteersArray
     );
 
-    return join(',', $volunteersWithPhone);
+    return join(', ', $volunteersWithPhone);
   }
 
   /**
@@ -169,7 +176,7 @@ class CRM_Goonjcustom_Token_CollectionCamp extends AbstractTokenSubscriber {
     $addressParts = [
       $collectionSource['Collection_Camp_Intent_Details.Location_Area_of_camp'],
       $collectionSource['Collection_Camp_Intent_Details.District'],
-      // $collectionSource['Collection_Camp_Intent_Details.City'],
+      $collectionSource['Collection_Camp_Intent_Details.City'],
       // CRM_Core_PseudoConstant::stateProvince($collectionSource['Collection_Camp_Intent_Details.State']),
       $collectionSource['Collection_Camp_Intent_Details.Pin_Code'],
     ];
