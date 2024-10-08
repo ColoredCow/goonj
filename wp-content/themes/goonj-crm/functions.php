@@ -422,7 +422,7 @@ function goonj_custom_message_placeholder() {
 
 add_shortcode( 'goonj_volunteer_message', 'goonj_custom_message_placeholder' );
 
-function generate_volunteer_button_html($buttonUrl) {
+function goonj_generate_volunteer_button_html($buttonUrl) {
     return sprintf(
         '<div class="volunteer-button-container" style="display: flex; justify-content: center; align-items: center; border-style:none; border-width:0px; border-radius:5px;">
             <a href="%s" class="wp-block-button__link has-white-color has-vivid-red-background-color has-text-color has-background has-link-color wp-element-button" 
@@ -446,12 +446,12 @@ function goonj_contribution_volunteer_signup_button() {
         ->execute();
 
     if ($activities->count() === 0) {
-        error_log('No activities found for Activity ID: ' . $activityId); // Log if no activities are found
+		\Civi::log()->info('No activities found for Activity ID:', ['activityId'=>$activityId]);
         return;
     }
 
     // Since we have activities, get the single record
-    $activity = $activities->single();
+    $activity = $activities->first();
     $individualId = $activity['source_contact_id'];
 
     $contacts = \Civi\Api4\Contact::get(FALSE)
@@ -472,13 +472,10 @@ function goonj_contribution_volunteer_signup_button() {
         'message' => 'individual-user'
     ));	
 
-    return generate_volunteer_button_html($redirectPathWithParams);
+    return goonj_generate_volunteer_button_html($redirectPathWithParams);
 }
 
 add_shortcode('goonj_contribution_volunteer_signup_button', 'goonj_contribution_volunteer_signup_button');
-
-
-
 
 function goonj_collection_camp_landing_page() {
 	ob_start();
