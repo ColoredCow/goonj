@@ -38,37 +38,36 @@ function civicrm_api3_goonjcustom_collection_camp_outcome_reminder_cron($params)
 
   // Fetch camps that have completed but the outcome form is not yet filled.
   $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
-    ->addSelect('Logistics_Coordination.Email_Sent', 'Logistics_Coordination.Camp_to_be_attended_by', 'Collection_Camp_Intent_Details.End_Date', 'Camp_Outcome.Last_Reminder_Sent')
+    ->addSelect(
+      'Logistics_Coordination.Email_Sent',
+      'Logistics_Coordination.Camp_to_be_attended_by',
+      'Collection_Camp_Intent_Details.End_Date',
+      'Camp_Outcome.Last_Reminder_Sent',
+      'Outcome_Form.Submitted'
+    )
     ->addWhere('Camp_Outcome.Rate_the_camp', 'IS NULL')
     ->addWhere('Collection_Camp_Core_Details.Status', '=', 'authorized')
     ->addWhere('Collection_Camp_Intent_Details.End_Date', '<=', $endOfDay)
     ->setLimit(25)
     ->execute();
+
   foreach ($collectionCamps as $camp) {
     try {
       $campAttendedById = $camp['Logistics_Coordination.Camp_to_be_attended_by'];
       $endDate = new \DateTime($camp['Collection_Camp_Intent_Details.End_Date']);
-      $lastReminderSent = new \DateTime($camp['Reminders.Last_Reminder_Sent']);
-      $hoursSinceCampEnd = $today->diff($endDate)->h;
-      $hoursSinceLastReminder = $today->diff($lastReminderSent)->h;
+      $lastReminderSent = $camp['Camp_Outcome.Last_Reminder_Sent'] ? new \DateTime($camp['Camp_Outcome.Last_Reminder_Sent']) : NULL;
 
-      // Check if 48 hours have passed since camp end and outcome form is not filled.
-      if ($hoursSinceCampEnd >= 48 && !$camp['Outcome_Form.Submitted']) {
-        // Send the reminder email.
-        CollectionCampService::sendReminderEmail($camp);
+      // Calculate hours since camp ended.
+      $hoursSinceCampEnd = $today->diff($endDate)->h + ($today->diff($endDate)->days * 24);
 
-        // Update the Last_Reminder_Sent field.
-        EckEntity::update('Collection_Camp', FALSE)
-          ->addValue('Reminders.Last_Reminder_Sent', $today->format('Y-m-d H:i:s'))
-          ->addWhere('id', '=', $camp['id'])
-          ->execute();
-      }
-      catch (\Exception $e) {
-        \Civi::log()->info('Error processing camp reminder', [
-          'id' => $camp['id'],
-          'error' => $e->getMessage(),
-        ]);
-      }
+      // Calculate hours since last reminder was sent (if any)
+      $hoursSinceLastReminder = $lastReminderSent ? ($today->diff($lastReminderSent)->h + ($today->diff($lastReminderSent)->days * 24)) : NULL;
+    }
+    catch (\Exception $e) {
+      \Civi::log()->error('Error processing camp reminder', [
+        'id' => $camp['id'],
+        'error' => $e->getMessage(),
+      ]);
     }
   }
 
