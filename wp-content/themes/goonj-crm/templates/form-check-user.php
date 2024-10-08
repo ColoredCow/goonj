@@ -9,7 +9,6 @@ $target_id = get_query_var('target_id', '');
 $source = get_query_var('source', '');
 
 $is_purpose_not_requiring_email = in_array($purpose, PURPOSES_NOT_REQUIRING_EMAIL);
-
 ?>
 
 <div class="text-center w-xl-520 m-auto">
