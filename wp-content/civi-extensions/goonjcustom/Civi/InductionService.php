@@ -172,12 +172,13 @@ class InductionService extends AutoSubscriber {
   /**
    * Common logic to send an email.
    */
-  private static function sendInductionEmail($contactId) {
-    if (self::emailAlreadySent($contactId)) {
-      \Civi::log()->info('Induction email already sent for contact', ['id' => $contactId]);
+  private static function sendInductionEmail($volunteerId) {
+
+    if (self::isEmailAlreadySent($volunteerId)) {
       return FALSE;
     }
 
+    // Retrieve the email template.
     $template = MessageTemplate::get(FALSE)
       ->addWhere('msg_title', 'LIKE', 'New_Volunteer_Registration%')
       ->setLimit(1)
@@ -187,14 +188,67 @@ class InductionService extends AutoSubscriber {
       return FALSE;
     }
 
+    // Prepare email parameters.
     $emailParams = [
-      'contact_id' => $contactId,
+      'contact_id' => $volunteerId,
       'template_id' => $template['id'],
       'cc' => self::$volunteerInductionAssigneeEmail,
     ];
 
-    civicrm_api3('Email', 'send', $emailParams);
+    self::queueInductionEmail($emailParams);
     return TRUE;
+  }
+
+  /**
+   * Queue the induction email to be processed later.
+   */
+  private static function queueInductionEmail($params) {
+    try {
+      $queue = \Civi::queue(\CRM_Goonjcustom_Engine::QUEUE_NAME, [
+        'type' => 'Sql',
+        'error' => 'abort',
+        'runner' => 'task',
+      ]);
+
+      $queue->createItem(new \CRM_Queue_Task(
+            [self::class, 'processQueuedInductionEmail'],
+            [$params]
+        ), [
+          'weight' => 1,
+        ]);
+
+      \Civi::log()->info('Induction email queued for contact', ['contactId' => $params['contact_id']]);
+    }
+    catch (\CRM_Core_Exception $ex) {
+      \Civi::log()->error('Failed to queue induction email due to CiviCRM error', [
+        'contactId' => $params['contact_id'],
+        'error' => $ex->getMessage(),
+      ]);
+    }
+  }
+
+  /**
+   * Process the queued induction email task.
+   */
+  public static function processQueuedInductionEmail($queue, $params) {
+    try {
+      $result = civicrm_api3('Email', 'send', $params);
+      if ($result['is_error']) {
+        throw new \CRM_Core_Exception($result['error_message']);
+      }
+      \Civi::log()->info('Successfully sent queued induction email', [
+        'params' => $params,
+      ]);
+      return TRUE;
+    }
+    catch (\Exception $ex) {
+      \Civi::log()->error('Failed to send queued induction email', [
+        'params' => $params,
+        'error' => $ex->getMessage(),
+      ]);
+      // Rethrow the exception for the queue system to handle.
+      throw $ex;
+    }
   }
 
   /**
@@ -329,7 +383,7 @@ class InductionService extends AutoSubscriber {
    * Check if induction email has already been sent.
    * Adjust the logic based on actual email activity type.
    */
-  private static function emailAlreadySent($contactId) {
+  private static function isEmailAlreadySent($contactId) {
 
     $volunteerEmailActivity = Activity::get(FALSE)
       ->addWhere('activity_type_id:name', '=', 'Email')
