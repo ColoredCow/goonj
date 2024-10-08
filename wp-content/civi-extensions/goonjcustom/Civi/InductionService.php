@@ -172,7 +172,7 @@ class InductionService extends AutoSubscriber {
   /**
    * Common logic to send an email.
    */
-  private static function sendInductionEmail($contactId) {
+  private static function sendInductionEmail($volunteerId) {
     // Check if the email was already sent.
     if (self::isEmailAlreadySent($contactId)) {
       \Civi::log()->info('Induction email already sent for contact', ['id' => $contactId]);
@@ -240,12 +240,6 @@ class InductionService extends AutoSubscriber {
         'error' => $ex->getMessage(),
       ]);
     }
-    catch (\Exception $ex) {
-      \Civi::log()->error('Unexpected error while queueing induction email', [
-        'contactId' => $params['contact_id'],
-        'error' => $ex->getMessage(),
-      ]);
-    }
   }
 
   /**
@@ -258,13 +252,13 @@ class InductionService extends AutoSubscriber {
         throw new \CRM_Core_Exception($result['error_message']);
       }
       \Civi::log()->info('Successfully sent queued induction email', [
-        'contactId' => $params['contact_id'],
+        'params' => $params,
       ]);
       return TRUE;
     }
     catch (\Exception $ex) {
       \Civi::log()->error('Failed to send queued induction email', [
-        'contactId' => $params['contact_id'],
+        'params' => $params,
         'error' => $ex->getMessage(),
       ]);
       // Rethrow the exception for the queue system to handle.
