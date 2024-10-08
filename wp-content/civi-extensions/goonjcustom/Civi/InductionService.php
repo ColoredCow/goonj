@@ -173,7 +173,6 @@ class InductionService extends AutoSubscriber {
    * Common logic to send an email.
    */
   private static function sendInductionEmail($contactId) {
-    \Civi::log()->info('sendInductionEmail', ['sendInductionEmail' => $contactId]);
     // Check if the email was already sent.
     if (self::emailAlreadySent($contactId)) {
       \Civi::log()->info('Induction email already sent for contact', ['id' => $contactId]);
@@ -206,13 +205,12 @@ class InductionService extends AutoSubscriber {
       ->addJoin('Email AS email', 'LEFT')
       ->addWhere('id', '=', $contactId)
       ->execute()->single();
+
     $email = $contacts['email.email'];
 
-    \Civi::log()->debug('Email Params', ['emailParams' => $emailParams, '$email' => $email, 'contacts' => $contacts]);
     if (empty($email)) {
-      \Civi::log()->info('email queueed', ['emailcontact' => $email]);
       self::queueInductionEmail($emailParams);
-      return;
+      return TRUE;
     }
   
     civicrm_api3('Email', 'send', $emailParams);
@@ -253,13 +251,8 @@ class InductionService extends AutoSubscriber {
    */
   public static function processQueuedInductionEmail($queue, $params) {
     try {
-      // Call the common method to send the induction email.
-      \Civi::log('processQueuedInductionEmail', ['processQueuedInductionEmail' => $params]);
-      // $result = self::sendInductionEmail($params['contactId']);
+
       $result = civicrm_api3('Email', 'send', $params);
-      if ($result) {
-        \Civi::log()->info('Successfully sent queued induction email', ['contactId' => $params['contactId']]);
-      }
     }
     catch (\Exception $ex) {
       \Civi::log()->error('Failed to send queued induction email', [
@@ -273,7 +266,6 @@ class InductionService extends AutoSubscriber {
    * Handles sending induction email to a volunteer.
    */
   public static function sendInductionEmailToVolunteer(string $op, string $objectName, int $objectId, &$objectRef) {
-    \Civi::log()->info('sendInductionEmailToVolunteer', ['op' => $op, 'objectname' => $objectName, 'id' => $objectId, 'params' => $objectRef]);
     if ($op !== 'create' || $objectName !== 'Email' || !$objectId || $objectRef->contact_id !== self::$volunteerId) {
       return;
     }
@@ -285,11 +277,10 @@ class InductionService extends AutoSubscriber {
    * Handles sending induction email to an individual.
    */
   public static function sendInductionEmailForTransitionedVolunteer(string $op, string $objectName, int $objectId, &$objectRef) {
-    \Civi::log()->info('sendInductionEmailForTransitionedVolunteer', ['op' => $op, 'objectname' => $objectName, 'id' => $objectId, 'params' => $objectRef]);
     if ($op !== 'edit' || $objectName !== 'Individual' || (int) self::$transitionedVolunteerId !== (int) $objectRef->id) {
       return FALSE;
     }
-    \Civi::log()->info('sendInductionEmailForTransitionedVolunteer2', ['op' => $op, 'objectname' => $objectName, 'id' => $objectId, 'params' => $objectRef]);
+
     self::sendInductionEmail(self::$transitionedVolunteerId);
   }
 
@@ -419,7 +410,6 @@ class InductionService extends AutoSubscriber {
    *
    */
   public static function hasIndividualChangedToVolunteer($op, $objectName, $id, &$params) {
-    \Civi::log()->info('hasIndividualChangedToVolunteer', ['op' => $op, 'objectname' => $objectName, 'id' => $id, 'params' => $params]);
     if ($op !== 'edit' || $objectName !== 'Individual') {
       return FALSE;
     }
@@ -449,7 +439,6 @@ class InductionService extends AutoSubscriber {
    */
   public static function createInductionForTransitionedVolunteer(string $op, string $objectName, int $objectId, &$objectRef) {
 
-    \Civi::log()->info('createInductionForTransitionedVolunteer', ['op' => $op, 'objectname' => $objectName, 'id' => $objectId, 'objectRef' => $objectRef]);
     if ($op !== 'edit' || $objectName !== 'Individual' || (int) self::$transitionedVolunteerId !== (int) $objectRef->id) {
       return FALSE;
     }
