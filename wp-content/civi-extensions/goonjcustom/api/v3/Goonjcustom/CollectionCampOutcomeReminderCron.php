@@ -62,6 +62,23 @@ function civicrm_api3_goonjcustom_collection_camp_outcome_reminder_cron($params)
 
       // Calculate hours since last reminder was sent (if any)
       $hoursSinceLastReminder = $lastReminderSent ? ($today->diff($lastReminderSent)->h + ($today->diff($lastReminderSent)->days * 24)) : NULL;
+
+      // Send the first reminder after 48 hours of camp end.
+      if ($hoursSinceCampEnd >= 48 && (!$lastReminderSent || $hoursSinceLastReminder >= 24)) {
+        // Send the reminder email.
+        sendOutcomeReminderEmail($campAttendedById);
+
+        // Update the Last_Reminder_Sent field in the database.
+        EckEntity::get('Collection_Camp', TRUE)
+          ->addWhere('id', '=', $camp['id'])
+          ->addValue('Camp_Outcome.Last_Reminder_Sent', $today->format('Y-m-d H:i:s'))
+          ->execute();
+
+        $returnValues[] = [
+          'camp_id' => $camp['id'],
+          'message' => 'Reminder sent to camp attendee.',
+        ];
+      }
     }
     catch (\Exception $e) {
       \Civi::log()->error('Error processing camp reminder', [
@@ -72,4 +89,28 @@ function civicrm_api3_goonjcustom_collection_camp_outcome_reminder_cron($params)
   }
 
   return civicrm_api3_create_success($returnValues, $params, 'Goonjcustom', 'collection_camp_outcome_reminder_cron');
+}
+
+/**
+ * Send the reminder email to the camp attendee.
+ *
+ * @param int $campAttendedById
+ */
+function sendOutcomeReminderEmail($campAttendedById) {
+  $campAttendedBy = Contact::get(FALSE)
+    ->addSelect('email.email', 'display_name')
+    ->addJoin('Email AS email', 'LEFT')
+    ->addWhere('id', '=', $campAttendedById)
+    ->execute()->single();
+
+  $attendeeEmail = $campAttendedBy['email.email'];
+
+  // Prepare and send the email.
+  $mailParams = [
+    'toEmail' => $attendeeEmail,
+    'subject' => 'Reminder: Please complete the camp outcome form',
+    'body' => 'Dear Attendee, please fill out the outcome form for the recent collection camp you attended.',
+  ];
+
+  $emailSendResult = \CRM_Utils_Mail::send($mailParams);
 }
