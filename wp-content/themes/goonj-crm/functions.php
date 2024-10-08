@@ -434,44 +434,53 @@ function goonj_generate_volunteer_button_html($buttonUrl) {
 }
 
 function goonj_contribution_volunteer_signup_button() {
+    $activityId = $_GET['activityId'] ?? '';
 
-    $activityId = isset($_GET['activityId']) ? sanitize_text_field($_GET['activityId']) : '';
-
-    $activities = \Civi\Api4\Activity::get(FALSE)
-        ->addSelect('source_contact_id')
-        ->addJoin('ActivityContact AS activity_contact', 'LEFT')
-        ->addWhere('id', '=', $activityId)
-        ->addWhere('activity_type_id:label', '=', 'Material Contribution')
-        ->execute();
-
-    if ($activities->count() === 0) {
-		\Civi::log()->info('No activities found for Activity ID:', ['activityId'=>$activityId]);
+    if (empty($activityId)) {
+        \Civi::log()->warning('Activity ID is missing');
         return;
     }
 
-    // Since we have activities, get the single record
-    $activity = $activities->first();
-    $individualId = $activity['source_contact_id'];
+    try {
+        $activities = \Civi\Api4\Activity::get(FALSE)
+            ->addSelect('source_contact_id')
+            ->addJoin('ActivityContact AS activity_contact', 'LEFT')
+            ->addWhere('id', '=', $activityId)
+            ->addWhere('activity_type_id:label', '=', 'Material Contribution')
+            ->execute();
 
-    $contacts = \Civi\Api4\Contact::get(FALSE)
-        ->addSelect('contact_sub_type')
-        ->addWhere('id', '=', $individualId)
-        ->execute();
+        if ($activities->count() === 0) {
+            \Civi::log()->info('No activities found for Activity ID:', ['activityId' => $activityId]);
+            return;
+        }
 
-    $contactSubTypes = $contacts[0]['contact_sub_type'] ?? null;
+        $activity = $activities->first();
+        $individualId = $activity['source_contact_id'];
 
-    // Check if contact_sub_type is not null or empty and contains 'Volunteer'
-    if (!empty($contactSubTypes) && in_array('Volunteer', $contactSubTypes)) {
-        return; // Exit if the individual is already a volunteer
+        $contact = \Civi\Api4\Contact::get(FALSE)
+            ->addSelect('contact_sub_type')
+            ->addWhere('id', '=', $individualId)
+            ->execute()
+            ->first();
+
+        $contactSubTypes = $contact['contact_sub_type'] ?? [];
+
+        // If the individual is already a volunteer, don't show the button
+        if (in_array('Volunteer', $contactSubTypes)) {
+            return;
+        }
+
+        $redirectPath = '/volunteer-registration/form-with-details/';
+        $redirectPathWithParams = $redirectPath . '#?' . http_build_query([
+            'Individual1' => $individualId,
+            'message' => 'individual-user'
+        ]);
+
+        return goonj_generate_volunteer_button_html($redirectPathWithParams);
+    } catch (\Exception $e) {
+        \Civi::log()->error('Error in goonj_contribution_volunteer_signup_button: ' . $e->getMessage());
+        return;
     }
-
-    $redirectPath = '/volunteer-registration/form-with-details/';
-    $redirectPathWithParams = $redirectPath . '#?' . http_build_query(array(
-        'Individual1' => $individualId,
-        'message' => 'individual-user'
-    ));	
-
-    return goonj_generate_volunteer_button_html($redirectPathWithParams);
 }
 
 add_shortcode('goonj_contribution_volunteer_signup_button', 'goonj_contribution_volunteer_signup_button');
@@ -521,6 +530,7 @@ function goonj_redirect_after_individual_creation() {
 	switch ( $creationFlow ) {
 		case 'material-contribution':
 			if ( ! $source ) {
+				\Civi::log()->warning('Source is missing for material contribution flow', ['individualId' => $_GET['individualId']]);
 				return;
 			}
 			// If the individual was created while in the process of material contribution,
