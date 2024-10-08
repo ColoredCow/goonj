@@ -175,7 +175,7 @@ class InductionService extends AutoSubscriber {
   private static function sendInductionEmail($volunteerId) {
     // Check if the email was already sent.
     if (self::isEmailAlreadySent($contactId)) {
-      \Civi::log()->info('Induction email already sent for contact', ['id' => $contactId]);
+      \Civi::log()->info('Induction email already sent for contact', ['id' => $volunteerId]);
       return FALSE;
     }
 
@@ -191,7 +191,7 @@ class InductionService extends AutoSubscriber {
 
     // Prepare email parameters.
     $emailParams = [
-      'contact_id' => $contactId,
+      'contact_id' => $volunteerId,
       'template_id' => $template['id'],
       'cc' => self::$volunteerInductionAssigneeEmail,
     ];
@@ -200,7 +200,7 @@ class InductionService extends AutoSubscriber {
     $contacts = Contact::get(FALSE)
       ->addSelect('email.email')
       ->addJoin('Email AS email', 'LEFT')
-      ->addWhere('id', '=', $contactId)
+      ->addWhere('id', '=', $volunteerId)
       ->execute()->single();
 
     $email = $contacts['email.email'];
