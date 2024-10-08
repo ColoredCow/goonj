@@ -272,7 +272,7 @@ function goonj_handle_user_identification_form() {
 
 		// If we are here, then it means for sure that the contact exists.
 
-		if ( 'material-contribution' || 'dropping-center-contribution' === $purpose ) {
+		if ( $purpose === 'material-contribution' || $purpose === 'dropping-center-contribution' ) {
 			$material_contribution_form_path = sprintf(
 				'/material-contribution/#?email=%s&phone=%s&Material_Contribution.Collection_Camp=%s&source_contact_id=%s',
 				$email,
