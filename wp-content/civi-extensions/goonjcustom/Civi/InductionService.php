@@ -174,7 +174,7 @@ class InductionService extends AutoSubscriber {
    */
   private static function sendInductionEmail($volunteerId) {
 
-    if (self::isEmailAlreadySent($contactId)) {
+    if (self::isEmailAlreadySent($volunteerId)) {
       return FALSE;
     }
 
