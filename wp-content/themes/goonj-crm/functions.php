@@ -272,21 +272,9 @@ function goonj_handle_user_identification_form() {
 
 		// If we are here, then it means for sure that the contact exists.
 
-		if ( 'material-contribution' === $purpose ) {
+		if ( 'material-contribution' || 'dropping-center-contribution' === $purpose ) {
 			$material_contribution_form_path = sprintf(
 				'/material-contribution/#?email=%s&phone=%s&Material_Contribution.Collection_Camp=%s&source_contact_id=%s',
-				$email,
-				$phone,
-				$target_id,
-				$found_contacts['id']
-			);
-			wp_redirect( $material_contribution_form_path );
-			exit;
-		}
-
-		if ( 'dropping-center-contribution' === $purpose ) {
-			$material_contribution_form_path = sprintf(
-				'/material-contribution/#?email=%s&phone=%s&Material_Contribution.Dropping_Center=%s&source_contact_id=%s',
 				$email,
 				$phone,
 				$target_id,
