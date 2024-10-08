@@ -434,7 +434,7 @@ function goonj_generate_volunteer_button_html($buttonUrl) {
 }
 
 function goonj_contribution_volunteer_signup_button() {
-    $activityId = $_GET['activityId'] ?? '';
+    $activityId = isset($_GET['activityId']) ? intval($_GET['activityId']) : 0;
 
     if (empty($activityId)) {
         \Civi::log()->warning('Activity ID is missing');
@@ -462,6 +462,11 @@ function goonj_contribution_volunteer_signup_button() {
             ->addWhere('id', '=', $individualId)
             ->execute()
             ->first();
+
+		if (empty($contact)) {
+			\Civi::log()->info('Contact not found', ['contact' => $contact['id']]);
+			return;
+		}
 
         $contactSubTypes = $contact['contact_sub_type'] ?? [];
 
