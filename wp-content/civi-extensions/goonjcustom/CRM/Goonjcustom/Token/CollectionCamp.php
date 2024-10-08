@@ -149,17 +149,43 @@ class CRM_Goonjcustom_Token_CollectionCamp extends AbstractTokenSubscriber {
     $volunteerIds = array_merge([$initiatorId], $volunteeringActivities->column('activity_contact.contact_id'));
 
     $volunteers = Contact::get(FALSE)
-      ->addSelect('phone.phone', 'display_name')
+      ->addSelect('phone.phone', 'phone.is_primary', 'display_name')
       ->addJoin('Phone AS phone', 'LEFT')
-      ->addWhere('phone.is_primary', '=', TRUE)
       ->addWhere('id', 'IN', $volunteerIds)
+      ->addOrderBy('created_date', 'ASC')
       ->execute();
 
+    $volunteersArray = $volunteers->jsonSerialize();
+    $volunteersDetails = [];
+
+    foreach ($volunteerIds as $volunteerId) {
+      $primaryVolunteers = array_filter($volunteersArray, function ($volunteer) use ($volunteerId) {
+        return $volunteer['id'] == $volunteerId && $volunteer['phone.is_primary'];
+      });
+
+      if (!empty($primaryVolunteer)) {
+        $volunteersDetails[] = reset($primaryVolunteers);
+      }
+      else {
+        $volunteer = array_filter($volunteersArray, function ($volunteer) use ($volunteerId) {
+          return $volunteer['id'] == $volunteerId;
+        });
+
+        if (!empty($volunteer)) {
+          $volunteersDetails[] = reset($volunteer);
+        }
+      }
+
+    }
+
     $volunteersWithPhone = array_map(
-        fn ($volunteer) => sprintf('%1$s (%2$s)', $volunteer['display_name'], $volunteer['phone.phone']), $volunteers->jsonSerialize()
+      fn($volunteer) => isset($volunteer['phone.phone']) && !empty($volunteer['phone.phone'])
+          ? sprintf('%1$s (%2$s)', $volunteer['display_name'], $volunteer['phone.phone'])
+          : $volunteer['display_name'],
+      $volunteersDetails
     );
 
-    return join(',', $volunteersWithPhone);
+    return join(', ', $volunteersWithPhone);
   }
 
   /**
@@ -169,8 +195,8 @@ class CRM_Goonjcustom_Token_CollectionCamp extends AbstractTokenSubscriber {
     $addressParts = [
       $collectionSource['Collection_Camp_Intent_Details.Location_Area_of_camp'],
       $collectionSource['Collection_Camp_Intent_Details.District'],
-      // $collectionSource['Collection_Camp_Intent_Details.City'],
-      // CRM_Core_PseudoConstant::stateProvince($collectionSource['Collection_Camp_Intent_Details.State']),
+      $collectionSource['Collection_Camp_Intent_Details.City'],
+      // CRM_Core_PseudoConstant::stateProvince($collectionSource['Collection_Camp_Intent_Details.State']),.
       $collectionSource['Collection_Camp_Intent_Details.Pin_Code'],
     ];
 
