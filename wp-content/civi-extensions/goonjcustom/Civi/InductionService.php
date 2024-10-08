@@ -185,11 +185,8 @@ class InductionService extends AutoSubscriber {
       ->setLimit(1)
       ->execute()->single();
 
-    // If no template is found, queue the email task to be processed later.
     if (!$template) {
-      \Civi::log()->warning('No email template found. Queuing the induction email.', ['contactId' => $contactId]);
-      self::queueInductionEmail($contactId);
-      return TRUE;
+      return FALSE;
     }
 
     // Prepare email parameters.
@@ -235,12 +232,12 @@ class InductionService extends AutoSubscriber {
         'weight' => 1,
       ]);
 
-      \Civi::log()->info('Induction email queued for contact', ['contactId' => $contactId]);
+      \Civi::log()->info('Induction email queued for contact', ['contactId' => $params['contactId']]);
 
     }
     catch (\Exception $ex) {
       \Civi::log()->error('Failed to queue induction email', [
-        'contactId' => $contactId,
+        'contactId' => $params['contactId'],
         'error' => $ex->getMessage(),
       ]);
     }
