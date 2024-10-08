@@ -7,7 +7,7 @@ $purpose = $args['purpose'];
 $target_id = get_query_var('target_id', '');
 $source = get_query_var('source', '');
 
-$is_purpose_requiring_email = !in_array($purpose, ['material-contribution', 'processing-center-office-visit', 'processing-center-material-contribution']);
+$is_purpose_requiring_email = !in_array($purpose, ['material-contribution', 'processing-center-office-visit', 'processing-center-material-contribution', 'dropping-center-contribution']);
 ?>
 
 <div class="text-center w-xl-520 m-auto">

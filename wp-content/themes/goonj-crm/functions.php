@@ -140,7 +140,7 @@ function goonj_handle_user_identification_form() {
 	$email = $_POST['email'] ?? '';
 	$phone = $_POST['phone'] ?? '';
 
-	$is_purpose_requiring_email = ! in_array( $purpose, array( 'material-contribution', 'processing-center-office-visit', 'processing-center-material-contribution' ) );
+	$is_purpose_requiring_email = ! in_array( $purpose, array( 'material-contribution', 'processing-center-office-visit', 'processing-center-material-contribution', 'dropping-center-contribution') );
 
 	if ( empty( $phone ) || ( $is_purpose_requiring_email && empty( $email ) ) ) {
 		return;
@@ -275,6 +275,18 @@ function goonj_handle_user_identification_form() {
 		if ( 'material-contribution' === $purpose ) {
 			$material_contribution_form_path = sprintf(
 				'/material-contribution/#?email=%s&phone=%s&Material_Contribution.Collection_Camp=%s&source_contact_id=%s',
+				$email,
+				$phone,
+				$target_id,
+				$found_contacts['id']
+			);
+			wp_redirect( $material_contribution_form_path );
+			exit;
+		}
+
+		if ( 'dropping-center-contribution' === $purpose ) {
+			$material_contribution_form_path = sprintf(
+				'/material-contribution/#?email=%s&phone=%s&Material_Contribution.Dropping_Center=%s&source_contact_id=%s',
 				$email,
 				$phone,
 				$target_id,
