@@ -135,8 +135,8 @@ function goonj_handle_user_identification_form() {
 	$purpose = $_POST['purpose'] ?? 'collection-camp-intent';
 	$target_id = $_POST['target_id'] ?? '';
 	$source = $_POST['source'] ?? '';
-	$state = $_POST['state'] ?? '';
-	$city = $_POST['city'] ?? '';
+	$state = $_POST['state_id'] ?? '';
+	$city = $_POST['city_id'] ?? '';
 
 	// Retrieve the email and phone number from the POST data
 	$email = $_POST['email'] ?? '';
