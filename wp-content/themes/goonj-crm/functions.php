@@ -419,7 +419,76 @@ function goonj_is_volunteer_inducted( $volunteer ) {
 function goonj_custom_message_placeholder() {
 	return '<div id="custom-message" class="ml-24"></div>';
 }
+
 add_shortcode( 'goonj_volunteer_message', 'goonj_custom_message_placeholder' );
+
+function goonj_generate_volunteer_button_html($buttonUrl) {
+    return sprintf(
+        '<div class="volunteer-button-container">
+            <a href="%s" class="wp-block-button__link has-white-color has-vivid-red-background-color has-text-color has-background has-link-color wp-element-button volunteer-button-link">
+                Wish to Volunteer?
+            </a>
+        </div>',
+        esc_url($buttonUrl)
+    );
+}
+
+function goonj_contribution_volunteer_signup_button() {
+    $activityId = isset($_GET['activityId']) ? intval($_GET['activityId']) : 0;
+
+    if (empty($activityId)) {
+        \Civi::log()->warning('Activity ID is missing');
+        return;
+    }
+
+    try {
+        $activities = \Civi\Api4\Activity::get(FALSE)
+            ->addSelect('source_contact_id')
+            ->addJoin('ActivityContact AS activity_contact', 'LEFT')
+            ->addWhere('id', '=', $activityId)
+            ->addWhere('activity_type_id:label', '=', 'Material Contribution')
+            ->execute();
+
+        if ($activities->count() === 0) {
+            \Civi::log()->info('No activities found for Activity ID:', ['activityId' => $activityId]);
+            return;
+        }
+
+        $activity = $activities->first();
+        $individualId = $activity['source_contact_id'];
+
+        $contact = \Civi\Api4\Contact::get(FALSE)
+            ->addSelect('contact_sub_type')
+            ->addWhere('id', '=', $individualId)
+            ->execute()
+            ->first();
+
+		if (empty($contact)) {
+			\Civi::log()->info('Contact not found', ['contact' => $contact['id']]);
+			return;
+		}
+
+        $contactSubTypes = $contact['contact_sub_type'] ?? [];
+
+        // If the individual is already a volunteer, don't show the button
+        if (in_array('Volunteer', $contactSubTypes)) {
+            return;
+        }
+
+        $redirectPath = '/volunteer-registration/form-with-details/';
+        $redirectPathWithParams = $redirectPath . '#?' . http_build_query([
+            'Individual1' => $individualId,
+            'message' => 'individual-user'
+        ]);
+
+        return goonj_generate_volunteer_button_html($redirectPathWithParams);
+    } catch (\Exception $e) {
+        \Civi::log()->error('Error in goonj_contribution_volunteer_signup_button: ' . $e->getMessage());
+        return;
+    }
+}
+
+add_shortcode('goonj_contribution_volunteer_signup_button', 'goonj_contribution_volunteer_signup_button');
 
 function goonj_collection_camp_landing_page() {
 	ob_start();
@@ -461,14 +530,14 @@ function goonj_redirect_after_individual_creation() {
 	$source = $individual['source'];
 	$sourceProcessingCenter = $individual['Individual_fields.Source_Processing_Center'];
 
-	if ( ! $source ) {
-		return;
-	}
-
 	$redirectPath = '';
 
 	switch ( $creationFlow ) {
 		case 'material-contribution':
+			if ( ! $source ) {
+				\Civi::log()->warning('Source is missing for material contribution flow', ['individualId' => $_GET['individualId']]);
+				return;
+			}
 			// If the individual was created while in the process of material contribution,
 			// then we need to find out from WHERE was she trying to contribute.
 
