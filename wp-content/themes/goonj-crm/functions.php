@@ -424,9 +424,8 @@ add_shortcode( 'goonj_volunteer_message', 'goonj_custom_message_placeholder' );
 
 function goonj_generate_volunteer_button_html($buttonUrl) {
     return sprintf(
-        '<div class="volunteer-button-container" style="display: flex; justify-content: center; align-items: center; border-style:none; border-width:0px; border-radius:5px;">
-            <a href="%s" class="wp-block-button__link has-white-color has-vivid-red-background-color has-text-color has-background has-link-color wp-element-button" 
-                style="border-style:none; border-width:0px; border-radius:5px">
+        '<div class="volunteer-button-container">
+            <a href="%s" class="wp-block-button__link has-white-color has-vivid-red-background-color has-text-color has-background has-link-color wp-element-button volunteer-button-link">
                 Wish to Volunteer?
             </a>
         </div>',

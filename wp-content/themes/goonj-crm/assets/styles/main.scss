@@ -406,6 +406,21 @@ form input {
   justify-content: center;
 }
 
+.volunteer-button-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-style: none;
+  border-width: 0px;
+  border-radius: 5px;
+}
+
+.volunteer-button-link {
+  border-style: none;
+  border-width: 0px;
+  border-radius: 5px;
+}
+
 .font-family {
   font-family: 'Open Sans', sans-serif;
 }
