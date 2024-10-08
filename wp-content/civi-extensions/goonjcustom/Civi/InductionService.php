@@ -173,34 +173,107 @@ class InductionService extends AutoSubscriber {
    * Common logic to send an email.
    */
   private static function sendInductionEmail($contactId) {
+    \Civi::log()->info('sendInductionEmail', ['sendInductionEmail' => $contactId]);
+    // Check if the email was already sent.
     if (self::emailAlreadySent($contactId)) {
       \Civi::log()->info('Induction email already sent for contact', ['id' => $contactId]);
       return FALSE;
     }
 
+    // Retrieve the email template.
     $template = MessageTemplate::get(FALSE)
       ->addWhere('msg_title', 'LIKE', 'New_Volunteer_Registration%')
       ->setLimit(1)
       ->execute()->single();
 
+    // If no template is found, queue the email task to be processed later.
     if (!$template) {
-      return FALSE;
+      \Civi::log()->warning('No email template found. Queuing the induction email.', ['contactId' => $contactId]);
+      self::queueInductionEmail($contactId);
+      return TRUE;
     }
 
+    // Prepare email parameters.
     $emailParams = [
       'contact_id' => $contactId,
       'template_id' => $template['id'],
       'cc' => self::$volunteerInductionAssigneeEmail,
     ];
 
+    // Fetch contact's email.
+    $contacts = Contact::get(FALSE)
+      ->addSelect('email.email')
+      ->addJoin('Email AS email', 'LEFT')
+      ->addWhere('id', '=', $contactId)
+      ->execute()->single();
+    $email = $contacts['email.email'];
+
+    \Civi::log()->debug('Email Params', ['emailParams' => $emailParams, '$email' => $email, 'contacts' => $contacts]);
+    if (empty($email)) {
+      \Civi::log()->info('email queueed', ['emailcontact' => $email]);
+      self::queueInductionEmail($emailParams);
+      return;
+    }
+  
     civicrm_api3('Email', 'send', $emailParams);
     return TRUE;
+  }
+
+  /**
+   * Queue the induction email to be processed later.
+   */
+  private static function queueInductionEmail($params) {
+    try {
+      $queue = \Civi::queue(\CRM_Goonjcustom_Engine::QUEUE_NAME, [
+        'type' => 'Sql',
+        'error' => 'abort',
+        'runner' => 'task',
+      ]);
+
+      $queue->createItem(new \CRM_Queue_Task(
+        [self::class, 'processQueuedInductionEmail'],
+        [$params]
+      ), [
+        'weight' => 1,
+      ]);
+
+      \Civi::log()->info('Induction email queued for contact', ['contactId' => $contactId]);
+
+    }
+    catch (\Exception $ex) {
+      \Civi::log()->error('Failed to queue induction email', [
+        'contactId' => $contactId,
+        'error' => $ex->getMessage(),
+      ]);
+    }
+  }
+
+  /**
+   * Process the queued induction email task.
+   */
+  public static function processQueuedInductionEmail($queue, $params) {
+    try {
+      // Call the common method to send the induction email.
+      \Civi::log('processQueuedInductionEmail', ['processQueuedInductionEmail' => $params]);
+      // $result = self::sendInductionEmail($params['contactId']);
+      $result = civicrm_api3('Email', 'send', $params);
+      if ($result) {
+        \Civi::log()->info('Successfully sent queued induction email', ['contactId' => $params['contactId']]);
+      }
+    }
+    catch (\Exception $ex) {
+      \Civi::log()->error('Failed to send queued induction email', [
+        'contactId' => $params['contactId'],
+        'error' => $ex->getMessage(),
+      ]);
+    }
   }
 
   /**
    * Handles sending induction email to a volunteer.
    */
   public static function sendInductionEmailToVolunteer(string $op, string $objectName, int $objectId, &$objectRef) {
+    \Civi::log()->info('sendInductionEmailToVolunteer', ['op' => $op, 'objectname' => $objectName, 'id' => $objectId, 'params' => $objectRef]);
     if ($op !== 'create' || $objectName !== 'Email' || !$objectId || $objectRef->contact_id !== self::$volunteerId) {
       return;
     }
@@ -212,10 +285,11 @@ class InductionService extends AutoSubscriber {
    * Handles sending induction email to an individual.
    */
   public static function sendInductionEmailForTransitionedVolunteer(string $op, string $objectName, int $objectId, &$objectRef) {
+    \Civi::log()->info('sendInductionEmailForTransitionedVolunteer', ['op' => $op, 'objectname' => $objectName, 'id' => $objectId, 'params' => $objectRef]);
     if ($op !== 'edit' || $objectName !== 'Individual' || (int) self::$transitionedVolunteerId !== (int) $objectRef->id) {
       return FALSE;
     }
-
+    \Civi::log()->info('sendInductionEmailForTransitionedVolunteer2', ['op' => $op, 'objectname' => $objectName, 'id' => $objectId, 'params' => $objectRef]);
     self::sendInductionEmail(self::$transitionedVolunteerId);
   }
 
@@ -345,6 +419,7 @@ class InductionService extends AutoSubscriber {
    *
    */
   public static function hasIndividualChangedToVolunteer($op, $objectName, $id, &$params) {
+    \Civi::log()->info('hasIndividualChangedToVolunteer', ['op' => $op, 'objectname' => $objectName, 'id' => $id, 'params' => $params]);
     if ($op !== 'edit' || $objectName !== 'Individual') {
       return FALSE;
     }
@@ -374,6 +449,7 @@ class InductionService extends AutoSubscriber {
    */
   public static function createInductionForTransitionedVolunteer(string $op, string $objectName, int $objectId, &$objectRef) {
 
+    \Civi::log()->info('createInductionForTransitionedVolunteer', ['op' => $op, 'objectname' => $objectName, 'id' => $objectId, 'objectRef' => $objectRef]);
     if ($op !== 'edit' || $objectName !== 'Individual' || (int) self::$transitionedVolunteerId !== (int) $objectRef->id) {
       return FALSE;
     }
