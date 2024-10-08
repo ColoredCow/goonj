@@ -153,10 +153,17 @@ class CRM_Goonjcustom_Token_CollectionCamp extends AbstractTokenSubscriber {
       ->addJoin('Phone AS phone', 'LEFT')
       ->addWhere('phone.is_primary', '=', TRUE)
       ->addWhere('id', 'IN', $volunteerIds)
+      ->addOrderBy('created_date', 'ASC')
       ->execute();
 
+    $volunteersArray = $volunteers->jsonSerialize();
+
+    usort($volunteersArray, function($a, $b) use ($volunteerIds) {
+        return array_search($a['id'], $volunteerIds) - array_search($b['id'], $volunteerIds);
+    });
+
     $volunteersWithPhone = array_map(
-        fn ($volunteer) => sprintf('%1$s (%2$s)', $volunteer['display_name'], $volunteer['phone.phone']), $volunteers->jsonSerialize()
+        fn ($volunteer) => sprintf('%1$s (%2$s)', $volunteer['display_name'], $volunteer['phone.phone']), $volunteersArray
     );
 
     return join(',', $volunteersWithPhone);

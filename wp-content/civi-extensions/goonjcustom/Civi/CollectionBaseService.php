@@ -157,7 +157,7 @@ class CollectionBaseService extends AutoSubscriber {
    */
   public static function html2image($htmlContent, $outputPath) {
     $nodePath = NODE_PATH;
-    $puppeteerJsPath = escapeshellarg(\CRM_Goonjcustom_ExtensionUtil::path('/js/puppeteer.js'));
+    $puppeteerJsPath = escapeshellarg(\CRM_Goonjcustom_ExtensionUtil::path('js/puppeteer.js'));
     $htmlContent = escapeshellarg($htmlContent);
 
     $command = "$nodePath $puppeteerJsPath $htmlContent $outputPath";
