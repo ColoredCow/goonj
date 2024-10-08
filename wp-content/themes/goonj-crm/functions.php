@@ -135,6 +135,8 @@ function goonj_handle_user_identification_form() {
 	$purpose = $_POST['purpose'] ?? 'collection-camp-intent';
 	$target_id = $_POST['target_id'] ?? '';
 	$source = $_POST['source'] ?? '';
+	$state = $_POST['state'] ?? '';
+	$city = $_POST['city'] ?? '';
 
 	// Retrieve the email and phone number from the POST data
 	$email = $_POST['email'] ?? '';
@@ -206,11 +208,13 @@ function goonj_handle_user_identification_form() {
 				// Redirect to individual registration with option for volunteering.
 				case 'material-contribution':
 					$individual_volunteer_registration_form_path = sprintf(
-						'/individual-registration-with-volunteer-option/#?email=%s&phone=%s&source=%s&Individual_fields.Creation_Flow=%s',
+						'/individual-registration-with-volunteer-option/#?email=%s&phone=%s&source=%s&Individual_fields.Creation_Flow=%s&state_province_id=%s&city=%s',
 						$email,
 						$phone,
 						$source,
 						'material-contribution',
+						$state,
+						$city
 					);
 					$redirect_url = $individual_volunteer_registration_form_path;
 					break;
@@ -500,7 +504,8 @@ add_shortcode( 'goonj_collection_landing_page', 'goonj_collection_camp_landing_p
 
 add_filter( 'query_vars', 'goonj_query_vars' );
 function goonj_query_vars( $vars ) {
-	$vars[] = 'target_id';
+    $vars[] = 'state_province_id';
+    $vars[] = 'city';
 	return $vars;
 }
 

@@ -15,14 +15,18 @@ $headings = array(
 $heading_text = $headings[ $target ];
 
 $register_link = sprintf(
-	'/individual-registration-with-volunteer-option/#?source=%s',
+	'/individual-registration-with-volunteer-option/#?source=%s&state_province_id=%s&city=%s',
 	$action_target['title'],
+	$action_target['Collection_Camp_Intent_Details.State'],
+	$action_target['Collection_Camp_Intent_Details.City']
 );
 
 $material_contribution_link = sprintf(
-	'/collection-camp-contribution?source=%s&target_id=%s',
+	'/collection-camp-contribution?source=%s&target_id=%s&state_province_id=%s&city=%s',
 	$action_target['title'],
 	$action_target['id'],
+	$state = $action_target['Collection_Camp_Intent_Details.State'],
+	$action_target['Collection_Camp_Intent_Details.City']
 );
 
 $pu_visit_check_link = sprintf(
