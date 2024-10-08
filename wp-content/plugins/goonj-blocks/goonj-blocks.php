@@ -86,6 +86,8 @@ function gb_goonj_blocks_check_action_target_exists() {
 		'Collection_Camp_Intent_Details.Start_Date',
 		'Collection_Camp_Intent_Details.End_Date',
 		'Collection_Camp_Intent_Details.Location_Area_of_camp',
+		'Collection_Camp_Intent_Details.City',
+		'Collection_Camp_Intent_Details.State',
 	);
 
 	switch ( $target ) {
