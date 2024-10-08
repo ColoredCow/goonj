@@ -500,7 +500,12 @@ class CollectionCampService extends AutoSubscriber {
     $currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
     $collectionCampId = $currentCollectionCamp['id'];
     $collectionCampSubtype = $currentCollectionCamp['subtype:name'];
-    
+
+    if (empty($collectionCampSubtype)) {
+      \Civi::log()->warning('Collection camp subtype is not set or is empty for Collection Camp ID: ' . $collectionCampId);
+      return;
+    }
+
     // Check for status change.
     if ($currentStatus !== $newStatus) {
       if ($newStatus === 'authorized') {
