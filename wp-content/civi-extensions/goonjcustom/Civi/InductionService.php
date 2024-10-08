@@ -232,17 +232,17 @@ class InductionService extends AutoSubscriber {
           'weight' => 1,
         ]);
 
-      \Civi::log()->info('Induction email queued for contact', ['contactId' => $params['contactId']]);
+      \Civi::log()->info('Induction email queued for contact', ['contactId' => $params['contact_id']]);
     }
     catch (\CRM_Core_Exception $ex) {
       \Civi::log()->error('Failed to queue induction email due to CiviCRM error', [
-        'contactId' => $params['contactId'],
+        'contactId' => $params['contact_id'],
         'error' => $ex->getMessage(),
       ]);
     }
     catch (\Exception $ex) {
       \Civi::log()->error('Unexpected error while queueing induction email', [
-        'contactId' => $params['contactId'],
+        'contactId' => $params['contact_id'],
         'error' => $ex->getMessage(),
       ]);
     }
@@ -258,13 +258,13 @@ class InductionService extends AutoSubscriber {
         throw new \CRM_Core_Exception($result['error_message']);
       }
       \Civi::log()->info('Successfully sent queued induction email', [
-        'contactId' => $params['contactId'],
+        'contactId' => $params['contact_id'],
       ]);
       return TRUE;
     }
     catch (\Exception $ex) {
       \Civi::log()->error('Failed to send queued induction email', [
-        'contactId' => $params['contactId'],
+        'contactId' => $params['contact_id'],
         'error' => $ex->getMessage(),
       ]);
       // Rethrow the exception for the queue system to handle.
