@@ -48,7 +48,6 @@ function civicrm_api3_goonjcustom_collection_camp_outcome_reminder_cron($params)
     ->addWhere('Camp_Outcome.Rate_the_camp', 'IS NULL')
     ->addWhere('Collection_Camp_Core_Details.Status', '=', 'authorized')
     ->addWhere('Collection_Camp_Intent_Details.End_Date', '<=', $endOfDay)
-    ->setLimit(25)
     ->execute();
 
   foreach ($collectionCamps as $camp) {
