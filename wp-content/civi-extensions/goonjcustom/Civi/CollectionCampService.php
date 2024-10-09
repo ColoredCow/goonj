@@ -538,18 +538,24 @@ class CollectionCampService extends AutoSubscriber {
     try {
       $collectionCampId = $objectRef->id;
       $collectionCamp = EckEntity::get('Collection_Camp', TRUE)
-        ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_QR_Code.QR_Code')
+        ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_QR_Code.QR_Code', 'subtype:name')
         ->addWhere('id', '=', $collectionCampId)
         ->execute()->single();
 
       $status = $collectionCamp['Collection_Camp_Core_Details.Status'];
       $collectionCampQr = $collectionCamp['Collection_Camp_QR_Code.QR_Code'];
+      $collectionCampSubtype = $collectionCamp['subtype:name'];
 
+      if (empty($collectionCampSubtype)) {
+        \Civi::log()->error('Collection camp subtype is not set or is empty for Collection Camp ID: ' . $collectionCampId);
+        return;
+      }
+      
       if ($status !== 'authorized' || $collectionCampQr !== NULL) {
         return;
       }
 
-      self::generateQrCode($collectionCampId);
+      QrCodeService::generateQrCode($collectionCampId, $collectionCampSubtype);
 
     }
     catch (\Exception $e) {
