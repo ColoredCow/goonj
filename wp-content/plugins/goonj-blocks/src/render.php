@@ -15,7 +15,7 @@ $headings = array(
 $heading_text = $headings[ $target ];
 
 $register_link = sprintf(
-	'/individual-registration-with-volunteer-option/#?source=%s&state_province_id=%s&city=%s',
+	'/volunteer-registration/form/#?source=%s&state_province_id=%s&city=%s',
 	$action_target['title'],
 	$action_target['Collection_Camp_Intent_Details.State'];
 	$action_target['Collection_Camp_Intent_Details.City'];
