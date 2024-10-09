@@ -480,7 +480,7 @@ class CollectionBaseService extends AutoSubscriber {
         $emailParams['attachments'][] = [
           'fullPath' => $filePath,
           'mime_type' => $file['mime_type'],
-          'cleanName' => $file['uri'],
+          'cleanName' => "collection_camp_{$collectionSourceId}.png",
         ];
       }
 
