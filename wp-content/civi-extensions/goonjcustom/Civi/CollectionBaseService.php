@@ -98,7 +98,7 @@ class CollectionBaseService extends AutoSubscriber {
     ],
     );
 
-    $baseFileName = "poster_{$collectionSourceId}.png";
+    $baseFileName = "collection_camp_{$collectionSourceId}.png";
     $fileName = \CRM_Utils_File::makeFileName($baseFileName);
     $tempFilePath = \CRM_Utils_File::tempnam($baseFileName);
 
@@ -126,7 +126,7 @@ class CollectionBaseService extends AutoSubscriber {
     // Save the poster image as an attachment linked to the collection camp.
     $params = [
       'entity_id' => $collectionSourceId,
-      'name' => $fileName,
+      'name' => $baseFileName,
       'mime_type' => 'image/png',
       'field_name' => $posterFieldId,
       'options' => [
