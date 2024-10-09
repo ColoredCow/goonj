@@ -139,7 +139,7 @@ function goonj_handle_user_identification_form() {
 	// Retrieve the email and phone number from the POST data
 	$email = $_POST['email'] ?? '';
 	$phone = $_POST['phone'] ?? '';
-	$state = $_POST['state_id'] ?? '';
+	$state_id = $_POST['state_id'] ?? '';
 	$city = $_POST['city'] ?? '';
 
 	$is_purpose_requiring_email = ! in_array( $purpose, array( 'material-contribution', 'processing-center-office-visit', 'processing-center-material-contribution' ) );
@@ -213,8 +213,8 @@ function goonj_handle_user_identification_form() {
 						$phone,
 						$source,
 						'material-contribution',
-						$state,
-						$city
+						sanitize_text_field($state_id),
+						sanitize_text_field($city)
 					);
 					$redirect_url = $individual_volunteer_registration_form_path;
 					break;
