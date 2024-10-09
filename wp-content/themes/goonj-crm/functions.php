@@ -140,7 +140,7 @@ function goonj_handle_user_identification_form() {
 	$email = $_POST['email'] ?? '';
 	$phone = $_POST['phone'] ?? '';
 	$state = $_POST['state_id'] ?? '';
-	$city = $_POST['city_id'] ?? '';
+	$city = $_POST['city'] ?? '';
 
 	$is_purpose_requiring_email = ! in_array( $purpose, array( 'material-contribution', 'processing-center-office-visit', 'processing-center-material-contribution' ) );
 
