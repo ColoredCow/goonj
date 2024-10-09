@@ -17,16 +17,16 @@ $heading_text = $headings[ $target ];
 $register_link = sprintf(
 	'/volunteer-registration/form/#?source=%s&state_province_id=%s&city=%s',
 	$action_target['title'],
-	$action_target['Collection_Camp_Intent_Details.State'];
-	$action_target['Collection_Camp_Intent_Details.City'];
+	$action_target['Collection_Camp_Intent_Details.State'],
+	$action_target['Collection_Camp_Intent_Details.City'],
 );
 
 $material_contribution_link = sprintf(
 	'/collection-camp-contribution?source=%s&target_id=%s&state_province_id=%s&city=%s',
 	$action_target['title'],
 	$action_target['id'],
-	$action_target['Collection_Camp_Intent_Details.State'];
-	$action_target['Collection_Camp_Intent_Details.City'];
+	$action_target['Collection_Camp_Intent_Details.State'],
+	$action_target['Collection_Camp_Intent_Details.City'],
 );
 
 $pu_visit_check_link = sprintf(
