@@ -108,9 +108,7 @@ class CollectionBaseService extends AutoSubscriber {
       'collectionSourceCustomData' => self::$generatePosterRequest['customData'],
     ],
     );
-
-    $baseFileName = "poster_{$collectionSourceId}.png";
-    $fileName = \CRM_Utils_File::makeFileName($baseFileName);
+    $baseFileName = "CollectionCampPoster_{$collectionSourceId}.png";
     $tempFilePath = \CRM_Utils_File::tempnam($baseFileName);
 
     $posterGenerated = self::html2image($rendered['html'], $tempFilePath);
@@ -137,7 +135,7 @@ class CollectionBaseService extends AutoSubscriber {
     // Save the poster image as an attachment linked to the collection camp.
     $params = [
       'entity_id' => $collectionSourceId,
-      'name' => $fileName,
+      'name' => $baseFileName,
       'mime_type' => 'image/png',
       'field_name' => $posterFieldId,
       'options' => [
