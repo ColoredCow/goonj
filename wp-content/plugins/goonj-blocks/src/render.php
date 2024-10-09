@@ -52,11 +52,21 @@ if ( in_array( $target, array( 'collection-camp', 'dropping-center' ) ) ) :
 		<tbody>
 			<tr class="wp-block-gb-table-row">
 				<td class="wp-block-gb-table-cell wp-block-gb-table-header">From</td>
-				<td class="wp-block-gb-table-cell"><?php echo $start_date->format( 'd-m-Y h:i A' ); ?></td>
+				<td class="wp-block-gb-table-cell">
+					<?php echo $start_date->format('d-m-Y'); ?>
+				</td>
 			</tr>
 			<tr class="wp-block-gb-table-row">
 				<td class="wp-block-gb-table-cell wp-block-gb-table-header">To</td>
-				<td class="wp-block-gb-table-cell"><?php echo $end_date->format( 'd-m-Y h:i A' ); ?></td>
+				<td class="wp-block-gb-table-cell">
+					<?php echo $end_date->format('d-m-Y'); ?>
+				</td>
+			</tr>
+			<tr class="wp-block-gb-table-row">
+				<td class="wp-block-gb-table-cell wp-block-gb-table-header">Time</td>
+				<td class="wp-block-gb-table-cell">
+					<?php echo $start_date->format('h:i A') . ' - ' . $end_date->format('h:i A'); ?>
+				</td>
 			</tr>
 			<tr class="wp-block-gb-table-row">
 				<td class="wp-block-gb-table-cell wp-block-gb-table-header">Address of the camp</td>
