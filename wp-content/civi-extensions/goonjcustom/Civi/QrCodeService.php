@@ -98,7 +98,7 @@ class QrCodeService extends AutoSubscriber {
       $attachmentUrl = $attachment['url'];
 
     }
-    catch (\CiviCRM_API3_Exception $e) {
+    catch (\Exception $e) {
       \CRM_Core_Error::debug_log_message('Error generating QR code: ' . $e->getMessage());
       return FALSE;
     }
