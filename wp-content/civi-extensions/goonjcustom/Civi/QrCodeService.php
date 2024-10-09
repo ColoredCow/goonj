@@ -89,7 +89,7 @@ class QrCodeService extends AutoSubscriber {
 
       $result = civicrm_api3('Attachment', 'create', $params);
 
-      if (empty($result['id'])) {
+      if (!empty($result['is_error'])) {
         \CRM_Core_Error::debug_log_message('Failed to create attachment for collection camp ID ' . $collectionCampId);
         return FALSE;
       }
