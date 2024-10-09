@@ -349,7 +349,7 @@ class CollectionCampService extends AutoSubscriber {
 
         // Fetch the Goonj-specific state code.
         $config = self::getConfig();
-        $stateCode = $config['state_codes'][$stateAbbreviation] ?? 'UNKNOWN';
+        $stateCode = $config['state_codes']['STATE_CODES'][$stateAbbreviation] ?? 'UNKNOWN';
 
         // Get the current event title.
         $currentTitle = $objectRef['title'] ?? 'Collection Camp';

@@ -2,13 +2,14 @@
 /**
  * Theme file to Design User Identification form
  */
-require_once 'Constants.php';
+
+$constantData = require_once 'wp-content/civi-extensions/goonjcustom/config/constants.php';
 
 $purpose = $args['purpose'];
 $target_id = get_query_var('target_id', '');
 $source = get_query_var('source', '');
 
-$is_purpose_not_requiring_email = in_array($purpose, PURPOSES_NOT_REQUIRING_EMAIL);
+$is_purpose_not_requiring_email = !in_array($purpose, $constantData['PURPOSES_NOT_REQUIRING_EMAIL']);
 ?>
 
 <div class="text-center w-xl-520 m-auto">
@@ -19,8 +20,8 @@ $is_purpose_not_requiring_email = in_array($purpose, PURPOSES_NOT_REQUIRING_EMAI
         <input type="hidden" name="target_id" value="<?php echo esc_attr($target_id); ?>" />
         <input type="hidden" name="source" value="<?php echo esc_attr($source); ?>" />
             <div class="d-grid">
-                <label class="font-sans" for="email">Email <?php if ($is_purpose_requiring_email) : ?><span class="required-indicator">*</span><?php endif; ?></label>
-                <input type="email" id="email" name="email" <?php echo $is_purpose_requiring_email ? 'required' : ''; ?> value="<?php echo isset($_POST['email']) ? esc_attr(sanitize_email($_POST['email'])) : ''; ?>">
+                <label class="font-sans" for="email">Email <?php if ($is_purpose_not_requiring_email) : ?><span class="required-indicator">*</span><?php endif; ?></label>
+                <input type="email" id="email" name="email" <?php echo $is_purpose_not_requiring_email ? 'required' : ''; ?> value="<?php echo isset($_POST['email']) ? esc_attr(sanitize_email($_POST['email'])) : ''; ?>">
             </div>
             <br>
             <div class="d-grid">
