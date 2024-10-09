@@ -17,18 +17,18 @@ $headings = [
 $heading_text = $headings[$target];
 
 $register_link = sprintf(
-	'/volunteer-registration/form/#?source=%s&state_province_id=%s&city=%s',
-	$action_target['title'],
-	$action_target['Collection_Camp_Intent_Details.State'],
-	$action_target['Collection_Camp_Intent_Details.City'],
+    '/volunteer-registration/form/#?source=%s&state_province_id=%s&city=%s',
+    $action_target['title'],
+    $action_target['Collection_Camp_Intent_Details.State'],
+    $action_target['Collection_Camp_Intent_Details.City'],
 );
 
 $material_contribution_link = sprintf(
-	'/collection-camp-contribution?source=%s&target_id=%s&state_province_id=%s&city=%s',
-	$action_target['title'],
-	$action_target['id'],
-	$action_target['Collection_Camp_Intent_Details.State'],
-	$action_target['Collection_Camp_Intent_Details.City'],
+    '/collection-camp-contribution?source=%s&target_id=%s&state_province_id=%s&city=%s',
+    $action_target['title'],
+    $action_target['id'],
+    $action_target['Collection_Camp_Intent_Details.State'],
+    $action_target['Collection_Camp_Intent_Details.City'],
 );
 
 $dropping_center_material_contribution_link = sprintf(
@@ -38,35 +38,43 @@ $dropping_center_material_contribution_link = sprintf(
 );
 
 $pu_visit_check_link = sprintf(
-	'/processing-center/office-visit/?target_id=%s',
-	$action_target['id']
+    '/processing-center/office-visit/?target_id=%s',
+    $action_target['id']
 );
 
 $pu_material_contribution_check_link = sprintf(
-	'/processing-center/material-contribution/?target_id=%s',
-	$action_target['id']
+    '/processing-center/material-contribution/?target_id=%s',
+    $action_target['id']
 );
 
-if (in_array($target, ['collection-camp', 'dropping-center'])) :
+$target_config = [
+  'dropping-center' => [
+    'start_time' => 'Dropping_Centre.Start_Time',
+    'end_time' => 'Dropping_Centre.End_Time',
+    'address' => 'Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_',
+    'contribution_link' => $dropping_center_material_contribution_link,
+  ],
+  'collection-camp' => [
+    'start_time' => 'Collection_Camp_Intent_Details.Start_Date',
+    'end_time' => 'Collection_Camp_Intent_Details.End_Date',
+    'address' => 'Collection_Camp_Intent_Details.Location_Area_of_camp',
+    'contribution_link' => $material_contribution_link,
+  ],
+];
+
+
+if (isset($target_config[$target])) :
   try {
-    if ('dropping-center' === $target) {
-      $start_date        = new DateTime($action_target['Dropping_Centre.Start_Time']);
-      $end_date          = new DateTime($action_target['Dropping_Centre.End_Time']);
-      $address           = $action_target['Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_'];
-      $contribution_link = $dropping_center_material_contribution_link;
-    }
-    else {
-      $start_date        = new DateTime($action_target['Collection_Camp_Intent_Details.Start_Date']);
-      $end_date          = new DateTime($action_target['Collection_Camp_Intent_Details.End_Date']);
-      $address           = $action_target['Collection_Camp_Intent_Details.Location_Area_of_camp'];
-      $contribution_link = $material_contribution_link;
-    }
+    $config = $target_config[$target];
+    $start_date = new DateTime($action_target[$config['start_time']]);
+    $end_date = new DateTime($action_target[$config['end_time']]);
+    $address = $action_target[$config['address']];
+    $contribution_link = $config['contribution_link'];
   }
   catch (Exception $e) {
-    // Log the error and set fallback dates.
-    \Civi::log()->info('Invalid date format for start or end time', ['error' => $e->getMessage()]);
-    $start_date = new DateTime();
-    $end_date   = new DateTime();
+    \Civi::log()->error('Invalid date format for start or end time', ['error' => $e->getMessage(), 'target' => $target]);
+	echo '<div class="error">An error occurred. Please try again later.</div>';
+    return;
   }
   ?>
     <div class="wp-block-gb-heading-wrapper">
