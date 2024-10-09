@@ -30,6 +30,8 @@ class CollectionCampService extends AutoSubscriber {
   const ENTITY_NAME = 'Collection_Camp';
   const ENTITY_SUBTYPE_NAME = 'Collection_Camp';
   const MATERIAL_RELATIONSHIP_TYPE_NAME = 'Material Management Team of';
+  const DROPPING_CENTER_URL_PATTERN = "%sactions/dropping-center/%s";
+  const COLLECTION_CAMP_URL_PATTERN = "%sactions/collection-camp/%s";
 
   private static $individualId = NULL;
   private static $collectionCampAddress = NULL;
@@ -523,9 +525,9 @@ class CollectionCampService extends AutoSubscriber {
       $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
       
       if ($collectionCampSubtype === 'Dropping_Center') {
-        $url = "{$baseUrl}actions/dropping-center/{$collectionCampId}";
+        $url = sprintf(self::DROPPING_CENTER_URL_PATTERN, $baseUrl, $collectionCampId);
       } else {
-        $url = "{$baseUrl}actions/collection-camp/{$collectionCampId}";
+        $url = sprintf(self::COLLECTION_CAMP_URL_PATTERN, $baseUrl, $collectionCampId);
       }
 
       $options = new QROptions([
