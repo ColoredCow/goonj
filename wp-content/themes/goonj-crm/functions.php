@@ -142,7 +142,7 @@ function goonj_handle_user_identification_form() {
 	$state_id = $_POST['state_id'] ?? '';
 	$city = $_POST['city'] ?? '';
 
-	$is_purpose_requiring_email = ! in_array( $purpose, array( 'material-contribution', 'processing-center-office-visit', 'processing-center-material-contribution' ) );
+	$is_purpose_requiring_email = ! in_array( $purpose, array( 'material-contribution', 'processing-center-office-visit', 'processing-center-material-contribution', 'dropping-center-contribution') );
 
 	if ( empty( $phone ) || ( $is_purpose_requiring_email && empty( $email ) ) ) {
 		return;
@@ -274,9 +274,10 @@ function goonj_handle_user_identification_form() {
 			exit;
 		}
 
-		// If we are here, then it means for sure that the contact exists.
+		$allowedPurposes = ['material-contribution', 'dropping-center-contribution'];
 
-		if ( 'material-contribution' === $purpose ) {
+		// If we are here, then it means for sure that the contact exists.
+		if ( in_array( $purpose, $allowedPurposes ) ) {
 			$material_contribution_form_path = sprintf(
 				'/material-contribution/#?email=%s&phone=%s&Material_Contribution.Collection_Camp=%s&source_contact_id=%s',
 				$email,

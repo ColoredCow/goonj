@@ -30,6 +30,8 @@ class CollectionCampService extends AutoSubscriber {
   const ENTITY_NAME = 'Collection_Camp';
   const ENTITY_SUBTYPE_NAME = 'Collection_Camp';
   const MATERIAL_RELATIONSHIP_TYPE_NAME = 'Material Management Team of';
+  const DROPPING_CENTER_URL_PATTERN = "%sactions/dropping-center/%s";
+  const COLLECTION_CAMP_URL_PATTERN = "%sactions/collection-camp/%s";
 
   private static $individualId = NULL;
   private static $collectionCampAddress = NULL;
@@ -350,7 +352,7 @@ class CollectionCampService extends AutoSubscriber {
 
         // Fetch the Goonj-specific state code.
         $config = self::getConfig();
-        $stateCode = $config['state_codes'][$stateAbbreviation] ?? 'UNKNOWN';
+        $stateCode = $config['constant_data']['STATE_CODES'][$stateAbbreviation] ?? 'UNKNOWN';
 
         // Get the current event title.
         $currentTitle = $objectRef['title'] ?? 'Collection Camp';
@@ -383,7 +385,7 @@ class CollectionCampService extends AutoSubscriber {
 
     // Include and return the configuration files.
     return [
-      'state_codes' => include $extensionPath . 'constants.php',
+      'constant_data' => include $extensionPath . 'constants.php',
       'event_codes' => include $extensionPath . 'eventCode.php',
     ];
   }
@@ -493,18 +495,24 @@ class CollectionCampService extends AutoSubscriber {
     }
 
     $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
-      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id')
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id', 'subtype:name')
       ->addWhere('id', '=', $objectId)
       ->execute();
 
     $currentCollectionCamp = $collectionCamps->first();
     $currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
     $collectionCampId = $currentCollectionCamp['id'];
+    $collectionCampSubtype = $currentCollectionCamp['subtype:name'];
+
+    if (empty($collectionCampSubtype)) {
+      \Civi::log()->warning('Collection camp subtype is not set or is empty for Collection Camp ID: ' . $collectionCampId);
+      return;
+    }
 
     // Check for status change.
     if ($currentStatus !== $newStatus) {
       if ($newStatus === 'authorized') {
-        self::generateQrCode($collectionCampId);
+        self::generateQrCode($collectionCampId, $collectionCampSubtype);
       }
     }
   }
@@ -512,11 +520,16 @@ class CollectionCampService extends AutoSubscriber {
   /**
    *
    */
-  public static function generateQrCode($collectionCampId) {
+  public static function generateQrCode($collectionCampId, $collectionCampSubtype) {
 
     try {
       $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
-      $url = "{$baseUrl}actions/collection-camp/{$collectionCampId}";
+      
+      if ($collectionCampSubtype === 'Dropping_Center') {
+        $url = sprintf(self::DROPPING_CENTER_URL_PATTERN, $baseUrl, $collectionCampId);
+      } else {
+        $url = sprintf(self::COLLECTION_CAMP_URL_PATTERN, $baseUrl, $collectionCampId);
+      }
 
       $options = new QROptions([
         'version'    => 5,
