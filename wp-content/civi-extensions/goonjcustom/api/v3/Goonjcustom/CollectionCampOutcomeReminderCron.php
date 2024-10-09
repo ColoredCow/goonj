@@ -4,6 +4,7 @@
  * @file
  */
 
+use Civi\Api4\Contact;
 use Civi\Api4\EckEntity;
 
 /**
@@ -43,17 +44,28 @@ function civicrm_api3_goonjcustom_collection_camp_outcome_reminder_cron($params)
       'Logistics_Coordination.Camp_to_be_attended_by',
       'Collection_Camp_Intent_Details.End_Date',
       'Camp_Outcome.Last_Reminder_Sent',
-      'Camp_Outcome.Rate_the_camp'
+      'Camp_Outcome.Rate_the_camp',
+      'title',
+      'Collection_Camp_Intent_Details.Location_Area_of_camp',
     )
     ->addWhere('Camp_Outcome.Rate_the_camp', 'IS NULL')
+    ->addWhere('Logistics_Coordination.Email_Sent', '=', 1)
     ->addWhere('Collection_Camp_Core_Details.Status', '=', 'authorized')
     ->addWhere('Collection_Camp_Intent_Details.End_Date', '<=', $endOfDay)
     ->execute();
 
+  [$defaultFromName, $defaultFromEmail] = CRM_Core_BAO_Domain::getNameAndEmail();
+  $from = "\"$defaultFromName\" <$defaultFromEmail>";
+
   foreach ($collectionCamps as $camp) {
     try {
       $campAttendedById = $camp['Logistics_Coordination.Camp_to_be_attended_by'];
+      $endDateForCollectionCamp = $camp['Collection_Camp_Intent_Details.End_Date'];
       $endDate = new \DateTime($camp['Collection_Camp_Intent_Details.End_Date']);
+      $collectionCampId = $camp['id'];
+      $campCode = $camp['title'];
+      $campAddress = $camp['Collection_Camp_Intent_Details.Location_Area_of_camp'];
+
       $lastReminderSent = $camp['Camp_Outcome.Last_Reminder_Sent'] ? new \DateTime($camp['Camp_Outcome.Last_Reminder_Sent']) : NULL;
 
       // Calculate hours since camp ended.
@@ -67,10 +79,10 @@ function civicrm_api3_goonjcustom_collection_camp_outcome_reminder_cron($params)
         // Send the reminder email if the form is still not filled.
         if ($lastReminderSent === NULL || $hoursSinceLastReminder >= 24) {
           // Send the reminder email.
-          sendOutcomeReminderEmail($campAttendedById);
+          sendOutcomeReminderEmail($campAttendedById, $from, $campCode, $campAddress, $collectionCampId, $endDateForCollectionCamp);
 
           // Update the Last_Reminder_Sent field in the database.
-          EckEntity::get('Collection_Camp', TRUE)
+          EckEntity::update('Collection_Camp', TRUE)
             ->addWhere('id', '=', $camp['id'])
             ->addValue('Camp_Outcome.Last_Reminder_Sent', $today->format('Y-m-d H:i:s'))
             ->execute();
@@ -98,7 +110,7 @@ function civicrm_api3_goonjcustom_collection_camp_outcome_reminder_cron($params)
  *
  * @param int $campAttendedById
  */
-function sendOutcomeReminderEmail($campAttendedById) {
+function sendOutcomeReminderEmail($campAttendedById, $from, $campCode, $campAddress, $collectionCampId, $endDateForCollectionCamp) {
   $campAttendedBy = Contact::get(FALSE)
     ->addSelect('email.email', 'display_name')
     ->addJoin('Email AS email', 'LEFT')
@@ -106,13 +118,33 @@ function sendOutcomeReminderEmail($campAttendedById) {
     ->execute()->single();
 
   $attendeeEmail = $campAttendedBy['email.email'];
+  $attendeeName = $campAttendedBy['display_name'];
 
   // Prepare and send the email.
   $mailParams = [
+    'subject' => 'Reminder to fill the camp outcome form for ' . $campCode . ' at ' . $campAddress . ' on ' . $endDateForCollectionCamp,
+    'from' => $from,
     'toEmail' => $attendeeEmail,
-    'subject' => 'Reminder: Please complete the camp outcome form',
-    'body' => 'Dear Attendee, please fill out the outcome form for the recent collection camp you attended.',
+    'replyTo' => $from,
+    'html' => getOutcomeReminderEmailHtml($attendeeName, $collectionCampId, $campAttendedById),
   ];
 
   $emailSendResult = \CRM_Utils_Mail::send($mailParams);
+}
+
+/**
+ *
+ */
+function getOutcomeReminderEmailHtml($attendeeName, $collectionCampId, $campAttendedById) {
+  $homeUrl = \CRM_Utils_System::baseCMSURL();
+  $campOutcomeFormUrl = $homeUrl . '/camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $campAttendedById;
+  $html = "
+    <p>Dear $attendeeName,</p>
+    <p>This is a kind reminder to complete the Camp Outcome Form at the earliest. Your feedback is crucial in helping us assess the overall response and impact of the camp/drive.</p>
+    <p>You can access the form using the link below:</p>
+    <p><a href=\"$campOutcomeFormUrl\">Camp Outcome Form</a></p>
+    <p>We appreciate your cooperation.</p>
+    <p>Warm Regards,<br>Urban Relations Team</p>";
+
+  return $html;
 }
