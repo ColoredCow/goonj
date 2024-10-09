@@ -352,7 +352,7 @@ class CollectionCampService extends AutoSubscriber {
 
         // Fetch the Goonj-specific state code.
         $config = self::getConfig();
-        $stateCode = $config['state_codes']['STATE_CODES'][$stateAbbreviation] ?? 'UNKNOWN';
+        $stateCode = $config['constant_data']['STATE_CODES'][$stateAbbreviation] ?? 'UNKNOWN';
 
         // Get the current event title.
         $currentTitle = $objectRef['title'] ?? 'Collection Camp';
@@ -385,7 +385,7 @@ class CollectionCampService extends AutoSubscriber {
 
     // Include and return the configuration files.
     return [
-      'state_codes' => include $extensionPath . 'constants.php',
+      'constant_data' => include $extensionPath . 'constants.php',
       'event_codes' => include $extensionPath . 'eventCode.php',
     ];
   }
