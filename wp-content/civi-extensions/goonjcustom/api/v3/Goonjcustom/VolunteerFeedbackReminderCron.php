@@ -4,6 +4,10 @@
  * @file
  */
 
+use Civi\Api4\EckEntity;
+use Civi\CollectionCampVolunteerFeedbackService;
+use Civi\Api4\Contact;
+
 /**
  * Goonjcustom.VolunteerFeedbackReminderCron API specification (optional)
  * This is used for documentation and validation.
@@ -61,7 +65,7 @@ function civicrm_api3_goonjcustom_volunteer_feedback_reminder_cron($params) {
         ->execute()->single();
 
       $volunteerEmailId = $campAttendedBy['email.email'];
-      $organizingContactName = $campAttendedBy['display_name'];
+      $volunteerName = $campAttendedBy['display_name'];
 
       $endDate = new \DateTime($camp['Collection_Camp_Intent_Details.End_Date']);
       $collectionCampId = $camp['id'];
@@ -75,7 +79,7 @@ function civicrm_api3_goonjcustom_volunteer_feedback_reminder_cron($params) {
       // Check if feedback form is not filled and 24 hours have passed since camp end.
       if ($hoursSinceCampEnd >= 24 && ($lastReminderSent === NULL)) {
         // Send the first reminder email to the volunteer.
-        CollectionCampOutcomeService::sendVolunteerFeedbackReminderEmail($volunteerEmailId, $from, $campAddress, $collectionCampId, $endDate);
+        CollectionCampVolunteerFeedbackService::sendVolunteerFeedbackReminderEmail($volunteerEmailId, $from, $campAddress, $collectionCampId, $endDate, $volunteerName);
 
         // Update the Last_Reminder_Sent field in the database to avoid duplicate reminders.
         EckEntity::update('Collection_Camp', TRUE)
