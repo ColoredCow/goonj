@@ -54,19 +54,8 @@ class CollectionBaseService extends AutoSubscriber {
 
     $messageTemplateId = $params['Collection_Camp_Core_Details.Poster_Template'];
 
-    $currentCollectionSource = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('custom.*')
-      ->addWhere('id', '=', $id)
-      ->execute()->single();
-
-    $posterExists = !is_null($currentCollectionSource['Collection_Camp_Core_Details.Poster']);
-
-    if ($posterExists) {
-      return;
-    }
-
     self::$generatePosterRequest = [
-      'collectionSourceId' => $currentCollectionSource['id'],
+      'collectionSourceId' => $id,
       'messageTemplateId' => $messageTemplateId,
       'customData' => $params,
     ];
