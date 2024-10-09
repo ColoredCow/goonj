@@ -8,7 +8,7 @@ use Civi\Api4\EckEntity;
 use Civi\CollectionCampOutcomeService;
 
 /**
- * Goonjcustom.CollectionCampCron API specification (optional)
+ * Goonjcustom.CollectionCampOutcomeReminderCron API specification (optional)
  * This is used for documentation and validation.
  *
  * @param array $spec
@@ -21,7 +21,7 @@ function _civicrm_api3_goonjcustom_collection_camp_outcome_reminder_cron_spec(&$
 }
 
 /**
- * Goonjcustom.CollectionCampCron API.
+ * Goonjcustom.CollectionCampOutcomeReminderCron API.
  *
  * @param array $params
  *
