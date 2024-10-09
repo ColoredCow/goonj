@@ -13,20 +13,22 @@ $headings = array(
 );
 
 $heading_text = $headings[ $target ];
+$state = $action_target['Collection_Camp_Intent_Details.State'];
+$city = $action_target['Collection_Camp_Intent_Details.City'];
 
 $register_link = sprintf(
 	'/individual-registration-with-volunteer-option/#?source=%s&state_province_id=%s&city=%s',
 	$action_target['title'],
-	$action_target['Collection_Camp_Intent_Details.State'],
-	$action_target['Collection_Camp_Intent_Details.City']
+	$state,
+	$city
 );
 
 $material_contribution_link = sprintf(
 	'/collection-camp-contribution?source=%s&target_id=%s&state_province_id=%s&city=%s',
 	$action_target['title'],
 	$action_target['id'],
-	$state = $action_target['Collection_Camp_Intent_Details.State'],
-	$action_target['Collection_Camp_Intent_Details.City']
+	$state,
+	$city
 );
 
 $pu_visit_check_link = sprintf(
