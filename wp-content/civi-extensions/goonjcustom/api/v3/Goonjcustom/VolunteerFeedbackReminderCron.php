@@ -29,7 +29,6 @@ function _civicrm_api3_goonjcustom_volunteer_feedback_reminder_cron_spec(&$spec)
  *
  * @throws \CRM_Core_Exception
  */
-< ? php
 
 /**
  * Cron job to send reminder emails to volunteers who haven't filled the feedback form.
