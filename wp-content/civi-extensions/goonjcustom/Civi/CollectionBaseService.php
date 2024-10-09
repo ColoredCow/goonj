@@ -34,12 +34,12 @@ class CollectionBaseService extends AutoSubscriber {
       '&hook_civicrm_tabset' => 'collectionBaseTabset',
       '&hook_civicrm_selectWhereClause' => 'aclCollectionCamp',
       '&hook_civicrm_pre' => [
-        // ['handleAuthorizationEmails'],
+        ['handleAuthorizationEmails'],
         ['checkIfPosterNeedsToBeGenerated'],
       ],
       '&hook_civicrm_post' => [
         ['maybeGeneratePoster', 20],
-        // ['handleAuthorizationEmailsPost', 10],
+        ['handleAuthorizationEmailsPost', 10],
       ],
     ];
   }
@@ -54,19 +54,8 @@ class CollectionBaseService extends AutoSubscriber {
 
     $messageTemplateId = $params['Collection_Camp_Core_Details.Poster_Template'];
 
-    $currentCollectionSource = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('custom.*')
-      ->addWhere('id', '=', $id)
-      ->execute()->single();
-
-    $posterExists = !is_null($currentCollectionSource['Collection_Camp_Core_Details.Poster']);
-
-    if ($posterExists) {
-      return;
-    }
-
     self::$generatePosterRequest = [
-      'collectionSourceId' => $currentCollectionSource['id'],
+      'collectionSourceId' => $id,
       'messageTemplateId' => $messageTemplateId,
       'customData' => $params,
     ];
@@ -109,7 +98,7 @@ class CollectionBaseService extends AutoSubscriber {
     ],
     );
 
-    $baseFileName = "poster_{$collectionSourceId}.png";
+    $baseFileName = "collection_camp_{$collectionSourceId}.png";
     $fileName = \CRM_Utils_File::makeFileName($baseFileName);
     $tempFilePath = \CRM_Utils_File::tempnam($baseFileName);
 
@@ -137,7 +126,7 @@ class CollectionBaseService extends AutoSubscriber {
     // Save the poster image as an attachment linked to the collection camp.
     $params = [
       'entity_id' => $collectionSourceId,
-      'name' => $fileName,
+      'name' => $baseFileName,
       'mime_type' => 'image/png',
       'field_name' => $posterFieldId,
       'options' => [
@@ -157,7 +146,7 @@ class CollectionBaseService extends AutoSubscriber {
    */
   public static function html2image($htmlContent, $outputPath) {
     $nodePath = NODE_PATH;
-    $puppeteerJsPath = escapeshellarg(\CRM_Goonjcustom_ExtensionUtil::path('/js/puppeteer.js'));
+    $puppeteerJsPath = escapeshellarg(\CRM_Goonjcustom_ExtensionUtil::path('js/puppeteer.js'));
     $htmlContent = escapeshellarg($htmlContent);
 
     $command = "$nodePath $puppeteerJsPath $htmlContent $outputPath";
@@ -492,7 +481,7 @@ class CollectionBaseService extends AutoSubscriber {
         $emailParams['attachments'][] = [
           'fullPath' => $filePath,
           'mime_type' => $file['mime_type'],
-          'cleanName' => $file['uri'],
+          'cleanName' => "collection_camp_{$collectionSourceId}.png",
         ];
       }
 
