@@ -17,14 +17,18 @@ $headings = [
 $heading_text = $headings[$target];
 
 $register_link = sprintf(
-    '/individual-registration-with-volunteer-option/#?source=%s',
-    $action_target['title'],
+	'/volunteer-registration/form/#?source=%s&state_province_id=%s&city=%s',
+	$action_target['title'],
+	$action_target['Collection_Camp_Intent_Details.State'],
+	$action_target['Collection_Camp_Intent_Details.City'],
 );
 
 $material_contribution_link = sprintf(
-    '/collection-camp-contribution?source=%s&target_id=%s',
-    $action_target['title'],
-    $action_target['id'],
+	'/collection-camp-contribution?source=%s&target_id=%s&state_province_id=%s&city=%s',
+	$action_target['title'],
+	$action_target['id'],
+	$action_target['Collection_Camp_Intent_Details.State'],
+	$action_target['Collection_Camp_Intent_Details.City'],
 );
 
 $dropping_center_material_contribution_link = sprintf(
@@ -34,13 +38,13 @@ $dropping_center_material_contribution_link = sprintf(
 );
 
 $pu_visit_check_link = sprintf(
-    '/processing-center/office-visit/?target_id=%s',
-    $action_target['id']
+	'/processing-center/office-visit/?target_id=%s',
+	$action_target['id']
 );
 
 $pu_material_contribution_check_link = sprintf(
-    '/processing-center/material-contribution/?target_id=%s',
-    $action_target['id']
+	'/processing-center/material-contribution/?target_id=%s',
+	$action_target['id']
 );
 
 if (in_array($target, ['collection-camp', 'dropping-center'])) :
