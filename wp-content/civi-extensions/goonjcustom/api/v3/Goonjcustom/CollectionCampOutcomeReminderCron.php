@@ -54,40 +54,9 @@ function civicrm_api3_goonjcustom_collection_camp_outcome_reminder_cron($params)
     ->addWhere('Collection_Camp_Intent_Details.End_Date', '<=', $endOfDay)
     ->execute();
 
-  [$defaultFromName, $defaultFromEmail] = CRM_Core_BAO_Domain::getNameAndEmail();
-  $from = "\"$defaultFromName\" <$defaultFromEmail>";
-
   foreach ($collectionCamps as $camp) {
     try {
-      $campAttendedById = $camp['Logistics_Coordination.Camp_to_be_attended_by'];
-      $endDateForCollectionCamp = $camp['Collection_Camp_Intent_Details.End_Date'];
-      $endDate = new \DateTime($camp['Collection_Camp_Intent_Details.End_Date']);
-      $collectionCampId = $camp['id'];
-      $campCode = $camp['title'];
-      $campAddress = $camp['Collection_Camp_Intent_Details.Location_Area_of_camp'];
-
-      $lastReminderSent = $camp['Camp_Outcome.Last_Reminder_Sent'] ? new \DateTime($camp['Camp_Outcome.Last_Reminder_Sent']) : NULL;
-
-      // Calculate hours since camp ended.
-      $hoursSinceCampEnd = $today->diff($endDate)->h + ($today->diff($endDate)->days * 24);
-
-      // Calculate hours since last reminder was sent (if any)
-      $hoursSinceLastReminder = $lastReminderSent ? ($today->diff($lastReminderSent)->h + ($today->diff($lastReminderSent)->days * 24)) : NULL;
-
-      // Check if the outcome form is not filled and send the first reminder after 48 hours of camp end.
-      if ($hoursSinceCampEnd >= 48) {
-        // Send the reminder email if the form is still not filled.
-        if ($lastReminderSent === NULL || $hoursSinceLastReminder >= 24) {
-          // Send the reminder email.
-          CollectionCampOutcomeService::sendOutcomeReminderEmail($campAttendedById, $from, $campCode, $campAddress, $collectionCampId, $endDateForCollectionCamp);
-
-          // Update the Last_Reminder_Sent field in the database.
-          EckEntity::update('Collection_Camp', TRUE)
-            ->addWhere('id', '=', $camp['id'])
-            ->addValue('Camp_Outcome.Last_Reminder_Sent', $today->format('Y-m-d H:i:s'))
-            ->execute();
-        }
-      }
+      CollectionCampOutcomeService::processCampReminder($camp, $today);
     }
     catch (\Exception $e) {
       \Civi::log()->error('Error processing camp reminder', [
