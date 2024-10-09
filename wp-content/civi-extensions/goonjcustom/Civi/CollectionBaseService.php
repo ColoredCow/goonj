@@ -54,19 +54,8 @@ class CollectionBaseService extends AutoSubscriber {
 
     $messageTemplateId = $params['Collection_Camp_Core_Details.Poster_Template'];
 
-    $currentCollectionSource = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('custom.*')
-      ->addWhere('id', '=', $id)
-      ->execute()->single();
-
-    $posterExists = !is_null($currentCollectionSource['Collection_Camp_Core_Details.Poster']);
-
-    if ($posterExists) {
-      return;
-    }
-
     self::$generatePosterRequest = [
-      'collectionSourceId' => $currentCollectionSource['id'],
+      'collectionSourceId' => $id,
       'messageTemplateId' => $messageTemplateId,
       'customData' => $params,
     ];
@@ -109,7 +98,7 @@ class CollectionBaseService extends AutoSubscriber {
     ],
     );
 
-    $baseFileName = "poster_{$collectionSourceId}.png";
+    $baseFileName = "collection_camp_{$collectionSourceId}.png";
     $fileName = \CRM_Utils_File::makeFileName($baseFileName);
     $tempFilePath = \CRM_Utils_File::tempnam($baseFileName);
 
@@ -137,7 +126,7 @@ class CollectionBaseService extends AutoSubscriber {
     // Save the poster image as an attachment linked to the collection camp.
     $params = [
       'entity_id' => $collectionSourceId,
-      'name' => $fileName,
+      'name' => $baseFileName,
       'mime_type' => 'image/png',
       'field_name' => $posterFieldId,
       'options' => [
