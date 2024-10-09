@@ -65,14 +65,17 @@ function civicrm_api3_goonjcustom_collection_camp_outcome_reminder_cron($params)
       $collectionCampId = $camp['id'];
       $campCode = $camp['title'];
       $campAddress = $camp['Collection_Camp_Intent_Details.Location_Area_of_camp'];
+      error_log("collectionCampId: " . print_r($collectionCampId, TRUE));
 
       $lastReminderSent = $camp['Camp_Outcome.Last_Reminder_Sent'] ? new \DateTime($camp['Camp_Outcome.Last_Reminder_Sent']) : NULL;
 
       // Calculate hours since camp ended.
       $hoursSinceCampEnd = $today->diff($endDate)->h + ($today->diff($endDate)->days * 24);
+      error_log("hoursSinceCampEnd: " . print_r($hoursSinceCampEnd, TRUE));
 
       // Calculate hours since last reminder was sent (if any)
       $hoursSinceLastReminder = $lastReminderSent ? ($today->diff($lastReminderSent)->h + ($today->diff($lastReminderSent)->days * 24)) : NULL;
+      error_log("hoursSinceLastReminder: " . print_r($hoursSinceLastReminder, TRUE));
 
       // Check if the outcome form is not filled and send the first reminder after 48 hours of camp end.
       if ($hoursSinceCampEnd >= 48) {
@@ -130,6 +133,14 @@ function sendOutcomeReminderEmail($campAttendedById, $from, $campCode, $campAddr
   ];
 
   $emailSendResult = \CRM_Utils_Mail::send($mailParams);
+
+  if (!$emailSendResult) {
+    \Civi::log()->error('Failed to send reminder email', [
+      'campAttendedById' => $campAttendedById,
+      'attendeeEmail' => $attendeeEmail,
+    ]);
+    throw new \CRM_Core_Exception('Failed to send reminder email');
+  }
 }
 
 /**
