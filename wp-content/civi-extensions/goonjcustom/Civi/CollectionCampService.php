@@ -19,12 +19,14 @@ use Civi\Api4\Relationship;
 use Civi\Api4\StateProvince;
 use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
-use Civi\QrCodeable;
+use Civi\Traits\QrCodeable;
 
 /**
  *
  */
 class CollectionCampService extends AutoSubscriber {
+  use QrCodeable;
+
   const FALLBACK_OFFICE_NAME = 'Delhi';
   const RELATIONSHIP_TYPE_NAME = 'Collection Camp Coordinator of';
   const COLLECTION_CAMP_INTENT_FB_NAME = 'afformCollectionCampIntentDetails';
@@ -505,7 +507,15 @@ class CollectionCampService extends AutoSubscriber {
     // Check for status change.
     if ($currentStatus !== $newStatus) {
       if ($newStatus === 'authorized') {
-        QrCodeable::generateQrCode($collectionCampId);
+        $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+        $data = "{$baseUrl}actions/collection-camp/{$collectionCampId}";
+
+      $saveOptions = [
+        // dummy options
+        'custom_group_name' => 'Collection_Camp_QR_Code',
+      ];
+  
+        self::generateQrCode($data, $collectionCampId, $saveOptions);
       }
     }
   }
@@ -542,7 +552,15 @@ class CollectionCampService extends AutoSubscriber {
         return;
       }
 
-      QrCodeable::generateQrCode($collectionCampId);
+      $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+      $data = "{$baseUrl}actions/collection-camp/{$collectionCampId}";
+
+      // dummy options
+      $saveOptions = [
+        'custom_group_name' => 'Collection_Camp_QR_Code',
+      ];
+  
+      self::generateQrCode($data, $collectionCampId, $saveOptions);
 
     }
     catch (\Exception $e) {
