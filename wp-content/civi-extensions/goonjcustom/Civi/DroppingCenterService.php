@@ -5,14 +5,19 @@ namespace Civi;
 use Civi\Api4\EckEntity;
 use Civi\Api4\OptionValue;
 use Civi\Core\Service\AutoSubscriber;
+use Civi\Traits\QrCodeable;
 
 /**
  *
  */
 class DroppingCenterService extends AutoSubscriber {
+  use QrCodeable;
 
   const ENTITY_NAME = 'Collection_Camp';
   const ENTITY_SUBTYPE_NAME = 'Dropping_Center';
+
+
+  private static $subtypeId;
 
   /**
    *
@@ -20,7 +25,64 @@ class DroppingCenterService extends AutoSubscriber {
   public static function getSubscribedEvents() {
     return [
       '&hook_civicrm_tabset' => 'droppingCenterTabset',
+      '&hook_civicrm_pre' => 'generateDroppingCenterQr',
     ];
+  }
+
+  /**
+   *
+   */
+  private static function isDroppingCenterSubtype($objectRef) {
+    // @todo need to remove from here.
+    self::init();
+    return (int) $objectRef['subtype'] === self::$subtypeId;
+  }
+
+  /**
+   *
+   */
+  public static function generateDroppingCenterQr(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($objectName != 'Eck_Collection_Camp' || !$objectId || self::isDroppingCenterSubtype($objectRef)) {
+      return;
+    }
+
+    $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
+
+    if (!$newStatus) {
+      return;
+    }
+
+    $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id')
+      ->addWhere('id', '=', $objectId)
+      ->execute();
+
+    $currentCollectionCamp = $collectionCamps->first();
+    $currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
+    $collectionCampId = $currentCollectionCamp['id'];
+
+    // Check for status change.
+    if ($currentStatus !== $newStatus) {
+      if ($newStatus === 'authorized') {
+        self::generateDroppingCenterQrCode($collectionCampId);
+      }
+    }
+  }
+
+  /**
+   *
+   */
+  private static function generateDroppingCenterQrCode($id) {
+    $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+    $data = "{$baseUrl}actions/dropping-center/{$id}";
+
+    $saveOptions = [
+      'customGroupName' => 'Collection_Camp_QR_Code',
+      'customFieldName' => 'QR_Code',
+    ];
+
+    self::generateQrCode($data, $id, $saveOptions);
+
   }
 
   /**
@@ -114,6 +176,18 @@ class DroppingCenterService extends AutoSubscriber {
     }
 
     return TRUE;
+  }
+
+  /**
+   *
+   */
+  public static function init() {
+    $subtype = OptionValue::get(FALSE)
+      ->addWhere('grouping', '=', self::ENTITY_NAME)
+      ->addWhere('name', '=', self::ENTITY_SUBTYPE_NAME)
+      ->execute()->single();
+    self::$subtypeId = (int) $subtype['value'];
+
   }
 
 }
