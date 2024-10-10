@@ -135,7 +135,6 @@ class MaterialContributionService extends AutoSubscriber {
             ->addWhere('id', '=', $goonjOfficeId)
             ->execute()->single();
 
-        // Check if organization is found and if 'address_primary.city' exists
         if ($organization && isset($organization['address_primary.city'])) {
             $city = $organization['address_primary.city'];
         }
