@@ -4,8 +4,6 @@ namespace Civi;
 
 require_once __DIR__ . '/../../../../wp-content/civi-extensions/goonjcustom/vendor/autoload.php';
 
-use chillerlan\QRCode\QRCode;
-use chillerlan\QRCode\QROptions;
 use Civi\Afform\Event\AfformSubmitEvent;
 use Civi\Api4\Activity;
 use Civi\Api4\Contact;
@@ -19,12 +17,14 @@ use Civi\Api4\Relationship;
 use Civi\Api4\StateProvince;
 use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
-use Civi\QrCodeService;
+use Civi\Traits\QrCodeable;
 
 /**
  *
  */
 class CollectionCampService extends AutoSubscriber {
+  use QrCodeable;
+
   const FALLBACK_OFFICE_NAME = 'Delhi';
   const RELATIONSHIP_TYPE_NAME = 'Collection Camp Coordinator of';
   const COLLECTION_CAMP_INTENT_FB_NAME = 'afformCollectionCampIntentDetails';
@@ -35,6 +35,7 @@ class CollectionCampService extends AutoSubscriber {
   private static $individualId = NULL;
   private static $collectionCampAddress = NULL;
   private static $fromAddress = NULL;
+  private static $subtypeId;
 
   /**
    *
@@ -120,39 +121,22 @@ class CollectionCampService extends AutoSubscriber {
    *
    */
   private static function isViewingCollectionCamp($tabsetName, $context) {
+    // @todo need to remove from here.
+    self::init();
+
     if ($tabsetName !== 'civicrm/eck/entity' || empty($context) || $context['entity_type']['name'] !== self::ENTITY_NAME) {
       return FALSE;
     }
 
     $entityId = $context['entity_id'];
 
-    $entityResults = EckEntity::get(self::ENTITY_NAME, TRUE)
+    $entity = EckEntity::get(self::ENTITY_NAME, TRUE)
       ->addWhere('id', '=', $entityId)
-      ->execute();
-
-    $entity = $entityResults->first();
+      ->execute()->single();
 
     $entitySubtypeValue = $entity['subtype'];
 
-    $subtypeResults = OptionValue::get(TRUE)
-      ->addSelect('name')
-      ->addWhere('grouping', '=', self::ENTITY_NAME)
-      ->addWhere('value', '=', $entitySubtypeValue)
-      ->execute();
-
-    $subtype = $subtypeResults->first();
-
-    if (!$subtype) {
-      return FALSE;
-    }
-
-    $subtypeName = $subtype['name'];
-
-    if ($subtypeName !== self::ENTITY_SUBTYPE_NAME) {
-      return FALSE;
-    }
-
-    return TRUE;
+    return (int) $entitySubtypeValue === self::$subtypeId;
   }
 
   /**
@@ -440,7 +424,6 @@ class CollectionCampService extends AutoSubscriber {
     $contactId = $currentCollectionCamp['Collection_Camp_Core_Details.Contact_Id'];
     $collectionCampTitle = $currentCollectionCamp['title'];
     $collectionCampId = $currentCollectionCamp['id'];
-    $collectionCampSubtype = $currentCollectionCamp['subtype:name'];
 
     // Check for status change.
     if ($currentStatus !== $newStatus) {
@@ -472,6 +455,16 @@ class CollectionCampService extends AutoSubscriber {
   }
 
   /**
+   *
+   */
+  private static function isCollectionCampSubtype($objectRef) {
+    // @todo need to remove from here.
+    self::init();
+    $isSubtype = (int) $objectRef['subtype'] === self::$subtypeId;
+    return $isSubtype;
+  }
+
+  /**
    * This hook is called after a db write on entities.
    *
    * @param string $op
@@ -484,7 +477,8 @@ class CollectionCampService extends AutoSubscriber {
    *   The reference to the object.
    */
   public static function generateCollectionCampQr(string $op, string $objectName, $objectId, &$objectRef) {
-    if ($objectName != 'Eck_Collection_Camp' || !$objectId) {
+    $isCollectionCampSubtype = self::isCollectionCampSubtype($objectRef);
+    if ($objectName != 'Eck_Collection_Camp' || !$objectId || !$isCollectionCampSubtype) {
       return;
     }
 
@@ -495,26 +489,37 @@ class CollectionCampService extends AutoSubscriber {
     }
 
     $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
-      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id', 'subtype:name')
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id')
       ->addWhere('id', '=', $objectId)
       ->execute();
 
     $currentCollectionCamp = $collectionCamps->first();
     $currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
     $collectionCampId = $currentCollectionCamp['id'];
-    $collectionCampSubtype = $currentCollectionCamp['subtype:name'];
-
-    if (empty($collectionCampSubtype)) {
-      \Civi::log()->warning('Collection camp subtype is not set or is empty for Collection Camp ID: ' . $collectionCampId);
-      return;
-    }
 
     // Check for status change.
     if ($currentStatus !== $newStatus) {
       if ($newStatus === 'authorized') {
-        QrCodeService::generateQrCode($collectionCampId, $collectionCampSubtype);
+        self::generateCollectionCampQrCode($collectionCampId);
+
       }
     }
+  }
+
+  /**
+   *
+   */
+  private static function generateCollectionCampQrCode($id) {
+    $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+    $data = "{$baseUrl}actions/collection-camp/{$id}";
+
+    $saveOptions = [
+      'customGroupName' => 'Collection_Camp_QR_Code',
+      'customFieldName' => 'QR_Code',
+    ];
+
+    self::generateQrCode($data, $id, $saveOptions);
+
   }
 
   /**
@@ -538,24 +543,18 @@ class CollectionCampService extends AutoSubscriber {
     try {
       $collectionCampId = $objectRef->id;
       $collectionCamp = EckEntity::get('Collection_Camp', TRUE)
-        ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_QR_Code.QR_Code', 'subtype:name')
+        ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_QR_Code.QR_Code')
         ->addWhere('id', '=', $collectionCampId)
         ->execute()->single();
 
       $status = $collectionCamp['Collection_Camp_Core_Details.Status'];
       $collectionCampQr = $collectionCamp['Collection_Camp_QR_Code.QR_Code'];
-      $collectionCampSubtype = $collectionCamp['subtype:name'];
 
-      if (empty($collectionCampSubtype)) {
-        \Civi::log()->error('Collection camp subtype is not set or is empty for Collection Camp ID: ' . $collectionCampId);
-        return;
-      }
-      
       if ($status !== 'authorized' || $collectionCampQr !== NULL) {
         return;
       }
 
-      QrCodeService::generateQrCode($collectionCampId, $collectionCampSubtype);
+      self::generateCollectionCampQrCode($collectionCampId);
 
     }
     catch (\Exception $e) {
@@ -1148,6 +1147,19 @@ class CollectionCampService extends AutoSubscriber {
       ->addValue('Camp_Outcome.Number_of_Contributors', $contributorCount)
       ->addWhere('id', '=', $collectionCamp['id'])
       ->execute();
+  }
+
+  /**
+   *
+   */
+  public static function init() {
+    $subtype = OptionValue::get(FALSE)
+      ->addWhere('grouping', '=', self::ENTITY_NAME)
+      ->addWhere('name', '=', self::ENTITY_SUBTYPE_NAME)
+      ->execute()->single();
+
+    self::$subtypeId = (int) $subtype['value'];
+
   }
 
 }
