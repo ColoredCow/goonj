@@ -447,4 +447,101 @@ class InductionService extends AutoSubscriber {
     self::createInduction(self::$transitionedVolunteerId, $stateId);
   }
 
+  /**
+   * Process volunteer induction reminder logic.
+   *
+   * @param array $volunteer
+   * @param \DateTimeImmutable $today
+   *
+   * @throws \Exception
+   */
+  public static function processInductionReminder($volunteer, $today) {
+    $from = self::getDefaultFromEmail();
+    $volunteerId = $volunteer['id'];
+    $volunteerName = $volunteer['display_name'];
+    $volunteerEmail = $volunteer['email_primary.email'];
+    $registrationDate = new \DateTime($volunteer['created_date']);
+    $lastReminderSent = $volunteer['Volunteer_fields.Last_Reminder_Sent'] ? new \DateTime($volunteer['Volunteer_fields.Last_Reminder_Sent']) : NULL;
+
+    // Calculate hours since registration.
+    $hoursSinceRegistration = $today->diff($registrationDate)->h + ($today->diff($registrationDate)->days * 24);
+    error_log("hoursSinceRegistration: " . print_r($hoursSinceRegistration, TRUE));
+
+    // Calculate hours since last reminder was sent (if any)
+    $hoursSinceLastReminder = $lastReminderSent ? ($today->diff($lastReminderSent)->h + ($today->diff($lastReminderSent)->days * 24)) : NULL;
+    error_log("hoursSinceLastReminder: " . print_r($hoursSinceLastReminder, TRUE));
+
+    // Send the first reminder if one week (7 days = 168 hours) has passed since registration.
+    if ($hoursSinceRegistration >= 168) {
+      // Send the reminder email if it's the first one or 24 hours have passed since the last one.
+      if ($lastReminderSent === NULL || $hoursSinceLastReminder >= 24) {
+        // Send the reminder email.
+        self::sendInductionReminderEmail($volunteerId, $from, $volunteerName, $volunteerEmail);
+
+        // Update the Last_Reminder_Sent field in the database.
+        EckEntity::update('Volunteer_Induction', TRUE)
+          ->addWhere('id', '=', $volunteer['id'])
+          ->addValue('Volunteer_fields.Last_Reminder_Sent', $today->format('Y-m-d H:i:s'))
+          ->execute();
+      }
+    }
+  }
+
+  /**
+   * Send the reminder email to the volunteer.
+   */
+  public static function sendInductionReminderEmail($volunteerId, $from, $volunteerName, $volunteerEmail) {
+    $mailParams = [
+      'subject' => 'Complete Your Orientation & start Your Volunteering Journey!',
+      'from' => $from,
+      'toEmail' => $volunteerEmail,
+      'replyTo' => $from,
+      'html' => self::getInductionReminderEmailHtml($volunteerName),
+    ];
+
+    $emailSendResult = \CRM_Utils_Mail::send($mailParams);
+
+    if (!$emailSendResult) {
+      \Civi::log()->error('Failed to send induction reminder email', [
+        'volunteerId' => $volunteerId,
+        'volunteerEmail' => $volunteerEmail,
+      ]);
+      throw new \CRM_Core_Exception('Failed to send induction reminder email');
+    }
+  }
+
+  /**
+   * Generate the induction reminder email HTML.
+   */
+  public static function getInductionReminderEmailHtml($volunteerName) {
+    $homeUrl = \CRM_Utils_System::baseCMSURL();
+    $officeLocationsUrl = 'https://goonj.org/our-offices/';
+    $contactEmail = 'mail@goonj.org';
+    $contactPhone = '011-41401216';
+
+    $html = "
+    <p>Dear $volunteerName,</p>
+    <p>Greetings from Goonj.</p>
+    <p>We noticed that your orientation is still pending, and we would be happy to help you complete this important step.</p>
+    <p>You have two options for completing the orientation:</p>
+    <ul>
+      <li><strong>In-person orientation:</strong> Held every Tuesday, Thursday, and Saturday at 4 p.m. (except on gazetted holidays) at any of our Goonj offices: <a href=\"$officeLocationsUrl\">$officeLocationsUrl</a></li>
+      <li><strong>Online orientation:</strong> If there isn’t a Goonj office in your city, we offer virtual sessions every Wednesday at 4 p.m. (excluding gazetted holidays).</li>
+    </ul>
+    <p>Please reply to this email with your preferred option and a convenient date.</p>
+    <p>If you have any questions or need assistance, feel free to reach out to us at <a href=\"mailto:$contactEmail\">$contactEmail</a> or call us at $contactPhone.</p>
+    <p>We look forward to welcoming you and getting your volunteer journey started!</p>
+    <p>Warm regards,<br>Team Goonj</p>";
+
+    return $html;
+  }
+
+  /**
+   * Get default from email.
+   */
+  public static function getDefaultFromEmail() {
+    [$defaultFromName, $defaultFromEmail] = \CRM_Core_BAO_Domain::getNameAndEmail();
+    return "\"$defaultFromName\" <$defaultFromEmail>";
+  }
+
 }

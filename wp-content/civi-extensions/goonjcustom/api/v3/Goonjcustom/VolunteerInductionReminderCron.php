@@ -1,0 +1,57 @@
+<?php
+
+/**
+ * @file
+ */
+
+use Civi\Api4\Individual;
+use Civi\InductionService;
+
+/**
+ * Custom.VolunteerInductionReminderCron API specification.
+ *
+ * @param array $spec
+ */
+function _civicrm_api3_goonjcustom_volunteer_induction_reminder_cron_spec(&$spec) {
+  // No specific parameters for this cron job.
+}
+
+/**
+ * Custom.VolunteerInductionReminderCron API.
+ *
+ * @param array $params
+ *
+ * @return array API result descriptor
+ *
+ * @throws \CRM_Core_Exception
+ */
+function civicrm_api3_goonjcustom_volunteer_induction_reminder_cron($params) {
+  $returnValues = [];
+  $today = new DateTimeImmutable();
+  $endOfDay = $today->setTime(23, 59, 59)->format('Y-m-d H:i:s');
+
+  // Fetch volunteers who have registered but not scheduled an induction.
+  $volunteers = Individual::get(TRUE)
+    ->addSelect('created_date', 'display_name', 'email_primary.email', 'Volunteer_fields.Last_Reminder_Sent')
+    ->addJoin('Activity AS activity', 'LEFT')
+    ->addWhere('activity.activity_type_id', '=', 57)
+    ->addWhere('activity.status_id', '=', 9)
+    ->addWhere('contact_sub_type', '=', 'Volunteer')
+    ->addWhere('created_date', '<=', (new DateTime())->format('Y-m-d H:i:s'))
+    ->execute();
+
+  foreach ($volunteers as $volunteer) {
+    error_log("volunteer: " . print_r($volunteer, TRUE));
+    try {
+      InductionService::processInductionReminder($volunteer, $today);
+    }
+    catch (\Exception $e) {
+      \Civi::log()->error('Error processing volunteer induction reminder', [
+        'id' => $volunteer['id'],
+        'error' => $e->getMessage(),
+      ]);
+    }
+  }
+
+  return civicrm_api3_create_success($returnValues, $params, 'Goonjcustom', 'volunteer_induction_reminder_cron');
+}
