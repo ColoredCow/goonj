@@ -3,8 +3,7 @@
  * @see https://github.com/WordPress/gutenberg/blob/trunk/docs/reference-guides/block-api/block-metadata.md#render
  */
 
-define('DATE_FORMAT', 'd-m-Y');
-define('TIME_FORMAT', 'h:i A');
+require_once __DIR__ . '/functions.php';
 $target        = get_query_var( 'target' );
 $action_target = get_query_var( 'action_target' );
 
@@ -41,17 +40,6 @@ $pu_material_contribution_check_link = sprintf(
 	$action_target['id']
 );
 
-function format_date($date) {
-    return $date->format(DATE_FORMAT);
-}
-
-function format_time_range($start_date, $end_date) {
-    // if ($start_date->format('Y-m-d') !== $end_date->format('Y-m-d')) {
-    //     return $start_date->format(DATE_FORMAT . ' ' . TIME_FORMAT) . ' - ' . $end_date->format(DATE_FORMAT . ' ' . TIME_FORMAT);
-    // }
-    return $start_date->format(TIME_FORMAT) . ' - ' . $end_date->format(TIME_FORMAT);
-}
-
 if ( in_array( $target, array( 'collection-camp', 'dropping-center' ) ) ) :
 	$start_date = new DateTime( $action_target['Collection_Camp_Intent_Details.Start_Date'] );
 	$end_date   = new DateTime( $action_target['Collection_Camp_Intent_Details.End_Date'] );
@@ -65,11 +53,11 @@ if ( in_array( $target, array( 'collection-camp', 'dropping-center' ) ) ) :
         <tbody>
             <tr class="wp-block-gb-table-row">
                 <td class="wp-block-gb-table-cell wp-block-gb-table-header">From</td>
-                <td class="wp-block-gb-table-cell"><?php echo format_date($start_date); ?></td>
+                <td class="wp-block-gb-table-cell"><?php echo gb_format_date($start_date); ?></td>
             </tr>
             <tr class="wp-block-gb-table-row">
                 <td class="wp-block-gb-table-cell wp-block-gb-table-header">To</td>
-                <td class="wp-block-gb-table-cell"><?php echo format_date($end_date); ?></td>
+                <td class="wp-block-gb-table-cell"><?php echo gb_format_date($end_date); ?></td>
             </tr>
             <tr class="wp-block-gb-table-row">
                 <td class="wp-block-gb-table-cell wp-block-gb-table-header">Time</td>
