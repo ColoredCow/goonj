@@ -428,15 +428,12 @@ function goonj_custom_message_placeholder() {
 add_shortcode( 'goonj_volunteer_message', 'goonj_custom_message_placeholder' );
 
 function goonj_generate_button_html($buttonUrl, $buttonText) {
-    return sprintf(
-        '<div class="volunteer-button-container">
-            <a href="%s" class="wp-block-button__link has-white-color has-vivid-red-background-color has-text-color has-background has-link-color wp-element-button volunteer-button-link">
-                %s
-            </a>
-        </div>',
-        esc_url($buttonUrl),
-        esc_html($buttonText)
-    );
+    set_query_var('buttonUrl', $buttonUrl);
+    set_query_var('buttonText', $buttonText);
+
+    ob_start();
+    get_template_part('templates/button-template');
+    return ob_get_clean();
 }
 
 function goonj_contribution_volunteer_signup_button() {
@@ -498,123 +495,148 @@ function goonj_contribution_volunteer_signup_button() {
 add_shortcode('goonj_contribution_volunteer_signup_button', 'goonj_contribution_volunteer_signup_button');
 
 function goonj_pu_activity_button() {
-    $activityId = isset($_GET['activityId']) ? intval($_GET['activityId']) : 0;
+	$activityId = isset($_GET['activityId']) ? intval($_GET['activityId']) : 0;
 
-    if (empty($activityId)) {
-        \Civi::log()->warning('Activity ID is missing');
-        return;
-    }
+	if (empty($activityId)) {
+		\Civi::log()->info('Activity ID is missing', ['activityId'=>$activityId]);
+		return;
+	}
 
-    try {
-        // Fetch activity details
-        $activity = \Civi\Api4\Activity::get(FALSE)
-            ->addSelect('source_contact_id', 'Office_Visit.Goonj_Processing_Center', 'Material_Contribution.Goonj_Office', 'activity_type_id:label')
-            ->addJoin('ActivityContact AS activity_contact', 'LEFT')
-            ->addWhere('id', '=', $activityId)
-            ->execute()
-            ->first();
+	try {
+		// Fetch activity details
+		$activity = fetch_activity_details($activityId);
 
-        if (!$activity) {
-            \Civi::log()->info('No activities found for Activity ID:', ['activityId' => $activityId]);
-            return;
-        }
-
-        $individualId = $activity['source_contact_id'];
-        $activityTypeLabel = $activity['activity_type_id:label'];
-
-        // Mapping activity type labels to their respective Goonj Office fields
-        $officeMapping = [
-            'Material Contribution' => 'Material_Contribution.Goonj_Office',
-            'Office visit' => 'Office_Visit.Goonj_Processing_Center',
-        ];
-
-		// Determine the Goonj Office ID based on the activity type
-		$goonjOfficeId = null; // Initialize to null
-		if (array_key_exists($activityTypeLabel, $officeMapping)) {
-			$goonjOfficeId = $activity[$officeMapping[$activityTypeLabel]] ?? null; // Retrieve the office ID if it exists
+		if (!$activity) {
+			\Civi::log()->info('No activities found for Activity ID:', ['activityId' => $activityId]);
+			return;
 		}
 
-		// Handle case if Goonj Office ID is still null
+		$individualId = $activity['source_contact_id'];
+		$goonjOfficeId = get_goonj_office_id($activity);
+
 		if (is_null($goonjOfficeId)) {
-			\Civi::log()->warning('Goonj Office ID is null for Activity ID:', ['activityId' => $activityId]);
-			// Additional handling if needed (e.g., return or throw an error)
+			\Civi::log()->info('Goonj Office ID is null for Activity ID:', ['activityId'=>$activityId]);
+			return;
 		}
 
+		// Fetch user's activities for the day
+		$contactActivities = fetch_contact_activities_for_today($individualId);
 
-        // Define today's date range
-        $todayDate = date('Y-m-d');
-        $startOfDay = $todayDate . ' 00:00:00'; 
-        $endOfDay = $todayDate . ' 23:59:59';
+		// Process activities and check for office visits and material contributions
+		$officeActivities = process_activities($contactActivities);
 
-        // Fetch user's pu activities for the day
-        $fetchUserActivities = \Civi\Api4\Activity::get(FALSE)
-            ->addSelect('Office_Visit.Goonj_Processing_Center', 'activity_type_id:label', 'Material_Contribution.Goonj_Office')
-            ->addWhere('source_contact_id', '=', $individualId)
-            ->addWhere('activity_type_id:label', 'IN', ['Office visit', 'Material Contribution'])
-            ->addWhere('created_date', '>=', $startOfDay)
-            ->addWhere('created_date', '<=', $endOfDay)
-            ->execute();
+		// Check if both activity types exist for any office
+		if (check_if_both_activity_types_exist($officeActivities)) {
+			return; // Both activity types exist, no button needed
+		}
 
-        \Civi::log()->info('fetchUserActivities', ['fetchUserActivities' => $fetchUserActivities]);
+		// Generate redirect URL and button
+		return generate_activity_button($officeActivities, $goonjOfficeId, $individualId);
 
-        // Initialize flags for activity types and office activities array
-        $hasOfficeVisit = false;
-        $hasMaterialContribution = false;
-        $officeActivities = [];
-
-        // Single loop to process activities
-        foreach ($fetchUserActivities as $activity) {
-            $officeId = $activity['Office_Visit.Goonj_Processing_Center'] ?: $activity['Material_Contribution.Goonj_Office'];
-            $activityType = $activity['activity_type_id:label'];
-
-            // Track if both activity types exist and group by office ID
-            if ($officeId && in_array($activityType, ['Office visit', 'Material Contribution'])) {
-                $officeActivities[$officeId][] = $activityType;
-
-                if ($activityType === 'Office visit') {
-                    $hasOfficeVisit = true;
-                } elseif ($activityType === 'Material Contribution') {
-                    $hasMaterialContribution = true;
-                }
-            }
-        }
-
-        // Check if any office ID has both activity types
-        foreach ($officeActivities as $activityTypes) {
-            if (count(array_unique($activityTypes)) === 2) {
-                return; // Both activity types exist, no button needed
-            }
-        }
-
-        // Determine redirect path and button text
-        $redirectPath = '';
-        $buttonText = '';
-
-        if ($hasOfficeVisit) {
-            $redirectPath = '/material-contribution/details/';
-            $buttonText = 'Material Contribution';
-        } elseif ($hasMaterialContribution) {
-            $redirectPath = '/processing-center/material-contribution/details/';
-            $buttonText = 'Office Visit';
-        }
-
-        $redirectParams = [
-            'source_contact_id' => $individualId,
-            'Office_Visit.Goonj_Processing_Center' => $hasOfficeVisit ? $goonjOfficeId : null,
-            'Material_Contribution.Goonj_Office' => $hasMaterialContribution ? $goonjOfficeId : null,
-        ];
-
-        // Build redirect URL with parameters
-        $redirectPathWithParams = $redirectPath . '#?' . http_build_query(array_filter($redirectParams));
-
-        return goonj_generate_button_html($redirectPathWithParams, $buttonText);
-    } catch (\Exception $e) {
-        \Civi::log()->error('Error in goonj_pu_activity_button: ' . $e->getMessage());
-        return;
-    }
+	} catch (\Exception $e) {
+		\Civi::log()->error('Error in goonj_pu_activity_button: ' . $e->getMessage());
+		return;
+	}
 }
 
 add_shortcode('goonj_pu_activity_button', 'goonj_pu_activity_button');
+
+function fetch_activity_details($activityId) {
+	return \Civi\Api4\Activity::get(FALSE)
+		->addSelect('source_contact_id', 'Office_Visit.Goonj_Processing_Center', 'Material_Contribution.Goonj_Office', 'activity_type_id:label')
+		->addWhere('id', '=', $activityId)
+		->execute()
+		->first();
+}
+
+// Function to determine Goonj Office ID based on activity type
+function get_goonj_office_id($activity) {
+	$activityTypeLabel = $activity['activity_type_id:label'];
+	$officeMapping = [
+		'Material Contribution' => 'Material_Contribution.Goonj_Office',
+		'Office visit' => 'Office_Visit.Goonj_Processing_Center',
+	];
+
+	return array_key_exists($activityTypeLabel, $officeMapping) ? $activity[$officeMapping[$activityTypeLabel]] ?? null : null;
+}
+
+// Function to fetch user's activities for today
+function fetch_contact_activities_for_today($individualId) {
+	$todayDate = date('Y-m-d');
+	$startOfDay = $todayDate . ' 00:00:00'; 
+	$endOfDay = $todayDate . ' 23:59:59';
+
+	return \Civi\Api4\Activity::get(FALSE)
+		->addSelect('Office_Visit.Goonj_Processing_Center', 'activity_type_id:label', 'Material_Contribution.Goonj_Office')
+		->addWhere('source_contact_id', '=', $individualId)
+		->addWhere('activity_type_id:label', 'IN', ['Office visit', 'Material Contribution'])
+		->addWhere('created_date', '>=', $startOfDay)
+		->addWhere('created_date', '<=', $endOfDay)
+		->execute();
+}
+
+// Function to process activities and track office visits and material contributions
+function process_activities($activities) {
+	$officeActivities = [];
+	foreach ($activities as $activity) {
+		$officeId = $activity['Office_Visit.Goonj_Processing_Center'] ?: $activity['Material_Contribution.Goonj_Office'];
+		$activityType = $activity['activity_type_id:label'];
+
+		if ($officeId && in_array($activityType, ['Office visit', 'Material Contribution'])) {
+			$officeActivities[$officeId][] = $activityType;
+		}
+	}
+	return $officeActivities;
+}
+
+// Function to check if both activity types exist for any office
+function check_if_both_activity_types_exist($officeActivities) {
+	foreach ($officeActivities as $activityTypes) {
+		if (count(array_unique($activityTypes)) === 2) {
+			return true; // Both activity types exist
+		}
+	}
+	return false;
+}
+
+// Function to generate redirect URL and button
+function generate_activity_button($officeActivities, $goonjOfficeId, $individualId) {
+	$hasOfficeVisit = false;
+	$hasMaterialContribution = false;
+
+	// Check for office visit and material contribution activity types
+	foreach ($officeActivities as $activityTypes) {
+		if (in_array('Office visit', $activityTypes)) {
+			$hasOfficeVisit = true;
+		}
+		if (in_array('Material Contribution', $activityTypes)) {
+			$hasMaterialContribution = true;
+		}
+	}
+
+	$redirectPath = '';
+	$buttonText = '';
+
+	// Set the correct redirect path and button text based on activities completed
+	if ($hasOfficeVisit) {
+		$redirectPath = '/processing-center/material-contribution/details/';
+		$buttonText = 'Proceed to Material Contribution';
+	} elseif ($hasMaterialContribution) {
+		$redirectPath = '/processing-center/office-visit/details/';
+		$buttonText = 'Proceed to Office Visit';
+	}
+
+	$redirectParams = [
+		'source_contact_id' => $individualId,
+		'Material_Contribution.Goonj_Office' => $hasOfficeVisit ? $goonjOfficeId : null,
+		'Office_Visit.Goonj_Processing_Center' => $hasMaterialContribution ? $goonjOfficeId : null,
+	];
+
+	// Create the full URL with query parameters
+	$redirectPathWithParams = $redirectPath . '#?' . http_build_query(array_filter($redirectParams));
+
+	return goonj_generate_button_html($redirectPathWithParams, $buttonText);
+}
 
 function goonj_collection_camp_landing_page() {
 	ob_start();
