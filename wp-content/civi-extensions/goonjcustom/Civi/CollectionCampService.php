@@ -519,8 +519,8 @@ class CollectionCampService extends AutoSubscriber {
     $data = "{$baseUrl}actions/collection-camp/{$id}";
 
     $saveOptions = [
-        // Dummy options.
-      'custom_group_name' => 'Collection_Camp_QR_Code',
+      'customGroupName' => 'Collection_Camp_QR_Code',
+      'customFieldName' => 'QR_Code',
     ];
 
     self::generateQrCode($data, $id, $saveOptions);
