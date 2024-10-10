@@ -69,17 +69,8 @@ class MaterialContributionService extends AutoSubscriber {
     $contribution = $activities->first();
 
     $goonjOfficeId = $contribution['Material_Contribution.Goonj_Office'] ?? null;
-    $city = '';
 
-    if ($goonjOfficeId) {
-
-      $organization = Organization::get(FALSE)
-          ->addSelect('address_primary.city')
-          ->addWhere('id', '=', $goonjOfficeId)
-          ->execute()->single();
-
-      $city = $organization['address_primary.city'];
-    }
+    $city = self::getCityFromGoonjOfficeId($goonjOfficeId);
 
     $contactData = civicrm_api4('Contact', 'get', [
       'select' => [
@@ -134,6 +125,22 @@ class MaterialContributionService extends AutoSubscriber {
     $fileName = 'material_contribution_' . $contribution['id'] . '.pdf';
     $params['attachments'][] = \CRM_Utils_Mail::appendPDF($fileName, $html);
     $params['cc'] = 'crm@goonj.org';
+  }
+
+  private static function getCityFromGoonjOfficeId($goonjOfficeId) {
+    $city = '';
+    if ($goonjOfficeId) {
+        $organization = Organization::get(FALSE)
+            ->addSelect('address_primary.city')
+            ->addWhere('id', '=', $goonjOfficeId)
+            ->execute()->single();
+
+        // Check if organization is found and if 'address_primary.city' exists
+        if ($organization && isset($organization['address_primary.city'])) {
+            $city = $organization['address_primary.city'];
+        }
+    }
+    return $city;
   }
 
   /**
