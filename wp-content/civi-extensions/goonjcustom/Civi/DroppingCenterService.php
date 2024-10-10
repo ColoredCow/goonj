@@ -143,39 +143,25 @@ class DroppingCenterService extends AutoSubscriber {
    *
    */
   private static function isViewingDroppingCenter($tabsetName, $context) {
+    // @todo need to remove from here.
+    self::init();
+    if ($tabsetName !== 'civicrm/eck/entity' || empty($context) || $context['entity_type']['name'] !== self::ENTITY_NAME) {
+      return FALSE;
+    }
+
     if ($tabsetName !== 'civicrm/eck/entity' || empty($context) || $context['entity_type']['name'] !== self::ENTITY_NAME) {
       return FALSE;
     }
 
     $entityId = $context['entity_id'];
 
-    $entityResults = EckEntity::get(self::ENTITY_NAME, TRUE)
+    $entity = EckEntity::get(self::ENTITY_NAME, TRUE)
       ->addWhere('id', '=', $entityId)
-      ->execute();
-
-    $entity = $entityResults->first();
+      ->execute()->single();
 
     $entitySubtypeValue = $entity['subtype'];
 
-    $subtypeResults = OptionValue::get(TRUE)
-      ->addSelect('name')
-      ->addWhere('grouping', '=', self::ENTITY_NAME)
-      ->addWhere('value', '=', $entitySubtypeValue)
-      ->execute();
-
-    $subtype = $subtypeResults->first();
-
-    if (!$subtype) {
-      return FALSE;
-    }
-
-    $subtypeName = $subtype['name'];
-
-    if ($subtypeName !== self::ENTITY_SUBTYPE_NAME) {
-      return FALSE;
-    }
-
-    return TRUE;
+    return (int) $entitySubtypeValue === self::$subtypeId;
   }
 
   /**
