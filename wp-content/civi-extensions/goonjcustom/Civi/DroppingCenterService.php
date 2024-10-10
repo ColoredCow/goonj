@@ -5,14 +5,18 @@ namespace Civi;
 use Civi\Api4\EckEntity;
 use Civi\Api4\OptionValue;
 use Civi\Core\Service\AutoSubscriber;
+use Civi\Traits\QrCodeable;
 
 /**
  *
  */
 class DroppingCenterService extends AutoSubscriber {
+  use QrCodeable;
 
   const ENTITY_NAME = 'Collection_Camp';
   const ENTITY_SUBTYPE_NAME = 'Dropping_Center';
+
+  private static $subtypeId;
 
   /**
    *
@@ -20,7 +24,62 @@ class DroppingCenterService extends AutoSubscriber {
   public static function getSubscribedEvents() {
     return [
       '&hook_civicrm_tabset' => 'droppingCenterTabset',
+      '&hook_civicrm_pre' => 'generateDroppingCenterQr',
     ];
+  }
+
+  /**
+   *
+   */
+  private static function isDroppingCenterSubtype($objectRef) {
+    // @todo need to remove from here.
+    self::init();
+    $isSubtype = (int) $objectRef['subtype'] === self::$subtypeId;
+    return $isSubtype;
+  }
+
+  /**
+   *
+   */
+  public static function generateDroppingCenterQr(string $op, string $objectName, $objectId, &$objectRef) {
+    $isDroppingCenterSubtype = self::isDroppingCenterSubtype($objectRef);
+    if ($objectName != 'Eck_Collection_Camp' || !$objectId || !$isDroppingCenterSubtype) {
+      return;
+    }
+
+    $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
+    if (!$newStatus) {
+      return;
+    }
+
+    $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id')
+      ->addWhere('id', '=', $objectId)
+      ->execute();
+
+    $currentCollectionCamp = $collectionCamps->first();
+    $currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
+    $collectionCampId = $currentCollectionCamp['id'];
+
+    // Check for status change.
+    if ($currentStatus !== $newStatus && $newStatus === 'authorized') {
+      self::generateDroppingCenterQrCode($collectionCampId);
+    }
+  }
+
+  /**
+   *
+   */
+  private static function generateDroppingCenterQrCode($id) {
+    $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+    $data = "{$baseUrl}actions/dropping-center/{$id}";
+
+    $saveOptions = [
+      'customGroupName' => 'Collection_Camp_QR_Code',
+      'customFieldName' => 'QR_Code',
+    ];
+
+    self::generateQrCode($data, $id, $saveOptions);
   }
 
   /**
@@ -81,39 +140,35 @@ class DroppingCenterService extends AutoSubscriber {
    *
    */
   private static function isViewingDroppingCenter($tabsetName, $context) {
+    // @todo need to remove from here.
+    self::init();
+
     if ($tabsetName !== 'civicrm/eck/entity' || empty($context) || $context['entity_type']['name'] !== self::ENTITY_NAME) {
       return FALSE;
     }
 
     $entityId = $context['entity_id'];
 
-    $entityResults = EckEntity::get(self::ENTITY_NAME, TRUE)
+    $entity = EckEntity::get(self::ENTITY_NAME, TRUE)
       ->addWhere('id', '=', $entityId)
-      ->execute();
-
-    $entity = $entityResults->first();
+      ->execute()->single();
 
     $entitySubtypeValue = $entity['subtype'];
 
-    $subtypeResults = OptionValue::get(TRUE)
-      ->addSelect('name')
+    return (int) $entitySubtypeValue === self::$subtypeId;
+  }
+
+  /**
+   *
+   */
+  public static function init() {
+    $subtype = OptionValue::get(FALSE)
       ->addWhere('grouping', '=', self::ENTITY_NAME)
-      ->addWhere('value', '=', $entitySubtypeValue)
-      ->execute();
+      ->addWhere('name', '=', self::ENTITY_SUBTYPE_NAME)
+      ->execute()->single();
 
-    $subtype = $subtypeResults->first();
+    self::$subtypeId = (int) $subtype['value'];
 
-    if (!$subtype) {
-      return FALSE;
-    }
-
-    $subtypeName = $subtype['name'];
-
-    if ($subtypeName !== self::ENTITY_SUBTYPE_NAME) {
-      return FALSE;
-    }
-
-    return TRUE;
   }
 
 }
