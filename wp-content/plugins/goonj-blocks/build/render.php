@@ -61,7 +61,7 @@ if ( in_array( $target, array( 'collection-camp', 'dropping-center' ) ) ) :
             </tr>
             <tr class="wp-block-gb-table-row">
                 <td class="wp-block-gb-table-cell wp-block-gb-table-header">Time</td>
-                <td class="wp-block-gb-table-cell"><?php echo format_time_range($start_date, $end_date); ?></td>
+                <td class="wp-block-gb-table-cell"><?php echo gb_format_time_range($start_date, $end_date); ?></td>
             </tr>
             <tr class="wp-block-gb-table-row">
                 <td class="wp-block-gb-table-cell wp-block-gb-table-header">Address of the camp</td>
