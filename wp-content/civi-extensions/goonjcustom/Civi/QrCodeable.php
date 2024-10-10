@@ -10,7 +10,7 @@ use chillerlan\QRCode\QROptions;
 /**
  *
  */
-class QrCodeService extends AutoSubscriber {
+class QrCodeable extends AutoSubscriber {
 
   const DROPPING_CENTER_URL_PATTERN = "%sactions/dropping-center/%s";
   const COLLECTION_CAMP_URL_PATTERN = "%sactions/collection-camp/%s";
@@ -25,17 +25,10 @@ class QrCodeService extends AutoSubscriber {
   /**
    *
    */
-  public static function generateQrCode($collectionCampId, $collectionCampSubtype) {
+  public static function generateQrCode($collectionCampId) {
     try {
       $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
-
-      if ($collectionCampSubtype === 'Dropping_Center') {
-        $url = sprintf(self::DROPPING_CENTER_URL_PATTERN, $baseUrl, $collectionCampId);
-      }
-      else {
-        $url = sprintf(self::COLLECTION_CAMP_URL_PATTERN, $baseUrl, $collectionCampId);
-      }
-
+      $url = "{$baseUrl}actions/collection-camp/{$collectionCampId}";
       $options = new QROptions([
         'version'    => 5,
         'outputType' => QRCode::OUTPUT_IMAGE_PNG,

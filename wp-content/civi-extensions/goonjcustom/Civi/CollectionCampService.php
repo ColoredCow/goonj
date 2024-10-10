@@ -19,7 +19,7 @@ use Civi\Api4\Relationship;
 use Civi\Api4\StateProvince;
 use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
-use Civi\QrCodeService;
+use Civi\QrCodeable;
 
 /**
  *
@@ -440,7 +440,6 @@ class CollectionCampService extends AutoSubscriber {
     $contactId = $currentCollectionCamp['Collection_Camp_Core_Details.Contact_Id'];
     $collectionCampTitle = $currentCollectionCamp['title'];
     $collectionCampId = $currentCollectionCamp['id'];
-    $collectionCampSubtype = $currentCollectionCamp['subtype:name'];
 
     // Check for status change.
     if ($currentStatus !== $newStatus) {
@@ -495,24 +494,18 @@ class CollectionCampService extends AutoSubscriber {
     }
 
     $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
-      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id', 'subtype:name')
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id')
       ->addWhere('id', '=', $objectId)
       ->execute();
 
     $currentCollectionCamp = $collectionCamps->first();
     $currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
     $collectionCampId = $currentCollectionCamp['id'];
-    $collectionCampSubtype = $currentCollectionCamp['subtype:name'];
-
-    if (empty($collectionCampSubtype)) {
-      \Civi::log()->warning('Collection camp subtype is not set or is empty for Collection Camp ID: ' . $collectionCampId);
-      return;
-    }
 
     // Check for status change.
     if ($currentStatus !== $newStatus) {
       if ($newStatus === 'authorized') {
-        QrCodeService::generateQrCode($collectionCampId, $collectionCampSubtype);
+        QrCodeable::generateQrCode($collectionCampId);
       }
     }
   }
@@ -538,24 +531,18 @@ class CollectionCampService extends AutoSubscriber {
     try {
       $collectionCampId = $objectRef->id;
       $collectionCamp = EckEntity::get('Collection_Camp', TRUE)
-        ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_QR_Code.QR_Code', 'subtype:name')
+        ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_QR_Code.QR_Code')
         ->addWhere('id', '=', $collectionCampId)
         ->execute()->single();
 
       $status = $collectionCamp['Collection_Camp_Core_Details.Status'];
       $collectionCampQr = $collectionCamp['Collection_Camp_QR_Code.QR_Code'];
-      $collectionCampSubtype = $collectionCamp['subtype:name'];
-
-      if (empty($collectionCampSubtype)) {
-        \Civi::log()->error('Collection camp subtype is not set or is empty for Collection Camp ID: ' . $collectionCampId);
-        return;
-      }
       
       if ($status !== 'authorized' || $collectionCampQr !== NULL) {
         return;
       }
 
-      QrCodeService::generateQrCode($collectionCampId, $collectionCampSubtype);
+      QrCodeable::generateQrCode($collectionCampId);
 
     }
     catch (\Exception $e) {
