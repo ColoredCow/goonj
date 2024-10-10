@@ -432,7 +432,11 @@ function goonj_generate_button_html($buttonUrl, $buttonText) {
     set_query_var('buttonText', $buttonText);
 
     ob_start();
-    get_template_part('templates/button-template');
+	get_template_part('templates/button-template', null, [
+		'buttonUrl' => $buttonUrl,
+		'buttonText' => $buttonText,
+	]);
+		
     return ob_get_clean();
 }
 
@@ -601,41 +605,38 @@ function check_if_both_activity_types_exist($officeActivities) {
 
 // Function to generate redirect URL and button
 function generate_activity_button($officeActivities, $goonjOfficeId, $individualId) {
-	$hasOfficeVisit = false;
-	$hasMaterialContribution = false;
+    $activityTypes = ['Office visit', 'Material Contribution'];
+    $completedActivities = $officeActivities[$goonjOfficeId] ?? [];
+    $pendingActivities = array_diff($activityTypes, $completedActivities);
 
-	// Check for office visit and material contribution activity types
-	foreach ($officeActivities as $activityTypes) {
-		if (in_array('Office visit', $activityTypes)) {
-			$hasOfficeVisit = true;
-		}
-		if (in_array('Material Contribution', $activityTypes)) {
-			$hasMaterialContribution = true;
-		}
-	}
+    if (empty($pendingActivities)) {
+        return; // All activities completed
+    }
 
-	$redirectPath = '';
-	$buttonText = '';
+    $activityMap = [
+        'Office visit' => [
+            'redirectPath' => '/processing-center/office-visit/details/',
+            'buttonText' => __('Proceed to Office Visit', 'goonj-crm'),
+            'queryParam' => 'Office_Visit.Goonj_Processing_Center',
+        ],
+        'Material Contribution' => [
+            'redirectPath' => '/processing-center/material-contribution/details/',
+            'buttonText' => __('Proceed to Material Contribution', 'goonj-crm'),
+            'queryParam' => 'Material_Contribution.Goonj_Office',
+        ],
+    ];
 
-	// Set the correct redirect path and button text based on activities completed
-	if ($hasOfficeVisit) {
-		$redirectPath = '/processing-center/material-contribution/details/';
-		$buttonText = 'Proceed to Material Contribution';
-	} elseif ($hasMaterialContribution) {
-		$redirectPath = '/processing-center/office-visit/details/';
-		$buttonText = 'Proceed to Office Visit';
-	}
+    $nextActivity = reset($pendingActivities);
+    $details = $activityMap[$nextActivity];
 
-	$redirectParams = [
-		'source_contact_id' => $individualId,
-		'Material_Contribution.Goonj_Office' => $hasOfficeVisit ? $goonjOfficeId : null,
-		'Office_Visit.Goonj_Processing_Center' => $hasMaterialContribution ? $goonjOfficeId : null,
-	];
+    $redirectParams = [
+        'source_contact_id' => $individualId,
+        $details['queryParam'] => $goonjOfficeId,
+    ];
 
-	// Create the full URL with query parameters
-	$redirectPathWithParams = $redirectPath . '#?' . http_build_query(array_filter($redirectParams));
+    $redirectPathWithParams = $details['redirectPath'] . '#?' . http_build_query($redirectParams);
 
-	return goonj_generate_button_html($redirectPathWithParams, $buttonText);
+    return goonj_generate_button_html($redirectPathWithParams, $details['buttonText']);
 }
 
 function goonj_collection_camp_landing_page() {
