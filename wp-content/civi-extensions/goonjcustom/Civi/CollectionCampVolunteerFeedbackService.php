@@ -27,7 +27,7 @@ class CollectionCampVolunteerFeedbackService extends AutoSubscriber {
    */
   public static function sendVolunteerFeedbackReminderEmail($volunteerEmailId, $from, $campAddress, $collectionCampId, $endDate, $volunteerName) {
     $mailParams = [
-      'subject' => 'Reminder to fill the camp feedback form for ' . $campAddress . ' on ' . $endDate->format('Y-m-d'),
+      'subject' => 'Reminder to share your feedback for ' . $campAddress . ' on ' . $endDate->format('Y-m-d'),
       'from' => $from,
       'toEmail' => $volunteerEmailId,
       'replyTo' => $from,
@@ -61,7 +61,7 @@ class CollectionCampVolunteerFeedbackService extends AutoSubscriber {
     $html = "
       <p>Dear $volunteerName,</p>
       <p>Greetings from Goonj!</p>
-      <p>We are kindly reminding you to share your valuable feedback on the recent collection camp you attended. Your insights are essential for us to continue improving our future camps and make them even better.</p>
+      <p>Kindly reminding you to share your valuable feedback on the recent collection camp. Your insights are important for us to continue improving future in future camps.</p>
       <p>If you haven’t had the chance yet, please take a few minutes to fill out the feedback form here:</p>
       <p><a href=\"$feedbackFormUrl\">Volunteer Feedback Form</a></p>
       <p>We look forward to working with you again!</p>
