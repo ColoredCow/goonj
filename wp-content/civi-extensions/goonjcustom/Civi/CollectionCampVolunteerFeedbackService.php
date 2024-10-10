@@ -29,10 +29,7 @@ class CollectionCampVolunteerFeedbackService extends AutoSubscriber {
    * @throws \CRM_Core_Exception
    */
   public static function processVolunteerFeedbackReminder($camp, $today) {
-    // Get the default 'from' email.
-    [$defaultFromName, $defaultFromEmail] = \CRM_Core_BAO_Domain::getNameAndEmail();
-    $from = "\"$defaultFromName\" <$defaultFromEmail>";
-
+    $from = self::getDefaultFromEmail();
     $volunteerContactId = $camp['Collection_Camp_Core_Details.Contact_Id'];
     $campAttendedBy = Contact::get(TRUE)
       ->addSelect('email.email', 'display_name')
@@ -118,6 +115,14 @@ class CollectionCampVolunteerFeedbackService extends AutoSubscriber {
       <p>Warm regards,<br>Team Goonj</p>";
 
     return $html;
+  }
+
+  /**
+   * Get default from email.
+   */
+  public static function getDefaultFromEmail() {
+    [$defaultFromName, $defaultFromEmail] = \CRM_Core_BAO_Domain::getNameAndEmail();
+    return "\"$defaultFromName\" <$defaultFromEmail>";
   }
 
 }
