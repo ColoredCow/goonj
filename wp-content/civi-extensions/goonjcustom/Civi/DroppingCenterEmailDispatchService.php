@@ -29,7 +29,7 @@ class DroppingCenterEmailDispatchService extends AutoSubscriber {
       $jsonData = $objectRef->data;
 
       $dataArray = json_decode($jsonData, TRUE);
-      
+
       $droppingCenterId = $dataArray['Eck_Collection_Camp1'][0]['fields']['id'];
 
       $droppingCenterData = civicrm_api4('Eck_Collection_Camp', 'get', [
@@ -65,6 +65,18 @@ class DroppingCenterEmailDispatchService extends AutoSubscriber {
       $phone = $contactDataArray['phone_primary.phone'] ?? 'N/A';
       $name = $contactDataArray['display_name'] ?? 'N/A';
 
+      $collectionCamp = civicrm_api4('Eck_Collection_Camp', 'get', [
+        'select' => [
+          'Dropping_Centre.Goonj_Office',
+        ],
+        'where' => [
+          ['id', '=', 390],
+        ],
+        'limit' => 25,
+        'checkPermissions' => FALSE,
+      ]);
+      $goonjOfficeRecord = $collectionCamp[0] ?? [];
+      $droppingCenterGoonjOffice = $goonjOfficeRecord['Dropping_Centre.Goonj_Office'] ?? 'N/A';
       self::sendCampEmail($email, $name, $droppingCenterId, $contactId, $droppingCenterGoonjOffice);
     }
   }
@@ -73,13 +85,9 @@ class DroppingCenterEmailDispatchService extends AutoSubscriber {
    *
    */
   public static function sendCampEmail($email, $name, $droppingCenterId, $contactId, $droppingCenterGoonjOffice) {
-    error_log("email: " . print_r($email, TRUE));
-    error_log("name: " . print_r($name, TRUE));
-    error_log("droppingCenterId: " . print_r($droppingCenterId, TRUE));
-    error_log("droppingCenterGoonjOffice: " . print_r($droppingCenterGoonjOffice, TRUE));
     $homeUrl = \CRM_Utils_System::baseCMSURL();
 
-    $campVehicleDispatchFormUrl = $homeUrl . 'camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp=' . $droppingCenterId . '&Camp_Vehicle_Dispatch.Filled_by=' . $filledBy . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . '&Eck_Collection_Camp1=' . $droppingCenterId;
+    $campVehicleDispatchFormUrl = $homeUrl . '/dropping-center/camp-vehicle-dispatch/#?Camp_Vehicle_Dispatch.Collection_Camp=' . $droppingCenterId . '&Camp_Vehicle_Dispatch.Filled_by=' . $filledBy . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $droppingCenterGoonjOffice . '&Eck_Collection_Camp1=' . $droppingCenterId;
     $campOutcomeFormUrl = $homeUrl . '/camp-outcome-form/#?Eck_Collection_Camp1=' . $droppingCenterId . '&Camp_Outcome.Filled_By=' . $contactId;
 
     $emailHtml = "
