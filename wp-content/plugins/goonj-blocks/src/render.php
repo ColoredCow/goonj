@@ -39,6 +39,12 @@ $pu_material_contribution_check_link = sprintf(
 	$action_target['id']
 );
 
+$dropping_center_material_contribution_link = sprintf(
+    '/dropping-center-contribution?source=%s&target_id=%s',
+    $action_target['title'],
+    $action_target['id'],
+);
+
 $target_config = [
 	'dropping-center' => [
 	  'start_time' => 'Dropping_Centre.Start_Time',
@@ -90,7 +96,7 @@ $target_config = [
 		<a href="<?php echo esc_url( $register_link ); ?>" class="wp-block-gb-action-button">
 			<?php esc_html_e( 'Volunteer with Goonj', 'goonj-blocks' ); ?>
 		</a>
-		<a href="<?php echo esc_url( $material_contribution_link ); ?>" class="wp-block-gb-action-button">
+		<a href="<?php echo esc_url( $contribution_link ); ?>" class="wp-block-gb-action-button">
 			<?php esc_html_e( 'Record your Material Contribution', 'goonj-blocks' ); ?>
 		</a>
 	</div>
