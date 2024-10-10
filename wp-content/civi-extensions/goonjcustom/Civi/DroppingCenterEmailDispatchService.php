@@ -26,12 +26,11 @@ class DroppingCenterEmailDispatchService extends AutoSubscriber {
 
     if ($afformName === 'afformSendDispatchEmail' && ($op === 'create' || $op === 'edit')) {
 
-      $jsonData = $objectname->data;
+      $jsonData = $objectRef->data;
 
       $dataArray = json_decode($jsonData, TRUE);
-
-      $id = $dataArray['Eck_Collection_Camp1'][0]['fields']['id'];
-      $droppingCenterId = $objectRef->id;
+      
+      $droppingCenterId = $dataArray['Eck_Collection_Camp1'][0]['fields']['id'];
 
       $droppingCenterData = civicrm_api4('Eck_Collection_Camp', 'get', [
         'select' => [
@@ -80,7 +79,7 @@ class DroppingCenterEmailDispatchService extends AutoSubscriber {
     error_log("droppingCenterGoonjOffice: " . print_r($droppingCenterGoonjOffice, TRUE));
     $homeUrl = \CRM_Utils_System::baseCMSURL();
 
-    $campVehicleDispatchFormUrl = $homeUrl . 'camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id=' . $droppingCenterId;
+    $campVehicleDispatchFormUrl = $homeUrl . 'camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp=' . $droppingCenterId . '&Camp_Vehicle_Dispatch.Filled_by=' . $filledBy . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . '&Eck_Collection_Camp1=' . $droppingCenterId;
     $campOutcomeFormUrl = $homeUrl . '/camp-outcome-form/#?Eck_Collection_Camp1=' . $droppingCenterId . '&Camp_Outcome.Filled_By=' . $contactId;
 
     $emailHtml = "
