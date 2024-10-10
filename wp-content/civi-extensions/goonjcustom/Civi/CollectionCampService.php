@@ -4,8 +4,6 @@ namespace Civi;
 
 require_once __DIR__ . '/../../../../wp-content/civi-extensions/goonjcustom/vendor/autoload.php';
 
-use chillerlan\QRCode\QRCode;
-use chillerlan\QRCode\QROptions;
 use Civi\Afform\Event\AfformSubmitEvent;
 use Civi\Api4\Activity;
 use Civi\Api4\Contact;
@@ -507,17 +505,26 @@ class CollectionCampService extends AutoSubscriber {
     // Check for status change.
     if ($currentStatus !== $newStatus) {
       if ($newStatus === 'authorized') {
-        $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
-        $data = "{$baseUrl}actions/collection-camp/{$collectionCampId}";
+        self::generateCollectionCampQrCode($collectionCampId);
 
-      $saveOptions = [
-        // dummy options
-        'custom_group_name' => 'Collection_Camp_QR_Code',
-      ];
-  
-        self::generateQrCode($data, $collectionCampId, $saveOptions);
       }
     }
+  }
+
+  /**
+   *
+   */
+  private static function generateCollectionCampQrCode($id) {
+    $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+    $data = "{$baseUrl}actions/collection-camp/{$id}";
+
+    $saveOptions = [
+        // Dummy options.
+      'custom_group_name' => 'Collection_Camp_QR_Code',
+    ];
+
+    self::generateQrCode($data, $id, $saveOptions);
+
   }
 
   /**
@@ -547,20 +554,12 @@ class CollectionCampService extends AutoSubscriber {
 
       $status = $collectionCamp['Collection_Camp_Core_Details.Status'];
       $collectionCampQr = $collectionCamp['Collection_Camp_QR_Code.QR_Code'];
-      
+
       if ($status !== 'authorized' || $collectionCampQr !== NULL) {
         return;
       }
 
-      $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
-      $data = "{$baseUrl}actions/collection-camp/{$collectionCampId}";
-
-      // dummy options
-      $saveOptions = [
-        'custom_group_name' => 'Collection_Camp_QR_Code',
-      ];
-  
-      self::generateQrCode($data, $collectionCampId, $saveOptions);
+      self::generateCollectionCampQrCode($collectionCampId);
 
     }
     catch (\Exception $e) {
