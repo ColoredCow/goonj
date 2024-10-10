@@ -32,6 +32,7 @@ trait QrCodeable {
       $baseFileName = "qr_code_{$entityId}.png";
 
       $saveOptions['baseFileName'] = $baseFileName;
+      $saveOptions['entityId'] = $entityId;
 
       self::saveQrCode($qrcode, $saveOptions);
     }
@@ -48,6 +49,7 @@ trait QrCodeable {
    */
   public static function saveQrCode($qrcode, $options) {
     $baseFileName = $options['baseFileName'];
+    $entityId = $options['entityId'];
 
     $fileName = \CRM_Utils_File::makeFileName($baseFileName);
     $tempFilePath = \CRM_Utils_File::tempnam($baseFileName);
