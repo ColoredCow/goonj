@@ -6,7 +6,6 @@
 
 use Civi\Api4\EckEntity;
 use Civi\CollectionCampVolunteerFeedbackService;
-use Civi\Api4\Contact;
 
 /**
  * Goonjcustom.VolunteerFeedbackReminderCron API specification (optional)
@@ -51,42 +50,9 @@ function civicrm_api3_goonjcustom_volunteer_feedback_reminder_cron($params) {
     ->addWhere('Collection_Camp_Intent_Details.End_Date', '<=', $endOfDay)
     ->execute();
 
-  [$defaultFromName, $defaultFromEmail] = CRM_Core_BAO_Domain::getNameAndEmail();
-  $from = "\"$defaultFromName\" <$defaultFromEmail>";
-
   foreach ($volunteerCamps as $camp) {
     try {
-      $volunteerContactId = $camp['Collection_Camp_Core_Details.Contact_Id'];
-      // Get recipient email and name.
-      $campAttendedBy = Contact::get(TRUE)
-        ->addSelect('email.email', 'display_name')
-        ->addJoin('Email AS email', 'LEFT')
-        ->addWhere('id', '=', $volunteerContactId)
-        ->execute()->single();
-
-      $volunteerEmailId = $campAttendedBy['email.email'];
-      $volunteerName = $campAttendedBy['display_name'];
-
-      $endDate = new \DateTime($camp['Collection_Camp_Intent_Details.End_Date']);
-      $collectionCampId = $camp['id'];
-      $campAddress = $camp['Collection_Camp_Intent_Details.Location_Area_of_camp'];
-
-      $lastReminderSent = $camp['Volunteer_Camp_Feedback.Last_Reminder_Sent'] ? new \DateTime($camp['Volunteer_Camp_Feedback.Last_Reminder_Sent']) : NULL;
-
-      // Calculate hours since camp ended.
-      $hoursSinceCampEnd = $today->diff($endDate)->h + ($today->diff($endDate)->days * 24);
-
-      // Check if feedback form is not filled and 24 hours have passed since camp end.
-      if ($hoursSinceCampEnd >= 24 && ($lastReminderSent === NULL)) {
-        // Send the first reminder email to the volunteer.
-        CollectionCampVolunteerFeedbackService::sendVolunteerFeedbackReminderEmail($volunteerEmailId, $from, $campAddress, $collectionCampId, $endDate, $volunteerName);
-
-        // Update the Last_Reminder_Sent field in the database to avoid duplicate reminders.
-        EckEntity::update('Collection_Camp', TRUE)
-          ->addWhere('id', '=', $camp['id'])
-          ->addValue('Volunteer_Camp_Feedback.Last_Reminder_Sent', $today->format('Y-m-d H:i:s'))
-          ->execute();
-      }
+      CollectionCampVolunteerFeedbackService::processVolunteerFeedbackReminder($camp, $today);
     }
     catch (\Exception $e) {
       \Civi::log()->error('Error processing volunteer feedback reminder', [
