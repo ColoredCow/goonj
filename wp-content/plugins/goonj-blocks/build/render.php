@@ -46,9 +46,9 @@ function format_date($date) {
 }
 
 function format_time_range($start_date, $end_date) {
-    if ($start_date->format('Y-m-d') !== $end_date->format('Y-m-d')) {
-        return $start_date->format(DATE_FORMAT . ' ' . TIME_FORMAT) . ' - ' . $end_date->format(DATE_FORMAT . ' ' . TIME_FORMAT);
-    }
+    // if ($start_date->format('Y-m-d') !== $end_date->format('Y-m-d')) {
+    //     return $start_date->format(DATE_FORMAT . ' ' . TIME_FORMAT) . ' - ' . $end_date->format(DATE_FORMAT . ' ' . TIME_FORMAT);
+    // }
     return $start_date->format(TIME_FORMAT) . ' - ' . $end_date->format(TIME_FORMAT);
 }
 
