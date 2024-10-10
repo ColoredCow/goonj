@@ -428,13 +428,13 @@ function goonj_custom_message_placeholder() {
 add_shortcode( 'goonj_volunteer_message', 'goonj_custom_message_placeholder' );
 
 function goonj_generate_button_html($buttonUrl, $buttonText) {
-    ob_start();
-    get_template_part('templates/button-template', null, [
-        'buttonUrl' => $buttonUrl,
-        'buttonText' => $buttonText
-    ]);
+	ob_start();
+	get_template_part('templates/button-template', null, [
+		'buttonUrl' => $buttonUrl,
+		'buttonText' => $buttonText
+	]);
 
-    return ob_get_clean();
+	return ob_get_clean();
 }
 
 
@@ -564,10 +564,11 @@ function get_goonj_office_id($activity) {
 
 // Function to fetch user's activities for today
 function fetch_contact_activities_for_today($individualId) {
-	$todayDate = date('Y-m-d');
-	$startOfDay = $todayDate . ' 00:00:00'; 
-	$endOfDay = $todayDate . ' 23:59:59';
 
+	$timezone = new \DateTimeZone('UTC');
+	$today = new \DateTime('now', $timezone);
+	$startOfDay = $today->setTime(0, 0)->format('Y-m-d H:i:s');
+	$endOfDay = $today->setTime(23, 59, 59)->format('Y-m-d H:i:s');
 	return \Civi\Api4\Activity::get(FALSE)
 		->addSelect('Office_Visit.Goonj_Processing_Center', 'activity_type_id:label', 'Material_Contribution.Goonj_Office')
 		->addWhere('source_contact_id', '=', $individualId)
