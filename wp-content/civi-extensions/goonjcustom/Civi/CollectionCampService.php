@@ -35,6 +35,7 @@ class CollectionCampService extends AutoSubscriber {
   private static $individualId = NULL;
   private static $collectionCampAddress = NULL;
   private static $fromAddress = NULL;
+  private static $subtypeId;
 
   /**
    *
@@ -120,39 +121,22 @@ class CollectionCampService extends AutoSubscriber {
    *
    */
   private static function isViewingCollectionCamp($tabsetName, $context) {
+    // @todo need to remove from here.
+    self::init();
+
     if ($tabsetName !== 'civicrm/eck/entity' || empty($context) || $context['entity_type']['name'] !== self::ENTITY_NAME) {
       return FALSE;
     }
 
     $entityId = $context['entity_id'];
 
-    $entityResults = EckEntity::get(self::ENTITY_NAME, TRUE)
+    $entity = EckEntity::get(self::ENTITY_NAME, TRUE)
       ->addWhere('id', '=', $entityId)
-      ->execute();
-
-    $entity = $entityResults->first();
+      ->execute()->single();
 
     $entitySubtypeValue = $entity['subtype'];
 
-    $subtypeResults = OptionValue::get(TRUE)
-      ->addSelect('name')
-      ->addWhere('grouping', '=', self::ENTITY_NAME)
-      ->addWhere('value', '=', $entitySubtypeValue)
-      ->execute();
-
-    $subtype = $subtypeResults->first();
-
-    if (!$subtype) {
-      return FALSE;
-    }
-
-    $subtypeName = $subtype['name'];
-
-    if ($subtypeName !== self::ENTITY_SUBTYPE_NAME) {
-      return FALSE;
-    }
-
-    return TRUE;
+    return (int) $entitySubtypeValue === self::$subtypeId;
   }
 
   /**
@@ -471,6 +455,15 @@ class CollectionCampService extends AutoSubscriber {
   }
 
   /**
+   *
+   */
+  private static function isCollectionCampSubtype($objectRef) {
+    // @todo need to remove from here.
+    self::init();
+    return (int) $objectRef['subtype'] === self::$subtypeId;
+  }
+
+  /**
    * This hook is called after a db write on entities.
    *
    * @param string $op
@@ -483,7 +476,8 @@ class CollectionCampService extends AutoSubscriber {
    *   The reference to the object.
    */
   public static function generateCollectionCampQr(string $op, string $objectName, $objectId, &$objectRef) {
-    if ($objectName != 'Eck_Collection_Camp' || !$objectId) {
+
+    if ($objectName != 'Eck_Collection_Camp' || !$objectId || self::isCollectionCampSubtype($objectRef)) {
       return;
     }
 
@@ -1152,6 +1146,19 @@ class CollectionCampService extends AutoSubscriber {
       ->addValue('Camp_Outcome.Number_of_Contributors', $contributorCount)
       ->addWhere('id', '=', $collectionCamp['id'])
       ->execute();
+  }
+
+  /**
+   *
+   */
+  public static function init() {
+    $subtype = OptionValue::get(FALSE)
+      ->addWhere('grouping', '=', self::ENTITY_NAME)
+      ->addWhere('name', '=', self::ENTITY_SUBTYPE_NAME)
+      ->execute()->single();
+
+    self::$subtypeId = (int) $subtype['value'];
+
   }
 
 }
