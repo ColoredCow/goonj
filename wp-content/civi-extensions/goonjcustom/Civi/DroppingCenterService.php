@@ -16,7 +16,6 @@ class DroppingCenterService extends AutoSubscriber {
   const ENTITY_NAME = 'Collection_Camp';
   const ENTITY_SUBTYPE_NAME = 'Dropping_Center';
 
-
   private static $subtypeId;
 
   /**
@@ -35,19 +34,20 @@ class DroppingCenterService extends AutoSubscriber {
   private static function isDroppingCenterSubtype($objectRef) {
     // @todo need to remove from here.
     self::init();
-    return (int) $objectRef['subtype'] === self::$subtypeId;
+    $isSubtype = (int) $objectRef['subtype'] === self::$subtypeId;
+    return $isSubtype;
   }
 
   /**
    *
    */
   public static function generateDroppingCenterQr(string $op, string $objectName, $objectId, &$objectRef) {
-    if ($objectName != 'Eck_Collection_Camp' || !$objectId || self::isDroppingCenterSubtype($objectRef)) {
+    $isDroppingCenterSubtype = self::isDroppingCenterSubtype($objectRef);
+    if ($objectName != 'Eck_Collection_Camp' || !$objectId || !$isDroppingCenterSubtype) {
       return;
     }
 
     $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
-
     if (!$newStatus) {
       return;
     }
@@ -62,10 +62,8 @@ class DroppingCenterService extends AutoSubscriber {
     $collectionCampId = $currentCollectionCamp['id'];
 
     // Check for status change.
-    if ($currentStatus !== $newStatus) {
-      if ($newStatus === 'authorized') {
-        self::generateDroppingCenterQrCode($collectionCampId);
-      }
+    if ($currentStatus !== $newStatus && $newStatus === 'authorized') {
+      self::generateDroppingCenterQrCode($collectionCampId);
     }
   }
 
@@ -82,7 +80,6 @@ class DroppingCenterService extends AutoSubscriber {
     ];
 
     self::generateQrCode($data, $id, $saveOptions);
-
   }
 
   /**
@@ -145,9 +142,6 @@ class DroppingCenterService extends AutoSubscriber {
   private static function isViewingDroppingCenter($tabsetName, $context) {
     // @todo need to remove from here.
     self::init();
-    if ($tabsetName !== 'civicrm/eck/entity' || empty($context) || $context['entity_type']['name'] !== self::ENTITY_NAME) {
-      return FALSE;
-    }
 
     if ($tabsetName !== 'civicrm/eck/entity' || empty($context) || $context['entity_type']['name'] !== self::ENTITY_NAME) {
       return FALSE;
@@ -172,6 +166,7 @@ class DroppingCenterService extends AutoSubscriber {
       ->addWhere('grouping', '=', self::ENTITY_NAME)
       ->addWhere('name', '=', self::ENTITY_SUBTYPE_NAME)
       ->execute()->single();
+
     self::$subtypeId = (int) $subtype['value'];
 
   }
