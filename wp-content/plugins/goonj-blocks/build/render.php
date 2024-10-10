@@ -61,7 +61,7 @@ $target_Data = [
 	  \Civi::log()->error('Invalid date format for start or end time', ['error' => $e->getMessage(), 'target' => $target]);
 	  echo '<div class="error">An error occurred. Please try again later.</div>';
 	  return;
-	}
+	}	
 	?>	
 	<div class="wp-block-gb-heading-wrapper">
 		<h2 class="wp-block-gb-heading"><?php echo esc_html($heading_text); ?></h2>

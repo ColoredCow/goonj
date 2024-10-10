@@ -49,12 +49,12 @@ $target_Data = [
 	  'contribution_link' => $material_contribution_link,
 	],
   ];
-  if (isset($target_config[$target])) :
+  if (isset($target_Data[$target])) :
 	try {
-	  $config = $target_config[$target];
-	  $start_date = new DateTime($action_target[$config['start_time']]);
-	  $end_date = new DateTime($action_target[$config['end_time']]);
-	  $address = $action_target[$config['address']];
+	  $config = $target_Data[$target];
+	  $start_date = new DateTime($target_Data[$config['start_time']]);
+	  $end_date = new DateTime($target_Data[$config['end_time']]);
+	  $address = $target_Data[$config['address']];
 	  $contribution_link = $config['contribution_link'];
 	}
 	catch (Exception $e) {
