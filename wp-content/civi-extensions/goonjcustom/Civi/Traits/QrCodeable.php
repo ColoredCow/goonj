@@ -50,6 +50,8 @@ trait QrCodeable {
   public static function saveQrCode($qrcode, $options) {
     $baseFileName = $options['baseFileName'];
     $entityId = $options['entityId'];
+    $customGroupName = $options['customGroupName'];
+    $customFieldName = $options['customFieldName'];
 
     $fileName = \CRM_Utils_File::makeFileName($baseFileName);
     $tempFilePath = \CRM_Utils_File::tempnam($baseFileName);
@@ -63,21 +65,21 @@ trait QrCodeable {
 
     $customFields = CustomField::get(FALSE)
       ->addSelect('id')
-      ->addWhere('custom_group_id:name', '=', 'Collection_Camp_QR_Code')
-      ->addWhere('name', '=', 'QR_Code')
+      ->addWhere('custom_group_id:name', '=', $customGroupName)
+      ->addWhere('name', '=', $customFieldName)
       ->setLimit(1)
       ->execute();
 
     $qrField = $customFields->first();
 
     if (!$qrField) {
-      \CRM_Core_Error::debug_log_message('No field to save QR Code for collection camp ID ' . $entityId);
+      \CRM_Core_Error::debug_log_message('No field to save QR Code for entity ID ' . $entityId);
       return FALSE;
     }
 
     $qrFieldId = 'custom_' . $qrField['id'];
 
-    // Save the QR code as an attachment linked to the collection camp.
+    // Save the QR code as an attachment linked to the entity.
     $params = [
       'entity_id' => $entityId,
       'name' => $fileName,
@@ -91,7 +93,7 @@ trait QrCodeable {
     $result = civicrm_api3('Attachment', 'create', $params);
 
     if (!empty($result['is_error'])) {
-      \CRM_Core_Error::debug_log_message('Failed to create attachment for collection camp ID ' . $entityId);
+      \CRM_Core_Error::debug_log_message('Failed to create attachment for entity ID ' . $entityId);
       return FALSE;
     }
 
