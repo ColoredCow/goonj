@@ -35,11 +35,34 @@ $pu_material_contribution_check_link = sprintf(
 	$action_target['id']
 );
 
-if ( in_array( $target, array( 'collection-camp', 'dropping-center' ) ) ) :
-	$start_date = new DateTime( $action_target['Collection_Camp_Intent_Details.Start_Date'] );
-	$end_date   = new DateTime( $action_target['Collection_Camp_Intent_Details.End_Date'] );
-	$address = $action_target['Collection_Camp_Intent_Details.Location_Area_of_camp'];
+$target_config = [
+	'dropping-center' => [
+	  'start_time' => 'Dropping_Centre.Start_Time',
+	  'end_time' => 'Dropping_Centre.End_Time',
+	  'address' => 'Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_',
+	  'contribution_link' => $dropping_center_material_contribution_link,
+	],
+	'collection-camp' => [
+	  'start_time' => 'Collection_Camp_Intent_Details.Start_Date',
+	  'end_time' => 'Collection_Camp_Intent_Details.End_Date',
+	  'address' => 'Collection_Camp_Intent_Details.Location_Area_of_camp',
+	  'contribution_link' => $material_contribution_link,
+	],
+  ];
 
+if (isset($target_config[$target])) :
+	try {
+	  $config = $target_config[$target];
+	  $start_date = new DateTime($action_target[$config['start_time']]);
+	  $end_date = new DateTime($action_target[$config['end_time']]);
+	  $address = $action_target[$config['address']];
+	  $contribution_link = $config['contribution_link'];
+	}
+	catch (Exception $e) {
+	  \Civi::log()->error('Invalid date format for start or end time', ['error' => $e->getMessage(), 'target' => $target]);
+	  echo '<div class="error">An error occurred. Please try again later.</div>';
+	  return;
+	}
 	?>
 	<div class="wp-block-gb-heading-wrapper">
 		<h2 class="wp-block-gb-heading"><?php echo esc_html($heading_text); ?></h2>
