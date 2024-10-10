@@ -53,8 +53,7 @@ $target_config = [
 	  'contribution_link' => $material_contribution_link,
 	],
   ];
-
-if (isset($target_config[$target])) :
+  if (isset($target_config[$target])) :
 	try {
 	  $config = $target_config[$target];
 	  $start_date = new DateTime($action_target[$config['start_time']]);
@@ -66,8 +65,8 @@ if (isset($target_config[$target])) :
 	  \Civi::log()->error('Invalid date format for start or end time', ['error' => $e->getMessage(), 'target' => $target]);
 	  echo '<div class="error">An error occurred. Please try again later.</div>';
 	  return;
-	}
-	?>
+	}	
+	?>	
 	<div class="wp-block-gb-heading-wrapper">
 		<h2 class="wp-block-gb-heading"><?php echo esc_html($heading_text); ?></h2>
 	</div>
