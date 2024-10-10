@@ -55,7 +55,7 @@ class MaterialContributionService extends AutoSubscriber {
 
     // Hack: Retrieve the most recent "Material Contribution" activity for this contact.
     $activities = Activity::get(TRUE)
-      ->addSelect('*', 'contact.display_name', 'Material_Contribution.Delivered_By', 'Material_Contribution.Delivered_By_Contact')
+      ->addSelect('*', 'contact.display_name', 'Material_Contribution.Delivered_By', 'Material_Contribution.Delivered_By_Contact', 'Material_Contribution.Goonj_Office')
       ->addJoin('ActivityContact AS activity_contact', 'LEFT')
       ->addJoin('Contact AS contact', 'LEFT')
       ->addWhere('source_contact_id', '=', $params['contactId'])
@@ -66,6 +66,19 @@ class MaterialContributionService extends AutoSubscriber {
       ->execute();
 
     $contribution = $activities->first();
+
+    $goonjOfficeId = $contribution['Material_Contribution.Goonj_Office'] ?? null;
+    $city = '';
+
+    if ($goonjOfficeId) {
+
+      $organization = \Civi\Api4\Organization::get(FALSE)
+          ->addSelect('address_primary.city')
+          ->addWhere('id', '=', $goonjOfficeId)
+          ->execute()->single();
+
+      $city = $organizations['address_primary.city'];
+    }
 
     $contactData = civicrm_api4('Contact', 'get', [
       'select' => [
@@ -103,6 +116,10 @@ class MaterialContributionService extends AutoSubscriber {
     $collectionCamp = $collectionCampData[0] ?? [];
 
     $locationAreaOfCamp = $collectionCamp['Collection_Camp_Intent_Details.Location_Area_of_camp'] ?? 'N/A';
+
+    if ($city !== null) {
+      $locationAreaOfCamp = $city;
+    }
 
     $contactDataArray = $contactData[0] ?? [];
     $email = $contactDataArray['email_primary.email'] ?? 'N/A';
