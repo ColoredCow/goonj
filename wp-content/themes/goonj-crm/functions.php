@@ -428,17 +428,15 @@ function goonj_custom_message_placeholder() {
 add_shortcode( 'goonj_volunteer_message', 'goonj_custom_message_placeholder' );
 
 function goonj_generate_button_html($buttonUrl, $buttonText) {
-    set_query_var('buttonUrl', $buttonUrl);
-    set_query_var('buttonText', $buttonText);
-
     ob_start();
-	get_template_part('templates/button-template', null, [
-		'buttonUrl' => $buttonUrl,
-		'buttonText' => $buttonText,
-	]);
-		
+    get_template_part('templates/button-template', null, [
+        'buttonUrl' => $buttonUrl,
+        'buttonText' => $buttonText
+    ]);
+
     return ob_get_clean();
 }
+
 
 function goonj_contribution_volunteer_signup_button() {
     $activityId = isset($_GET['activityId']) ? intval($_GET['activityId']) : 0;
@@ -483,11 +481,11 @@ function goonj_contribution_volunteer_signup_button() {
         }
 
         $redirectPath = '/volunteer-registration/form-with-details/';
-        $redirectPathWithParams = $redirectPath . '#?' . http_build_query([
+        $redirectPathWithParams = $redirectPath . '?' . http_build_query([
             'Individual1' => $individualId,
             'message' => 'individual-user'
         ]);
-		$buttonText = 'Wish to Volunteer?';
+		$buttonText = __('Wish to Volunteer?', 'goonj-crm');
 
         return goonj_generate_button_html($redirectPathWithParams, $buttonText);
     } catch (\Exception $e) {
