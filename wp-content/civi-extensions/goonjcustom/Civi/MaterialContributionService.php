@@ -4,6 +4,7 @@ namespace Civi;
 
 use Civi\Api4\ActionSchedule;
 use Civi\Api4\Activity;
+use Civi\Api4\Organization;
 use Civi\Core\Service\AutoSubscriber;
 
 /**
@@ -72,12 +73,12 @@ class MaterialContributionService extends AutoSubscriber {
 
     if ($goonjOfficeId) {
 
-      $organization = \Civi\Api4\Organization::get(FALSE)
+      $organization = Organization::get(FALSE)
           ->addSelect('address_primary.city')
           ->addWhere('id', '=', $goonjOfficeId)
           ->execute()->single();
 
-      $city = $organizations['address_primary.city'];
+      $city = $organization['address_primary.city'];
     }
 
     $contactData = civicrm_api4('Contact', 'get', [
@@ -117,7 +118,7 @@ class MaterialContributionService extends AutoSubscriber {
 
     $locationAreaOfCamp = $collectionCamp['Collection_Camp_Intent_Details.Location_Area_of_camp'] ?? 'N/A';
 
-    if ($city !== null) {
+    if (!empty($city)) {
       $locationAreaOfCamp = $city;
     }
 
