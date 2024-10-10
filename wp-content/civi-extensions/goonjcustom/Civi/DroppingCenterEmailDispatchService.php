@@ -22,7 +22,9 @@ class DroppingCenterEmailDispatchService extends AutoSubscriber {
    *
    */
   public static function postProcess(string $op, string $objectName, int $objectId, &$objectRef) {
-    if ($objectName === 'Eck_Collection_Camp' && ($op === 'create' || $op === 'edit')) {
+    $afformName = $objectRef->afform_name;
+
+    if ($afformName === 'afformSendDispatchEmail' && ($op === 'create' || $op === 'edit')) {
 
       $jsonData = $objectname->data;
 
@@ -39,7 +41,6 @@ class DroppingCenterEmailDispatchService extends AutoSubscriber {
         ['id', '=', $droppingCenterId],
         ],
       ]);
-
       $contactId = NULL;
       if (!empty($droppingCenterData)) {
         $droppingCenter = $droppingCenterData[0] ?? [];
@@ -73,6 +74,10 @@ class DroppingCenterEmailDispatchService extends AutoSubscriber {
    *
    */
   public static function sendCampEmail($email, $name, $droppingCenterId, $contactId, $droppingCenterGoonjOffice) {
+    error_log("email: " . print_r($email, TRUE));
+    error_log("name: " . print_r($name, TRUE));
+    error_log("droppingCenterId: " . print_r($droppingCenterId, TRUE));
+    error_log("droppingCenterGoonjOffice: " . print_r($droppingCenterGoonjOffice, TRUE));
     $homeUrl = \CRM_Utils_System::baseCMSURL();
 
     $campVehicleDispatchFormUrl = $homeUrl . 'camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id=' . $droppingCenterId;
@@ -80,21 +85,20 @@ class DroppingCenterEmailDispatchService extends AutoSubscriber {
 
     // Note: The content will need to be updated once the final email template is available.
     $emailHtml = "
-      <html>
-      <body>
-        <p>Dear {$name},</p>
-        <p>Thank you for your involvement in the collection camp (ID: {$droppingCenterId}).</p>
-        <p>Here is the <a href='{$campVehicleDispatchFormUrl}'>Vehicle Dispatch Form</a> for your reference.</p>
-        <ul>
-        <li><a href=\"$campOutcomeFormUrl\">Camp Outcome Form</a></li>
-      </ul>
-        <p>Best regards,<br>Goonj Team</p>
-      </body>
-      </html>
+    <html>
+    <body>
+    <p>Dear {$name},</p>
+    <p>Thank you so much for your invaluable efforts in running the Goonj Dropping Center. 
+    Your dedication plays a crucial role in our work, and we deeply appreciate your continued support.</p>
+    <p>Please fill out this Dispatch Form – <a href='{$campVehicleDispatchFormUrl}'>[link]</a> once the vehicle is loaded and ready to head to Goonj’s processing center. 
+    This will help us to verify and acknowledge the materials as soon as they arrive.</p>
+    <p>We truly appreciate your cooperation and continued commitment to our cause.</p>
+    <p>Warm Regards,<br>Team Goonj</p>
+    </body>
+    </html>
     ";
-
     $mailParams = [
-      'subject' => 'Dropping Center Notification',
+      'subject' => 'Kindly fill the Dispatch Form for Material Pickup',
       'from' => 'urban.ops@goonj.org',
       'toEmail' => $email,
       'html' => $emailHtml,
