@@ -460,7 +460,8 @@ class CollectionCampService extends AutoSubscriber {
   private static function isCollectionCampSubtype($objectRef) {
     // @todo need to remove from here.
     self::init();
-    return (int) $objectRef['subtype'] === self::$subtypeId;
+    $isSubtype = (int) $objectRef['subtype'] === self::$subtypeId;
+    return $isSubtype;
   }
 
   /**
@@ -476,8 +477,8 @@ class CollectionCampService extends AutoSubscriber {
    *   The reference to the object.
    */
   public static function generateCollectionCampQr(string $op, string $objectName, $objectId, &$objectRef) {
-
-    if ($objectName != 'Eck_Collection_Camp' || !$objectId || self::isCollectionCampSubtype($objectRef)) {
+    $isCollectionCampSubtype = self::isCollectionCampSubtype($objectRef);
+    if ($objectName != 'Eck_Collection_Camp' || !$objectId || !$isCollectionCampSubtype) {
       return;
     }
 
