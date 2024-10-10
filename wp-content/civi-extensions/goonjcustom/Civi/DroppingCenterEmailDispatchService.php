@@ -83,7 +83,6 @@ class DroppingCenterEmailDispatchService extends AutoSubscriber {
     $campVehicleDispatchFormUrl = $homeUrl . 'camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id=' . $droppingCenterId;
     $campOutcomeFormUrl = $homeUrl . '/camp-outcome-form/#?Eck_Collection_Camp1=' . $droppingCenterId . '&Camp_Outcome.Filled_By=' . $contactId;
 
-    // Note: The content will need to be updated once the final email template is available.
     $emailHtml = "
     <html>
     <body>
@@ -93,7 +92,7 @@ class DroppingCenterEmailDispatchService extends AutoSubscriber {
     <p>Please fill out this Dispatch Form – <a href='{$campVehicleDispatchFormUrl}'>[link]</a> once the vehicle is loaded and ready to head to Goonj’s processing center. 
     This will help us to verify and acknowledge the materials as soon as they arrive.</p>
     <p>We truly appreciate your cooperation and continued commitment to our cause.</p>
-    <p>Warm Regards,<br>Team Goonj</p>
+    <p>Warm Regards,<br>Team Goonj..</p>
     </body>
     </html>
     ";
