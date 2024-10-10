@@ -40,11 +40,9 @@ function civicrm_api3_goonjcustom_collection_camp_outcome_reminder_cron($params)
   // Fetch camps that have completed but the outcome form is not yet filled.
   $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
     ->addSelect(
-      'Logistics_Coordination.Email_Sent',
       'Logistics_Coordination.Camp_to_be_attended_by',
       'Collection_Camp_Intent_Details.End_Date',
       'Camp_Outcome.Last_Reminder_Sent',
-      'Camp_Outcome.Rate_the_camp',
       'title',
       'Collection_Camp_Intent_Details.Location_Area_of_camp',
     )
