@@ -18,8 +18,6 @@ class DroppingCenterService extends AutoSubscriber {
   const ENTITY_NAME = 'Collection_Camp';
   const ENTITY_SUBTYPE_NAME = 'Dropping_Center';
 
-  private static $subtypeId;
-
   /**
    *
    */
@@ -33,16 +31,8 @@ class DroppingCenterService extends AutoSubscriber {
   /**
    *
    */
-  private static function isDroppingCenterSubtype($objectRef) {
-    $subtypeId = self::getSubtypeId();
-    return (int) $objectRef['subtype'] === $subtypeId;
-  }
-
-  /**
-   *
-   */
   public static function generateDroppingCenterQr(string $op, string $objectName, $objectId, &$objectRef) {
-    if ($objectName !== 'Eck_Collection_Camp' || !$objectId || !self::isDroppingCenterSubtype($objectRef)) {
+    if ($objectName !== 'Eck_Collection_Camp' || !$objectId || !self::isCurrentSubtype($objectRef)) {
       return;
     }
 
