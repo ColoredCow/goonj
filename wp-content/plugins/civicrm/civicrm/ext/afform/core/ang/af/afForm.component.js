@@ -382,6 +382,29 @@
           }
         }
 
+        // PU Visit Date validation
+        if (ctrl.getFormMeta().name === 'afformMaterialContributionForPUCopy') {
+          var visitDateField = $element.find("af-field[name='activity_date_time'] input[type='text']");
+          if (visitDateField.length) {
+              var visitDateValue = visitDateField.val().trim();
+              if (visitDateValue !== "") {
+                  var visitDateParts = visitDateValue.split('/');
+                  if (visitDateParts.length === 3) {
+                      var visitDate = new Date(visitDateParts[2], visitDateParts[1] - 1, visitDateParts[0]);
+                      var today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      
+                      if (visitDate < today) {
+                          errorMessage += `Visit date cannot be in the past.\n`;
+                          isValid = false;
+                      }
+                  } else {
+                      errorMessage += "Invalid visit date format.\n";
+                      isValid = false;
+                  }
+              }
+          }
+        }
     
         if (!isValid) {
             CRM.alert(errorMessage, ts("Form Error"));
