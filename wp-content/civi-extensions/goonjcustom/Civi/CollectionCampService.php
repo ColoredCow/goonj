@@ -1319,6 +1319,7 @@ class CollectionCampService extends AutoSubscriber {
 
     $collectionCampId = $collectionSourceVehicleDispatch['Camp_Vehicle_Dispatch.Collection_Camp'];
 
+     // Update camp status to 'completed' when the camp outcome form is submitted
     $results = EckEntity::update('Collection_Camp', FALSE)
       ->addValue('Collection_Camp_Intent_Details.Camp_status_field', 'completed')
       ->addWhere('id', '=', $collectionCampId)
