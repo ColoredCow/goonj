@@ -49,7 +49,7 @@ function civicrm_api3_goonjcustom_volunteer_feedback_collection_camp_cron($param
   $todayFormatted = $today->format('Y-m-d');
 
   $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
-    ->addSelect('Collection_Camp_Intent_Details.End_Date', 'Logistics_Coordination.Feedback_Email_Sent', 'Collection_Camp_Core_Details.Contact_Id', 'Collection_Camp_Intent_Details.Location_Area_of_camp')
+    ->addSelect('Collection_Camp_Intent_Details.End_Date', 'Logistics_Coordination.Feedback_Email_Sent', 'Collection_Camp_Core_Details.Contact_Id', 'Collection_Camp_Intent_Details.Location_Area_of_camp', 'Collection_Camp_Intent_Details.Camp_status_field')
     ->addWhere('Collection_Camp_Core_Details.Status', '=', 'authorized')
     ->addWhere('subtype', '=', $collectionCampSubtype)
     ->addWhere('Collection_Camp_Intent_Details.End_Date', '<=', $endOfDay)
@@ -66,6 +66,13 @@ function civicrm_api3_goonjcustom_volunteer_feedback_collection_camp_cron($param
       $feedbackEmailSent = $camp['Logistics_Coordination.Feedback_Email_Sent'];
       $initiatorId = $camp['Collection_Camp_Core_Details.Contact_Id'];
       $campAddress = $camp['Collection_Camp_Intent_Details.Location_Area_of_camp'];
+      $campStatus = $camp['Collection_Camp_Intent_Details.Camp_status_field'];
+
+      // Skip if camp status is "aborted".
+      if ($campStatus === 'aborted') {
+        \Civi::log()->info("Skipping camp ID $collectionCampId as it is marked as 'aborted'");
+        continue;
+      }
 
       // Get recipient email and name.
       $campAttendedBy = Contact::get(TRUE)
