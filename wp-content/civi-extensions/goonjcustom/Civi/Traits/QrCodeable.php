@@ -2,9 +2,9 @@
 
 namespace Civi\Traits;
 
-use Civi\Api4\CustomField;
 use chillerlan\QRCode\QRCode;
 use chillerlan\QRCode\QROptions;
+use Civi\Api4\CustomField;
 
 /**
  *
