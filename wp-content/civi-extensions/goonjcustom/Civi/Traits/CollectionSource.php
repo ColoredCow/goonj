@@ -16,8 +16,8 @@ trait CollectionSource {
   public static function getSubtypeId() {
     if (!self::$subtypeId) {
       $subtype = OptionValue::get(FALSE)
-        ->addWhere('grouping', '=', self::ENTITY_NAME)
-        ->addWhere('name', '=', self::ENTITY_SUBTYPE_NAME)
+        ->addWhere('grouping', '=', static::ENTITY_NAME)
+        ->addWhere('name', '=', static::ENTITY_SUBTYPE_NAME)
         ->execute()->single();
 
       self::$subtypeId = (int) $subtype['value'];
@@ -30,7 +30,7 @@ trait CollectionSource {
    *
    */
   private static function isCurrentSubtype($objectRef) {
-    if (empty($objectRef)) {
+    if (empty($objectRef['subtype'])) {
       return FALSE;
     }
 
