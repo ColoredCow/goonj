@@ -37,7 +37,6 @@ class CollectionCampService extends AutoSubscriber {
   private static $individualId = NULL;
   private static $collectionCampAddress = NULL;
   private static $fromAddress = NULL;
-  private static $subtypeId;
 
   /**
    *
@@ -456,14 +455,6 @@ class CollectionCampService extends AutoSubscriber {
   }
 
   /**
-   *
-   */
-  private static function isCollectionCampSubtype($objectRef) {
-    $subtypeId = self::getSubtypeId();
-    return (int) $objectRef['subtype'] === $subtypeId;
-  }
-
-  /**
    * This hook is called after a db write on entities.
    *
    * @param string $op
@@ -476,7 +467,7 @@ class CollectionCampService extends AutoSubscriber {
    *   The reference to the object.
    */
   public static function generateCollectionCampQr(string $op, string $objectName, $objectId, &$objectRef) {
-    if ($objectName != 'Eck_Collection_Camp' || !$objectId || !self::isCollectionCampSubtype($objectRef)) {
+    if ($objectName !== 'Eck_Collection_Camp' || !$objectId || !self::isCurrentSubtype($objectRef)) {
       return;
     }
 

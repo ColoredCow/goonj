@@ -8,6 +8,7 @@ use Civi\Api4\OptionValue;
  *
  */
 trait CollectionSource {
+  private static $subtypeId;
 
   /**
    *
@@ -23,6 +24,18 @@ trait CollectionSource {
     }
 
     return self::$subtypeId;
+  }
+
+  /**
+   *
+   */
+  private static function isCurrentSubtype($objectRef) {
+    if (empty($objectRef)) {
+      return FALSE;
+    }
+
+    $subtypeId = self::getSubtypeId();
+    return (int) $objectRef['subtype'] === $subtypeId;
   }
 
 }
