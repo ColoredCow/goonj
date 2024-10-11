@@ -30,6 +30,14 @@ $material_contribution_link = sprintf(
 	$action_target['Collection_Camp_Intent_Details.City'],
 );
 
+$dropping_center_material_contribution_link = sprintf(
+	'/dropping-center-contribution?source=%s&target_id=%s&state_province_id=%s&city=%s',
+    $action_target['title'],
+    $action_target['id'],
+	$action_target['Dropping_Centre.State'],
+	$action_target['Dropping_Centre.District_City'],
+);
+
 $pu_visit_check_link = sprintf(
 	'/processing-center/office-visit/?target_id=%s',
 	$action_target['id']
@@ -95,7 +103,7 @@ $target_Data = [
 		<a href="<?php echo esc_url( $register_link ); ?>" class="wp-block-gb-action-button">
 			<?php esc_html_e( 'Volunteer with Goonj', 'goonj-blocks' ); ?>
 		</a>
-		<a href="<?php echo esc_url( $material_contribution_link ); ?>" class="wp-block-gb-action-button">
+		<a href="<?php echo esc_url( $contribution_link ); ?>" class="wp-block-gb-action-button">
 			<?php esc_html_e( 'Record your Material Contribution', 'goonj-blocks' ); ?>
 		</a>
 	</div>

@@ -90,7 +90,9 @@ function gb_goonj_blocks_check_action_target_exists() {
 		'Collection_Camp_Intent_Details.State',
 		'Dropping_Centre.Start_Time',
 		'Dropping_Centre.End_Time,',
-		'Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_'
+		'Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_',
+		'Dropping_Centre.State',
+		'Dropping_Centre.District_City',
 	);
 
 	switch ( $target ) {
