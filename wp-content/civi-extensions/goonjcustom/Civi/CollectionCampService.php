@@ -17,6 +17,7 @@ use Civi\Api4\Relationship;
 use Civi\Api4\StateProvince;
 use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
+use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
 
 /**
@@ -24,6 +25,7 @@ use Civi\Traits\QrCodeable;
  */
 class CollectionCampService extends AutoSubscriber {
   use QrCodeable;
+  use CollectionSource;
 
   const FALLBACK_OFFICE_NAME = 'Delhi';
   const RELATIONSHIP_TYPE_NAME = 'Collection Camp Coordinator of';
@@ -121,9 +123,6 @@ class CollectionCampService extends AutoSubscriber {
    *
    */
   private static function isViewingCollectionCamp($tabsetName, $context) {
-    // @todo need to remove from here.
-    self::init();
-
     if ($tabsetName !== 'civicrm/eck/entity' || empty($context) || $context['entity_type']['name'] !== self::ENTITY_NAME) {
       return FALSE;
     }
@@ -136,7 +135,9 @@ class CollectionCampService extends AutoSubscriber {
 
     $entitySubtypeValue = $entity['subtype'];
 
-    return (int) $entitySubtypeValue === self::$subtypeId;
+    $subtypeId = self::getSubtypeId();
+
+    return (int) $entitySubtypeValue === $subtypeId;
   }
 
   /**
@@ -458,10 +459,8 @@ class CollectionCampService extends AutoSubscriber {
    *
    */
   private static function isCollectionCampSubtype($objectRef) {
-    // @todo need to remove from here.
-    self::init();
-    $isSubtype = (int) $objectRef['subtype'] === self::$subtypeId;
-    return $isSubtype;
+    $subtypeId = self::getSubtypeId();
+    return (int) $objectRef['subtype'] === $subtypeId;
   }
 
   /**
@@ -477,8 +476,7 @@ class CollectionCampService extends AutoSubscriber {
    *   The reference to the object.
    */
   public static function generateCollectionCampQr(string $op, string $objectName, $objectId, &$objectRef) {
-    $isCollectionCampSubtype = self::isCollectionCampSubtype($objectRef);
-    if ($objectName != 'Eck_Collection_Camp' || !$objectId || !$isCollectionCampSubtype) {
+    if ($objectName != 'Eck_Collection_Camp' || !$objectId || !self::isCollectionCampSubtype($objectRef)) {
       return;
     }
 
@@ -1147,19 +1145,6 @@ class CollectionCampService extends AutoSubscriber {
       ->addValue('Camp_Outcome.Number_of_Contributors', $contributorCount)
       ->addWhere('id', '=', $collectionCamp['id'])
       ->execute();
-  }
-
-  /**
-   *
-   */
-  public static function init() {
-    $subtype = OptionValue::get(FALSE)
-      ->addWhere('grouping', '=', self::ENTITY_NAME)
-      ->addWhere('name', '=', self::ENTITY_SUBTYPE_NAME)
-      ->execute()->single();
-
-    self::$subtypeId = (int) $subtype['value'];
-
   }
 
 }
