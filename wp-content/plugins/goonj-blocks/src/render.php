@@ -52,18 +52,18 @@ $pu_material_contribution_check_link = sprintf(
 
 $target_data = [
 	'dropping-center' => [
-	  'start_time' => 'Dropping_Centre.Start_Time',
-	  'end_time' => 'Dropping_Centre.End_Time',
-	  'address' => 'Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_',
-	  'contribution_link' => $dropping_center_material_contribution_link,
+		'start_time' => 'Dropping_Centre.Start_Time',
+		'end_time' => 'Dropping_Centre.End_Time',
+		'address' => 'Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_',
+		'contribution_link' => $dropping_center_material_contribution_link,
 	],
 	'collection-camp' => [
-	  'start_time' => 'Collection_Camp_Intent_Details.Start_Date',
-	  'end_time' => 'Collection_Camp_Intent_Details.End_Date',
-	  'address' => 'Collection_Camp_Intent_Details.Location_Area_of_camp',
-	  'contribution_link' => $material_contribution_link,
+		'start_time' => 'Collection_Camp_Intent_Details.Start_Date',
+		'end_time' => 'Collection_Camp_Intent_Details.End_Date',
+		'address' => 'Collection_Camp_Intent_Details.Location_Area_of_camp',
+		'contribution_link' => $material_contribution_link,
 	],
-  ];
+];
 
 if ( in_array( $target, array( 'collection-camp', 'dropping-center' ) ) ) :
     $target_info = $target_data[$target];
