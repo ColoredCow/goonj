@@ -3,7 +3,6 @@
 namespace Civi;
 
 use Civi\Api4\EckEntity;
-use Civi\Api4\OptionValue;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
@@ -143,19 +142,6 @@ class DroppingCenterService extends AutoSubscriber {
     $subtypeId = self::getSubtypeId();
 
     return (int) $entitySubtypeValue === $subtypeId;
-  }
-
-  /**
-   *
-   */
-  public static function init() {
-    $subtype = OptionValue::get(FALSE)
-      ->addWhere('grouping', '=', self::ENTITY_NAME)
-      ->addWhere('name', '=', self::ENTITY_SUBTYPE_NAME)
-      ->execute()->single();
-
-    self::$subtypeId = (int) $subtype['value'];
-
   }
 
 }
