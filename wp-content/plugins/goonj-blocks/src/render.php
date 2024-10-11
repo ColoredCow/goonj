@@ -48,8 +48,6 @@ $pu_material_contribution_check_link = sprintf(
 	$action_target['id']
 );
 
-
-
 $target_data = [
 	'dropping-center' => [
 		'start_time' => 'Dropping_Centre.Start_Time',
