@@ -63,7 +63,7 @@ class DroppingCenterEmailDispatchService extends AutoSubscriber {
       $contactDataArray = $contactData[0] ?? [];
       $email = $contactDataArray['email_primary.email'] ?? 'N/A';
       $phone = $contactDataArray['phone_primary.phone'] ?? 'N/A';
-      $name = $contactDataArray['display_name'] ?? 'N/A';
+      $initiatorName = $contactDataArray['display_name'] ?? 'N/A';
 
       $collectionCamp = civicrm_api4('Eck_Collection_Camp', 'get', [
         'select' => [
@@ -77,23 +77,23 @@ class DroppingCenterEmailDispatchService extends AutoSubscriber {
       ]);
       $goonjOfficeRecord = $collectionCamp[0] ?? [];
       $droppingCenterGoonjOffice = $goonjOfficeRecord['Dropping_Centre.Goonj_Office'] ?? 'N/A';
-      self::sendCampEmail($email, $name, $droppingCenterId, $contactId, $droppingCenterGoonjOffice);
+      self::sendCampEmail($email, $initiatorName, $droppingCenterId, $contactId, $droppingCenterGoonjOffice);
     }
   }
 
   /**
    *
    */
-  public static function sendCampEmail($email, $name, $droppingCenterId, $contactId, $droppingCenterGoonjOffice) {
+  public static function sendCampEmail($email, $initiatorName, $droppingCenterId, $contactId, $droppingCenterGoonjOffice) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
 
-    $campVehicleDispatchFormUrl = $homeUrl . '/dropping-center/camp-vehicle-dispatch/#?Camp_Vehicle_Dispatch.Collection_Camp=' . $droppingCenterId . '&Camp_Vehicle_Dispatch.Filled_by=' . $filledBy . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $droppingCenterGoonjOffice . '&Eck_Collection_Camp1=' . $droppingCenterId;
+    $campVehicleDispatchFormUrl = $homeUrl . '/dropping-center/camp-vehicle-dispatch/#?Camp_Vehicle_Dispatch.Collection_Camp=' . $droppingCenterId . '&Camp_Vehicle_Dispatch.Filled_by=' . $contactId . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $droppingCenterGoonjOffice . '&Eck_Collection_Camp1=' . $droppingCenterId;
     $campOutcomeFormUrl = $homeUrl . '/camp-outcome-form/#?Eck_Collection_Camp1=' . $droppingCenterId . '&Camp_Outcome.Filled_By=' . $contactId;
 
     $emailHtml = "
     <html>
     <body>
-    <p>Dear {$name},</p>
+    <p>Dear {$initiatorName},</p>
     <p>Thank you so much for your invaluable efforts in running the Goonj Dropping Center. 
     Your dedication plays a crucial role in our work, and we deeply appreciate your continued support.</p>
     <p>Please fill out this Dispatch Form – <a href='{$campVehicleDispatchFormUrl}'>[link]</a> once the vehicle is loaded and ready to head to Goonj’s processing center. 
