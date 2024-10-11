@@ -506,7 +506,7 @@ function goonj_pu_activity_button() {
 
 	try {
 		// Fetch activity details
-		$activity = fetch_activity_details($activityId);
+		$activity = goonj_fetch_pu_activity_details($activityId);
 
 		if (!$activity) {
 			\Civi::log()->info('No activities found for Activity ID:', ['activityId' => $activityId]);
@@ -514,7 +514,7 @@ function goonj_pu_activity_button() {
 		}
 
 		$individualId = $activity['source_contact_id'];
-		$goonjOfficeId = get_goonj_office_id($activity);
+		$goonjOfficeId = goonj_get_goonj_office_id($activity);
 
 		if (is_null($goonjOfficeId)) {
 			\Civi::log()->info('Goonj Office ID is null for Activity ID:', ['activityId'=>$activityId]);
@@ -522,18 +522,18 @@ function goonj_pu_activity_button() {
 		}
 
 		// Fetch user's activities for the day
-		$contactActivities = fetch_contact_activities_for_today($individualId);
+		$contactActivities = fetch_contact_pu_activities_for_today($individualId);
 
 		// Process activities and check for office visits and material contributions
-		$officeActivities = process_activities($contactActivities);
+		$officeActivities = goonj_process_pu_activities($contactActivities);
 
 		// Check if both activity types exist for any office
-		if (check_if_both_activity_types_exist($officeActivities)) {
+		if (goonj_check_if_both_pu_activity_types_exist($officeActivities)) {
 			return; // Both activity types exist, no button needed
 		}
 
 		// Generate redirect URL and button
-		return generate_activity_button($officeActivities, $goonjOfficeId, $individualId);
+		return goonj_generate_activity_button($officeActivities, $goonjOfficeId, $individualId);
 
 	} catch (\Exception $e) {
 		\Civi::log()->error('Error in goonj_pu_activity_button: ' . $e->getMessage());
@@ -543,7 +543,7 @@ function goonj_pu_activity_button() {
 
 add_shortcode('goonj_pu_activity_button', 'goonj_pu_activity_button');
 
-function fetch_activity_details($activityId) {
+function goonj_fetch_pu_activity_details($activityId) {
 	return \Civi\Api4\Activity::get(FALSE)
 		->addSelect('source_contact_id', 'Office_Visit.Goonj_Processing_Center', 'Material_Contribution.Goonj_Office', 'activity_type_id:label')
 		->addWhere('id', '=', $activityId)
@@ -552,7 +552,7 @@ function fetch_activity_details($activityId) {
 }
 
 // Function to determine Goonj Office ID based on activity type
-function get_goonj_office_id($activity) {
+function goonj_get_goonj_office_id($activity) {
 	$activityTypeLabel = $activity['activity_type_id:label'];
 	$officeMapping = [
 		'Material Contribution' => 'Material_Contribution.Goonj_Office',
@@ -563,7 +563,7 @@ function get_goonj_office_id($activity) {
 }
 
 // Function to fetch user's activities for today
-function fetch_contact_activities_for_today($individualId) {
+function fetch_contact_pu_activities_for_today($individualId) {
 
 	$timezone = new \DateTimeZone('UTC');
 	$today = new \DateTime('now', $timezone);
@@ -579,7 +579,7 @@ function fetch_contact_activities_for_today($individualId) {
 }
 
 // Function to process activities and track office visits and material contributions
-function process_activities($activities) {
+function goonj_process_pu_activities($activities) {
 	$officeActivities = [];
 	foreach ($activities as $activity) {
 		$officeId = $activity['Office_Visit.Goonj_Processing_Center'] ?: $activity['Material_Contribution.Goonj_Office'];
@@ -593,7 +593,7 @@ function process_activities($activities) {
 }
 
 // Function to check if both activity types exist for any office
-function check_if_both_activity_types_exist($officeActivities) {
+function goonj_check_if_both_pu_activity_types_exist($officeActivities) {
 	foreach ($officeActivities as $activityTypes) {
 		if (count(array_unique($activityTypes)) === 2) {
 			return true; // Both activity types exist
@@ -603,7 +603,7 @@ function check_if_both_activity_types_exist($officeActivities) {
 }
 
 // Function to generate redirect URL and button
-function generate_activity_button($officeActivities, $goonjOfficeId, $individualId) {
+function goonj_generate_activity_button($officeActivities, $goonjOfficeId, $individualId) {
     $activityTypes = ['Office visit', 'Material Contribution'];
     $completedActivities = $officeActivities[$goonjOfficeId] ?? [];
     $pendingActivities = array_diff($activityTypes, $completedActivities);
