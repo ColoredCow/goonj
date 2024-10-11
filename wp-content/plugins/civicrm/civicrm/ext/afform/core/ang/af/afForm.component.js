@@ -383,29 +383,45 @@
         }
 
         // PU Visit Date validation
+        function validateDate(dateValue, fieldName, pastAllowed = true, futureAllowed = true) {
+          if (dateValue === "") return { isValid: true, errorMessage: "" };
+        
+          var dateParts = dateValue.split('/');
+          if (dateParts.length !== 3) {
+            return { isValid: false, errorMessage: `Invalid ${fieldName} format.\n` };
+          }
+        
+          var date = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
+          var today = new Date();
+          today.setHours(0, 0, 0, 0);
+        
+          if (!pastAllowed && date < today) {
+            return { isValid: false, errorMessage: `${fieldName} cannot be in the past.\n` };
+          }
+        
+          if (!futureAllowed && date > today) {
+            return { isValid: false, errorMessage: `${fieldName} cannot be in the future.\n` };
+          }
+        
+          if (date.toDateString() === today.toDateString() && !pastAllowed && !futureAllowed) {
+            return { isValid: false, errorMessage: `${fieldName} cannot be today.\n` };
+          }
+        
+          return { isValid: true, errorMessage: "" };
+        }
+        
+        // In customValidateFields function:
         if (ctrl.getFormMeta().name === 'afformMaterialContributionForPUCopy') {
           var visitDateField = $element.find("af-field[name='activity_date_time'] input[type='text']");
           if (visitDateField.length) {
-              var visitDateValue = visitDateField.val().trim();
-              if (visitDateValue !== "") {
-                  var visitDateParts = visitDateValue.split('/');
-                  if (visitDateParts.length === 3) {
-                      var visitDate = new Date(visitDateParts[2], visitDateParts[1] - 1, visitDateParts[0]);
-                      var today = new Date();
-                      today.setHours(0, 0, 0, 0);
-                      
-                      if (visitDate < today) {
-                          errorMessage += `Visit date cannot be in the past.\n`;
-                          isValid = false;
-                      }
-                  } else {
-                      errorMessage += "Invalid visit date format.\n";
-                      isValid = false;
-                  }
-              }
+            var visitDateValue = visitDateField.val().trim();
+            var visitDateValidation = validateDate(visitDateValue, 'Visit date', false, true);
+            if (!visitDateValidation.isValid) {
+              errorMessage += visitDateValidation.errorMessage;
+              isValid = false;
+            }
           }
         }
-    
         if (!isValid) {
             CRM.alert(errorMessage, ts("Form Error"));
         }
