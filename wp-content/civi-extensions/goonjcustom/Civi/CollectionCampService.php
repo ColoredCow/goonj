@@ -56,7 +56,7 @@ class CollectionCampService extends AutoSubscriber {
         ['setOfficeDetails'],
         ['linkInductionWithCollectionCamp'],
         ['mailNotificationToMmt'],
-
+        ['updateCampStatusOnOutcomeFilled'],
       ],
       '&hook_civicrm_fieldOptions' => 'setIndianStateOptions',
       'civi.afform.submit' => [
@@ -1285,6 +1285,44 @@ class CollectionCampService extends AutoSubscriber {
           ->execute();
       }
     }
+  }
+
+  /**
+   * This hook is called after the database write on a custom table.
+   *
+   * @param string $op
+   *   The type of operation being performed.
+   * @param string $objectName
+   *   The custom group ID.
+   * @param int $objectId
+   *   The entityID of the row in the custom table.
+   * @param object $objectRef
+   *   The parameters that were sent into the calling function.
+   */
+  public static function updateCampStatusOnOutcomeFilled($op, $groupID, $entityID, &$params) {
+    if ($op !== 'create') {
+      return;
+    }
+
+    if (!($goonjField = self::findOfficeId($params))) {
+      return;
+    }
+
+    $goonjFieldId = $goonjField['value'];
+    $vehicleDispatchId = $goonjField['entity_id'];
+
+    $collectionSourceVehicleDispatch = EckEntity::get('Collection_Source_Vehicle_Dispatch', FALSE)
+      ->addSelect('Camp_Vehicle_Dispatch.Collection_Camp')
+      ->addWhere('id', '=', $vehicleDispatchId)
+      ->execute()->first();
+
+    $collectionCampId = $collectionSourceVehicleDispatch['Camp_Vehicle_Dispatch.Collection_Camp'];
+
+    $results = EckEntity::update('Collection_Camp', FALSE)
+      ->addValue('Collection_Camp_Intent_Details.Camp_status_field', 'completed')
+      ->addWhere('id', '=', $collectionCampId)
+      ->execute();
+
   }
 
 }
