@@ -50,6 +50,7 @@ class CollectionCampService extends AutoSubscriber {
         ['linkCollectionCampToContact'],
         ['generateCollectionCampCode'],
         ['createActivityForCollectionCamp'],
+        ['updateCampStatusAfterAuth'],
       ],
       '&hook_civicrm_custom' => [
         ['setOfficeDetails'],
@@ -1121,6 +1122,7 @@ class CollectionCampService extends AutoSubscriber {
       $campAddress = $collectionCamp['Collection_Camp_Intent_Details.Location_Area_of_camp'];
       $campAttendedById = $collectionCamp['Logistics_Coordination.Camp_to_be_attended_by'];
       $logisticEmailSent = $collectionCamp['Logistics_Coordination.Email_Sent'];
+      $campStatus = $collectionCamp['Collection_Camp_Intent_Details.Camp_status_field'];
 
       $startDate = new \DateTime($collectionCamp['Collection_Camp_Intent_Details.Start_Date']);
 
@@ -1146,7 +1148,7 @@ class CollectionCampService extends AutoSubscriber {
           'from' => self::getFromAddress(),
           'toEmail' => $attendeeEmail,
           'replyTo' => self::getFromAddress(),
-          'html' => self::getLogisticsEmailHtml($attendeeName, $campId, $campAttendedById, $campOffice, $campCode, $campAddress),
+          'html' => self::getLogisticsEmailHtml($attendeeName, $campId, $campAttendedById, $campOffice, $campCode, $campAddress, $campStatus),
         ];
 
         $emailSendResult = \CRM_Utils_Mail::send($mailParams);
@@ -1169,23 +1171,37 @@ class CollectionCampService extends AutoSubscriber {
   /**
    *
    */
-  private static function getLogisticsEmailHtml($contactName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress) {
+  private static function getLogisticsEmailHtml($contactName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress, $campStatus) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
     // Construct the full URLs for the forms.
     $campVehicleDispatchFormUrl = $homeUrl . 'camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp=' . $collectionCampId . '&Camp_Vehicle_Dispatch.Filled_by=' . $campAttendedById . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice . '&Eck_Collection_Camp1=' . $collectionCampId;
-    $campOutcomeFormUrl = $homeUrl . '/camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $campAttendedById;
 
+    // Initialize camp outcome form URL variable.
+    $campOutcomeFormUrl = '';
+
+    // Include camp outcome form if the status is NOT "aborted".
+    if ($campStatus !== 'aborted') {
+      $campOutcomeFormUrl = '<li><a href="' . $homeUrl . '/camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $campAttendedById . '">Camp Outcome Form</a><br>
+        This feedback form should be filled out after the camp/drive ends, once you have an overview of the event\'s outcomes.</li>';
+    }
+
+    // Determine the appropriate message based on whether the outcome form is included.
+    $formCountMessage = ($campStatus !== 'aborted')
+    ? 'There are two forms that require your attention during and after the camp:'
+    : 'There is one form that requires your attention during the camp:';
+
+    // Build the email content.
     $html = "
-      <p>Dear $contactName,</p>
-      <p>Thank you for attending the camp <strong>$campCode</strong> at <strong>$campAddress</strong>. There are two forms that require your attention during and after the camp:</p>
-      <ol>
-          <li><a href=\"$campVehicleDispatchFormUrl\">Dispatch Form</a><br>
-          Please complete this form from the camp location once the vehicle is being loaded and ready for dispatch to the Goonj's processing center.</li>
-          <li><a href=\"$campOutcomeFormUrl\">Camp Outcome Form</a><br>
-          This feedback form should be filled out after the camp/drive ends, once you have an overview of the event's outcomes.</li>
-      </ol>
-      <p>We appreciate your cooperation.</p>
-      <p>Warm Regards,<br>Urban Relations Team</p>";
+    <p>Dear $contactName,</p>
+    <p>Thank you for attending the camp <strong>$campCode</strong> at <strong>$campAddress</strong>.</p>
+    <p>$formCountMessage</p>
+    <ol>
+        <li><a href=\"$campVehicleDispatchFormUrl\">Dispatch Form</a><br>
+        Please complete this form from the camp location once the vehicle is being loaded and ready for dispatch to the Goonj's processing center.</li>
+        $campOutcomeFormUrl
+    </ol>
+    <p>We appreciate your cooperation.</p>
+    <p>Warm Regards,<br>Urban Relations Team</p>";
 
     return $html;
   }
@@ -1216,6 +1232,59 @@ class CollectionCampService extends AutoSubscriber {
       ->addValue('Camp_Outcome.Number_of_Contributors', $contributorCount)
       ->addWhere('id', '=', $collectionCamp['id'])
       ->execute();
+  }
+
+  /**
+   * This hook is called after a db write on entities.
+   *
+   * @param string $op
+   *   The type of operation being performed.
+   * @param string $objectName
+   *   The name of the object.
+   * @param int $objectId
+   *   The unique identifier for the object.
+   * @param object $objectRef
+   *   The reference to the object.
+   */
+  public static function updateCampStatusAfterAuth(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($objectName != 'Eck_Collection_Camp') {
+      return;
+    }
+
+    $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
+
+    if (!$newStatus || !$objectId) {
+      return;
+    }
+
+    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect('Collection_Camp_Core_Details.Status')
+      ->addWhere('id', '=', $objectId)
+      ->execute()->single();
+
+    $currentStatus = $collectionCamp['Collection_Camp_Core_Details.Status'];
+
+    // Check for status change.
+    if ($currentStatus !== $newStatus) {
+      if ($newStatus === 'authorized') {
+        // Access the subtype.
+        $subtypeId = $objectRef['subtype'] ?? NULL;
+        if ($subtypeId === NULL) {
+          return;
+        }
+
+        // Access the id within the decoded data.
+        $campId = $objectRef['id'] ?? NULL;
+        if ($campId === NULL) {
+          return;
+        }
+
+        $results = EckEntity::update('Collection_Camp', TRUE)
+          ->addValue('Collection_Camp_Intent_Details.Camp_status_field', 'planned')
+          ->addWhere('id', '=', $campId)
+          ->execute();
+      }
+    }
   }
 
 }
