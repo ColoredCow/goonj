@@ -2,21 +2,26 @@
 
 namespace Civi;
 
-use Civi\Api4\Contact;
-use Civi\Api4\CustomField;
 use Civi\Api4\EckEntity;
-use Civi\Api4\OptionValue;
-use Civi\Api4\Relationship;
 use Civi\Core\Service\AutoSubscriber;
+use Civi\Traits\CollectionSource;
+use Civi\Api4\OptionValue;
+use Civi\Traits\QrCodeable;
+use Civi\Api4\Contact;
+use Civi\Api4\Relationship;
+use Civi\Api4\CustomField;
 
 /**
  *
  */
 class DroppingCenterService extends AutoSubscriber {
-  const FALLBACK_OFFICE_NAME = 'Delhi';
-  const RELATIONSHIP_TYPE_NAME = 'Collection Camp Coordinator of';
+  use QrCodeable;
+  use CollectionSource;
+
   const ENTITY_NAME = 'Collection_Camp';
+  const RELATIONSHIP_TYPE_NAME = 'Dropping Center Coordinator of';
   const ENTITY_SUBTYPE_NAME = 'Dropping_Center';
+  const FALLBACK_OFFICE_NAME = 'Delhi';
 
   /**
    *
@@ -24,16 +29,39 @@ class DroppingCenterService extends AutoSubscriber {
   public static function getSubscribedEvents() {
     return [
       '&hook_civicrm_tabset' => 'droppingCenterTabset',
-      '&hook_civicrm_custom' => [
-        ['setOfficeDetails'],
-      ],
+      '&hook_civicrm_pre' => 'generateDroppingCenterQr',
+      '&hook_civicrm_custom' => 'setOfficeDetails',
     ];
-
   }
 
   /**
    *
    */
+  public static function generateDroppingCenterQr(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($objectName !== 'Eck_Collection_Camp' || !$objectId || !self::isCurrentSubtype($objectRef)) {
+      return;
+    }
+
+    $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
+    if (!$newStatus) {
+      return;
+    }
+
+    $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id')
+      ->addWhere('id', '=', $objectId)
+      ->execute();
+
+    $currentCollectionCamp = $collectionCamps->first();
+    $currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
+    $collectionCampId = $currentCollectionCamp['id'];
+
+    // Check for status change.
+    if ($currentStatus !== $newStatus && $newStatus === 'authorized') {
+      self::generateDroppingCenterQrCode($collectionCampId);
+    }
+  }
+
   private static function getFallbackCoordinator() {
     $fallbackOffice = self::getFallbackOffice();
     $fallbackCoordinators = Relationship::get(FALSE)
@@ -50,9 +78,6 @@ class DroppingCenterService extends AutoSubscriber {
     return $coordinator;
   }
 
-  /**
-   *
-   */
   private static function findStateField(array $array) {
     $filteredItems = array_filter($array, fn($item) => $item['entity_table'] === 'civicrm_eck_collection_camp');
 
@@ -82,9 +107,6 @@ class DroppingCenterService extends AutoSubscriber {
     return $stateItemIndex !== FALSE ? $filteredItems[$stateItemIndex] : FALSE;
   }
 
-  /**
-   *
-   */
   private static function getFallbackOffice() {
     $fallbackOffices = Contact::get(FALSE)
       ->addSelect('id')
@@ -97,6 +119,18 @@ class DroppingCenterService extends AutoSubscriber {
   /**
    *
    */
+  private static function generateDroppingCenterQrCode($id) {
+    $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+    $data = "{$baseUrl}actions/dropping-center/{$id}";
+
+    $saveOptions = [
+      'customGroupName' => 'Collection_Camp_QR_Code',
+      'customFieldName' => 'QR_Code',
+    ];
+
+    self::generateQrCode($data, $id, $saveOptions);
+  }
+
   public static function setOfficeDetails($op, $groupID, $entityID, &$params) {
     if ($op !== 'create') {
       return;
@@ -238,33 +272,14 @@ class DroppingCenterService extends AutoSubscriber {
 
     $entityId = $context['entity_id'];
 
-    $entityResults = EckEntity::get(self::ENTITY_NAME, TRUE)
+    $entity = EckEntity::get(self::ENTITY_NAME, TRUE)
       ->addWhere('id', '=', $entityId)
-      ->execute();
-
-    $entity = $entityResults->first();
+      ->execute()->single();
 
     $entitySubtypeValue = $entity['subtype'];
+    $subtypeId = self::getSubtypeId();
 
-    $subtypeResults = OptionValue::get(TRUE)
-      ->addSelect('name')
-      ->addWhere('grouping', '=', self::ENTITY_NAME)
-      ->addWhere('value', '=', $entitySubtypeValue)
-      ->execute();
-
-    $subtype = $subtypeResults->first();
-
-    if (!$subtype) {
-      return FALSE;
-    }
-
-    $subtypeName = $subtype['name'];
-
-    if ($subtypeName !== self::ENTITY_SUBTYPE_NAME) {
-      return FALSE;
-    }
-
-    return TRUE;
+    return (int) $entitySubtypeValue === $subtypeId;
   }
 
 }
