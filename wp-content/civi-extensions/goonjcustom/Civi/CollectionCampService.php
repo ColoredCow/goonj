@@ -565,7 +565,8 @@ class CollectionCampService extends AutoSubscriber {
    *   The parameters that were sent into the calling function.
    */
   public static function setOfficeDetails($op, $groupID, $entityID, &$params) {
-    if ($op !== 'create') {
+    $subtypeName = self::getSubtypeNameByEntityId($entityID);
+    if ($op !== 'create' || $subtypeName !== self::ENTITY_SUBTYPE_NAME) {
       return;
     }
 
@@ -1136,6 +1137,23 @@ class CollectionCampService extends AutoSubscriber {
       ->addValue('Camp_Outcome.Number_of_Contributors', $contributorCount)
       ->addWhere('id', '=', $collectionCamp['id'])
       ->execute();
+  }
+
+  /**
+   *
+   */
+  public static function getSubtypeNameByEntityId($entityID) {
+    $getSubtypeName = civicrm_api4('Eck_Collection_Camp', 'get', [
+      'select' => [
+        'subtype:name',
+      ],
+      'where' => [
+            ['id', '=', $entityID],
+      ],
+    ]);
+    $entityData = $getSubtypeName[0] ?? [];
+    $subtypeName = $entityData['subtype:name'] ?? NULL;
+    return $subtypeName;
   }
 
 }

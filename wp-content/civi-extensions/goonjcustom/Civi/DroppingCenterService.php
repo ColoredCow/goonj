@@ -2,14 +2,13 @@
 
 namespace Civi;
 
+use Civi\Api4\Contact;
+use Civi\Api4\CustomField;
 use Civi\Api4\EckEntity;
+use Civi\Api4\Relationship;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
-use Civi\Api4\OptionValue;
 use Civi\Traits\QrCodeable;
-use Civi\Api4\Contact;
-use Civi\Api4\Relationship;
-use Civi\Api4\CustomField;
 
 /**
  *
@@ -62,6 +61,9 @@ class DroppingCenterService extends AutoSubscriber {
     }
   }
 
+  /**
+   *
+   */
   private static function getFallbackCoordinator() {
     $fallbackOffice = self::getFallbackOffice();
     $fallbackCoordinators = Relationship::get(FALSE)
@@ -78,6 +80,9 @@ class DroppingCenterService extends AutoSubscriber {
     return $coordinator;
   }
 
+  /**
+   *
+   */
   private static function findStateField(array $array) {
     $filteredItems = array_filter($array, fn($item) => $item['entity_table'] === 'civicrm_eck_collection_camp');
 
@@ -107,6 +112,9 @@ class DroppingCenterService extends AutoSubscriber {
     return $stateItemIndex !== FALSE ? $filteredItems[$stateItemIndex] : FALSE;
   }
 
+  /**
+   *
+   */
   private static function getFallbackOffice() {
     $fallbackOffices = Contact::get(FALSE)
       ->addSelect('id')
@@ -131,8 +139,13 @@ class DroppingCenterService extends AutoSubscriber {
     self::generateQrCode($data, $id, $saveOptions);
   }
 
+  /**
+   *
+   */
   public static function setOfficeDetails($op, $groupID, $entityID, &$params) {
-    if ($op !== 'create') {
+    $subtypeName = self::getSubtypeNameByEntityId($entityID);
+
+    if ($op !== 'create' || $subtypeName !== self::ENTITY_SUBTYPE_NAME) {
       return;
     }
 
@@ -280,6 +293,23 @@ class DroppingCenterService extends AutoSubscriber {
     $subtypeId = self::getSubtypeId();
 
     return (int) $entitySubtypeValue === $subtypeId;
+  }
+
+  /**
+   *
+   */
+  public static function getSubtypeNameByEntityId($entityID) {
+    $getSubtypeName = civicrm_api4('Eck_Collection_Camp', 'get', [
+      'select' => [
+        'subtype:name',
+      ],
+      'where' => [
+            ['id', '=', $entityID],
+      ],
+    ]);
+    $entityData = $getSubtypeName[0] ?? [];
+    $subtypeName = $entityData['subtype:name'] ?? NULL;
+    return $subtypeName;
   }
 
 }
