@@ -3,8 +3,8 @@
 namespace Civi;
 
 use Civi\Api4\EckEntity;
-use Civi\Api4\OptionValue;
 use Civi\Core\Service\AutoSubscriber;
+use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
 
 /**
@@ -12,11 +12,10 @@ use Civi\Traits\QrCodeable;
  */
 class DroppingCenterService extends AutoSubscriber {
   use QrCodeable;
+  use CollectionSource;
 
   const ENTITY_NAME = 'Collection_Camp';
   const ENTITY_SUBTYPE_NAME = 'Dropping_Center';
-
-  private static $subtypeId;
 
   /**
    *
@@ -31,19 +30,8 @@ class DroppingCenterService extends AutoSubscriber {
   /**
    *
    */
-  private static function isDroppingCenterSubtype($objectRef) {
-    // @todo need to remove from here.
-    self::init();
-    $isSubtype = (int) $objectRef['subtype'] === self::$subtypeId;
-    return $isSubtype;
-  }
-
-  /**
-   *
-   */
   public static function generateDroppingCenterQr(string $op, string $objectName, $objectId, &$objectRef) {
-    $isDroppingCenterSubtype = self::isDroppingCenterSubtype($objectRef);
-    if ($objectName != 'Eck_Collection_Camp' || !$objectId || !$isDroppingCenterSubtype) {
+    if ($objectName !== 'Eck_Collection_Camp' || !$objectId || !self::isCurrentSubtype($objectRef)) {
       return;
     }
 
@@ -140,9 +128,6 @@ class DroppingCenterService extends AutoSubscriber {
    *
    */
   private static function isViewingDroppingCenter($tabsetName, $context) {
-    // @todo need to remove from here.
-    self::init();
-
     if ($tabsetName !== 'civicrm/eck/entity' || empty($context) || $context['entity_type']['name'] !== self::ENTITY_NAME) {
       return FALSE;
     }
@@ -154,21 +139,9 @@ class DroppingCenterService extends AutoSubscriber {
       ->execute()->single();
 
     $entitySubtypeValue = $entity['subtype'];
+    $subtypeId = self::getSubtypeId();
 
-    return (int) $entitySubtypeValue === self::$subtypeId;
-  }
-
-  /**
-   *
-   */
-  public static function init() {
-    $subtype = OptionValue::get(FALSE)
-      ->addWhere('grouping', '=', self::ENTITY_NAME)
-      ->addWhere('name', '=', self::ENTITY_SUBTYPE_NAME)
-      ->execute()->single();
-
-    self::$subtypeId = (int) $subtype['value'];
-
+    return (int) $entitySubtypeValue === $subtypeId;
   }
 
 }
