@@ -1279,6 +1279,7 @@ class CollectionCampService extends AutoSubscriber {
           return;
         }
 
+        // Update camp status to 'planned' when the camp is authorized
         $results = EckEntity::update('Collection_Camp', TRUE)
           ->addValue('Collection_Camp_Intent_Details.Camp_status_field', 'planned')
           ->addWhere('id', '=', $campId)
