@@ -66,8 +66,14 @@ $target_data = [
 if ( in_array( $target, array( 'collection-camp', 'dropping-center' ) ) ) :
     $target_info = $target_data[$target];
     
-    $start_date = new DateTime($action_target[$target_info['start_time']]);
-    $end_date = new DateTime($action_target[$target_info['end_time']]);
+    try {
+        $start_date = new DateTime($action_target[$target_info['start_time']]);
+        $end_date = new DateTime($action_target[$target_info['end_time']]);
+    } catch (Exception $e) {
+		Civi::log()->error("Error creating DateTime object: " . $e->getMessage());
+        $start_date = $end_date = new DateTime(); // Default to current date/time
+    }
+    
     $address = $action_target[$target_info['address']];
     $contribution_link = $target_info['contribution_link'];
 
@@ -99,7 +105,7 @@ if ( in_array( $target, array( 'collection-camp', 'dropping-center' ) ) ) :
 		<a href="<?php echo esc_url( $register_link ); ?>" class="wp-block-gb-action-button">
 			<?php esc_html_e( 'Volunteer with Goonj', 'goonj-blocks' ); ?>
 		</a>
-		<a href="<?php echo esc_url( $contribution_link ); ?>" class="wp-block-gb-action-button">
+		<a href="<?php echo esc_url( $contribution_link ?? '#' ); ?>" class="wp-block-gb-action-button">
 			<?php esc_html_e( 'Record your Material Contribution', 'goonj-blocks' ); ?>
 		</a>
 	</div>
