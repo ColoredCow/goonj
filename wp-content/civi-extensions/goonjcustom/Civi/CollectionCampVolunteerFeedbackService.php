@@ -4,7 +4,6 @@ namespace Civi;
 
 use Civi\Api4\Contact;
 use Civi\Api4\EckEntity;
-use Civi\Core\Service\AutoSubscriber;
 
 /**
  * Collection Camp Outcome Service.
@@ -21,8 +20,7 @@ class CollectionCampVolunteerFeedbackService {
    *
    * @throws \CRM_Core_Exception
    */
-  public static function processVolunteerFeedbackReminder($camp, $now) {
-    $from = self::getDefaultFromEmail();
+  public static function processVolunteerFeedbackReminder($camp, $now, $from) {
     $initiatorId = $camp['Collection_Camp_Core_Details.Contact_Id'];
     $initiator = Contact::get(TRUE)
       ->addSelect('email.email', 'display_name')
