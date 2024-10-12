@@ -4,7 +4,6 @@ namespace Civi;
 
 use Civi\Api4\Contact;
 use Civi\Api4\EckEntity;
-use Civi\Core\Service\AutoSubscriber;
 
 /**
  *
@@ -32,24 +31,26 @@ class CollectionCampOutcomeService {
     // Calculate hours since camp ended.
     $hoursSinceCampEnd = abs($today->getTimestamp() - $endDate->getTimestamp()) / 3600;
 
-
     // Calculate hours since last reminder was sent (if any)
     $hoursSinceLastReminder = $lastReminderSent ? abs($today->getTimestamp() - $lastReminderSent->getTimestamp()) / 3600 : NULL;
 
     // Check if the outcome form is not filled and send the first reminder after 48 hours of camp end.
-    if ($hoursSinceCampEnd >= 48) {
-      // Send the reminder email if the form is still not filled.
-      if ($lastReminderSent === NULL || $hoursSinceLastReminder >= 24) {
-        // Send the reminder email.
-        self::sendOutcomeReminderEmail($campAttendedById, $from, $campCode, $campAddress, $collectionCampId, $endDateString);
-
-        // Update the Last_Reminder_Sent field in the database.
-        EckEntity::update('Collection_Camp', TRUE)
-          ->addWhere('id', '=', $camp['id'])
-          ->addValue('Camp_Outcome.Last_Reminder_Sent', $today->format('Y-m-d H:i:s'))
-          ->execute();
-      }
+    if ($hoursSinceCampEnd < 48) {
+      return FALSE;
     }
+
+    // Send the reminder email if the form is still not filled.
+    if ($hoursSinceLastReminder < 24) {
+      return FALSE;
+    }
+    // Send the reminder email.
+    self::sendOutcomeReminderEmail($campAttendedById, $from, $campCode, $campAddress, $collectionCampId, $endDateString);
+
+    // Update the Last_Reminder_Sent field in the database.
+    EckEntity::update('Collection_Camp', TRUE)
+      ->addWhere('id', '=', $camp['id'])
+      ->addValue('Camp_Outcome.Last_Reminder_Sent', $today->format('Y-m-d H:i:s'))
+      ->execute();
   }
 
   /**
