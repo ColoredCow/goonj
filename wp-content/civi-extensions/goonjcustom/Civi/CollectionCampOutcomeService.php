@@ -14,11 +14,11 @@ class CollectionCampOutcomeService {
    * Process camp reminder logic.
    *
    * @param array $camp
-   * @param \DateTimeImmutable $today
+   * @param \DateTimeImmutable $now
    *
    * @throws \Exception
    */
-  public static function processCampReminder($camp, $today, $from) {
+  public static function processCampReminder($camp, $now, $from) {
     $campAttendedById = $camp['Logistics_Coordination.Camp_to_be_attended_by'];
     $endDateString = $camp['Collection_Camp_Intent_Details.End_Date'];
     $endDate = new \DateTime($camp['Collection_Camp_Intent_Details.End_Date']);
@@ -29,10 +29,10 @@ class CollectionCampOutcomeService {
     $lastReminderSent = $camp['Camp_Outcome.Last_Reminder_Sent'] ? new \DateTime($camp['Camp_Outcome.Last_Reminder_Sent']) : NULL;
 
     // Calculate hours since camp ended.
-    $hoursSinceCampEnd = abs($today->getTimestamp() - $endDate->getTimestamp()) / 3600;
+    $hoursSinceCampEnd = abs($now->getTimestamp() - $endDate->getTimestamp()) / 3600;
 
     // Calculate hours since last reminder was sent (if any)
-    $hoursSinceLastReminder = $lastReminderSent ? abs($today->getTimestamp() - $lastReminderSent->getTimestamp()) / 3600 : NULL;
+    $hoursSinceLastReminder = $lastReminderSent ? abs($now->getTimestamp() - $lastReminderSent->getTimestamp()) / 3600 : NULL;
 
     // Check if the outcome form is not filled and send the first reminder after 48 hours of camp end.
     if ($hoursSinceCampEnd < 48) {
@@ -49,7 +49,7 @@ class CollectionCampOutcomeService {
     // Update the Last_Reminder_Sent field in the database.
     EckEntity::update('Collection_Camp', TRUE)
       ->addWhere('id', '=', $camp['id'])
-      ->addValue('Camp_Outcome.Last_Reminder_Sent', $today->format('Y-m-d H:i:s'))
+      ->addValue('Camp_Outcome.Last_Reminder_Sent', $now->format('Y-m-d H:i:s'))
       ->execute();
   }
 
