@@ -6,6 +6,7 @@
 
 use Civi\Api4\EckEntity;
 use Civi\CollectionCampOutcomeService;
+use Civi\HelperService;
 
 /**
  * Goonjcustom.CollectionCampOutcomeReminderCron API specification (optional)
@@ -37,7 +38,7 @@ function civicrm_api3_goonjcustom_collection_camp_outcome_reminder_cron($params)
   $now = new DateTimeImmutable();
   $endOfDay = $now->setTime(23, 59, 59)->format('Y-m-d H:i:s');
   // Get the default "from" email.
-  $from = CollectionCampOutcomeService::getDefaultFromEmail();
+  $from = HelperService::getDefaultFromEmail();
 
   // Fetch camps that have completed but the outcome form is not yet filled.
   $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
