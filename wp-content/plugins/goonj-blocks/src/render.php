@@ -3,6 +3,7 @@
  * @see https://github.com/WordPress/gutenberg/blob/trunk/docs/reference-guides/block-api/block-metadata.md#render
  */
 
+require_once __DIR__ . '/functions.php';
 $target        = get_query_var( 'target' );
 $action_target = get_query_var( 'action_target' );
 
@@ -15,14 +16,18 @@ $headings = array(
 $heading_text = $headings[ $target ];
 
 $register_link = sprintf(
-	'/individual-registration-with-volunteer-option/#?source=%s',
+	'/volunteer-registration/form/#?source=%s&state_province_id=%s&city=%s',
 	$action_target['title'],
+	$action_target['Collection_Camp_Intent_Details.State'],
+	$action_target['Collection_Camp_Intent_Details.City'],
 );
 
 $material_contribution_link = sprintf(
-	'/collection-camp-contribution?source=%s&target_id=%s',
+	'/collection-camp-contribution?source=%s&target_id=%s&state_province_id=%s&city=%s',
 	$action_target['title'],
 	$action_target['id'],
+	$action_target['Collection_Camp_Intent_Details.State'],
+	$action_target['Collection_Camp_Intent_Details.City'],
 );
 
 $pu_visit_check_link = sprintf(
@@ -44,22 +49,26 @@ if ( in_array( $target, array( 'collection-camp', 'dropping-center' ) ) ) :
 	<div class="wp-block-gb-heading-wrapper">
 		<h2 class="wp-block-gb-heading"><?php echo esc_html($heading_text); ?></h2>
 	</div>
-	<table class="wp-block-gb-table">
-		<tbody>
-			<tr class="wp-block-gb-table-row">
-				<td class="wp-block-gb-table-cell wp-block-gb-table-header">From</td>
-				<td class="wp-block-gb-table-cell"><?php echo $start_date->format( 'd-m-Y h:i A' ); ?></td>
-			</tr>
-			<tr class="wp-block-gb-table-row">
-				<td class="wp-block-gb-table-cell wp-block-gb-table-header">To</td>
-				<td class="wp-block-gb-table-cell"><?php echo $end_date->format( 'd-m-Y h:i A' ); ?></td>
-			</tr>
-			<tr class="wp-block-gb-table-row">
-				<td class="wp-block-gb-table-cell wp-block-gb-table-header">Address of the camp</td>
-				<td class="wp-block-gb-table-cell"><?php echo esc_html( $address ); ?></td>
-			</tr>
-		</tbody>
-	</table>
+    <table class="wp-block-gb-table">
+        <tbody>
+            <tr class="wp-block-gb-table-row">
+                <td class="wp-block-gb-table-cell wp-block-gb-table-header">From</td>
+                <td class="wp-block-gb-table-cell"><?php echo gb_format_date($start_date); ?></td>
+            </tr>
+            <tr class="wp-block-gb-table-row">
+                <td class="wp-block-gb-table-cell wp-block-gb-table-header">To</td>
+                <td class="wp-block-gb-table-cell"><?php echo gb_format_date($end_date); ?></td>
+            </tr>
+            <tr class="wp-block-gb-table-row">
+                <td class="wp-block-gb-table-cell wp-block-gb-table-header">Time</td>
+                <td class="wp-block-gb-table-cell"><?php echo gb_format_time_range($start_date, $end_date); ?></td>
+            </tr>
+            <tr class="wp-block-gb-table-row">
+                <td class="wp-block-gb-table-cell wp-block-gb-table-header">Address of the camp</td>
+                <td class="wp-block-gb-table-cell"><?php echo esc_html($address); ?></td>
+            </tr>
+        </tbody>
+    </table>
 	<div <?php echo get_block_wrapper_attributes(); ?>>
 		<a href="<?php echo esc_url( $register_link ); ?>" class="wp-block-gb-action-button">
 			<?php esc_html_e( 'Volunteer with Goonj', 'goonj-blocks' ); ?>

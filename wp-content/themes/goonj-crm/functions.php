@@ -139,6 +139,8 @@ function goonj_handle_user_identification_form() {
 	// Retrieve the email and phone number from the POST data
 	$email = $_POST['email'] ?? '';
 	$phone = $_POST['phone'] ?? '';
+	$state_id = $_POST['state_id'] ?? '';
+	$city = $_POST['city'] ?? '';
 
 	$is_purpose_requiring_email = ! in_array( $purpose, array( 'material-contribution', 'processing-center-office-visit', 'processing-center-material-contribution' ) );
 
@@ -206,11 +208,13 @@ function goonj_handle_user_identification_form() {
 				// Redirect to individual registration with option for volunteering.
 				case 'material-contribution':
 					$individual_volunteer_registration_form_path = sprintf(
-						'/individual-registration-with-volunteer-option/#?email=%s&phone=%s&source=%s&Individual_fields.Creation_Flow=%s',
+						'/individual-registration-with-volunteer-option/#?email=%s&phone=%s&source=%s&Individual_fields.Creation_Flow=%s&state_province_id=%s&city=%s',
 						$email,
 						$phone,
 						$source,
 						'material-contribution',
+						sanitize_text_field($state_id),
+						sanitize_text_field($city)
 					);
 					$redirect_url = $individual_volunteer_registration_form_path;
 					break;
@@ -347,11 +351,12 @@ function goonj_handle_user_identification_form() {
 		// If we are here, then it means the user exists as an inducted volunteer.
 		// Fetch the most recent collection camp activity based on the creation date
 		$optionValues = \Civi\Api4\OptionValue::get( false )
-		->addWhere( 'option_group_id:label', '=', 'ECK Subtypes' )
-		->addWhere( 'label', '=', 'Collection Camp' )
-		->execute();
+		->addWhere('option_group_id:name', '=', 'eck_sub_types')
+		->addWhere('name', '=', 'Collection_Camp')
+		->addWhere('grouping', '=', 'Collection_Camp')
+		->execute()->single();
 
-		$collectionCampSubtype = $optionValues->first()['value'];
+		$collectionCampSubtype = $optionValues['value'];
 
 		$collectionCampResult = \Civi\Api4\EckEntity::get( 'Collection_Camp', false )
 		->addSelect( '*', 'custom.*' )
@@ -500,6 +505,8 @@ add_shortcode( 'goonj_collection_landing_page', 'goonj_collection_camp_landing_p
 add_filter( 'query_vars', 'goonj_query_vars' );
 function goonj_query_vars( $vars ) {
 	$vars[] = 'target_id';
+	$vars[] = 'state_province_id';
+	$vars[] = 'city';
 	return $vars;
 }
 
