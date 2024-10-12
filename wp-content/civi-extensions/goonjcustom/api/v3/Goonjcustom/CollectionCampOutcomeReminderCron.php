@@ -36,6 +36,8 @@ function civicrm_api3_goonjcustom_collection_camp_outcome_reminder_cron($params)
   $returnValues = [];
   $today = new DateTimeImmutable();
   $endOfDay = $today->setTime(23, 59, 59)->format('Y-m-d H:i:s');
+  // Get the default "from" email.
+  $from = CollectionCampOutcomeService::getDefaultFromEmail();
 
   // Fetch camps that have completed but the outcome form is not yet filled.
   $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
@@ -54,7 +56,7 @@ function civicrm_api3_goonjcustom_collection_camp_outcome_reminder_cron($params)
 
   foreach ($collectionCamps as $camp) {
     try {
-      CollectionCampOutcomeService::processCampReminder($camp, $today);
+      CollectionCampOutcomeService::processCampReminder($camp, $today, $from);
     }
     catch (\Exception $e) {
       \Civi::log()->error('Error processing camp reminder', [
