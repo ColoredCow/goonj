@@ -38,8 +38,8 @@ function _civicrm_api3_goonjcustom_volunteer_feedback_reminder_cron_spec(&$spec)
  */
 function civicrm_api3_goonjcustom_volunteer_feedback_reminder_cron($params) {
   $returnValues = [];
-  $today = new DateTimeImmutable();
-  $endOfDay = $today->setTime(23, 59, 59)->format('Y-m-d H:i:s');
+  $now = new DateTimeImmutable();
+  $endOfDay = $now->setTime(23, 59, 59)->format('Y-m-d H:i:s');
 
   // Fetch camps that have completed and volunteers have not filled the feedback form.
   $campsNeedReminder = EckEntity::get('Collection_Camp', TRUE)
@@ -52,7 +52,7 @@ function civicrm_api3_goonjcustom_volunteer_feedback_reminder_cron($params) {
 
   foreach ($campsNeedReminder as $camp) {
     try {
-      CollectionCampVolunteerFeedbackService::processVolunteerFeedbackReminder($camp, $today);
+      CollectionCampVolunteerFeedbackService::processVolunteerFeedbackReminder($camp, $now);
     }
     catch (\Exception $e) {
       \Civi::log()->error('Error processing volunteer feedback reminder', [

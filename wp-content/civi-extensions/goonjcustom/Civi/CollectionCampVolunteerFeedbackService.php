@@ -16,12 +16,12 @@ class CollectionCampVolunteerFeedbackService {
    *
    * @param array $camp
    *   The camp data.
-   * @param \DateTimeImmutable $today
+   * @param \DateTimeImmutable $now
    *   The current date.
    *
    * @throws \CRM_Core_Exception
    */
-  public static function processVolunteerFeedbackReminder($camp, $today) {
+  public static function processVolunteerFeedbackReminder($camp, $now) {
     $from = self::getDefaultFromEmail();
     $initiatorId = $camp['Collection_Camp_Core_Details.Contact_Id'];
     $initiator = Contact::get(TRUE)
@@ -41,7 +41,7 @@ class CollectionCampVolunteerFeedbackService {
     $lastReminderSent = $camp['Volunteer_Camp_Feedback.Last_Reminder_Sent'] ? new \DateTime($camp['Volunteer_Camp_Feedback.Last_Reminder_Sent']) : NULL;
 
     // Calculate hours since camp ended.
-    $hoursSinceCampEnd = abs($today->getTimestamp() - $endDate->getTimestamp()) / 3600;
+    $hoursSinceCampEnd = abs($now->getTimestamp() - $endDate->getTimestamp()) / 3600;
 
     // Check if feedback form is not filled and 24 hours have passed since camp end.
     if ($hoursSinceCampEnd >= 24 && ($lastReminderSent === NULL)) {
@@ -51,7 +51,7 @@ class CollectionCampVolunteerFeedbackService {
       // Update the Last_Reminder_Sent field in the database.
       EckEntity::update('Collection_Camp', TRUE)
         ->addWhere('id', '=', $collectionCampId)
-        ->addValue('Volunteer_Camp_Feedback.Last_Reminder_Sent', $today->format('Y-m-d H:i:s'))
+        ->addValue('Volunteer_Camp_Feedback.Last_Reminder_Sent', $now->format('Y-m-d H:i:s'))
         ->execute();
     }
   }
