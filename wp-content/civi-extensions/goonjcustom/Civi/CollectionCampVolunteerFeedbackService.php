@@ -43,7 +43,6 @@ class CollectionCampVolunteerFeedbackService {
     // Calculate hours since camp ended.
     $hoursSinceCampEnd = abs($today->getTimestamp() - $endDate->getTimestamp()) / 3600;
 
-
     // Check if feedback form is not filled and 24 hours have passed since camp end.
     if ($hoursSinceCampEnd >= 24 && ($lastReminderSent === NULL)) {
       // Send the first reminder email to the volunteer.
