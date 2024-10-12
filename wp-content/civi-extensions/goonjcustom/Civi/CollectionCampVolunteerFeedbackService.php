@@ -23,15 +23,15 @@ class CollectionCampVolunteerFeedbackService {
    */
   public static function processVolunteerFeedbackReminder($camp, $today) {
     $from = self::getDefaultFromEmail();
-    $volunteerContactId = $camp['Collection_Camp_Core_Details.Contact_Id'];
-    $campAttendedBy = Contact::get(TRUE)
+    $initiatorId = $camp['Collection_Camp_Core_Details.Contact_Id'];
+    $initiator = Contact::get(TRUE)
       ->addSelect('email.email', 'display_name')
       ->addJoin('Email AS email', 'LEFT')
-      ->addWhere('id', '=', $volunteerContactId)
+      ->addWhere('id', '=', $initiatorId)
       ->execute()->single();
 
-    $volunteerEmailId = $campAttendedBy['email.email'];
-    $volunteerName = $campAttendedBy['display_name'];
+    $initiatorEmail = $initiator['email.email'];
+    $initiatorName = $initiator['display_name'];
 
     $endDate = new \DateTime($camp['Collection_Camp_Intent_Details.End_Date']);
     $collectionCampId = $camp['id'];
@@ -46,7 +46,7 @@ class CollectionCampVolunteerFeedbackService {
     // Check if feedback form is not filled and 24 hours have passed since camp end.
     if ($hoursSinceCampEnd >= 24 && ($lastReminderSent === NULL)) {
       // Send the first reminder email to the volunteer.
-      self::sendVolunteerFeedbackReminderEmail($volunteerEmailId, $from, $campAddress, $collectionCampId, $endDate, $volunteerName);
+      self::sendVolunteerFeedbackReminderEmail($initiatorEmail, $from, $campAddress, $collectionCampId, $endDate, $initiatorName);
 
       // Update the Last_Reminder_Sent field in the database.
       EckEntity::update('Collection_Camp', TRUE)
@@ -59,26 +59,26 @@ class CollectionCampVolunteerFeedbackService {
   /**
    * Send the feedback reminder email to the volunteer.
    *
-   * @param int $volunteerEmailId
+   * @param int $initiatorEmail
    * @param string $from
    * @param string $campAddress
    * @param int $collectionCampId
    * @param \DateTime $endDate
    */
-  public static function sendVolunteerFeedbackReminderEmail($volunteerEmailId, $from, $campAddress, $collectionCampId, $endDate, $volunteerName) {
+  public static function sendVolunteerFeedbackReminderEmail($initiatorEmail, $from, $campAddress, $collectionCampId, $endDate, $initiatorName) {
     $mailParams = [
       'subject' => 'Reminder to share your feedback for ' . $campAddress . ' on ' . $endDate->format('Y-m-d'),
       'from' => $from,
-      'toEmail' => $volunteerEmailId,
+      'toEmail' => $initiatorEmail,
       'replyTo' => $from,
-      'html' => self::getVolunteerFeedbackReminderEmailHtml($volunteerName, $collectionCampId),
+      'html' => self::getVolunteerFeedbackReminderEmailHtml($initiatorName, $collectionCampId),
     ];
 
     $emailSendResult = \CRM_Utils_Mail::send($mailParams);
 
     if (!$emailSendResult) {
       \Civi::log()->error('Failed to send feedback reminder email', [
-        'volunteerEmailId' => $volunteerEmailId,
+        'initiatorEmail' => $initiatorEmail,
         'volunteerEmail' => $volunteerEmail,
       ]);
       throw new \CRM_Core_Exception('Failed to send feedback reminder email');
@@ -88,17 +88,17 @@ class CollectionCampVolunteerFeedbackService {
   /**
    * Generates HTML content for the volunteer feedback reminder email.
    *
-   * @param string $volunteerName
+   * @param string $initiatorName
    * @param int $collectionCampId
    *
    * @return string
    */
-  public static function getVolunteerFeedbackReminderEmailHtml($volunteerName, $collectionCampId) {
+  public static function getVolunteerFeedbackReminderEmailHtml($initiatorName, $collectionCampId) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
     $feedbackFormUrl = $homeUrl . 'volunteer-camp-feedback/#?Eck_Collection_Camp1=' . $collectionCampId;
 
     $html = "
-      <p>Dear $volunteerName,</p>
+      <p>Dear $initiatorName,</p>
       <p>Greetings from Goonj!</p>
       <p>Kindly reminding you to share your valuable feedback on the recent collection camp. Your insights are important for us to continue improving in future camps.</p>
       <p>If you haven’t had the chance yet, please take a few minutes to fill out the feedback form here:</p>
