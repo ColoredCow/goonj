@@ -9,14 +9,7 @@ use Civi\Core\Service\AutoSubscriber;
 /**
  * Collection Camp Outcome Service.
  */
-class CollectionCampVolunteerFeedbackService extends AutoSubscriber {
-
-  /**
-   * Define subscribed events.
-   */
-  public static function getSubscribedEvents() {
-    return [];
-  }
+class CollectionCampVolunteerFeedbackService {
 
   /**
    * Process the feedback reminder for a volunteer.
