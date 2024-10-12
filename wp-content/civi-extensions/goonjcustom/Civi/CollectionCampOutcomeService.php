@@ -19,8 +19,7 @@ class CollectionCampOutcomeService {
    *
    * @throws \Exception
    */
-  public static function processCampReminder($camp, $today) {
-    $from = self::getDefaultFromEmail();
+  public static function processCampReminder($camp, $today, $from) {
     $campAttendedById = $camp['Logistics_Coordination.Camp_to_be_attended_by'];
     $endDateForCollectionCamp = $camp['Collection_Camp_Intent_Details.End_Date'];
     $endDate = new \DateTime($camp['Collection_Camp_Intent_Details.End_Date']);
