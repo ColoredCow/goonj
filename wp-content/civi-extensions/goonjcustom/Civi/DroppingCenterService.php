@@ -9,6 +9,7 @@ use Civi\Api4\Relationship;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
+use Civi\Traits\SubtypeSource;
 
 /**
  *
@@ -16,9 +17,10 @@ use Civi\Traits\QrCodeable;
 class DroppingCenterService extends AutoSubscriber {
   use QrCodeable;
   use CollectionSource;
+  use SubtypeSource;
 
   const ENTITY_NAME = 'Collection_Camp';
-  const RELATIONSHIP_TYPE_NAME = 'Collection Camp Coordinator of';
+  const RELATIONSHIP_TYPE_NAME = 'Dropping Center Coordinator of';
   const ENTITY_SUBTYPE_NAME = 'Dropping_Center';
   const FALLBACK_OFFICE_NAME = 'Delhi';
 
@@ -143,9 +145,7 @@ class DroppingCenterService extends AutoSubscriber {
    *
    */
   public static function setOfficeDetails($op, $groupID, $entityID, &$params) {
-    $subtypeName = self::getSubtypeNameByEntityId($entityID);
-
-    if ($op !== 'create' || $subtypeName !== self::ENTITY_SUBTYPE_NAME) {
+    if ($op !== 'create' || self::getSubtypeNameByEntityId($entityID) !== self::ENTITY_SUBTYPE_NAME) {
       return;
     }
 
@@ -209,7 +209,7 @@ class DroppingCenterService extends AutoSubscriber {
     else {
       $coordinator = $coordinators->first();
     }
-    
+
     if (!$coordinator) {
       throw new \Exception('No coordinator available to assign.');
     }
@@ -297,23 +297,6 @@ class DroppingCenterService extends AutoSubscriber {
     $subtypeId = self::getSubtypeId();
 
     return (int) $entitySubtypeValue === $subtypeId;
-  }
-
-  /**
-   *
-   */
-  public static function getSubtypeNameByEntityId($entityID) {
-    $getSubtypeName = civicrm_api4('Eck_Collection_Camp', 'get', [
-      'select' => [
-        'subtype:name',
-      ],
-      'where' => [
-            ['id', '=', $entityID],
-      ],
-    ]);
-    $entityData = $getSubtypeName[0] ?? [];
-    $subtypeName = $entityData['subtype:name'] ?? NULL;
-    return $subtypeName;
   }
 
 }
