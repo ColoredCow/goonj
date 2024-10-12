@@ -21,7 +21,7 @@ class CollectionCampOutcomeService {
    */
   public static function processCampReminder($camp, $today, $from) {
     $campAttendedById = $camp['Logistics_Coordination.Camp_to_be_attended_by'];
-    $endDateForCollectionCamp = $camp['Collection_Camp_Intent_Details.End_Date'];
+    $endDateString = $camp['Collection_Camp_Intent_Details.End_Date'];
     $endDate = new \DateTime($camp['Collection_Camp_Intent_Details.End_Date']);
     $collectionCampId = $camp['id'];
     $campCode = $camp['title'];
@@ -41,7 +41,7 @@ class CollectionCampOutcomeService {
       // Send the reminder email if the form is still not filled.
       if ($lastReminderSent === NULL || $hoursSinceLastReminder >= 24) {
         // Send the reminder email.
-        self::sendOutcomeReminderEmail($campAttendedById, $from, $campCode, $campAddress, $collectionCampId, $endDateForCollectionCamp);
+        self::sendOutcomeReminderEmail($campAttendedById, $from, $campCode, $campAddress, $collectionCampId, $endDateString);
 
         // Update the Last_Reminder_Sent field in the database.
         EckEntity::update('Collection_Camp', TRUE)
@@ -55,7 +55,7 @@ class CollectionCampOutcomeService {
   /**
    * Send the reminder email to the camp attendee.
    */
-  public static function sendOutcomeReminderEmail($campAttendedById, $from, $campCode, $campAddress, $collectionCampId, $endDateForCollectionCamp) {
+  public static function sendOutcomeReminderEmail($campAttendedById, $from, $campCode, $campAddress, $collectionCampId, $endDateString) {
     $campAttendedBy = Contact::get(FALSE)
       ->addSelect('email.email', 'display_name')
       ->addJoin('Email AS email', 'LEFT')
@@ -66,7 +66,7 @@ class CollectionCampOutcomeService {
     $attendeeName = $campAttendedBy['display_name'];
 
     $mailParams = [
-      'subject' => 'Reminder to fill the camp outcome form for ' . $campCode . ' at ' . $campAddress . ' on ' . $endDateForCollectionCamp,
+      'subject' => 'Reminder to fill the camp outcome form for ' . $campCode . ' at ' . $campAddress . ' on ' . $endDateString,
       'from' => $from,
       'toEmail' => $attendeeEmail,
       'replyTo' => $from,
