@@ -41,7 +41,8 @@ class CollectionCampVolunteerFeedbackService {
     $lastReminderSent = $camp['Volunteer_Camp_Feedback.Last_Reminder_Sent'] ? new \DateTime($camp['Volunteer_Camp_Feedback.Last_Reminder_Sent']) : NULL;
 
     // Calculate hours since camp ended.
-    $hoursSinceCampEnd = $today->diff($endDate)->h + ($today->diff($endDate)->days * 24);
+    $hoursSinceCampEnd = abs($today->getTimestamp() - $endDate->getTimestamp()) / 3600;
+
 
     // Check if feedback form is not filled and 24 hours have passed since camp end.
     if ($hoursSinceCampEnd >= 24 && ($lastReminderSent === NULL)) {
