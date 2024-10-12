@@ -5,6 +5,7 @@
  */
 
 use Civi\Api4\EckEntity;
+use Civi\HelperService;
 use Civi\CollectionCampVolunteerFeedbackService;
 
 /**
@@ -42,7 +43,7 @@ function civicrm_api3_goonjcustom_volunteer_feedback_reminder_cron($params) {
   $endOfDay = $now->setTime(23, 59, 59)->format('Y-m-d H:i:s');
 
   // Get the default "from" email.
-  $from = CollectionCampVolunteerFeedbackService::getDefaultFromEmail();
+  $from = HelperService::getDefaultFromEmail();
 
   // Fetch camps that have completed and volunteers have not filled the feedback form.
   $campsNeedReminder = EckEntity::get('Collection_Camp', TRUE)
