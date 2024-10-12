@@ -481,7 +481,7 @@ function goonj_contribution_volunteer_signup_button() {
         }
 
         $redirectPath = '/volunteer-registration/form-with-details/';
-        $redirectPathWithParams = $redirectPath . '?' . http_build_query([
+        $redirectPathWithParams = $redirectPath . '#?' . http_build_query([
             'Individual1' => $individualId,
             'message' => 'individual-user'
         ]);
