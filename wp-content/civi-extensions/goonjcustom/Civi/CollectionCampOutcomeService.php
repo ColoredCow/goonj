@@ -31,10 +31,11 @@ class CollectionCampOutcomeService {
     $lastReminderSent = $camp['Camp_Outcome.Last_Reminder_Sent'] ? new \DateTime($camp['Camp_Outcome.Last_Reminder_Sent']) : NULL;
 
     // Calculate hours since camp ended.
-    $hoursSinceCampEnd = $today->diff($endDate)->h + ($today->diff($endDate)->days * 24);
+    $hoursSinceCampEnd = abs($today->getTimestamp() - $endDate->getTimestamp()) / 3600;
+
 
     // Calculate hours since last reminder was sent (if any)
-    $hoursSinceLastReminder = $lastReminderSent ? ($today->diff($lastReminderSent)->h + ($today->diff($lastReminderSent)->days * 24)) : NULL;
+    $hoursSinceLastReminder = $lastReminderSent ? abs($today->getTimestamp() - $lastReminderSent->getTimestamp()) / 3600 : NULL;
 
     // Check if the outcome form is not filled and send the first reminder after 48 hours of camp end.
     if ($hoursSinceCampEnd >= 48) {
