@@ -57,7 +57,7 @@ class CollectionCampService extends AutoSubscriber {
       '&hook_civicrm_custom' => [
         ['setOfficeDetails'],
         ['linkInductionWithCollectionCamp'],
-        ['mailNotificationToMmt'],
+        // ['mailNotificationToMmt'],
 
       ],
       '&hook_civicrm_fieldOptions' => 'setIndianStateOptions',
