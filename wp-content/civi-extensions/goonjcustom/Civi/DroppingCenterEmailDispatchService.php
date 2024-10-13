@@ -87,7 +87,7 @@ class DroppingCenterEmailDispatchService extends AutoSubscriber {
   public static function sendCampEmail($email, $initiatorName, $droppingCenterId, $contactId, $droppingCenterGoonjOffice) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
 
-    $campVehicleDispatchFormUrl = $homeUrl . '/dropping-center/camp-vehicle-dispatch/#?Camp_Vehicle_Dispatch.Collection_Camp=' . $droppingCenterId . '&Camp_Vehicle_Dispatch.Filled_by=' . $contactId . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $droppingCenterGoonjOffice . '&Eck_Collection_Camp1=' . $droppingCenterId;
+    $campVehicleDispatchFormUrl = $homeUrl . '/vehicle-dispatch/#?Camp_Vehicle_Dispatch.Collection_Camp=' . $droppingCenterId . '&Camp_Vehicle_Dispatch.Filled_by=' . $contactId . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $droppingCenterGoonjOffice . '&Eck_Collection_Camp1=' . $droppingCenterId;
     $campOutcomeFormUrl = $homeUrl . '/camp-outcome-form/#?Eck_Collection_Camp1=' . $droppingCenterId . '&Camp_Outcome.Filled_By=' . $contactId;
 
     $emailHtml = "
