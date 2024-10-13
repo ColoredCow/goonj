@@ -3,13 +3,16 @@
 namespace Civi;
 
 use Civi\Api4\EckEntity;
-use Civi\Api4\OptionValue;
 use Civi\Core\Service\AutoSubscriber;
+use Civi\Traits\CollectionSource;
+use Civi\Traits\QrCodeable;
 
 /**
  *
  */
 class DroppingCenterService extends AutoSubscriber {
+  use QrCodeable;
+  use CollectionSource;
 
   const ENTITY_NAME = 'Collection_Camp';
   const ENTITY_SUBTYPE_NAME = 'Dropping_Center';
@@ -20,7 +23,51 @@ class DroppingCenterService extends AutoSubscriber {
   public static function getSubscribedEvents() {
     return [
       '&hook_civicrm_tabset' => 'droppingCenterTabset',
+      '&hook_civicrm_pre' => 'generateDroppingCenterQr',
     ];
+  }
+
+  /**
+   *
+   */
+  public static function generateDroppingCenterQr(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($objectName !== 'Eck_Collection_Camp' || !$objectId || !self::isCurrentSubtype($objectRef)) {
+      return;
+    }
+
+    $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
+    if (!$newStatus) {
+      return;
+    }
+
+    $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id')
+      ->addWhere('id', '=', $objectId)
+      ->execute();
+
+    $currentCollectionCamp = $collectionCamps->first();
+    $currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
+    $collectionCampId = $currentCollectionCamp['id'];
+
+    // Check for status change.
+    if ($currentStatus !== $newStatus && $newStatus === 'authorized') {
+      self::generateDroppingCenterQrCode($collectionCampId);
+    }
+  }
+
+  /**
+   *
+   */
+  private static function generateDroppingCenterQrCode($id) {
+    $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+    $data = "{$baseUrl}actions/dropping-center/{$id}";
+
+    $saveOptions = [
+      'customGroupName' => 'Collection_Camp_QR_Code',
+      'customFieldName' => 'QR_Code',
+    ];
+
+    self::generateQrCode($data, $id, $saveOptions);
   }
 
   /**
@@ -30,71 +77,51 @@ class DroppingCenterService extends AutoSubscriber {
     if (!self::isViewingDroppingCenter($tabsetName, $context)) {
       return;
     }
-
-    $status = \CRM_Utils_System::url(
-      "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fdropping_center-status",
-    );
-
-    $visitDetails = \CRM_Utils_System::url(
-      "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fvisit-details%2Fcreate",
-    );
-
-    $donationTrackingUrl = \CRM_Utils_System::url(
-      "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fdonation-box-list",
-    );
-
-    $logisticsCoordinationUrl = \CRM_Utils_System::url(
-      "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fdropping-center%2Flogistics-coordination",
-    );
-
-    $outcome = \CRM_Utils_System::url(
-      "wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fdropping-center-outcome",
-    );
-
-    // Add the Status tab.
-    $tabs['status'] = [
-      'title' => ts('Status'),
-      'link' => $status,
-      'valid' => 1,
-      'active' => 1,
-      'current' => FALSE,
+    $tabConfigs = [
+      'status' => [
+        'title' => ts('Status'),
+        'module' => 'afsearchDroppingCenterStatus',
+        'directive' => 'afsearch-dropping-center-status',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      ],
+      'visitDetails' => [
+        'title' => ts('Visit Details'),
+        'module' => 'afsearchVisitDetails',
+        'directive' => 'afsearch-visit-details',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      ],
+      'donationTracking' => [
+        'title' => ts('Donation Tracking'),
+        'module' => 'afsearchDroppingCenterDonationBoxRegisterList',
+        'directive' => 'afsearch-dropping-center-donation-box-register-list',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      ],
+      'logisticsCoordination' => [
+        'title' => ts('Logistics'),
+        'module' => 'afsearchDroppingCenterLogisticsCoordination',
+        'directive' => 'afsearch-dropping-center-logistics-coordination',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      ],
+      'outcome' => [
+        'title' => ts('Outcome'),
+        'module' => 'afformDroppingCenterOutcome',
+        'directive' => 'afform-dropping-center-outcome',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCampService.tpl',
+      ],
     ];
 
-    // Add the Visit Details tab.
-    $tabs['visit details'] = [
-      'title' => ts('Visit Details'),
-      'link' => $visitDetails,
-      'valid' => 1,
-      'active' => 1,
-      'current' => FALSE,
-    ];
+    foreach ($tabConfigs as $key => $config) {
+      $tabs[$key] = [
+        'id' => $key,
+        'title' => $config['title'],
+        'is_active' => 1,
+        'template' => $config['template'],
+        'module' => $config['module'],
+        'directive' => $config['directive'],
+      ];
 
-    // Add the Donation Box/Register Tracking tab.
-    $tabs['donation tracking'] = [
-      'title' => ts('Donation Tracking'),
-      'link' => $donationTrackingUrl,
-      'valid' => 1,
-      'active' => 1,
-      'current' => FALSE,
-    ];
-
-    // Add the Logistics Coordination tab.
-    $tabs['logistics coordination'] = [
-      'title' => ts('Logistics Coordination'),
-      'link' => $logisticsCoordinationUrl,
-      'valid' => 1,
-      'active' => 1,
-      'current' => FALSE,
-    ];
-
-    // Add the outcome tab.
-    $tabs['outcome'] = [
-      'title' => ts('Outcome'),
-      'link' => $outcome,
-      'valid' => 1,
-      'active' => 1,
-      'current' => FALSE,
-    ];
+      \Civi::service('angularjs.loader')->addModules($config['module']);
+    }
   }
 
   /**
@@ -107,33 +134,14 @@ class DroppingCenterService extends AutoSubscriber {
 
     $entityId = $context['entity_id'];
 
-    $entityResults = EckEntity::get(self::ENTITY_NAME, TRUE)
+    $entity = EckEntity::get(self::ENTITY_NAME, TRUE)
       ->addWhere('id', '=', $entityId)
-      ->execute();
-
-    $entity = $entityResults->first();
+      ->execute()->single();
 
     $entitySubtypeValue = $entity['subtype'];
+    $subtypeId = self::getSubtypeId();
 
-    $subtypeResults = OptionValue::get(TRUE)
-      ->addSelect('name')
-      ->addWhere('grouping', '=', self::ENTITY_NAME)
-      ->addWhere('value', '=', $entitySubtypeValue)
-      ->execute();
-
-    $subtype = $subtypeResults->first();
-
-    if (!$subtype) {
-      return FALSE;
-    }
-
-    $subtypeName = $subtype['name'];
-
-    if ($subtypeName !== self::ENTITY_SUBTYPE_NAME) {
-      return FALSE;
-    }
-
-    return TRUE;
+    return (int) $entitySubtypeValue === $subtypeId;
   }
 
 }

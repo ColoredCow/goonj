@@ -1,57 +1,57 @@
 <?php
 
-add_action('wp_enqueue_scripts', 'goonj_enqueue_scripts');
+add_action( 'wp_enqueue_scripts', 'goonj_enqueue_scripts' );
 function goonj_enqueue_scripts() {
 	wp_enqueue_style(
 		'goonj-style',
 		get_template_directory_uri() . '/style.css',
 		array(),
-		wp_get_theme()->get('Version')
+		wp_get_theme()->get( 'Version' )
 	);
 	wp_enqueue_script(
 		'goonj-script',
 		get_template_directory_uri() . '/main.js',
 		array(),
-		wp_get_theme()->get('Version')
+		wp_get_theme()->get( 'Version' )
 	);
 	wp_enqueue_script(
 		'validation-script',
 		get_template_directory_uri() . '/validation.js',
-		array('jquery'),
-		wp_get_theme()->get('Version'),
+		array( 'jquery' ),
+		wp_get_theme()->get( 'Version' ),
 		true
 	);
 }
 
-add_action('admin_enqueue_scripts', 'goonj_enqueue_admin_scripts');
+add_action( 'admin_enqueue_scripts', 'goonj_enqueue_admin_scripts' );
 function goonj_enqueue_admin_scripts() {
 	wp_enqueue_style(
 		'goonj-admin-style',
 		get_template_directory_uri() . '/admin-style.css',
 		array(),
-		wp_get_theme()->get('Version')
+		wp_get_theme()->get( 'Version' )
 	);
 	wp_enqueue_script(
 		'goonj-admin-script',
 		get_template_directory_uri() . '/admin-script.js',
-		array('jquery'),
-		wp_get_theme()->get('Version'),
+		array( 'jquery' ),
+		wp_get_theme()->get( 'Version' ),
 		true
 	);
 }
 
 
-add_action('after_setup_theme', 'goonj_theme_setup');
+add_action( 'after_setup_theme', 'goonj_theme_setup' );
 function goonj_theme_setup() {
-	add_editor_style('style.css');
+	add_editor_style( 'style.css' );
 }
 
 
 
-add_action('template_redirect', 'goonj_redirect_logged_in_user_to_civi_dashboard');
+add_action( 'template_redirect', 'goonj_redirect_logged_in_user_to_civi_dashboard' );
 function goonj_redirect_logged_in_user_to_civi_dashboard() {
-	if (is_user_logged_in() && is_front_page()) {
-		wp_redirect(home_url('/wp-admin/admin.php?page=CiviCRM'));
+	if ( is_user_logged_in() && is_front_page() ) {
+		wp_redirect( home_url( '/wp-admin/admin.php?page=CiviCRM' ) );
 		exit();
 	}
 }
@@ -59,7 +59,7 @@ function goonj_redirect_logged_in_user_to_civi_dashboard() {
 add_action( 'wp_login_failed', 'goonj_custom_login_failed_redirect' );
 function goonj_custom_login_failed_redirect( $username ) {
 	// Change the URL to your desired page
-	$redirect_url = home_url( ); // Change '/login' to your custom login page slug
+	$redirect_url = home_url(); // Change '/login' to your custom login page slug
 
 	// Add a query variable to indicate a login error
 	$redirect_url = add_query_arg( 'login', 'failed', $redirect_url );
@@ -85,22 +85,21 @@ function goonj_check_empty_login_fields( $user, $username, $password ) {
 
 add_filter( 'login_form_top', 'goonj_login_form_validation_errors' );
 function goonj_login_form_validation_errors( $string ) {
-	if ( isset( $_REQUEST['login'] ) && $_REQUEST['login'] === 'failed'  ) {
+	if ( isset( $_REQUEST['login'] ) && $_REQUEST['login'] === 'failed' ) {
 		return '<p class="error">Login failed: Invalid username or password.</p>';
 	}
 
-	if ( isset( $_REQUEST['password-reset'] ) && $_REQUEST['password-reset'] === 'success'  ) {
-		return
-		'<p class="fw-600 fz-16 mb-6">Your password has been set successful</p>
+	if ( isset( $_REQUEST['password-reset'] ) && $_REQUEST['password-reset'] === 'success' ) {
+		return '<p class="fw-600 fz-16 mb-6">Your password has been set successful</p>
 		<p class="fw-400 fz-16 mt-0 mb-24">You can now login to your account using your new password</p>';
 	}
 
 	return $string;
 }
 
-add_action('login_form_rp', 'goonj_custom_reset_password_form');
+add_action( 'login_form_rp', 'goonj_custom_reset_password_form' );
 function goonj_custom_reset_password_form() {
-	get_template_part('templates/password-reset');
+	get_template_part( 'templates/password-reset' );
 }
 
 add_action( 'validate_password_reset', 'goonj_custom_password_reset_redirection', 10, 2 );
@@ -121,15 +120,13 @@ function goonj_custom_password_reset_redirection( $errors, $user ) {
 
 add_shortcode( 'goonj_check_user_form', 'goonj_check_user_action' );
 
-function goonj_check_user_action($atts)
-{
-	get_template_part('templates/form', 'check-user', [ 'purpose' => $atts['purpose'] ]);
+function goonj_check_user_action( $atts ) {
+	get_template_part( 'templates/form', 'check-user', array( 'purpose' => $atts['purpose'] ) );
 	return ob_get_clean();
-
 }
 
 
-add_action('wp', 'goonj_handle_user_identification_form');
+add_action( 'wp', 'goonj_handle_user_identification_form' );
 function goonj_handle_user_identification_form() {
 	if ( ! isset( $_POST['action'] ) || ( $_POST['action'] !== 'goonj-check-user' ) ) {
 		return;
@@ -139,12 +136,13 @@ function goonj_handle_user_identification_form() {
 	$target_id = $_POST['target_id'] ?? '';
 	$source = $_POST['source'] ?? '';
 
-
 	// Retrieve the email and phone number from the POST data
 	$email = $_POST['email'] ?? '';
 	$phone = $_POST['phone'] ?? '';
+	$state_id = $_POST['state_id'] ?? '';
+	$city = $_POST['city'] ?? '';
 
-	$is_purpose_requiring_email = !in_array($purpose, ['material-contribution', 'processing-center-office-visit', 'processing-center-material-contribution']);
+	$is_purpose_requiring_email = ! in_array( $purpose, array( 'material-contribution', 'processing-center-office-visit', 'processing-center-material-contribution' ) );
 
 	if ( empty( $phone ) || ( $is_purpose_requiring_email && empty( $email ) ) ) {
 		return;
@@ -152,18 +150,18 @@ function goonj_handle_user_identification_form() {
 
 	try {
 		// Find the contact ID based on email and phone number
-		$query = \Civi\Api4\Contact::get(FALSE)
-			->addSelect('id', 'contact_sub_type', 'display_name')
-			->addWhere('phone_primary.phone', '=', $phone)
-			->addWhere('contact_type', '=', 'Individual')
-			->addWhere('is_deleted', '=', 0);
+		$query = \Civi\Api4\Contact::get( false )
+			->addSelect( 'id', 'contact_sub_type', 'display_name' )
+			->addWhere( 'phone_primary.phone', '=', $phone )
+			->addWhere( 'contact_type', '=', 'Individual' )
+			->addWhere( 'is_deleted', '=', 0 );
 
-		if ( !empty( $email ) ) {
-			$query->addWhere('email_primary.email', '=', $email);
+		if ( ! empty( $email ) ) {
+			$query->addWhere( 'email_primary.email', '=', $email );
 		}
 
 		// Execute the query with a limit of 1
-		$contactResult = $query->setLimit(1)->execute();
+		$contactResult = $query->setLimit( 1 )->execute();
 
 		$found_contacts = $contactResult->first() ?? null;
 
@@ -197,15 +195,26 @@ function goonj_handle_user_identification_form() {
 		);
 
 		if ( empty( $found_contacts ) ) {
+			$organizationName = null;
+			// If the purpose requires fetching the organization name,
+			if ( in_array( $purpose, [ 'processing-center-material-contribution', 'processing-center-office-visit' ] ) ) {
+				$organizationName = \Civi\Api4\Organization::get(FALSE)
+				->addSelect('display_name')
+				->addWhere('id', '=', $target_id)
+				->execute()->single();
+			}
 			switch ( $purpose ) {
 				// Contact does not exist and the purpose is to do material contribution.
 				// Redirect to individual registration with option for volunteering.
 				case 'material-contribution':
 					$individual_volunteer_registration_form_path = sprintf(
-						'/individual-registration-with-volunteer-option/#?email=%s&phone=%s&source=%s',
+						'/individual-registration-with-volunteer-option/#?email=%s&phone=%s&source=%s&Individual_fields.Creation_Flow=%s&state_province_id=%s&city=%s',
 						$email,
 						$phone,
 						$source,
+						'material-contribution',
+						sanitize_text_field($state_id),
+						sanitize_text_field($city)
 					);
 					$redirect_url = $individual_volunteer_registration_form_path;
 					break;
@@ -222,25 +231,29 @@ function goonj_handle_user_identification_form() {
 					$redirect_url = $individual_registration_form_path;
 					break;
 
-				//Contact does not exist and the purpose is processing center material contribution
-				//redirect to individual registration
+				// Contact does not exist and the purpose is processing center material contribution
+				// redirect to individual registration
 				case 'processing-center-material-contribution':
 					$individual_registration_form_path = sprintf(
-						'/processing-center/material-contribution/individual-registration/#?email=%s&phone=%s&target_id=%s',
+						'/processing-center/material-contribution/individual-registration/#?email=%s&phone=%s&source=%s&Individual_fields.Creation_Flow=%s&Individual_fields.Source_Processing_Center=%s',
 						$email,
 						$phone,
+						$organizationName['display_name'],
+						'office-visit-contribution',
 						$target_id,
 					);
 					$redirect_url = $individual_registration_form_path;
 					break;
 
-				//Contact does not exist and the purpose is processing center office visit
-				//redirect to individual registration
+				// Contact does not exist and the purpose is processing center office visit
+				// redirect to individual registration
 				case 'processing-center-office-visit':
 					$individual_registration_form_path = sprintf(
-						'/processing-center/office-visit/individual-registration/#?email=%s&phone=%s&target_id=%s',
+						'/processing-center/office-visit/individual-registration/#?email=%s&phone=%s&source=%s&Individual_fields.Creation_Flow=%s&Individual_fields.Source_Processing_Center=%s',
 						$email,
 						$phone,
+						$organizationName['display_name'],
+						'office-visit',
 						$target_id,
 					);
 					$redirect_url = $individual_registration_form_path;
@@ -310,55 +323,56 @@ function goonj_handle_user_identification_form() {
 		}
 
 		$contactId = $found_contacts['id'];
-		$contactSubType = $found_contacts['contact_sub_type'] ?? [];
+		$contactSubType = $found_contacts['contact_sub_type'] ?? array();
 		// Check if the contact is a volunteer
-		if ( empty( $contactSubType ) || !in_array( 'Volunteer', $contactSubType ) ) {
-			wp_redirect('/volunteer-form/#?Individual1=' . $contactId . '&message=individual-user');
+		if ( empty( $contactSubType ) || ! in_array( 'Volunteer', $contactSubType ) ) {
+			wp_redirect( '/volunteer-form/#?Individual1=' . $contactId . '&message=individual-user' );
 			exit;
 		}
 
 		// If we are here, then it means Volunteer exists in our system.
 		// Now we need to check if the volunteer is inducted or not.
 		// If the volunteer is not inducted,
-		//   1. Trigger an email for Induction
-		//   2. Change volunteer status to "Waiting for Induction"
+		// 1. Trigger an email for Induction
+		// 2. Change volunteer status to "Waiting for Induction"
 		if ( ! goonj_is_volunteer_inducted( $found_contacts ) ) {
-			if ($purpose === 'dropping-center') {
-				$redirect_url = home_url('/dropping-center/waiting-induction/');
-			} elseif ($purpose === 'volunteer-registration') {
-				$redirect_url = home_url('/volunteer-registration/waiting-induction/');
+			if ( $purpose === 'dropping-center' ) {
+				$redirect_url = home_url( '/dropping-center/waiting-induction/' );
+			} elseif ( $purpose === 'volunteer-registration' ) {
+				$redirect_url = home_url( '/volunteer-registration/waiting-induction/' );
 			} else {
-				$redirect_url = home_url('/collection-camp/waiting-induction/');
+				$redirect_url = home_url( '/collection-camp/waiting-induction/' );
 			}
 
-			wp_redirect($redirect_url);
+			wp_redirect( $redirect_url );
 			exit;
 		}
 
 		// If we are here, then it means the user exists as an inducted volunteer.
 		// Fetch the most recent collection camp activity based on the creation date
-		$optionValues = \Civi\Api4\OptionValue::get(FALSE)
-		->addWhere('option_group_id:label', '=', 'ECK Subtypes')
-		->addWhere('label', '=', 'Collection Camp')
+		$optionValues = \Civi\Api4\OptionValue::get( false )
+		->addWhere('option_group_id:name', '=', 'eck_sub_types')
+		->addWhere('name', '=', 'Collection_Camp')
+		->addWhere('grouping', '=', 'Collection_Camp')
+		->execute()->single();
+
+		$collectionCampSubtype = $optionValues['value'];
+
+		$collectionCampResult = \Civi\Api4\EckEntity::get( 'Collection_Camp', false )
+		->addSelect( '*', 'custom.*' )
+		->addWhere( 'Collection_Camp_Core_Details.Contact_Id', '=', $found_contacts['id'] )
+		->addWhere( 'subtype', '=', $collectionCampSubtype ) // Collection Camp subtype
+		->addOrderBy( 'created_date', 'DESC' )
+		->setLimit( 1 )
 		->execute();
 
-		$collectionCampSubtype = $optionValues->first()['value'];
-
-		$collectionCampResult = \Civi\Api4\EckEntity::get('Collection_Camp', FALSE)
-		->addSelect('*', 'custom.*')
-		->addWhere('Collection_Camp_Core_Details.Contact_Id', '=', $found_contacts['id'])
-		->addWhere('subtype', '=', $collectionCampSubtype) // Collection Camp subtype
-		->addOrderBy('created_date', 'DESC')
-		->setLimit(1)
-		->execute();
-
-		if ($purpose === 'dropping-center') {
-			wp_redirect(get_home_url() . "/dropping-center/intent/#?Collection_Camp_Core_Details.Contact_Id=" . $found_contacts['id']);
+		if ( $purpose === 'dropping-center' ) {
+			wp_redirect( get_home_url() . '/dropping-center/intent/#?Collection_Camp_Core_Details.Contact_Id=' . $found_contacts['id'] );
 			exit;
 		}
 
-		if ($purpose === 'volunteer-registration') {
-			wp_redirect(get_home_url() . "/volunteer-registration/already-inducted/");
+		if ( $purpose === 'volunteer-registration' ) {
+			wp_redirect( get_home_url() . '/volunteer-registration/already-inducted/' );
 			exit;
 		}
 
@@ -366,43 +380,43 @@ function goonj_handle_user_identification_form() {
 		$recentCamp = $collectionCampResult->first() ?? null;
 		$display_name = $found_contacts['display_name'];
 
-		if (!empty($recentCamp)) {
+		if ( ! empty( $recentCamp ) ) {
 			// Save the recentCamp data to the session
 			$_SESSION['recentCampData'] = $recentCamp;
 			$_SESSION['contactId'] = $found_contacts['id'];
 			$_SESSION['displayName'] = $display_name;
 			$_SESSION['contactNumber'] = $phone;
 
-			wp_redirect(get_home_url() . "/collection-camp/choose-from-past/#?Collection_Camp_Core_Details.Contact_Id=" . $found_contacts['id'] . '&message=past-collection-data' );
+			wp_redirect( get_home_url() . '/collection-camp/choose-from-past/#?Collection_Camp_Core_Details.Contact_Id=' . $found_contacts['id'] . '&message=past-collection-data' );
 			exit;
 		} else {
-			$redirect_url = get_home_url() . "/collection-camp/intent/#?Collection_Camp_Core_Details.Contact_Id=" . $found_contacts['id'] . '&message=collection-camp-page&Collection_Camp_Intent_Details.Name=' . $display_name . '&Collection_Camp_Intent_Details.Contact_Number='. $phone;
+			$redirect_url = get_home_url() . '/collection-camp/intent/#?Collection_Camp_Core_Details.Contact_Id=' . $found_contacts['id'] . '&message=collection-camp-page&Collection_Camp_Intent_Details.Name=' . $display_name . '&Collection_Camp_Intent_Details.Contact_Number=' . $phone;
 		}
-		wp_redirect($redirect_url);
+		wp_redirect( $redirect_url );
 		exit;
-	} catch (Exception $e) {
-		error_log("Error: " . $e->getMessage());
-		echo "An error occurred. Please try again later.";
+	} catch ( Exception $e ) {
+		error_log( 'Error: ' . $e->getMessage() );
+		echo 'An error occurred. Please try again later.';
 	}
 }
 
 function goonj_is_volunteer_inducted( $volunteer ) {
-	$optionValue = \Civi\Api4\OptionValue::get(FALSE)
-	->addWhere('option_group_id:name', '=', 'activity_type')
-	->addWhere('label', '=', 'Induction')
+	$optionValue = \Civi\Api4\OptionValue::get( false )
+	->addWhere( 'option_group_id:name', '=', 'activity_type' )
+	->addWhere( 'label', '=', 'Induction' )
 	->execute()->single();
 
 	$activityTypeId = $optionValue['value'];
 
-	$activityResult = \Civi\Api4\Activity::get(FALSE)
-	->addSelect('id')
-	->addWhere('target_contact_id', '=', $volunteer['id'])
-	->addWhere('activity_type_id', '=', $activityTypeId)
-	->addWhere('status_id:label', 'IN', ['Completed', 'Unknown'])
-	->setLimit(1)
+	$activityResult = \Civi\Api4\Activity::get( false )
+	->addSelect( 'id' )
+	->addWhere( 'target_contact_id', '=', $volunteer['id'] )
+	->addWhere( 'activity_type_id', '=', $activityTypeId )
+	->addWhere( 'status_id:label', 'IN', array( 'Completed', 'Unknown' ) )
+	->setLimit( 1 )
 	->execute();
 
-	$foundCompletedInductionActivities= $activityResult->first() ?? null;
+	$foundCompletedInductionActivities = $activityResult->first() ?? null;
 
 	return ! empty( $foundCompletedInductionActivities );
 }
@@ -410,11 +424,80 @@ function goonj_is_volunteer_inducted( $volunteer ) {
 function goonj_custom_message_placeholder() {
 	return '<div id="custom-message" class="ml-24"></div>';
 }
-add_shortcode('goonj_volunteer_message', 'goonj_custom_message_placeholder');
+
+add_shortcode( 'goonj_volunteer_message', 'goonj_custom_message_placeholder' );
+
+function goonj_generate_volunteer_button_html($buttonUrl) {
+    return sprintf(
+        '<div class="volunteer-button-container">
+            <a href="%s" class="wp-block-button__link has-white-color has-vivid-red-background-color has-text-color has-background has-link-color wp-element-button volunteer-button-link">
+                Wish to Volunteer?
+            </a>
+        </div>',
+        esc_url($buttonUrl)
+    );
+}
+
+function goonj_contribution_volunteer_signup_button() {
+    $activityId = isset($_GET['activityId']) ? intval($_GET['activityId']) : 0;
+
+    if (empty($activityId)) {
+        \Civi::log()->warning('Activity ID is missing');
+        return;
+    }
+
+    try {
+        $activities = \Civi\Api4\Activity::get(FALSE)
+            ->addSelect('source_contact_id')
+            ->addJoin('ActivityContact AS activity_contact', 'LEFT')
+            ->addWhere('id', '=', $activityId)
+            ->addWhere('activity_type_id:label', '=', 'Material Contribution')
+            ->execute();
+
+        if ($activities->count() === 0) {
+            \Civi::log()->info('No activities found for Activity ID:', ['activityId' => $activityId]);
+            return;
+        }
+
+        $activity = $activities->first();
+        $individualId = $activity['source_contact_id'];
+
+        $contact = \Civi\Api4\Contact::get(FALSE)
+            ->addSelect('contact_sub_type')
+            ->addWhere('id', '=', $individualId)
+            ->execute()
+            ->first();
+
+		if (empty($contact)) {
+			\Civi::log()->info('Contact not found', ['contact' => $contact['id']]);
+			return;
+		}
+
+        $contactSubTypes = $contact['contact_sub_type'] ?? [];
+
+        // If the individual is already a volunteer, don't show the button
+        if (in_array('Volunteer', $contactSubTypes)) {
+            return;
+        }
+
+        $redirectPath = '/volunteer-registration/form-with-details/';
+        $redirectPathWithParams = $redirectPath . '#?' . http_build_query([
+            'Individual1' => $individualId,
+            'message' => 'individual-user'
+        ]);
+
+        return goonj_generate_volunteer_button_html($redirectPathWithParams);
+    } catch (\Exception $e) {
+        \Civi::log()->error('Error in goonj_contribution_volunteer_signup_button: ' . $e->getMessage());
+        return;
+    }
+}
+
+add_shortcode('goonj_contribution_volunteer_signup_button', 'goonj_contribution_volunteer_signup_button');
 
 function goonj_collection_camp_landing_page() {
 	ob_start();
-	get_template_part('templates/collection-landing-page');
+	get_template_part( 'templates/collection-landing-page' );
 	return ob_get_clean();
 }
 add_shortcode( 'goonj_collection_landing_page', 'goonj_collection_camp_landing_page' );
@@ -422,6 +505,8 @@ add_shortcode( 'goonj_collection_landing_page', 'goonj_collection_camp_landing_p
 add_filter( 'query_vars', 'goonj_query_vars' );
 function goonj_query_vars( $vars ) {
 	$vars[] = 'target_id';
+	$vars[] = 'state_province_id';
+	$vars[] = 'city';
 	return $vars;
 }
 
@@ -430,4 +515,74 @@ function goonj_collection_camp_past_data() {
 	ob_start();
 	get_template_part( 'templates/collection-camp-data' );
 	return ob_get_clean();
+}
+
+add_action( 'template_redirect', 'goonj_redirect_after_individual_creation' );
+function goonj_redirect_after_individual_creation() {
+	if (
+		! isset( $_GET['goonjAction'] ) ||
+		$_GET['goonjAction'] !== 'individualCreated' ||
+		! isset( $_GET['individualId'] )
+	) {
+		return;
+	}
+
+	$individual = \Civi\Api4\Contact::get( false )
+		->addSelect( 'source', 'Individual_fields.Creation_Flow', 'Individual_fields.Source_Processing_Center' )
+		->addWhere( 'id', '=', absint( $_GET['individualId'] ) )
+		->setLimit( 1 )
+		->execute()->single();
+
+	$creationFlow = $individual['Individual_fields.Creation_Flow'];
+	$source = $individual['source'];
+	$sourceProcessingCenter = $individual['Individual_fields.Source_Processing_Center'];
+
+	$redirectPath = '';
+
+	switch ( $creationFlow ) {
+		case 'material-contribution':
+			if ( ! $source ) {
+				\Civi::log()->warning('Source is missing for material contribution flow', ['individualId' => $_GET['individualId']]);
+				return;
+			}
+			// If the individual was created while in the process of material contribution,
+			// then we need to find out from WHERE was she trying to contribute.
+
+			// First, we check if the source of Individual is Colllection Camp (or Dropping Center).
+			$collectionCamp = \Civi\Api4\EckEntity::get( 'Collection_Camp', false )
+				->addWhere( 'title', '=', $source )
+				->setLimit( 1 )
+				->execute()->first();
+
+			if ( ! empty( $collectionCamp['id'] ) ) {
+				$redirectPath = sprintf(
+					'/material-contribution/#?Material_Contribution.Collection_Camp=%s&source_contact_id=%s',
+					$collectionCamp['id'],
+					$individual['id']
+				);
+				break;
+			}
+		case 'office-visit':
+			$sourceProcessingCenter = $individual['Individual_fields.Source_Processing_Center'];
+			$redirectPath = sprintf(
+				'/processing-center/office-visit/details/#?Office_Visit.Goonj_Processing_Center=%s&source_contact_id=%s',
+				$sourceProcessingCenter,
+				$individual['id']
+			);
+			break;
+		case 'office-visit-contribution':
+			$sourceProcessingCenter = $individual['Individual_fields.Source_Processing_Center'];
+			$redirectPath = sprintf(
+				'/processing-center/material-contribution/details/#?Material_Contribution.Goonj_Office=%s&source_contact_id=%s',
+				$sourceProcessingCenter,
+				$individual['id']
+			);
+			break;
+	}
+
+	if ( empty( $redirectPath ) ) {
+		return;
+	}
+
+	wp_safe_redirect( $redirectPath );
 }

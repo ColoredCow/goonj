@@ -31,6 +31,8 @@ export const userDetails = {
   profession: faker.helpers.arrayElement(['Homemaker', 'Government Employee']),
   contactMethod: faker.helpers.arrayElement(['Whatsapp', 'Mail', 'Both']),
   referralSource: faker.helpers.arrayElement(['Newspaper', 'Website', 'Social media']),
+  healthIssues: 'None',
+  comments: faker.helpers.arrayElement(['Nice initiative', 'None']),
 };
 
 export async function userLogin(page) {

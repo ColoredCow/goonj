@@ -305,10 +305,11 @@
         }
 
     // Collection camp start date and end date validation
-    var startDateValue = $element.find("af-field[name='Collection_Camp_Intent_Details.Start_Date'] .crm-form-date-wrapper input.crm-form-date").val();
-    var endDateValue = $element.find("af-field[name='Collection_Camp_Intent_Details.End_Date'] .crm-form-date-wrapper input.crm-form-date").val();
-    
-    if (startDateValue && endDateValue) {
+    if (ctrl.getFormMeta().name === 'afformCollectionCampIntentDetails') {
+      var startDateValue = $element.find("af-field[name='Collection_Camp_Intent_Details.Start_Date'] .crm-form-date-wrapper input.crm-form-date").val();
+      var endDateValue = $element.find("af-field[name='Collection_Camp_Intent_Details.End_Date'] .crm-form-date-wrapper input.crm-form-date").val();
+      
+      if (startDateValue && endDateValue) {
         var today = new Date();
         today.setHours(0, 0, 0, 0); 
         
@@ -338,6 +339,7 @@
           isValid = false;
         }
     }
+  }
 
     // Birth date validation
     var birthDateField = $element.find("af-field[name='birth_date'] input[type='text']");
