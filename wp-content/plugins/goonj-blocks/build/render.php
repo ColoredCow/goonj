@@ -76,6 +76,7 @@ if ( in_array( $target, array( 'collection-camp', 'dropping-center' ) ) ) :
     
     $address = $action_target[$target_info['address']];
     $contribution_link = $target_info['contribution_link'];
+	$address_label = ($target === 'dropping-center') ? 'Area of the dropping center' : 'Address of the camp';
 
 	?>
 	<div class="wp-block-gb-heading-wrapper">
@@ -96,7 +97,7 @@ if ( in_array( $target, array( 'collection-camp', 'dropping-center' ) ) ) :
                 <td class="wp-block-gb-table-cell"><?php echo gb_format_time_range($start_date, $end_date); ?></td>
             </tr>
             <tr class="wp-block-gb-table-row">
-                <td class="wp-block-gb-table-cell wp-block-gb-table-header">Address of the camp</td>
+			<td class="wp-block-gb-table-cell wp-block-gb-table-header"><?php echo esc_html($address_label); ?></td>
                 <td class="wp-block-gb-table-cell"><?php echo esc_html($address); ?></td>
             </tr>
         </tbody>
