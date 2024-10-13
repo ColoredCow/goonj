@@ -78,6 +78,11 @@ class DroppingCenterService extends AutoSubscriber {
       return;
     }
     $tabConfigs = [
+      'materialContribution' => [
+        'title' => ts('Material Contribution'),
+        'module' => 'afsearchDroppingCenterMaterialContributions',
+        'directive' => 'afsearch-dropping-center-material-contributions',
+      ],
       'status' => [
         'title' => ts('Status'),
         'module' => 'afsearchDroppingCenterStatus',

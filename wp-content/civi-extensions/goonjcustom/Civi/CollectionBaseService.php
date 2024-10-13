@@ -177,11 +177,6 @@ class CollectionBaseService extends AutoSubscriber {
         'module' => 'afsearchEventVolunteer',
         'directive' => 'afsearch-event-volunteer',
       ],
-      'materialContribution' => [
-        'title' => ts('Material Contribution'),
-        'module' => 'afsearchCollectionCampMaterialContributions',
-        'directive' => 'afsearch-collection-camp-material-contributions',
-      ],
       'vehicleDispatch' => [
         'title' => ts('Dispatch'),
         'module' => 'afsearchCampVehicleDispatchData',

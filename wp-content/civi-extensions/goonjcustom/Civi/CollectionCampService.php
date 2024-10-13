@@ -84,6 +84,12 @@ class CollectionCampService extends AutoSubscriber {
       //   'directive' => 'afsearch-collection-camp-activity',
       //   'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
       // ],
+      'materialContribution' => [
+        'title' => ts('Material Contribution'),
+        'module' => 'afsearchCollectionCampMaterialContributions',
+        'directive' => 'afsearch-collection-camp-material-contributions',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      ],
       'logistics' => [
         'title' => ts('Logistics'),
         'module' => 'afsearchCollectionCampLogistics',
