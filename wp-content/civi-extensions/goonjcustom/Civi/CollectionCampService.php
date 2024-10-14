@@ -703,32 +703,27 @@ class CollectionCampService extends AutoSubscriber {
    *
    */
   private static function findStateField(array $array) {
-    $filteredItems = array_filter($array, fn($item) => $item['entity_table'] === 'civicrm_eck_collection_camp');
-
-    if (empty($filteredItems)) {
-      return FALSE;
-    }
-
-    $collectionCampStateFields = CustomField::get(FALSE)
+    $collectionCampStateField = CustomField::get(FALSE)
       ->addSelect('id')
       ->addWhere('name', '=', 'state')
       ->addWhere('custom_group_id:name', '=', 'Collection_Camp_Intent_Details')
       ->execute()
       ->first();
 
-    if (!$collectionCampStateFields) {
+    if (!$collectionCampStateField) {
       return FALSE;
     }
 
-    $stateFieldId = $collectionCampStateFields['id'];
+    $stateFieldId = $collectionCampStateField['id'];
 
-    $stateItemIndex = array_search(TRUE, array_map(fn($item) =>
-        $item['entity_table'] === 'civicrm_eck_collection_camp' &&
-        $item['custom_field_id'] == $stateFieldId,
-        $filteredItems
-    ));
+    foreach ($array as $item) {
+      if ($item['entity_table'] === 'civicrm_eck_collection_camp' &&
+            $item['custom_field_id'] === $stateFieldId) {
+        return $item;
+      }
+    }
 
-    return $stateItemIndex !== FALSE ? $filteredItems[$stateItemIndex] : FALSE;
+    return FALSE;
   }
 
   /**

@@ -84,32 +84,25 @@ class DroppingCenterService extends AutoSubscriber {
    *
    */
   private static function findStateField(array $array) {
-    $filteredItems = array_filter($array, fn($item) => $item['entity_table'] === 'civicrm_eck_collection_camp');
-
-    if (empty($filteredItems)) {
-      return FALSE;
-    }
-
-    $collectionCampStateFields = CustomField::get(FALSE)
+    $stateFieldId = CustomField::get(FALSE)
       ->addSelect('id')
       ->addWhere('name', '=', 'State')
       ->addWhere('custom_group_id:name', '=', 'Dropping_Centre')
       ->execute()
-      ->first();
+      ->first()['id'] ?? NULL;
 
-    if (!$collectionCampStateFields) {
+    if (!$stateFieldId) {
       return FALSE;
     }
 
-    $stateFieldId = $collectionCampStateFields['id'];
+    foreach ($array as $item) {
+      if ($item['entity_table'] === 'civicrm_eck_collection_camp' &&
+            $item['custom_field_id'] === $stateFieldId) {
+        return $item;
+      }
+    }
 
-    $stateItemIndex = array_search(TRUE, array_map(fn($item) =>
-        $item['entity_table'] === 'civicrm_eck_collection_camp' &&
-        $item['custom_field_id'] == $stateFieldId,
-        $filteredItems
-    ));
-
-    return $stateItemIndex !== FALSE ? $filteredItems[$stateItemIndex] : FALSE;
+    return FALSE;
   }
 
   /**
