@@ -6,6 +6,7 @@
 
 use Civi\Api4\Individual;
 use Civi\InductionService;
+use Civi\HelperService;
 
 /**
  * Custom.VolunteerInductionReminderCron API specification.
@@ -30,6 +31,9 @@ function civicrm_api3_goonjcustom_volunteer_induction_reminder_cron($params) {
   $today = new DateTimeImmutable();
   $endOfDay = $today->setTime(23, 59, 59)->format('Y-m-d H:i:s');
 
+  // Get the default "from" email.
+  $from = HelperService::getDefaultFromEmail();
+
   // Fetch volunteers who have registered but not scheduled an induction.
   $volunteers = Individual::get(TRUE)
     ->addSelect('created_date', 'display_name', 'email_primary.email', 'Volunteer_fields.Last_Reminder_Sent')
@@ -43,7 +47,7 @@ function civicrm_api3_goonjcustom_volunteer_induction_reminder_cron($params) {
   foreach ($volunteers as $volunteer) {
     error_log("volunteer: " . print_r($volunteer, TRUE));
     try {
-      InductionService::processInductionReminder($volunteer, $today);
+      InductionService::processInductionReminder($volunteer, $today, $from);
     }
     catch (\Exception $e) {
       \Civi::log()->error('Error processing volunteer induction reminder', [

@@ -455,8 +455,7 @@ class InductionService extends AutoSubscriber {
    *
    * @throws \Exception
    */
-  public static function processInductionReminder($volunteer, $today) {
-    $from = self::getDefaultFromEmail();
+  public static function processInductionReminder($volunteer, $today, $from) {
     $volunteerId = $volunteer['id'];
     $volunteerName = $volunteer['display_name'];
     $volunteerEmail = $volunteer['email_primary.email'];
@@ -534,14 +533,6 @@ class InductionService extends AutoSubscriber {
     <p>Warm regards,<br>Team Goonj</p>";
 
     return $html;
-  }
-
-  /**
-   * Get default from email.
-   */
-  public static function getDefaultFromEmail() {
-    [$defaultFromName, $defaultFromEmail] = \CRM_Core_BAO_Domain::getNameAndEmail();
-    return "\"$defaultFromName\" <$defaultFromEmail>";
   }
 
 }
