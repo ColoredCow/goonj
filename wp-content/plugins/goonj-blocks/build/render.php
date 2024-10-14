@@ -55,12 +55,14 @@ $target_data = [
     'start_time' => 'Dropping_Centre.Start_Time',
     'end_time' => 'Dropping_Centre.End_Time',
     'address' => 'Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_',
+    'address_label' => 'Area of the dropping center',
     'contribution_link' => $dropping_center_material_contribution_link,
   ],
   'collection-camp' => [
     'start_time' => 'Collection_Camp_Intent_Details.Start_Date',
     'end_time' => 'Collection_Camp_Intent_Details.End_Date',
     'address' => 'Collection_Camp_Intent_Details.Location_Area_of_camp',
+    'address_label' => 'Address of the camp',
     'contribution_link' => $material_contribution_link,
   ],
 ];
@@ -80,7 +82,7 @@ if (in_array($target, ['collection-camp', 'dropping-center'])) :
 
   $address = $action_target[$target_info['address']];
   $contribution_link = $target_info['contribution_link'];
-  $address_label = ($target === 'dropping-center') ? 'Area of the dropping center' : 'Address of the camp';
+  $address_label = $target_info['address_label'];
 
   ?>
     <div class="wp-block-gb-heading-wrapper">
