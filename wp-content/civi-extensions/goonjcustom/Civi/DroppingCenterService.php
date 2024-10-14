@@ -167,7 +167,7 @@ class DroppingCenterService extends AutoSubscriber {
    *
    */
   public static function mailNotificationToMmt($op, $groupID, $entityID, &$params) {
-    if ($op !== 'create' || self::getEntitySubtypeName($entityID) !== self::ENTITY_SUBTYPE_NAME) {
+    if ($op !== 'create') {
       return;
     }
 
@@ -184,6 +184,10 @@ class DroppingCenterService extends AutoSubscriber {
       ->execute()->first();
 
     $droppingCenterId = $collectionSourceVehicleDispatch['Camp_Vehicle_Dispatch.Collection_Camp'];
+
+    if (self::getEntitySubtypeName($droppingCenterId) !== self::ENTITY_SUBTYPE_NAME) {
+      return;
+    }
 
     $droppingCenter = EckEntity::get('Collection_Camp', FALSE)
       ->addSelect('Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_', 'title')
@@ -235,7 +239,7 @@ class DroppingCenterService extends AutoSubscriber {
    */
   public static function goonjcustom_material_management_email_html($droppingCenterId, $droppingCenterCode, $droppingCenterAddress, $vehicleDispatchId) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
-    $materialdispatchUrl = $homeUrl . '/acknowledgement-form-for-dispatch/#?Eck_Collection_Source_Vehicle_Dispatch1=' . $vehicleDispatchId . '&Camp_Vehicle_Dispatch.Collection_Camp=' . $collectionCampId . '&id=' . $vehicleDispatchId . '&Eck_Collection_Camp1=' . $collectionCampId;
+    $materialdispatchUrl = $homeUrl . '/acknowledgement-for-dispatch/#?Eck_Collection_Source_Vehicle_Dispatch1=' . $vehicleDispatchId . '&Camp_Vehicle_Dispatch.Collection_Camp=' . $collectionCampId . '&id=' . $vehicleDispatchId . '&Eck_Collection_Camp1=' . $collectionCampId;
     $html = "
     <p>Dear MMT team,</p>
     <p>This is to inform you that a vehicle has been sent from the dropping center <strong>$droppingCenterCode</strong> at <strong>$droppingCenterAddress</strong>.</p>

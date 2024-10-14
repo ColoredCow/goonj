@@ -565,7 +565,7 @@ class CollectionCampService extends AutoSubscriber {
    *   The parameters that were sent into the calling function.
    */
   public static function setOfficeDetails($op, $groupID, $entityID, &$params) {
-    if ($op !== 'create' ||  self::getEntitySubtypeName($entityID) !== self::ENTITY_SUBTYPE_NAME) {
+    if ($op !== 'create' || self::getEntitySubtypeName($entityID) !== self::ENTITY_SUBTYPE_NAME) {
       return;
     }
 
@@ -778,7 +778,7 @@ class CollectionCampService extends AutoSubscriber {
     $fallbackCoordinators = Relationship::get(FALSE)
       ->addWhere('contact_id_b', '=', $fallbackOffice['id'])
       ->addWhere('relationship_type_id:name', '=', self::RELATIONSHIP_TYPE_NAME)
-      ->addWhere('is_current', '=', True)
+      ->addWhere('is_current', '=', TRUE)
       ->execute();
 
     $coordinatorCount = $fallbackCoordinators->count();
@@ -839,10 +839,9 @@ class CollectionCampService extends AutoSubscriber {
    *   The parameters that were sent into the calling function.
    */
   public static function mailNotificationToMmt($op, $groupID, $entityID, &$params) {
-    if ($op !== 'create' || self::getEntitySubtypeName($entityID) !== self::ENTITY_SUBTYPE_NAME) {
+    if ($op !== 'create') {
       return;
     }
-
     if (!($goonjField = self::findOfficeId($params))) {
       return;
     }
@@ -856,6 +855,10 @@ class CollectionCampService extends AutoSubscriber {
       ->execute()->first();
 
     $collectionCampId = $collectionSourceVehicleDispatch['Camp_Vehicle_Dispatch.Collection_Camp'];
+
+    if (self::getEntitySubtypeName($collectionCampId) !== self::ENTITY_SUBTYPE_NAME) {
+      return;
+    }
 
     $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
       ->addSelect('Collection_Camp_Intent_Details.Location_Area_of_camp', 'title')
@@ -923,25 +926,25 @@ class CollectionCampService extends AutoSubscriber {
    */
   private static function findOfficeId(array $array) {
     $goonjOfficeId = CustomField::get(FALSE)
-        ->addSelect('id')
-        ->addWhere('custom_group_id:name', '=', 'Camp_Vehicle_Dispatch')
-        ->addWhere('name', '=', 'To_which_PU_Center_material_is_being_sent')
-        ->execute()
-        ->first()['id'] ?? NULL;
+      ->addSelect('id')
+      ->addWhere('custom_group_id:name', '=', 'Camp_Vehicle_Dispatch')
+      ->addWhere('name', '=', 'To_which_PU_Center_material_is_being_sent')
+      ->execute()
+      ->first()['id'] ?? NULL;
 
     if (!$goonjOfficeId) {
-        return FALSE;
+      return FALSE;
     }
 
     foreach ($array as $item) {
-        if ($item['entity_table'] === 'civicrm_eck_collection_source_vehicle_dispatch' &&
+      if ($item['entity_table'] === 'civicrm_eck_collection_source_vehicle_dispatch' &&
             $item['custom_field_id'] == $goonjOfficeId) {
-            return $item;
-        }
+        return $item;
+      }
     }
 
     return FALSE;
-}
+  }
 
   /**
    * This hook is called after a db write on entities.
