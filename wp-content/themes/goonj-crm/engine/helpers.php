@@ -20,7 +20,7 @@ function goonj_get_goonj_office_id( $activity ) {
 }
 
 // Function to fetch user's activities for today
-function fetch_contact_pu_activities_for_today( $individual_id ) {
+function goonj_fetch_contact_pu_activities_for_today( $individual_id ) {
 
 	$timezone = new \DateTimeZone( 'UTC' );
 	$today = new \DateTime( 'now', $timezone );

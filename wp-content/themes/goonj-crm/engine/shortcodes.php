@@ -108,7 +108,7 @@ function goonj_pu_activity_button() {
 			return;
 		}
 
-		$contact_activities = fetch_contact_pu_activities_for_today( $individual_id );
+		$contact_activities = goonj_fetch_contact_pu_activities_for_today( $individual_id );
 
 		$office_activities = goonj_process_pu_activities( $contact_activities );
 
