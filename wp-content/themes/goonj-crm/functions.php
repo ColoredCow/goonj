@@ -569,8 +569,8 @@ function goonj_redirect_after_individual_creation() {
 			// If the individual was created while in the process of material contribution,
 			// then we need to find out from WHERE was she trying to contribute.
 
-			// First, we check if the source of Individual is Colllection Camp (or Dropping Center).
-			$collectionCamp = \Civi\Api4\EckEntity::get( 'Collection_Camp', false )
+			// First, we check if the source of Individual is Collection Camp (or Dropping Center).
+			$collectionCamp = \Civi\Api4\EckEntity::get( 'Collection_Camp', FALSE )
 				->addWhere( 'title', '=', $source )
 				->setLimit( 1 )
 				->execute()->first();
@@ -588,19 +588,19 @@ function goonj_redirect_after_individual_creation() {
 					\Civi::log()->warning('Source is missing for material contribution flow', ['individualId' => $_GET['individualId']]);
 					return;
 				}
-				// If the individual was created while in the process of material contribution,
-				// then we need to find out from WHERE was she trying to contribute.
+				// If the individual was created during a material contribution process,
+				// We need to determine from where they were attempting to contribute.
 	
-				// First, we check if the source of Individual is Colllection Camp (or Dropping Center).
-				$collectionCamp = \Civi\Api4\EckEntity::get( 'Collection_Camp', false )
+				// First, we check if the source of Individual is Collection Camp (or Dropping Center).
+				$droppingCenter = \Civi\Api4\EckEntity::get( 'Collection_Camp', false )
 					->addWhere( 'title', '=', $source )
 					->setLimit( 1 )
 					->execute()->first();
 	
-				if ( ! empty( $collectionCamp['id'] ) ) {
+				if ( ! empty( $droppingCenter['id'] ) ) {
 					$redirectPath = sprintf(
 						'/dropping-center/material-contribution/#?Material_Contribution.Dropping_Center=%s&source_contact_id=%s',
-						$collectionCamp['id'],
+						$droppingCenter['id'],
 						$individual['id']
 					);
 					break;
