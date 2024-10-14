@@ -591,7 +591,7 @@ function goonj_redirect_after_individual_creation() {
 				// If the individual was created during a material contribution process,
 				// We need to determine from where they were attempting to contribute.
 	
-				// First, we check if the source of Individual is Collection Camp (or Dropping Center).
+				// First, we check if the source of Individual is Dropping Center.
 				$droppingCenter = \Civi\Api4\EckEntity::get( 'Collection_Camp', false )
 					->addWhere( 'title', '=', $source )
 					->setLimit( 1 )
