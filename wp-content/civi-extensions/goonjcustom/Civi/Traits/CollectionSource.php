@@ -29,6 +29,24 @@ trait CollectionSource {
   /**
    *
    */
+  public static function getEntitySubtypeName($entityID) {
+    $getSubtypeName = civicrm_api4('Eck_Collection_Camp', 'get', [
+      'select' => [
+        'subtype:name',
+      ],
+      'where' => [
+              ['id', '=', $entityID],
+      ],
+    ]);
+
+    $entityData = $getSubtypeName[0] ?? [];
+
+    return $entityData['subtype:name'] ?? NULL;
+  }
+
+  /**
+   *
+   */
   private static function isCurrentSubtype($objectRef) {
     if (empty($objectRef['subtype'])) {
       return FALSE;
