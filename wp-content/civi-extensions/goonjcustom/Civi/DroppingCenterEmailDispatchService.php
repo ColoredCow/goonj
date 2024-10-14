@@ -44,7 +44,6 @@ class DroppingCenterEmailDispatchService extends AutoSubscriber {
       if (!empty($droppingCenterData)) {
         $droppingCenter = $droppingCenterData[0] ?? [];
         $contactId = $droppingCenter['Collection_Camp_Core_Details.Contact_Id'] ?? NULL;
-        $droppingCenterGoonjOffice = $droppingCenter['Collection_Camp_Intent_Details.Goonj_Office'] ?? NULL;
         ;
       }
 
@@ -70,9 +69,8 @@ class DroppingCenterEmailDispatchService extends AutoSubscriber {
           'Dropping_Centre.Goonj_Office',
         ],
         'where' => [
-          ['id', '=', 390],
+          ['id', '=', $droppingCenterId],
         ],
-        'limit' => 25,
         'checkPermissions' => FALSE,
       ]);
       $goonjOfficeRecord = $collectionCamp[0] ?? [];

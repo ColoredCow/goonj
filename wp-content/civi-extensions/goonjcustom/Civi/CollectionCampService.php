@@ -19,6 +19,7 @@ use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
+use Civi\Traits\SubtypeSource;
 
 /**
  *
@@ -26,6 +27,7 @@ use Civi\Traits\QrCodeable;
 class CollectionCampService extends AutoSubscriber {
   use QrCodeable;
   use CollectionSource;
+  use SubtypeSource;
 
   const FALLBACK_OFFICE_NAME = 'Delhi';
   const RELATIONSHIP_TYPE_NAME = 'Collection Camp Coordinator of';
@@ -565,7 +567,7 @@ class CollectionCampService extends AutoSubscriber {
    *   The parameters that were sent into the calling function.
    */
   public static function setOfficeDetails($op, $groupID, $entityID, &$params) {
-    if ($op !== 'create') {
+    if ($op !== 'create' ||  self::getSubtypeNameByEntityId($entityID) !== self::ENTITY_SUBTYPE_NAME) {
       return;
     }
 
@@ -629,6 +631,10 @@ class CollectionCampService extends AutoSubscriber {
     }
     else {
       $coordinator = $coordinators->first();
+    }
+
+    if (!$coordinator) {
+      throw new \Exception('No coordinator available to assign.');
     }
 
     $coordinatorId = $coordinator['contact_id_a'];

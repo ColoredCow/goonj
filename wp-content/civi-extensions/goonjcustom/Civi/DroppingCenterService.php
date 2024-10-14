@@ -2,14 +2,16 @@
 
 namespace Civi;
 
+use Civi\Api4\Contact;
+use Civi\Api4\CustomField;
 use Civi\Api4\EckEntity;
+use Civi\Api4\Relationship;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
 use Civi\Api4\Email;
 use Civi\Api4\OptionValue;
-use Civi\Api4\CustomField;
-use Civi\Api4\Relationship;
+use Civi\Traits\SubtypeSource;
 
 /**
  *
@@ -17,10 +19,13 @@ use Civi\Api4\Relationship;
 class DroppingCenterService extends AutoSubscriber {
   use QrCodeable;
   use CollectionSource;
+  use SubtypeSource;
 
   const ENTITY_NAME = 'Collection_Camp';
+  const RELATIONSHIP_TYPE_NAME = 'Collection Camp Coordinator of';
   const ENTITY_SUBTYPE_NAME = 'Dropping_Center';
   const MATERIAL_RELATIONSHIP_TYPE_NAME = 'Material Management Team of';
+  const FALLBACK_OFFICE_NAME = 'Delhi';
 
   /**
    *
@@ -29,7 +34,10 @@ class DroppingCenterService extends AutoSubscriber {
     return [
       '&hook_civicrm_tabset' => 'droppingCenterTabset',
       '&hook_civicrm_pre' => 'generateDroppingCenterQr',
-      '&hook_civicrm_custom' => 'mailNotificationToMmt',
+      '&hook_civicrm_custom' => [
+        ['setOfficeDetails'],
+        ['mailNotificationToMmt'],
+      ],
     ];
   }
 
@@ -59,6 +67,69 @@ class DroppingCenterService extends AutoSubscriber {
     if ($currentStatus !== $newStatus && $newStatus === 'authorized') {
       self::generateDroppingCenterQrCode($collectionCampId);
     }
+  }
+
+  /**
+   *
+   */
+  private static function getFallbackCoordinator() {
+    $fallbackOffice = self::getFallbackOffice();
+    $fallbackCoordinators = Relationship::get(FALSE)
+      ->addWhere('contact_id_b', '=', $fallbackOffice['id'])
+      ->addWhere('relationship_type_id:name', '=', self::RELATIONSHIP_TYPE_NAME)
+      ->addWhere('is_current', '=', FALSE)
+      ->execute();
+
+    $coordinatorCount = $fallbackCoordinators->count();
+
+    $randomIndex = rand(0, $coordinatorCount - 1);
+    $coordinator = $fallbackCoordinators->itemAt($randomIndex);
+
+    return $coordinator;
+  }
+
+  /**
+   *
+   */
+  private static function findStateField(array $array) {
+    $filteredItems = array_filter($array, fn($item) => $item['entity_table'] === 'civicrm_eck_collection_camp');
+
+    if (empty($filteredItems)) {
+      return FALSE;
+    }
+
+    $collectionCampStateFields = CustomField::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('name', '=', 'State')
+      ->addWhere('custom_group_id:name', '=', 'Dropping_Centre')
+      ->execute()
+      ->first();
+
+    if (!$collectionCampStateFields) {
+      return FALSE;
+    }
+
+    $stateFieldId = $collectionCampStateFields['id'];
+
+    $stateItemIndex = array_search(TRUE, array_map(fn($item) =>
+        $item['entity_table'] === 'civicrm_eck_collection_camp' &&
+        $item['custom_field_id'] == $stateFieldId,
+        $filteredItems
+    ));
+
+    return $stateItemIndex !== FALSE ? $filteredItems[$stateItemIndex] : FALSE;
+  }
+
+  /**
+   *
+   */
+  private static function getFallbackOffice() {
+    $fallbackOffices = Contact::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('organization_name', 'CONTAINS', self::FALLBACK_OFFICE_NAME)
+      ->execute();
+
+    return $fallbackOffices->first();
   }
 
   /**
@@ -190,6 +261,90 @@ class DroppingCenterService extends AutoSubscriber {
     <p>Warm regards,<br>Urban Relations Team</p>";
 
     return $html;
+  }
+
+  /**
+   *
+   */
+  public static function setOfficeDetails($op, $groupID, $entityID, &$params) {
+    if ($op !== 'create' || self::getSubtypeNameByEntityId($entityID) !== self::ENTITY_SUBTYPE_NAME) {
+      return;
+    }
+
+    if (!($stateField = self::findStateField($params))) {
+      return;
+    }
+
+    $stateId = $stateField['value'];
+
+    $collectionCampId = $stateField['entity_id'];
+
+    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect('Dropping_Centre.Will_your_dropping_center_be_open_for_general_public_as_well_out')
+      ->addWhere('id', '=', $collectionCampId)
+      ->execute();
+
+    $collectionCampData = $collectionCamp->first();
+
+    if (!$stateId) {
+      \CRM_Core_Error::debug_log_message('Cannot assign Goonj Office to collection camp: ' . $collectionCamp['id']);
+      \CRM_Core_Error::debug_log_message('No state provided on the intent for collection camp: ' . $collectionCamp['id']);
+      return FALSE;
+    }
+
+    $officesFound = Contact::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('contact_type', '=', 'Organization')
+      ->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_Office')
+      ->addWhere('Goonj_Office_Details.Collection_Camp_Catchment', 'CONTAINS', $stateId)
+      ->execute();
+
+    $stateOffice = $officesFound->first();
+
+    // If no state office is found, assign the fallback state office.
+    if (!$stateOffice) {
+      $stateOffice = self::getFallbackOffice();
+    }
+
+    $stateOfficeId = $stateOffice['id'];
+
+    EckEntity::update('Collection_Camp', FALSE)
+      ->addValue('Dropping_Centre.Goonj_Office', $stateOfficeId)
+      ->addWhere('id', '=', $collectionCampId)
+      ->execute();
+
+    $coordinators = Relationship::get(FALSE)
+      ->addWhere('contact_id_b', '=', $stateOfficeId)
+      ->addWhere('relationship_type_id:name', '=', self::RELATIONSHIP_TYPE_NAME)
+      ->addWhere('is_current', '=', TRUE)
+      ->execute();
+
+    $coordinatorCount = $coordinators->count();
+
+    if ($coordinatorCount === 0) {
+      $coordinator = self::getFallbackCoordinator();
+    }
+    elseif ($coordinatorCount > 1) {
+      $randomIndex = rand(0, $coordinatorCount - 1);
+      $coordinator = $coordinators->itemAt($randomIndex);
+    }
+    else {
+      $coordinator = $coordinators->first();
+    }
+
+    if (!$coordinator) {
+      throw new \Exception('No coordinator available to assign.');
+    }
+
+    $coordinatorId = $coordinator['contact_id_a'];
+
+    EckEntity::update('Collection_Camp', FALSE)
+      ->addValue('Dropping_Centre.Coordinating_Urban_POC', $coordinatorId)
+      ->addWhere('id', '=', $collectionCampId)
+      ->execute();
+
+    return TRUE;
+
   }
 
   /**
