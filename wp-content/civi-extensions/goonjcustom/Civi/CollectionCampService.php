@@ -779,7 +779,7 @@ class CollectionCampService extends AutoSubscriber {
     $fallbackCoordinators = Relationship::get(FALSE)
       ->addWhere('contact_id_b', '=', $fallbackOffice['id'])
       ->addWhere('relationship_type_id:name', '=', self::RELATIONSHIP_TYPE_NAME)
-      ->addWhere('is_current', '=', FALSE)
+      ->addWhere('is_current', '=', True)
       ->execute();
 
     $coordinatorCount = $fallbackCoordinators->count();
