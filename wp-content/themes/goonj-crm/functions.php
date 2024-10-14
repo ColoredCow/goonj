@@ -421,26 +421,12 @@ function goonj_custom_message_placeholder() {
 	return '<div id="custom-message" class="ml-24"></div>';
 }
 
-function goonj_collection_camp_landing_page() {
-	ob_start();
-	get_template_part( 'templates/collection-landing-page' );
-	return ob_get_clean();
-}
-add_shortcode( 'goonj_collection_landing_page', 'goonj_collection_camp_landing_page' );
-
 add_filter( 'query_vars', 'goonj_query_vars' );
 function goonj_query_vars( $vars ) {
 	$vars[] = 'target_id';
 	$vars[] = 'state_province_id';
 	$vars[] = 'city';
 	return $vars;
-}
-
-add_shortcode( 'goonj_collection_camp_past', 'goonj_collection_camp_past_data' );
-function goonj_collection_camp_past_data() {
-	ob_start();
-	get_template_part( 'templates/collection-camp-data' );
-	return ob_get_clean();
 }
 
 add_action( 'template_redirect', 'goonj_redirect_after_individual_creation' );

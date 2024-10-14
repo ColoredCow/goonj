@@ -2,7 +2,7 @@
 
 function goonj_fetch_pu_activity_details( $activityId ) {
 	return \Civi\Api4\Activity::get( false )
-		->addSelect( 'source_contact_id', 'Office_Visit.Goonj_Processing_Center', 'Material_Contribution.Goonj_Office', 'activity_type_id:label' )
+		->addSelect( 'source_contact_id', 'Office_Visit.Goonj_Processing_Center', 'Material_Contribution.Goonj_Office', 'activity_type_id:name' )
 		->addWhere( 'id', '=', $activityId )
 		->execute()
 		->first();
@@ -10,7 +10,7 @@ function goonj_fetch_pu_activity_details( $activityId ) {
 
 // Function to determine Goonj Office ID based on activity type
 function goonj_get_goonj_office_id( $activity ) {
-	$activityTypeLabel = $activity['activity_type_id:label'];
+	$activityTypeLabel = $activity['activity_type_id:name'];
 	$officeMapping = array(
 		'Material Contribution' => 'Material_Contribution.Goonj_Office',
 		'Office visit' => 'Office_Visit.Goonj_Processing_Center',
@@ -26,10 +26,11 @@ function fetch_contact_pu_activities_for_today( $individual_id ) {
 	$today = new \DateTime( 'now', $timezone );
 	$startOfDay = $today->setTime( 0, 0 )->format( 'Y-m-d H:i:s' );
 	$endOfDay = $today->setTime( 23, 59, 59 )->format( 'Y-m-d H:i:s' );
-	return \Civi\Api4\Activity::get( false )
-		->addSelect( 'Office_Visit.Goonj_Processing_Center', 'activity_type_id:label', 'Material_Contribution.Goonj_Office' )
+
+    return \Civi\Api4\Activity::get( false )
+		->addSelect( 'Office_Visit.Goonj_Processing_Center', 'activity_type_id:name', 'Material_Contribution.Goonj_Office' )
 		->addWhere( 'source_contact_id', '=', $individual_id )
-		->addWhere( 'activity_type_id:label', 'IN', array( 'Office visit', 'Material Contribution' ) )
+		->addWhere( 'activity_type_id:name', 'IN', array( 'Office visit', 'Material Contribution' ) )
 		->addWhere( 'created_date', '>=', $startOfDay )
 		->addWhere( 'created_date', '<=', $endOfDay )
 		->execute();
@@ -38,15 +39,17 @@ function fetch_contact_pu_activities_for_today( $individual_id ) {
 // Function to process activities and track office visits and material contributions
 function goonj_process_pu_activities( $activities ) {
 	$office_activities = array();
-	foreach ( $activities as $activity ) {
+
+    foreach ( $activities as $activity ) {
 		$officeId = $activity['Office_Visit.Goonj_Processing_Center'] ?: $activity['Material_Contribution.Goonj_Office'];
-		$activityType = $activity['activity_type_id:label'];
+		$activityType = $activity['activity_type_id:name'];
 
 		if ( $officeId && in_array( $activityType, array( 'Office visit', 'Material Contribution' ) ) ) {
 			$office_activities[ $officeId ][] = $activityType;
 		}
 	}
-	return $office_activities;
+
+    return $office_activities;
 }
 
 // Function to check if both activity types exist for any office
