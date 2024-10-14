@@ -839,7 +839,7 @@ class CollectionCampService extends AutoSubscriber {
    *   The parameters that were sent into the calling function.
    */
   public static function mailNotificationToMmt($op, $groupID, $entityID, &$params) {
-    if ($op !== 'create') {
+    if ($op !== 'create' || self::getEntitySubtypeName($entityID) !== self::ENTITY_SUBTYPE_NAME) {
       return;
     }
 
@@ -922,33 +922,26 @@ class CollectionCampService extends AutoSubscriber {
    *
    */
   private static function findOfficeId(array $array) {
-    $filteredItems = array_filter($array, fn($item) => $item['entity_table'] === 'civicrm_eck_collection_source_vehicle_dispatch');
-
-    if (empty($filteredItems)) {
-      return FALSE;
-    }
-
     $goonjOfficeId = CustomField::get(FALSE)
-      ->addSelect('id')
-      ->addWhere('custom_group_id:name', '=', 'Camp_Vehicle_Dispatch')
-      ->addWhere('name', '=', 'To_which_PU_Center_material_is_being_sent')
-      ->execute()
-      ->first();
+        ->addSelect('id')
+        ->addWhere('custom_group_id:name', '=', 'Camp_Vehicle_Dispatch')
+        ->addWhere('name', '=', 'To_which_PU_Center_material_is_being_sent')
+        ->execute()
+        ->first()['id'] ?? NULL;
 
     if (!$goonjOfficeId) {
-      return FALSE;
+        return FALSE;
     }
 
-    $goonjOfficeFieldId = $goonjOfficeId['id'];
+    foreach ($array as $item) {
+        if ($item['entity_table'] === 'civicrm_eck_collection_source_vehicle_dispatch' &&
+            $item['custom_field_id'] == $goonjOfficeId) {
+            return $item;
+        }
+    }
 
-    $goonjOfficeIndex = array_search(TRUE, array_map(fn($item) =>
-        $item['entity_table'] === 'civicrm_eck_collection_source_vehicle_dispatch' &&
-        $item['custom_field_id'] == $goonjOfficeFieldId,
-        $filteredItems
-    ));
-
-    return $goonjOfficeIndex !== FALSE ? $filteredItems[$goonjOfficeIndex] : FALSE;
-  }
+    return FALSE;
+}
 
   /**
    * This hook is called after a db write on entities.

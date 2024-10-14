@@ -70,10 +70,8 @@ class DroppingCenterEmailDispatchService extends AutoSubscriber {
           'Dropping_Centre.Goonj_Office',
         ],
         'where' => [
-          ['id', '=', 390],
+          ['id', '=', $droppingCenterId],
         ],
-        'limit' => 25,
-        'checkPermissions' => FALSE,
       ]);
       $goonjOfficeRecord = $collectionCamp[0] ?? [];
       $droppingCenterGoonjOffice = $goonjOfficeRecord['Dropping_Centre.Goonj_Office'] ?? 'N/A';

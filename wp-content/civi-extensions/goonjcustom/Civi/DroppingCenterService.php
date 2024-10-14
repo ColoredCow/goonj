@@ -5,12 +5,12 @@ namespace Civi;
 use Civi\Api4\Contact;
 use Civi\Api4\CustomField;
 use Civi\Api4\EckEntity;
+use Civi\Api4\Email;
+use Civi\Api4\OptionValue;
 use Civi\Api4\Relationship;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
-use Civi\Api4\Email;
-use Civi\Api4\OptionValue;
 
 /**
  *
@@ -75,7 +75,7 @@ class DroppingCenterService extends AutoSubscriber {
     $fallbackCoordinators = Relationship::get(FALSE)
       ->addWhere('contact_id_b', '=', $fallbackOffice['id'])
       ->addWhere('relationship_type_id:name', '=', self::RELATIONSHIP_TYPE_NAME)
-      ->addWhere('is_current', '=', True)
+      ->addWhere('is_current', '=', TRUE)
       ->execute();
 
     $coordinatorCount = $fallbackCoordinators->count();
@@ -138,37 +138,36 @@ class DroppingCenterService extends AutoSubscriber {
     self::generateQrCode($data, $id, $saveOptions);
   }
 
+  /**
+   *
+   */
   private static function findOfficeId(array $array) {
-    $filteredItems = array_filter($array, fn($item) => $item['entity_table'] === 'civicrm_eck_collection_source_vehicle_dispatch');
-
-    if (empty($filteredItems)) {
-      return FALSE;
-    }
-
     $goonjOfficeId = CustomField::get(FALSE)
       ->addSelect('id')
       ->addWhere('custom_group_id:name', '=', 'Camp_Vehicle_Dispatch')
       ->addWhere('name', '=', 'To_which_PU_Center_material_is_being_sent')
       ->execute()
-      ->first();
+      ->first()['id'] ?? NULL;
 
     if (!$goonjOfficeId) {
       return FALSE;
     }
 
-    $goonjOfficeFieldId = $goonjOfficeId['id'];
+    foreach ($array as $item) {
+      if ($item['entity_table'] === 'civicrm_eck_collection_source_vehicle_dispatch' &&
+            $item['custom_field_id'] == $goonjOfficeId) {
+        return $item;
+      }
+    }
 
-    $goonjOfficeIndex = array_search(TRUE, array_map(fn($item) =>
-        $item['entity_table'] === 'civicrm_eck_collection_source_vehicle_dispatch' &&
-        $item['custom_field_id'] == $goonjOfficeFieldId,
-        $filteredItems
-    ));
-
-    return $goonjOfficeIndex !== FALSE ? $filteredItems[$goonjOfficeIndex] : FALSE;
+    return FALSE;
   }
 
+  /**
+   *
+   */
   public static function mailNotificationToMmt($op, $groupID, $entityID, &$params) {
-    if ($op !== 'create') {
+    if ($op !== 'create' || self::getEntitySubtypeName($entityID) !== self::ENTITY_SUBTYPE_NAME) {
       return;
     }
 
@@ -184,11 +183,11 @@ class DroppingCenterService extends AutoSubscriber {
       ->addWhere('id', '=', $vehicleDispatchId)
       ->execute()->first();
 
-    $collectionCampId = $collectionSourceVehicleDispatch['Camp_Vehicle_Dispatch.Collection_Camp'];
+    $droppingCenterId = $collectionSourceVehicleDispatch['Camp_Vehicle_Dispatch.Collection_Camp'];
 
     $droppingCenter = EckEntity::get('Collection_Camp', FALSE)
       ->addSelect('Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_', 'title')
-      ->addWhere('id', '=', $collectionCampId)
+      ->addWhere('id', '=', $droppingCenterId)
       ->execute()->single();
 
     $droppingCenterCode = $droppingCenter['title'];
@@ -225,7 +224,7 @@ class DroppingCenterService extends AutoSubscriber {
       'from' => $fromEmail['label'],
       'toEmail' => $mmtEmail,
       'replyTo' => $fromEmail['label'],
-      'html' => self::goonjcustom_material_management_email_html($collectionCampId, $droppingCenterCode, $droppingCenterAddress, $vehicleDispatchId),
+      'html' => self::goonjcustom_material_management_email_html($droppingCenterId, $droppingCenterCode, $droppingCenterAddress, $vehicleDispatchId),
     ];
     \CRM_Utils_Mail::send($mailParams);
 
@@ -234,7 +233,7 @@ class DroppingCenterService extends AutoSubscriber {
   /**
    *
    */
-  public static function goonjcustom_material_management_email_html($collectionCampId, $droppingCenterCode, $droppingCenterAddress, $vehicleDispatchId) {
+  public static function goonjcustom_material_management_email_html($droppingCenterId, $droppingCenterCode, $droppingCenterAddress, $vehicleDispatchId) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
     $materialdispatchUrl = $homeUrl . '/acknowledgement-form-for-dispatch/#?Eck_Collection_Source_Vehicle_Dispatch1=' . $vehicleDispatchId . '&Camp_Vehicle_Dispatch.Collection_Camp=' . $collectionCampId . '&id=' . $vehicleDispatchId . '&Eck_Collection_Camp1=' . $collectionCampId;
     $html = "
