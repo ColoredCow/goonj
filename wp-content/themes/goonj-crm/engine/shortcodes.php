@@ -92,10 +92,14 @@ function goonj_pu_activity_button() {
 	$activity_id = absint( $_GET['activityId'] );
 
 	try {
-		$activity = goonj_fetch_pu_activity_details( $activity_id );
-
-		if ( ! $activity ) {
-			\Civi::log()->info( 'No activities found for Activity ID:', array( 'activityId' => $activity_id ) );
+		$activity = \Civi\Api4\Activity::get(false)
+			->addSelect('source_contact_id', 'Office_Visit.Goonj_Processing_Center', 'Material_Contribution.Goonj_Office', 'activity_type_id:name')
+			->addWhere('id', '=', $activity_id)
+			->execute()
+			->first();
+		
+		if (!$activity) {
+			\Civi::log()->info('No activity found', ['activityId' => $activityId]);
 			return;
 		}
 
@@ -108,15 +112,7 @@ function goonj_pu_activity_button() {
 			return;
 		}
 
-		$contact_activities = goonj_fetch_contact_pu_activities_for_today( $individual_id );
-
-		$office_activities = goonj_process_pu_activities( $contact_activities );
-
-		if ( goonj_check_if_both_pu_activity_types_exist( $office_activities ) ) {
-			return;
-		}
-
-		return goonj_generate_activity_button( $office_activities, $office_id, $individual_id );
+		return goonj_generate_activity_button( $activity, $office_id, $individual_id );
 
 	} catch ( \Exception $e ) {
 		\Civi::log()->error( 'Error in goonj_pu_activity_button: ' . $e->getMessage() );
