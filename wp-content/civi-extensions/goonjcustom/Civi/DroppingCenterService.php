@@ -202,7 +202,8 @@ class DroppingCenterService extends AutoSubscriber {
     }
 
     if (!$coordinator) {
-      throw new \Exception('No coordinator available to assign.');
+      \CRM_Core_Error::debug_log_message('No coordinator available to assign.');
+      return FALSE;
     }
 
     $coordinatorId = $coordinator['contact_id_a'];
