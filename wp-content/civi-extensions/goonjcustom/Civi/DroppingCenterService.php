@@ -148,16 +148,16 @@ class DroppingCenterService extends AutoSubscriber {
 
     $droppingCenterId = $stateField['entity_id'];
 
-    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+    $droppingCenter = EckEntity::get('Collection_Camp', FALSE)
       ->addSelect('Dropping_Centre.Will_your_dropping_center_be_open_for_general_public_as_well_out')
       ->addWhere('id', '=', $droppingCenterId)
       ->execute();
 
-    $collectionCampData = $collectionCamp->first();
+    $collectionCampData = $droppingCenter->first();
 
     if (!$stateId) {
-      \CRM_Core_Error::debug_log_message('Cannot assign Goonj Office to  dropping center: ' . $collectionCamp['id']);
-      \CRM_Core_Error::debug_log_message('No state provided on the intent for  dropping center: ' . $collectionCamp['id']);
+      \CRM_Core_Error::debug_log_message('Cannot assign Goonj Office to  dropping center: ' . $droppingCenter['id']);
+      \CRM_Core_Error::debug_log_message('No state provided on the intent for  dropping center: ' . $droppingCenter['id']);
       return FALSE;
     }
 
