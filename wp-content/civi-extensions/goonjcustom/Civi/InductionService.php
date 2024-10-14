@@ -464,7 +464,7 @@ class InductionService extends AutoSubscriber {
     $lastReminderSent = $volunteer['Volunteer_fields.Last_Reminder_Sent'] ? new \DateTime($volunteer['Volunteer_fields.Last_Reminder_Sent']) : NULL;
 
     // Calculate hours since registration.
-    $hoursSinceRegistration = $today->diff($registrationDate)->h + ($today->diff($registrationDate)->days * 24);
+    $hoursSinceRegistration = ($today->getTimestamp() - $registrationDate->getTimestamp()) / 3600;
     error_log("hoursSinceRegistration: " . print_r($hoursSinceRegistration, TRUE));
 
     // Calculate hours since last reminder was sent (if any)
