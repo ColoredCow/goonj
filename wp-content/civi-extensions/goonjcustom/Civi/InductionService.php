@@ -468,7 +468,7 @@ class InductionService extends AutoSubscriber {
     error_log("hoursSinceRegistration: " . print_r($hoursSinceRegistration, TRUE));
 
     // Calculate hours since last reminder was sent (if any)
-    $hoursSinceLastReminder = $lastReminderSent ? ($today->diff($lastReminderSent)->h + ($today->diff($lastReminderSent)->days * 24)) : NULL;
+    $hoursSinceLastReminder = $lastReminderSent ? (($today->getTimestamp() - $lastReminderSent->getTimestamp()) / 3600) : NULL;
     error_log("hoursSinceLastReminder: " . print_r($hoursSinceLastReminder, TRUE));
 
     // Send the first reminder if one week (7 days = 168 hours) has passed since registration.
