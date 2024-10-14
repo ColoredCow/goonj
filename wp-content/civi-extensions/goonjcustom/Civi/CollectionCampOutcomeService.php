@@ -39,14 +39,12 @@ class CollectionCampOutcomeService {
       return FALSE;
     }
 
-    // Send the reminder email if the form is still not filled.
+    // Return if 24 hours have not passed since the last reminder.
     if ($hoursSinceLastReminder < 24) {
       return FALSE;
     }
-    // Send the reminder email.
     self::sendOutcomeReminderEmail($campAttendedById, $from, $campCode, $campAddress, $collectionCampId, $endDateString);
 
-    // Update the Last_Reminder_Sent field in the database.
     EckEntity::update('Collection_Camp', TRUE)
       ->addWhere('id', '=', $camp['id'])
       ->addValue('Camp_Outcome.Last_Reminder_Sent', $now->format('Y-m-d H:i:s'))
