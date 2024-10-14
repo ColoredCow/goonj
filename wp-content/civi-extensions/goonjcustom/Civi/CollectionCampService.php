@@ -565,7 +565,7 @@ class CollectionCampService extends AutoSubscriber {
    *   The parameters that were sent into the calling function.
    */
   public static function setOfficeDetails($op, $groupID, $entityID, &$params) {
-    if ($op !== 'create') {
+    if ($op !== 'create' ||  self::getEntitySubtypeName($entityID) !== self::ENTITY_SUBTYPE_NAME) {
       return;
     }
 
@@ -628,6 +628,11 @@ class CollectionCampService extends AutoSubscriber {
     }
     else {
       $coordinator = $coordinators->first();
+    }
+
+    if (!$coordinator) {
+      \CRM_Core_Error::debug_log_message('No coordinator available to assign.');
+      return FALSE;
     }
 
     $coordinatorId = $coordinator['contact_id_a'];
@@ -698,32 +703,27 @@ class CollectionCampService extends AutoSubscriber {
    *
    */
   private static function findStateField(array $array) {
-    $filteredItems = array_filter($array, fn($item) => $item['entity_table'] === 'civicrm_eck_collection_camp');
-
-    if (empty($filteredItems)) {
-      return FALSE;
-    }
-
-    $collectionCampStateFields = CustomField::get(FALSE)
+    $collectionCampStateField = CustomField::get(FALSE)
       ->addSelect('id')
       ->addWhere('name', '=', 'state')
       ->addWhere('custom_group_id:name', '=', 'Collection_Camp_Intent_Details')
       ->execute()
       ->first();
 
-    if (!$collectionCampStateFields) {
+    if (!$collectionCampStateField) {
       return FALSE;
     }
 
-    $stateFieldId = $collectionCampStateFields['id'];
+    $stateFieldId = $collectionCampStateField['id'];
 
-    $stateItemIndex = array_search(TRUE, array_map(fn($item) =>
-        $item['entity_table'] === 'civicrm_eck_collection_camp' &&
-        $item['custom_field_id'] == $stateFieldId,
-        $filteredItems
-    ));
+    foreach ($array as $item) {
+      if ($item['entity_table'] === 'civicrm_eck_collection_camp' &&
+            $item['custom_field_id'] === $stateFieldId) {
+        return $item;
+      }
+    }
 
-    return $stateItemIndex !== FALSE ? $filteredItems[$stateItemIndex] : FALSE;
+    return FALSE;
   }
 
   /**
@@ -778,7 +778,7 @@ class CollectionCampService extends AutoSubscriber {
     $fallbackCoordinators = Relationship::get(FALSE)
       ->addWhere('contact_id_b', '=', $fallbackOffice['id'])
       ->addWhere('relationship_type_id:name', '=', self::RELATIONSHIP_TYPE_NAME)
-      ->addWhere('is_current', '=', FALSE)
+      ->addWhere('is_current', '=', True)
       ->execute();
 
     $coordinatorCount = $fallbackCoordinators->count();
