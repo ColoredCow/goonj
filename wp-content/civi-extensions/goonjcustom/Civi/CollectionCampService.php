@@ -4,8 +4,6 @@ namespace Civi;
 
 require_once __DIR__ . '/../../../../wp-content/civi-extensions/goonjcustom/vendor/autoload.php';
 
-use chillerlan\QRCode\QRCode;
-use chillerlan\QRCode\QROptions;
 use Civi\Afform\Event\AfformSubmitEvent;
 use Civi\Api4\Activity;
 use Civi\Api4\Contact;
@@ -19,11 +17,16 @@ use Civi\Api4\Relationship;
 use Civi\Api4\StateProvince;
 use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
+use Civi\Traits\CollectionSource;
+use Civi\Traits\QrCodeable;
 
 /**
  *
  */
 class CollectionCampService extends AutoSubscriber {
+  use QrCodeable;
+  use CollectionSource;
+
   const FALLBACK_OFFICE_NAME = 'Delhi';
   const RELATIONSHIP_TYPE_NAME = 'Collection Camp Coordinator of';
   const COLLECTION_CAMP_INTENT_FB_NAME = 'afformCollectionCampIntentDetails';
@@ -126,33 +129,15 @@ class CollectionCampService extends AutoSubscriber {
 
     $entityId = $context['entity_id'];
 
-    $entityResults = EckEntity::get(self::ENTITY_NAME, TRUE)
+    $entity = EckEntity::get(self::ENTITY_NAME, TRUE)
       ->addWhere('id', '=', $entityId)
-      ->execute();
-
-    $entity = $entityResults->first();
+      ->execute()->single();
 
     $entitySubtypeValue = $entity['subtype'];
 
-    $subtypeResults = OptionValue::get(TRUE)
-      ->addSelect('name')
-      ->addWhere('grouping', '=', self::ENTITY_NAME)
-      ->addWhere('value', '=', $entitySubtypeValue)
-      ->execute();
+    $subtypeId = self::getSubtypeId();
 
-    $subtype = $subtypeResults->first();
-
-    if (!$subtype) {
-      return FALSE;
-    }
-
-    $subtypeName = $subtype['name'];
-
-    if ($subtypeName !== self::ENTITY_SUBTYPE_NAME) {
-      return FALSE;
-    }
-
-    return TRUE;
+    return (int) $entitySubtypeValue === $subtypeId;
   }
 
   /**
@@ -483,7 +468,7 @@ class CollectionCampService extends AutoSubscriber {
    *   The reference to the object.
    */
   public static function generateCollectionCampQr(string $op, string $objectName, $objectId, &$objectRef) {
-    if ($objectName != 'Eck_Collection_Camp' || !$objectId) {
+    if ($objectName !== 'Eck_Collection_Camp' || !$objectId || !self::isCurrentSubtype($objectRef)) {
       return;
     }
 
@@ -505,7 +490,8 @@ class CollectionCampService extends AutoSubscriber {
     // Check for status change.
     if ($currentStatus !== $newStatus) {
       if ($newStatus === 'authorized') {
-        self::generateQrCode($collectionCampId);
+        self::generateCollectionCampQrCode($collectionCampId);
+
       }
     }
   }
@@ -513,83 +499,17 @@ class CollectionCampService extends AutoSubscriber {
   /**
    *
    */
-  public static function generateQrCode($collectionCampId) {
+  private static function generateCollectionCampQrCode($id) {
+    $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+    $data = "{$baseUrl}actions/collection-camp/{$id}";
 
-    try {
-      $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
-      $url = "{$baseUrl}actions/collection-camp/{$collectionCampId}";
+    $saveOptions = [
+      'customGroupName' => 'Collection_Camp_QR_Code',
+      'customFieldName' => 'QR_Code',
+    ];
 
-      $options = new QROptions([
-        'version'    => 5,
-        'outputType' => QRCode::OUTPUT_IMAGE_PNG,
-        'eccLevel'   => QRCode::ECC_L,
-        'scale'      => 10,
-      ]);
+    self::generateQrCode($data, $id, $saveOptions);
 
-      $qrcode = (new QRCode($options))->render($url);
-
-      // Remove the base64 header and decode the image data.
-      $qrcode = str_replace('data:image/png;base64,', '', $qrcode);
-
-      $qrcode = base64_decode($qrcode);
-
-      $baseFileName = "qr_code_{$collectionCampId}.png";
-
-      $fileName = \CRM_Utils_File::makeFileName($baseFileName);
-
-      $tempFilePath = \CRM_Utils_File::tempnam($baseFileName);
-
-      $numBytes = file_put_contents($tempFilePath, $qrcode);
-
-      if (!$numBytes) {
-        \CRM_Core_Error::debug_log_message('Failed to write QR code to temporary file for collection camp ID ' . $collectionCampId);
-        return FALSE;
-      }
-
-      $customFields = CustomField::get(FALSE)
-        ->addSelect('id')
-        ->addWhere('custom_group_id:name', '=', 'Collection_Camp_QR_Code')
-        ->addWhere('name', '=', 'QR_Code')
-        ->setLimit(1)
-        ->execute();
-
-      $qrField = $customFields->first();
-
-      if (!$qrField) {
-        \CRM_Core_Error::debug_log_message('No field to save QR Code for collection camp ID ' . $collectionCampId);
-        return FALSE;
-      }
-
-      $qrFieldId = 'custom_' . $qrField['id'];
-
-      // Save the QR code as an attachment linked to the collection camp.
-      $params = [
-        'entity_id' => $collectionCampId,
-        'name' => $fileName,
-        'mime_type' => 'image/png',
-        'field_name' => $qrFieldId,
-        'options' => [
-          'move-file' => $tempFilePath,
-        ],
-      ];
-
-      $result = civicrm_api3('Attachment', 'create', $params);
-
-      if (empty($result['id'])) {
-        \CRM_Core_Error::debug_log_message('Failed to create attachment for collection camp ID ' . $collectionCampId);
-        return FALSE;
-      }
-
-      $attachment = $result['values'][$result['id']];
-
-      $attachmentUrl = $attachment['url'];
-    }
-    catch (\CiviCRM_API3_Exception $e) {
-      \CRM_Core_Error::debug_log_message('Error generating QR code: ' . $e->getMessage());
-      return FALSE;
-    }
-
-    return TRUE;
   }
 
   /**
@@ -624,7 +544,7 @@ class CollectionCampService extends AutoSubscriber {
         return;
       }
 
-      self::generateQrCode($collectionCampId);
+      self::generateCollectionCampQrCode($collectionCampId);
 
     }
     catch (\Exception $e) {
