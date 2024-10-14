@@ -110,9 +110,10 @@ class MaterialContributionService extends AutoSubscriber {
 
     $locationAreaOfCamp = $collectionCamp['Collection_Camp_Intent_Details.Location_Area_of_camp'] ?? 'N/A';
 
-    if (empty($locationAreaOfCamp) && !empty($city)) {
+    // If locationAreaOfCamp is 'N/A' and city is not empty, assign the value of city to locationAreaOfCamp
+    if ($locationAreaOfCamp === 'N/A' && !empty($city)) {
       $locationAreaOfCamp = $city;
-    } 
+    }
 
     $contactDataArray = $contactData[0] ?? [];
     $email = $contactDataArray['email_primary.email'] ?? 'N/A';
