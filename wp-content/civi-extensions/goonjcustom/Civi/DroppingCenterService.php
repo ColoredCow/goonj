@@ -124,13 +124,13 @@ class DroppingCenterService extends AutoSubscriber {
 
     $collectionCampId = $collectionSourceVehicleDispatch['Camp_Vehicle_Dispatch.Collection_Camp'];
 
-    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+    $droppingCenter = EckEntity::get('Collection_Camp', FALSE)
       ->addSelect('Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_', 'title')
       ->addWhere('id', '=', $collectionCampId)
       ->execute()->single();
 
-    $droppingCenterCode = $collectionCamp['title'];
-    $droppingCenterAddress = $collectionCamp['Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_'];
+    $droppingCenterCode = $droppingCenter['title'];
+    $droppingCenterAddress = $droppingCenter['Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_'];
 
     $coordinators = Relationship::get(FALSE)
       ->addWhere('contact_id_b', '=', $goonjFieldId)
