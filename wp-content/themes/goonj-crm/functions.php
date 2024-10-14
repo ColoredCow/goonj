@@ -197,10 +197,10 @@ function goonj_handle_user_identification_form() {
 		if ( empty( $found_contacts ) ) {
 			$organizationName = null;
 			// If the purpose requires fetching the organization name,
-			if ( in_array( $purpose, [ 'processing-center-material-contribution', 'processing-center-office-visit' ] ) ) {
-				$organizationName = \Civi\Api4\Organization::get(FALSE)
-				->addSelect('display_name')
-				->addWhere('id', '=', $target_id)
+			if ( in_array( $purpose, array( 'processing-center-material-contribution', 'processing-center-office-visit' ) ) ) {
+				$organizationName = \Civi\Api4\Organization::get( false )
+				->addSelect( 'display_name' )
+				->addWhere( 'id', '=', $target_id )
 				->execute()->single();
 			}
 			switch ( $purpose ) {
@@ -213,8 +213,8 @@ function goonj_handle_user_identification_form() {
 						$phone,
 						$source,
 						'material-contribution',
-						sanitize_text_field($state_id),
-						sanitize_text_field($city)
+						sanitize_text_field( $state_id ),
+						sanitize_text_field( $city )
 					);
 					$redirect_url = $individual_volunteer_registration_form_path;
 					break;
@@ -351,9 +351,9 @@ function goonj_handle_user_identification_form() {
 		// If we are here, then it means the user exists as an inducted volunteer.
 		// Fetch the most recent collection camp activity based on the creation date
 		$optionValues = \Civi\Api4\OptionValue::get( false )
-		->addWhere('option_group_id:name', '=', 'eck_sub_types')
-		->addWhere('name', '=', 'Collection_Camp')
-		->addWhere('grouping', '=', 'Collection_Camp')
+		->addWhere( 'option_group_id:name', '=', 'eck_sub_types' )
+		->addWhere( 'name', '=', 'Collection_Camp' )
+		->addWhere( 'grouping', '=', 'Collection_Camp' )
 		->execute()->single();
 
 		$collectionCampSubtype = $optionValues['value'];
@@ -427,184 +427,190 @@ function goonj_custom_message_placeholder() {
 
 add_shortcode( 'goonj_volunteer_message', 'goonj_custom_message_placeholder' );
 
-function goonj_generate_button_html($buttonUrl, $buttonText) {
+function goonj_generate_button_html( $button_url, $button_text ) {
 	ob_start();
-	get_template_part('templates/button-template', null, [
-		'buttonUrl' => $buttonUrl,
-		'buttonText' => $buttonText
-	]);
+	get_template_part(
+		'templates/primary-button',
+		null,
+		array(
+			'button_url' => $button_url,
+			'button_text' => $button_text,
+		)
+	);
 
 	return ob_get_clean();
 }
 
 
 function goonj_contribution_volunteer_signup_button() {
-    $activityId = isset($_GET['activityId']) ? intval($_GET['activityId']) : 0;
+	$activityId = isset( $_GET['activityId'] ) ? intval( $_GET['activityId'] ) : 0;
 
-    if (empty($activityId)) {
-        \Civi::log()->warning('Activity ID is missing');
-        return;
-    }
+	if ( empty( $activityId ) ) {
+		\Civi::log()->warning( 'Activity ID is missing' );
+		return;
+	}
 
-    try {
-        $activities = \Civi\Api4\Activity::get(FALSE)
-            ->addSelect('source_contact_id')
-            ->addJoin('ActivityContact AS activity_contact', 'LEFT')
-            ->addWhere('id', '=', $activityId)
-            ->addWhere('activity_type_id:label', '=', 'Material Contribution')
-            ->execute();
+	try {
+		$activities = \Civi\Api4\Activity::get( false )
+			->addSelect( 'source_contact_id' )
+			->addJoin( 'ActivityContact AS activity_contact', 'LEFT' )
+			->addWhere( 'id', '=', $activityId )
+			->addWhere( 'activity_type_id:label', '=', 'Material Contribution' )
+			->execute();
 
-        if ($activities->count() === 0) {
-            \Civi::log()->info('No activities found for Activity ID:', ['activityId' => $activityId]);
-            return;
-        }
-
-        $activity = $activities->first();
-        $individualId = $activity['source_contact_id'];
-
-        $contact = \Civi\Api4\Contact::get(FALSE)
-            ->addSelect('contact_sub_type')
-            ->addWhere('id', '=', $individualId)
-            ->execute()
-            ->first();
-
-		if (empty($contact)) {
-			\Civi::log()->info('Contact not found', ['contact' => $contact['id']]);
+		if ( $activities->count() === 0 ) {
+			\Civi::log()->info( 'No activities found for Activity ID:', array( 'activityId' => $activityId ) );
 			return;
 		}
 
-        $contactSubTypes = $contact['contact_sub_type'] ?? [];
+		$activity = $activities->first();
+		$individualId = $activity['source_contact_id'];
 
-        // If the individual is already a volunteer, don't show the button
-        if (in_array('Volunteer', $contactSubTypes)) {
-            return;
-        }
+		$contact = \Civi\Api4\Contact::get( false )
+			->addSelect( 'contact_sub_type' )
+			->addWhere( 'id', '=', $individualId )
+			->execute()
+			->first();
 
-        $redirectPath = '/volunteer-registration/form-with-details/';
-        $redirectPathWithParams = $redirectPath . '#?' . http_build_query([
-            'Individual1' => $individualId,
-            'message' => 'individual-user'
-        ]);
-		$buttonText = __('Wish to Volunteer?', 'goonj-crm');
+		if ( empty( $contact ) ) {
+			\Civi::log()->info( 'Contact not found', array( 'contact' => $contact['id'] ) );
+			return;
+		}
 
-        return goonj_generate_button_html($redirectPathWithParams, $buttonText);
-    } catch (\Exception $e) {
-        \Civi::log()->error('Error in goonj_contribution_volunteer_signup_button: ' . $e->getMessage());
-        return;
-    }
+		$contactSubTypes = $contact['contact_sub_type'] ?? array();
+
+		// If the individual is already a volunteer, don't show the button
+		if ( in_array( 'Volunteer', $contactSubTypes ) ) {
+			return;
+		}
+
+		$redirectPath = '/volunteer-registration/form-with-details/';
+		$redirectPathWithParams = $redirectPath . '#?' . http_build_query(
+			array(
+				'Individual1' => $individualId,
+				'message' => 'individual-user',
+			)
+		);
+		$buttonText = __( 'Wish to Volunteer?', 'goonj-crm' );
+
+		return goonj_generate_button_html( $redirectPathWithParams, $buttonText );
+	} catch ( \Exception $e ) {
+		\Civi::log()->error( 'Error in goonj_contribution_volunteer_signup_button: ' . $e->getMessage() );
+		return;
+	}
 }
 
-add_shortcode('goonj_contribution_volunteer_signup_button', 'goonj_contribution_volunteer_signup_button');
+add_shortcode( 'goonj_contribution_volunteer_signup_button', 'goonj_contribution_volunteer_signup_button' );
 
 // Function to determine which activity button (if any) should be displayed for the user
 function goonj_pu_activity_button() {
 	// Retrieve the activity ID from the URL parameters (GET request)
-	$activityId = isset($_GET['activityId']) ? intval($_GET['activityId']) : 0;
+	$activityId = isset( $_GET['activityId'] ) ? intval( $_GET['activityId'] ) : 0;
 
 	// If no valid activity ID is provided, log an error and exit the function
-	if (empty($activityId)) {
-		\Civi::log()->info('Activity ID is missing', ['activityId' => $activityId]);
+	if ( empty( $activityId ) ) {
+		\Civi::log()->info( 'Activity ID is missing', array( 'activityId' => $activityId ) );
 		return;
 	}
 
 	try {
 		// Fetch the details of the current activity (either Office Visit or Material Contribution)
-		$activity = goonj_fetch_pu_activity_details($activityId);
+		$activity = goonj_fetch_pu_activity_details( $activityId );
 
 		// If no activity details are found, log an error and exit the function
-		if (!$activity) {
-			\Civi::log()->info('No activities found for Activity ID:', ['activityId' => $activityId]);
+		if ( ! $activity ) {
+			\Civi::log()->info( 'No activities found for Activity ID:', array( 'activityId' => $activityId ) );
 			return;
 		}
 
 		// Extract the individual's ID from the activity data
 		$individualId = $activity['source_contact_id'];
-		
+
 		// Fetch the Goonj office ID from the activity details (can be from Office Visit or Material Contribution)
-		$goonjOfficeId = goonj_get_goonj_office_id($activity);
+		$goonjOfficeId = goonj_get_goonj_office_id( $activity );
 
 		// If the office ID is null, log an error and exit the function
-		if (is_null($goonjOfficeId)) {
-			\Civi::log()->info('Goonj Office ID is null for Activity ID:', ['activityId' => $activityId]);
+		if ( is_null( $goonjOfficeId ) ) {
+			\Civi::log()->info( 'Goonj Office ID is null for Activity ID:', array( 'activityId' => $activityId ) );
 			return;
 		}
 
 		// Fetch all activities for this individual that occurred today (Office Visits and Material Contributions)
-		$contactActivities = fetch_contact_pu_activities_for_today($individualId);
+		$contactActivities = fetch_contact_pu_activities_for_today( $individualId );
 
 		// Process these activities to determine what has already been completed at this office
-		$officeActivities = goonj_process_pu_activities($contactActivities);
+		$officeActivities = goonj_process_pu_activities( $contactActivities );
 
 		// If both Office Visit and Material Contribution have been completed at the same office, exit the function
-		if (goonj_check_if_both_pu_activity_types_exist($officeActivities)) {
+		if ( goonj_check_if_both_pu_activity_types_exist( $officeActivities ) ) {
 			return; // Both activities are done, no button needed
 		}
 
 		// Generate the appropriate button for the next pending activity and return the HTML
-		return goonj_generate_activity_button($officeActivities, $goonjOfficeId, $individualId);
+		return goonj_generate_activity_button( $officeActivities, $goonjOfficeId, $individualId );
 
-	} catch (\Exception $e) {
+	} catch ( \Exception $e ) {
 		// Log any exceptions that occur during the process
-		\Civi::log()->error('Error in goonj_pu_activity_button: ' . $e->getMessage());
+		\Civi::log()->error( 'Error in goonj_pu_activity_button: ' . $e->getMessage() );
 		return;
 	}
 }
 
-add_shortcode('goonj_pu_activity_button', 'goonj_pu_activity_button');
+add_shortcode( 'goonj_pu_activity_button', 'goonj_pu_activity_button' );
 
-function goonj_fetch_pu_activity_details($activityId) {
-	return \Civi\Api4\Activity::get(FALSE)
-		->addSelect('source_contact_id', 'Office_Visit.Goonj_Processing_Center', 'Material_Contribution.Goonj_Office', 'activity_type_id:label')
-		->addWhere('id', '=', $activityId)
+function goonj_fetch_pu_activity_details( $activityId ) {
+	return \Civi\Api4\Activity::get( false )
+		->addSelect( 'source_contact_id', 'Office_Visit.Goonj_Processing_Center', 'Material_Contribution.Goonj_Office', 'activity_type_id:label' )
+		->addWhere( 'id', '=', $activityId )
 		->execute()
 		->first();
 }
 
 // Function to determine Goonj Office ID based on activity type
-function goonj_get_goonj_office_id($activity) {
+function goonj_get_goonj_office_id( $activity ) {
 	$activityTypeLabel = $activity['activity_type_id:label'];
-	$officeMapping = [
+	$officeMapping = array(
 		'Material Contribution' => 'Material_Contribution.Goonj_Office',
 		'Office visit' => 'Office_Visit.Goonj_Processing_Center',
-	];
+	);
 
-	return array_key_exists($activityTypeLabel, $officeMapping) ? $activity[$officeMapping[$activityTypeLabel]] ?? null : null;
+	return array_key_exists( $activityTypeLabel, $officeMapping ) ? $activity[ $officeMapping[ $activityTypeLabel ] ] ?? null : null;
 }
 
 // Function to fetch user's activities for today
-function fetch_contact_pu_activities_for_today($individualId) {
+function fetch_contact_pu_activities_for_today( $individualId ) {
 
-	$timezone = new \DateTimeZone('UTC');
-	$today = new \DateTime('now', $timezone);
-	$startOfDay = $today->setTime(0, 0)->format('Y-m-d H:i:s');
-	$endOfDay = $today->setTime(23, 59, 59)->format('Y-m-d H:i:s');
-	return \Civi\Api4\Activity::get(FALSE)
-		->addSelect('Office_Visit.Goonj_Processing_Center', 'activity_type_id:label', 'Material_Contribution.Goonj_Office')
-		->addWhere('source_contact_id', '=', $individualId)
-		->addWhere('activity_type_id:label', 'IN', ['Office visit', 'Material Contribution'])
-		->addWhere('created_date', '>=', $startOfDay)
-		->addWhere('created_date', '<=', $endOfDay)
+	$timezone = new \DateTimeZone( 'UTC' );
+	$today = new \DateTime( 'now', $timezone );
+	$startOfDay = $today->setTime( 0, 0 )->format( 'Y-m-d H:i:s' );
+	$endOfDay = $today->setTime( 23, 59, 59 )->format( 'Y-m-d H:i:s' );
+	return \Civi\Api4\Activity::get( false )
+		->addSelect( 'Office_Visit.Goonj_Processing_Center', 'activity_type_id:label', 'Material_Contribution.Goonj_Office' )
+		->addWhere( 'source_contact_id', '=', $individualId )
+		->addWhere( 'activity_type_id:label', 'IN', array( 'Office visit', 'Material Contribution' ) )
+		->addWhere( 'created_date', '>=', $startOfDay )
+		->addWhere( 'created_date', '<=', $endOfDay )
 		->execute();
 }
 
 // Function to process activities and track office visits and material contributions
-function goonj_process_pu_activities($activities) {
-	$officeActivities = [];
-	foreach ($activities as $activity) {
+function goonj_process_pu_activities( $activities ) {
+	$officeActivities = array();
+	foreach ( $activities as $activity ) {
 		$officeId = $activity['Office_Visit.Goonj_Processing_Center'] ?: $activity['Material_Contribution.Goonj_Office'];
 		$activityType = $activity['activity_type_id:label'];
 
-		if ($officeId && in_array($activityType, ['Office visit', 'Material Contribution'])) {
-			$officeActivities[$officeId][] = $activityType;
+		if ( $officeId && in_array( $activityType, array( 'Office visit', 'Material Contribution' ) ) ) {
+			$officeActivities[ $officeId ][] = $activityType;
 		}
 	}
 	return $officeActivities;
 }
 
 // Function to check if both activity types exist for any office
-function goonj_check_if_both_pu_activity_types_exist($officeActivities) {
-	foreach ($officeActivities as $activityTypes) {
-		if (count(array_unique($activityTypes)) === 2) {
+function goonj_check_if_both_pu_activity_types_exist( $officeActivities ) {
+	foreach ( $officeActivities as $activityTypes ) {
+		if ( count( array_unique( $activityTypes ) ) === 2 ) {
 			return true; // Both activity types exist
 		}
 	}
@@ -612,52 +618,52 @@ function goonj_check_if_both_pu_activity_types_exist($officeActivities) {
 }
 
 // Function to generate the redirect URL and button for the next pending activity
-function goonj_generate_activity_button($officeActivities, $goonjOfficeId, $individualId) {
+function goonj_generate_activity_button( $officeActivities, $goonjOfficeId, $individualId ) {
 	// Define the two activity types: Office visit and Material Contribution
-	$activityTypes = ['Office visit', 'Material Contribution'];
-	
+	$activityTypes = array( 'Office visit', 'Material Contribution' );
+
 	// Get the list of completed activities for the specified office
 	// If no activities are found for this office, an empty array is returned
-	$completedActivities = $officeActivities[$goonjOfficeId] ?? [];
-	
+	$completedActivities = $officeActivities[ $goonjOfficeId ] ?? array();
+
 	// Find the activities that are still pending by comparing with the list of activity types
-	$pendingActivities = array_diff($activityTypes, $completedActivities);
+	$pendingActivities = array_diff( $activityTypes, $completedActivities );
 
 	// If all activities have been completed, no button is needed, so exit the function
-	if (empty($pendingActivities)) {
+	if ( empty( $pendingActivities ) ) {
 		return;
 	}
 
 	// Define the mapping for each activity type to its respective redirect path, button text, and query parameter
-	$activityMap = [
-		'Office visit' => [
+	$activityMap = array(
+		'Office visit' => array(
 			'redirectPath' => '/processing-center/office-visit/details/',
-			'buttonText' => __('Proceed to Office Visit', 'goonj-crm'),
+			'buttonText' => __( 'Proceed to Office Visit', 'goonj-crm' ),
 			'queryParam' => 'Office_Visit.Goonj_Processing_Center',
-		],
-		'Material Contribution' => [
+		),
+		'Material Contribution' => array(
 			'redirectPath' => '/processing-center/material-contribution/details/',
-			'buttonText' => __('Proceed to Material Contribution', 'goonj-crm'),
+			'buttonText' => __( 'Proceed to Material Contribution', 'goonj-crm' ),
 			'queryParam' => 'Material_Contribution.Goonj_Office',
-		],
-	];
+		),
+	);
 
 	// Get the first pending activity from the list of pending activities
-	$nextActivity = reset($pendingActivities);
+	$nextActivity = reset( $pendingActivities );
 	// Fetch the relevant details for the next activity, including the redirect path and button text
-	$details = $activityMap[$nextActivity];
+	$details = $activityMap[ $nextActivity ];
 
 	// Prepare the query parameters needed for the redirection, including the individual and office IDs
-	$redirectParams = [
+	$redirectParams = array(
 		'source_contact_id' => $individualId,
 		$details['queryParam'] => $goonjOfficeId,
-	];
+	);
 
 	// Generate the full redirect URL with the necessary query parameters
-	$redirectPathWithParams = $details['redirectPath'] . '#?' . http_build_query($redirectParams);
+	$redirectPathWithParams = $details['redirectPath'] . '#?' . http_build_query( $redirectParams );
 
 	// Generate the HTML for the button using the redirect URL and the button text
-	return goonj_generate_button_html($redirectPathWithParams, $details['buttonText']);
+	return goonj_generate_button_html( $redirectPathWithParams, $details['buttonText'] );
 }
 
 function goonj_collection_camp_landing_page() {
@@ -707,7 +713,7 @@ function goonj_redirect_after_individual_creation() {
 	switch ( $creationFlow ) {
 		case 'material-contribution':
 			if ( ! $source ) {
-				\Civi::log()->warning('Source is missing for material contribution flow', ['individualId' => $_GET['individualId']]);
+				\Civi::log()->warning( 'Source is missing for material contribution flow', array( 'individualId' => $_GET['individualId'] ) );
 				return;
 			}
 			// If the individual was created while in the process of material contribution,
