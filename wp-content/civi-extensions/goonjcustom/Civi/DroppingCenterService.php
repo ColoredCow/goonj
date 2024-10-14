@@ -20,7 +20,7 @@ class DroppingCenterService extends AutoSubscriber {
   use CollectionSource;
 
   const ENTITY_NAME = 'Collection_Camp';
-  const RELATIONSHIP_TYPE_NAME = 'Collection Camp Coordinator of';
+  const RELATIONSHIP_TYPE_NAME = 'Dropping Center Coordinator of';
   const ENTITY_SUBTYPE_NAME = 'Dropping_Center';
   const MATERIAL_RELATIONSHIP_TYPE_NAME = 'Material Management Team of';
   const FALLBACK_OFFICE_NAME = 'Delhi';
