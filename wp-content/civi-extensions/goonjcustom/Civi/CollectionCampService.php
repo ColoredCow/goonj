@@ -19,7 +19,6 @@ use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
-use Civi\Traits\SubtypeSource;
 
 /**
  *
@@ -27,7 +26,6 @@ use Civi\Traits\SubtypeSource;
 class CollectionCampService extends AutoSubscriber {
   use QrCodeable;
   use CollectionSource;
-  use SubtypeSource;
 
   const FALLBACK_OFFICE_NAME = 'Delhi';
   const RELATIONSHIP_TYPE_NAME = 'Collection Camp Coordinator of';

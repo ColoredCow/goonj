@@ -9,7 +9,6 @@ use Civi\Api4\Relationship;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
-use Civi\Traits\SubtypeSource;
 
 /**
  *
@@ -17,7 +16,6 @@ use Civi\Traits\SubtypeSource;
 class DroppingCenterService extends AutoSubscriber {
   use QrCodeable;
   use CollectionSource;
-  use SubtypeSource;
 
   const ENTITY_NAME = 'Collection_Camp';
   const RELATIONSHIP_TYPE_NAME = 'Dropping Center Coordinator of';
