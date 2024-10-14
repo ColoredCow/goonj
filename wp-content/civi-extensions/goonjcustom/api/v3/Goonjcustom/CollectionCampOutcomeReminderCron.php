@@ -47,6 +47,7 @@ function civicrm_api3_goonjcustom_collection_camp_outcome_reminder_cron($params)
       'Camp_Outcome.Last_Reminder_Sent',
       'title',
       'Collection_Camp_Intent_Details.Location_Area_of_camp',
+      'Collection_Camp_Intent_Details.Camp_status_field',
     )
     ->addWhere('Camp_Outcome.Rate_the_camp', 'IS NULL')
     ->addWhere('Logistics_Coordination.Email_Sent', '=', 1)
