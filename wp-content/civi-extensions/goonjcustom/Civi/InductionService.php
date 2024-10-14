@@ -462,6 +462,8 @@ class InductionService extends AutoSubscriber {
     $registrationDate = new \DateTime($volunteer['created_date']);
     $lastReminderSent = $volunteer['Volunteer_fields.Last_Reminder_Sent'] ? new \DateTime($volunteer['Volunteer_fields.Last_Reminder_Sent']) : NULL;
 
+    error_log("volunteerId: " . print_r($volunteerId, TRUE));
+
     // Calculate hours since registration.
     $hoursSinceRegistration = ($today->getTimestamp() - $registrationDate->getTimestamp()) / 3600;
     error_log("hoursSinceRegistration: " . print_r($hoursSinceRegistration, TRUE));
@@ -477,11 +479,11 @@ class InductionService extends AutoSubscriber {
         // Send the reminder email.
         self::sendInductionReminderEmail($volunteerId, $from, $volunteerName, $volunteerEmail);
 
-        // Update the Last_Reminder_Sent field in the database.
-        EckEntity::update('Volunteer_Induction', TRUE)
-          ->addWhere('id', '=', $volunteer['id'])
-          ->addValue('Volunteer_fields.Last_Reminder_Sent', $today->format('Y-m-d H:i:s'))
-          ->execute();
+        // // Update the Last_Reminder_Sent field in the database.
+        // EckEntity::update('Volunteer_Induction', TRUE)
+        //   ->addWhere('id', '=', $volunteer['id'])
+        //   ->addValue('Volunteer_fields.Last_Reminder_Sent', $today->format('Y-m-d H:i:s'))
+        //   ->execute();
       }
     }
   }
