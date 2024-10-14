@@ -145,7 +145,7 @@ class DroppingCenterService extends AutoSubscriber {
    *
    */
   public static function setOfficeDetails($op, $groupID, $entityID, &$params) {
-    if ($op !== 'create' || self::getSubtypeNameByEntityId($entityID) !== self::ENTITY_SUBTYPE_NAME) {
+    if ($op !== 'create' || self::getEntitySubtypeName($entityID) !== self::ENTITY_SUBTYPE_NAME) {
       return;
     }
 
@@ -155,18 +155,18 @@ class DroppingCenterService extends AutoSubscriber {
 
     $stateId = $stateField['value'];
 
-    $collectionCampId = $stateField['entity_id'];
+    $droppingCenterId = $stateField['entity_id'];
 
     $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
       ->addSelect('Dropping_Centre.Will_your_dropping_center_be_open_for_general_public_as_well_out')
-      ->addWhere('id', '=', $collectionCampId)
+      ->addWhere('id', '=', $droppingCenterId)
       ->execute();
 
     $collectionCampData = $collectionCamp->first();
 
     if (!$stateId) {
-      \CRM_Core_Error::debug_log_message('Cannot assign Goonj Office to collection camp: ' . $collectionCamp['id']);
-      \CRM_Core_Error::debug_log_message('No state provided on the intent for collection camp: ' . $collectionCamp['id']);
+      \CRM_Core_Error::debug_log_message('Cannot assign Goonj Office to  dropping center: ' . $collectionCamp['id']);
+      \CRM_Core_Error::debug_log_message('No state provided on the intent for  dropping center: ' . $collectionCamp['id']);
       return FALSE;
     }
 
@@ -188,7 +188,7 @@ class DroppingCenterService extends AutoSubscriber {
 
     EckEntity::update('Collection_Camp', FALSE)
       ->addValue('Dropping_Centre.Goonj_Office', $stateOfficeId)
-      ->addWhere('id', '=', $collectionCampId)
+      ->addWhere('id', '=', $droppingCenterId)
       ->execute();
 
     $coordinators = Relationship::get(FALSE)
@@ -218,7 +218,7 @@ class DroppingCenterService extends AutoSubscriber {
 
     EckEntity::update('Collection_Camp', FALSE)
       ->addValue('Dropping_Centre.Coordinating_Urban_POC', $coordinatorId)
-      ->addWhere('id', '=', $collectionCampId)
+      ->addWhere('id', '=', $droppingCenterId)
       ->execute();
 
     return TRUE;

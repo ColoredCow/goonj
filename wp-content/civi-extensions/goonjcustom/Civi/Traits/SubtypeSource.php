@@ -16,7 +16,7 @@ trait SubtypeSource {
    * @return string|null
    *   The subtype name or NULL if not found.
    */
-  public static function getSubtypeNameByEntityId($entityID) {
+  public static function getEntitySubtypeName($entityID) {
     $getSubtypeName = civicrm_api4('Eck_Collection_Camp', 'get', [
       'select' => [
         'subtype:name',
