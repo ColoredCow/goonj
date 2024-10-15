@@ -54,7 +54,7 @@ $target_data = [
   'dropping-center' => [
     'volunteer_name' => 'Collection_Camp_Core_Details.Contact_Id.display_name',
     'address' => 'Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_',
-    'address_label' => 'Area of the dropping center',
+    'address_label' => 'Goonj volunteer run dropping center (Address)',
     'contribution_link' => $dropping_center_material_contribution_link,
   ],
   'collection-camp' => [
@@ -92,7 +92,7 @@ if (in_array($target, ['collection-camp', 'dropping-center'])) :
         <tbody>
             <?php if ($target === 'dropping-center') : ?>
             <tr class="wp-block-gb-table-row">
-                <td class="wp-block-gb-table-cell wp-block-gb-table-header">Goonj volunteer run dropping center (Address)</td>
+                <td class="wp-block-gb-table-cell wp-block-gb-table-header">Volunteer name</td>
                 <td class="wp-block-gb-table-cell"><?php echo esc_html($volunteer_name); ?></td>
             </tr>
             <?php endif; ?>
