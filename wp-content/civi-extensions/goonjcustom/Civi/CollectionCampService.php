@@ -277,22 +277,15 @@ class CollectionCampService extends AutoSubscriber {
    *   The reference to the object.
    */
   public static function generateCollectionCampCode(string $op, string $objectName, $objectId, &$objectRef) {
-    if ($objectName != 'Eck_Collection_Camp') {
+    $statusDetails = self::checkCampStatusAndIds($objectName, $objectId, $objectRef);
+
+    // Ensure valid status and camp details are returned.
+    if (!$statusDetails) {
       return;
     }
 
-    $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
-
-    if (!$newStatus || !$objectId) {
-      return;
-    }
-
-    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id', 'title')
-      ->addWhere('id', '=', $objectId)
-      ->execute()->single();
-
-    $currentStatus = $collectionCamp['Collection_Camp_Core_Details.Status'];
+    $newStatus = $statusDetails['newStatus'];
+    $currentStatus = $statusDetails['currentStatus'];
 
     // Check for status change.
     if ($currentStatus !== $newStatus) {
@@ -785,7 +778,7 @@ class CollectionCampService extends AutoSubscriber {
     $fallbackCoordinators = Relationship::get(FALSE)
       ->addWhere('contact_id_b', '=', $fallbackOffice['id'])
       ->addWhere('relationship_type_id:name', '=', self::RELATIONSHIP_TYPE_NAME)
-      ->addWhere('is_current', '=', True)
+      ->addWhere('is_current', '=', TRUE)
       ->execute();
 
     $coordinatorCount = $fallbackCoordinators->count();
@@ -1172,22 +1165,15 @@ class CollectionCampService extends AutoSubscriber {
    *   The reference to the object.
    */
   public static function updateCampStatusAfterAuth(string $op, string $objectName, $objectId, &$objectRef) {
-    if ($objectName != 'Eck_Collection_Camp') {
+    $statusDetails = self::checkCampStatusAndIds($objectName, $objectId, $objectRef);
+
+    // Ensure valid status and camp details are returned.
+    if (!$statusDetails) {
       return;
     }
 
-    $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
-
-    if (!$newStatus || !$objectId) {
-      return;
-    }
-
-    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Collection_Camp_Core_Details.Status')
-      ->addWhere('id', '=', $objectId)
-      ->execute()->single();
-
-    $currentStatus = $collectionCamp['Collection_Camp_Core_Details.Status'];
+    $newStatus = $statusDetails['newStatus'];
+    $currentStatus = $statusDetails['currentStatus'];
 
     // Check for status change.
     if ($currentStatus !== $newStatus) {
@@ -1204,7 +1190,7 @@ class CollectionCampService extends AutoSubscriber {
           return;
         }
 
-        // Update camp status to 'planned' when the camp is authorized
+        // Update camp status to 'planned' when the camp is authorized.
         $results = EckEntity::update('Collection_Camp', TRUE)
           ->addValue('Collection_Camp_Intent_Details.Camp_status_field', 'planned')
           ->addWhere('id', '=', $campId)
@@ -1244,12 +1230,45 @@ class CollectionCampService extends AutoSubscriber {
 
     $collectionCampId = $collectionSourceVehicleDispatch['Camp_Vehicle_Dispatch.Collection_Camp'];
 
-     // Update camp status to 'completed' when the camp outcome form is submitted
+    // Update camp status to 'completed' when the camp outcome form is submitted.
     $results = EckEntity::update('Collection_Camp', FALSE)
       ->addValue('Collection_Camp_Intent_Details.Camp_status_field', 'completed')
       ->addWhere('id', '=', $collectionCampId)
       ->execute();
 
+  }
+
+  /**
+   *
+   */
+  public static function checkCampStatusAndIds(string $objectName, $objectId, &$objectRef) {
+    // Ensure the object is of type 'Eck_Collection_Camp'.
+    if ($objectName != 'Eck_Collection_Camp') {
+      return NULL;
+    }
+
+    // Retrieve the new status from the object reference.
+    $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
+
+    // Ensure both new status and object ID are provided.
+    if (!$newStatus || !$objectId) {
+      return NULL;
+    }
+
+    // Fetch the current status of the camp.
+    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect('Collection_Camp_Core_Details.Status')
+      ->addWhere('id', '=', $objectId)
+      ->execute()->single();
+
+    // Retrieve the current status of the camp.
+    $currentStatus = $collectionCamp['Collection_Camp_Core_Details.Status'] ?? '';
+
+    // Return the necessary details.
+    return [
+      'newStatus' => $newStatus,
+      'currentStatus' => $currentStatus,
+    ];
   }
 
 }
