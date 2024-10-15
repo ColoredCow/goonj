@@ -138,7 +138,7 @@ function goonj_handle_user_identification_form() {
 	$state_id = $_POST['state_id'] ?? '';
 	$city = $_POST['city'] ?? '';
 
-	$is_purpose_requiring_email = ! in_array( $purpose, array( 'material-contribution', 'processing-center-office-visit', 'processing-center-material-contribution' ) );
+	$is_purpose_requiring_email = ! in_array( $purpose, array( 'material-contribution', 'processing-center-office-visit', 'processing-center-material-contribution', 'dropping-center-contribution' ) );
 
 	if ( empty( $phone ) || ( $is_purpose_requiring_email && empty( $email ) ) ) {
 		return;
@@ -216,9 +216,18 @@ function goonj_handle_user_identification_form() {
 					break;
 
 				// Contact does not exist and the purpose is to create a dropping center.
-				// Redirect to volunteer registration.
-				case 'dropping-center':
-					$redirect_url = $dropping_center_volunteer_registration_form_path;
+				// Redirect to individual registration with option for volunteering.
+				case 'dropping-center-contribution':
+					$individual_registration_form_path = sprintf(
+						'/individual-signup-with-volunteering/#?email=%s&phone=%s&source=%s&Individual_fields.Creation_Flow=%s&state_province_id=%s&city=%s',
+						$email,
+						$phone,
+						$source,
+						'dropping-center-contribution',
+						sanitize_text_field($state_id),
+						sanitize_text_field($city)
+					);
+					$redirect_url = $individual_registration_form_path;
 					break;
 
 				// Contact does not exist and the purpose is to register an institute.
@@ -270,17 +279,27 @@ function goonj_handle_user_identification_form() {
 			exit;
 		}
 
-		// If we are here, then it means for sure that the contact exists.
-
-		if ( 'material-contribution' === $purpose ) {
-			$material_contribution_form_path = sprintf(
+		// If we are here, then it means for sure that the contact exists.	
+		if ($purpose === 'material-contribution') {
+			$material_contribution_form_Path = sprintf(
 				'/material-contribution/#?email=%s&phone=%s&Material_Contribution.Collection_Camp=%s&source_contact_id=%s',
 				$email,
 				$phone,
 				$target_id,
 				$found_contacts['id']
 			);
-			wp_redirect( $material_contribution_form_path );
+			wp_redirect( $material_contribution_form_Path );
+			exit;
+		}
+		if ($purpose === 'dropping-center-contribution') {
+			$dropping_center_form_path = sprintf(
+				'/dropping-center/material-contribution/#?email=%s&phone=%s&Material_Contribution.Dropping_Center=%s&source_contact_id=%s',
+				$email,
+				$phone,
+				$target_id,
+				$found_contacts['id']
+			);
+			wp_redirect( $dropping_center_form_path );
 			exit;
 		}
 
@@ -460,10 +479,10 @@ function goonj_redirect_after_individual_creation() {
 			// If the individual was created while in the process of material contribution,
 			// then we need to find out from WHERE was she trying to contribute.
 
-			// First, we check if the source of Individual is Colllection Camp (or Dropping Center).
-			$collectionCamp = \Civi\Api4\EckEntity::get( 'Collection_Camp', false )
+			// First, we check if the source of Individual is Collection Camp (or Dropping Center).
+			$collectionCamp = \Civi\Api4\EckEntity::get( 'Collection_Camp', FALSE )
 				->addWhere( 'title', '=', $source )
-				->setLimit( 1 )
+				->addWhere('subtype:name', '=', 'Collection_Camp')
 				->execute()->first();
 
 			if ( ! empty( $collectionCamp['id'] ) ) {
@@ -474,6 +493,28 @@ function goonj_redirect_after_individual_creation() {
 				);
 				break;
 			}
+			case 'dropping-center-contribution':
+				if ( ! $source ) {
+					\Civi::log()->warning('Source is missing for material contribution flow', ['individualId' => $_GET['individualId']]);
+					return;
+				}
+				// If the individual was created during a material contribution process,
+				// We need to determine from where they were attempting to contribute.
+	
+				// First, we check if the source of Individual is Dropping Center.
+				$droppingCenter = \Civi\Api4\EckEntity::get( 'Collection_Camp', false )
+					->addWhere( 'title', '=', $source )
+					->addWhere('subtype:name', '=', 'Dropping_Center')
+					->execute()->first();
+	
+				if ( ! empty( $droppingCenter['id'] ) ) {
+					$redirectPath = sprintf(
+						'/dropping-center/material-contribution/#?Material_Contribution.Dropping_Center=%s&source_contact_id=%s',
+						$droppingCenter['id'],
+						$individual['id']
+					);
+					break;
+				}
 		case 'office-visit':
 			$sourceProcessingCenter = $individual['Individual_fields.Source_Processing_Center'];
 			$redirectPath = sprintf(
