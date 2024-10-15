@@ -37,6 +37,7 @@ trait CollectionSource {
       'where' => [
               ['id', '=', $entityID],
       ],
+      'checkPermissions' => FALSE,
     ]);
 
     $entityData = $getSubtypeName[0] ?? [];

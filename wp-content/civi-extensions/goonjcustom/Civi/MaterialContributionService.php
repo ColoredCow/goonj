@@ -98,6 +98,7 @@ class MaterialContributionService extends AutoSubscriber {
               ['id', '=', $activity['Material_Contribution.Collection_Camp']],
       ],
       'limit' => 1,
+      'checkPermissions' => FALSE,
     ]);
 
     $collectionCamp = $collectionCampData[0] ?? [];
