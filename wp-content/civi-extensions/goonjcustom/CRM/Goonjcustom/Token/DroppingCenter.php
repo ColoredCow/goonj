@@ -22,11 +22,10 @@ class CRM_Goonjcustom_Token_DroppingCenter extends AbstractTokenSubscriber {
     parent::__construct('dropping_center', [
       'venue' => \CRM_Goonjcustom_ExtensionUtil::ts('Venue'),
       'date' => \CRM_Goonjcustom_ExtensionUtil::ts('Date'),
-      'time' => \CRM_Goonjcustom_ExtensionUtil::ts('Time'),
+      'time' => \CRM_Goonjcustom_ExtensionUtil::ts('Timing'),
       'volunteers' => \CRM_Goonjcustom_ExtensionUtil::ts('Volunteers'),
       'coordinator' => \CRM_Goonjcustom_ExtensionUtil::ts('Coordinator (Goonj)'),
       'remarks' => \CRM_Goonjcustom_ExtensionUtil::ts('Remarks'),
-      'type' => \CRM_Goonjcustom_ExtensionUtil::ts('Type (Camp/Drive)'),
       'address_city' => \CRM_Goonjcustom_ExtensionUtil::ts('City'),
     ]);
   }
@@ -62,21 +61,10 @@ class CRM_Goonjcustom_Token_DroppingCenter extends AbstractTokenSubscriber {
         break;
 
       case 'date':
-      case 'time':
-      case 'type':
-        $start = new DateTime($collectionSource['Dropping_Centre.Start_Date']);
-        $end = new DateTime($collectionSource['Dropping_Centre.End_Date']);
 
-        if ($field === 'type') {
-          $value = $start->format('Y-m-d') === $end->format('Y-m-d') ? 'Camp' : 'Drive';
-        }
-        elseif ($field === 'date') {
-          $value = $this->formatDate($start, $end);
-        }
-        else {
-          $value = $this->formatTime($start, $end);
-        }
-        break;
+      // @todo Update the data timing field for the poster.
+      // Need to adjust and implement the logic for formatting the start and end time.
+      case 'time':
 
       case 'volunteers':
         $value = $this->formatVolunteers($collectionSource);
@@ -193,11 +181,11 @@ class CRM_Goonjcustom_Token_DroppingCenter extends AbstractTokenSubscriber {
    */
   private function formatVenue($collectionSource) {
     $addressParts = [
-        $collectionSource['Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_'] ?? '',
-        $collectionSource['Dropping_Centre.District_City'] ?? '',
+      $collectionSource['Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_'] ?? '',
+      $collectionSource['Dropping_Centre.District_City'] ?? '',
         // Uncomment if needed
         // CRM_Core_PseudoConstant::stateProvince($collectionSource['Dropping_Centre.State']) ?? '',
-        // $collectionSource['Dropping_Centre.Postal_Code'] ?? '',
+        // $collectionSource['Dropping_Centre.Postal_Code'] ?? '',.
     ];
 
     return join(', ', array_filter($addressParts));
