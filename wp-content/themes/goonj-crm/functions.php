@@ -572,7 +572,6 @@ function goonj_redirect_after_individual_creation() {
 			// First, we check if the source of Individual is Collection Camp (or Dropping Center).
 			$collectionCamp = \Civi\Api4\EckEntity::get( 'Collection_Camp', FALSE )
 				->addWhere( 'title', '=', $source )
-				->setLimit( 1 )
 				->execute()->first();
 
 			if ( ! empty( $collectionCamp['id'] ) ) {
@@ -594,7 +593,6 @@ function goonj_redirect_after_individual_creation() {
 				// First, we check if the source of Individual is Dropping Center.
 				$droppingCenter = \Civi\Api4\EckEntity::get( 'Collection_Camp', false )
 					->addWhere( 'title', '=', $source )
-					->setLimit( 1 )
 					->execute()->first();
 	
 				if ( ! empty( $droppingCenter['id'] ) ) {
