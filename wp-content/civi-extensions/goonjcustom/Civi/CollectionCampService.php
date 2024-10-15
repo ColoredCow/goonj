@@ -926,9 +926,11 @@ class CollectionCampService extends AutoSubscriber {
    */
   private static function findOfficeId(array $array) {
     $filteredItems = array_filter($array, fn($item) => $item['entity_table'] === 'civicrm_eck_collection_source_vehicle_dispatch');
+    
     if (empty($filteredItems)) {
       return FALSE;
     }
+
     $goonjOfficeId = CustomField::get(FALSE)
       ->addSelect('id')
       ->addWhere('custom_group_id:name', '=', 'Camp_Vehicle_Dispatch')
