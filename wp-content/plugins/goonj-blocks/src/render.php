@@ -52,8 +52,7 @@ $pu_material_contribution_check_link = sprintf(
 
 $target_data = [
   'dropping-center' => [
-    'start_time' => 'Dropping_Centre.Start_Time',
-    'end_time' => 'Dropping_Centre.End_Time',
+    'volunteer_name' => 'Collection_Camp_Core_Details.Contact_Id.display_name',
     'address' => 'Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_',
     'address_label' => 'Area of the dropping center',
     'contribution_link' => $dropping_center_material_contribution_link,
@@ -83,6 +82,7 @@ if (in_array($target, ['collection-camp', 'dropping-center'])) :
   $address = $action_target[$target_info['address']];
   $contribution_link = $target_info['contribution_link'];
   $address_label = $target_info['address_label'];
+  $volunteer_name = $action_target[$target_info['volunteer_name']];
 
   ?>
     <div class="wp-block-gb-heading-wrapper">
@@ -90,6 +90,14 @@ if (in_array($target, ['collection-camp', 'dropping-center'])) :
     </div>
     <table class="wp-block-gb-table">
         <tbody>
+            <?php if ($target === 'dropping-center') : ?>
+            <tr class="wp-block-gb-table-row">
+                <td class="wp-block-gb-table-cell wp-block-gb-table-header">Goonj volunteer run dropping center (Address)</td>
+                <td class="wp-block-gb-table-cell"><?php echo esc_html($volunteer_name); ?></td>
+            </tr>
+            <?php endif; ?>
+
+            <?php if ($target === 'collection-camp') : ?>
             <tr class="wp-block-gb-table-row">
                 <td class="wp-block-gb-table-cell wp-block-gb-table-header">From</td>
                 <td class="wp-block-gb-table-cell"><?php echo gb_format_date($start_date); ?></td>
@@ -102,6 +110,7 @@ if (in_array($target, ['collection-camp', 'dropping-center'])) :
                 <td class="wp-block-gb-table-cell wp-block-gb-table-header">Time</td>
                 <td class="wp-block-gb-table-cell"><?php echo gb_format_time_range($start_date, $end_date); ?></td>
             </tr>
+            <?php endif; ?>
             <tr class="wp-block-gb-table-row">
                 <td class="wp-block-gb-table-cell wp-block-gb-table-header"><?php echo esc_html($address_label); ?></td>
                 <td class="wp-block-gb-table-cell"><?php echo esc_html($address); ?></td>

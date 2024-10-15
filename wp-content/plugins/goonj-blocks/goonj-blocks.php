@@ -93,6 +93,7 @@ function gb_goonj_blocks_check_action_target_exists() {
 		'Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_',
 		'Dropping_Centre.State',
 		'Dropping_Centre.District_City',
+		'Collection_Camp_Core_Details.Contact_Id.display_name',
 	);
 
 	switch ( $target ) {
