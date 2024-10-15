@@ -85,6 +85,12 @@ class CollectionCampService extends AutoSubscriber {
       //   'directive' => 'afsearch-collection-camp-activity',
       //   'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
       // ],
+      'materialContribution' => [
+        'title' => ts('Material Contribution'),
+        'module' => 'afsearchCollectionCampMaterialContributions',
+        'directive' => 'afsearch-collection-camp-material-contributions',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      ],
       'logistics' => [
         'title' => ts('Logistics'),
         'module' => 'afsearchCollectionCampLogistics',
@@ -566,7 +572,7 @@ class CollectionCampService extends AutoSubscriber {
    *   The parameters that were sent into the calling function.
    */
   public static function setOfficeDetails($op, $groupID, $entityID, &$params) {
-    if ($op !== 'create') {
+    if ($op !== 'create' ||  self::getEntitySubtypeName($entityID) !== self::ENTITY_SUBTYPE_NAME) {
       return;
     }
 
@@ -577,17 +583,16 @@ class CollectionCampService extends AutoSubscriber {
     $stateId = $stateField['value'];
     $collectionCampId = $stateField['entity_id'];
 
-    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+    $collectionCampData = EckEntity::get('Collection_Camp', FALSE)
       ->addSelect('Collection_Camp_Intent_Details.Will_your_collection_drive_be_open_for_general_public')
       ->addWhere('id', '=', $collectionCampId)
-      ->execute();
+      ->execute()->single();
 
-    $collectionCampData = $collectionCamp->first();
     $isPublicDriveOpen = $collectionCampData['Collection_Camp_Intent_Details.Will_your_collection_drive_be_open_for_general_public'];
 
     if (!$stateId) {
-      \CRM_Core_Error::debug_log_message('Cannot assign Goonj Office to collection camp: ' . $collectionCamp['id']);
-      \CRM_Core_Error::debug_log_message('No state provided on the intent for collection camp: ' . $collectionCamp['id']);
+      \CRM_Core_Error::debug_log_message('Cannot assign Goonj Office to collection camp: ' . $collectionCampData['id']);
+      \CRM_Core_Error::debug_log_message('No state provided on the intent for collection camp: ' . $collectionCampData['id']);
       return FALSE;
     }
 
@@ -630,6 +635,11 @@ class CollectionCampService extends AutoSubscriber {
     }
     else {
       $coordinator = $coordinators->first();
+    }
+
+    if (!$coordinator) {
+      \CRM_Core_Error::debug_log_message('No coordinator available to assign.');
+      return FALSE;
     }
 
     $coordinatorId = $coordinator['contact_id_a'];
@@ -700,32 +710,27 @@ class CollectionCampService extends AutoSubscriber {
    *
    */
   private static function findStateField(array $array) {
-    $filteredItems = array_filter($array, fn($item) => $item['entity_table'] === 'civicrm_eck_collection_camp');
-
-    if (empty($filteredItems)) {
-      return FALSE;
-    }
-
-    $collectionCampStateFields = CustomField::get(FALSE)
+    $collectionCampStateField = CustomField::get(FALSE)
       ->addSelect('id')
       ->addWhere('name', '=', 'state')
       ->addWhere('custom_group_id:name', '=', 'Collection_Camp_Intent_Details')
       ->execute()
       ->first();
 
-    if (!$collectionCampStateFields) {
+    if (!$collectionCampStateField) {
       return FALSE;
     }
 
-    $stateFieldId = $collectionCampStateFields['id'];
+    $stateFieldId = $collectionCampStateField['id'];
 
-    $stateItemIndex = array_search(TRUE, array_map(fn($item) =>
-        $item['entity_table'] === 'civicrm_eck_collection_camp' &&
-        $item['custom_field_id'] == $stateFieldId,
-        $filteredItems
-    ));
+    foreach ($array as $item) {
+      if ($item['entity_table'] === 'civicrm_eck_collection_camp' &&
+            $item['custom_field_id'] === $stateFieldId) {
+        return $item;
+      }
+    }
 
-    return $stateItemIndex !== FALSE ? $filteredItems[$stateItemIndex] : FALSE;
+    return FALSE;
   }
 
   /**
@@ -780,7 +785,7 @@ class CollectionCampService extends AutoSubscriber {
     $fallbackCoordinators = Relationship::get(FALSE)
       ->addWhere('contact_id_b', '=', $fallbackOffice['id'])
       ->addWhere('relationship_type_id:name', '=', self::RELATIONSHIP_TYPE_NAME)
-      ->addWhere('is_current', '=', FALSE)
+      ->addWhere('is_current', '=', True)
       ->execute();
 
     $coordinatorCount = $fallbackCoordinators->count();
