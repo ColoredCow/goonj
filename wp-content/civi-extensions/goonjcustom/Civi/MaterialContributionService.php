@@ -74,14 +74,12 @@ class MaterialContributionService extends AutoSubscriber {
     $contactData = Contact::get(FALSE)
       ->addSelect('email_primary.email', 'phone_primary.phone')
       ->addWhere('id', '=', $params['contactId'])
-      ->setLimit(1)
-      ->execute();
+      ->execute()->single();
 
     $locationAreaOfCamp = self::getContributionCity($contribution);
 
-    $contactDataArray = $contactData[0] ?? [];
-    $email = $contactDataArray['email_primary.email'] ?? 'N/A';
-    $phone = $contactDataArray['phone_primary.phone'] ?? 'N/A';
+    $email = $contactData['email_primary.email'] ?? 'N/A';
+    $phone = $contactData['phone_primary.phone'] ?? 'N/A';
 
     if (!$contribution) {
       return;
@@ -96,36 +94,15 @@ class MaterialContributionService extends AutoSubscriber {
   /**
    *
    */
-  private static function getCityFromGoonjOfficeId($goonjOfficeId) {
-    $city = '';
-    if ($goonjOfficeId) {
-      $organization = Organization::get(FALSE)
-        ->addSelect('address_primary.city')
-        ->addWhere('id', '=', $goonjOfficeId)
-        ->execute()->single();
-
-      if ($organization && isset($organization['address_primary.city'])) {
-        $city = $organization['address_primary.city'];
-      }
-    }
-    return $city;
-  }
-
-  /**
-   *
-   */
   private static function getContributionCity($contribution) {
     $officeId = $contribution['Material_Contribution.Goonj_Office'];
 
     if (!$officeId) {
       // Check for collection camp.
-      $activityData = Activity::get(FALSE)
+      $activity = Activity::get(FALSE)
         ->addSelect('Material_Contribution.Collection_Camp')
         ->addWhere('id', '=', $contribution['id'])
-        ->setLimit(1)
-        ->execute();
-
-      $activity = $activityData[0] ?? [];
+        ->execute()->single();
 
       // If no collection camp is found, return an empty string.
       if (empty($activity['Material_Contribution.Collection_Camp'])) {
@@ -133,17 +110,20 @@ class MaterialContributionService extends AutoSubscriber {
       }
 
       // Fetch the city of the collection camp¯.
-      $collectionCampData = EckEntity::get('Collection_Camp', TRUE)
+      $collectionCamp = EckEntity::get('Collection_Camp', TRUE)
         ->addSelect('Collection_Camp_Intent_Details.Location_Area_of_camp')
         ->addWhere('id', '=', $activity['Material_Contribution.Collection_Camp'])
-        ->setLimit(1)
-        ->execute();
+        ->execute()->single();
 
-      $collectionCamp = $collectionCampData[0] ?? [];
       return $collectionCamp['Collection_Camp_Intent_Details.Location_Area_of_camp'] ?? 'N/A';
     }
 
-    return self::getCityFromGoonjOfficeId($officeId);
+    $organization = Organization::get(FALSE)
+        ->addSelect('address_primary.city')
+        ->addWhere('id', '=', $officeId)
+        ->execute()->single();
+
+    return $organization['address_primary.city'] ?? '';
   }
 
   /**
