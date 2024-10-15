@@ -119,9 +119,9 @@ class MaterialContributionService extends AutoSubscriber {
     }
 
     $organization = Organization::get(FALSE)
-        ->addSelect('address_primary.city')
-        ->addWhere('id', '=', $officeId)
-        ->execute()->single();
+      ->addSelect('address_primary.city')
+      ->addWhere('id', '=', $officeId)
+      ->execute()->single();
 
     return $organization['address_primary.city'] ?? '';
   }
