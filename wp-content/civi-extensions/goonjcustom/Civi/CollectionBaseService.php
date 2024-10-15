@@ -70,11 +70,9 @@ class CollectionBaseService extends AutoSubscriber {
   private static function generateBaseFileName($collectionSourceId) {
     if (self::getEntitySubtypeName($collectionSourceId) == self::ENTITY_NAME) {
       $baseFileName = "collection_camp_{$collectionSourceId}.png";
-      error_log("collebaseFileName: " . print_r($baseFileName, TRUE));
     }
     else {
       $baseFileName = "dropping_center_{$collectionSourceId}.png";
-      error_log("dropbaseFileName: " . print_r($baseFileName, TRUE));
     }
 
     return $baseFileName;
