@@ -4,6 +4,8 @@ namespace Civi;
 
 use Civi\Api4\ActionSchedule;
 use Civi\Api4\Activity;
+use Civi\Api4\Contact;
+use Civi\Api4\EckEntity;
 use Civi\Api4\Organization;
 use Civi\Core\Service\AutoSubscriber;
 
@@ -69,18 +71,11 @@ class MaterialContributionService extends AutoSubscriber {
     $contribution = $activities->first();
 
     $goonjOfficeId = $contribution['Material_Contribution.Goonj_Office'];
-
-    $contactData = civicrm_api4('Contact', 'get', [
-      'select' => [
-        'email_primary.email',
-        'phone_primary.phone',
-      ],
-      'where' => [
-              ['id', '=', $params['contactId']],
-      ],
-      'limit' => 1,
-      'checkPermissions' => FALSE,
-    ]);
+    $contactData = Contact::get(FALSE)
+      ->addSelect('email_primary.email', 'phone_primary.phone')
+      ->addWhere('id', '=', $params['contactId'])
+      ->setLimit(1)
+      ->execute();
 
     $locationAreaOfCamp = self::getContributionCity($contribution);
 
@@ -98,62 +93,58 @@ class MaterialContributionService extends AutoSubscriber {
     $params['cc'] = 'crm@goonj.org';
   }
 
+  /**
+   *
+   */
   private static function getCityFromGoonjOfficeId($goonjOfficeId) {
     $city = '';
     if ($goonjOfficeId) {
-        $organization = Organization::get(FALSE)
-            ->addSelect('address_primary.city')
-            ->addWhere('id', '=', $goonjOfficeId)
-            ->execute()->single();
+      $organization = Organization::get(FALSE)
+        ->addSelect('address_primary.city')
+        ->addWhere('id', '=', $goonjOfficeId)
+        ->execute()->single();
 
-        if ($organization && isset($organization['address_primary.city'])) {
-            $city = $organization['address_primary.city'];
-        }
+      if ($organization && isset($organization['address_primary.city'])) {
+        $city = $organization['address_primary.city'];
+      }
     }
     return $city;
   }
 
+  /**
+   *
+   */
   private static function getContributionCity($contribution) {
     $officeId = $contribution['Material_Contribution.Goonj_Office'];
 
     if (!$officeId) {
-        // Check for collection camp
-        $activityData = civicrm_api4('Activity', 'get', [
-            'select' => [
-                'Material_Contribution.Collection_Camp',
-            ],
-            'where' => [
-                ['id', '=', $contribution['id']],
-            ],
-            'limit' => 1,
-            'checkPermissions' => FALSE,
-        ]);
+      // Check for collection camp.
+      $activityData = Activity::get(FALSE)
+        ->addSelect('Material_Contribution.Collection_Camp')
+        ->addWhere('id', '=', $contribution['id'])
+        ->setLimit(1)
+        ->execute();
 
-        $activity = $activityData[0] ?? [];
+      $activity = $activityData[0] ?? [];
 
-        // If no collection camp is found, return an empty string
-        if (empty($activity['Material_Contribution.Collection_Camp'])) {
-            return '';
-        }
+      // If no collection camp is found, return an empty string.
+      if (empty($activity['Material_Contribution.Collection_Camp'])) {
+        return '';
+      }
 
-        // Fetch the city of the collection camp
-        $collectionCampData = civicrm_api4('Eck_Collection_Camp', 'get', [
-            'select' => [
-                'Collection_Camp_Intent_Details.Location_Area_of_camp',
-            ],
-            'where' => [
-                ['id', '=', $activity['Material_Contribution.Collection_Camp']],
-            ],
-            'limit' => 1,
-            'checkPermissions' => FALSE,
-        ]);
+      // Fetch the city of the collection camp¯.
+      $collectionCampData = EckEntity::get('Collection_Camp', TRUE)
+        ->addSelect('Collection_Camp_Intent_Details.Location_Area_of_camp')
+        ->addWhere('id', '=', $activity['Material_Contribution.Collection_Camp'])
+        ->setLimit(1)
+        ->execute();
 
-        $collectionCamp = $collectionCampData[0] ?? [];
-        return $collectionCamp['Collection_Camp_Intent_Details.Location_Area_of_camp'] ?? 'N/A';
+      $collectionCamp = $collectionCampData[0] ?? [];
+      return $collectionCamp['Collection_Camp_Intent_Details.Location_Area_of_camp'] ?? 'N/A';
     }
 
     return self::getCityFromGoonjOfficeId($officeId);
-}
+  }
 
   /**
    * Generate the HTML for the PDF from the activity data.
