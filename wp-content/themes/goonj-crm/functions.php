@@ -279,29 +279,27 @@ function goonj_handle_user_identification_form() {
 			exit;
 		}
 
-		$allowedPurposes = ['material-contribution', 'dropping-center-contribution'];
-
-		// If we are here, then it means for sure that the contact exists.
-		if (in_array($purpose, $allowedPurposes)) {
-			if ($purpose === 'material-contribution') {
-				$form_path = sprintf(
-					'/material-contribution/#?email=%s&phone=%s&Material_Contribution.Collection_Camp=%s&source_contact_id=%s',
-					$email,
-					$phone,
-					$target_id,
-					$found_contacts['id']
-				);
-			} elseif ($purpose === 'dropping-center-contribution') {
-				$form_path = sprintf(
-					'/dropping-center/material-contribution/#?email=%s&phone=%s&Material_Contribution.Dropping_Center=%s&source_contact_id=%s',
-					$email,
-					$phone,
-					$target_id,
-					$found_contacts['id']
-				);
-			}
-			
-			wp_redirect($form_path);
+		// If we are here, then it means for sure that the contact exists.	
+		if ($purpose === 'material-contribution') {
+			$material_contribution_form_Path = sprintf(
+				'/material-contribution/#?email=%s&phone=%s&Material_Contribution.Collection_Camp=%s&source_contact_id=%s',
+				$email,
+				$phone,
+				$target_id,
+				$found_contacts['id']
+			);
+			wp_redirect( $material_contribution_form_Path );
+			exit;
+		}
+		if ($purpose === 'dropping-center-contribution') {
+			$dropping_center_form_path = sprintf(
+				'/dropping-center/material-contribution/#?email=%s&phone=%s&Material_Contribution.Dropping_Center=%s&source_contact_id=%s',
+				$email,
+				$phone,
+				$target_id,
+				$found_contacts['id']
+			);
+			wp_redirect( $dropping_center_form_path );
 			exit;
 		}
 
@@ -484,6 +482,7 @@ function goonj_redirect_after_individual_creation() {
 			// First, we check if the source of Individual is Collection Camp (or Dropping Center).
 			$collectionCamp = \Civi\Api4\EckEntity::get( 'Collection_Camp', FALSE )
 				->addWhere( 'title', '=', $source )
+				->addWhere('subtype:name', '=', 'Collection_Camp')
 				->execute()->first();
 
 			if ( ! empty( $collectionCamp['id'] ) ) {
@@ -505,6 +504,7 @@ function goonj_redirect_after_individual_creation() {
 				// First, we check if the source of Individual is Dropping Center.
 				$droppingCenter = \Civi\Api4\EckEntity::get( 'Collection_Camp', false )
 					->addWhere( 'title', '=', $source )
+					->addWhere('subtype:name', '=', 'Dropping_Center')
 					->execute()->first();
 	
 				if ( ! empty( $droppingCenter['id'] ) ) {
