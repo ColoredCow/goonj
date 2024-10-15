@@ -14,14 +14,14 @@ class DroppingCenterEmailDispatchService extends AutoSubscriber {
    */
   public static function getSubscribedEvents() {
     return [
-      '&hook_civicrm_post' => 'postProcess',
+      '&hook_civicrm_post' => 'processDroppingCenterEmailDispatch',
     ];
   }
 
   /**
    *
    */
-  public static function postProcess(string $op, string $objectName, int $objectId, &$objectRef) {
+  public static function processDroppingCenterEmailDispatch(string $op, string $objectName, int $objectId, &$objectRef) {
     $afformName = $objectRef->afform_name;
 
     if ($afformName === 'afformSendDispatchEmail' && ($op === 'create' || $op === 'edit')) {
