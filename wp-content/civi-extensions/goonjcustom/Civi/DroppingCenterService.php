@@ -142,25 +142,31 @@ class DroppingCenterService extends AutoSubscriber {
    *
    */
   private static function findOfficeId(array $array) {
+
+    $filteredItems = array_filter($array, fn($item) => $item['entity_table'] === 'civicrm_eck_collection_source_vehicle_dispatch');
+    if (empty($filteredItems)) {
+      return FALSE;
+    }
     $goonjOfficeId = CustomField::get(FALSE)
       ->addSelect('id')
       ->addWhere('custom_group_id:name', '=', 'Camp_Vehicle_Dispatch')
       ->addWhere('name', '=', 'To_which_PU_Center_material_is_being_sent')
       ->execute()
-      ->first()['id'] ?? NULL;
+      ->first();
 
     if (!$goonjOfficeId) {
       return FALSE;
     }
 
-    foreach ($array as $item) {
-      if ($item['entity_table'] === 'civicrm_eck_collection_source_vehicle_dispatch' &&
-            $item['custom_field_id'] == $goonjOfficeId) {
-        return $item;
-      }
-    }
+    $goonjOfficeFieldId = $goonjOfficeId['id'];
 
-    return FALSE;
+    $goonjOfficeIndex = array_search(TRUE, array_map(fn($item) =>
+        $item['entity_table'] === 'civicrm_eck_collection_source_vehicle_dispatch' &&
+        $item['custom_field_id'] == $goonjOfficeFieldId,
+        $filteredItems
+    ));
+
+    return $goonjOfficeIndex !== FALSE ? $filteredItems[$goonjOfficeIndex] : FALSE;
   }
 
   /**
