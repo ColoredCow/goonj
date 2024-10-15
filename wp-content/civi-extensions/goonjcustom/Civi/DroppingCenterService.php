@@ -227,8 +227,8 @@ class DroppingCenterService extends AutoSubscriber {
     $tabConfigs = [
       'materialContribution' => [
         'title' => ts('Material Contribution'),
-        'module' => 'afsearchDroppingCenterMaterialContributions',
-        'directive' => 'afsearch-dropping-center-material-contributions',
+        'module' => 'afsearchDroppingCenterMaterialContribution',
+        'directive' => 'afsearch-dropping-center-material-contribution',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
       ],
       'status' => [
