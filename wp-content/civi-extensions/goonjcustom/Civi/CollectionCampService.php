@@ -1239,7 +1239,17 @@ class CollectionCampService extends AutoSubscriber {
   }
 
   /**
+   * Check the status of a Collection Camp and return status details.
    *
+   * @param string $objectName
+   *   The name of the object being processed.
+   * @param int $objectId
+   *   The ID of the object being processed.
+   * @param array &$objectRef
+   *   A reference to the object data.
+   *
+   * @return array|null
+   *   An array containing the new and current status if valid, or NULL if invalid.
    */
   public static function checkCampStatusAndIds(string $objectName, $objectId, &$objectRef) {
     // Ensure the object is of type 'Eck_Collection_Camp'.
