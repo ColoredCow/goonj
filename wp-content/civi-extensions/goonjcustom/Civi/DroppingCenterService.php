@@ -342,12 +342,6 @@ class DroppingCenterService extends AutoSubscriber {
       return;
     }
     $tabConfigs = [
-      'SendDispatchEmail' => [
-        'title' => ts('Send Dispatch Email'),
-        'module' => 'afformSendDispatchEmail',
-        'directive' => 'afform-send-dispatch-email',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCampService.tpl',
-      ],
       'status' => [
         'title' => ts('Status'),
         'module' => 'afsearchDroppingCenterStatus',
