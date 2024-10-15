@@ -11,7 +11,6 @@ use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
 use Civi\Api4\Email;
 use Civi\Api4\OptionValue;
-use Civi\Traits\SubtypeSource;
 
 /**
  *
@@ -19,7 +18,6 @@ use Civi\Traits\SubtypeSource;
 class DroppingCenterService extends AutoSubscriber {
   use QrCodeable;
   use CollectionSource;
-  use SubtypeSource;
 
   const ENTITY_NAME = 'Collection_Camp';
   const RELATIONSHIP_TYPE_NAME = 'Collection Camp Coordinator of';
@@ -77,7 +75,7 @@ class DroppingCenterService extends AutoSubscriber {
     $fallbackCoordinators = Relationship::get(FALSE)
       ->addWhere('contact_id_b', '=', $fallbackOffice['id'])
       ->addWhere('relationship_type_id:name', '=', self::RELATIONSHIP_TYPE_NAME)
-      ->addWhere('is_current', '=', FALSE)
+      ->addWhere('is_current', '=', True)
       ->execute();
 
     $coordinatorCount = $fallbackCoordinators->count();
@@ -92,32 +90,25 @@ class DroppingCenterService extends AutoSubscriber {
    *
    */
   private static function findStateField(array $array) {
-    $filteredItems = array_filter($array, fn($item) => $item['entity_table'] === 'civicrm_eck_collection_camp');
-
-    if (empty($filteredItems)) {
-      return FALSE;
-    }
-
-    $collectionCampStateFields = CustomField::get(FALSE)
+    $stateFieldId = CustomField::get(FALSE)
       ->addSelect('id')
       ->addWhere('name', '=', 'State')
       ->addWhere('custom_group_id:name', '=', 'Dropping_Centre')
       ->execute()
-      ->first();
+      ->first()['id'] ?? NULL;
 
-    if (!$collectionCampStateFields) {
+    if (!$stateFieldId) {
       return FALSE;
     }
 
-    $stateFieldId = $collectionCampStateFields['id'];
+    foreach ($array as $item) {
+      if ($item['entity_table'] === 'civicrm_eck_collection_camp' &&
+            $item['custom_field_id'] === $stateFieldId) {
+        return $item;
+      }
+    }
 
-    $stateItemIndex = array_search(TRUE, array_map(fn($item) =>
-        $item['entity_table'] === 'civicrm_eck_collection_camp' &&
-        $item['custom_field_id'] == $stateFieldId,
-        $filteredItems
-    ));
-
-    return $stateItemIndex !== FALSE ? $filteredItems[$stateItemIndex] : FALSE;
+    return FALSE;
   }
 
   /**
@@ -267,7 +258,7 @@ class DroppingCenterService extends AutoSubscriber {
    *
    */
   public static function setOfficeDetails($op, $groupID, $entityID, &$params) {
-    if ($op !== 'create' || self::getSubtypeNameByEntityId($entityID) !== self::ENTITY_SUBTYPE_NAME) {
+    if ($op !== 'create' || self::getEntitySubtypeName($entityID) !== self::ENTITY_SUBTYPE_NAME) {
       return;
     }
 
@@ -277,18 +268,18 @@ class DroppingCenterService extends AutoSubscriber {
 
     $stateId = $stateField['value'];
 
-    $collectionCampId = $stateField['entity_id'];
+    $droppingCenterId = $stateField['entity_id'];
 
-    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+    $droppingCenter = EckEntity::get('Collection_Camp', FALSE)
       ->addSelect('Dropping_Centre.Will_your_dropping_center_be_open_for_general_public_as_well_out')
-      ->addWhere('id', '=', $collectionCampId)
+      ->addWhere('id', '=', $droppingCenterId)
       ->execute();
 
-    $collectionCampData = $collectionCamp->first();
+    $collectionCampData = $droppingCenter->first();
 
     if (!$stateId) {
-      \CRM_Core_Error::debug_log_message('Cannot assign Goonj Office to collection camp: ' . $collectionCamp['id']);
-      \CRM_Core_Error::debug_log_message('No state provided on the intent for collection camp: ' . $collectionCamp['id']);
+      \CRM_Core_Error::debug_log_message('Cannot assign Goonj Office to  dropping center: ' . $droppingCenter['id']);
+      \CRM_Core_Error::debug_log_message('No state provided on the intent for  dropping center: ' . $droppingCenter['id']);
       return FALSE;
     }
 
@@ -310,7 +301,7 @@ class DroppingCenterService extends AutoSubscriber {
 
     EckEntity::update('Collection_Camp', FALSE)
       ->addValue('Dropping_Centre.Goonj_Office', $stateOfficeId)
-      ->addWhere('id', '=', $collectionCampId)
+      ->addWhere('id', '=', $droppingCenterId)
       ->execute();
 
     $coordinators = Relationship::get(FALSE)
@@ -333,14 +324,15 @@ class DroppingCenterService extends AutoSubscriber {
     }
 
     if (!$coordinator) {
-      throw new \Exception('No coordinator available to assign.');
+      \CRM_Core_Error::debug_log_message('No coordinator available to assign.');
+      return FALSE;
     }
 
     $coordinatorId = $coordinator['contact_id_a'];
 
     EckEntity::update('Collection_Camp', FALSE)
       ->addValue('Dropping_Centre.Coordinating_Urban_POC', $coordinatorId)
-      ->addWhere('id', '=', $collectionCampId)
+      ->addWhere('id', '=', $droppingCenterId)
       ->execute();
 
     return TRUE;

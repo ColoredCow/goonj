@@ -100,7 +100,7 @@ class CollectionCampVolunteerFeedbackService {
       <p>Greetings from Goonj!</p>
       <p>Kindly reminding you to share your valuable feedback on the recent collection camp. Your insights are important for us to continue improving in future camps.</p>
       <p>If you haven’t had the chance yet, please take a few minutes to fill out the feedback form here:</p>
-      <p><a href=\"$feedbackFormUrl\">Volunteer Feedback Form</a></p>
+      <p><a href=\"$feedbackFormUrl\">Feedback Form Link</a></p>
       <p>We look forward to working with you again!</p>
       <p>Warm regards,<br>Team Goonj</p>";
 

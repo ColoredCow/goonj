@@ -43,7 +43,7 @@ function civicrm_api3_goonjcustom_dropping_center_cron($params) {
             'select' => ['subject'],
             'where' => [
                 ['activity_type_id:name', '=', 'Material Contribution'],
-                ['Material_Contribution.Collection_Camp', '=', $trackingId],
+                ['Material_Contribution.Dropping_Center', '=', $trackingId],
             ],
             'checkPermissions' => TRUE,
         ]);
