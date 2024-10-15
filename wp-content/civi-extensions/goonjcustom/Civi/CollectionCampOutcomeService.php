@@ -40,7 +40,7 @@ class CollectionCampOutcomeService {
     }
 
     // Return if 24 hours have not passed since the last reminder.
-    if ($hoursSinceLastReminder < 24) {
+    if ($lastReminderSent !== NULL && $hoursSinceLastReminder < 24) {
       return FALSE;
     }
     self::sendOutcomeReminderEmail($campAttendedById, $from, $campCode, $campAddress, $collectionCampId, $endDateString);

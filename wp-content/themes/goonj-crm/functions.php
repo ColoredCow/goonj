@@ -1,5 +1,8 @@
 <?php
 
+require_once __DIR__ . '/engine/helpers.php';
+require_once __DIR__ . '/engine/shortcodes.php';
+
 add_action( 'wp_enqueue_scripts', 'goonj_enqueue_scripts' );
 function goonj_enqueue_scripts() {
 	wp_enqueue_style(
@@ -118,13 +121,6 @@ function goonj_custom_password_reset_redirection( $errors, $user ) {
 	}
 }
 
-add_shortcode( 'goonj_check_user_form', 'goonj_check_user_action' );
-
-function goonj_check_user_action( $atts ) {
-	get_template_part( 'templates/form', 'check-user', array( 'purpose' => $atts['purpose'] ) );
-	return ob_get_clean();
-}
-
 
 add_action( 'wp', 'goonj_handle_user_identification_form' );
 function goonj_handle_user_identification_form() {
@@ -197,10 +193,10 @@ function goonj_handle_user_identification_form() {
 		if ( empty( $found_contacts ) ) {
 			$organizationName = null;
 			// If the purpose requires fetching the organization name,
-			if ( in_array( $purpose, [ 'processing-center-material-contribution', 'processing-center-office-visit' ] ) ) {
-				$organizationName = \Civi\Api4\Organization::get(FALSE)
-				->addSelect('display_name')
-				->addWhere('id', '=', $target_id)
+			if ( in_array( $purpose, array( 'processing-center-material-contribution', 'processing-center-office-visit' ) ) ) {
+				$organizationName = \Civi\Api4\Organization::get( false )
+				->addSelect( 'display_name' )
+				->addWhere( 'id', '=', $target_id )
 				->execute()->single();
 			}
 			switch ( $purpose ) {
@@ -213,8 +209,8 @@ function goonj_handle_user_identification_form() {
 						$phone,
 						$source,
 						'material-contribution',
-						sanitize_text_field($state_id),
-						sanitize_text_field($city)
+						sanitize_text_field( $state_id ),
+						sanitize_text_field( $city )
 					);
 					$redirect_url = $individual_volunteer_registration_form_path;
 					break;
@@ -351,9 +347,9 @@ function goonj_handle_user_identification_form() {
 		// If we are here, then it means the user exists as an inducted volunteer.
 		// Fetch the most recent collection camp activity based on the creation date
 		$optionValues = \Civi\Api4\OptionValue::get( false )
-		->addWhere('option_group_id:name', '=', 'eck_sub_types')
-		->addWhere('name', '=', 'Collection_Camp')
-		->addWhere('grouping', '=', 'Collection_Camp')
+		->addWhere( 'option_group_id:name', '=', 'eck_sub_types' )
+		->addWhere( 'name', '=', 'Collection_Camp' )
+		->addWhere( 'grouping', '=', 'Collection_Camp' )
 		->execute()->single();
 
 		$collectionCampSubtype = $optionValues['value'];
@@ -425,96 +421,12 @@ function goonj_custom_message_placeholder() {
 	return '<div id="custom-message" class="ml-24"></div>';
 }
 
-add_shortcode( 'goonj_volunteer_message', 'goonj_custom_message_placeholder' );
-
-function goonj_generate_volunteer_button_html($buttonUrl) {
-    return sprintf(
-        '<div class="volunteer-button-container">
-            <a href="%s" class="wp-block-button__link has-white-color has-vivid-red-background-color has-text-color has-background has-link-color wp-element-button volunteer-button-link">
-                Wish to Volunteer?
-            </a>
-        </div>',
-        esc_url($buttonUrl)
-    );
-}
-
-function goonj_contribution_volunteer_signup_button() {
-    $activityId = isset($_GET['activityId']) ? intval($_GET['activityId']) : 0;
-
-    if (empty($activityId)) {
-        \Civi::log()->warning('Activity ID is missing');
-        return;
-    }
-
-    try {
-        $activities = \Civi\Api4\Activity::get(FALSE)
-            ->addSelect('source_contact_id')
-            ->addJoin('ActivityContact AS activity_contact', 'LEFT')
-            ->addWhere('id', '=', $activityId)
-            ->addWhere('activity_type_id:label', '=', 'Material Contribution')
-            ->execute();
-
-        if ($activities->count() === 0) {
-            \Civi::log()->info('No activities found for Activity ID:', ['activityId' => $activityId]);
-            return;
-        }
-
-        $activity = $activities->first();
-        $individualId = $activity['source_contact_id'];
-
-        $contact = \Civi\Api4\Contact::get(FALSE)
-            ->addSelect('contact_sub_type')
-            ->addWhere('id', '=', $individualId)
-            ->execute()
-            ->first();
-
-		if (empty($contact)) {
-			\Civi::log()->info('Contact not found', ['contact' => $contact['id']]);
-			return;
-		}
-
-        $contactSubTypes = $contact['contact_sub_type'] ?? [];
-
-        // If the individual is already a volunteer, don't show the button
-        if (in_array('Volunteer', $contactSubTypes)) {
-            return;
-        }
-
-        $redirectPath = '/volunteer-registration/form-with-details/';
-        $redirectPathWithParams = $redirectPath . '#?' . http_build_query([
-            'Individual1' => $individualId,
-            'message' => 'individual-user'
-        ]);
-
-        return goonj_generate_volunteer_button_html($redirectPathWithParams);
-    } catch (\Exception $e) {
-        \Civi::log()->error('Error in goonj_contribution_volunteer_signup_button: ' . $e->getMessage());
-        return;
-    }
-}
-
-add_shortcode('goonj_contribution_volunteer_signup_button', 'goonj_contribution_volunteer_signup_button');
-
-function goonj_collection_camp_landing_page() {
-	ob_start();
-	get_template_part( 'templates/collection-landing-page' );
-	return ob_get_clean();
-}
-add_shortcode( 'goonj_collection_landing_page', 'goonj_collection_camp_landing_page' );
-
 add_filter( 'query_vars', 'goonj_query_vars' );
 function goonj_query_vars( $vars ) {
 	$vars[] = 'target_id';
 	$vars[] = 'state_province_id';
 	$vars[] = 'city';
 	return $vars;
-}
-
-add_shortcode( 'goonj_collection_camp_past', 'goonj_collection_camp_past_data' );
-function goonj_collection_camp_past_data() {
-	ob_start();
-	get_template_part( 'templates/collection-camp-data' );
-	return ob_get_clean();
 }
 
 add_action( 'template_redirect', 'goonj_redirect_after_individual_creation' );
@@ -542,7 +454,7 @@ function goonj_redirect_after_individual_creation() {
 	switch ( $creationFlow ) {
 		case 'material-contribution':
 			if ( ! $source ) {
-				\Civi::log()->warning('Source is missing for material contribution flow', ['individualId' => $_GET['individualId']]);
+				\Civi::log()->warning( 'Source is missing for material contribution flow', array( 'individualId' => $_GET['individualId'] ) );
 				return;
 			}
 			// If the individual was created while in the process of material contribution,
