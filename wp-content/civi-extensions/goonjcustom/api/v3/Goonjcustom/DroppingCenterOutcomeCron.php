@@ -83,7 +83,6 @@ function civicrm_api3_goonjcustom_dropping_center_outcome_cron($params) {
 
   foreach ($bagData as $record) {
     $dispatchId = $record['Camp_Vehicle_Dispatch.Collection_Camp'];
-    // Default to 0 if empty.
     $bagsReceived = (int) ($record['Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office'] ?? 0);
 
     if (!isset($bagsReceivedByTrackingId[$dispatchId])) {
