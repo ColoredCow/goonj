@@ -62,9 +62,9 @@ class CRM_Goonjcustom_Token_DroppingCenter extends AbstractTokenSubscriber {
 
       case 'date':
 
-      // @todo Update the data timing field for the poster.
-      // Need to adjust and implement the logic for formatting the start and end time.
       case 'time':
+        $value = $collectionSource['Dropping_Centre.Timing'];
+        break;
 
       case 'volunteers':
         $value = $this->formatVolunteers($collectionSource);
