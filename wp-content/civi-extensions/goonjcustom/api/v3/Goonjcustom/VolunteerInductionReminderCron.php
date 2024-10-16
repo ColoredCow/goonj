@@ -40,7 +40,6 @@ function civicrm_api3_goonjcustom_volunteer_induction_reminder_cron($params) {
   $from = HelperService::getDefaultFromEmail();
 
   while (TRUE) {
-    // Fetch volunteers who have registered but not scheduled an induction.
     $activityTypeOptionValue = OptionValue::get(TRUE)
       ->addWhere('option_group_id:name', '=', 'activity_type')
       ->addWhere('name', '=', 'Induction')
@@ -55,6 +54,7 @@ function civicrm_api3_goonjcustom_volunteer_induction_reminder_cron($params) {
 
     $activityStatus = $activityStatusOptionValue['value'];
 
+    // Fetch volunteers who have registered but not scheduled an induction.
     $volunteers = Individual::get(TRUE)
       ->addSelect('created_date', 'display_name', 'email_primary.email', 'Individual_fields.Last_Reminder_Sent', 'address_primary.state_province_id')
       ->addJoin('Activity AS activity', 'LEFT')
