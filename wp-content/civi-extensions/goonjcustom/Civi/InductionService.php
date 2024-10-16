@@ -5,6 +5,7 @@ namespace Civi;
 use Civi\Api4\Activity;
 use Civi\Api4\Contact;
 use Civi\Api4\CustomField;
+use Civi\Api4\Individual;
 use Civi\Api4\MessageTemplate;
 use Civi\Api4\Relationship;
 use Civi\Core\Service\AutoSubscriber;
@@ -460,7 +461,7 @@ class InductionService extends AutoSubscriber {
     $volunteerName = $volunteer['display_name'];
     $volunteerEmail = $volunteer['email_primary.email'];
     $registrationDate = new \DateTime($volunteer['created_date']);
-    $lastReminderSent = $volunteer['Volunteer_fields.Last_Reminder_Sent'] ? new \DateTime($volunteer['Volunteer_fields.Last_Reminder_Sent']) : NULL;
+    $lastReminderSent = $volunteer['Individual_fields.Last_Reminder_Sent'] ? new \DateTime($volunteer['Individual_fields.Last_Reminder_Sent']) : NULL;
 
     error_log("volunteerId: " . print_r($volunteerId, TRUE));
 
@@ -472,11 +473,12 @@ class InductionService extends AutoSubscriber {
     if ($hoursSinceRegistration >= 168 && $lastReminderSent === NULL) {
       // Send the reminder email.
       self::sendInductionReminderEmail($volunteerId, $from, $volunteerName, $volunteerEmail);
+      error_log("working");
 
       // Update the Last_Reminder_Sent field in the database.
-      EckEntity::update('Volunteer_Induction', TRUE)
+      Individual::update(FALSE)
+        ->addValue('Individual_fields.Last_Reminder_Sent', $today->format('Y-m-d H:i:s'))
         ->addWhere('id', '=', $volunteerId)
-        ->addValue('Volunteer_fields.Last_Reminder_Sent', $today->format('Y-m-d H:i:s'))
         ->execute();
 
       error_log("Reminder sent to volunteerId: " . print_r($volunteerId, TRUE));
