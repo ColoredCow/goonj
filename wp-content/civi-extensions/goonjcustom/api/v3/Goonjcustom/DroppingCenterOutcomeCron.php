@@ -46,7 +46,7 @@ function civicrm_api3_goonjcustom_dropping_center_outcome_cron($params) {
 
     // Calculate footfall.
     $activities = civicrm_api4('Activity', 'get', [
-      'select' => ['subject'],
+      'select' => ['id'],
       'where' => [
         ['activity_type_id:name', '=', 'Material Contribution'],
         ['Material_Contribution.Dropping_Center', '=', $trackingId],
