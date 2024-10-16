@@ -51,7 +51,7 @@ function civicrm_api3_goonjcustom_dropping_center_outcome_cron($params) {
         ['activity_type_id:name', '=', 'Material Contribution'],
         ['Material_Contribution.Dropping_Center', '=', $trackingId],
       ],
-      'checkPermissions' => TRUE,
+      'checkPermissions' => FALSE,
     ]);
     $footfallByTrackingId[$trackingId] = count($activities);
 
@@ -59,7 +59,7 @@ function civicrm_api3_goonjcustom_dropping_center_outcome_cron($params) {
     $collectionSourceVehicleDispatches = civicrm_api4('Eck_Collection_Source_Vehicle_Dispatch', 'get', [
       'select' => ['Camp_Vehicle_Dispatch.Collection_Camp'],
       'where' => [['Camp_Vehicle_Dispatch.Collection_Camp', '=', $trackingId]],
-      'checkPermissions' => TRUE,
+      'checkPermissions' => FALSE,
     ]);
     $vehicleDispatchesByTrackingId[$trackingId] = count($collectionSourceVehicleDispatches);
 
@@ -72,7 +72,7 @@ function civicrm_api3_goonjcustom_dropping_center_outcome_cron($params) {
       'where' => [
         ['Camp_Vehicle_Dispatch.Collection_Camp', '=', $trackingId],
       ],
-      'checkPermissions' => TRUE,
+      'checkPermissions' => FALSE,
     ]);
 
     $totalBags = 0;
@@ -110,7 +110,7 @@ function civicrm_api3_goonjcustom_dropping_center_outcome_cron($params) {
     civicrm_api4('Eck_Collection_Camp', 'update', [
       'values' => ['Dropping_Center_Outcome.Footfall_at_the_center' => max($footfallCount, 0)],
       'where' => [['id', '=', $trackingId]],
-      'checkPermissions' => TRUE,
+      'checkPermissions' => FALSE,
     ]);
   }
 
@@ -119,7 +119,7 @@ function civicrm_api3_goonjcustom_dropping_center_outcome_cron($params) {
     civicrm_api4('Eck_Collection_Camp', 'update', [
       'values' => ['Dropping_Center_Outcome.Total_no_of_vehicle_material_collected' => max($vehicleCount, 0)],
       'where' => [['id', '=', $trackingId]],
-      'checkPermissions' => TRUE,
+      'checkPermissions' => FALSE,
     ]);
   }
 
@@ -128,7 +128,7 @@ function civicrm_api3_goonjcustom_dropping_center_outcome_cron($params) {
     civicrm_api4('Eck_Collection_Camp', 'update', [
       'values' => ['Dropping_Center_Outcome.Total_no_of_bags_received_from_center' => max($bagsReceived, 0)],
       'where' => [['id', '=', $trackingId]],
-      'checkPermissions' => TRUE,
+      'checkPermissions' => FALSE,
     ]);
   }
 
