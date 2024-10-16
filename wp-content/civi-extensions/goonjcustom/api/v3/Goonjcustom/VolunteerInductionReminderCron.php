@@ -5,6 +5,7 @@
  */
 
 use Civi\Api4\Individual;
+use Civi\Api4\OptionValue;
 use Civi\HelperService;
 use Civi\InductionService;
 
@@ -40,11 +41,25 @@ function civicrm_api3_goonjcustom_volunteer_induction_reminder_cron($params) {
 
   while (TRUE) {
     // Fetch volunteers who have registered but not scheduled an induction.
+    $activityTypeOptionValue = OptionValue::get(TRUE)
+      ->addWhere('option_group_id:name', '=', 'activity_type')
+      ->addWhere('name', '=', 'Induction')
+      ->execute()->single();
+
+    $activityTypeId = $activityTypeOptionValue['value'];
+
+    $activityStatusOptionValue = OptionValue::get(TRUE)
+      ->addWhere('option_group_id:name', '=', 'activity_status')
+      ->addWhere('name', '=', 'To be scheduled')
+      ->execute()->single();
+
+    $activityStatus = $activityStatusOptionValue['value'];
+
     $volunteers = Individual::get(TRUE)
       ->addSelect('created_date', 'display_name', 'email_primary.email', 'Individual_fields.Last_Reminder_Sent')
       ->addJoin('Activity AS activity', 'LEFT')
-      ->addWhere('activity.activity_type_id', '=', 57)
-      ->addWhere('activity.status_id', '=', 9)
+      ->addWhere('activity.activity_type_id', '=', $activityTypeId)
+      ->addWhere('activity.status_id', '=', $activityStatus)
       ->addWhere('contact_sub_type', '=', 'Volunteer')
       ->addWhere('Individual_fields.Last_Reminder_Sent', 'IS NULL')
       ->addWhere('created_date', '<=', (new DateTime())->format('Y-m-d H:i:s'))
