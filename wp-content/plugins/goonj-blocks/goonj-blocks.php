@@ -48,6 +48,11 @@ function gb_goonj_blocks_custom_rewrite_rules() {
 		'index.php?pagename=actions&target=processing-center&id=$matches[1]',
 		'top'
 	);
+	add_rewrite_rule(
+		'^actions/induction-schedule/?$',
+		'index.php?pagename=actions&target=induction-schedule',
+		'top'
+	);	
 }
 
 add_filter( 'query_vars', 'gb_goonj_blocks_query_vars' );
@@ -55,8 +60,12 @@ function gb_goonj_blocks_query_vars( $vars ) {
 	$vars[] = 'target';
 	$vars[] = 'id';
 	$vars[] = 'source';
+	$vars[] = 'source_contact_id';
 	return $vars;
 }
+add_action( 'init', function() {
+    flush_rewrite_rules();
+});
 
 add_action( 'template_redirect', 'gb_goonj_blocks_check_action_target_exists' );
 function gb_goonj_blocks_check_action_target_exists() {
@@ -71,6 +80,9 @@ function gb_goonj_blocks_check_action_target_exists() {
 	}
 
 	$target = get_query_var( 'target' );
+	$source_contact_id = get_query_var( 'source_contact_id' );
+	\Civi::log()->info('source_contact_id', ['source_contact_id'=>$source_contact_id]);
+	// var_dump($target);
 	$id = intval( get_query_var( 'id' ) );
 
 	// Load CiviCRM.
@@ -95,6 +107,8 @@ function gb_goonj_blocks_check_action_target_exists() {
 	);
 
 	switch ( $target ) {
+		case 'induction-schedule':
+			$wp_query->set( 'source_contact_id', $source_contact_id );
 		case 'collection-camp':
 		case 'dropping-center':
 			$result = \Civi\Api4\EckEntity::get( 'Collection_Camp', false )
