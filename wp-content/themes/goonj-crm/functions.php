@@ -393,8 +393,12 @@ function goonj_handle_user_identification_form() {
 		->setLimit( 1 )
 		->execute();
 
+		// Recent camp data
+		$recentCamp = $collectionCampResult->first() ?? null;
+		$display_name = $found_contacts['display_name'];
+
 		if ( $purpose === 'dropping-center' ) {
-			wp_redirect( get_home_url() . '/dropping-center/intent/#?Collection_Camp_Core_Details.Contact_Id=' . $found_contacts['id'] );
+			wp_redirect( get_home_url() . '/dropping-center/intent/#?Collection_Camp_Core_Details.Contact_Id=' . $found_contacts['id'] . '&Dropping_Centre.Name=' . $display_name . '&Dropping_Centre.Contact_Number=' . $phone);
 			exit;
 		}
 
@@ -402,10 +406,6 @@ function goonj_handle_user_identification_form() {
 			wp_redirect( get_home_url() . '/volunteer-registration/already-inducted/' );
 			exit;
 		}
-
-		// Recent camp data
-		$recentCamp = $collectionCampResult->first() ?? null;
-		$display_name = $found_contacts['display_name'];
 
 		if ( ! empty( $recentCamp ) ) {
 			// Save the recentCamp data to the session
