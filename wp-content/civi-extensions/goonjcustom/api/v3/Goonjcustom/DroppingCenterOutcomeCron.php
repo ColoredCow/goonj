@@ -13,11 +13,11 @@ function civicrm_api3_goonjcustom_dropping_center_outcome_cron($params) {
   $droppingCenters = civicrm_api4('Eck_Collection_Camp', 'get', [
     'select' => [
       'Donation_Box_Register_Tracking.Cash_Contribution',
-      'Dropping_Centre.Dropping_Center_Tracking_Id',
+      'Dropping_Centre.Tracking_Id',
       'Donation_Box_Register_Tracking.Product_Sale_Amount_GBG_',
     ],
     'where' => [
-        ['Dropping_Centre.Dropping_Center_Tracking_Id', 'IS NOT NULL'],
+        ['Dropping_Centre.Tracking_Id', 'IS NOT NULL'],
     ],
     'checkPermissions' => FALSE,
   ]);
@@ -29,7 +29,7 @@ function civicrm_api3_goonjcustom_dropping_center_outcome_cron($params) {
   $bagsReceivedByTrackingId = [];
 
   foreach ($droppingCenters as $center) {
-    $trackingId = $center['Dropping_Centre.Dropping_Center_Tracking_Id'];
+    $trackingId = $center['Dropping_Centre.Tracking_Id'];
 
     if (!isset($cashContributionByTrackingId[$trackingId])) {
       $cashContributionByTrackingId[$trackingId] = 0;
