@@ -17,6 +17,7 @@ class InductionService extends AutoSubscriber {
   const INDUCTION_ACTIVITY_TYPE_NAME = 'Induction';
   const INDUCTION_DEFAULT_STATUS_NAME = 'To be scheduled';
   const RELATIONSHIP_TYPE_NAME = 'Induction Coordinator of';
+  const FALLBACK_OFFICE_NAME = 'Delhi';
 
   private static $volunteerId = NULL;
   private static $volunteerInductionAssigneeEmail = NULL;
@@ -460,20 +461,19 @@ class InductionService extends AutoSubscriber {
     $volunteerId = $volunteer['id'];
     $volunteerName = $volunteer['display_name'];
     $volunteerEmail = $volunteer['email_primary.email'];
+    $volunteerState = $volunteer['address_primary.state_province_id'];
     $registrationDate = new \DateTime($volunteer['created_date']);
     $lastReminderSent = $volunteer['Individual_fields.Last_Reminder_Sent'] ? new \DateTime($volunteer['Individual_fields.Last_Reminder_Sent']) : NULL;
 
-    error_log("volunteerId: " . print_r($volunteerId, TRUE));
+    $coordinatorEmailId = self::findInductionCoordinator($volunteerState);
 
     // Calculate hours since registration.
     $hoursSinceRegistration = ($today->getTimestamp() - $registrationDate->getTimestamp()) / 3600;
-    error_log("hoursSinceRegistration: " . print_r($hoursSinceRegistration, TRUE));
 
     // If 7 days (168 hours) have passed since registration and no reminder has been sent yet.
     if ($hoursSinceRegistration >= 168 && $lastReminderSent === NULL) {
       // Send the reminder email.
-      self::sendInductionReminderEmail($volunteerId, $from, $volunteerName, $volunteerEmail);
-      error_log("working");
+      self::sendInductionReminderEmail($volunteerId, $from, $volunteerName, $volunteerEmail, $coordinatorEmailId);
 
       // Update the Last_Reminder_Sent field in the database.
       Individual::update(FALSE)
@@ -481,19 +481,107 @@ class InductionService extends AutoSubscriber {
         ->addWhere('id', '=', $volunteerId)
         ->execute();
 
-      error_log("Reminder sent to volunteerId: " . print_r($volunteerId, TRUE));
     }
 
   }
 
   /**
+   *
+   */
+  public static function findInductionCoordinator($stateId) {
+    $officesFound = Contact::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('contact_type', '=', 'Organization')
+      ->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_Office')
+      ->addWhere('Goonj_Office_Details.Collection_Camp_Catchment', 'CONTAINS', $stateId)
+      ->execute();
+
+    $stateOffice = $officesFound->first();
+
+    if (!$stateOffice) {
+      $stateOffice = self::getFallbackOffice();
+    }
+
+    $stateOfficeId = $stateOffice['id'];
+
+    $coordinators = Relationship::get(FALSE)
+      ->addWhere('contact_id_b', '=', $stateOfficeId)
+      ->addWhere('relationship_type_id:name', '=', self::RELATIONSHIP_TYPE_NAME)
+      ->addWhere('is_current', '=', TRUE)
+      ->execute();
+
+    $coordinatorCount = $coordinators->count();
+
+    if ($coordinatorCount === 0) {
+      $coordinator = self::getFallbackCoordinator();
+
+    }
+    elseif ($coordinatorCount > 1) {
+      $randomIndex = rand(0, $coordinatorCount - 1);
+      $coordinator = $coordinators->itemAt($randomIndex);
+    }
+    else {
+      $coordinator = $coordinators->first();
+    }
+
+    if (!$coordinator) {
+      \CRM_Core_Error::debug_log_message('No coordinator available to assign.');
+      return FALSE;
+    }
+
+    $coordinatorId = $coordinator['contact_id_a'];
+
+    $contact = Contact::get(TRUE)
+      ->addSelect('email.email')
+      ->addJoin('Email AS email', 'LEFT')
+      ->addWhere('id', '=', $coordinatorId)
+      ->execute()->single();
+
+    $coordinatorEmailId = $contact['email.email'];
+
+    return $coordinatorEmailId;
+  }
+
+  /**
+   *
+   */
+  private static function getFallbackOffice() {
+    $fallbackOffices = Contact::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('organization_name', 'CONTAINS', self::FALLBACK_OFFICE_NAME)
+      ->execute();
+
+    return $fallbackOffices->first();
+  }
+
+  /**
+   *
+   */
+  private static function getFallbackCoordinator() {
+    $fallbackOffice = self::getFallbackOffice();
+    $fallbackCoordinators = Relationship::get(FALSE)
+      ->addWhere('contact_id_b', '=', $fallbackOffice['id'])
+      ->addWhere('relationship_type_id:name', '=', self::RELATIONSHIP_TYPE_NAME)
+      ->addWhere('is_current', '=', TRUE)
+      ->execute();
+
+    $coordinatorCount = $fallbackCoordinators->count();
+
+    $randomIndex = rand(0, $coordinatorCount - 1);
+    $coordinator = $fallbackCoordinators->itemAt($randomIndex);
+
+    return $coordinator;
+  }
+
+  /**
    * Send the reminder email to the volunteer.
    */
-  public static function sendInductionReminderEmail($volunteerId, $from, $volunteerName, $volunteerEmail) {
+  public static function sendInductionReminderEmail($volunteerId, $from, $volunteerName, $volunteerEmail, $coordinatorEmailId) {
     $mailParams = [
       'subject' => 'Complete Your Orientation & start Your Volunteering Journey!',
       'from' => $from,
       'toEmail' => $volunteerEmail,
+      'cc' => $coordinatorEmailId,
       'replyTo' => $from,
       'html' => self::getInductionReminderEmailHtml($volunteerName),
     ];

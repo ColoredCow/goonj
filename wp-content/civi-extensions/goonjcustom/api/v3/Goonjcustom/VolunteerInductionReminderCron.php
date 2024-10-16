@@ -56,7 +56,7 @@ function civicrm_api3_goonjcustom_volunteer_induction_reminder_cron($params) {
     $activityStatus = $activityStatusOptionValue['value'];
 
     $volunteers = Individual::get(TRUE)
-      ->addSelect('created_date', 'display_name', 'email_primary.email', 'Individual_fields.Last_Reminder_Sent')
+      ->addSelect('created_date', 'display_name', 'email_primary.email', 'Individual_fields.Last_Reminder_Sent', 'address_primary.state_province_id')
       ->addJoin('Activity AS activity', 'LEFT')
       ->addWhere('activity.activity_type_id', '=', $activityTypeId)
       ->addWhere('activity.status_id', '=', $activityStatus)
@@ -74,7 +74,6 @@ function civicrm_api3_goonjcustom_volunteer_induction_reminder_cron($params) {
 
     // Process each volunteer in the fetched batch.
     foreach ($volunteers as $volunteer) {
-      error_log("volunteer: " . print_r($volunteer, TRUE));
       try {
         InductionService::processInductionReminder($volunteer, $today, $from);
       }
