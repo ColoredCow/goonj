@@ -30,7 +30,7 @@ function _civicrm_api3_goonjcustom_volunteer_induction_reminder_cron_spec(&$spec
 function civicrm_api3_goonjcustom_volunteer_induction_reminder_cron($params) {
   $returnValues = [];
   $today = new DateTimeImmutable();
-  $endOfDay = $today->setTime(23, 59, 59)->format('Y-m-d H:i:s');
+
   // Limit the number of emails per batch.
   $batchSize = 20;
   // Start from the first offset.
