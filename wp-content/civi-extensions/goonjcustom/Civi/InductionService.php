@@ -468,24 +468,20 @@ class InductionService extends AutoSubscriber {
     $hoursSinceRegistration = ($today->getTimestamp() - $registrationDate->getTimestamp()) / 3600;
     error_log("hoursSinceRegistration: " . print_r($hoursSinceRegistration, TRUE));
 
-    // Calculate hours since last reminder was sent (if any)
-    $hoursSinceLastReminder = $lastReminderSent ? (($today->getTimestamp() - $lastReminderSent->getTimestamp()) / 3600) : NULL;
-    error_log("hoursSinceLastReminder: " . print_r($hoursSinceLastReminder, TRUE));
+    // If 7 days (168 hours) have passed since registration and no reminder has been sent yet.
+    if ($hoursSinceRegistration >= 168 && $lastReminderSent === NULL) {
+      // Send the reminder email.
+      self::sendInductionReminderEmail($volunteerId, $from, $volunteerName, $volunteerEmail);
 
-    // Send the first reminder if one week (7 days = 168 hours) has passed since registration.
-    if ($hoursSinceRegistration >= 168) {
-      // Send the reminder email if it's the first one or 24 hours have passed since the last one.
-      if ($lastReminderSent === NULL || $hoursSinceLastReminder >= 24) {
-        // Send the reminder email.
-        self::sendInductionReminderEmail($volunteerId, $from, $volunteerName, $volunteerEmail);
+      // Update the Last_Reminder_Sent field in the database.
+      EckEntity::update('Volunteer_Induction', TRUE)
+        ->addWhere('id', '=', $volunteerId)
+        ->addValue('Volunteer_fields.Last_Reminder_Sent', $today->format('Y-m-d H:i:s'))
+        ->execute();
 
-        // // Update the Last_Reminder_Sent field in the database.
-        // EckEntity::update('Volunteer_Induction', TRUE)
-        //   ->addWhere('id', '=', $volunteer['id'])
-        //   ->addValue('Volunteer_fields.Last_Reminder_Sent', $today->format('Y-m-d H:i:s'))
-        //   ->execute();
-      }
+      error_log("Reminder sent to volunteerId: " . print_r($volunteerId, TRUE));
     }
+
   }
 
   /**
