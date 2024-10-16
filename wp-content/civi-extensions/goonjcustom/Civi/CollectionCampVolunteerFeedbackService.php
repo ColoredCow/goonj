@@ -34,6 +34,13 @@ class CollectionCampVolunteerFeedbackService {
     $endDate = new \DateTime($camp['Collection_Camp_Intent_Details.End_Date']);
     $collectionCampId = $camp['id'];
     $campAddress = $camp['Collection_Camp_Intent_Details.Location_Area_of_camp'];
+    $campStatus = $camp['Collection_Camp_Intent_Details.Camp_status_field'];
+
+    // Skip if camp status is "aborted".
+    if ($campStatus === 'aborted') {
+      \Civi::log()->info("Skipping camp ID $collectionCampId as it is marked as 'aborted'");
+      return FALSE;
+    }
 
     // Check last reminder sent.
     $lastReminderSent = $camp['Volunteer_Camp_Feedback.Last_Reminder_Sent'] ? new \DateTime($camp['Volunteer_Camp_Feedback.Last_Reminder_Sent']) : NULL;
