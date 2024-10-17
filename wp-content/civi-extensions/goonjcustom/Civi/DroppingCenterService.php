@@ -365,7 +365,7 @@ class DroppingCenterService extends AutoSubscriber {
       ->execute()->single();
 
     $contactId = $droppingCenterData['Collection_Camp_Core_Details.Contact_Id'] ?? NULL;
-    $droppingCenterGoonjOffice = $droppingCenterData['Dropping_Centre.Goonj_Office'] ?? 'N/A';
+    $goonjOffice = $droppingCenterData['Dropping_Centre.Goonj_Office'] ?? 'N/A';
 
     if (!$contactId) {
       return;
@@ -381,17 +381,17 @@ class DroppingCenterService extends AutoSubscriber {
     $initiatorName = $contactInfo['display_name'];
 
     // Send the dispatch email.
-    self::sendDispatchEmail($email, $initiatorName, $droppingCenterId, $contactId, $droppingCenterGoonjOffice);
+    self::sendDispatchEmail($email, $initiatorName, $droppingCenterId, $contactId, $goonjOffice);
   }
 
   /**
    *
    */
-  public static function sendDispatchEmail($email, $initiatorName, $droppingCenterId, $contactId, $droppingCenterGoonjOffice) {
+  public static function sendDispatchEmail($email, $initiatorName, $droppingCenterId, $contactId, $goonjOffice) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
     $from = HelperService::getDefaultFromEmail();
 
-    $droppingCenterVehicleDispatchFormUrl = $homeUrl . '/vehicle-dispatch/#?Camp_Vehicle_Dispatch.Collection_Camp=' . $droppingCenterId . '&Camp_Vehicle_Dispatch.Filled_by=' . $contactId . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $droppingCenterGoonjOffice . '&Eck_Collection_Camp1=' . $droppingCenterId;
+    $vehicleDispatchFormUrl = $homeUrl . '/vehicle-dispatch/#?Camp_Vehicle_Dispatch.Collection_Camp=' . $droppingCenterId . '&Camp_Vehicle_Dispatch.Filled_by=' . $contactId . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $goonjOffice . '&Eck_Collection_Camp1=' . $droppingCenterId;
 
     $emailHtml = "
     <html>
@@ -399,7 +399,7 @@ class DroppingCenterService extends AutoSubscriber {
     <p>Dear {$initiatorName},</p>
     <p>Thank you so much for your invaluable efforts in running the Goonj Dropping Center. 
     Your dedication plays a crucial role in our work, and we deeply appreciate your continued support.</p>
-    <p>Please fill out this Dispatch Form – <a href='{$droppingCenterVehicleDispatchFormUrl}'>[link]</a> once the vehicle is loaded and ready to head to Goonj’s processing center. 
+    <p>Please fill out this Dispatch Form – <a href='{$vehicleDispatchFormUrl}'>[link]</a> once the vehicle is loaded and ready to head to Goonj’s processing center. 
     This will help us to verify and acknowledge the materials as soon as they arrive.</p>
     <p>We truly appreciate your cooperation and continued commitment to our cause.</p>
     <p>Warm Regards,<br>Team Goonj..</p>
