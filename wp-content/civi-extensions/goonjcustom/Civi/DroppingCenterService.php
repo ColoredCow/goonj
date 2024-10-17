@@ -376,7 +376,7 @@ class DroppingCenterService extends AutoSubscriber {
       return;
     }
 
-    $contactData = civicrm_api4('Contact', 'get', [
+    $contactInfo = civicrm_api4('Contact', 'get', [
       'select' => [
         'email_primary.email',
         'phone_primary.phone',
@@ -388,10 +388,10 @@ class DroppingCenterService extends AutoSubscriber {
       'limit' => 1,
     ]);
 
-    $contactDataArray = $contactData[0] ?? [];
-    $email = $contactDataArray['email_primary.email'];
-    $phone = $contactDataArray['phone_primary.phone'];
-    $initiatorName = $contactDataArray['display_name'];
+    $contactData = $contactInfo[0] ?? [];
+    $email = $contactData['email_primary.email'];
+    $phone = $contactData['phone_primary.phone'];
+    $initiatorName = $contactData['display_name'];
 
     // Send the dispatch email.
     self::sendDispatchEmail($email, $initiatorName, $droppingCenterId, $contactId, $droppingCenterGoonjOffice);
