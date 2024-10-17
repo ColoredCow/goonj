@@ -359,39 +359,26 @@ class DroppingCenterService extends AutoSubscriber {
       return;
     }
 
-    $droppingCenterData = civicrm_api4('Eck_Collection_Camp', 'get', [
-      'select' => [
-        'Collection_Camp_Core_Details.Contact_Id',
-        'Collection_Camp_Intent_Details.Goonj_Office',
-      ],
-      'where' => [
-            ['id', '=', $droppingCenterId],
-      ],
-    ]);
+    $droppingCenterData = EckEntity::get('Collection_Camp', TRUE)
+      ->addSelect('Collection_Camp_Core_Details.Contact_Id', 'Dropping_Centre.Goonj_Office')
+      ->addWhere('id', '=', $droppingCenterId)
+      ->execute()->single();
 
-    $contactId = $droppingCenterData[0]['Collection_Camp_Core_Details.Contact_Id'] ?? NULL;
-    $droppingCenterGoonjOffice = $droppingCenterData[0]['Collection_Camp_Intent_Details.Goonj_Office'] ?? 'N/A';
+    $contactId = $droppingCenterData['Collection_Camp_Core_Details.Contact_Id'] ?? NULL;
+    $droppingCenterGoonjOffice = $droppingCenterData['Dropping_Centre.Goonj_Office'] ?? 'N/A';
 
     if (!$contactId) {
       return;
     }
 
-    $contactInfo = civicrm_api4('Contact', 'get', [
-      'select' => [
-        'email_primary.email',
-        'phone_primary.phone',
-        'display_name',
-      ],
-      'where' => [
-            ['id', '=', $contactId],
-      ],
-      'limit' => 1,
-    ]);
+    $contactInfo = Contact::get(TRUE)
+      ->addSelect('email_primary.email', 'phone_primary.phone', 'display_name')
+      ->addWhere('id', '=', $contactId)
+      ->execute()->single();
 
-    $contactData = $contactInfo[0] ?? [];
-    $email = $contactData['email_primary.email'];
-    $phone = $contactData['phone_primary.phone'];
-    $initiatorName = $contactData['display_name'];
+    $email = $contactInfo['email_primary.email'];
+    $phone = $contactInfo['phone_primary.phone'];
+    $initiatorName = $contactInfo['display_name'];
 
     // Send the dispatch email.
     self::sendDispatchEmail($email, $initiatorName, $droppingCenterId, $contactId, $droppingCenterGoonjOffice);
