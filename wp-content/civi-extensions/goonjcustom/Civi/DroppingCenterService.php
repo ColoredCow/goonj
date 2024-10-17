@@ -339,60 +339,62 @@ class DroppingCenterService extends AutoSubscriber {
    *
    */
   public static function processDispatchEmail(string $op, string $objectName, int $objectId, &$objectRef) {
+
+    if ($objectName !== 'AfformSubmission') {
+      return;
+    }
+
     $afformName = $objectRef->afform_name;
 
-    if ($afformName === 'afformSendDispatchEmail') {
-
-      $jsonData = $objectRef->data;
-
-      $dataArray = json_decode($jsonData, TRUE);
-
-      $droppingCenterId = $dataArray['Eck_Collection_Camp1'][0]['fields']['id'];
-
-      $droppingCenterData = civicrm_api4('Eck_Collection_Camp', 'get', [
-        'select' => [
-          'Collection_Camp_Core_Details.Contact_Id',
-        ],
-        'where' => [
-        ['id', '=', $droppingCenterId],
-        ],
-      ]);
-      $contactId = NULL;
-      if (!empty($droppingCenterData)) {
-        $droppingCenter = $droppingCenterData[0] ?? [];
-        $contactId = $droppingCenter['Collection_Camp_Core_Details.Contact_Id'] ?? NULL;
-        $droppingCenterGoonjOffice = $droppingCenter['Collection_Camp_Intent_Details.Goonj_Office'] ?? NULL;
-      }
-
-      $contactData = civicrm_api4('Contact', 'get', [
-        'select' => [
-          'email_primary.email',
-          'phone_primary.phone',
-          'display_name',
-        ],
-        'where' => [
-          ['id', '=', $contactId],
-        ],
-        'limit' => 1,
-      ]);
-
-      $contactDataArray = $contactData[0] ?? [];
-      $email = $contactDataArray['email_primary.email'] ?? 'N/A';
-      $phone = $contactDataArray['phone_primary.phone'] ?? 'N/A';
-      $initiatorName = $contactDataArray['display_name'] ?? 'N/A';
-
-      $goonjOfficeFromDroppingCenter = civicrm_api4('Eck_Collection_Camp', 'get', [
-        'select' => [
-          'Dropping_Centre.Goonj_Office',
-        ],
-        'where' => [
-          ['id', '=', $droppingCenterId],
-        ],
-      ]);
-      $goonjOfficeRecord = $goonjOfficeFromDroppingCenter[0] ?? [];
-      $droppingCenterGoonjOffice = $goonjOfficeRecord['Dropping_Centre.Goonj_Office'] ?? 'N/A';
-      self::sendDispatchEmail($email, $initiatorName, $droppingCenterId, $contactId, $droppingCenterGoonjOffice);
+    if ($afformName !== 'afformSendDispatchEmail') {
+      return;
     }
+
+    $jsonData = $objectRef->data;
+    $dataArray = json_decode($jsonData, TRUE);
+
+    $droppingCenterId = $dataArray['Eck_Collection_Camp1'][0]['fields']['id'] ?? NULL;
+
+    if (!$droppingCenterId) {
+      return;
+    }
+
+    $droppingCenterData = civicrm_api4('Eck_Collection_Camp', 'get', [
+      'select' => [
+        'Collection_Camp_Core_Details.Contact_Id',
+        'Collection_Camp_Intent_Details.Goonj_Office',
+      ],
+      'where' => [
+            ['id', '=', $droppingCenterId],
+      ],
+    ]);
+
+    $contactId = $droppingCenterData[0]['Collection_Camp_Core_Details.Contact_Id'] ?? NULL;
+    $droppingCenterGoonjOffice = $droppingCenterData[0]['Collection_Camp_Intent_Details.Goonj_Office'] ?? 'N/A';
+
+    if (!$contactId) {
+      return;
+    }
+
+    $contactData = civicrm_api4('Contact', 'get', [
+      'select' => [
+        'email_primary.email',
+        'phone_primary.phone',
+        'display_name',
+      ],
+      'where' => [
+            ['id', '=', $contactId],
+      ],
+      'limit' => 1,
+    ]);
+
+    $contactDataArray = $contactData[0] ?? [];
+    $email = $contactDataArray['email_primary.email'];
+    $phone = $contactDataArray['phone_primary.phone'];
+    $initiatorName = $contactDataArray['display_name'];
+
+    // Send the dispatch email.
+    self::sendDispatchEmail($email, $initiatorName, $droppingCenterId, $contactId, $droppingCenterGoonjOffice);
   }
 
   /**
