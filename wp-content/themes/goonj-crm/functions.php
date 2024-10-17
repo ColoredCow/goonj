@@ -268,6 +268,18 @@ function goonj_handle_user_identification_form() {
 				case 'volunteer-registration':
 					$redirect_url = $volunteer_registration_url;
 					break;
+
+				case 'dropping-center':
+				// Redirect to generic volunteer registration URL for dropping center
+				$volunteer_registration_url = sprintf(
+					'/volunteer-registration/form/#?email=%s&phone=%s&message=%s',
+					$email,
+					$phone,
+					'dropping-center'
+				);
+				$redirect_url = $volunteer_registration_url;
+				break;
+				
 				// Contact does not exist and the purpose is not defined.
 				// Redirect to volunteer registration with collection camp activity selected.
 				default:
@@ -381,8 +393,12 @@ function goonj_handle_user_identification_form() {
 		->setLimit( 1 )
 		->execute();
 
+		// Recent camp data
+		$recentCamp = $collectionCampResult->first() ?? null;
+		$display_name = $found_contacts['display_name'];
+
 		if ( $purpose === 'dropping-center' ) {
-			wp_redirect( get_home_url() . '/dropping-center/intent/#?Collection_Camp_Core_Details.Contact_Id=' . $found_contacts['id'] );
+			wp_redirect( get_home_url() . '/dropping-center/intent/#?Collection_Camp_Core_Details.Contact_Id=' . $found_contacts['id'] . '&Dropping_Centre.Name=' . $display_name . '&Dropping_Centre.Contact_Number=' . $phone);
 			exit;
 		}
 
@@ -390,10 +406,6 @@ function goonj_handle_user_identification_form() {
 			wp_redirect( get_home_url() . '/volunteer-registration/already-inducted/' );
 			exit;
 		}
-
-		// Recent camp data
-		$recentCamp = $collectionCampResult->first() ?? null;
-		$display_name = $found_contacts['display_name'];
 
 		if ( ! empty( $recentCamp ) ) {
 			// Save the recentCamp data to the session
