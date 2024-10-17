@@ -53,6 +53,7 @@ function civicrm_api3_goonjcustom_volunteer_feedback_collection_camp_cron($param
     ->addWhere('Collection_Camp_Core_Details.Status', '=', 'authorized')
     ->addWhere('subtype', '=', $collectionCampSubtype)
     ->addWhere('Collection_Camp_Intent_Details.End_Date', '<=', $endOfDay)
+    ->addWhere('Collection_Camp_Intent_Details.Camp_status_field', '!=', 'aborted')
     ->execute();
 
   [$defaultFromName, $defaultFromEmail] = CRM_Core_BAO_Domain::getNameAndEmail();
@@ -66,13 +67,6 @@ function civicrm_api3_goonjcustom_volunteer_feedback_collection_camp_cron($param
       $feedbackEmailSent = $camp['Logistics_Coordination.Feedback_Email_Sent'];
       $initiatorId = $camp['Collection_Camp_Core_Details.Contact_Id'];
       $campAddress = $camp['Collection_Camp_Intent_Details.Location_Area_of_camp'];
-      $campStatus = $camp['Collection_Camp_Intent_Details.Camp_status_field'];
-
-      // Skip if camp status is "aborted".
-      if ($campStatus === 'aborted') {
-        \Civi::log()->info("Skipping camp ID $collectionCampId as it is marked as 'aborted'");
-        continue;
-      }
 
       // Get recipient email and name.
       $campAttendedBy = Contact::get(TRUE)
