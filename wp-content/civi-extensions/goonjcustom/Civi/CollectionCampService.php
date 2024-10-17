@@ -1042,6 +1042,12 @@ class CollectionCampService extends AutoSubscriber {
       $logisticEmailSent = $collectionCamp['Logistics_Coordination.Email_Sent'];
       $campStatus = $collectionCamp['Collection_Camp_Intent_Details.Camp_status_field'];
 
+      // Skip if camp status is "aborted".
+      if ($campStatus === 'aborted') {
+        \Civi::log()->info("Skipping camp ID $collectionCampId as it is marked as 'aborted'");
+        return FALSE;
+      }
+
       $startDate = new \DateTime($collectionCamp['Collection_Camp_Intent_Details.Start_Date']);
 
       $today = new \DateTimeImmutable();
@@ -1066,7 +1072,7 @@ class CollectionCampService extends AutoSubscriber {
           'from' => self::getFromAddress(),
           'toEmail' => $attendeeEmail,
           'replyTo' => self::getFromAddress(),
-          'html' => self::getLogisticsEmailHtml($attendeeName, $campId, $campAttendedById, $campOffice, $campCode, $campAddress, $campStatus),
+          'html' => self::getLogisticsEmailHtml($attendeeName, $campId, $campAttendedById, $campOffice, $campCode, $campAddress),
         ];
 
         $emailSendResult = \CRM_Utils_Mail::send($mailParams);
@@ -1089,34 +1095,21 @@ class CollectionCampService extends AutoSubscriber {
   /**
    *
    */
-  private static function getLogisticsEmailHtml($contactName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress, $campStatus) {
+  private static function getLogisticsEmailHtml($contactName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
     // Construct the full URLs for the forms.
     $campVehicleDispatchFormUrl = $homeUrl . 'camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp=' . $collectionCampId . '&Camp_Vehicle_Dispatch.Filled_by=' . $campAttendedById . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice . '&Eck_Collection_Camp1=' . $collectionCampId;
 
-    // Initialize camp outcome form URL variable.
-    $campOutcomeFormUrl = '';
+    $campOutcomeFormUrl = $homeUrl . '/camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $campAttendedById;
 
-    // Include camp outcome form if the status is NOT "aborted".
-    if ($campStatus !== 'aborted') {
-      $campOutcomeFormUrl = '<li><a href="' . $homeUrl . '/camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $campAttendedById . '">Camp Outcome Form</a><br>
-        This feedback form should be filled out after the camp/drive ends, once you have an overview of the event\'s outcomes.</li>';
-    }
-
-    // Determine the appropriate message based on whether the outcome form is included.
-    $formCountMessage = ($campStatus !== 'aborted')
-    ? 'There are two forms that require your attention during and after the camp:'
-    : 'There is one form that requires your attention during the camp:';
-
-    // Build the email content.
     $html = "
     <p>Dear $contactName,</p>
-    <p>Thank you for attending the camp <strong>$campCode</strong> at <strong>$campAddress</strong>.</p>
-    <p>$formCountMessage</p>
+    <p>Thank you for attending the camp <strong>$campCode</strong> at <strong>$campAddress</strong>. There are two forms that require your attention during and after the camp:</p>
     <ol>
         <li><a href=\"$campVehicleDispatchFormUrl\">Dispatch Form</a><br>
         Please complete this form from the camp location once the vehicle is being loaded and ready for dispatch to the Goonj's processing center.</li>
-        $campOutcomeFormUrl
+        <li><a href=\"$campOutcomeFormUrl\">Camp Outcome Form</a><br>
+        This feedback form should be filled out after the camp/drive ends, once you have an overview of the event's outcomes.</li>
     </ol>
     <p>We appreciate your cooperation.</p>
     <p>Warm Regards,<br>Urban Relations Team</p>";
