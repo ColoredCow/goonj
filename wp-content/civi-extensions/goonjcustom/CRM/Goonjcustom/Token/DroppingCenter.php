@@ -41,7 +41,7 @@ class CRM_Goonjcustom_Token_DroppingCenter extends AbstractTokenSubscriber {
   ) {
 
     if (empty($row->context['collectionSourceId'])) {
-      \Civi::log()->debug(__CLASS__ . '::' . __METHOD__ . ' There is no collectionSourceId in the context, you can\'t use collection_camp tokens.');
+      \Civi::log()->debug(__CLASS__ . '::' . __METHOD__ . ' There is no collectionSourceId in the context, you can\'t use dropping_center tokens.');
       $row->format('text/plain')->tokens($entity, $field, '');
       return;
     }
