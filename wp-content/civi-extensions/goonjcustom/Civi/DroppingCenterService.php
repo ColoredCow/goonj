@@ -173,7 +173,6 @@ class DroppingCenterService extends AutoSubscriber {
    *
    */
   public static function mailNotificationToMmt($op, $groupID, $entityID, &$params) {
-    $from = HelperService::getDefaultFromEmail();
     if ($op !== 'create') {
       return;
     }
@@ -222,7 +221,7 @@ class DroppingCenterService extends AutoSubscriber {
       ->execute()->single();
 
     $mmtEmail = $email['email'];
-
+    $from = HelperService::getDefaultFromEmail();
     $mailParams = [
       'subject' => 'Dropping center address ' . $droppingCenterAddress . ' - Material Acknowledgement',
       'from' => $from,
@@ -388,8 +387,6 @@ class DroppingCenterService extends AutoSubscriber {
    */
   public static function sendDispatchEmail($email, $initiatorName, $droppingCenterId, $contactId, $goonjOffice) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
-    $from = HelperService::getDefaultFromEmail();
-
     $vehicleDispatchFormUrl = $homeUrl . '/vehicle-dispatch/#?Camp_Vehicle_Dispatch.Collection_Camp=' . $droppingCenterId . '&Camp_Vehicle_Dispatch.Filled_by=' . $contactId . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $goonjOffice . '&Eck_Collection_Camp1=' . $droppingCenterId;
 
     $emailHtml = "
@@ -405,6 +402,7 @@ class DroppingCenterService extends AutoSubscriber {
     </body>
     </html>
     ";
+    $from = HelperService::getDefaultFromEmail();
     $mailParams = [
       'subject' => 'Kindly fill the Dispatch Form for Material Pickup',
       'from' => $from,
