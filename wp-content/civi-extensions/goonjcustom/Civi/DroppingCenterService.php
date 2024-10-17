@@ -36,7 +36,7 @@ class DroppingCenterService extends AutoSubscriber {
         ['setOfficeDetails'],
         ['mailNotificationToMmt'],
       ],
-      '&hook_civicrm_post' => 'processDroppingCenterEmailDispatch',
+      '&hook_civicrm_post' => 'processDroppingCenterDispatchEmail',
     ];
   }
 
