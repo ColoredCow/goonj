@@ -147,18 +147,18 @@ class DroppingCenterService extends AutoSubscriber {
     if (empty($filteredItems)) {
       return FALSE;
     }
-    $goonjOfficeId = CustomField::get(FALSE)
+    $goonjOfficeField = CustomField::get(FALSE)
       ->addSelect('id')
       ->addWhere('custom_group_id:name', '=', 'Camp_Vehicle_Dispatch')
       ->addWhere('name', '=', 'To_which_PU_Center_material_is_being_sent')
       ->execute()
       ->first();
 
-    if (!$goonjOfficeId) {
+    if (!$goonjOfficeField) {
       return FALSE;
     }
 
-    $goonjOfficeFieldId = $goonjOfficeId['id'];
+    $goonjOfficeFieldId = $goonjOfficeField['id'];
 
     $goonjOfficeIndex = array_search(TRUE, array_map(fn($item) =>
         $item['entity_table'] === 'civicrm_eck_collection_source_vehicle_dispatch' &&
@@ -223,13 +223,12 @@ class DroppingCenterService extends AutoSubscriber {
 
     $mmtEmail = $email['email'];
 
-    // Email to material management team member.
     $mailParams = [
-      'subject' => 'Dropping center Address ' . $droppingCenterAddress . ' - Material Acknowledgement',
+      'subject' => 'Dropping center address ' . $droppingCenterAddress . ' - Material Acknowledgement',
       'from' => $from,
       'toEmail' => $mmtEmail,
       'replyTo' => $fromEmail['label'],
-      'html' => self::goonjcustom_material_management_email_html($droppingCenterId, $droppingCenterCode, $droppingCenterAddress, $vehicleDispatchId),
+      'html' => self::getMmtEmailHtml($droppingCenterId, $droppingCenterCode, $droppingCenterAddress, $vehicleDispatchId),
     ];
     \CRM_Utils_Mail::send($mailParams);
 
@@ -238,7 +237,7 @@ class DroppingCenterService extends AutoSubscriber {
   /**
    *
    */
-  public static function goonjcustom_material_management_email_html($droppingCenterId, $droppingCenterCode, $droppingCenterAddress, $vehicleDispatchId) {
+  public static function getMmtEmailHtml($droppingCenterId, $droppingCenterCode, $droppingCenterAddress, $vehicleDispatchId) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
     $materialdispatchUrl = $homeUrl . '/acknowledgement-for-dispatch/#?Eck_Collection_Source_Vehicle_Dispatch1=' . $vehicleDispatchId . '&Camp_Vehicle_Dispatch.Collection_Camp=' . $droppingCenterId . '&id=' . $vehicleDispatchId . '&Eck_Collection_Camp1=' . $droppingCenterId;
     $html = "
