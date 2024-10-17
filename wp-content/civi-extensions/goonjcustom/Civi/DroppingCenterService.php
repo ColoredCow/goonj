@@ -344,7 +344,7 @@ class DroppingCenterService extends AutoSubscriber {
   /**
    *
    */
-  public static function processDroppingCenterEmailDispatch(string $op, string $objectName, int $objectId, &$objectRef) {
+  public static function processDroppingCenterDispatchEmail(string $op, string $objectName, int $objectId, &$objectRef) {
     $afformName = $objectRef->afform_name;
 
     if ($afformName === 'afformSendDispatchEmail') {
@@ -387,7 +387,7 @@ class DroppingCenterService extends AutoSubscriber {
       $phone = $contactDataArray['phone_primary.phone'] ?? 'N/A';
       $initiatorName = $contactDataArray['display_name'] ?? 'N/A';
 
-      $collectionCamp = civicrm_api4('Eck_Collection_Camp', 'get', [
+      $goonjOfficeFromDroppingCenter = civicrm_api4('Eck_Collection_Camp', 'get', [
         'select' => [
           'Dropping_Centre.Goonj_Office',
         ],
@@ -395,7 +395,7 @@ class DroppingCenterService extends AutoSubscriber {
           ['id', '=', $droppingCenterId],
         ],
       ]);
-      $goonjOfficeRecord = $collectionCamp[0] ?? [];
+      $goonjOfficeRecord = $goonjOfficeFromDroppingCenter[0] ?? [];
       $droppingCenterGoonjOffice = $goonjOfficeRecord['Dropping_Centre.Goonj_Office'] ?? 'N/A';
       self::sendDroppingCenterDispatchEmail($email, $initiatorName, $droppingCenterId, $contactId, $droppingCenterGoonjOffice);
     }
