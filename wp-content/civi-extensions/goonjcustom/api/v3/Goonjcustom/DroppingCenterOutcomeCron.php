@@ -14,8 +14,8 @@ function civicrm_api3_goonjcustom_dropping_center_outcome_cron($params) {
   $returnValues = [];
 
   $droppingCenters = EckEntity::get('Collection_Camp', TRUE)
-    ->addSelect('Donation_Box_Register_Tracking.Cash_Contribution', 'Dropping_Centre.Dropping_Center_Tracking_Id', 'Donation_Box_Register_Tracking.Product_Sale_Amount_GBG_')
-    ->addWhere('Dropping_Centre.Dropping_Center_Tracking_Id', 'IS NOT NULL')
+    ->addSelect('Donation_Box_Register_Tracking.Cash_Contribution', 'Dropping_Centre.Tracking_Id', 'Donation_Box_Register_Tracking.Product_Sale_Amount_GBG_')
+    ->addWhere('Dropping_Centre.Tracking_Id', 'IS NOT NULL')
     ->execute();
 
   $cashContributionByTrackingId = [];
@@ -25,7 +25,7 @@ function civicrm_api3_goonjcustom_dropping_center_outcome_cron($params) {
   $bagsReceivedByTrackingId = [];
 
   foreach ($droppingCenters as $center) {
-    $trackingId = $center['Dropping_Centre.Dropping_Center_Tracking_Id'];
+    $trackingId = $center['Dropping_Centre.Tracking_Id'];
 
     if (!isset($cashContributionByTrackingId[$trackingId])) {
       $cashContributionByTrackingId[$trackingId] = 0;
