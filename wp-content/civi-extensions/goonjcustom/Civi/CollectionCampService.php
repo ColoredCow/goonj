@@ -571,7 +571,7 @@ class CollectionCampService extends AutoSubscriber {
    *   The parameters that were sent into the calling function.
    */
   public static function setOfficeDetails($op, $groupID, $entityID, &$params) {
-    if ($op !== 'create' ||  self::getEntitySubtypeName($entityID) !== self::ENTITY_SUBTYPE_NAME) {
+    if ($op !== 'create' || self::getEntitySubtypeName($entityID) !== self::ENTITY_SUBTYPE_NAME) {
       return;
     }
 
@@ -784,7 +784,7 @@ class CollectionCampService extends AutoSubscriber {
     $fallbackCoordinators = Relationship::get(FALSE)
       ->addWhere('contact_id_b', '=', $fallbackOffice['id'])
       ->addWhere('relationship_type_id:name', '=', self::RELATIONSHIP_TYPE_NAME)
-      ->addWhere('is_current', '=', True)
+      ->addWhere('is_current', '=', TRUE)
       ->execute();
 
     $coordinatorCount = $fallbackCoordinators->count();
@@ -848,7 +848,6 @@ class CollectionCampService extends AutoSubscriber {
     if ($op !== 'create') {
       return;
     }
-
     if (!($goonjField = self::findOfficeId($params))) {
       return;
     }
@@ -862,6 +861,10 @@ class CollectionCampService extends AutoSubscriber {
       ->execute()->first();
 
     $collectionCampId = $collectionSourceVehicleDispatch['Camp_Vehicle_Dispatch.Collection_Camp'];
+
+    if (self::getEntitySubtypeName($collectionCampId) !== self::ENTITY_SUBTYPE_NAME) {
+      return;
+    }
 
     $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
       ->addSelect('Collection_Camp_Intent_Details.Location_Area_of_camp', 'title')
