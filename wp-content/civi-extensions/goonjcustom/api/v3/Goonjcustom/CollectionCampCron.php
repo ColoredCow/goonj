@@ -55,7 +55,6 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
       'Collection_Camp_Intent_Details.Goonj_Office',
       'Collection_Camp_Intent_Details.Location_Area_of_camp',
       'Collection_Camp_Core_Details.Contact_Id',
-      'Collection_Camp_Intent_Details.Camp_Status',
     )
     ->addWhere('Collection_Camp_Core_Details.Status', '=', 'authorized')
     ->addWhere('subtype', '=', $collectionCampSubtype)
