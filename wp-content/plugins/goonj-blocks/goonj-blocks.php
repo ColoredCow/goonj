@@ -49,10 +49,10 @@ function gb_goonj_blocks_custom_rewrite_rules() {
 		'top'
 	);
 	add_rewrite_rule(
-		'^actions/induction-schedule/?$',
-		'index.php?pagename=actions&target=induction-schedule',
+		'^actions/induction-schedule/([0-9]+)/?',
+		'index.php?pagename=actions&target=induction-schedule&id=$matches[1]',
 		'top'
-	);	
+	);
 }
 
 add_filter( 'query_vars', 'gb_goonj_blocks_query_vars' );
@@ -80,10 +80,15 @@ function gb_goonj_blocks_check_action_target_exists() {
 	}
 
 	$target = get_query_var( 'target' );
+	// $source_contact_id = get_query_var( 'source_contact_id' );
+	// \Civi::log()->info('source_contact_id', ['source_contact_id'=>$source_contact_id]);
+	var_dump($target);
 	$source_contact_id = get_query_var( 'source_contact_id' );
 	\Civi::log()->info('source_contact_id', ['source_contact_id'=>$source_contact_id]);
 	// var_dump($target);
 	$id = intval( get_query_var( 'id' ) );
+
+	var_dump($id);
 
 	// Load CiviCRM.
 	if ( function_exists( 'civicrm_initialize' ) ) {
@@ -108,9 +113,16 @@ function gb_goonj_blocks_check_action_target_exists() {
 
 	switch ( $target ) {
 		case 'induction-schedule':
-			$wp_query->set( 'source_contact_id', $source_contact_id );
+			$contacts = \Civi\Api4\Contact::get(FALSE)
+			->addWhere('id', '=', $id)
+			->setLimit(1)
+			->execute()->single();
+			// error_log('check: ' . print_r($contacts, true));
+			$wp_query->set( 'action_target', $contacts );
+			break;
 		case 'collection-camp':
 		case 'dropping-center':
+			error_log('check1');
 			$result = \Civi\Api4\EckEntity::get( 'Collection_Camp', false )
 				->selectRowCount()
 				->addSelect( ...$entity_fields )
@@ -125,6 +137,7 @@ function gb_goonj_blocks_check_action_target_exists() {
 			}
 			break;
 		case 'processing-center':
+			error_log('check2');
 			$result = \Civi\Api4\Organization::get( false )
 				->addWhere( 'id', '=', $id )
 				->setLimit( 1 )
