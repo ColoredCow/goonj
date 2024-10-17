@@ -43,13 +43,13 @@ function civicrm_api3_goonjcustom_dropping_center_outcome_cron($params) {
   }
 
   // Calculate vehicle dispatch count.
-  $collectionSourceVehicleDispatches = EckEntity::get('Collection_Source_Vehicle_Dispatch', TRUE)
+  $vehicleDispatches = EckEntity::get('Collection_Source_Vehicle_Dispatch', TRUE)
     ->addSelect('Camp_Vehicle_Dispatch.Collection_Camp')
     ->addWhere('Camp_Vehicle_Dispatch.Collection_Camp', 'IS NOT NULL')
     ->execute();
 
   $vehicleDispatchCount = [];
-  foreach ($collectionSourceVehicleDispatches as $dispatch) {
+  foreach ($vehicleDispatches as $dispatch) {
     $dispatchId = $dispatch['Camp_Vehicle_Dispatch.Collection_Camp'];
 
     if (!isset($vehicleDispatchCount[$dispatchId])) {
