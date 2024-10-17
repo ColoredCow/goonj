@@ -35,7 +35,7 @@ class DroppingCenterService extends AutoSubscriber {
         ['setOfficeDetails'],
         ['mailNotificationToMmt'],
       ],
-      '&hook_civicrm_post' => 'processDroppingCenterDispatchEmail',
+      '&hook_civicrm_post' => 'processDispatchEmail',
     ];
   }
 
@@ -338,7 +338,7 @@ class DroppingCenterService extends AutoSubscriber {
   /**
    *
    */
-  public static function processDroppingCenterDispatchEmail(string $op, string $objectName, int $objectId, &$objectRef) {
+  public static function processDispatchEmail(string $op, string $objectName, int $objectId, &$objectRef) {
     $afformName = $objectRef->afform_name;
 
     if ($afformName === 'afformSendDispatchEmail') {
@@ -391,14 +391,14 @@ class DroppingCenterService extends AutoSubscriber {
       ]);
       $goonjOfficeRecord = $goonjOfficeFromDroppingCenter[0] ?? [];
       $droppingCenterGoonjOffice = $goonjOfficeRecord['Dropping_Centre.Goonj_Office'] ?? 'N/A';
-      self::sendDroppingCenterDispatchEmail($email, $initiatorName, $droppingCenterId, $contactId, $droppingCenterGoonjOffice);
+      self::sendDispatchEmail($email, $initiatorName, $droppingCenterId, $contactId, $droppingCenterGoonjOffice);
     }
   }
 
   /**
    *
    */
-  public static function sendDroppingCenterDispatchEmail($email, $initiatorName, $droppingCenterId, $contactId, $droppingCenterGoonjOffice) {
+  public static function sendDispatchEmail($email, $initiatorName, $droppingCenterId, $contactId, $droppingCenterGoonjOffice) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
     $from = HelperService::getDefaultFromEmail();
 
