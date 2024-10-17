@@ -279,7 +279,6 @@ class CollectionCampService extends AutoSubscriber {
   public static function generateCollectionCampCode(string $op, string $objectName, $objectId, &$objectRef) {
     $statusDetails = self::checkCampStatusAndIds($objectName, $objectId, $objectRef);
 
-    // Ensure valid status and camp details are returned.
     if (!$statusDetails) {
       return;
     }
@@ -287,16 +286,13 @@ class CollectionCampService extends AutoSubscriber {
     $newStatus = $statusDetails['newStatus'];
     $currentStatus = $statusDetails['currentStatus'];
 
-    // Check for status change.
     if ($currentStatus !== $newStatus) {
       if ($newStatus === 'authorized') {
-        // Access the subtype.
         $subtypeId = $objectRef['subtype'] ?? NULL;
         if ($subtypeId === NULL) {
           return;
         }
 
-        // Access the id within the decoded data.
         $campId = $objectRef['id'] ?? NULL;
         if ($campId === NULL) {
           return;
@@ -1153,7 +1149,6 @@ class CollectionCampService extends AutoSubscriber {
   public static function updateCampStatusAfterAuth(string $op, string $objectName, $objectId, &$objectRef) {
     $statusDetails = self::checkCampStatusAndIds($objectName, $objectId, $objectRef);
 
-    // Ensure valid status and camp details are returned.
     if (!$statusDetails) {
       return;
     }
@@ -1161,22 +1156,18 @@ class CollectionCampService extends AutoSubscriber {
     $newStatus = $statusDetails['newStatus'];
     $currentStatus = $statusDetails['currentStatus'];
 
-    // Check for status change.
     if ($currentStatus !== $newStatus) {
       if ($newStatus === 'authorized') {
-        // Access the subtype.
         $subtypeId = $objectRef['subtype'] ?? NULL;
         if ($subtypeId === NULL) {
           return;
         }
 
-        // Access the id within the decoded data.
         $campId = $objectRef['id'] ?? NULL;
         if ($campId === NULL) {
           return;
         }
 
-        // Update camp status to 'planned' when the camp is authorized.
         $results = EckEntity::update('Collection_Camp', TRUE)
           ->addValue('Collection_Camp_Intent_Details.Camp_status_field', 'planned')
           ->addWhere('id', '=', $campId)
