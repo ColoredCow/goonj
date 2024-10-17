@@ -1207,7 +1207,6 @@ class CollectionCampService extends AutoSubscriber {
 
     $collectionCampId = $collectionSourceVehicleDispatch['Camp_Vehicle_Dispatch.Collection_Camp'];
 
-    // Update camp status to 'completed' when the camp outcome form is submitted.
     $results = EckEntity::update('Collection_Camp', FALSE)
       ->addValue('Collection_Camp_Intent_Details.Camp_Status', 'completed')
       ->addWhere('id', '=', $collectionCampId)
@@ -1229,29 +1228,23 @@ class CollectionCampService extends AutoSubscriber {
    *   An array containing the new and current status if valid, or NULL if invalid.
    */
   public static function checkCampStatusAndIds(string $objectName, $objectId, &$objectRef) {
-    // Ensure the object is of type 'Eck_Collection_Camp'.
     if ($objectName != 'Eck_Collection_Camp') {
       return NULL;
     }
 
-    // Retrieve the new status from the object reference.
     $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
 
-    // Ensure both new status and object ID are provided.
     if (!$newStatus || !$objectId) {
       return NULL;
     }
 
-    // Fetch the current status of the camp.
     $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
       ->addSelect('Collection_Camp_Core_Details.Status')
       ->addWhere('id', '=', $objectId)
       ->execute()->single();
 
-    // Retrieve the current status of the camp.
     $currentStatus = $collectionCamp['Collection_Camp_Core_Details.Status'] ?? '';
 
-    // Return the necessary details.
     return [
       'newStatus' => $newStatus,
       'currentStatus' => $currentStatus,
