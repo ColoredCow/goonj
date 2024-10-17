@@ -55,13 +55,13 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
       'Collection_Camp_Intent_Details.Goonj_Office',
       'Collection_Camp_Intent_Details.Location_Area_of_camp',
       'Collection_Camp_Core_Details.Contact_Id',
-      'Collection_Camp_Intent_Details.Camp_status_field',
+      'Collection_Camp_Intent_Details.Camp_Status',
     )
     ->addWhere('Collection_Camp_Core_Details.Status', '=', 'authorized')
     ->addWhere('subtype', '=', $collectionCampSubtype)
     ->addWhere('Collection_Camp_Intent_Details.Start_Date', '<=', $endOfDay)
     ->addWhere('Logistics_Coordination.Camp_to_be_attended_by', 'IS NOT EMPTY')
-    ->addWhere('Collection_Camp_Intent_Details.Camp_status_field', '!=', 'aborted')
+    ->addWhere('Collection_Camp_Intent_Details.Camp_Status', '!=', 'aborted')
     ->addClause('OR',
       ['Logistics_Coordination.Email_Sent', 'IS NULL'],
       ['Logistics_Coordination.Email_Sent', '=', 0]

@@ -47,12 +47,12 @@ function civicrm_api3_goonjcustom_volunteer_feedback_reminder_cron($params) {
 
   // Fetch camps that have completed and volunteers have not filled the feedback form.
   $campsNeedReminder = EckEntity::get('Collection_Camp', TRUE)
-    ->addSelect('Volunteer_Camp_Feedback.Last_Reminder_Sent', 'Collection_Camp_Intent_Details.Location_Area_of_camp', 'Collection_Camp_Intent_Details.End_Date', 'Collection_Camp_Core_Details.Contact_Id', 'Collection_Camp_Intent_Details.Camp_status_field')
+    ->addSelect('Volunteer_Camp_Feedback.Last_Reminder_Sent', 'Collection_Camp_Intent_Details.Location_Area_of_camp', 'Collection_Camp_Intent_Details.End_Date', 'Collection_Camp_Core_Details.Contact_Id', 'Collection_Camp_Intent_Details.Camp_Status')
     ->addWhere('Volunteer_Camp_Feedback.Give_Rating_to_your_camp', 'IS NULL')
     ->addWhere('Logistics_Coordination.Feedback_Email_Sent', '=', 1)
     ->addWhere('Collection_Camp_Core_Details.Status', '=', 'authorized')
     ->addWhere('Collection_Camp_Intent_Details.End_Date', '<=', $endOfDay)
-    ->addWhere('Collection_Camp_Intent_Details.Camp_status_field', '!=', 'aborted')
+    ->addWhere('Collection_Camp_Intent_Details.Camp_Status', '!=', 'aborted')
     ->execute();
 
   foreach ($campsNeedReminder as $camp) {

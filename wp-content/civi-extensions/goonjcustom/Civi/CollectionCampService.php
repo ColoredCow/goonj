@@ -1169,7 +1169,7 @@ class CollectionCampService extends AutoSubscriber {
         }
 
         $results = EckEntity::update('Collection_Camp', TRUE)
-          ->addValue('Collection_Camp_Intent_Details.Camp_status_field', 'planned')
+          ->addValue('Collection_Camp_Intent_Details.Camp_Status', 'planned')
           ->addWhere('id', '=', $campId)
           ->execute();
       }
@@ -1209,7 +1209,7 @@ class CollectionCampService extends AutoSubscriber {
 
     // Update camp status to 'completed' when the camp outcome form is submitted.
     $results = EckEntity::update('Collection_Camp', FALSE)
-      ->addValue('Collection_Camp_Intent_Details.Camp_status_field', 'completed')
+      ->addValue('Collection_Camp_Intent_Details.Camp_Status', 'completed')
       ->addWhere('id', '=', $collectionCampId)
       ->execute();
 
