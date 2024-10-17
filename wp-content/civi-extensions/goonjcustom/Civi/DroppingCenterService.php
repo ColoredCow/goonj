@@ -174,6 +174,7 @@ class DroppingCenterService extends AutoSubscriber {
    *
    */
   public static function mailNotificationToMmt($op, $groupID, $entityID, &$params) {
+    $from = HelperService::getDefaultFromEmail();
     if ($op !== 'create') {
       return;
     }
@@ -223,16 +224,10 @@ class DroppingCenterService extends AutoSubscriber {
 
     $mmtEmail = $email['email'];
 
-    $fromEmail = OptionValue::get(FALSE)
-      ->addSelect('label')
-      ->addWhere('option_group_id:name', '=', 'from_email_address')
-      ->addWhere('is_default', '=', TRUE)
-      ->execute()->single();
-
     // Email to material management team member.
     $mailParams = [
       'subject' => 'Dropping center Address ' . $droppingCenterAddress . ' - Material Acknowledgement',
-      'from' => $fromEmail['label'],
+      'from' => $from,
       'toEmail' => $mmtEmail,
       'replyTo' => $fromEmail['label'],
       'html' => self::goonjcustom_material_management_email_html($droppingCenterId, $droppingCenterCode, $droppingCenterAddress, $vehicleDispatchId),
