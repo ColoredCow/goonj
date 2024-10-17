@@ -1040,13 +1040,6 @@ class CollectionCampService extends AutoSubscriber {
       $campAddress = $collectionCamp['Collection_Camp_Intent_Details.Location_Area_of_camp'];
       $campAttendedById = $collectionCamp['Logistics_Coordination.Camp_to_be_attended_by'];
       $logisticEmailSent = $collectionCamp['Logistics_Coordination.Email_Sent'];
-      $campStatus = $collectionCamp['Collection_Camp_Intent_Details.Camp_status_field'];
-
-      // Skip if camp status is "aborted".
-      if ($campStatus === 'aborted') {
-        \Civi::log()->info("Skipping camp ID $collectionCampId as it is marked as 'aborted'");
-        return FALSE;
-      }
 
       $startDate = new \DateTime($collectionCamp['Collection_Camp_Intent_Details.Start_Date']);
 

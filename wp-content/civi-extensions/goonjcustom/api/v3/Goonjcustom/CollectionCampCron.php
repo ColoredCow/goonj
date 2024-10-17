@@ -61,6 +61,7 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
     ->addWhere('subtype', '=', $collectionCampSubtype)
     ->addWhere('Collection_Camp_Intent_Details.Start_Date', '<=', $endOfDay)
     ->addWhere('Logistics_Coordination.Camp_to_be_attended_by', 'IS NOT EMPTY')
+    ->addWhere('Collection_Camp_Intent_Details.Camp_status_field', '!=', 'aborted')
     ->addClause('OR',
       ['Logistics_Coordination.Email_Sent', 'IS NULL'],
       ['Logistics_Coordination.Email_Sent', '=', 0]
