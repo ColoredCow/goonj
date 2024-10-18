@@ -5,6 +5,7 @@ namespace Civi;
 use Civi\Api4\Activity;
 use Civi\Api4\Contact;
 use Civi\Api4\CustomField;
+use Civi\Api4\Individual;
 use Civi\Api4\MessageTemplate;
 use Civi\Api4\Relationship;
 use Civi\Core\Service\AutoSubscriber;
@@ -16,6 +17,7 @@ class InductionService extends AutoSubscriber {
   const INDUCTION_ACTIVITY_TYPE_NAME = 'Induction';
   const INDUCTION_DEFAULT_STATUS_NAME = 'To be scheduled';
   const RELATIONSHIP_TYPE_NAME = 'Induction Coordinator of';
+  const FALLBACK_OFFICE_NAME = 'Delhi';
 
   private static $volunteerId = NULL;
   private static $volunteerInductionAssigneeEmail = NULL;
@@ -445,6 +447,180 @@ class InductionService extends AutoSubscriber {
     }
 
     self::createInduction(self::$transitionedVolunteerId, $stateId);
+  }
+
+  /**
+   * Process volunteer induction reminder logic.
+   *
+   * @param array $volunteer
+   * @param \DateTimeImmutable $today
+   *
+   * @throws \Exception
+   */
+  public static function processInductionReminder($volunteer, $today, $from) {
+    $volunteerId = $volunteer['id'];
+    $volunteerName = $volunteer['display_name'];
+    $volunteerEmail = $volunteer['email_primary.email'];
+    $volunteerState = $volunteer['address_primary.state_province_id'];
+    $registrationDate = new \DateTime($volunteer['created_date']);
+    $lastReminderSent = $volunteer['Individual_fields.Last_Reminder_Sent'] ? new \DateTime($volunteer['Individual_fields.Last_Reminder_Sent']) : NULL;
+
+    $coordinatorEmailId = self::findInductionCoordinator($volunteerState);
+
+    // Calculate hours since registration.
+    $hoursSinceRegistration = ($today->getTimestamp() - $registrationDate->getTimestamp()) / 3600;
+
+    // If 7 days (168 hours) have passed since registration and no reminder has been sent yet.
+    if ($hoursSinceRegistration >= 168 && $lastReminderSent === NULL) {
+      // Send the reminder email.
+      self::sendInductionReminderEmail($volunteerId, $from, $volunteerName, $volunteerEmail, $coordinatorEmailId);
+
+      // Update the Last_Reminder_Sent field in the database.
+      Individual::update(FALSE)
+        ->addValue('Individual_fields.Last_Reminder_Sent', $today->format('Y-m-d H:i:s'))
+        ->addWhere('id', '=', $volunteerId)
+        ->execute();
+
+    }
+
+  }
+
+  /**
+   *
+   */
+  public static function findInductionCoordinator($stateId) {
+    $officesFound = Contact::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('contact_type', '=', 'Organization')
+      ->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_Office')
+      ->addWhere('Goonj_Office_Details.Collection_Camp_Catchment', 'CONTAINS', $stateId)
+      ->execute();
+
+    $stateOffice = $officesFound->first();
+
+    if (!$stateOffice) {
+      $stateOffice = self::getFallbackOffice();
+    }
+
+    $stateOfficeId = $stateOffice['id'];
+
+    $coordinators = Relationship::get(FALSE)
+      ->addWhere('contact_id_b', '=', $stateOfficeId)
+      ->addWhere('relationship_type_id:name', '=', self::RELATIONSHIP_TYPE_NAME)
+      ->addWhere('is_current', '=', TRUE)
+      ->execute();
+
+    $coordinatorCount = $coordinators->count();
+
+    if ($coordinatorCount === 0) {
+      $coordinator = self::getFallbackCoordinator();
+
+    }
+    elseif ($coordinatorCount > 1) {
+      $randomIndex = rand(0, $coordinatorCount - 1);
+      $coordinator = $coordinators->itemAt($randomIndex);
+    }
+    else {
+      $coordinator = $coordinators->first();
+    }
+
+    if (!$coordinator) {
+      \CRM_Core_Error::debug_log_message('No coordinator available to assign.');
+      return FALSE;
+    }
+
+    $coordinatorId = $coordinator['contact_id_a'];
+
+    $contact = Contact::get(TRUE)
+      ->addSelect('email.email')
+      ->addJoin('Email AS email', 'LEFT')
+      ->addWhere('id', '=', $coordinatorId)
+      ->execute()->single();
+
+    $coordinatorEmailId = $contact['email.email'];
+
+    return $coordinatorEmailId;
+  }
+
+  /**
+   *
+   */
+  private static function getFallbackOffice() {
+    $fallbackOffices = Contact::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('organization_name', 'CONTAINS', self::FALLBACK_OFFICE_NAME)
+      ->execute();
+
+    return $fallbackOffices->first();
+  }
+
+  /**
+   *
+   */
+  private static function getFallbackCoordinator() {
+    $fallbackOffice = self::getFallbackOffice();
+    $fallbackCoordinators = Relationship::get(FALSE)
+      ->addWhere('contact_id_b', '=', $fallbackOffice['id'])
+      ->addWhere('relationship_type_id:name', '=', self::RELATIONSHIP_TYPE_NAME)
+      ->addWhere('is_current', '=', TRUE)
+      ->execute();
+
+    $coordinatorCount = $fallbackCoordinators->count();
+
+    $randomIndex = rand(0, $coordinatorCount - 1);
+    $coordinator = $fallbackCoordinators->itemAt($randomIndex);
+
+    return $coordinator;
+  }
+
+  /**
+   * Send the reminder email to the volunteer.
+   */
+  public static function sendInductionReminderEmail($volunteerId, $from, $volunteerName, $volunteerEmail, $coordinatorEmailId) {
+    $mailParams = [
+      'subject' => 'Complete Your Orientation & start Your Volunteering Journey!',
+      'from' => $from,
+      'toEmail' => $volunteerEmail,
+      'cc' => $coordinatorEmailId,
+      'replyTo' => $from,
+      'html' => self::getInductionReminderEmailHtml($volunteerName),
+    ];
+
+    $emailSendResult = \CRM_Utils_Mail::send($mailParams);
+
+    if (!$emailSendResult) {
+      \Civi::log()->error('Failed to send induction reminder email', [
+        'volunteerId' => $volunteerId,
+        'volunteerEmail' => $volunteerEmail,
+      ]);
+      throw new \CRM_Core_Exception('Failed to send induction reminder email');
+    }
+  }
+
+  /**
+   * Generate the induction reminder email HTML.
+   */
+  public static function getInductionReminderEmailHtml($volunteerName) {
+    $homeUrl = \CRM_Utils_System::baseCMSURL();
+    $officeLocationsUrl = 'https://goonj.org/our-offices/';
+    $contactEmail = 'mail@goonj.org';
+    $contactPhone = '011-41401216';
+
+    $html = "
+    <p>Dear $volunteerName,</p>
+    <p>Greetings from Goonj.</p>
+    <p>We noticed that your orientation is still pending, and we would be happy to help you complete this important step.</p>
+    <p>You have two options for completing the orientation:</p>
+    <ul>
+      <li><strong>In-person orientation:</strong> Held every Tuesday, Thursday, and Saturday at 4 p.m. (except on gazetted holidays) at any of our Goonj offices: <a href=\"$officeLocationsUrl\">$officeLocationsUrl</a></li>
+      <li><strong>Online orientation:</strong> If there isn’t a Goonj office in your city, we offer virtual sessions every Wednesday at 4 p.m. (excluding gazetted holidays).</li>
+    </ul>
+    <p>Please reply to this email with your preferred option and a convenient date.</p>
+    <p>If you have any questions or need assistance, feel free to reach out to us at <a href=\"mailto:$contactEmail\">$contactEmail</a> or call us at $contactPhone.</p>
+    <p>We look forward to welcoming you and getting your volunteer journey started!</p>
+    <p>Warm regards,<br>Team Goonj</p>";
+
+    return $html;
   }
 
 }
