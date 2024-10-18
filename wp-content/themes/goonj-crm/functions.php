@@ -263,7 +263,7 @@ function goonj_handle_user_identification_form() {
 					);
 					$redirect_url = $individual_registration_form_path;
 					break;
-					
+
 				// Redirect to volunteer registration.
 				case 'volunteer-registration':
 					$redirect_url = $volunteer_registration_url;
