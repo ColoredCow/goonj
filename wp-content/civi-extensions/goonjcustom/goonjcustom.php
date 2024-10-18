@@ -22,6 +22,7 @@ function goonjcustom_civicrm_config(&$config): void {
   _goonjcustom_civix_civicrm_config($config);
 
   \Civi::dispatcher()->addSubscriber(new CRM_Goonjcustom_Token_CollectionCamp());
+  \Civi::dispatcher()->addSubscriber(new CRM_Goonjcustom_Token_DroppingCenter());
 }
 
 /**
