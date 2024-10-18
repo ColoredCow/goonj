@@ -24,6 +24,12 @@ function goonj_generate_activity_button( $activity, $office_id, $individual_id )
 	// Calculate the pending activities by comparing with $activityTypes
 	$pendingActivities = array_diff( $activityTypes, array( $completedActivityType ) );
 
+	// Set the 'You are Visiting as' field to 'Group' if both 'Entity_Type' and 'Entity_Name' 
+	// are provided in the Material Contribution form; otherwise, set it to 'Individual'.
+	$visitedAs = (!empty($activity['Material_Contribution.Entity_Type']) && !empty($activity['Material_Contribution.Entity_Name']))
+	? 'Group'
+	: 'Individual';
+
 	// Define the mapping for each activity to the corresponding button and redirect info
 	$activityMap = array(
 		'Office visit' => array(
@@ -32,7 +38,8 @@ function goonj_generate_activity_button( $activity, $office_id, $individual_id )
 			'queryParam' => 'Office_Visit.Goonj_Processing_Center',
 			'additionalParams' => array(
 				'Office_Visit.Entity_Type' => $activity['Material_Contribution.Entity_Type'], // Additional params from contribution activity
-				'Office_Visit.Entity_Name' => $activity['Material_Contribution.Entity_Name']
+				'Office_Visit.Entity_Name' => $activity['Material_Contribution.Entity_Name'],
+				'Office_Visit.You_are_Visiting_as'=>$visitedAs
 			)
 		),
 		'Material Contribution' => array(
