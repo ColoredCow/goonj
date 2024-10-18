@@ -392,8 +392,6 @@ function goonj_handle_user_identification_form() {
 		->setLimit( 1 )
 		->execute();
 
-		// Recent camp data
-		$recentCamp = $collectionCampResult->first() ?? null;
 		$display_name = $found_contacts['display_name'];
 
 		if ( $purpose === 'dropping-center' ) {
@@ -405,6 +403,9 @@ function goonj_handle_user_identification_form() {
 			wp_redirect( get_home_url() . '/volunteer-registration/already-inducted/' );
 			exit;
 		}
+
+		// Recent camp data
+		$recentCamp = $collectionCampResult->first() ?? null;
 
 		if ( ! empty( $recentCamp ) ) {
 			// Save the recentCamp data to the session
