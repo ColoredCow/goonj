@@ -263,22 +263,21 @@ function goonj_handle_user_identification_form() {
 					);
 					$redirect_url = $individual_registration_form_path;
 					break;
-
+					
 				// Redirect to volunteer registration.
 				case 'volunteer-registration':
 					$redirect_url = $volunteer_registration_url;
 					break;
-
+					
 				case 'dropping-center':
-				// Redirect to generic volunteer registration URL for dropping center
-				$volunteer_registration_url = sprintf(
-					'/volunteer-registration/form/#?email=%s&phone=%s&message=%s',
-					$email,
-					$phone,
-					'dropping-center'
-				);
-				$redirect_url = $volunteer_registration_url;
-				break;
+					$volunteer_registration_url = sprintf(
+						'/volunteer-registration/form/#?email=%s&phone=%s&message=%s',
+						$email,
+						$phone,
+						'dropping-center'
+					);
+					$redirect_url = $volunteer_registration_url;
+					break;
 				
 				// Contact does not exist and the purpose is not defined.
 				// Redirect to volunteer registration with collection camp activity selected.
