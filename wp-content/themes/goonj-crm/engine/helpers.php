@@ -30,6 +30,10 @@ function goonj_generate_activity_button( $activity, $office_id, $individual_id )
 			'redirectPath' => '/processing-center/office-visit/details/',
 			'buttonText' => __( 'Proceed to Office Visit', 'goonj-crm' ),
 			'queryParam' => 'Office_Visit.Goonj_Processing_Center',
+			'additionalParams' => array(
+				'Office_Visit.Entity_Type' => $activity['Material_Contribution.Entity_Type'], //additonal params to auto fill from contribution activity
+				'Office_Visit.Entity_Name' => $activity['Material_Contribution.Entity_Name']
+			)
 		),
 		'Material Contribution' => array(
 			'redirectPath' => '/processing-center/material-contribution/details/',
@@ -47,6 +51,10 @@ function goonj_generate_activity_button( $activity, $office_id, $individual_id )
 		'source_contact_id' => $individual_id,
 		$details['queryParam'] => $office_id,
 	);
+
+	if ( isset( $details['additionalParams'] ) ) {
+		$redirectParams = array_merge( $redirectParams, $details['additionalParams'] );
+	}
 
 	$redirectPathWithParams = $details['redirectPath'] . '#?' . http_build_query( $redirectParams );
 
