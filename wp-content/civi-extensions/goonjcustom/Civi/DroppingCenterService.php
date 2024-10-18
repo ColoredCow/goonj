@@ -429,26 +429,26 @@ class DroppingCenterService extends AutoSubscriber {
       ],
       'status' => [
         'title' => ts('Status'),
-        'module' => 'afsearchDroppingCenterStatus',
-        'directive' => 'afsearch-dropping-center-status',
+        'module' => 'afsearchStatus',
+        'directive' => 'afsearch-status',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
       ],
-      'visitDetails' => [
-        'title' => ts('Visit Details'),
-        'module' => 'afsearchVisitDetails',
-        'directive' => 'afsearch-visit-details',
+      'visit' => [
+        'title' => ts('Visit'),
+        'module' => 'afsearchVisitList',
+        'directive' => 'afsearch-visit-list',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
       ],
-      'donationTracking' => [
-        'title' => ts('Donation Tracking'),
-        'module' => 'afsearchDroppingCenterDonationBoxRegisterList',
-        'directive' => 'afsearch-dropping-center-donation-box-register-list',
+      'donation' => [
+        'title' => ts('Donation'),
+        'module' => 'afsearchDonation',
+        'directive' => 'afsearch-donation',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
       ],
-      'logisticsCoordination' => [
+      'logistics' => [
         'title' => ts('Logistics'),
-        'module' => 'afsearchDroppingCenterLogisticsCoordination',
-        'directive' => 'afsearch-dropping-center-logistics-coordination',
+        'module' => 'afsearchLogistics',
+        'directive' => 'afsearch-logistics',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
       ],
       'outcome' => [
