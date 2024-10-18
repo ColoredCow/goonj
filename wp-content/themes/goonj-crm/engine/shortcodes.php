@@ -39,7 +39,6 @@ function goonj_contribution_volunteer_signup_button() {
 			->addSelect( 'source_contact_id' )
 			->addJoin( 'ActivityContact AS activity_contact', 'LEFT' )
 			->addWhere( 'id', '=', $activity_id )
-			->addWhere( 'activity_type_id:label', '=', 'Material Contribution' )
 			->execute();
 
 		if ( $activities->count() === 0 ) {
