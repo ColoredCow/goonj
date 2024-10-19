@@ -7,6 +7,7 @@ use Civi\Api4\CustomField;
 use Civi\Api4\EckEntity;
 use Civi\Api4\Email;
 use Civi\Api4\Relationship;
+use Civi\Api4\StateProvince;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
@@ -35,6 +36,7 @@ class DroppingCenterService extends AutoSubscriber {
         ['setOfficeDetails'],
         ['mailNotificationToMmt'],
       ],
+      '&hook_civicrm_fieldOptions' => 'setIndianStateOptions',
       '&hook_civicrm_post' => 'processDispatchEmail',
     ];
   }
@@ -411,6 +413,43 @@ class DroppingCenterService extends AutoSubscriber {
     ];
 
     \CRM_Utils_Mail::send($mailParams);
+  }
+
+  /**
+   *
+   */
+  public static function setIndianStateOptions(string $entity, string $field, array &$options, array $params) {
+    if ($entity !== 'Eck_Collection_Camp') {
+      return;
+    }
+
+    $customStateFields = CustomField::get(FALSE)
+      ->addWhere('custom_group_id:name', '=', 'Dropping_Centre')
+      ->addWhere('name', '=', 'State')
+      ->execute();
+
+    $stateField = $customStateFields->first();
+
+    $stateFieldId = $stateField['id'];
+
+    if ($field !== "custom_$stateFieldId") {
+      return;
+    }
+
+    $activeIndianStates = StateProvince::get(FALSE)
+      ->addWhere('country_id.iso_code', '=', 'IN')
+      ->addOrderBy('name', 'ASC')
+      ->execute();
+
+    $stateOptions = [];
+    foreach ($activeIndianStates as $state) {
+      if ($state['is_active']) {
+        $stateOptions[$state['id']] = $state['name'];
+      }
+    }
+
+    $options = $stateOptions;
+
   }
 
   /**
