@@ -48,7 +48,6 @@
       this.loadData = function(selectedEntity, selectedIndex, selectedId, selectedField) {
         let toLoad = true;
         const params = {name: ctrl.getFormMeta().name, args: {}};
-        console.log(params,"params")
         // Load single entity
         if (selectedEntity) {
           toLoad = !!selectedId;
