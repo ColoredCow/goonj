@@ -48,6 +48,7 @@
       this.loadData = function(selectedEntity, selectedIndex, selectedId, selectedField) {
         let toLoad = true;
         const params = {name: ctrl.getFormMeta().name, args: {}};
+        console.log(params,"params")
         // Load single entity
         if (selectedEntity) {
           toLoad = !!selectedId;
@@ -302,6 +303,25 @@
                     isValid = false;
                 }
             }
+        }
+        
+        // Date validation for the Open Dropping Center form to ensure the selected date is not in the past.
+        if (ctrl.getFormMeta().name === 'afformDroppingCenterDetailForm') {
+          var dateField = $element.find("input.crm-form-date").val().trim(); 
+          
+          if (dateField !== "") {
+            var today = new Date();
+            today.setHours(0, 0, 0, 0);
+            var dateParts = dateField.split('/');
+            var selectedDate = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
+            
+            // Check if the selected date is in the past
+            if (selectedDate < today) {
+              isValid = false;
+              
+              alert(`The selected date (${dateField}) cannot be in the past.\n`);
+            }
+          }
         }
 
     // Collection camp start date and end date validation
