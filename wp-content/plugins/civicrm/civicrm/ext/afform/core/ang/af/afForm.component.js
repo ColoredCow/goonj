@@ -318,7 +318,7 @@
             if (selectedDate < today) {
               isValid = false;
               
-              alert(`The selected dropping center date (${dateField}) cannot be in the past.\n`);
+              errorMessage+=`The selected dropping center date (${dateField}) cannot be in the past.`;
             }
           }
         }
