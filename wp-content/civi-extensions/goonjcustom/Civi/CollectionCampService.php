@@ -1211,7 +1211,7 @@ class CollectionCampService extends AutoSubscriber {
 
     }
     catch (\Exception $e) {
-      error_log("Exception occurred while updating camp status for campId: $collectionCampId");
+      \Civi::log()->error("Exception occurred while updating camp status for campId: $collectionCampId. Error: " . $e->getMessage());
     }
   }
 
