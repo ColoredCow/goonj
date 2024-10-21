@@ -158,7 +158,7 @@ if (in_array($target, ['collection-camp', 'dropping-center'])) :
             // Generate the booking link with slot-specific parameters
             $book_slot_link = sprintf(
                 '/induction-schedule-slot-success/?source_contact_id=%s&slot_date=%s&slot_time=%s',
-                $action_target['id'], // Assuming the contact ID is stored here
+                $action_target['id'], 
                 urlencode($slot['date']),
                 urlencode($slot['time'])
             );
