@@ -1171,9 +1171,11 @@ class CollectionCampService extends AutoSubscriber {
           ->addValue('Collection_Camp_Intent_Details.Camp_Status', 'planned')
           ->addWhere('id', '=', $campId)
           ->execute();
+          error_log("results: " . print_r($results, TRUE));
       }
     }
   }
+
 
   /**
    * This hook is called after a db write on entities.
