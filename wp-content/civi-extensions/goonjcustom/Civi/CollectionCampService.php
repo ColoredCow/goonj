@@ -37,6 +37,7 @@ class CollectionCampService extends AutoSubscriber {
   private static $individualId = NULL;
   private static $collectionCampAddress = NULL;
   private static $fromAddress = NULL;
+  private static $processedCampIds = [];
 
   /**
    *
@@ -1187,7 +1188,7 @@ class CollectionCampService extends AutoSubscriber {
    *   The reference to the object.
    */
   public static function updateCampStatusOnOutcomeFilled(string $op, string $objectName, int $objectId, &$objectRef) {
-    if ($objectName !== 'Eck_Collection_Camp' || !$objectRef->id) {
+    if ($objectName !== 'Eck_Collection_Camp' || !$objectRef->id || $objectRef->afform_name !== 'afformCampOutcomeForm') {
       return;
     }
 
@@ -1196,12 +1197,13 @@ class CollectionCampService extends AutoSubscriber {
     $collectionCampId = $objectRef->id;
 
     // If the camp ID has already been processed, return to avoid repeated execution.
-    if ($collectionCampId === $processedCampId) {
+    if (in_array($collectionCampId, self::$processedCampIds)) {
       return;
     }
 
     // Mark this camp ID as processed to prevent future executions for the same ID.
-    $processedCampId = $collectionCampId;
+    self::$processedCampIds[] = $collectionCampId;
+    error_log("collectionCampId: " . print_r($collectionCampId, TRUE));
 
     try {
       EckEntity::update('Collection_Camp', FALSE)
