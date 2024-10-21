@@ -1161,11 +1161,6 @@ class CollectionCampService extends AutoSubscriber {
 
     if ($currentStatus !== $newStatus) {
       if ($newStatus === 'authorized') {
-        $subtypeId = $objectRef['subtype'] ?? NULL;
-        if ($subtypeId === NULL) {
-          return;
-        }
-
         $campId = $objectRef['id'] ?? NULL;
         if ($campId === NULL) {
           return;
