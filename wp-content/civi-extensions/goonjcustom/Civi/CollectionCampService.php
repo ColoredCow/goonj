@@ -1188,7 +1188,15 @@ class CollectionCampService extends AutoSubscriber {
    *   The reference to the object.
    */
   public static function updateCampStatusOnOutcomeFilled(string $op, string $objectName, int $objectId, &$objectRef) {
-    if ($objectName !== 'Eck_Collection_Camp' || !$objectRef->id || $objectRef->afform_name !== 'afformCampOutcomeForm') {
+    if ($objectRef instanceof CRM_Afform_BAO_AfformSubmission) {
+      $afformName = $objectRef->afform_name;
+
+      if ($afformName !== 'afformCampOutcomeForm') {
+        return;
+      }
+    }
+
+    if ($objectName !== 'Eck_Collection_Camp' || !$objectRef->id) {
       return;
     }
 
