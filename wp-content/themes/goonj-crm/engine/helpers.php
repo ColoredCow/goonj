@@ -37,7 +37,7 @@ function goonj_generate_activity_button( $activity, $office_id, $individual_id )
 			'buttonText' => __( 'Proceed to Processing Center Tour', 'goonj-crm' ),
 			'queryParam' => 'Office_Visit.Goonj_Processing_Center',
 			'additionalParams' => array(
-				'Office_Visit.Entity_Type' => $activity['Material_Contribution.Entity_Type'], // Additional params from contribution activity
+				'Office_Visit.Entity_Type' => $activity['Material_Contribution.Entity_Type'],
 				'Office_Visit.Entity_Name' => $activity['Material_Contribution.Entity_Name'],
 				'Office_Visit.You_are_Visiting_as'=>$visitedAs
 			)
