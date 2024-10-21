@@ -303,4 +303,11 @@ class DroppingCenterService extends AutoSubscriber {
     return (int) $entitySubtypeValue === $subtypeId;
   }
 
+  /**
+   *
+   */
+  protected static function getBaseFileNamePattern(int $collectionSourceId): string {
+    return "dropping_center_{$collectionSourceId}.png";
+  }
+
 }

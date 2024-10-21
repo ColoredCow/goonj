@@ -1145,4 +1145,11 @@ class CollectionCampService extends AutoSubscriber {
       ->execute();
   }
 
+  /**
+   *
+   */
+  protected static function getBaseFileNamePattern(int $collectionSourceId): string {
+    return "collection_camp_{$collectionSourceId}.png";
+  }
+
 }

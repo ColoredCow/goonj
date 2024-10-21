@@ -63,16 +63,14 @@ trait CollectionSource {
   /**
    *
    */
-  private static function generateBaseFileName($collectionSourceId) {
-    if (self::getEntitySubtypeName($collectionSourceId) == self::ENTITY_NAME) {
-      $baseFileName = "collection_camp_{$collectionSourceId}.png";
-    }
-    else {
-      $baseFileName = "dropping_center_{$collectionSourceId}.png";
-    }
-
-    return $baseFileName;
+  public static function generateBaseFileName($collectionSourceId) {
+    return static::getBaseFileNamePattern($collectionSourceId);
   }
+
+  /**
+   * Force the implementing classes to define the pattern.
+   */
+  abstract protected static function getBaseFileNamePattern(int $collectionSourceId): string;
 
   /**
    * This hook is called before a db write on some collection camp objects.
