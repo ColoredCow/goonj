@@ -28,7 +28,13 @@ class DroppingCenterService extends AutoSubscriber {
   public static function getSubscribedEvents() {
     return [
       '&hook_civicrm_tabset' => 'droppingCenterTabset',
-      '&hook_civicrm_pre' => 'generateDroppingCenterQr',
+      '&hook_civicrm_pre' => [
+        ['generateDroppingCenterQr'],
+        ['handleAuthorizationEmailsPost', 10],
+      ],
+      '&hook_civicrm_post' => [
+        ['handleAuthorizationEmails'],
+      ],
       '&hook_civicrm_custom' => 'setOfficeDetails',
     ];
   }
@@ -69,7 +75,7 @@ class DroppingCenterService extends AutoSubscriber {
     $fallbackCoordinators = Relationship::get(FALSE)
       ->addWhere('contact_id_b', '=', $fallbackOffice['id'])
       ->addWhere('relationship_type_id:name', '=', self::RELATIONSHIP_TYPE_NAME)
-      ->addWhere('is_current', '=', True)
+      ->addWhere('is_current', '=', TRUE)
       ->execute();
 
     $coordinatorCount = $fallbackCoordinators->count();

@@ -47,12 +47,14 @@ class CollectionCampService extends AutoSubscriber {
         ['individualCreated'],
         ['assignChapterGroupToIndividual'],
         ['reGenerateCollectionCampQr'],
+        ['handleAuthorizationEmailsPost', 10],
       ],
       '&hook_civicrm_pre' => [
         ['generateCollectionCampQr'],
         ['linkCollectionCampToContact'],
         ['generateCollectionCampCode'],
         ['createActivityForCollectionCamp'],
+        ['handleAuthorizationEmails'],
       ],
       '&hook_civicrm_custom' => [
         ['setOfficeDetails'],
@@ -784,7 +786,7 @@ class CollectionCampService extends AutoSubscriber {
     $fallbackCoordinators = Relationship::get(FALSE)
       ->addWhere('contact_id_b', '=', $fallbackOffice['id'])
       ->addWhere('relationship_type_id:name', '=', self::RELATIONSHIP_TYPE_NAME)
-      ->addWhere('is_current', '=', True)
+      ->addWhere('is_current', '=', TRUE)
       ->execute();
 
     $coordinatorCount = $fallbackCoordinators->count();
