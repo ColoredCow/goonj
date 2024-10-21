@@ -9,6 +9,9 @@ use Civi\Api4\OptionValue;
  */
 trait CollectionSource {
   private static $subtypeId;
+  private static $collectionAuthorized;
+  private static $collectionAuthorizedStatus;
+  private static $authorizationEmailQueued;
 
   /**
    *

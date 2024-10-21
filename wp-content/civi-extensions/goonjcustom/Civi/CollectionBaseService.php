@@ -17,9 +17,6 @@ class CollectionBaseService extends AutoSubscriber {
   const INTENT_CUSTOM_GROUP_NAME = 'Collection_Camp_Intent_Details';
 
   private static $stateCustomFieldDbDetails = [];
-  private static $collectionAuthorized = NULL;
-  private static $collectionAuthorizedStatus = NULL;
-  private static $authorizationEmailQueued = NULL;
   private static $generatePosterRequest = NULL;
 
   /**
