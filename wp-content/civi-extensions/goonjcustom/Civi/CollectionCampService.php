@@ -47,6 +47,7 @@ class CollectionCampService extends AutoSubscriber {
         ['individualCreated'],
         ['assignChapterGroupToIndividual'],
         ['reGenerateCollectionCampQr'],
+        ['updateCampStatusOnOutcomeFilled'],
       ],
       '&hook_civicrm_pre' => [
         ['generateCollectionCampQr'],
@@ -59,7 +60,6 @@ class CollectionCampService extends AutoSubscriber {
         ['setOfficeDetails'],
         ['linkInductionWithCollectionCamp'],
         ['mailNotificationToMmt'],
-        ['updateCampStatusOnOutcomeFilled'],
       ],
       '&hook_civicrm_fieldOptions' => 'setIndianStateOptions',
       'civi.afform.submit' => [
@@ -1180,41 +1180,44 @@ class CollectionCampService extends AutoSubscriber {
   }
 
   /**
-   * This hook is called after the database write on a custom table.
+   * This hook is called after a db write on entities.
    *
    * @param string $op
    *   The type of operation being performed.
    * @param string $objectName
-   *   The custom group ID.
+   *   The name of the object.
    * @param int $objectId
-   *   The entityID of the row in the custom table.
+   *   The unique identifier for the object.
    * @param object $objectRef
-   *   The parameters that were sent into the calling function.
+   *   The reference to the object.
    */
-  public static function updateCampStatusOnOutcomeFilled($op, $groupID, $entityID, &$params) {
-    if ($op !== 'create') {
+  public static function updateCampStatusOnOutcomeFilled(string $op, string $objectName, int $objectId, &$objectRef) {
+    if ($objectName !== 'Eck_Collection_Camp' || !$objectRef->id) {
       return;
     }
 
-    if (!($goonjField = self::findOfficeId($params))) {
+    static $processedCampId = NULL;
+
+    $collectionCampId = $objectRef->id;
+
+    // If the camp ID has already been processed, return to avoid repeated execution.
+    if ($collectionCampId === $processedCampId) {
       return;
     }
 
-    $goonjFieldId = $goonjField['value'];
-    $vehicleDispatchId = $goonjField['entity_id'];
+    // Mark this camp ID as processed to prevent future executions for the same ID.
+    $processedCampId = $collectionCampId;
 
-    $collectionSourceVehicleDispatch = EckEntity::get('Collection_Source_Vehicle_Dispatch', FALSE)
-      ->addSelect('Camp_Vehicle_Dispatch.Collection_Camp')
-      ->addWhere('id', '=', $vehicleDispatchId)
-      ->execute()->first();
+    try {
+      EckEntity::update('Collection_Camp', FALSE)
+        ->addWhere('id', '=', $collectionCampId)
+        ->addValue('Collection_Camp_Intent_Details.Camp_Status', 'completed')
+        ->execute();
 
-    $collectionCampId = $collectionSourceVehicleDispatch['Camp_Vehicle_Dispatch.Collection_Camp'];
-
-    $results = EckEntity::update('Collection_Camp', FALSE)
-      ->addValue('Collection_Camp_Intent_Details.Camp_Status', 'completed')
-      ->addWhere('id', '=', $collectionCampId)
-      ->execute();
-
+    }
+    catch (\Exception $e) {
+      error_log("Exception occurred while updating camp status for campId: $collectionCampId");
+    }
   }
 
   /**
