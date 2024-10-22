@@ -47,6 +47,7 @@ class CollectionCampService extends AutoSubscriber {
         ['individualCreated'],
         ['assignChapterGroupToIndividual'],
         ['reGenerateCollectionCampQr'],
+        ['updateCampStatusOnOutcomeFilled'],
       ],
       '&hook_civicrm_pre' => [
         ['generateCollectionCampQr'],
@@ -59,7 +60,6 @@ class CollectionCampService extends AutoSubscriber {
         ['setOfficeDetails'],
         ['linkInductionWithCollectionCamp'],
         ['mailNotificationToMmt'],
-        ['updateCampStatusOnOutcomeFilled'],
       ],
       '&hook_civicrm_fieldOptions' => 'setIndianStateOptions',
       'civi.afform.submit' => [
@@ -1161,11 +1161,6 @@ class CollectionCampService extends AutoSubscriber {
 
     if ($currentStatus !== $newStatus) {
       if ($newStatus === 'authorized') {
-        $subtypeId = $objectRef['subtype'] ?? NULL;
-        if ($subtypeId === NULL) {
-          return;
-        }
-
         $campId = $objectRef['id'] ?? NULL;
         if ($campId === NULL) {
           return;
@@ -1180,41 +1175,47 @@ class CollectionCampService extends AutoSubscriber {
   }
 
   /**
-   * This hook is called after the database write on a custom table.
+   * This hook is called after a db write on entities.
    *
    * @param string $op
    *   The type of operation being performed.
    * @param string $objectName
-   *   The custom group ID.
+   *   The name of the object.
    * @param int $objectId
-   *   The entityID of the row in the custom table.
+   *   The unique identifier for the object.
    * @param object $objectRef
-   *   The parameters that were sent into the calling function.
+   *   The reference to the object.
    */
-  public static function updateCampStatusOnOutcomeFilled($op, $groupID, $entityID, &$params) {
-    if ($op !== 'create') {
+  public static function updateCampStatusOnOutcomeFilled(string $op, string $objectName, int $objectId, &$objectRef) {
+    if ($objectName !== 'AfformSubmission') {
       return;
     }
 
-    if (!($goonjField = self::findOfficeId($params))) {
+    $afformName = $objectRef->afform_name;
+
+    if ($afformName !== 'afformCampOutcomeForm') {
       return;
     }
 
-    $goonjFieldId = $goonjField['value'];
-    $vehicleDispatchId = $goonjField['entity_id'];
+    $jsonData = $objectRef->data;
+    $dataArray = json_decode($jsonData, TRUE);
 
-    $collectionSourceVehicleDispatch = EckEntity::get('Collection_Source_Vehicle_Dispatch', FALSE)
-      ->addSelect('Camp_Vehicle_Dispatch.Collection_Camp')
-      ->addWhere('id', '=', $vehicleDispatchId)
-      ->execute()->first();
+    $collectionCampId = $dataArray['Eck_Collection_Camp1'][0]['fields']['id'];
 
-    $collectionCampId = $collectionSourceVehicleDispatch['Camp_Vehicle_Dispatch.Collection_Camp'];
+    if (!$collectionCampId) {
+      return;
+    }
 
-    $results = EckEntity::update('Collection_Camp', FALSE)
-      ->addValue('Collection_Camp_Intent_Details.Camp_Status', 'completed')
-      ->addWhere('id', '=', $collectionCampId)
-      ->execute();
+    try {
+      EckEntity::update('Collection_Camp', FALSE)
+        ->addWhere('id', '=', $collectionCampId)
+        ->addValue('Collection_Camp_Intent_Details.Camp_Status', 'completed')
+        ->execute();
 
+    }
+    catch (\Exception $e) {
+      \Civi::log()->error("Exception occurred while updating camp status for campId: $collectionCampId. Error: " . $e->getMessage());
+    }
   }
 
   /**
