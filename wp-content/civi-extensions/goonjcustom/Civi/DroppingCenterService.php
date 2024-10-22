@@ -459,13 +459,7 @@ class DroppingCenterService extends AutoSubscriber {
     if (!self::isViewingDroppingCenter($tabsetName, $context)) {
       return;
     }
-    $tabConfigs = [
-      'feedback' => [
-        'title' => ts('Feedback'),
-        'module' => 'afsearchFeedback',
-        'directive' => 'afsearch-feedback',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-      ],    
+    $tabConfigs = [ 
       'materialContribution' => [
         'title' => ts('Material Contribution'),
         'module' => 'afsearchDroppingCenterMaterialContributions',
@@ -502,6 +496,12 @@ class DroppingCenterService extends AutoSubscriber {
         'directive' => 'afform-dropping-center-outcome',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCampService.tpl',
       ],
+      'feedback' => [
+        'title' => ts('Feedback'),
+        'module' => 'afsearchFeedback',
+        'directive' => 'afsearch-feedback',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      ],   
     ];
 
     foreach ($tabConfigs as $key => $config) {
