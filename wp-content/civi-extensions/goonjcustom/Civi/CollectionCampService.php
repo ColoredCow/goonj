@@ -37,7 +37,6 @@ class CollectionCampService extends AutoSubscriber {
   private static $individualId = NULL;
   private static $collectionCampAddress = NULL;
   private static $fromAddress = NULL;
-  private static $processedCampIds = [];
 
   /**
    *
@@ -1171,11 +1170,10 @@ class CollectionCampService extends AutoSubscriber {
           ->addValue('Collection_Camp_Intent_Details.Camp_Status', 'planned')
           ->addWhere('id', '=', $campId)
           ->execute();
-          error_log("results: " . print_r($results, TRUE));
+        error_log("results: " . print_r($results, TRUE));
       }
     }
   }
-
 
   /**
    * This hook is called after a db write on entities.
@@ -1190,30 +1188,24 @@ class CollectionCampService extends AutoSubscriber {
    *   The reference to the object.
    */
   public static function updateCampStatusOnOutcomeFilled(string $op, string $objectName, int $objectId, &$objectRef) {
-    if ($objectRef instanceof CRM_Afform_BAO_AfformSubmission) {
-      $afformName = $objectRef->afform_name;
-
-      if ($afformName !== 'afformCampOutcomeForm') {
-        return;
-      }
-    }
-
-    if ($objectName !== 'Eck_Collection_Camp' || !$objectRef->id) {
+    if ($objectName !== 'AfformSubmission') {
       return;
     }
 
-    static $processedCampId = NULL;
+    $afformName = $objectRef->afform_name;
 
-    $collectionCampId = $objectRef->id;
-
-    // If the camp ID has already been processed, return to avoid repeated execution.
-    if (in_array($collectionCampId, self::$processedCampIds)) {
+    if ($afformName !== 'afformCampOutcomeForm') {
       return;
     }
 
-    // Mark this camp ID as processed to prevent future executions for the same ID.
-    self::$processedCampIds[] = $collectionCampId;
-    error_log("collectionCampId: " . print_r($collectionCampId, TRUE));
+    $jsonData = $objectRef->data;
+    $dataArray = json_decode($jsonData, TRUE);
+
+    $collectionCampId = $dataArray['Eck_Collection_Camp1'][0]['fields']['id'];
+
+    if (!$collectionCampId) {
+      return;
+    }
 
     try {
       EckEntity::update('Collection_Camp', FALSE)
