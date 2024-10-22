@@ -188,11 +188,6 @@ class CollectionBaseService extends AutoSubscriber {
     }
 
     $tabConfigs = [
-      'eventVolunteers' => [
-        'title' => ts('Event Volunteers'),
-        'module' => 'afsearchEventVolunteer',
-        'directive' => 'afsearch-event-volunteer',
-      ],
       'vehicleDispatch' => [
         'title' => ts('Dispatch'),
         'module' => 'afsearchCampVehicleDispatchData',
