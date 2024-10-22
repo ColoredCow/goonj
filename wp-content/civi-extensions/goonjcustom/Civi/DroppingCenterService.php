@@ -459,7 +459,7 @@ class DroppingCenterService extends AutoSubscriber {
     if (!self::isViewingDroppingCenter($tabsetName, $context)) {
       return;
     }
-    $tabConfigs = [ 
+    $tabConfigs = [
       'materialContribution' => [
         'title' => ts('Material Contribution'),
         'module' => 'afsearchDroppingCenterMaterialContributions',
