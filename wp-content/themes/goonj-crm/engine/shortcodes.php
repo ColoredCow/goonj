@@ -39,7 +39,6 @@ function goonj_contribution_volunteer_signup_button() {
 			->addSelect( 'source_contact_id' )
 			->addJoin( 'ActivityContact AS activity_contact', 'LEFT' )
 			->addWhere( 'id', '=', $activity_id )
-			->addWhere( 'activity_type_id:label', '=', 'Material Contribution' )
 			->execute();
 
 		if ( $activities->count() === 0 ) {
@@ -93,7 +92,7 @@ function goonj_pu_activity_button() {
 
 	try {
 		$activity = \Civi\Api4\Activity::get(false)
-			->addSelect('source_contact_id', 'Office_Visit.Goonj_Processing_Center', 'Material_Contribution.Goonj_Office', 'activity_type_id:name')
+			->addSelect('custom.*', 'source_contact_id', 'Office_Visit.Goonj_Processing_Center', 'Material_Contribution.Goonj_Office', 'activity_type_id:name')
 			->addWhere('id', '=', $activity_id)
 			->execute()
 			->first();

@@ -24,12 +24,23 @@ function goonj_generate_activity_button( $activity, $office_id, $individual_id )
 	// Calculate the pending activities by comparing with $activityTypes
 	$pendingActivities = array_diff( $activityTypes, array( $completedActivityType ) );
 
+	// Set the 'You are Visiting as' field to 'Group' if both 'Entity_Type' and 'Entity_Name' 
+	// are provided in the Material Contribution form; otherwise, set it to 'Individual'.
+	$visitedAs = (!empty($activity['Material_Contribution.Entity_Type']) && !empty($activity['Material_Contribution.Entity_Name']))
+	? 'Group'
+	: 'Individual';
+
 	// Define the mapping for each activity to the corresponding button and redirect info
 	$activityMap = array(
 		'Office visit' => array(
 			'redirectPath' => '/processing-center/office-visit/details/',
-			'buttonText' => __( 'Proceed to Office Visit', 'goonj-crm' ),
+			'buttonText' => __( 'Proceed to Processing Center Tour', 'goonj-crm' ),
 			'queryParam' => 'Office_Visit.Goonj_Processing_Center',
+			'additionalParams' => array(
+				'Office_Visit.Entity_Type' => $activity['Material_Contribution.Entity_Type'],
+				'Office_Visit.Entity_Name' => $activity['Material_Contribution.Entity_Name'],
+				'Office_Visit.You_are_Visiting_as'=>$visitedAs
+			)
 		),
 		'Material Contribution' => array(
 			'redirectPath' => '/processing-center/material-contribution/details/',
@@ -47,6 +58,11 @@ function goonj_generate_activity_button( $activity, $office_id, $individual_id )
 		'source_contact_id' => $individual_id,
 		$details['queryParam'] => $office_id,
 	);
+
+	// Merge additional params if they exist
+	if ( !empty( $details['additionalParams'] ) ) {
+		$redirectParams += $details['additionalParams'];
+	}
 
 	$redirectPathWithParams = $details['redirectPath'] . '#?' . http_build_query( $redirectParams );
 

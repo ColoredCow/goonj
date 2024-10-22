@@ -303,6 +303,25 @@
                 }
             }
         }
+        
+        // Date validation for the Open Dropping Center form to ensure the selected date is not in the past.
+        if (ctrl.getFormMeta().name === 'afformDroppingCenterDetailForm') {
+          var dateField = $element.find("input.crm-form-date").val().trim(); 
+          
+          if (dateField !== "") {
+            var today = new Date();
+            today.setHours(0, 0, 0, 0);
+            var dateParts = dateField.split('/');
+            var selectedDate = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
+            
+            // Check if the selected date is in the past
+            if (selectedDate < today) {
+              isValid = false;
+              
+              errorMessage+=`The selected dropping center date (${dateField}) cannot be in the past.`;
+            }
+          }
+        }
 
     // Collection camp start date and end date validation
     if (ctrl.getFormMeta().name === 'afformCollectionCampIntentDetails') {

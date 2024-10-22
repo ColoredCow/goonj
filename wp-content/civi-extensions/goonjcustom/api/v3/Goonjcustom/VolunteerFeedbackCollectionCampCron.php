@@ -53,6 +53,7 @@ function civicrm_api3_goonjcustom_volunteer_feedback_collection_camp_cron($param
     ->addWhere('Collection_Camp_Core_Details.Status', '=', 'authorized')
     ->addWhere('subtype', '=', $collectionCampSubtype)
     ->addWhere('Collection_Camp_Intent_Details.End_Date', '<=', $endOfDay)
+    ->addWhere('Collection_Camp_Intent_Details.Camp_Status', '!=', 'aborted')
     ->execute();
 
   [$defaultFromName, $defaultFromEmail] = CRM_Core_BAO_Domain::getNameAndEmail();
