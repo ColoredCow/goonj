@@ -460,6 +460,12 @@ class DroppingCenterService extends AutoSubscriber {
       return;
     }
     $tabConfigs = [
+      'feedback' => [
+        'title' => ts('Feedback'),
+        'module' => 'afsearchFeedback',
+        'directive' => 'afsearch-feedback',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      ],    
       'materialContribution' => [
         'title' => ts('Material Contribution'),
         'module' => 'afsearchDroppingCenterMaterialContributions',
