@@ -54,6 +54,7 @@ function civicrm_api3_goonjcustom_collection_camp_outcome_reminder_cron($params)
     ->addWhere('Collection_Camp_Core_Details.Status', '=', 'authorized')
     ->addWhere('Collection_Camp_Intent_Details.End_Date', '<=', $endOfDay)
     ->addWhere('Collection_Camp_Intent_Details.Camp_Status', '!=', 'aborted')
+    ->addWhere('Camp_Outcome.Final_Reminder_Sent', 'IS NULL')
     ->execute();
 
   foreach ($collectionCamps as $camp) {
