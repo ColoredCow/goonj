@@ -6,7 +6,7 @@ use Civi\Api4\Contact;
 use Civi\Api4\EckEntity;
 
 /**
- *
+ * Class to manage sending feedback emails for Dropping Centers.
  */
 class DroppingCenterFeedbackCron {
 
@@ -36,25 +36,39 @@ class DroppingCenterFeedbackCron {
     $organizingContactName = $campAttendedBy['display_name'];
 
     if (!$status) {
-      $mailParams = [
-        'subject' => 'Your Feedback on Managing the Goonj Dropping Center',
-        'from' => $from,
-        'toEmail' => $contactEmailId,
-        'replyTo' => $from,
-        'html' => self::sendFeedbackEmail($organizingContactName, $droppingCenterId),
-      ];
-
-      // Send the email.
-      $feedbackEmailSendResult = \CRM_Utils_Mail::send($mailParams);
+      self::sendFeedbackEmail($organizingContactName, $droppingCenterId, $contactEmailId, $from);
 
       // Update status if the email is sent.
-      if ($feedbackEmailSendResult) {
-        EckEntity::update('Dropping_Center_Meta', TRUE)
-          ->addValue('Status.Feedback_Email_Delivered:name', 1)
-          ->addWhere('Dropping_Center_Meta.Dropping_Center', '=', $droppingCenterId)
-          ->execute();
-      }
+      EckEntity::update('Dropping_Center_Meta', TRUE)
+        ->addValue('Status.Feedback_Email_Delivered:name', 1)
+        ->addWhere('Dropping_Center_Meta.Dropping_Center', '=', $droppingCenterId)
+        ->execute();
     }
+  }
+
+  /**
+   * Send feedback email to the contact.
+   *
+   * @param string $organizingContactName
+   *   Name of the organizing contact.
+   * @param int $droppingCenterId
+   *   ID of the Dropping Center.
+   * @param string $contactEmailId
+   *   Email address of the recipient.
+   * @param string $from
+   *   Email address for 'from'.
+   */
+  public static function sendFeedbackEmail($organizingContactName, $droppingCenterId, $contactEmailId, $from) {
+    $mailParams = [
+      'subject' => 'Your Feedback on Managing the Goonj Dropping Center',
+      'from' => $from,
+      'toEmail' => $contactEmailId,
+      'replyTo' => $from,
+      'html' => self::generateFeedbackEmailHtml($organizingContactName, $droppingCenterId),
+    ];
+
+    // Send the email.
+    \CRM_Utils_Mail::send($mailParams);
   }
 
   /**
@@ -65,10 +79,8 @@ class DroppingCenterFeedbackCron {
    *
    * @return string HTML content for email
    */
-  public static function sendFeedbackEmail($organizingContactName, $droppingCenterId) {
+  public static function generateFeedbackEmailHtml($organizingContactName, $droppingCenterId) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
-
-    // URL for the feedback form.
     $volunteerFeedback = $homeUrl . 'volunteer-feedback/#?Eck_Collection_Camp1=' . $droppingCenterId;
 
     $html = "
