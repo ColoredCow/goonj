@@ -135,9 +135,50 @@ function goonj_collection_camp_past_data() {
 
 function goonj_induction_slot_details() {
 
-	$source_contact_id = isset( $_GET['source_contact_id'] ) ? intval( $_GET['source_contact_id'] ) : 0;
-	$slot_date = isset( $_GET['slot_date'] ) ? $_GET['slot_date'] : 0;
-	$slot_time = isset( $_GET['slot_time'] ) ? $_GET['slot_time'] : 0;
-	\Civi::log()->info('slot_date', ['source_contact_id'=>$source_contact_id, 'slot_date'=>$slot_date, 'slot_time'=>$slot_time]);
-	return;
+	$source_contact_id = isset($_GET['source_contact_id']) ? intval($_GET['source_contact_id']) : 0;
+	$slot_date = isset($_GET['slot_date']) ? $_GET['slot_date'] : 0;
+	$slot_time = isset($_GET['slot_time']) ? $_GET['slot_time'] : 0;
+	
+	\Civi::log()->info('slot_date', [
+		'source_contact_id' => $source_contact_id,
+		'slot_date' => $slot_date,
+		'slot_time' => $slot_time
+	]);
+	
+	// Fetch the activity for the given source contact and criteria
+	$activity = \Civi\Api4\Activity::get(FALSE)
+		->addSelect('id', 'activity_date_time', 'status_id')
+		->addWhere('source_contact_id', '=', $source_contact_id)
+		->addWhere('activity_type_id:name', '=', 'Induction')
+		->addWhere('status_id:name', '=', 'To be scheduled') // Fetch only unscheduled activities
+		->execute()->single();
+	
+	// If no activity found, exit
+	if (empty($activity)) {
+		\Civi::log()->info('No activity found for contact', ['source_contact_id' => $source_contact_id]);
+		return;
+	}
+	
+	// Combine slot date (d-m-Y) and slot time (H:i) to form the new activity date time
+	$newActivityDateTime = DateTime::createFromFormat('d-m-Y H:i', $slot_date . ' ' . $slot_time);
+	
+	if ($newActivityDateTime === false) {
+		\Civi::log()->error('Invalid date/time format', ['slot_date' => $slot_date, 'slot_time' => $slot_time]);
+		return;
+	}
+	
+	// Update the activity with the new date time and set status to "Scheduled" (status_id = 1)
+	\Civi\Api4\Activity::update(FALSE)
+		->addValue('activity_date_time', $newActivityDateTime->format('Y-m-d H:i:s'))
+		->addValue('status_id', 1) // 1 indicates "Scheduled"
+		->addWhere('id', '=', $activity['id']) // Update the fetched activity
+		->execute();
+	
+	// Log the successful update
+	\Civi::log()->info('Activity updated successfully', [
+		'activity_id' => $activity['id'],
+		'new_date_time' => $newActivityDateTime->format('Y-m-d H:i:s'),
+		'new_status_id' => 1
+	]);
+	
 }
