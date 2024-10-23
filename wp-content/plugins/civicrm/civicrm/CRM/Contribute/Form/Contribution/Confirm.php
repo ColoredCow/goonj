@@ -2600,6 +2600,8 @@ class CRM_Contribute_Form_Contribution_Confirm extends CRM_Contribute_Form_Contr
       if (!empty($form->_paymentProcessor)) {
         try {
           $payment = Civi\Payment\System::singleton()->getByProcessor($form->_paymentProcessor);
+          CRM_Core_Error::debug_var('payment', $payment);
+
           if ($contribution->contribution_recur_id && $this->getPaymentProcessorObject()->supports('noReturnForRecurring')) {
             // We want to get rid of this & make it generic - eg. by making payment processing the last thing
             // and always calling it first.
@@ -2607,6 +2609,21 @@ class CRM_Contribute_Form_Contribution_Confirm extends CRM_Contribute_Form_Contr
           }
           $paymentParams['currency'] = $this->getCurrency();
           $result = $payment->doPayment($paymentParams);
+          if (!is_array($result)) {
+            CRM_Core_Error::debug_log_message('Payment processing failed. Result is not an array.');
+            CRM_Core_Error::debug_var('Payment Parameters', $paymentParams);
+            throw new CRM_Core_Exception('Payment processing failed. Expected an array result.');
+        }
+          CRM_Core_Error::debug_var('result', $result);
+
+          CRM_Core_Error::debug_var('Payment Parameters', $paymentParams);
+          if (is_array($result)) {
+            $form->_params = array_merge($form->_params, $result);
+          } else {
+            // Log the error or throw an exception if the payment result is invalid
+            CRM_Core_Error::debug_log_message('Payment processing failed. Result is not an array.');
+            throw new CRM_Core_Exception('Payment processing failed.');
+          }
           $form->_params = array_merge($form->_params, $result);
           $form->assign('trxn_id', $result['trxn_id'] ?? '');
           $contribution->trxn_id = $result['trxn_id'] ?? $contribution->trxn_id ?? '';

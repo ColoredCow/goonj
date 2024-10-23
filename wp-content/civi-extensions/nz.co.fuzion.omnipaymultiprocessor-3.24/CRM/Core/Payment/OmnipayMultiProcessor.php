@@ -157,6 +157,9 @@ class CRM_Core_Payment_OmnipayMultiProcessor extends CRM_Core_Payment_PaymentExt
         'payment_status_id' => array_search('Completed', CRM_Contribute_BAO_Contribution::buildOptions('contribution_status_id', 'validate')),
       ];
     }
+
+    // Logging initial params for debug
+    CRM_Core_Error::debug_var('Initial params', $params);
     if (is_object($params)) {
       // I recently tried to fix the checking in the Dummmy processor to be strict & enforce the documented payment
       // processor contract for recurring. That work was reverted in core but it became apparent in the process that
@@ -182,23 +185,46 @@ class CRM_Core_Payment_OmnipayMultiProcessor extends CRM_Core_Payment_PaymentExt
     try {
       if (!empty($params['token'])) {
         $response = $this->doTokenPayment($params);
+
+        // Log response details for token payments
+        CRM_Core_Error::debug_var('Token Payment response', $response);
+        CRM_Core_Error::debug_var('is_successful', $response->isSuccessful());
+        CRM_Core_Error::debug_var('is_redirect', $response->isRedirect());
+
       }
       // 'create_card_action' is a bit of a sagePay hack - see https://github.com/thephpleague/omnipay-sagepay/issues/157
       // don't rely on it being unchanged - tests & comments are your friend.
       elseif (!empty($params['is_recur']) && $this->getProcessorTypeMetadata('create_card_action') !== 'purchase') {
         $response = $this->gateway->createCard($this->getCreditCardOptions(array_merge($params, ['action' => 'Purchase']), $this->_component))->send();
+
+        // Log response for recurring card creation
+        CRM_Core_Error::debug_var('Recurring Card Creation response', $response);
+        CRM_Core_Error::debug_var('is_successful', $response->isSuccessful());
+
       }
       else {
-        $response = $this->gateway->purchase($this->getCreditCardOptions($params))
-          ->send();
+        $response = $this->gateway->purchase($this->getCreditCardOptions($params))->send();
+
+        // Log response for standard purchase
+        CRM_Core_Error::debug_var('Standard Purchase response', $response);
+        CRM_Core_Error::debug_var('is_successful', $response->isSuccessful());
+        CRM_Core_Error::debug_var('error_code', $response->getCode());
+        CRM_Core_Error::debug_var('error_message', $response->getMessage());
       }
+      // Log response status
+      CRM_Core_Error::debug_var('is_successful', $response->isSuccessful());
+      CRM_Core_Error::debug_var('is_redirect', $response->isRedirect());
       if ($response->isSuccessful()) {
+        CRM_Core_Error::debug_var('Transaction successful', $response->getTransactionReference());
         if (method_exists($response, 'getCardReference') && $response->getCardReference()) {
           $params['token'] = $response->getCardReference();
+          CRM_Core_Error::debug_var('Saved card token', $params['token']);
+
         }
         // mark order as complete
         if (!empty($params['is_recur'])) {
           $paymentTokenID = $this->savePaymentToken($params);
+          CRM_Core_Error::debug_var('Recurring Payment Token ID', $paymentTokenID);
           civicrm_api3('ContributionRecur', 'create', ['id' => $params['contributionRecurID'], 'payment_token_id' => $paymentTokenID]);
         }
         $params['trxn_id'] = $response->getTransactionReference();
@@ -208,7 +234,10 @@ class CRM_Core_Payment_OmnipayMultiProcessor extends CRM_Core_Payment_PaymentExt
         return $params;
       }
       if ($response->isRedirect()) {
+        CRM_Core_Error::debug_log_message('Redirecting to payment gateway...');
+        CRM_Core_Error::debug_var('Redirect URL', $response->getRedirectUrl());
         if ($response->getTransactionReference()) {
+          CRM_Core_Error::debug_var('Transaction Reference', $response->getTransactionReference());
           // Most processors don't return a reference at this stage, but it's OK
           // to store the reference if they do (ie. SagePay). Note that this might
           // be a temporary fix as I'm considering creating a payment token record might be
@@ -235,16 +264,22 @@ class CRM_Core_Payment_OmnipayMultiProcessor extends CRM_Core_Payment_PaymentExt
               'contact_id' => $params['contactID'],
             ]);
           $url = CRM_Utils_System::url('civicrm/payment/details', ['key' => $params['qfKey']]);
+          CRM_Core_Error::debug_var('url', $url);
+
           $this->log('success_redirect', ['url' => $url]);
           CRM_Utils_System::redirect($url);
         }
         $response->redirect();
       }
       else {
+        CRM_Core_Error::debug_var('Payment Error', 'Failed processor transaction');
+        CRM_Core_Error::debug_var('error_code', $response->getCode());
+        CRM_Core_Error::debug_var('error_message', $response->getMessage());
         return $this->handleError('alert', 'failed processor transaction ' . $this->_paymentProcessor['payment_processor_type'], [$response->getCode() => $response->getMessage()]);
       }
     }
     catch (\Exception $e) {
+      CRM_Core_Error::debug_var('Exception Caught', $e->getMessage());
       // internal error, log exception and display a generic message to the customer
       //@todo - looks like invalid credit card numbers are winding up here too - we could handle separately by capturing that exception type - what is good fraud practice?
       return $this->handleError('error', 'unknown processor error ' . $this->_paymentProcessor['payment_processor_type'], [$e->getCode() => $e->getMessage()], $e->getCode(), 'Sorry, there was an error processing your payment. Please try again later.');
