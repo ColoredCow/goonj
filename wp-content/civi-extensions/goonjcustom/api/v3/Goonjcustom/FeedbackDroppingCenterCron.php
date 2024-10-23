@@ -76,7 +76,7 @@ function civicrm_api3_goonjcustom_feedback_dropping_center_cron($params) {
           'from' => $from,
           'toEmail' => $contactEmailId,
           'replyTo' => $from,
-          'html' => goonjcustom_volunteer_feedback_email_html($organizingContactName, $droppingCenterId),
+          'html' => sendFeedbackEmail($organizingContactName, $droppingCenterId),
         ];
         $feedbackEmailSendResult = CRM_Utils_Mail::send($mailParams);
 
@@ -105,7 +105,7 @@ function civicrm_api3_goonjcustom_feedback_dropping_center_cron($params) {
  *
  * @return string HTML content for email
  */
-function goonjcustom_volunteer_feedback_email_html($organizingContactName, $droppingCenterId) {
+function sendFeedbackEmail($organizingContactName, $droppingCenterId) {
   $homeUrl = \CRM_Utils_System::baseCMSURL();
 
   // URL for the  feedback form.
