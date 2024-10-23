@@ -8,8 +8,9 @@
 require_once __DIR__ . '/functions.php';
 $target        = get_query_var('target');
 $action_target = get_query_var('action_target');
-$source_target_id = $action_target['id'];
-var_dump($source_target_id);
+$source_contact_id = $action_target['id'] ?? null; // Make sure $source_contact_id is properly defined.
+$slots = generate_induction_slots($source_contact_id);
+
 // die;
 $headings = [
   'collection-camp' => 'Collection Camp',
@@ -23,7 +24,7 @@ $heading_text = $headings[$target];
 
 
 // Generate 30 slots.
-$slots = generate_induction_slots();
+// $slots = generate_induction_slots();
 $register_link = sprintf(
     '/volunteer-registration/form/#?source=%s&state_province_id=%s&city=%s',
     $action_target['title'],
@@ -158,7 +159,7 @@ if (in_array($target, ['collection-camp', 'dropping-center'])) :
             // Generate the booking link with slot-specific parameters
             $book_slot_link = sprintf(
                 '/induction-schedule-slot-success/?source_contact_id=%s&slot_date=%s&slot_time=%s',
-                $action_target['id'], // Assuming the contact ID is stored here
+                $action_target['id'], 
                 urlencode($slot['date']),
                 urlencode($slot['time'])
             );

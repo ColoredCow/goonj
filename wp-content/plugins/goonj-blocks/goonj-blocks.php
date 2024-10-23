@@ -82,13 +82,13 @@ function gb_goonj_blocks_check_action_target_exists() {
 	$target = get_query_var( 'target' );
 	// $source_contact_id = get_query_var( 'source_contact_id' );
 	// \Civi::log()->info('source_contact_id', ['source_contact_id'=>$source_contact_id]);
-	var_dump($target);
+	// var_dump($target);
 	$source_contact_id = get_query_var( 'source_contact_id' );
 	\Civi::log()->info('source_contact_id', ['source_contact_id'=>$source_contact_id]);
 	// var_dump($target);
 	$id = intval( get_query_var( 'id' ) );
 
-	var_dump($id);
+	// var_dump($id);
 
 	// Load CiviCRM.
 	if ( function_exists( 'civicrm_initialize' ) ) {
