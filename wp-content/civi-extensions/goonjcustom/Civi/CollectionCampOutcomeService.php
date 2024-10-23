@@ -39,15 +39,26 @@ class CollectionCampOutcomeService {
       return FALSE;
     }
 
-    // Return if 24 hours have not passed since the last reminder.
-    if ($lastReminderSent !== NULL && $hoursSinceLastReminder < 24) {
+    // If no reminders have been sent yet, send the first reminder.
+    if ($lastReminderSent === NULL) {
+      EckEntity::update('Collection_Camp', TRUE)
+        ->addWhere('id', '=', $camp['id'])
+        ->addValue('Camp_Outcome.Last_Reminder_Sent', $now->format('Y-m-d H:i:s'))
+        ->execute();
+
+      self::sendOutcomeReminderEmail($campAttendedById, $from, $campCode, $campAddress, $collectionCampId, $endDateString);
+      return;
+    }
+
+    // Return if 48 hours have not passed since the last reminder was sent.
+    if ($lastReminderSent !== NULL && $hoursSinceLastReminder < 48) {
       return FALSE;
     }
     self::sendOutcomeReminderEmail($campAttendedById, $from, $campCode, $campAddress, $collectionCampId, $endDateString);
 
     EckEntity::update('Collection_Camp', TRUE)
       ->addWhere('id', '=', $camp['id'])
-      ->addValue('Camp_Outcome.Last_Reminder_Sent', $now->format('Y-m-d H:i:s'))
+      ->addValue('Camp_Outcome.Final_Reminder_Sent', $now->format('Y-m-d H:i:s'))
       ->execute();
   }
 
