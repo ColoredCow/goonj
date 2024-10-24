@@ -48,7 +48,7 @@ function civicrm_api3_goonjcustom_feedback_dropping_center_cron($params) {
   $statusName = $optionValues['value'];
 
   $droppingCenterMeta = EckEntity::get('Dropping_Center_Meta', TRUE)
-    ->addSelect('Status.Status:name', 'Status.Closing_Date', 'Dropping_Center_Meta.Dropping_Center', 'Dropping_Center_Meta.Dropping_Center.Collection_Camp_Core_Details.Contact_Id', 'Status.Feedback_Email_Delivered:name')
+    ->addSelect('Dropping_Center_Meta.Dropping_Center', 'Dropping_Center_Meta.Dropping_Center.Collection_Camp_Core_Details.Contact_Id', 'Status.Feedback_Email_Delivered:name')
     ->addWhere('subtype', '=', $statusName)
     ->addWhere('Status.Status:name', '=', 'Permanently_Closed')
     ->execute();
