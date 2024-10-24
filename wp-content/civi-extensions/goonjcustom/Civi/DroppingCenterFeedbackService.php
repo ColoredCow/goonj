@@ -21,7 +21,6 @@ class DroppingCenterFeedbackService {
    * @throws \CRM_Core_Exception
    */
   public static function processDroppingCenterStatus($droppingCenterId, $initiatorId, $status, $from) {
-
     // Get recipient email and name.
     $contactDetails = self::getContactDetails($initiatorId);
 
@@ -29,15 +28,17 @@ class DroppingCenterFeedbackService {
       $contactEmailId = $contactDetails['email.email'];
       $organizingContactName = $contactDetails['display_name'];
 
-      if (!$status) {
-        self::sendFeedbackEmail($organizingContactName, $droppingCenterId, $contactEmailId, $from);
-
-        // Update status if the email is sent.
-        EckEntity::update('Dropping_Center_Meta', TRUE)
-          ->addValue('Status.Feedback_Email_Delivered:name', 1)
-          ->addWhere('Dropping_Center_Meta.Dropping_Center', '=', $droppingCenterId)
-          ->execute();
+      if ($status) {
+        return;
       }
+
+      self::sendFeedbackEmail($organizingContactName, $droppingCenterId, $contactEmailId, $from);
+
+      // Update status if the email is sent.
+      EckEntity::update('Dropping_Center_Meta', TRUE)
+        ->addValue('Status.Feedback_Email_Delivered:name', 1)
+        ->addWhere('Dropping_Center_Meta.Dropping_Center', '=', $droppingCenterId)
+        ->execute();
     }
   }
 
