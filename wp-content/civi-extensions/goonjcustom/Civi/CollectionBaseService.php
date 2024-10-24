@@ -11,11 +11,13 @@ use Civi\Api4\GroupContact;
 use Civi\Api4\MessageTemplate;
 use Civi\Api4\OptionValue;
 use Civi\Core\Service\AutoSubscriber;
+use Civi\Traits\CollectionSource;
 
 /**
  *
  */
 class CollectionBaseService extends AutoSubscriber {
+  use CollectionSource;
 
   const ENTITY_NAME = 'Collection_Camp';
   const INTENT_CUSTOM_GROUP_NAME = 'Collection_Camp_Intent_Details';
@@ -65,6 +67,20 @@ class CollectionBaseService extends AutoSubscriber {
   /**
    *
    */
+  private static function generateBaseFileName($collectionSourceId) {
+    if (self::getEntitySubtypeName($collectionSourceId) == self::ENTITY_NAME) {
+      $baseFileName = "collection_camp_{$collectionSourceId}.png";
+    }
+    else {
+      $baseFileName = "dropping_center_{$collectionSourceId}.png";
+    }
+
+    return $baseFileName;
+  }
+
+  /**
+   *
+   */
   public static function maybeGeneratePoster(string $op, string $objectName, int $objectId, &$objectRef) {
     if (!self::$generatePosterRequest || $objectName !== 'Eck_Collection_Camp' || $op !== 'edit') {
       return;
@@ -97,8 +113,8 @@ class CollectionBaseService extends AutoSubscriber {
       'collectionSourceCustomData' => self::$generatePosterRequest['customData'],
     ],
     );
+    $baseFileName = self::generateBaseFileName($collectionSourceId);
 
-    $baseFileName = "collection_camp_{$collectionSourceId}.png";
     $fileName = \CRM_Utils_File::makeFileName($baseFileName);
     $tempFilePath = \CRM_Utils_File::tempnam($baseFileName);
 
@@ -173,16 +189,6 @@ class CollectionBaseService extends AutoSubscriber {
     }
 
     $tabConfigs = [
-      'eventVolunteers' => [
-        'title' => ts('Event Volunteers'),
-        'module' => 'afsearchEventVolunteer',
-        'directive' => 'afsearch-event-volunteer',
-      ],
-      'materialContribution' => [
-        'title' => ts('Material Contribution'),
-        'module' => 'afsearchCollectionCampMaterialContributions',
-        'directive' => 'afsearch-collection-camp-material-contributions',
-      ],
       'vehicleDispatch' => [
         'title' => ts('Dispatch'),
         'module' => 'afsearchCampVehicleDispatchData',
@@ -481,7 +487,7 @@ class CollectionBaseService extends AutoSubscriber {
         $emailParams['attachments'][] = [
           'fullPath' => $filePath,
           'mime_type' => $file['mime_type'],
-          'cleanName' => "collection_camp_{$collectionSourceId}.png",
+          'cleanName' => self::generateBaseFileName($collectionSourceId),
         ];
       }
 

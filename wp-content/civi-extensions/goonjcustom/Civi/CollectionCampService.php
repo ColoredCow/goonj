@@ -4,8 +4,6 @@ namespace Civi;
 
 require_once __DIR__ . '/../../../../wp-content/civi-extensions/goonjcustom/vendor/autoload.php';
 
-use chillerlan\QRCode\QRCode;
-use chillerlan\QRCode\QROptions;
 use Civi\Afform\Event\AfformSubmitEvent;
 use Civi\Api4\Activity;
 use Civi\Api4\Contact;
@@ -19,11 +17,16 @@ use Civi\Api4\Relationship;
 use Civi\Api4\StateProvince;
 use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
+use Civi\Traits\CollectionSource;
+use Civi\Traits\QrCodeable;
 
 /**
  *
  */
 class CollectionCampService extends AutoSubscriber {
+  use QrCodeable;
+  use CollectionSource;
+
   const FALLBACK_OFFICE_NAME = 'Delhi';
   const RELATIONSHIP_TYPE_NAME = 'Collection Camp Coordinator of';
   const COLLECTION_CAMP_INTENT_FB_NAME = 'afformCollectionCampIntentDetails';
@@ -44,18 +47,19 @@ class CollectionCampService extends AutoSubscriber {
         ['individualCreated'],
         ['assignChapterGroupToIndividual'],
         ['reGenerateCollectionCampQr'],
+        ['updateCampStatusOnOutcomeFilled'],
       ],
       '&hook_civicrm_pre' => [
         ['generateCollectionCampQr'],
         ['linkCollectionCampToContact'],
         ['generateCollectionCampCode'],
         ['createActivityForCollectionCamp'],
+        ['updateCampStatusAfterAuth'],
       ],
       '&hook_civicrm_custom' => [
         ['setOfficeDetails'],
         ['linkInductionWithCollectionCamp'],
         ['mailNotificationToMmt'],
-
       ],
       '&hook_civicrm_fieldOptions' => 'setIndianStateOptions',
       'civi.afform.submit' => [
@@ -81,6 +85,18 @@ class CollectionCampService extends AutoSubscriber {
       //   'directive' => 'afsearch-collection-camp-activity',
       //   'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
       // ],
+      'eventVolunteers' => [
+        'title' => ts('Event Volunteers'),
+        'module' => 'afsearchEventVolunteer',
+        'directive' => 'afsearch-event-volunteer',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      ],
+      'materialContribution' => [
+        'title' => ts('Material Contribution'),
+        'module' => 'afsearchCollectionCampMaterialContributions',
+        'directive' => 'afsearch-collection-camp-material-contributions',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      ],
       'logistics' => [
         'title' => ts('Logistics'),
         'module' => 'afsearchCollectionCampLogistics',
@@ -125,33 +141,15 @@ class CollectionCampService extends AutoSubscriber {
 
     $entityId = $context['entity_id'];
 
-    $entityResults = EckEntity::get(self::ENTITY_NAME, TRUE)
+    $entity = EckEntity::get(self::ENTITY_NAME, TRUE)
       ->addWhere('id', '=', $entityId)
-      ->execute();
-
-    $entity = $entityResults->first();
+      ->execute()->single();
 
     $entitySubtypeValue = $entity['subtype'];
 
-    $subtypeResults = OptionValue::get(TRUE)
-      ->addSelect('name')
-      ->addWhere('grouping', '=', self::ENTITY_NAME)
-      ->addWhere('value', '=', $entitySubtypeValue)
-      ->execute();
+    $subtypeId = self::getSubtypeId();
 
-    $subtype = $subtypeResults->first();
-
-    if (!$subtype) {
-      return FALSE;
-    }
-
-    $subtypeName = $subtype['name'];
-
-    if ($subtypeName !== self::ENTITY_SUBTYPE_NAME) {
-      return FALSE;
-    }
-
-    return TRUE;
+    return (int) $entitySubtypeValue === $subtypeId;
   }
 
   /**
@@ -285,33 +283,22 @@ class CollectionCampService extends AutoSubscriber {
    *   The reference to the object.
    */
   public static function generateCollectionCampCode(string $op, string $objectName, $objectId, &$objectRef) {
-    if ($objectName != 'Eck_Collection_Camp') {
+    $statusDetails = self::checkCampStatusAndIds($objectName, $objectId, $objectRef);
+
+    if (!$statusDetails) {
       return;
     }
 
-    $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
+    $newStatus = $statusDetails['newStatus'];
+    $currentStatus = $statusDetails['currentStatus'];
 
-    if (!$newStatus || !$objectId) {
-      return;
-    }
-
-    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id', 'title')
-      ->addWhere('id', '=', $objectId)
-      ->execute()->single();
-
-    $currentStatus = $collectionCamp['Collection_Camp_Core_Details.Status'];
-
-    // Check for status change.
     if ($currentStatus !== $newStatus) {
       if ($newStatus === 'authorized') {
-        // Access the subtype.
         $subtypeId = $objectRef['subtype'] ?? NULL;
         if ($subtypeId === NULL) {
           return;
         }
 
-        // Access the id within the decoded data.
         $campId = $objectRef['id'] ?? NULL;
         if ($campId === NULL) {
           return;
@@ -482,7 +469,7 @@ class CollectionCampService extends AutoSubscriber {
    *   The reference to the object.
    */
   public static function generateCollectionCampQr(string $op, string $objectName, $objectId, &$objectRef) {
-    if ($objectName != 'Eck_Collection_Camp' || !$objectId) {
+    if ($objectName !== 'Eck_Collection_Camp' || !$objectId || !self::isCurrentSubtype($objectRef)) {
       return;
     }
 
@@ -504,7 +491,8 @@ class CollectionCampService extends AutoSubscriber {
     // Check for status change.
     if ($currentStatus !== $newStatus) {
       if ($newStatus === 'authorized') {
-        self::generateQrCode($collectionCampId);
+        self::generateCollectionCampQrCode($collectionCampId);
+
       }
     }
   }
@@ -512,83 +500,17 @@ class CollectionCampService extends AutoSubscriber {
   /**
    *
    */
-  public static function generateQrCode($collectionCampId) {
+  private static function generateCollectionCampQrCode($id) {
+    $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+    $data = "{$baseUrl}actions/collection-camp/{$id}";
 
-    try {
-      $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
-      $url = "{$baseUrl}actions/collection-camp/{$collectionCampId}";
+    $saveOptions = [
+      'customGroupName' => 'Collection_Camp_QR_Code',
+      'customFieldName' => 'QR_Code',
+    ];
 
-      $options = new QROptions([
-        'version'    => 5,
-        'outputType' => QRCode::OUTPUT_IMAGE_PNG,
-        'eccLevel'   => QRCode::ECC_L,
-        'scale'      => 10,
-      ]);
+    self::generateQrCode($data, $id, $saveOptions);
 
-      $qrcode = (new QRCode($options))->render($url);
-
-      // Remove the base64 header and decode the image data.
-      $qrcode = str_replace('data:image/png;base64,', '', $qrcode);
-
-      $qrcode = base64_decode($qrcode);
-
-      $baseFileName = "qr_code_{$collectionCampId}.png";
-
-      $fileName = \CRM_Utils_File::makeFileName($baseFileName);
-
-      $tempFilePath = \CRM_Utils_File::tempnam($baseFileName);
-
-      $numBytes = file_put_contents($tempFilePath, $qrcode);
-
-      if (!$numBytes) {
-        \CRM_Core_Error::debug_log_message('Failed to write QR code to temporary file for collection camp ID ' . $collectionCampId);
-        return FALSE;
-      }
-
-      $customFields = CustomField::get(FALSE)
-        ->addSelect('id')
-        ->addWhere('custom_group_id:name', '=', 'Collection_Camp_QR_Code')
-        ->addWhere('name', '=', 'QR_Code')
-        ->setLimit(1)
-        ->execute();
-
-      $qrField = $customFields->first();
-
-      if (!$qrField) {
-        \CRM_Core_Error::debug_log_message('No field to save QR Code for collection camp ID ' . $collectionCampId);
-        return FALSE;
-      }
-
-      $qrFieldId = 'custom_' . $qrField['id'];
-
-      // Save the QR code as an attachment linked to the collection camp.
-      $params = [
-        'entity_id' => $collectionCampId,
-        'name' => $fileName,
-        'mime_type' => 'image/png',
-        'field_name' => $qrFieldId,
-        'options' => [
-          'move-file' => $tempFilePath,
-        ],
-      ];
-
-      $result = civicrm_api3('Attachment', 'create', $params);
-
-      if (empty($result['id'])) {
-        \CRM_Core_Error::debug_log_message('Failed to create attachment for collection camp ID ' . $collectionCampId);
-        return FALSE;
-      }
-
-      $attachment = $result['values'][$result['id']];
-
-      $attachmentUrl = $attachment['url'];
-    }
-    catch (\CiviCRM_API3_Exception $e) {
-      \CRM_Core_Error::debug_log_message('Error generating QR code: ' . $e->getMessage());
-      return FALSE;
-    }
-
-    return TRUE;
   }
 
   /**
@@ -623,7 +545,7 @@ class CollectionCampService extends AutoSubscriber {
         return;
       }
 
-      self::generateQrCode($collectionCampId);
+      self::generateCollectionCampQrCode($collectionCampId);
 
     }
     catch (\Exception $e) {
@@ -645,7 +567,7 @@ class CollectionCampService extends AutoSubscriber {
    *   The parameters that were sent into the calling function.
    */
   public static function setOfficeDetails($op, $groupID, $entityID, &$params) {
-    if ($op !== 'create') {
+    if ($op !== 'create' || self::getEntitySubtypeName($entityID) !== self::ENTITY_SUBTYPE_NAME) {
       return;
     }
 
@@ -656,17 +578,16 @@ class CollectionCampService extends AutoSubscriber {
     $stateId = $stateField['value'];
     $collectionCampId = $stateField['entity_id'];
 
-    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+    $collectionCampData = EckEntity::get('Collection_Camp', FALSE)
       ->addSelect('Collection_Camp_Intent_Details.Will_your_collection_drive_be_open_for_general_public')
       ->addWhere('id', '=', $collectionCampId)
-      ->execute();
+      ->execute()->single();
 
-    $collectionCampData = $collectionCamp->first();
     $isPublicDriveOpen = $collectionCampData['Collection_Camp_Intent_Details.Will_your_collection_drive_be_open_for_general_public'];
 
     if (!$stateId) {
-      \CRM_Core_Error::debug_log_message('Cannot assign Goonj Office to collection camp: ' . $collectionCamp['id']);
-      \CRM_Core_Error::debug_log_message('No state provided on the intent for collection camp: ' . $collectionCamp['id']);
+      \CRM_Core_Error::debug_log_message('Cannot assign Goonj Office to collection camp: ' . $collectionCampData['id']);
+      \CRM_Core_Error::debug_log_message('No state provided on the intent for collection camp: ' . $collectionCampData['id']);
       return FALSE;
     }
 
@@ -709,6 +630,11 @@ class CollectionCampService extends AutoSubscriber {
     }
     else {
       $coordinator = $coordinators->first();
+    }
+
+    if (!$coordinator) {
+      \CRM_Core_Error::debug_log_message('No coordinator available to assign.');
+      return FALSE;
     }
 
     $coordinatorId = $coordinator['contact_id_a'];
@@ -779,32 +705,27 @@ class CollectionCampService extends AutoSubscriber {
    *
    */
   private static function findStateField(array $array) {
-    $filteredItems = array_filter($array, fn($item) => $item['entity_table'] === 'civicrm_eck_collection_camp');
-
-    if (empty($filteredItems)) {
-      return FALSE;
-    }
-
-    $collectionCampStateFields = CustomField::get(FALSE)
+    $collectionCampStateField = CustomField::get(FALSE)
       ->addSelect('id')
       ->addWhere('name', '=', 'state')
       ->addWhere('custom_group_id:name', '=', 'Collection_Camp_Intent_Details')
       ->execute()
       ->first();
 
-    if (!$collectionCampStateFields) {
+    if (!$collectionCampStateField) {
       return FALSE;
     }
 
-    $stateFieldId = $collectionCampStateFields['id'];
+    $stateFieldId = $collectionCampStateField['id'];
 
-    $stateItemIndex = array_search(TRUE, array_map(fn($item) =>
-        $item['entity_table'] === 'civicrm_eck_collection_camp' &&
-        $item['custom_field_id'] == $stateFieldId,
-        $filteredItems
-    ));
+    foreach ($array as $item) {
+      if ($item['entity_table'] === 'civicrm_eck_collection_camp' &&
+            $item['custom_field_id'] === $stateFieldId) {
+        return $item;
+      }
+    }
 
-    return $stateItemIndex !== FALSE ? $filteredItems[$stateItemIndex] : FALSE;
+    return FALSE;
   }
 
   /**
@@ -859,7 +780,7 @@ class CollectionCampService extends AutoSubscriber {
     $fallbackCoordinators = Relationship::get(FALSE)
       ->addWhere('contact_id_b', '=', $fallbackOffice['id'])
       ->addWhere('relationship_type_id:name', '=', self::RELATIONSHIP_TYPE_NAME)
-      ->addWhere('is_current', '=', FALSE)
+      ->addWhere('is_current', '=', TRUE)
       ->execute();
 
     $coordinatorCount = $fallbackCoordinators->count();
@@ -923,7 +844,6 @@ class CollectionCampService extends AutoSubscriber {
     if ($op !== 'create') {
       return;
     }
-
     if (!($goonjField = self::findOfficeId($params))) {
       return;
     }
@@ -937,6 +857,10 @@ class CollectionCampService extends AutoSubscriber {
       ->execute()->first();
 
     $collectionCampId = $collectionSourceVehicleDispatch['Camp_Vehicle_Dispatch.Collection_Camp'];
+
+    if (self::getEntitySubtypeName($collectionCampId) !== self::ENTITY_SUBTYPE_NAME) {
+      return;
+    }
 
     $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
       ->addSelect('Collection_Camp_Intent_Details.Location_Area_of_camp', 'title')
@@ -1173,19 +1097,20 @@ class CollectionCampService extends AutoSubscriber {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
     // Construct the full URLs for the forms.
     $campVehicleDispatchFormUrl = $homeUrl . 'camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp=' . $collectionCampId . '&Camp_Vehicle_Dispatch.Filled_by=' . $campAttendedById . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice . '&Eck_Collection_Camp1=' . $collectionCampId;
+
     $campOutcomeFormUrl = $homeUrl . '/camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $campAttendedById;
 
     $html = "
-      <p>Dear $contactName,</p>
-      <p>Thank you for attending the camp <strong>$campCode</strong> at <strong>$campAddress</strong>. There are two forms that require your attention during and after the camp:</p>
-      <ol>
-          <li><a href=\"$campVehicleDispatchFormUrl\">Dispatch Form</a><br>
-          Please complete this form from the camp location once the vehicle is being loaded and ready for dispatch to the Goonj's processing center.</li>
-          <li><a href=\"$campOutcomeFormUrl\">Camp Outcome Form</a><br>
-          This feedback form should be filled out after the camp/drive ends, once you have an overview of the event's outcomes.</li>
-      </ol>
-      <p>We appreciate your cooperation.</p>
-      <p>Warm Regards,<br>Urban Relations Team</p>";
+    <p>Dear $contactName,</p>
+    <p>Thank you for attending the camp <strong>$campCode</strong> at <strong>$campAddress</strong>. There are two forms that require your attention during and after the camp:</p>
+    <ol>
+        <li><a href=\"$campVehicleDispatchFormUrl\">Dispatch Form</a><br>
+        Please complete this form from the camp location once the vehicle is being loaded and ready for dispatch to the Goonj's processing center.</li>
+        <li><a href=\"$campOutcomeFormUrl\">Camp Outcome Form</a><br>
+        This feedback form should be filled out after the camp/drive ends, once you have an overview of the event's outcomes.</li>
+    </ol>
+    <p>We appreciate your cooperation.</p>
+    <p>Warm Regards,<br>Urban Relations Team</p>";
 
     return $html;
   }
@@ -1216,6 +1141,124 @@ class CollectionCampService extends AutoSubscriber {
       ->addValue('Camp_Outcome.Number_of_Contributors', $contributorCount)
       ->addWhere('id', '=', $collectionCamp['id'])
       ->execute();
+  }
+
+  /**
+   * This hook is called after a db write on entities.
+   *
+   * @param string $op
+   *   The type of operation being performed.
+   * @param string $objectName
+   *   The name of the object.
+   * @param int $objectId
+   *   The unique identifier for the object.
+   * @param object $objectRef
+   *   The reference to the object.
+   */
+  public static function updateCampStatusAfterAuth(string $op, string $objectName, $objectId, &$objectRef) {
+    $statusDetails = self::checkCampStatusAndIds($objectName, $objectId, $objectRef);
+
+    if (!$statusDetails) {
+      return;
+    }
+
+    $newStatus = $statusDetails['newStatus'];
+    $currentStatus = $statusDetails['currentStatus'];
+
+    if ($currentStatus !== $newStatus) {
+      if ($newStatus === 'authorized') {
+        $campId = $objectRef['id'] ?? NULL;
+        if ($campId === NULL) {
+          return;
+        }
+
+        $results = EckEntity::update('Collection_Camp', TRUE)
+          ->addValue('Collection_Camp_Intent_Details.Camp_Status', 'planned')
+          ->addWhere('id', '=', $campId)
+          ->execute();
+      }
+    }
+  }
+
+  /**
+   * This hook is called after a db write on entities.
+   *
+   * @param string $op
+   *   The type of operation being performed.
+   * @param string $objectName
+   *   The name of the object.
+   * @param int $objectId
+   *   The unique identifier for the object.
+   * @param object $objectRef
+   *   The reference to the object.
+   */
+  public static function updateCampStatusOnOutcomeFilled(string $op, string $objectName, int $objectId, &$objectRef) {
+    if ($objectName !== 'AfformSubmission') {
+      return;
+    }
+
+    $afformName = $objectRef->afform_name;
+
+    if ($afformName !== 'afformCampOutcomeForm') {
+      return;
+    }
+
+    $jsonData = $objectRef->data;
+    $dataArray = json_decode($jsonData, TRUE);
+
+    $collectionCampId = $dataArray['Eck_Collection_Camp1'][0]['fields']['id'];
+
+    if (!$collectionCampId) {
+      return;
+    }
+
+    try {
+      EckEntity::update('Collection_Camp', FALSE)
+        ->addWhere('id', '=', $collectionCampId)
+        ->addValue('Collection_Camp_Intent_Details.Camp_Status', 'completed')
+        ->execute();
+
+    }
+    catch (\Exception $e) {
+      \Civi::log()->error("Exception occurred while updating camp status for campId: $collectionCampId. Error: " . $e->getMessage());
+    }
+  }
+
+  /**
+   * Check the status of a Collection Camp and return status details.
+   *
+   * @param string $objectName
+   *   The name of the object being processed.
+   * @param int $objectId
+   *   The ID of the object being processed.
+   * @param array &$objectRef
+   *   A reference to the object data.
+   *
+   * @return array|null
+   *   An array containing the new and current status if valid, or NULL if invalid.
+   */
+  public static function checkCampStatusAndIds(string $objectName, $objectId, &$objectRef) {
+    if ($objectName != 'Eck_Collection_Camp') {
+      return NULL;
+    }
+
+    $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
+
+    if (!$newStatus || !$objectId) {
+      return NULL;
+    }
+
+    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect('Collection_Camp_Core_Details.Status')
+      ->addWhere('id', '=', $objectId)
+      ->execute()->single();
+
+    $currentStatus = $collectionCamp['Collection_Camp_Core_Details.Status'] ?? '';
+
+    return [
+      'newStatus' => $newStatus,
+      'currentStatus' => $currentStatus,
+    ];
   }
 
 }
