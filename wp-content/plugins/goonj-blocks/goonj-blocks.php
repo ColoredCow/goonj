@@ -91,9 +91,9 @@ function gb_goonj_blocks_check_action_target_exists() {
 	switch ( $target ) {
 		case 'induction-schedule':
 			$result = \Civi\Api4\Contact::get(FALSE)
-			->addWhere('id', '=', $id)
-			->setLimit(1)
-			->execute();
+				->addWhere('id', '=', $id)
+				->setLimit(1)
+				->execute();
 
 			if ( $result->count()===0 ) {
 				$is_404 = true;
