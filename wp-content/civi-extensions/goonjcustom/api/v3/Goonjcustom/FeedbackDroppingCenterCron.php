@@ -6,8 +6,8 @@
 
 use Civi\Api4\EckEntity;
 use Civi\Api4\OptionValue;
-use Civi\HelperService;
 use Civi\DroppingCenterFeedbackService;
+use Civi\HelperService;
 
 /**
  * Goonjcustom.FeedbackDroppingCenterCron API specification (optional)
@@ -53,7 +53,7 @@ function civicrm_api3_goonjcustom_feedback_dropping_center_cron($params) {
     ->addWhere('Status.Status:name', '=', 'Permanently_Closed')
     ->execute();
 
-    $from = HelperService::getDefaultFromEmail();
+  $from = HelperService::getDefaultFromEmail();
 
   try {
     foreach ($droppingCenterMeta as $meta) {

@@ -24,7 +24,7 @@ class DroppingCenterFeedbackService {
 
     // Get recipient email and name.
     $contactDetails = self::getContactDetails($initiatorId);
-    
+
     if ($contactDetails) {
       $contactEmailId = $contactDetails['email.email'];
       $organizingContactName = $contactDetails['display_name'];
@@ -40,7 +40,7 @@ class DroppingCenterFeedbackService {
       }
     }
   }
-  
+
   /**
    * Get contact details for the given initiator ID.
    *
