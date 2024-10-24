@@ -441,10 +441,22 @@ form input {
   color: #fff;
   text-decoration: none;
   border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
 }
 
 .wp-block-gb-slots-wrapper .wp-block-gb-action-button:hover {
   background-color: #005177;
+}
+
+.wp-block-gb-slots-wrapper .wp-block-gb-action-button.disabled {
+  background-color: #ccc;
+  color: #666;
+  cursor: not-allowed;
+}
+
+.wp-block-gb-slots-wrapper .wp-block-gb-action-button.disabled:hover {
+  background-color: #ccc;
 }
 
 @media (max-width: 768px) {

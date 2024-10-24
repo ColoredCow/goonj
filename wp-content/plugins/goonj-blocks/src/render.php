@@ -8,10 +8,11 @@
 require_once __DIR__ . '/functions.php';
 $target        = get_query_var('target');
 $action_target = get_query_var('action_target');
-$source_contact_id = $action_target['id'] ?? null; // Make sure $source_contact_id is properly defined.
+$source_contact_id = $action_target['id'] ?? null;
+
 $slots = generate_induction_slots($source_contact_id);
 
-// die;
+
 $headings = [
   'collection-camp' => 'Collection Camp',
   'dropping-center' => 'Dropping Center',
@@ -21,16 +22,13 @@ $headings = [
 
 $heading_text = $headings[$target];
 
-
-
-// Generate 30 slots.
-// $slots = generate_induction_slots();
 $register_link = sprintf(
     '/volunteer-registration/form/#?source=%s&state_province_id=%s&city=%s',
     $action_target['title'],
     $action_target['Collection_Camp_Intent_Details.State'],
     $action_target['Collection_Camp_Intent_Details.City'],
 );
+
 $material_contribution_link = sprintf(
     '/collection-camp-contribution?source=%s&target_id=%s&state_province_id=%s&city=%s',
     $action_target['title'],
@@ -38,6 +36,7 @@ $material_contribution_link = sprintf(
     $action_target['Collection_Camp_Intent_Details.State'],
     $action_target['Collection_Camp_Intent_Details.City'],
 );
+
 $dropping_center_material_contribution_link = sprintf(
     '/dropping-center-contribution?source=%s&target_id=%s&state_province_id=%s&city=%s',
     $action_target['title'],
@@ -45,14 +44,17 @@ $dropping_center_material_contribution_link = sprintf(
     $action_target['Dropping_Centre.State'],
     $action_target['Dropping_Centre.District_City'],
 );
+
 $pu_visit_check_link = sprintf(
     '/processing-center/office-visit/?target_id=%s',
     $action_target['id']
 );
+
 $pu_material_contribution_check_link = sprintf(
     '/processing-center/material-contribution/?target_id=%s',
     $action_target['id']
 );
+
 $target_data = [
   'dropping-center' => [
     'volunteer_name' => 'Collection_Camp_Core_Details.Contact_Id.display_name',
@@ -68,6 +70,7 @@ $target_data = [
     'contribution_link' => $material_contribution_link,
   ],
 ];
+
 if (in_array($target, ['collection-camp', 'dropping-center'])) :
   $target_info = $target_data[$target];
 
@@ -144,40 +147,45 @@ if (in_array($target, ['collection-camp', 'dropping-center'])) :
                 <?php esc_html_e('Material Contribution', 'goonj-blocks'); ?>
             </a>
         </div>
+  <?php elseif ('induction-schedule' === $target) : ?>
+    <div class="wp-block-gb-slots-wrapper">
+        <?php if (!empty($slots) && in_array($slots['status'], ['Scheduled', 'Completed'])) : ?>
+            <h2 class="wp-block-gb-heading"><?php esc_html_e('Your Induction Status', 'goonj-blocks'); ?></h2>
+            <p>
+                <?php
+                echo esc_html__('Induction Status: ', 'goonj-blocks') . esc_html($slots['status']);
+                echo '<br>';
+                echo esc_html__('Induction Date and Time: ', 'goonj-blocks') . esc_html($slots['date']);
+                ?>
+            </p>
+        <?php else : ?>
+            <h2 class="wp-block-gb-heading"><?php esc_html_e('Available Induction Slots', 'goonj-blocks'); ?></h2>
+            <div class="wp-block-gb-slots-grid">
+                <?php foreach ($slots as $slot) : ?>
+                    <div class="wp-block-gb-slot-box">
+                        <h4 class="wp-block-gb-slot-day"><?php echo esc_html($slot['day']); ?></h4>
+                        <p class="wp-block-gb-slot-date"><?php echo esc_html($slot['date']); ?></p>
+                        <p class="wp-block-gb-slot-time"><?php echo esc_html($slot['time']); ?></p>
 
-        <?php elseif ('induction-schedule' === $target) : ?>
-<div class="wp-block-gb-slots-wrapper">
-  <h2 class="wp-block-gb-heading"><?php esc_html_e('Available Induction Slots', 'goonj-blocks'); ?></h2>
-  <div class="wp-block-gb-slots-grid">
-  <?php foreach ($slots as $slot) : ?>
-      <div class="wp-block-gb-slot-box">
-          <h4 class="wp-block-gb-slot-day"><?php echo esc_html($slot['day']); ?></h4>
-          <p class="wp-block-gb-slot-date"><?php echo esc_html($slot['date']); ?></p>
-          <p class="wp-block-gb-slot-time"><?php echo esc_html($slot['time']); ?></p>
-          
-          <?php
-          // Generate the booking link with slot-specific parameters
-          $book_slot_link = sprintf(
-              '/induction-schedule-slot-success/?source_contact_id=%s&slot_date=%s&slot_time=%s',
-              $action_target['id'], 
-              urlencode($slot['date']),
-              urlencode($slot['time'])
-          );
-          
-          // Check if the slot is full (activity_count > 20)
-          $is_disabled = ($slot['activity_count'] > 20) ? true : false;
-          ?>
-          
-          <a href="<?php echo esc_url($is_disabled ? '#' : $book_slot_link); ?>" 
-             class="wp-block-gb-action-button <?php echo $is_disabled ? 'disabled' : ''; ?>" 
-             <?php echo $is_disabled ? 'disabled' : ''; ?>>
-              <?php echo $is_disabled ? esc_html__('Slot Full', 'goonj-blocks') : esc_html__('Book Slot', 'goonj-blocks'); ?>
-          </a>
-      </div>
-  <?php endforeach; ?>
+                        <?php
+                        $book_slot_link = sprintf(
+                            '/induction-schedule-slot-success/?source_contact_id=%s&slot_date=%s&slot_time=%s',
+                            $action_target['id'],
+                            urlencode($slot['date']),
+                            urlencode($slot['time'])
+                        );
 
-  </div>
-</div>
-<?php endif; ?>
+                        $is_disabled = ($slot['activity_count'] > 20); // Mark slot as disabled if full
+                        ?>
 
-
+                        <a href="<?php echo esc_url($is_disabled ? '#' : $book_slot_link); ?>"
+                        class="wp-block-gb-action-button <?php echo $is_disabled ? 'disabled' : ''; ?>"
+                        <?php echo $is_disabled ? 'disabled' : ''; ?>>
+                            <?php echo $is_disabled ? esc_html__('Slot Full', 'goonj-blocks') : esc_html__('Book Slot', 'goonj-blocks'); ?>
+                        </a>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    </div>
+  <?php endif; ?>
