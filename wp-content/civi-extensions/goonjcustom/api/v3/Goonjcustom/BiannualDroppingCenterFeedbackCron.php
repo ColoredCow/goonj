@@ -24,7 +24,6 @@ function civicrm_api3_goonjcustom_biannual_dropping_center_feedback_cron($params
   // Set threshold date to 6 months ago.
   $thresholdDate = (new \DateTime())->modify('-6 months')->format('Y-m-d');
 
-  // Get all dropping centers where the center's open date is older than 6 months
   // and the last feedback email was either never sent or sent more than 6 months ago.
   $droppingCenters = EckEntity::get('Collection_Camp', TRUE)
     ->addSelect('Collection_Camp_Core_Details.Contact_Id', 'Dropping_Centre.last_feedback_sent_date')
