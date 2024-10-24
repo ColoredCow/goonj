@@ -6,7 +6,7 @@
 
 use Civi\Api4\EckEntity;
 use Civi\Api4\OptionValue;
-use Civi\DroppingCenterFeedbackCron;
+use Civi\DroppingCenterFeedbackService;
 
 /**
  * Goonjcustom.FeedbackDroppingCenterCron API specification (optional)

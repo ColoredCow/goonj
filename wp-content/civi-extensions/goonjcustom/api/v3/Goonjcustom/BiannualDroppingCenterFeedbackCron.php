@@ -6,7 +6,7 @@
 
 use Civi\Api4\Contact;
 use Civi\Api4\EckEntity;
-use Civi\DroppingCenterFeedbackCron;
+use Civi\DroppingCenterFeedbackService;
 
 /**
  *
@@ -64,7 +64,7 @@ function civicrm_api3_goonjcustom_biannual_dropping_center_feedback_cron($params
           // Send email only if not delivered and not permanently closed
           if (!$status) {
             // Send the feedback email.
-            DroppingCenterFeedbackCron::sendFeedbackEmail($organizingContactName, $droppingCenterId, $contactEmailId, $from);
+            DroppingCenterFeedbackService::sendFeedbackEmail($organizingContactName, $droppingCenterId, $contactEmailId, $from);
 
             // Update the last_feedback_sent_date to the current date after the email is sent.
             EckEntity::update('Collection_Camp', TRUE)

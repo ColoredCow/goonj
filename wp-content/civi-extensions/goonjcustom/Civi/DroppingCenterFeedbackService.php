@@ -8,7 +8,7 @@ use Civi\Api4\EckEntity;
 /**
  * Class to manage sending feedback emails for Dropping Centers.
  */
-class DroppingCenterFeedbackCron {
+class DroppingCenterFeedbackService {
 
   /**
    * Send feedback email if it hasn't been sent yet.
