@@ -20,30 +20,42 @@ class DroppingCenterFeedbackService {
    *
    * @throws \CRM_Core_Exception
    */
-  public static function processDroppingCenterStatus($meta, $from) {
-    $droppingCenterId = $meta['Dropping_Center_Meta.Dropping_Center'];
-    $initiatorId = $meta['Dropping_Center_Meta.Dropping_Center.Collection_Camp_Core_Details.Contact_Id'];
-    $status = $meta['Status.Feedback_Email_Delivered:name'];
+  public static function processDroppingCenterStatus($droppingCenterId, $initiatorId, $status, $from) {
 
     // Get recipient email and name.
-    $campAttendedBy = Contact::get(TRUE)
+    $contactDetails = self::getContactDetails($initiatorId);
+    
+    if ($contactDetails) {
+      $contactEmailId = $contactDetails['email.email'];
+      $organizingContactName = $contactDetails['display_name'];
+
+      if (!$status) {
+        self::sendFeedbackEmail($organizingContactName, $droppingCenterId, $contactEmailId, $from);
+
+        // Update status if the email is sent.
+        EckEntity::update('Dropping_Center_Meta', TRUE)
+          ->addValue('Status.Feedback_Email_Delivered:name', 1)
+          ->addWhere('Dropping_Center_Meta.Dropping_Center', '=', $droppingCenterId)
+          ->execute();
+      }
+    }
+  }
+  
+  /**
+   * Get contact details for the given initiator ID.
+   *
+   * @param int $initiatorId
+   *   The ID of the contact to retrieve.
+   *
+   * @return array|null
+   *   An associative array containing the email and display name, or null if not found.
+   */
+  protected static function getContactDetails($initiatorId) {
+    return Contact::get(TRUE)
       ->addSelect('email.email', 'display_name')
       ->addJoin('Email AS email', 'LEFT')
       ->addWhere('id', '=', $initiatorId)
       ->execute()->single();
-
-    $contactEmailId = $campAttendedBy['email.email'];
-    $organizingContactName = $campAttendedBy['display_name'];
-
-    if (!$status) {
-      self::sendFeedbackEmail($organizingContactName, $droppingCenterId, $contactEmailId, $from);
-
-      // Update status if the email is sent.
-      EckEntity::update('Dropping_Center_Meta', TRUE)
-        ->addValue('Status.Feedback_Email_Delivered:name', 1)
-        ->addWhere('Dropping_Center_Meta.Dropping_Center', '=', $droppingCenterId)
-        ->execute();
-    }
   }
 
   /**

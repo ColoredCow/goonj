@@ -6,6 +6,7 @@
 
 use Civi\Api4\EckEntity;
 use Civi\Api4\OptionValue;
+use Civi\HelperService;
 use Civi\DroppingCenterFeedbackService;
 
 /**
@@ -49,15 +50,19 @@ function civicrm_api3_goonjcustom_feedback_dropping_center_cron($params) {
   $droppingCenterMeta = EckEntity::get('Dropping_Center_Meta', TRUE)
     ->addSelect('Status.Status:name', 'Status.Closing_Date', 'Dropping_Center_Meta.Dropping_Center', 'Dropping_Center_Meta.Dropping_Center.Collection_Camp_Core_Details.Contact_Id', 'Status.Feedback_Email_Delivered:name')
     ->addWhere('subtype', '=', $statusName)
-    ->addWhere('Status.Status:name', '=', 'Parmanently_Closed')
+    ->addWhere('Status.Status:name', '=', 'Permanently_Closed')
     ->execute();
 
-  [$defaultFromName, $defaultFromEmail] = CRM_Core_BAO_Domain::getNameAndEmail();
-  $from = "\"$defaultFromName\" <$defaultFromEmail>";
+    $from = HelperService::getDefaultFromEmail();
 
   try {
     foreach ($droppingCenterMeta as $meta) {
-      DroppingCenterFeedbackCron::processDroppingCenterStatus($meta, $from);
+
+      $droppingCenterId = $meta['Dropping_Center_Meta.Dropping_Center'];
+      $initiatorId = $meta['Dropping_Center_Meta.Dropping_Center.Collection_Camp_Core_Details.Contact_Id'];
+      $status = $meta['Status.Feedback_Email_Delivered:name'];
+
+      DroppingCenterFeedbackService::processDroppingCenterStatus($droppingCenterId, $initiatorId, $status, $from);
     }
   }
   catch (Exception $e) {
