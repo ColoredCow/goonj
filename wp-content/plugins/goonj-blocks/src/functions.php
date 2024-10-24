@@ -140,7 +140,3 @@ function generate_induction_slots($source_contact_id = null, $days = 30) {
 
     return $slots;
 }
-
-
-
-
