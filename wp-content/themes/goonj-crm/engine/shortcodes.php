@@ -138,26 +138,36 @@ function goonj_induction_slot_details() {
 	$source_contact_id = isset($_GET['source_contact_id']) ? intval($_GET['source_contact_id']) : 0;
 	$slot_date = isset($_GET['slot_date']) ? $_GET['slot_date'] : 0;
 	$slot_time = isset($_GET['slot_time']) ? $_GET['slot_time'] : 0;
-	
-	\Civi::log()->info('slot_date', [
-		'source_contact_id' => $source_contact_id,
-		'slot_date' => $slot_date,
-		'slot_time' => $slot_time
-	]);
-	
-	// Fetch the activity for the given source contact and criteria
-	$activity = \Civi\Api4\Activity::get(FALSE)
-		->addSelect('id', 'activity_date_time', 'status_id')
+
+	// Fetch the induction activity for the source contact
+	$activities = \Civi\Api4\Activity::get(FALSE)
+		->addSelect('id', 'activity_date_time', 'status_id', 'status_id:name')
 		->addWhere('source_contact_id', '=', $source_contact_id)
 		->addWhere('activity_type_id:name', '=', 'Induction')
-		->addWhere('status_id:name', '=', 'To be scheduled') // Fetch only unscheduled activities
-		->execute()->single();
-	
-	// If no activity found, exit
-	if (empty($activity)) {
+		->execute();
+
+	// If no activities found, exit
+	if ($activities->count() === 0) {
 		\Civi::log()->info('No activity found for contact', ['source_contact_id' => $source_contact_id]);
 		return;
 	}
+
+	$inductionActivity = $activities->first();
+
+	// If no induction activity is found, exit
+	if ($inductionActivity === null) {
+		\Civi::log()->info('No induction activity found for contact', ['source_contact_id' => $source_contact_id]);
+		return;
+	}
+
+	$contactInductionStatus = $inductionActivity['status_id:name'];
+
+
+	// If the induction status is 'Scheduled', return
+	if (in_array($contactInductionStatus, ['Scheduled', 'Completed'])) {
+		return;
+	}
+
 	
 	// Combine slot date (d-m-Y) and slot time (H:i) to form the new activity date time
 	$newActivityDateTime = DateTime::createFromFormat('d-m-Y H:i', $slot_date . ' ' . $slot_time);
@@ -170,8 +180,8 @@ function goonj_induction_slot_details() {
 	// Update the activity with the new date time and set status to "Scheduled" (status_id = 1)
 	\Civi\Api4\Activity::update(FALSE)
 		->addValue('activity_date_time', $newActivityDateTime->format('Y-m-d H:i:s'))
-		->addValue('status_id', 1) // 1 indicates "Scheduled"
-		->addWhere('id', '=', $activity['id']) // Update the fetched activity
+		->addValue('status_id:name', 'Scheduled')
+		->addWhere('id', '=', $activity['id']) // Update the fetched activity status to scheduled
 		->execute();
 	
 	// Log the successful update
