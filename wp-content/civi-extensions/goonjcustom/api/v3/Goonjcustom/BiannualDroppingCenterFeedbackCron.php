@@ -32,6 +32,8 @@ function civicrm_api3_goonjcustom_biannual_dropping_center_feedback_cron($params
     ->addClause('OR', ['Dropping_Centre.last_feedback_sent_date', 'IS NULL'], ['Dropping_Centre.last_feedback_sent_date', '<=', $thresholdDate])
     ->execute();
 
+  error_log("droppingCenters: " . print_r($droppingCenters, TRUE));
+
   $from = HelperService::getDefaultFromEmail();
 
   try {
@@ -42,13 +44,10 @@ function civicrm_api3_goonjcustom_biannual_dropping_center_feedback_cron($params
       $droppingCenterMeta = EckEntity::get('Dropping_Center_Meta', TRUE)
         ->addSelect('Status.Status:name', 'Status.Feedback_Email_Delivered:name')
         ->addWhere('Dropping_Center_Meta.Dropping_Center', '=', $droppingCenterId)
-        ->addWhere('Status.Status:name', '=', 'Permanently_Closed')
-        ->execute();
+        ->addWhere('Status.Status:name', '=', 'Parmanently_Closed')
+        ->execute()->single();
 
-      foreach ($droppingCenterMeta as $meta) {
-        $status = $meta['Status.Feedback_Email_Delivered:name'];
-
-      }
+      $status = $droppingCenterMeta['Status.Feedback_Email_Delivered:name'];
 
       // Send email only if not delivered and not permanently closed
       // Send the feedback email.
