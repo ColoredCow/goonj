@@ -36,7 +36,7 @@ class DroppingCenterFeedbackService {
 
       // Update status if the email is sent.
       EckEntity::update('Dropping_Center_Meta', TRUE)
-        ->addValue('Status.Feedback_Email_Delivered:name', 1)
+        ->addValue('Status.Feedback_Email_Delivered', 1)
         ->addWhere('Dropping_Center_Meta.Dropping_Center', '=', $droppingCenterId)
         ->execute();
     }

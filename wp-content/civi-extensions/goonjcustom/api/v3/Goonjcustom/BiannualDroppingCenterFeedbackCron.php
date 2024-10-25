@@ -40,12 +40,12 @@ function civicrm_api3_goonjcustom_biannual_dropping_center_feedback_cron($params
       $initiatorId = $center['Collection_Camp_Core_Details.Contact_Id'];
 
       $droppingCenterMeta = EckEntity::get('Dropping_Center_Meta', TRUE)
-        ->addSelect('Status.Status:name', 'Status.Feedback_Email_Delivered:name')
+        ->addSelect('Status.Status:name', 'Status.Feedback_Email_Delivered')
         ->addWhere('Dropping_Center_Meta.Dropping_Center', '=', $droppingCenterId)
-        ->addWhere('Status.Status:name', '=', 'Parmanently_Closed')
-        ->execute()->single();
+        ->addWhere('Status.Status:name', '=', 'Permanently_Closed')
+        ->execute();
 
-      $status = $droppingCenterMeta['Status.Feedback_Email_Delivered:name'];
+      $status = $droppingCenterMeta[0]['Status.Feedback_Email_Delivered'];
 
       // Send email only if not delivered and not permanently closed
       // Send the feedback email.
