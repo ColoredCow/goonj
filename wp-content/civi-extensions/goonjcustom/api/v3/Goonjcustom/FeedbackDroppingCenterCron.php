@@ -56,11 +56,10 @@ function civicrm_api3_goonjcustom_feedback_dropping_center_cron($params) {
 
   try {
     foreach ($droppingCenterMeta as $meta) {
-
       $droppingCenterId = $meta['Dropping_Center_Meta.Dropping_Center'];
       $initiatorId = $meta['Dropping_Center_Meta.Dropping_Center.Collection_Camp_Core_Details.Contact_Id'];
       $status = $meta['Status.Feedback_Email_Delivered:name'];
-
+      
       DroppingCenterFeedbackService::processDroppingCenterStatus($droppingCenterId, $initiatorId, $status, $from);
     }
   }
