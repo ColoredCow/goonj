@@ -32,8 +32,6 @@ function civicrm_api3_goonjcustom_biannual_dropping_center_feedback_cron($params
     ->addClause('OR', ['Dropping_Centre.last_feedback_sent_date', 'IS NULL'], ['Dropping_Centre.last_feedback_sent_date', '<=', $thresholdDate])
     ->execute();
 
-  error_log("droppingCenters: " . print_r($droppingCenters, TRUE));
-
   $from = HelperService::getDefaultFromEmail();
 
   try {
