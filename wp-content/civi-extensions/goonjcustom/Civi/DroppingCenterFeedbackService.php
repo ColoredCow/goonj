@@ -51,12 +51,22 @@ class DroppingCenterFeedbackService {
    * @return array|null
    *   An associative array containing the email and display name, or null if not found.
    */
-  protected static function getContactDetails($initiatorId) {
+  public static function getContactDetails($initiatorId) {
     return Contact::get(TRUE)
       ->addSelect('email.email', 'display_name')
       ->addJoin('Email AS email', 'LEFT')
       ->addWhere('id', '=', $initiatorId)
       ->execute()->single();
+  }
+
+  /**
+   *
+   */
+  public static function updateFeedbackLastSentDate($droppingCenterId) {
+    EckEntity::update('Collection_Camp', TRUE)
+      ->addWhere('id', '=', $droppingCenterId)
+      ->addValue('Dropping_Centre.last_feedback_sent_date', (new \DateTime())->format('Y-m-d'))
+      ->execute();
   }
 
   /**
