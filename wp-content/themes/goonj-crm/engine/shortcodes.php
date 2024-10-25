@@ -145,6 +145,7 @@ function goonj_induction_slot_details() {
 		->addWhere('source_contact_id', '=', $source_contact_id)
 		->addWhere('activity_type_id:name', '=', 'Induction')
 		->execute();
+	\Civi::log()->info('activites', ['activities'=>$activities]);
 
 	// If no activities found, exit
 	if ($activities->count() === 0) {
@@ -178,15 +179,16 @@ function goonj_induction_slot_details() {
 	}
 	
 	// Update the activity with the new date time and set status to "Scheduled" (status_id = 1)
-	\Civi\Api4\Activity::update(FALSE)
+	$result = \Civi\Api4\Activity::update(FALSE)
 		->addValue('activity_date_time', $newActivityDateTime->format('Y-m-d H:i:s'))
 		->addValue('status_id:name', 'Scheduled')
-		->addWhere('id', '=', $activity['id']) // Update the fetched activity status to scheduled
+		->addWhere('id', '=', $inductionActivity['id']) // Update the fetched activity status to scheduled
 		->execute();
 	
 	// Log the successful update
 	\Civi::log()->info('Activity updated successfully', [
-		'activity_id' => $activity['id'],
+		'result'=>$result,
+		'activity_id' => $inductionActivity['id'],
 		'new_date_time' => $newActivityDateTime->format('Y-m-d H:i:s'),
 		'new_status_id' => 1
 	]);
