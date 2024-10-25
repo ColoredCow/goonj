@@ -42,7 +42,6 @@ function civicrm_api3_goonjcustom_feedback_dropping_center_cron($params) {
     ->addWhere('option_group_id:name', '=', 'eck_sub_types')
     ->addWhere('name', '=', 'Status')
     ->addWhere('grouping', '=', 'Dropping_Center_Meta')
-    ->setLimit(1)
     ->execute()->single();
 
   $statusName = $optionValues['value'];
