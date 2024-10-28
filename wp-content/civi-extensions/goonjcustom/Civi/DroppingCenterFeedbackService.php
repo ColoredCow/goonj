@@ -115,7 +115,7 @@ class DroppingCenterFeedbackService {
       <p>As part of our commitment to constant improvement, we would greatly appreciate hearing about your experience managing the Dropping Center. 
       If you could spare a few moments to complete our feedback form, your input would be invaluable to us!</p>
     
-      <p><a href='$volunteerFeedback'>Click here to access the feedback form.</a></p>
+      <p><a href='$volunteerFeedback'>Feedback Form Link.</a></p>
     
       <p>We encourage you to share any highlights, suggestions, or challenges you’ve encountered. Together, we can refine and enhance this process even further.</p>
     
