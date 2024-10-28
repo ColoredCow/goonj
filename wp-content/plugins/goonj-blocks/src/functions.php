@@ -55,6 +55,8 @@ function generate_induction_slots($source_contact_id = null, $days = 30) {
     }
 
     $contactStateId = intval($contact['address_primary.state_province_id']);
+    $physicalInductionType = 'Proceesing_Unit';
+    $onlineInductionType = 'Online_only_selected_by_Urban_P';
     $stateProvinces = \Civi\Api4\StateProvince::get(FALSE)
         ->addWhere('country_id.name', '=', 'India')
         ->addWhere('name', 'IN', ['Bihar', 'Jharkhand', 'Orissa'])
@@ -72,11 +74,18 @@ function generate_induction_slots($source_contact_id = null, $days = 30) {
         ->setLimit(30)
         ->execute();
 
-    $randomDates = [rand(1, 10), rand(11, 20)];
     $slots = [];
 
     if (in_array($contactStateId, $stateProvinces)) {
-        return generate_slots('Friday', 4, 30, $scheduledActivities, $randomDates);
+        // Check if city name exists and convert it to lowercase
+        $contactCity = isset($contact['address_primary.city']) ? strtolower($contact['address_primary.city']) : '';
+
+        // Check if the city is one of the specified cities
+        if (in_array($contactCity, ['patna', 'ranchi', 'bhubaneshwar'])) {
+            return generate_slots(['Tuesday', 'Thursday', 'Saturday'], 4, 30, $scheduledActivities, $physicalInductionType);
+        }
+
+        return generate_slots('Friday', 4, 30, $scheduledActivities, $onlineInductionType);
     }
 
     $officeContact = \Civi\Api4\Contact::get(FALSE)
@@ -86,13 +95,13 @@ function generate_induction_slots($source_contact_id = null, $days = 30) {
         ->execute();
 
     if ($officeContact->count() === 0) {
-        return generate_slots('Wednesday', 4, 30, $scheduledActivities, $randomDates);
+        return generate_slots('Wednesday', 4, 30, $scheduledActivities, $onlineInductionType);
     }
 
-    return generate_slots(['Tuesday', 'Thursday', 'Saturday'], 4, 30, $scheduledActivities, $randomDates);
+    return generate_slots(['Tuesday', 'Thursday', 'Saturday'], 4, 30, $scheduledActivities, $physicalInductionType);
 }
 
-function generate_slots($validDays, $timeHour, $maxSlots, $scheduledActivities, $randomDates) {
+function generate_slots($validDays, $timeHour, $maxSlots, $scheduledActivities, $inductionType) {
     $slots = [];
     $slotCount = 0;
     $validDays = (array)$validDays;
@@ -111,15 +120,12 @@ function generate_slots($validDays, $timeHour, $maxSlots, $scheduledActivities, 
                 }
             }
 
-            if ($slotCount === $randomDates[0] || $slotCount === $randomDates[1]) {
-                $activityCount = 22;
-            }
-
             $slots[] = [
                 'day' => $date->format('l'),
                 'date' => $date->format('d-m-Y'),
                 'time' => $date->format('H:i'),
                 'activity_count' => $activityCount,
+                'induction_type' => $inductionType,
             ];
             $slotCount++;
         }

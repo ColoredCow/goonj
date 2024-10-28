@@ -169,10 +169,11 @@ if (in_array($target, ['collection-camp', 'dropping-center'])) :
 
                         <?php
                         $book_slot_link = sprintf(
-                            '/induction-schedule-slot-success/?source_contact_id=%s&slot_date=%s&slot_time=%s',
+                            '/induction-schedule-slot-success/?source_contact_id=%s&slot_date=%s&slot_time=%s&induction_type=%s',
                             $action_target['id'],
                             urlencode($slot['date']),
-                            urlencode($slot['time'])
+                            urlencode($slot['time']),
+                            urldecode($slot['induction_type']),
                         );
 
                         $is_disabled = ($slot['activity_count'] > 20); // Mark slot as disabled if full
