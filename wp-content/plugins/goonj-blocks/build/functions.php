@@ -55,7 +55,7 @@ function generate_induction_slots($source_contact_id = null, $days = 30) {
     }
 
     $contactStateId = intval($contact['address_primary.state_province_id']);
-    $physicalInductionType = 'Proceesing_Unit';
+    $physicalInductionType = 'Processing_Unit';
     $onlineInductionType = 'Online_only_selected_by_Urban_P';
     $stateProvinces = \Civi\Api4\StateProvince::get(FALSE)
         ->addWhere('country_id.name', '=', 'India')
@@ -77,7 +77,7 @@ function generate_induction_slots($source_contact_id = null, $days = 30) {
     $slots = [];
 
     if (in_array($contactStateId, $stateProvinces)) {
-        // Check if city name exists for ranchi, bhubaneshwar, patna and convert it to lowercase
+        // Check if city name exists and convert it to lowercase
         $contactCity = isset($contact['address_primary.city']) ? strtolower($contact['address_primary.city']) : '';
 
         // Check if the city is one of the specified cities

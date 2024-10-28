@@ -55,7 +55,7 @@ function generate_induction_slots($source_contact_id = null, $days = 30) {
     }
 
     $contactStateId = intval($contact['address_primary.state_province_id']);
-    $physicalInductionType = 'Proceesing_Unit';
+    $physicalInductionType = 'Processing_Unit';
     $onlineInductionType = 'Online_only_selected_by_Urban_P';
     $stateProvinces = \Civi\Api4\StateProvince::get(FALSE)
         ->addWhere('country_id.name', '=', 'India')

@@ -175,15 +175,22 @@ function goonj_induction_slot_details() {
     ]);
 
     // Select email template based on induction type
-    $templateTitle = ($inductionType === 'Processing_Unit') 
-        ? 'Acknowledgment_for_Induction_Slot_Booked' 
-        : 'Acknowledgment_for_Online_Induction_Slot_Booked';
-    
-    $template = \Civi\Api4\MessageTemplate::get(FALSE)
-        ->addWhere('msg_title', 'LIKE', "$templateTitle%")
-        ->setLimit(1)
-        ->execute()
-        ->single();
+	// Debug log to check the value of inductionType
+	\Civi::log()->info('Induction Type Check', ['inductionType' => $inductionType]);
+
+	// Select email template based on induction type
+	$templateTitle = ($inductionType == 'Processing_Unit') 
+		? 'Acknowledgment_for_Induction_Slot_Booked' 
+		: 'Acknowledgment_for_Online_Induction_Slot_Booked';
+	\Civi::log()->info('templateTitle', ['templateTitle' => $templateTitle, 'inductionType' => $inductionType]);
+
+	$template = \Civi\Api4\MessageTemplate::get(FALSE)
+		->addWhere('msg_title', 'LIKE', $templateTitle . '%') // Adding '%' for right wildcard
+		->setLimit(1)
+		->execute()
+		->single();
+
+	\Civi::log()->info('template', ['template'=>$template]);
 
     if ($template) {
         // Send email
