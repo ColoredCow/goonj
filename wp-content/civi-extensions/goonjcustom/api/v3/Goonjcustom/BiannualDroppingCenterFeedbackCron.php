@@ -46,6 +46,7 @@ function civicrm_api3_goonjcustom_biannual_dropping_center_feedback_cron($params
         ->execute();
 
       $status = !empty($droppingCenterMeta) ? $droppingCenterMeta[0]['Status.Feedback_Email_Delivered'] : null;
+
       // Send email only if not delivered and not permanently closed
       // Send the feedback email.
       DroppingCenterFeedbackService::processDroppingCenterStatus($droppingCenterId, $initiatorId, $status, $from);
