@@ -229,7 +229,7 @@ class DroppingCenterService extends AutoSubscriber {
       'from' => $from,
       'toEmail' => $mmtEmail,
       'replyTo' => $fromEmail['label'],
-      'html' => self::getMmtEmailHtml($droppingCenterId, $droppingCenterCode, $droppingCenterAddress, $vehicleDispatchId),
+      'html' => self::getMmtEmailHtml($droppingCenterId, $droppingCenterCode, $droppingCenterAddress, $vehicleDispatchId, $mmtId),
     ];
     \CRM_Utils_Mail::send($mailParams);
 
@@ -238,9 +238,13 @@ class DroppingCenterService extends AutoSubscriber {
   /**
    *
    */
-  public static function getMmtEmailHtml($droppingCenterId, $droppingCenterCode, $droppingCenterAddress, $vehicleDispatchId) {
+  public static function getMmtEmailHtml($droppingCenterId, $droppingCenterCode, $droppingCenterAddress, $vehicleDispatchId, $mmtId) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
-    $materialdispatchUrl = $homeUrl . '/acknowledgement-for-dispatch/#?Eck_Collection_Source_Vehicle_Dispatch1=' . $vehicleDispatchId . '&Camp_Vehicle_Dispatch.Collection_Camp=' . $droppingCenterId . '&id=' . $vehicleDispatchId . '&Eck_Collection_Camp1=' . $droppingCenterId;
+    $materialdispatchUrl = $homeUrl . '/acknowledgement-for-dispatch/#?Eck_Collection_Source_Vehicle_Dispatch1=' . $vehicleDispatchId
+        . '&Camp_Vehicle_Dispatch.Collection_Camp=' . $droppingCenterId
+        . '&id=' . $vehicleDispatchId
+        . '&Eck_Collection_Camp1=' . $droppingCenterId
+        . '&Acknowledgement_For_Logistics.Verified_By=' . $mmtId;
     $html = "
     <p>Dear MMT team,</p>
     <p>This is to inform you that a vehicle has been sent from the dropping center <strong>$droppingCenterCode</strong> at <strong>$droppingCenterAddress</strong>.</p>
