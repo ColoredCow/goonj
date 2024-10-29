@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <extension key="civirazorpay" type="module">
   <file>civirazorpay</file>
+  <file>templates/CRM/Civirazorpay/razorpay_checkout.tpl</file>
   <name>civirazorpay</name>
   <description>FIXME</description>
   <license>AGPL-3.0</license>
@@ -38,4 +39,15 @@
     <mixin>setting-php@1.0.0</mixin>
     <mixin>smarty@1.0.3</mixin>
   </mixins>
+  <payment_processors>
+    <processor>
+        <name>CiviRazorpay</name>
+        <title>Razorpay</title>
+        <class_name>CiviRazorpay</class_name>
+        <billing_mode>form</billing_mode>
+        <user_name_label>API Key</user_name_label>
+        <password_label>API Secret</password_label>
+    </processor>
+  </payment_processors>
+
 </extension>

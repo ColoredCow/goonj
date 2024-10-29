@@ -50,7 +50,7 @@ return [
       // as per user_name_label, but saves to signature
       'signature_label' => 'signature',
       // prefix of CRM_Core is implicit so the class ie CRM_Core_Payment_MyProcessor
-      'class_name' => 'Payment_MyProcessor',
+      'class_name' => 'CiviRazorpay',
       // Any urls you might need stored for the user to be redirect to, for example.
       // Note it is quite common these days to hard code the urls in the processors
       // as they are not necessarily seen as configuration. But, if you enter
