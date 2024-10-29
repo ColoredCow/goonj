@@ -49,10 +49,16 @@ function civicrm_api3_goonjcustom_biannual_dropping_center_feedback_cron($params
 
       // Send email only if not delivered and not permanently closed
       // Send the feedback email.
-      DroppingCenterFeedbackService::processDroppingCenterStatus($droppingCenterId, $initiatorId, $status, $from);
+      if (empty($droppingCenterMeta[0])) {
+        // Proceed with sending the feedback email.
+        DroppingCenterFeedbackService::processDroppingCenterStatus($droppingCenterId, $initiatorId, $status, $from);
 
-      // Update the last_feedback_sent_date to the current date after the email is sent.
-      DroppingCenterFeedbackService::updateFeedbackLastSentDate($droppingCenterId);
+        // Update the last_feedback_sent_date to the current date after the email is sent
+        DroppingCenterFeedbackService::updateFeedbackLastSentDate($droppingCenterId);
+      }
+      else {
+        \CRM_Core_Error::debug_log_message("Feedback cron: Dropping Center ID {$droppingCenterId} is marked as 'Permanently Closed'. As a result, no email will be sent by the biannual feedback cron.");
+      }
     }
   }
   catch (Exception $e) {
