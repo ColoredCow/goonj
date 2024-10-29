@@ -26,7 +26,7 @@ function generate_induction_slots($source_contact_id = null, $days = 30) {
     }
 
     $contact = \Civi\Api4\Contact::get(FALSE)
-        ->addSelect('address_primary.state_province_id', 'address_primary.city')
+        ->addSelect('address_primary.state_province_id', 'address_primary.city', 'Individual_fields.Created_Date')
         ->addWhere('id', '=', $source_contact_id)
         ->execute()->single();
 
@@ -55,6 +55,8 @@ function generate_induction_slots($source_contact_id = null, $days = 30) {
     }
 
     $contactStateId = intval($contact['address_primary.state_province_id']);
+    $contactRegistrationDate = new DateTime($contact['Individual_fields.Created_Date']);
+    $contactRegistrationDate->modify('+1 day'); // Start slots generation from the day after registration
     $physicalInductionType = 'Processing_Unit';
     $onlineInductionType = 'Online_only_selected_by_Urban_P';
     $stateProvinces = \Civi\Api4\StateProvince::get(FALSE)
@@ -78,15 +80,12 @@ function generate_induction_slots($source_contact_id = null, $days = 30) {
     $slots = [];
 
     if (in_array($contactStateId, $stateProvinces)) {
-        // Check if city name exists and convert it to lowercase
         $contactCity = isset($contact['address_primary.city']) ? strtolower($contact['address_primary.city']) : '';
-
-        // Check if the city is one of the specified cities
         if (in_array($contactCity, ['patna', 'ranchi', 'bhubaneshwar'])) {
-            return generate_slots( $contactOfficeId, 30, $scheduledActivities, $physicalInductionType);
+            return generate_slots($contactOfficeId, 30, $scheduledActivities, $physicalInductionType, $contactRegistrationDate);
         }
 
-        return generate_slots($contactOfficeId, 30, $scheduledActivities, $onlineInductionType);
+        return generate_slots($contactOfficeId, 30, $scheduledActivities, $onlineInductionType, $contactRegistrationDate);
     }
 
     $officeContact = \Civi\Api4\Contact::get(FALSE)
@@ -96,26 +95,25 @@ function generate_induction_slots($source_contact_id = null, $days = 30) {
         ->execute();
 
     if ($officeContact->count() === 0) {
-        return generate_slots($contactOfficeId, 30, $scheduledActivities, $onlineInductionType);
+        return generate_slots($contactOfficeId, 30, $scheduledActivities, $onlineInductionType, $contactRegistrationDate);
     }
 
-    return generate_slots($contactOfficeId, 30, $scheduledActivities, $physicalInductionType);
+    return generate_slots($contactOfficeId, 30, $scheduledActivities, $physicalInductionType, $contactRegistrationDate);
 }
 
-function generate_slots($contactOfficeId, $maxSlots, $scheduledActivities, $inductionType) {
+function generate_slots($contactOfficeId, $maxSlots, $scheduledActivities, $inductionType, $startDate) {
     $slots = [];
     $slotCount = 0;
 
     $officeDetails = \Civi\Api4\Contact::get(FALSE)
-    ->addSelect('display_name', 'Goonj_Office_Details.Physical_Induction_Slot_Days:name', 'Goonj_Office_Details.Physical_Induction_Slot_Time', 'Goonj_Office_Details.Online_Induction_Slot_Days:name', 'Goonj_Office_Details.Online_Induction_Slot_Time')
-    ->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_Office')
-    ->addWhere('id', '=', $contactOfficeId)
-    ->execute()->first();
+        ->addSelect('display_name', 'Goonj_Office_Details.Physical_Induction_Slot_Days:name', 'Goonj_Office_Details.Physical_Induction_Slot_Time', 'Goonj_Office_Details.Online_Induction_Slot_Days:name', 'Goonj_Office_Details.Online_Induction_Slot_Time')
+        ->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_Office')
+        ->addWhere('id', '=', $contactOfficeId)
+        ->execute()->first();
 
     $validDays = ($inductionType === 'Processing_Unit')
         ? $officeDetails['Goonj_Office_Details.Physical_Induction_Slot_Days:name']
         : $officeDetails['Goonj_Office_Details.Online_Induction_Slot_Days:name'];
-
 
     $timeHour = ($inductionType === 'Processing_Unit')
         ? $officeDetails['Goonj_Office_Details.Physical_Induction_Slot_Time']
@@ -123,23 +121,20 @@ function generate_slots($contactOfficeId, $maxSlots, $scheduledActivities, $indu
 
     list($hour, $minute) = explode(':', $timeHour);
 
-
     for ($i = 0; $slotCount < $maxSlots; $i++) {
-        $date = (new DateTime())->modify("+{$i} days");
+        $date = (clone $startDate)->modify("+{$i} days");
 
         if (in_array($date->format('l'), $validDays)) {
-            // Set the time for the current date
             $date->setTime((int)$hour, (int)$minute);
             $activityDate = $date->format('Y-m-d');
             $activityCount = 0;
-            // Count activities scheduled for the current activity date
+
             foreach ($scheduledActivities as $activity) {
                 if ((new DateTime($activity['activity_date_time']))->format('Y-m-d') === $activityDate) {
                     $activityCount++;
                 }
             }
-        
-            // Add slot details to the slots array
+
             $slots[] = [
                 'day' => $date->format('l'),
                 'date' => $date->format('d-m-Y'),
@@ -148,7 +143,7 @@ function generate_slots($contactOfficeId, $maxSlots, $scheduledActivities, $indu
                 'induction_type' => $inductionType,
             ];
             $slotCount++;
-        }        
+        }
     }
 
     \Civi::log()->info('Activity slots created', ['slots' => $slots]);
