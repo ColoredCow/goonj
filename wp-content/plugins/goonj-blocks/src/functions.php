@@ -19,34 +19,34 @@ function gb_format_time_range($start_date, $end_date, $format = 'h:i A') {
 /**
  *
  */
-function generate_induction_slots($source_contact_id = null, $days = 30) {
-    if (empty($source_contact_id) || !is_numeric($source_contact_id)) {
-        \Civi::log()->warning('Invalid source_contact_id', ['source_contact_id' => $source_contact_id]);
+function generate_induction_slots($contactId = null, $days = 30) {
+    if (empty($contactId) || !is_numeric($contactId)) {
+        \Civi::log()->warning('Invalid contactId', ['contactId' => $contactId]);
         return [];
     }
 
-    $contact = \Civi\Api4\Contact::get(FALSE)
+    $contactData = \Civi\Api4\Contact::get(FALSE)
         ->addSelect('address_primary.state_province_id', 'address_primary.city', 'Individual_fields.Created_Date')
-        ->addWhere('id', '=', $source_contact_id)
+        ->addWhere('id', '=', $contactId)
         ->execute()->single();
 
-    if (empty($contact)) {
-        \Civi::log()->warning('Contact not found', ['source_contact_id' => $source_contact_id]);
+    if (empty($contactData)) {
+        \Civi::log()->warning('Contact not found', ['contactId' => $contactId]);
         return [];
     }
 
-    $activities = \Civi\Api4\Activity::get(FALSE)
+    $inductionActivities = \Civi\Api4\Activity::get(FALSE)
         ->addSelect('id', 'activity_date_time', 'status_id', 'status_id:name', 'Induction_Fields.Goonj_Office')
-        ->addWhere('source_contact_id', '=', $source_contact_id)
+        ->addWhere('source_contact_id', '=', $contactId)
         ->addWhere('activity_type_id:name', '=', 'Induction')
         ->execute();
 
-    if ($activities->count() === 0) {
-        \Civi::log()->info('No activity found for contact', ['source_contact_id' => $source_contact_id]);
+    if ($inductionActivities->count() === 0) {
+        \Civi::log()->info('No activity found for contact', ['contactId' => $contactId]);
         return [];
     }
 
-    $inductionActivity = $activities->first();
+    $inductionActivity = $inductionActivities->first();
     if (in_array($inductionActivity['status_id:name'], ['Scheduled', 'Completed'])) {
         return [
             'status' => $inductionActivity['status_id:name'],
@@ -54,38 +54,37 @@ function generate_induction_slots($source_contact_id = null, $days = 30) {
         ];
     }
 
-    $contactStateId = intval($contact['address_primary.state_province_id']);
-    $contactRegistrationDate = new DateTime($contact['Individual_fields.Created_Date']);
-    $contactRegistrationDate->modify('+1 day'); // Start slots generation from the day after registration
+    $contactStateId = intval($contactData['address_primary.state_province_id']);
+    $inductionSlotStartDate = (new DateTime($contactData['Individual_fields.Created_Date']))->modify('+1 day');
     $physicalInductionType = 'Processing_Unit';
     $onlineInductionType = 'Online_only_selected_by_Urban_P';
-    $stateProvinces = \Civi\Api4\StateProvince::get(FALSE)
+    $statesWithMixedInductionTypes = \Civi\Api4\StateProvince::get(FALSE)
         ->addWhere('country_id.name', '=', 'India')
         ->addWhere('name', 'IN', ['Bihar', 'Jharkhand', 'Orissa'])
         ->setLimit(3)
         ->execute()
         ->column('id');
 
-    $contactOfficeId = $inductionActivity['Induction_Fields.Goonj_Office'];
+    $assignedOfficeId = $inductionActivity['Induction_Fields.Goonj_Office'];
 
     $scheduledActivities = \Civi\Api4\Activity::get(FALSE)
         ->addSelect('activity_date_time', 'Induction_Fields.Goonj_Office', 'id')
         ->addWhere('activity_type_id', '=', 57)
         ->addWhere('status_id', '=', 1)
-        ->addWhere('Induction_Fields.Goonj_Office', '=', $contactOfficeId)
+        ->addWhere('Induction_Fields.Goonj_Office', '=', $assignedOfficeId)
         ->addWhere('activity_date_time', '>', (new DateTime('today midnight'))->format('Y-m-d H:i:s'))
         ->setLimit(30)
         ->execute();
 
     $slots = [];
 
-    if (in_array($contactStateId, $stateProvinces)) {
+    if (in_array($contactStateId, $statesWithMixedInductionTypes)) {
         $contactCity = isset($contact['address_primary.city']) ? strtolower($contact['address_primary.city']) : '';
         if (in_array($contactCity, ['patna', 'ranchi', 'bhubaneshwar'])) {
-            return generate_slots($contactOfficeId, 30, $scheduledActivities, $physicalInductionType, $contactRegistrationDate);
+            return generate_slots($assignedOfficeId, 30, $scheduledActivities, $physicalInductionType, $inductionSlotStartDate);
         }
 
-        return generate_slots($contactOfficeId, 30, $scheduledActivities, $onlineInductionType, $contactRegistrationDate);
+        return generate_slots($assignedOfficeId, 30, $scheduledActivities, $onlineInductionType, $inductionSlotStartDate);
     }
 
     $officeContact = \Civi\Api4\Contact::get(FALSE)
@@ -95,36 +94,36 @@ function generate_induction_slots($source_contact_id = null, $days = 30) {
         ->execute();
 
     if ($officeContact->count() === 0) {
-        return generate_slots($contactOfficeId, 30, $scheduledActivities, $onlineInductionType, $contactRegistrationDate);
+        return generate_slots($assignedOfficeId, 30, $scheduledActivities, $onlineInductionType, $inductionSlotStartDate);
     }
 
-    return generate_slots($contactOfficeId, 30, $scheduledActivities, $physicalInductionType, $contactRegistrationDate);
+    return generate_slots($assignedOfficeId, 30, $scheduledActivities, $physicalInductionType, $inductionSlotStartDate);
 }
 
-function generate_slots($contactOfficeId, $maxSlots, $scheduledActivities, $inductionType, $startDate) {
+function generate_slots($assignedOfficeId, $maxSlots, $scheduledActivities, $inductionType, $startDate) {
     $slots = [];
     $slotCount = 0;
 
     $officeDetails = \Civi\Api4\Contact::get(FALSE)
         ->addSelect('display_name', 'Goonj_Office_Details.Physical_Induction_Slot_Days:name', 'Goonj_Office_Details.Physical_Induction_Slot_Time', 'Goonj_Office_Details.Online_Induction_Slot_Days:name', 'Goonj_Office_Details.Online_Induction_Slot_Time')
         ->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_Office')
-        ->addWhere('id', '=', $contactOfficeId)
+        ->addWhere('id', '=', $assignedOfficeId)
         ->execute()->first();
 
-    $validDays = ($inductionType === 'Processing_Unit')
+    $validInductionDays = ($inductionType === 'Processing_Unit')
         ? $officeDetails['Goonj_Office_Details.Physical_Induction_Slot_Days:name']
         : $officeDetails['Goonj_Office_Details.Online_Induction_Slot_Days:name'];
 
-    $timeHour = ($inductionType === 'Processing_Unit')
+    $inductionTime = ($inductionType === 'Processing_Unit')
         ? $officeDetails['Goonj_Office_Details.Physical_Induction_Slot_Time']
         : $officeDetails['Goonj_Office_Details.Online_Induction_Slot_Time'];
 
-    list($hour, $minute) = explode(':', $timeHour);
+    list($hour, $minute) = explode(':', $inductionTime);
 
     for ($i = 0; $slotCount < $maxSlots; $i++) {
         $date = (clone $startDate)->modify("+{$i} days");
 
-        if (in_array($date->format('l'), $validDays)) {
+        if (in_array($date->format('l'), $validInductionDays)) {
             $date->setTime((int)$hour, (int)$minute);
             $activityDate = $date->format('Y-m-d');
             $activityCount = 0;
