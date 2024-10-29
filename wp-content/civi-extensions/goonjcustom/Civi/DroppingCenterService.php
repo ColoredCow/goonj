@@ -225,7 +225,7 @@ class DroppingCenterService extends AutoSubscriber {
     $mmtEmail = $email['email'];
     $from = HelperService::getDefaultFromEmail();
     $mailParams = [
-      'subject' => 'Dropping center address ' . $droppingCenterAddress . ' - Material Acknowledgement',
+      'subject' => 'Dropping Center Material Acknowledgement - ' . $droppingCenterAddress,
       'from' => $from,
       'toEmail' => $mmtEmail,
       'replyTo' => $fromEmail['label'],
