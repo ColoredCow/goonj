@@ -271,10 +271,11 @@ function goonj_handle_user_identification_form() {
 					
 				case 'dropping-center':
 					$volunteer_registration_url = sprintf(
-						'/volunteer-registration/form/#?email=%s&phone=%s&message=%s',
+						'/volunteer-registration/form/#?email=%s&phone=%s&message=%s&Volunteer_fields.Which_activities_are_you_interested_in_=%s',
 						$email,
 						$phone,
-						'dropping-center'
+						'dropping-center',
+						'23'
 					);
 					$redirect_url = $volunteer_registration_url;
 					break;
