@@ -397,7 +397,7 @@ class DroppingCenterService extends AutoSubscriber {
     <p>Dear {$initiatorName},</p>
     <p>Thank you so much for your invaluable efforts in running the Goonj Dropping Center. 
     Your dedication plays a crucial role in our work, and we deeply appreciate your continued support.</p>
-    <p>Please fill out this Dispatch Form – <a href='{$vehicleDispatchFormUrl}'>[link]</a> once the vehicle is loaded and ready to head to Goonj’s processing center. 
+    <p>Please fill out this Dispatch Form – <a href='{$vehicleDispatchFormUrl}'>[Dispatch Link]</a> once the vehicle is loaded and ready to head to Goonj’s processing center. 
     This will help us to verify and acknowledge the materials as soon as they arrive.</p>
     <p>We truly appreciate your cooperation and continued commitment to our cause.</p>
     <p>Warm Regards,<br>Team Goonj..</p>
