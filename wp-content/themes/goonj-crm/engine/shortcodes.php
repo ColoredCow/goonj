@@ -142,7 +142,7 @@ function goonj_induction_slot_details() {
 
     // Fetch the induction activity for the source contact
     $inductionActivity = \Civi\Api4\Activity::get(FALSE)
-        ->addSelect('id', 'activity_date_time', 'status_id:name', 'Induction_Fields.Goonj_Office')
+        ->addSelect('id', 'activity_date_time', 'status_id:name', 'Induction_Fields.Goonj_Office', 'Induction_Fields.Assign')
         ->addWhere('source_contact_id', '=', $source_contact_id)
         ->addWhere('activity_type_id:name', '=', 'Induction')
         ->setLimit(1)
@@ -193,10 +193,17 @@ function goonj_induction_slot_details() {
 	\Civi::log()->info('template', ['template'=>$template]);
 
     if ($template) {
-        // Send email
+
+		$assigneeContact = \Civi\Api4\Contact::get(FALSE)
+			->addSelect('email.email')
+			->addJoin('Email AS email', 'LEFT')
+			->addWhere('id', '=', $inductionActivity['Induction_Fields.Assign'])
+			->setLimit(1)
+			->execute()->single();
         $emailParams = [
             'contact_id' => $source_contact_id,
             'template_id' => $template['id'],
+			'cc'=> $assigneeContact['email.email']
         ];
         $emailResult = civicrm_api3('Email', 'send', $emailParams);
         \Civi::log()->info('Email sent', ['result' => $emailResult]);
