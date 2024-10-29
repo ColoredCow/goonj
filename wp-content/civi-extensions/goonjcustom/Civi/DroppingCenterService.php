@@ -469,6 +469,12 @@ class DroppingCenterService extends AutoSubscriber {
         'module' => 'afsearchCoordinator',
         'directive' => 'afsearch-coordinator',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      ],
+      'logistics' => [
+        'title' => ts('Logistics'),
+        'module' => 'afsearchLogistics',
+        'directive' => 'afsearch-logistics',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
       ],    
       'materialContribution' => [
         'title' => ts('Material Contribution'),
@@ -492,12 +498,6 @@ class DroppingCenterService extends AutoSubscriber {
         'title' => ts('Donation'),
         'module' => 'afsearchDonation',
         'directive' => 'afsearch-donation',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-      ],
-      'logistics' => [
-        'title' => ts('Logistics'),
-        'module' => 'afsearchLogistics',
-        'directive' => 'afsearch-logistics',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
       ],
       'outcome' => [
