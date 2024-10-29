@@ -65,6 +65,7 @@ function generate_induction_slots($source_contact_id = null, $days = 30) {
         ->column('id');
 
     $contactOfficeId = $inductionActivity['Induction_Fields.Goonj_Office'];
+
     $scheduledActivities = \Civi\Api4\Activity::get(FALSE)
         ->addSelect('activity_date_time', 'Induction_Fields.Goonj_Office', 'id')
         ->addWhere('activity_type_id', '=', 57)
@@ -82,10 +83,10 @@ function generate_induction_slots($source_contact_id = null, $days = 30) {
 
         // Check if the city is one of the specified cities
         if (in_array($contactCity, ['patna', 'ranchi', 'bhubaneshwar'])) {
-            return generate_slots(['Tuesday', 'Thursday', 'Saturday'], 4, 30, $scheduledActivities, $physicalInductionType);
+            return generate_slots( $contactOfficeId, 30, $scheduledActivities, $physicalInductionType);
         }
 
-        return generate_slots('Friday', 4, 30, $scheduledActivities, $onlineInductionType);
+        return generate_slots($contactOfficeId, 30, $scheduledActivities, $onlineInductionType);
     }
 
     $officeContact = \Civi\Api4\Contact::get(FALSE)
@@ -95,31 +96,50 @@ function generate_induction_slots($source_contact_id = null, $days = 30) {
         ->execute();
 
     if ($officeContact->count() === 0) {
-        return generate_slots('Wednesday', 4, 30, $scheduledActivities, $onlineInductionType);
+        return generate_slots($contactOfficeId, 30, $scheduledActivities, $onlineInductionType);
     }
 
-    return generate_slots(['Tuesday', 'Thursday', 'Saturday'], 4, 30, $scheduledActivities, $physicalInductionType);
+    return generate_slots($contactOfficeId, 30, $scheduledActivities, $physicalInductionType);
 }
 
-function generate_slots($validDays, $timeHour, $maxSlots, $scheduledActivities, $inductionType) {
+function generate_slots($contactOfficeId, $maxSlots, $scheduledActivities, $inductionType) {
     $slots = [];
     $slotCount = 0;
-    $validDays = (array)$validDays;
+
+    $officeDetails = \Civi\Api4\Contact::get(FALSE)
+    ->addSelect('display_name', 'Goonj_Office_Details.Physical_Induction_Slot_Days:name', 'Goonj_Office_Details.Physical_Induction_Slot_Time', 'Goonj_Office_Details.Online_Induction_Slot_Days:name', 'Goonj_Office_Details.Online_Induction_Slot_Time')
+    ->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_Office')
+    ->addWhere('id', '=', $contactOfficeId)
+    ->execute()->first();
+
+    $validDays = ($inductionType === 'Processing_Unit')
+        ? $officeDetails['Goonj_Office_Details.Physical_Induction_Slot_Days:name']
+        : $officeDetails['Goonj_Office_Details.Online_Induction_Slot_Days:name'];
+
+
+    $timeHour = ($inductionType === 'Processing_Unit')
+        ? $officeDetails['Goonj_Office_Details.Physical_Induction_Slot_Time']
+        : $officeDetails['Goonj_Office_Details.Online_Induction_Slot_Time'];
+
+    list($hour, $minute) = explode(':', $timeHour);
+
 
     for ($i = 0; $slotCount < $maxSlots; $i++) {
         $date = (new DateTime())->modify("+{$i} days");
 
         if (in_array($date->format('l'), $validDays)) {
+            // Set the time for the current date
+            $date->setTime((int)$hour, (int)$minute);
             $activityDate = $date->format('Y-m-d');
-            $date->setTime($timeHour, 0);
             $activityCount = 0;
-
+            // Count activities scheduled for the current activity date
             foreach ($scheduledActivities as $activity) {
                 if ((new DateTime($activity['activity_date_time']))->format('Y-m-d') === $activityDate) {
                     $activityCount++;
                 }
             }
-
+        
+            // Add slot details to the slots array
             $slots[] = [
                 'day' => $date->format('l'),
                 'date' => $date->format('d-m-Y'),
@@ -128,7 +148,7 @@ function generate_slots($validDays, $timeHour, $maxSlots, $scheduledActivities, 
                 'induction_type' => $inductionType,
             ];
             $slotCount++;
-        }
+        }        
     }
 
     \Civi::log()->info('Activity slots created', ['slots' => $slots]);

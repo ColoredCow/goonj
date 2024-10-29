@@ -416,37 +416,48 @@ form input {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 20px;
+  font-family: inherit;
 }
 
 .wp-block-gb-slots-wrapper .wp-block-gb-slot-box {
   border: 1px solid #ccc;
   padding: 10px;
   text-align: center;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
 }
 
 .wp-block-gb-slots-wrapper .wp-block-gb-slot-day {
   font-size: 1.2em;
   font-weight: bold;
+  font-family: inherit;
 }
 
 .wp-block-gb-slots-wrapper .wp-block-gb-slot-date,
 .wp-block-gb-slots-wrapper .wp-block-gb-slot-time {
   margin: 5px 0;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
 }
 
 .wp-block-gb-slots-wrapper .wp-block-gb-action-button {
   display: inline-block;
   padding: 8px 16px;
-  background-color: #0073aa;
+  background-color: #cf2e2e;
   color: #fff;
   text-decoration: none;
   border-radius: 5px;
   cursor: pointer;
   transition: background-color 0.3s ease;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
 }
 
 .wp-block-gb-slots-wrapper .wp-block-gb-action-button:hover {
-  background-color: #005177;
+  background-color: #a52727;
 }
 
 .wp-block-gb-slots-wrapper .wp-block-gb-action-button.disabled {
@@ -461,7 +472,7 @@ form input {
 
 @media (max-width: 768px) {
   .wp-block-gb-slots-wrapper .wp-block-gb-slots-grid {
-      grid-template-columns: 1fr;
+    grid-template-columns: 1fr;
   }
 }
 
