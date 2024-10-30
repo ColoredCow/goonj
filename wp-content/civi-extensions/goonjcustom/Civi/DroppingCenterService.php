@@ -225,11 +225,11 @@ class DroppingCenterService extends AutoSubscriber {
     $mmtEmail = $email['email'];
     $from = HelperService::getDefaultFromEmail();
     $mailParams = [
-      'subject' => 'Dropping center address ' . $droppingCenterAddress . ' - Material Acknowledgement',
+      'subject' => 'Dropping Center Material Acknowledgement - ' . $droppingCenterAddress,
       'from' => $from,
       'toEmail' => $mmtEmail,
       'replyTo' => $fromEmail['label'],
-      'html' => self::getMmtEmailHtml($droppingCenterId, $droppingCenterCode, $droppingCenterAddress, $vehicleDispatchId),
+      'html' => self::getMmtEmailHtml($droppingCenterId, $droppingCenterCode, $droppingCenterAddress, $vehicleDispatchId, $mmtId),
     ];
     \CRM_Utils_Mail::send($mailParams);
 
@@ -238,9 +238,13 @@ class DroppingCenterService extends AutoSubscriber {
   /**
    *
    */
-  public static function getMmtEmailHtml($droppingCenterId, $droppingCenterCode, $droppingCenterAddress, $vehicleDispatchId) {
+  public static function getMmtEmailHtml($droppingCenterId, $droppingCenterCode, $droppingCenterAddress, $vehicleDispatchId, $mmtId) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
-    $materialdispatchUrl = $homeUrl . '/acknowledgement-for-dispatch/#?Eck_Collection_Source_Vehicle_Dispatch1=' . $vehicleDispatchId . '&Camp_Vehicle_Dispatch.Collection_Camp=' . $droppingCenterId . '&id=' . $vehicleDispatchId . '&Eck_Collection_Camp1=' . $droppingCenterId;
+    $materialdispatchUrl = $homeUrl . '/acknowledgement-for-dispatch/#?Eck_Collection_Source_Vehicle_Dispatch1=' . $vehicleDispatchId
+        . '&Camp_Vehicle_Dispatch.Collection_Camp=' . $droppingCenterId
+        . '&id=' . $vehicleDispatchId
+        . '&Eck_Collection_Camp1=' . $droppingCenterId
+        . '&Acknowledgement_For_Logistics.Verified_By=' . $mmtId;
     $html = "
     <p>Dear MMT team,</p>
     <p>This is to inform you that a vehicle has been sent from the dropping center <strong>$droppingCenterCode</strong> at <strong>$droppingCenterAddress</strong>.</p>
@@ -397,7 +401,7 @@ class DroppingCenterService extends AutoSubscriber {
     <p>Dear {$initiatorName},</p>
     <p>Thank you so much for your invaluable efforts in running the Goonj Dropping Center. 
     Your dedication plays a crucial role in our work, and we deeply appreciate your continued support.</p>
-    <p>Please fill out this Dispatch Form – <a href='{$vehicleDispatchFormUrl}'>[link]</a> once the vehicle is loaded and ready to head to Goonj’s processing center. 
+    <p>Please fill out this Dispatch Form – <a href='{$vehicleDispatchFormUrl}'>[Dispatch Link]</a> once the vehicle is loaded and ready to head to Goonj’s processing center. 
     This will help us to verify and acknowledge the materials as soon as they arrive.</p>
     <p>We truly appreciate your cooperation and continued commitment to our cause.</p>
     <p>Warm Regards,<br>Team Goonj..</p>
@@ -465,6 +469,12 @@ class DroppingCenterService extends AutoSubscriber {
         'module' => 'afsearchCoordinator',
         'directive' => 'afsearch-coordinator',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      ],
+      'logistics' => [
+        'title' => ts('Logistics'),
+        'module' => 'afsearchLogistics',
+        'directive' => 'afsearch-logistics',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
       ],    
       'materialContribution' => [
         'title' => ts('Material Contribution'),
@@ -488,12 +498,6 @@ class DroppingCenterService extends AutoSubscriber {
         'title' => ts('Donation'),
         'module' => 'afsearchDonation',
         'directive' => 'afsearch-donation',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-      ],
-      'logistics' => [
-        'title' => ts('Logistics'),
-        'module' => 'afsearchLogistics',
-        'directive' => 'afsearch-logistics',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
       ],
       'outcome' => [
