@@ -358,7 +358,7 @@ function goonj_handle_user_identification_form() {
 			wp_redirect( '/volunteer-form/#?Individual1=' . $contactId . '&message=' . $message );
 			exit;
 		}
-		
+
 		// If we are here, then it means Volunteer exists in our system.
 		// Now we need to check if the volunteer is inducted or not.
 		// If the volunteer is not inducted,
