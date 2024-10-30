@@ -275,7 +275,7 @@ function goonj_handle_user_identification_form() {
 						$email,
 						$phone,
 						'dropping-center',
-						'23'
+						'27'
 					);
 					$redirect_url = $volunteer_registration_url;
 					break;
