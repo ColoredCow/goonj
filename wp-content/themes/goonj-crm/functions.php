@@ -352,8 +352,10 @@ function goonj_handle_user_identification_form() {
 		$contactId = $found_contacts['id'];
 		$contactSubType = $found_contacts['contact_sub_type'] ?? array();
 		// Check if the contact is a volunteer
+		$message = ($purpose === 'dropping-center') ? 'dropping-center-individual-user' : 'individual-user';
+		
 		if ( empty( $contactSubType ) || ! in_array( 'Volunteer', $contactSubType ) ) {
-			wp_redirect( '/volunteer-form/#?Individual1=' . $contactId . '&message=individual-user' );
+			wp_redirect( '/volunteer-form/#?Individual1=' . $contactId . '&message=' . $message );
 			exit;
 		}
 
