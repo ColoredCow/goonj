@@ -5,7 +5,6 @@ add_shortcode( 'goonj_volunteer_message', 'goonj_custom_message_placeholder' );
 add_shortcode( 'goonj_contribution_volunteer_signup_button', 'goonj_contribution_volunteer_signup_button' );
 add_shortcode( 'goonj_pu_activity_button', 'goonj_pu_activity_button' );
 add_shortcode( 'goonj_collection_landing_page', 'goonj_collection_camp_landing_page' );
-add_shortcode( 'goonj_dropping_center_landing_page', 'goonj_dropping_center_landing_page' );
 add_shortcode( 'goonj_collection_camp_past', 'goonj_collection_camp_past_data' );
 
 function goonj_check_user_action( $atts ) {
@@ -123,12 +122,6 @@ function goonj_pu_activity_button() {
 function goonj_collection_camp_landing_page() {
 	ob_start();
 	get_template_part( 'templates/collection-landing-page' );
-	return ob_get_clean();
-}
-
-function goonj_dropping_center_landing_page() {
-	ob_start();
-	get_template_part( 'templates/dropping-center-landing-page' );
 	return ob_get_clean();
 }
 
