@@ -4,6 +4,19 @@ use Civi\Api4\Activity;
 use Civi\Api4\MessageTemplate;
 
 /**
+ * Goonjcustom.InductionSlotBookingFollowUp API specification (optional)
+ * This is used for documentation and validation.
+ *
+ * @param array $spec
+ *   description of fields supported by this API call.
+ *
+ * @return void
+ */
+function _civicrm_api3_goonjcustom_induction_slot_booking_follow_up_cron_spec(&$spec) {
+  // There are no parameters for the Goonjcustom cron.
+}
+
+/**
  * Goonjcustom.induction_slot_booking_follow_up_cron API implementation.
  *
  * This function checks for unscheduled induction activities older than 7 days 
