@@ -4,7 +4,6 @@ document.addEventListener('DOMContentLoaded', function () {
   var message = params.get('message');
 
   if (message) {
-	console.log(message,"message")
 	var messageDiv = document.getElementById('custom-message');
 	if (messageDiv) {
 	  if (message === 'not-inducted-volunteer' || message === 'individual-user') {
