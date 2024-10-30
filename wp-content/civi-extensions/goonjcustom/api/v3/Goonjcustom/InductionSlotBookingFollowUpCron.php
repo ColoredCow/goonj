@@ -41,45 +41,56 @@ function civicrm_api3_goonjcustom_induction_slot_booking_follow_up_cron($params)
     $followUpDays = 7;
     $followUpTimestamp = strtotime("-$followUpDays days");
 
+    $batchSize = 25; // Process activities in batches of 25
+    $offset = 0;
+
     try {
-        // Retrieve unscheduled induction activities older than 7 days
-        $unscheduledInductionActivities = Activity::get(FALSE)
-            ->addSelect('source_contact_id', 'created_date')
-            ->addWhere('activity_type_id:name', '=', 'Induction')
-            ->addWhere('status_id:name', '=', 'To be scheduled')
-            ->addWhere('created_date', '<', date('Y-m-d H:i:s', $followUpTimestamp))
-            ->setLimit(25)
-            ->execute();
+        // Retrieve the email template for follow-up once outside the loop.
+        $template = MessageTemplate::get(FALSE)
+            ->addSelect('id', 'msg_subject')
+            ->addWhere('msg_title', 'LIKE', 'Induction_slot_booking_follow_up_email%')
+            ->setLimit(1)
+            ->execute()
+            ->single();
 
-        foreach ($unscheduledInductionActivities as $activity) {
-            // Fetch the email template for follow-up.
-            $template = MessageTemplate::get(FALSE)
-                ->addSelect('id', 'msg_subject')
-                ->addWhere('msg_title', 'LIKE', 'Induction_slot_booking_follow_up_email%')
-                ->setLimit(1)
-                ->execute()
-                ->single();
+        do {
+            // Retrieve a batch of unscheduled induction activities older than 7 days
+            $unscheduledInductionActivities = Activity::get(FALSE)
+                ->addSelect('id', 'source_contact_id', 'created_date')
+                ->addWhere('activity_type_id:name', '=', 'Induction')
+                ->addWhere('status_id:name', '=', 'To be scheduled')
+                ->addWhere('created_date', '<', date('Y-m-d H:i:s', $followUpTimestamp))
+                ->setLimit($batchSize)
+                ->setOffset($offset)
+                ->execute();
 
-            // Check if an email has already been sent to avoid duplication.
-            $emailActivities = Activity::get(FALSE)
-                ->addWhere('activity_type_id:name', '=', 'Email')
-                ->addWhere('subject', '=', $template['msg_subject'])
-                ->addWhere('source_contact_id', '=', $activity['source_contact_id'])
-                ->setLimit(1)
-                ->execute()->first();
+            // Process each activity in the batch
+            foreach ($unscheduledInductionActivities as $activity) {
+                // Check if an email has already been sent to avoid duplication.
+                $emailActivities = Activity::get(FALSE)
+                    ->addWhere('activity_type_id:name', '=', 'Email')
+                    ->addWhere('subject', '=', $template['msg_subject'])
+                    ->addWhere('source_contact_id', '=', $activity['source_contact_id'])
+                    ->setLimit(1)
+                    ->execute()->first();
 
-            if (!$emailActivities) {
-                // Prepare email parameters and send the email.
-                $emailParams = [
-                    'contact_id' => $activity['source_contact_id'],
-                    'template_id' => $template['id'],
-                ];
-                $emailResult = civicrm_api3('Email', 'send', $emailParams);
-                \Civi::log()->info('Follow-up email sent', ['result' => $emailResult]);
-            } else {
-                \Civi::log()->info('Email already sent to contact', ['contact_id' => $activity['source_contact_id']]);
+                if (!$emailActivities) {
+                    // Prepare email parameters and send the email.
+                    $emailParams = [
+                        'contact_id' => $activity['source_contact_id'],
+                        'template_id' => $template['id'],
+                    ];
+                    $emailResult = civicrm_api3('Email', 'send', $emailParams);
+                    \Civi::log()->info('Follow-up email sent', ['result' => $emailResult]);
+                } else {
+                    \Civi::log()->info('Email already sent to contact', ['contact_id' => $activity['source_contact_id']]);
+                }
             }
-        }
+
+            // Move to the next batch by increasing the offset
+            $offset += $batchSize;
+
+        } while (count($unscheduledInductionActivities) === $batchSize); // Continue until no more records
 
     } catch (Exception $e) {
         // Log any errors encountered during the process.
