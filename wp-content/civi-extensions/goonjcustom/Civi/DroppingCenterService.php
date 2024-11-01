@@ -469,7 +469,7 @@ class DroppingCenterService extends AutoSubscriber {
         'module' => 'afsearchLogistics',
         'directive' => 'afsearch-logistics',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-      ], 
+      ],
       'eventCoordinators' => [
         'title' => ts('Event Coordinators'),
         'module' => 'afsearchCoordinator',
@@ -487,7 +487,7 @@ class DroppingCenterService extends AutoSubscriber {
         'module' => 'afsearchAcknowledgementForLogisticsData',
         'directive' => 'afsearch-acknowledgement-for-logistics-data',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-      ],   
+      ],
       'materialContribution' => [
         'title' => ts('Material Contribution'),
         'module' => 'afsearchDroppingCenterMaterialContributions',
@@ -523,7 +523,7 @@ class DroppingCenterService extends AutoSubscriber {
         'module' => 'afsearchFeedback',
         'directive' => 'afsearch-feedback',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-      ],   
+      ],
     ];
 
     foreach ($tabConfigs as $key => $config) {
