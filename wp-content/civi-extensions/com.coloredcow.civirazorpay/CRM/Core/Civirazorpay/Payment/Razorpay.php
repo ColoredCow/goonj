@@ -23,35 +23,24 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
    *
    */
   public function doPayment(&$params, $component = 'contribute') {
-    // Load Razorpay API keys from configuration.
     $apiKey = $this->_paymentProcessor['user_name'];
     $apiSecret = $this->_paymentProcessor['password'];
-    $api = new Api($apiKey, $apiSecret);
+    $api = new Razorpay\Api\Api($apiKey, $apiSecret);
 
-    // Create a Razorpay order.
     $orderData = [
-    // Convert to paise.
-      'amount' => $params['amount'] * 100,
-      'currency' => 'INR',
-      'receipt' => 'RCPT-' . uniqid(),
-      'payment_capture' => 1,
+        'amount' => $params['amount'] * 100, // Convert to paise
+        'currency' => 'INR',
+        'receipt' => 'RCPT-' . uniqid(),
+        'payment_capture' => 1,
     ];
     $order = $api->order->create($orderData);
 
-    // Save the order ID to pass it to the frontend.
     $params['trxn_id'] = $order->id;
+    $params['razorpay_key'] = $apiKey;
+    $params['razorpay_order_id'] = $order->id;
 
-    // Pass the order details to the Razorpay checkout template.
-    $smarty = \CRM_Core_Smarty::singleton();
-    $smarty->assign('razorpayKey', $apiKey);
-    $smarty->assign('orderId', $order->id);
-    $smarty->assign('amount', $params['amount'] * 100);
-    $smarty->assign('currency', 'INR');
-
-    // Render the checkout template.
-    echo $smarty->fetch('razorpay_checkout.tpl');
-    exit;
-  }
+    return ['payment_status_id' => 1]; // 1 = Completed, 2 = Pending
+}
 
   /**
    * Check if the configuration for this payment processor is valid.
