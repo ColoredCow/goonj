@@ -11,6 +11,8 @@ use CRM_Civirazorpay_ExtensionUtil as E;
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_config/
  */
 function civirazorpay_civicrm_config(&$config): void {
+  $templateDir = __DIR__ . '/templates';
+  CRM_Core_Smarty::singleton()->addTemplateDir($templateDir);
   _civirazorpay_civix_civicrm_config($config);
 }
 
