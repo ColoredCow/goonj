@@ -11,7 +11,7 @@ return [
             'description' => 'Razorpay Payment Processor for Contributions',
             'user_name_label' => 'API Key',
             'password_label' => 'Secret Key',
-            'class_name' => 'Payment_Razorpay',
+            'class_name' => 'CRM_Civirazorpay_Payment_Razorpay',
             'billing_mode' => 1, // 1 = Onsite
             'payment_type' => 1, // 1 = Credit Card
         ],
