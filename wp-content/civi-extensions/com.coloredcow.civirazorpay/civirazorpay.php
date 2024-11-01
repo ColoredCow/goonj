@@ -1,6 +1,7 @@
 <?php
 
 require_once 'civirazorpay.civix.php';
+require_once __DIR__ . '/vendor/autoload.php';
 
 use CRM_Civirazorpay_ExtensionUtil as E;
 

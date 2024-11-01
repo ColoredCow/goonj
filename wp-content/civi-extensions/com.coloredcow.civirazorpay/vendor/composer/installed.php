@@ -3,7 +3,7 @@
         'name' => '__root__',
         'pretty_version' => 'dev-develop',
         'version' => 'dev-develop',
-        'reference' => 'd8acf3ea6de4a2ffe78684b78c072ad2dac7e638',
+        'reference' => 'da6d76bd0f7bd6e9aea2c98eef8b301c585d15da',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -13,7 +13,7 @@
         '__root__' => array(
             'pretty_version' => 'dev-develop',
             'version' => 'dev-develop',
-            'reference' => 'd8acf3ea6de4a2ffe78684b78c072ad2dac7e638',
+            'reference' => 'da6d76bd0f7bd6e9aea2c98eef8b301c585d15da',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
@@ -29,13 +29,10 @@
             'dev_requirement' => false,
         ),
         'rmccue/requests' => array(
-            'pretty_version' => 'v2.0.13',
-            'version' => '2.0.13.0',
-            'reference' => '8bc4aae49f5b2bd0a9f42e920e646ec5b2b0a68a',
-            'type' => 'library',
-            'install_path' => __DIR__ . '/../rmccue/requests',
-            'aliases' => array(),
             'dev_requirement' => false,
+            'replaced' => array(
+                0 => '*',
+            ),
         ),
     ),
 );
