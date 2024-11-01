@@ -42,6 +42,16 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
         exit;
     }
 
+    /**
+     * Check if the configuration for this payment processor is valid.
+     *
+     * @return array An array of error messages, empty if no errors.
+     */
+    public function checkConfig() {
+        // @todo
+        return [];
+    }
+
     public function handlePaymentNotification() {
         // Handle Razorpay IPN here
     }
