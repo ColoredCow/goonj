@@ -101,7 +101,7 @@ function generate_induction_slots($contactId = null, $days = 30) {
             // generate online induction slots for state having no office
             return generate_slots($assignedOfficeId, 30, $onlineInductionType, $inductionSlotStartDate);
         }
-
+        // generate physical induction slots having office in their states
         return generate_slots($assignedOfficeId, 30, $physicalInductionType, $inductionSlotStartDate);
     } catch (\Exception $e) {
         \Civi::log()->error('Error generating induction slots', [
@@ -128,7 +128,7 @@ function generate_slots($assignedOfficeId, $maxSlots, $inductionType, $startDate
     $highActivityCountDays = 0;
 
     try {
-        // Fetch office details for induction scheduling
+        // Fetch office induction details for induction scheduling
         $officeDetails = \Civi\Api4\Contact::get(FALSE)
             ->addSelect('display_name', 'Goonj_Office_Details.Physical_Induction_Slot_Days:name', 'Goonj_Office_Details.Physical_Induction_Slot_Time', 'Goonj_Office_Details.Online_Induction_Slot_Days:name', 'Goonj_Office_Details.Online_Induction_Slot_Time')
             ->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_Office')
@@ -160,8 +160,6 @@ function generate_slots($assignedOfficeId, $maxSlots, $inductionType, $startDate
             ->addWhere('activity_date_time', '>', (new DateTime('today midnight'))->format('Y-m-d H:i:s'))
             ->setLimit(60)
             ->execute();
-        
-        \Civi::log()->info('scheduledActivities', ['scheduledActivities'=>$scheduledActivities]);
 
         // Create a set of scheduled activity dates for quick lookup
         $scheduledActivityDates = [];
@@ -170,12 +168,12 @@ function generate_slots($assignedOfficeId, $maxSlots, $inductionType, $startDate
         }
 
         // Generate slots
-        generateActivitySlots($slots, $maxSlots, $validInductionDays, $hour, $minute, $startDate, $scheduledActivityDates, $slotCount, $highActivityCountDays);
+        generateActivitySlots($slots, $maxSlots, $validInductionDays, $hour, $minute, $startDate, $scheduledActivityDates, $slotCount, $highActivityCountDays, $inductionType);
 
         if ($highActivityCountDays >= 23) {
             $slotCount = 0;
             $startDate = new DateTime(end($slots)['date']);
-            generateActivitySlots($slots, $highActivityCountDays, $validInductionDays, $hour, $minute, $startDate, $scheduledActivityDates, $slotCount, $highActivityCountDays);
+            generateActivitySlots($slots, $highActivityCountDays, $validInductionDays, $hour, $minute, $startDate, $scheduledActivityDates, $slotCount, $highActivityCountDays, $inductionType);
         }
 
         \Civi::log()->info('Activity slots created', ['slots' => $slots]);
@@ -189,7 +187,7 @@ function generate_slots($assignedOfficeId, $maxSlots, $inductionType, $startDate
     }
 }
 
-function generateActivitySlots(&$slots, $maxSlots, $validInductionDays, $hour, $minute, $startDate, $scheduledActivityDates, &$slotCount, &$highActivityCountDays) {
+function generateActivitySlots(&$slots, $maxSlots, $validInductionDays, $hour, $minute, $startDate, $scheduledActivityDates, &$slotCount, &$highActivityCountDays, $inductionType) {
     for ($i = 0; $slotCount < $maxSlots; $i++) {
         $date = (clone $startDate)->modify("+{$i} days");
         $dayName = $date->format('l');
