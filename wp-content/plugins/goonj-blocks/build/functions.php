@@ -202,7 +202,7 @@ function generateActivitySlots(&$slots, $maxSlots, $validInductionDays, $hour, $
             $slots[] = [
                 'day' => $dayName,
                 'date' => $date->format('d-m-Y'),
-                'time' => $date->format('H:i'),
+                'time' => $date->format('h:i A'),
                 'activity_count' => $activityCount,
                 'induction_type' => $inductionType,
             ];
