@@ -79,24 +79,14 @@ function generate_induction_slots($contactId = null, $days = 30) {
 
         $assignedOfficeId = $inductionActivity['Induction_Fields.Goonj_Office'];
 
-        // Fetch already scheduled induction activities at the assigned Goonj office
-        $scheduledActivities = \Civi\Api4\Activity::get(FALSE)
-            ->addSelect('activity_date_time', 'Induction_Fields.Goonj_Office', 'id')
-            ->addWhere('activity_type_id:name', '=', 'Induction')
-            ->addWhere('status_id:name', '=', 'Scheduled')
-            ->addWhere('Induction_Fields.Goonj_Office', '=', $assignedOfficeId)
-            ->addWhere('activity_date_time', '>', (new DateTime('today midnight'))->format('Y-m-d H:i:s'))
-            ->setLimit(60)
-            ->execute();
-
         // Check for mixed induction type states and generate slots accordingly
         if (in_array($contactStateId, $statesWithMixedInductionTypes)) {
             $contactCity = isset($contact['address_primary.city']) ? strtolower($contact['address_primary.city']) : '';
             if (in_array($contactCity, ['patna', 'ranchi', 'bhubaneshwar'])) {
-                return generate_slots($assignedOfficeId, 30, $scheduledActivities, $physicalInductionType, $inductionSlotStartDate);
+                return generate_slots($assignedOfficeId, 30, $schedcalInductionType, $inductionSlotStartDate);
             }
 
-            return generate_slots($assignedOfficeId, 30, $scheduledActivities, $onlineInductionType, $inductionSlotStartDate);
+            return generate_slots($assignedOfficeId, 30, $schedeInductionType, $inductionSlotStartDate);
         }
 
         // Determine if a Goonj office exists in the contact's state and schedule accordingly
@@ -107,10 +97,10 @@ function generate_induction_slots($contactId = null, $days = 30) {
             ->execute();
 
         if ($officeContact->count() === 0) {
-            return generate_slots($assignedOfficeId, 30, $scheduledActivities, $onlineInductionType, $inductionSlotStartDate);
+            return generate_slots($assignedOfficeId, 30, $schedeInductionType, $inductionSlotStartDate);
         }
 
-        return generate_slots($assignedOfficeId, 30, $scheduledActivities, $physicalInductionType, $inductionSlotStartDate);
+        return generate_slots($assignedOfficeId, 30, $schedcalInductionType, $inductionSlotStartDate);
     } catch (\Exception $e) {
         \Civi::log()->error('Error generating induction slots', [
             'contactId' => $contactId,
@@ -130,11 +120,21 @@ function generate_induction_slots($contactId = null, $days = 30) {
  * @param DateTime $startDate The start date for generating slots.
  * @return array Array of generated slots with day, date, time, count, and type.
  */
-function generate_slots($assignedOfficeId, $maxSlots, $scheduledActivities, $inductionType, $startDate) {
+function generate_slots($assignedOfficeId, $maxSlots, $inductionType, $startDate) {
     $slots = [];
     $slotCount = 0;
 
     try {
+        // Fetch already scheduled induction activities at the assigned Goonj office
+        $scheduledActivities = \Civi\Api4\Activity::get(FALSE)
+            ->addSelect('activity_date_time', 'Induction_Fields.Goonj_Office', 'id')
+            ->addWhere('activity_type_id:name', '=', 'Induction')
+            ->addWhere('status_id:name', '=', 'Scheduled')
+            ->addWhere('Induction_Fields.Goonj_Office', '=', $assignedOfficeId)
+            ->addWhere('activity_date_time', '>', (new DateTime('today midnight'))->format('Y-m-d H:i:s'))
+            ->setLimit(60)
+            ->execute();
+
         // Fetch office details for induction scheduling
         $officeDetails = \Civi\Api4\Contact::get(FALSE)
             ->addSelect('display_name', 'Goonj_Office_Details.Physical_Induction_Slot_Days:name', 'Goonj_Office_Details.Physical_Induction_Slot_Time', 'Goonj_Office_Details.Online_Induction_Slot_Days:name', 'Goonj_Office_Details.Online_Induction_Slot_Time')
