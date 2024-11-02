@@ -83,10 +83,10 @@ function generate_induction_slots($contactId = null, $days = 30) {
         if (in_array($contactStateId, $statesWithMixedInductionTypes)) {
             $contactCity = isset($contact['address_primary.city']) ? strtolower($contact['address_primary.city']) : '';
             if (in_array($contactCity, ['patna', 'ranchi', 'bhubaneshwar'])) {
-                return generate_slots($assignedOfficeId, 30, $schedcalInductionType, $inductionSlotStartDate);
+                return generate_slots($assignedOfficeId, 30, $physicalInductionType, $inductionSlotStartDate);
             }
 
-            return generate_slots($assignedOfficeId, 30, $schedeInductionType, $inductionSlotStartDate);
+            return generate_slots($assignedOfficeId, 30, $onlineInductionType, $inductionSlotStartDate);
         }
 
         // Determine if a Goonj office exists in the contact's state and schedule accordingly
@@ -97,10 +97,10 @@ function generate_induction_slots($contactId = null, $days = 30) {
             ->execute();
 
         if ($officeContact->count() === 0) {
-            return generate_slots($assignedOfficeId, 30, $schedeInductionType, $inductionSlotStartDate);
+            return generate_slots($assignedOfficeId, 30, $onlineInductionType, $inductionSlotStartDate);
         }
 
-        return generate_slots($assignedOfficeId, 30, $schedcalInductionType, $inductionSlotStartDate);
+        return generate_slots($assignedOfficeId, 30, $physicalInductionType, $inductionSlotStartDate);
     } catch (\Exception $e) {
         \Civi::log()->error('Error generating induction slots', [
             'contactId' => $contactId,
@@ -123,18 +123,21 @@ function generate_induction_slots($contactId = null, $days = 30) {
 function generate_slots($assignedOfficeId, $maxSlots, $inductionType, $startDate) {
     $slots = [];
     $slotCount = 0;
+    $highActivityCountDays = 0;
+
+    // Define the number of random dates
+    $numberOfRandomDates = 23;
+    $randomDates = [];
+
+    // Generate unique random slot counts for 23 dates
+    while (count($randomDates) < $numberOfRandomDates) {
+        $randomDate = rand(0, $maxSlots - 1);
+        if (!in_array($randomDate, $randomDates)) {
+            $randomDates[] = $randomDate; // Ensure uniqueness
+        }
+    }
 
     try {
-        // Fetch already scheduled induction activities at the assigned Goonj office
-        $scheduledActivities = \Civi\Api4\Activity::get(FALSE)
-            ->addSelect('activity_date_time', 'Induction_Fields.Goonj_Office', 'id')
-            ->addWhere('activity_type_id:name', '=', 'Induction')
-            ->addWhere('status_id:name', '=', 'Scheduled')
-            ->addWhere('Induction_Fields.Goonj_Office', '=', $assignedOfficeId)
-            ->addWhere('activity_date_time', '>', (new DateTime('today midnight'))->format('Y-m-d H:i:s'))
-            ->setLimit(60)
-            ->execute();
-
         // Fetch office details for induction scheduling
         $officeDetails = \Civi\Api4\Contact::get(FALSE)
             ->addSelect('display_name', 'Goonj_Office_Details.Physical_Induction_Slot_Days:name', 'Goonj_Office_Details.Physical_Induction_Slot_Time', 'Goonj_Office_Details.Online_Induction_Slot_Days:name', 'Goonj_Office_Details.Online_Induction_Slot_Time')
@@ -147,6 +150,7 @@ function generate_slots($assignedOfficeId, $maxSlots, $inductionType, $startDate
             return FALSE;
         }
 
+        // Determine valid induction days and time based on induction type
         $validInductionDays = ($inductionType === 'Processing_Unit')
             ? $officeDetails['Goonj_Office_Details.Physical_Induction_Slot_Days:name']
             : $officeDetails['Goonj_Office_Details.Online_Induction_Slot_Days:name'];
@@ -157,28 +161,78 @@ function generate_slots($assignedOfficeId, $maxSlots, $inductionType, $startDate
 
         list($hour, $minute) = explode(':', $inductionTime);
 
+        // Fetch already scheduled induction activities at the assigned Goonj office
+        $scheduledActivities = \Civi\Api4\Activity::get(FALSE)
+            ->addSelect('activity_date_time')
+            ->addWhere('activity_type_id:name', '=', 'Induction')
+            ->addWhere('status_id:name', '=', 'Scheduled')
+            ->addWhere('Induction_Fields.Goonj_Office', '=', $assignedOfficeId)
+            ->addWhere('activity_date_time', '>', (new DateTime('today midnight'))->format('Y-m-d H:i:s'))
+            ->setLimit(60)
+            ->execute();
+        \Civi::log()->info('scheduledActivities', ['scheduledActivities'=>$scheduledActivities]);
+
+        // Create a set of scheduled activity dates for quick lookup
+        $scheduledActivityDates = [];
+        foreach ($scheduledActivities as $activity) {
+            $scheduledActivityDates[] = (new DateTime($activity['activity_date_time']))->format('Y-m-d');
+        }
+        \Civi::log()->info('scheduledActivityDates', ['scheduledActivityDates'=>$scheduledActivityDates]);
+
+        // Generate slots
         for ($i = 0; $slotCount < $maxSlots; $i++) {
             $date = (clone $startDate)->modify("+{$i} days");
+            $dayName = $date->format('l');
 
-            if (in_array($date->format('l'), $validInductionDays)) {
+            if (in_array($dayName, $validInductionDays)) {
                 $date->setTime((int)$hour, (int)$minute);
                 $activityDate = $date->format('Y-m-d');
-                $activityCount = 0;
+                        // $activityCount = count(array_filter($scheduledActivityDates, fn($scheduledActivityDate) => $scheduledActivityDate === $activityDate));
 
-                foreach ($scheduledActivities as $activity) {
-                    if ((new DateTime($activity['activity_date_time']))->format('Y-m-d') === $activityDate) {
-                        $activityCount++;
-                    }
+                                // Check if the current slot count is in the array of random dates
+                if (in_array($slotCount, $randomDates)) {
+                    $activityCount = 22; // Set activity count to 22 for testing purposes
+                } else {
+                    $activityCount = count(array_filter($scheduledActivityDates, fn($scheduledActivityDate) => $scheduledActivityDate === $activityDate));
                 }
 
                 $slots[] = [
-                    'day' => $date->format('l'),
+                    'day' => $dayName,
                     'date' => $date->format('d-m-Y'),
                     'time' => $date->format('H:i'),
                     'activity_count' => $activityCount,
                     'induction_type' => $inductionType,
                 ];
                 $slotCount++;
+                // Count days with activity count greater than 20
+                if ($activityCount > 20) {
+                    $highActivityCountDays++;
+                }
+            }
+        }
+
+        if ($highActivityCountDays >= 23){
+            $slotCount=0;
+            $startDate = new DateTime(end($slots)['date']);
+
+            for ($i = 0; $slotCount < $highActivityCountDays; $i++) {
+                $date = (clone $startDate)->modify("+{$i} days");
+                $dayName = $date->format('l');
+    
+                if (in_array($dayName, $validInductionDays)) {
+                    $date->setTime((int)$hour, (int)$minute);
+                    $activityDate = $date->format('Y-m-d');
+                    $activityCount = count(array_filter($scheduledActivityDates, fn($scheduledActivityDate) => $scheduledActivityDate === $activityDate));
+    
+                    $slots[] = [
+                        'day' => $dayName,
+                        'date' => $date->format('d-m-Y'),
+                        'time' => $date->format('H:i'),
+                        'activity_count' => $activityCount,
+                        'induction_type' => $inductionType,
+                    ];
+                    $slotCount++;
+                }
             }
         }
 
@@ -186,9 +240,11 @@ function generate_slots($assignedOfficeId, $maxSlots, $inductionType, $startDate
         return $slots;
     } catch (\Exception $e) {
         \Civi::log()->error('Error generating slots', [
-            'officeId' => $assignedOfficeId, // Corrected variable name here
+            'officeId' => $assignedOfficeId,
             'error' => $e->getMessage()
         ]);
         return [];
     }
 }
+
+
