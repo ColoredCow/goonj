@@ -12,7 +12,7 @@ return [
             'user_name_label' => 'API Key',
             'password_label' => 'Secret Key',
             'class_name' => 'Civirazorpay_Payment_Razorpay',
-            'billing_mode' => 1, // 1 = Onsite
+            'billing_mode' => 4, // Redirect
             'payment_type' => 1, // 1 = Credit Card
         ],
     ],

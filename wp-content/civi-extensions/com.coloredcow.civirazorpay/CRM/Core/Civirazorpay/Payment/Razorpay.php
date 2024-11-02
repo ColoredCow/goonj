@@ -25,22 +25,23 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
   public function doPayment(&$params, $component = 'contribute') {
     $apiKey = $this->_paymentProcessor['user_name'];
     $apiSecret = $this->_paymentProcessor['password'];
-    $api = new Razorpay\Api\Api($apiKey, $apiSecret);
+    $api = new Api($apiKey, $apiSecret);
 
     $orderData = [
-        'amount' => $params['amount'] * 100, // Convert to paise
-        'currency' => 'INR',
-        'receipt' => 'RCPT-' . uniqid(),
-        'payment_capture' => 1,
+    // Convert to paise.
+      'amount' => $params['amount'] * 100,
+      'currency' => 'INR',
+      'receipt' => 'RCPT-' . uniqid(),
+      'payment_capture' => 1,
     ];
     $order = $api->order->create($orderData);
 
-    $params['trxn_id'] = $order->id;
-    $params['razorpay_key'] = $apiKey;
-    $params['razorpay_order_id'] = $order->id;
+    // Mark contribution as pending in CiviCRM.
+    $params['contribution_status_id'] = 2;
 
-    return ['payment_status_id' => 1]; // 1 = Completed, 2 = Pending
-}
+    // Return Pending (2) response for CiviCRM.
+    return ['payment_status_id' => 2];
+  }
 
   /**
    * Check if the configuration for this payment processor is valid.
