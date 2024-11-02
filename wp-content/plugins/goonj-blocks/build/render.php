@@ -180,8 +180,7 @@ if (in_array($target, ['collection-camp', 'dropping-center'])) :
                         ?>
 
                         <a href="<?php echo esc_url($is_disabled ? '#' : $book_slot_link); ?>"
-                        class="wp-block-gb-action-button <?php echo $is_disabled ? 'disabled' : ''; ?>"
-                        <?php echo $is_disabled ? 'disabled' : ''; ?>>
+                        class="wp-block-gb-action-button <?php echo $is_disabled ? 'disabled' : ''; ?>">
                             <?php echo $is_disabled ? esc_html__('Slot Full', 'goonj-blocks') : esc_html__('Book Slot', 'goonj-blocks'); ?>
                         </a>
                     </div>

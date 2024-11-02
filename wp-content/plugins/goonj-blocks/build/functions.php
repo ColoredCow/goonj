@@ -82,14 +82,12 @@ function generate_induction_slots($contactId = null, $days = 30) {
         // Fetch already scheduled induction activities at the assigned Goonj office
         $scheduledActivities = \Civi\Api4\Activity::get(FALSE)
             ->addSelect('activity_date_time', 'Induction_Fields.Goonj_Office', 'id')
-            ->addWhere('activity_type_id', '=', 57)
-            ->addWhere('status_id', '=', 1)
+            ->addWhere('activity_type_id:name', '=', 'Induction')
+            ->addWhere('status_id:name', '=', 'Scheduled')
             ->addWhere('Induction_Fields.Goonj_Office', '=', $assignedOfficeId)
             ->addWhere('activity_date_time', '>', (new DateTime('today midnight'))->format('Y-m-d H:i:s'))
-            ->setLimit(30)
+            ->setLimit(60)
             ->execute();
-
-        $slots = [];
 
         // Check for mixed induction type states and generate slots accordingly
         if (in_array($contactStateId, $statesWithMixedInductionTypes)) {
@@ -144,8 +142,8 @@ function generate_slots($assignedOfficeId, $maxSlots, $scheduledActivities, $ind
             ->addWhere('id', '=', $assignedOfficeId)
             ->execute()->first();
         
-        if(empty($officeDetails) || empty($assignedOfficeId)){
-            \Civi::log()->info('Office Details not found', ['assignedOfficeId'=>$assignedOfficeId]);
+        if (empty($officeDetails) || empty($assignedOfficeId)) {
+            \Civi::log()->info('Office Details not found', ['assignedOfficeId' => $assignedOfficeId]);
             return FALSE;
         }
 
@@ -188,7 +186,7 @@ function generate_slots($assignedOfficeId, $maxSlots, $scheduledActivities, $ind
         return $slots;
     } catch (\Exception $e) {
         \Civi::log()->error('Error generating slots', [
-            'officeId' => $officeId,
+            'officeId' => $assignedOfficeId, // Corrected variable name here
             'error' => $e->getMessage()
         ]);
         return [];
