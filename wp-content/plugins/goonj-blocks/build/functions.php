@@ -42,7 +42,7 @@ function generate_induction_slots($contactId = null, $days = 30) {
             return [];
         }
 
-        // Retrieve all induction activities for the contact
+        // Retrieve induction activity for the contact
         $inductionActivities = \Civi\Api4\Activity::get(FALSE)
             ->addSelect('id', 'activity_date_time', 'status_id', 'status_id:name', 'Induction_Fields.Goonj_Office')
             ->addWhere('source_contact_id', '=', $contactId)
@@ -55,7 +55,7 @@ function generate_induction_slots($contactId = null, $days = 30) {
             return [];
         }
 
-        // If the latest induction activity status is 'Scheduled' or 'Completed', return the details
+        // If the induction activity status is 'Scheduled' or 'Completed', return the details
         $inductionActivity = $inductionActivities->first();
         if (in_array($inductionActivity['status_id:name'], ['Scheduled', 'Completed'])) {
             return [
@@ -83,9 +83,10 @@ function generate_induction_slots($contactId = null, $days = 30) {
         if (in_array($contactStateId, $statesWithMixedInductionTypes)) {
             $contactCity = isset($contact['address_primary.city']) ? strtolower($contact['address_primary.city']) : '';
             if (in_array($contactCity, ['patna', 'ranchi', 'bhubaneshwar'])) {
+                // generate physical slot for these cities
                 return generate_slots($assignedOfficeId, 30, $physicalInductionType, $inductionSlotStartDate);
             }
-
+            // generate online induction slots for other cities
             return generate_slots($assignedOfficeId, 30, $onlineInductionType, $inductionSlotStartDate);
         }
 
@@ -97,6 +98,7 @@ function generate_induction_slots($contactId = null, $days = 30) {
             ->execute();
 
         if ($officeContact->count() === 0) {
+            // generate online induction slots for state having no office
             return generate_slots($assignedOfficeId, 30, $onlineInductionType, $inductionSlotStartDate);
         }
 
@@ -124,18 +126,6 @@ function generate_slots($assignedOfficeId, $maxSlots, $inductionType, $startDate
     $slots = [];
     $slotCount = 0;
     $highActivityCountDays = 0;
-
-    // Define the number of random dates
-    $numberOfRandomDates = 23;
-    $randomDates = [];
-
-    // Generate unique random slot counts for 23 dates
-    while (count($randomDates) < $numberOfRandomDates) {
-        $randomDate = rand(0, $maxSlots - 1);
-        if (!in_array($randomDate, $randomDates)) {
-            $randomDates[] = $randomDate; // Ensure uniqueness
-        }
-    }
 
     try {
         // Fetch office details for induction scheduling
@@ -170,6 +160,7 @@ function generate_slots($assignedOfficeId, $maxSlots, $inductionType, $startDate
             ->addWhere('activity_date_time', '>', (new DateTime('today midnight'))->format('Y-m-d H:i:s'))
             ->setLimit(60)
             ->execute();
+        
         \Civi::log()->info('scheduledActivities', ['scheduledActivities'=>$scheduledActivities]);
 
         // Create a set of scheduled activity dates for quick lookup
@@ -177,63 +168,14 @@ function generate_slots($assignedOfficeId, $maxSlots, $inductionType, $startDate
         foreach ($scheduledActivities as $activity) {
             $scheduledActivityDates[] = (new DateTime($activity['activity_date_time']))->format('Y-m-d');
         }
-        \Civi::log()->info('scheduledActivityDates', ['scheduledActivityDates'=>$scheduledActivityDates]);
 
         // Generate slots
-        for ($i = 0; $slotCount < $maxSlots; $i++) {
-            $date = (clone $startDate)->modify("+{$i} days");
-            $dayName = $date->format('l');
+        generateActivitySlots($slots, $maxSlots, $validInductionDays, $hour, $minute, $startDate, $scheduledActivityDates, $slotCount, $highActivityCountDays);
 
-            if (in_array($dayName, $validInductionDays)) {
-                $date->setTime((int)$hour, (int)$minute);
-                $activityDate = $date->format('Y-m-d');
-                        // $activityCount = count(array_filter($scheduledActivityDates, fn($scheduledActivityDate) => $scheduledActivityDate === $activityDate));
-
-                                // Check if the current slot count is in the array of random dates
-                if (in_array($slotCount, $randomDates)) {
-                    $activityCount = 22; // Set activity count to 22 for testing purposes
-                } else {
-                    $activityCount = count(array_filter($scheduledActivityDates, fn($scheduledActivityDate) => $scheduledActivityDate === $activityDate));
-                }
-
-                $slots[] = [
-                    'day' => $dayName,
-                    'date' => $date->format('d-m-Y'),
-                    'time' => $date->format('H:i'),
-                    'activity_count' => $activityCount,
-                    'induction_type' => $inductionType,
-                ];
-                $slotCount++;
-                // Count days with activity count greater than 20
-                if ($activityCount > 20) {
-                    $highActivityCountDays++;
-                }
-            }
-        }
-
-        if ($highActivityCountDays >= 23){
-            $slotCount=0;
+        if ($highActivityCountDays >= 23) {
+            $slotCount = 0;
             $startDate = new DateTime(end($slots)['date']);
-
-            for ($i = 0; $slotCount < $highActivityCountDays; $i++) {
-                $date = (clone $startDate)->modify("+{$i} days");
-                $dayName = $date->format('l');
-    
-                if (in_array($dayName, $validInductionDays)) {
-                    $date->setTime((int)$hour, (int)$minute);
-                    $activityDate = $date->format('Y-m-d');
-                    $activityCount = count(array_filter($scheduledActivityDates, fn($scheduledActivityDate) => $scheduledActivityDate === $activityDate));
-    
-                    $slots[] = [
-                        'day' => $dayName,
-                        'date' => $date->format('d-m-Y'),
-                        'time' => $date->format('H:i'),
-                        'activity_count' => $activityCount,
-                        'induction_type' => $inductionType,
-                    ];
-                    $slotCount++;
-                }
-            }
+            generateActivitySlots($slots, $highActivityCountDays, $validInductionDays, $hour, $minute, $startDate, $scheduledActivityDates, $slotCount, $highActivityCountDays);
         }
 
         \Civi::log()->info('Activity slots created', ['slots' => $slots]);
@@ -246,5 +188,36 @@ function generate_slots($assignedOfficeId, $maxSlots, $inductionType, $startDate
         return [];
     }
 }
+
+function generateActivitySlots(&$slots, $maxSlots, $validInductionDays, $hour, $minute, $startDate, $scheduledActivityDates, &$slotCount, &$highActivityCountDays) {
+    for ($i = 0; $slotCount < $maxSlots; $i++) {
+        $date = (clone $startDate)->modify("+{$i} days");
+        $dayName = $date->format('l');
+
+        if (in_array($dayName, $validInductionDays)) {
+            $date->setTime((int)$hour, (int)$minute);
+            $activityDate = $date->format('Y-m-d');
+
+            // Determine activity count based on scheduled activities
+            $activityCount = count(array_filter($scheduledActivityDates, fn($scheduledActivityDate) => $scheduledActivityDate === $activityDate));
+
+            $slots[] = [
+                'day' => $dayName,
+                'date' => $date->format('d-m-Y'),
+                'time' => $date->format('H:i'),
+                'activity_count' => $activityCount,
+                'induction_type' => $inductionType,
+            ];
+            $slotCount++;
+
+            // Count days with activity count greater than 20
+            if ($activityCount > 20) {
+                $highActivityCountDays++;
+            }
+        }
+    }
+}
+
+
 
 
