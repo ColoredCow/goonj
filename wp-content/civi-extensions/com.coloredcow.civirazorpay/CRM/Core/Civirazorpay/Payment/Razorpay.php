@@ -1,62 +1,83 @@
 <?php
 
-/**
- *
- */
-
+use Civi\Payment\Exception\PaymentProcessorException;
 use Razorpay\Api\Api;
 
 /**
- *
+ * Class CRM_Core_Civirazorpay_Payment_Razorpay
+ * Handles Razorpay integration as a payment processor in CiviCRM.
  */
 class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
   const CHARSET = 'utf-8';
 
   protected $_mode = NULL;
 
+  /**
+   * Constructor.
+   */
   public function __construct($mode, &$paymentProcessor) {
     $this->_mode = $mode;
     $this->_paymentProcessor = $paymentProcessor;
   }
 
   /**
+   * Process payment by creating an order in Razorpay and injecting checkout script.
    *
+   * @param array $params
+   *   Payment parameters.
+   * @param string $component
+   *
+   * @return array
    */
   public function doPayment(&$params, $component = 'contribute') {
     $apiKey = $this->_paymentProcessor['user_name'];
     $apiSecret = $this->_paymentProcessor['password'];
-    $api = new Razorpay\Api\Api($apiKey, $apiSecret);
+    $api = new Api($apiKey, $apiSecret);
 
-    $orderData = [
-        'amount' => $params['amount'] * 100, // Convert to paise
+    // Create Razorpay order.
+    try {
+      $order = $api->order->create([
+      // Amount in paise.
+        'amount' => $params['amount'] * 100,
         'currency' => 'INR',
         'receipt' => 'RCPT-' . uniqid(),
+      // Auto-capture on payment success.
         'payment_capture' => 1,
-    ];
-    $order = $api->order->create($orderData);
+      ]);
+    }
+    catch (\Exception $e) {
+      throw new PaymentProcessorException('Error creating Razorpay order: ' . $e->getMessage());
+    }
 
-    $params['trxn_id'] = $order->id;
-    $params['razorpay_key'] = $apiKey;
-    $params['razorpay_order_id'] = $order->id;
+    // 2 is pending.
+    $params['contribution_status_id'] = 2;
 
-    return ['payment_status_id' => 1]; // 1 = Completed, 2 = Pending
-}
+    // Build the URL to redirect to the custom payment processing page.
+    $redirectUrl = CRM_Utils_System::url(
+        'civicrm/razorpay/payment',
+        [
+          'order_id' => $order->id,
+          'amount' => $params['amount'] * 100,
+          'currency' => 'INR',
+          'qfKey' => $params['qfKey'],
+        ],
+        // Absolute URL.
+        TRUE,
+        // Fragment.
+        NULL,
+        // Add SID if enabled in Civi.
+        FALSE
+    );
 
-  /**
-   * Check if the configuration for this payment processor is valid.
-   *
-   * @return array An array of error messages, empty if no errors.
-   */
-  public function checkConfig() {
-    // @todo
-    return [];
+    CRM_Utils_System::redirect($redirectUrl);
   }
 
   /**
    *
    */
-  public function handlePaymentNotification() {
-    // Handle Razorpay IPN here.
+  public function checkConfig() {
+    // @todo
+    return [];
   }
 
 }
