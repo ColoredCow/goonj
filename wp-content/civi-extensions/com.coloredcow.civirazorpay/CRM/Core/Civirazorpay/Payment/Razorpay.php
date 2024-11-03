@@ -30,8 +30,6 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
    * @return array
    */
   public function doPayment(&$params, $component = 'contribute') {
-    \CRM_Core_Error::debug_log_message('Razorpay doPayment called');
-    // Initialize Razorpay API.
     $apiKey = $this->_paymentProcessor['user_name'];
     $apiSecret = $this->_paymentProcessor['password'];
     $api = new Api($apiKey, $apiSecret);
@@ -46,39 +44,32 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
       // Auto-capture on payment success.
         'payment_capture' => 1,
       ]);
-
-      \Civi::log()->info(__FUNCTION__, [
-        'order' => $order,
-      ]);
     }
     catch (\Exception $e) {
-      \Civi::log()->info(__FUNCTION__, [
-        'e' => $e,
-      ]);
       throw new PaymentProcessorException('Error creating Razorpay order: ' . $e->getMessage());
     }
 
-    // Mark contribution as pending in CiviCRM.
-    // Pending.
+    // 2 is pending.
     $params['contribution_status_id'] = 2;
 
-    $successUrl = CRM_Utils_System::url('civicrm/contribute/transact', "_qf_ThankYou_display=1&qfKey={$params['qfKey']}", TRUE, NULL, FALSE);
-    $failUrl = CRM_Utils_System::url('civicrm/contribute/transact', "_qf_Main_display=1&qfKey={$params['qfKey']}&cancel=1", TRUE, NULL, FALSE);
+    // Build the URL to redirect to the custom payment processing page.
+    $redirectUrl = CRM_Utils_System::url(
+        'civicrm/razorpay/payment',
+        [
+          'order_id' => $order->id,
+          'amount' => $params['amount'] * 100,
+          'currency' => 'INR',
+          'qfKey' => $params['qfKey'],
+        ],
+        // Absolute URL.
+        TRUE,
+        // Fragment.
+        NULL,
+        // Add SID if enabled in Civi.
+        FALSE
+    );
 
-    $razorpayRedirectUrl = "https://checkout.razorpay.com/v1/checkout.js?order_id={$order->id}&key_id={$apiKey}&prefill[email]={$params['email']}&callback_url=" . urlencode($successUrl) . "&cancel_url=" . urlencode($failUrl);
-
-    \Civi::log()->info(__FUNCTION__, [
-      'params' => $params,
-      'order' => $order,
-      'razorpayRedirectUrl' => $razorpayRedirectUrl,
-      'successUrl' => $successUrl,
-      'failUrl' => $failUrl,
-    ]);
-
-    // Allow each CMS to do a pre-flight check before redirecting to Razorpay.
-    CRM_Core_Config::singleton()->userSystem->prePostRedirect();
-    CRM_Utils_System::setHttpHeader("HTTP/1.1 303 See Other", '');
-    CRM_Utils_System::redirect($razorpayRedirectUrl);
+    CRM_Utils_System::redirect($redirectUrl);
   }
 
   /**
