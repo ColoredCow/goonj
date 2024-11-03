@@ -73,38 +73,6 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
   }
 
   /**
-   * IPN Handler for Razorpay
-   * This method will handle the IPN (Instant Payment Notification) or webhook response from Razorpay after payment completion
-   *
-   * @param array $params
-   */
-  public function handlePaymentNotification($params) {
-    $orderId = $params['razorpay_order_id'];
-    $paymentId = $params['razorpay_payment_id'];
-
-    try {
-      // Capture the payment.
-      $payment = $this->razorpayApi->payment->fetch($paymentId);
-      $payment->capture(['amount' => $payment->amount]);
-
-      // Update contribution status to completed in CiviCRM.
-      $contributionId = civicrm_api3('Contribution', 'get', [
-        'trxn_id' => $orderId,
-        'sequential' => 1,
-      ])['values'][0]['id'];
-
-      civicrm_api3('Contribution', 'create', [
-        'id' => $contributionId,
-      // Completed.
-        'contribution_status_id' => 1,
-      ]);
-    }
-    catch (\Exception $e) {
-      CRM_Core_Error::debug_log_message('Error capturing Razorpay payment: ' . $e->getMessage());
-    }
-  }
-
-  /**
    *
    */
   public function checkConfig() {
