@@ -1,8 +1,4 @@
 {
-    "require": {
-        "razorpay/razorpay": "^2.9"
-    },
-    "replace": {
-        "rmccue/requests": "*"
-    }
+    "require": {},
+    "replace": {}
 }
