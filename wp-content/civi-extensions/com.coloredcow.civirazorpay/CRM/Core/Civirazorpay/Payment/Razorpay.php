@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/../../../../lib/razorpay/Razorpay.php';
+
 use Civi\Payment\Exception\PaymentProcessorException;
 use Razorpay\Api\Api;
 
