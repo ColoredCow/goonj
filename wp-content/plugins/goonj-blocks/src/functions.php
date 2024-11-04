@@ -26,7 +26,7 @@ function gb_format_time_range($start_date, $end_date, $format = 'h:i A') {
 function generate_induction_slots($contactId = null, $days = 30) {
     // Validate contactId
     if (empty($contactId) || !is_numeric($contactId)) {
-        \Civi::log()->warning('Invalid contactId', ['contactId' => $contactId]);
+        \Civi::log()->info('Invalid contactId', ['contactId' => $contactId]);
         return [];
     }
 
@@ -38,7 +38,7 @@ function generate_induction_slots($contactId = null, $days = 30) {
             ->execute()->single();
 
         if (empty($contactData)) {
-            \Civi::log()->warning('Contact not found', ['contactId' => $contactId]);
+            \Civi::log()->info('Contact not found', ['contactId' => $contactId]);
             return [];
         }
 
@@ -133,8 +133,7 @@ function generate_slots($assignedOfficeId, $maxSlots, $inductionType, $startDate
             ->addSelect('display_name', 'Goonj_Office_Details.Physical_Induction_Slot_Days:name', 'Goonj_Office_Details.Physical_Induction_Slot_Time', 'Goonj_Office_Details.Online_Induction_Slot_Days:name', 'Goonj_Office_Details.Online_Induction_Slot_Time')
             ->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_Office')
             ->addWhere('id', '=', $assignedOfficeId)
-            ->execute()
-            ->single();
+            ->execute()->single();
         
         if (empty($officeDetails) || empty($assignedOfficeId)) {
             \Civi::log()->info('Office Details not found', ['assignedOfficeId' => $assignedOfficeId]);
