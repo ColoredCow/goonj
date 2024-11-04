@@ -148,7 +148,6 @@ function goonj_induction_slot_details() {
             ->addWhere('activity_type_id:name', '=', 'Induction')
             ->execute()
             ->single();
-		\Civi::log()->info('inductionActivity', ['inductionActivity'=>$inductionActivity]);
 
         // Exit if no activity found or the status is not "To be Scheduled"
         if (!$inductionActivity || $inductionActivity['status_id:name'] !== 'To be scheduled') {
@@ -184,8 +183,7 @@ function goonj_induction_slot_details() {
         // Fetch the email template
         $template = \Civi\Api4\MessageTemplate::get(FALSE)
             ->addWhere('msg_title', 'LIKE', $templateTitle . '%')
-            ->execute()
-            ->single();
+            ->execute()->single();
 
         // If a template is found, send the email notification
         if ($template) {
@@ -193,8 +191,7 @@ function goonj_induction_slot_details() {
                 ->addSelect('email.email')
                 ->addJoin('Email AS email', 'LEFT')
                 ->addWhere('id', '=', $inductionActivity['Induction_Fields.Assign'])
-                ->execute()
-				->single();
+				->execute()->single();
 
             // Prepare email parameters
             $emailParams = [
@@ -205,8 +202,6 @@ function goonj_induction_slot_details() {
 
             // Send the email
             $emailResult = civicrm_api3('Email', 'send', $emailParams);
-        } else {
-            \Civi::log()->error('No email template found', ['template_title' => $templateTitle]);
         }
     } catch (\Exception $e) {
         \Civi::log()->error('Error processing induction slot details', [

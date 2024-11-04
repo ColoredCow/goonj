@@ -70,7 +70,6 @@ function goonjcustom_register_tokens(TokenRegisterEvent $e) {
     ->register('inductionOnlineMeetlink', ts('Induction Online Meet link'));
 }
 
-
 /**
  *
  */
@@ -135,9 +134,8 @@ function goonjcustom_evaluate_tokens(TokenValueEvent $e) {
 					->addSelect('activity_date_time', 'Induction_Fields.Goonj_Office')
 					->addWhere('activity_type_id:name', '=', 'Induction')
 					->addWhere('source_contact_id', '=', $contactId)
-					->setLimit(1)
 					->execute()
-					->first();
+					->single();
 
 			$inductionDateTime = $inductionActivity['activity_date_time'] ?? 'Not Scheduled';
 			$inductionGoonjOffice = $inductionActivity['Induction_Fields.Goonj_Office'] ?? '';
@@ -150,7 +148,7 @@ function goonjcustom_evaluate_tokens(TokenValueEvent $e) {
 							->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_Office')
 							->addWhere('id', '=', $inductionGoonjOffice)
 							->execute()
-							->first();
+              ->single();
 
 					$inductionOnlineMeetlink = $officeDetails['Goonj_Office_Details.Induction_Meeting_Access_Link'] ?? '';
 			}
