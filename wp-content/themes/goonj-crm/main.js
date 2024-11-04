@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', function () {
 					<p class="fw-400 font-sans fz-16 mt-0 mb-24">To set up a collection camp, please take a moment to fill out the volunteer registration form below. We can't wait to have you on board!</p>
 				`;
 	} 
-	else if (message === 'dropping-center') {
+	else if (message === 'dropping-center' || message === 'dropping-center-individual-user') {
 		messageDiv.innerHTML = `
 		<p class="fw-600 font-sans fz-20 mb-6">You are not registered as a volunteer with us.</p>
 		<p class="fw-400 font-sans fz-16 mt-0 mb-24">To set up a dropping center, please take a moment to fill out the volunteer registration form below. We can't wait to have you on board!</p>

@@ -315,10 +315,10 @@
             var selectedDate = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
             
             // Check if the selected date is in the past
-            if (selectedDate < today) {
+            if (selectedDate <= today) {
               isValid = false;
               
-              errorMessage+=`The selected dropping center date (${dateField}) cannot be in the past.`;
+              errorMessage+=`The selected dropping center date (${dateField}) cannot be today or in the past.`;
             }
           }
         }

@@ -33,7 +33,6 @@ class CollectionBaseService extends AutoSubscriber {
    */
   public static function getSubscribedEvents() {
     return [
-      '&hook_civicrm_tabset' => 'collectionBaseTabset',
       '&hook_civicrm_selectWhereClause' => 'aclCollectionCamp',
       '&hook_civicrm_pre' => [
         ['handleAuthorizationEmails'],
@@ -176,46 +175,6 @@ class CollectionBaseService extends AutoSubscriber {
     else {
       \Civi::log()->debug("Failed to generate poster image, return code: $returnCode");
       return FALSE;
-    }
-  }
-
-  /**
-   *
-   */
-  public static function collectionBaseTabset($tabsetName, &$tabs, $context) {
-    if ($tabsetName !== 'civicrm/eck/entity' || empty($context) || $context['entity_type']['name'] !== self::ENTITY_NAME) {
-      return;
-    }
-
-    $tabConfigs = [
-      'eventVolunteers' => [
-        'title' => ts('Event Volunteers'),
-        'module' => 'afsearchEventVolunteer',
-        'directive' => 'afsearch-event-volunteer',
-      ],
-      'vehicleDispatch' => [
-        'title' => ts('Dispatch'),
-        'module' => 'afsearchCampVehicleDispatchData',
-        'directive' => 'afsearch-camp-vehicle-dispatch-data',
-      ],
-      'materialAuthorization' => [
-        'title' => ts('Material Authorization'),
-        'module' => 'afsearchAcknowledgementForLogisticsData',
-        'directive' => 'afsearch-acknowledgement-for-logistics-data',
-      ],
-    ];
-
-    foreach ($tabConfigs as $key => $config) {
-      $tabs[$key] = [
-        'id' => $key,
-        'title' => $config['title'],
-        'is_active' => 1,
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'module' => $config['module'],
-        'directive' => $config['directive'],
-      ];
-
-      \Civi::service('angularjs.loader')->addModules($config['module']);
     }
   }
 
