@@ -146,8 +146,7 @@ function goonj_induction_slot_details() {
             ->addSelect('id', 'activity_date_time', 'status_id:name', 'Induction_Fields.Goonj_Office', 'Induction_Fields.Assign')
             ->addWhere('source_contact_id', '=', $source_contact_id)
             ->addWhere('activity_type_id:name', '=', 'Induction')
-            ->execute()
-            ->single();
+            ->execute()->single();
 
         // Exit if no activity found or the status is not "To be Scheduled"
         if (!$inductionActivity || $inductionActivity['status_id:name'] !== 'To be scheduled') {
