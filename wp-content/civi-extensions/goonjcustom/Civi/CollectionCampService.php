@@ -85,12 +85,6 @@ class CollectionCampService extends AutoSubscriber {
       //   'directive' => 'afsearch-collection-camp-activity',
       //   'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
       // ],
-      'logistics' => [
-        'title' => ts('Logistics'),
-        'module' => 'afsearchCollectionCampLogistics',
-        'directive' => 'afsearch-collection-camp-logistics',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-      ],
       'eventVolunteers' => [
         'title' => ts('Event Volunteers'),
         'module' => 'afsearchEventVolunteer',
@@ -101,6 +95,12 @@ class CollectionCampService extends AutoSubscriber {
         'title' => ts('Material Contribution'),
         'module' => 'afsearchCollectionCampMaterialContributions',
         'directive' => 'afsearch-collection-camp-material-contributions',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      ],
+      'logistics' => [
+        'title' => ts('Logistics'),
+        'module' => 'afsearchCollectionCampLogistics',
+        'directive' => 'afsearch-collection-camp-logistics',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
       ],
       'campOutcome' => [
