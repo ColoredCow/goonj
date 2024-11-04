@@ -6,6 +6,7 @@ add_shortcode( 'goonj_contribution_volunteer_signup_button', 'goonj_contribution
 add_shortcode( 'goonj_pu_activity_button', 'goonj_pu_activity_button' );
 add_shortcode( 'goonj_collection_landing_page', 'goonj_collection_camp_landing_page' );
 add_shortcode( 'goonj_collection_camp_past', 'goonj_collection_camp_past_data' );
+add_shortcode( 'goonj_induction_slot_details', 'goonj_induction_slot_details' );
 
 function goonj_check_user_action( $atts ) {
 	get_template_part( 'templates/form', 'check-user', array( 'purpose' => $atts['purpose'] ) );
@@ -39,6 +40,7 @@ function goonj_contribution_volunteer_signup_button() {
 			->addSelect( 'source_contact_id' )
 			->addJoin( 'ActivityContact AS activity_contact', 'LEFT' )
 			->addWhere( 'id', '=', $activity_id )
+			->addWhere( 'activity_type_id:label', '=', 'Material Contribution' )
 			->execute();
 
 		if ( $activities->count() === 0 ) {
@@ -129,4 +131,89 @@ function goonj_collection_camp_past_data() {
 	ob_start();
 	get_template_part( 'templates/collection-camp-data' );
 	return ob_get_clean();
+}
+
+function goonj_induction_slot_details() {
+    // Retrieve parameters from the GET request
+    $source_contact_id = intval($_GET['source_contact_id'] ?? 0);
+    $slot_date = $_GET['slot_date'] ?? '';
+    $slot_time = $_GET['slot_time'] ?? '';
+    $inductionType = $_GET['induction_type'] ?? '';
+
+    try {
+        // Fetch the induction activity for the specified source contact
+        $inductionActivity = \Civi\Api4\Activity::get(FALSE)
+            ->addSelect('id', 'activity_date_time', 'status_id:name', 'Induction_Fields.Goonj_Office', 'Induction_Fields.Assign')
+            ->addWhere('source_contact_id', '=', $source_contact_id)
+            ->addWhere('activity_type_id:name', '=', 'Induction')
+            ->setLimit(1)
+            ->execute()
+            ->first();
+		\Civi::log()->info('inductionActivity', ['inductionActivity'=>$inductionActivity]);
+
+        // Exit if no activity found or the status is not "To be Scheduled"
+        if (!$inductionActivity || $inductionActivity['status_id:name'] !== 'To be scheduled') {
+            \Civi::log()->info('No valid activity found or status is not To be Scheduled', ['contact_id' => $source_contact_id]);
+            return;
+        }
+
+		// Combine slot date (d-m-Y) and slot time (h:i A) to form new activity date and time
+		$newActivityDateTime = DateTime::createFromFormat('d-m-Y h:i A', "$slot_date $slot_time");
+		if (!$newActivityDateTime) {
+			\Civi::log()->error('Invalid date/time format', ['slot_date' => $slot_date, 'slot_time' => $slot_time]);
+			return;
+		}
+
+
+        // Update activity date and time and set the status to "Scheduled"
+        \Civi\Api4\Activity::update(FALSE)
+            ->addValue('activity_date_time', $newActivityDateTime->format('Y-m-d H:i:s'))
+            ->addValue('status_id:name', 'Scheduled')
+            ->addValue('Induction_Fields.Mode:name', $inductionType)
+            ->addWhere('id', '=', $inductionActivity['id'])
+            ->execute();
+        \Civi::log()->info('Activity updated successfully', [
+            'activity_id' => $inductionActivity['id'],
+            'new_date_time' => $newActivityDateTime->format('Y-m-d H:i:s')
+        ]);
+
+        // Select the email template based on the induction type
+        $templateTitle = ($inductionType == 'Processing_Unit') 
+            ? 'Acknowledgment_for_Induction_Slot_Booked' 
+            : 'Acknowledgment_for_Online_Induction_Slot_Booked';
+
+        // Fetch the email template
+        $template = \Civi\Api4\MessageTemplate::get(FALSE)
+            ->addWhere('msg_title', 'LIKE', $templateTitle . '%')
+            ->setLimit(1)
+            ->execute()
+            ->single();
+
+        // If a template is found, send the email notification
+        if ($template) {
+            $assigneeContact = \Civi\Api4\Contact::get(FALSE)
+                ->addSelect('email.email')
+                ->addJoin('Email AS email', 'LEFT')
+                ->addWhere('id', '=', $inductionActivity['Induction_Fields.Assign'])
+                ->setLimit(1)
+                ->execute()->single();
+
+            // Prepare email parameters
+            $emailParams = [
+                'contact_id' => $source_contact_id,
+                'template_id' => $template['id'],
+                'cc' => $assigneeContact['email.email']
+            ];
+
+            // Send the email
+            $emailResult = civicrm_api3('Email', 'send', $emailParams);
+        } else {
+            \Civi::log()->error('No email template found', ['template_title' => $templateTitle]);
+        }
+    } catch (\Exception $e) {
+        \Civi::log()->error('Error processing induction slot details', [
+            'contact_id' => $source_contact_id,
+            'error' => $e->getMessage()
+        ]);
+    }
 }
