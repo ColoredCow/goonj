@@ -465,18 +465,30 @@ class DroppingCenterService extends AutoSubscriber {
       return;
     }
     $tabConfigs = [
+      'logistics' => [
+        'title' => ts('Logistics'),
+        'module' => 'afsearchLogistics',
+        'directive' => 'afsearch-logistics',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      ],
       'eventCoordinators' => [
         'title' => ts('Event Coordinators'),
         'module' => 'afsearchCoordinator',
         'directive' => 'afsearch-coordinator',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
       ],
-      'logistics' => [
-        'title' => ts('Logistics'),
-        'module' => 'afsearchLogistics',
-        'directive' => 'afsearch-logistics',
+      'vehicleDispatch' => [
+        'title' => ts('Dispatch'),
+        'module' => 'afsearchCampVehicleDispatchData',
+        'directive' => 'afsearch-camp-vehicle-dispatch-data',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-      ],    
+      ],
+      'materialAuthorization' => [
+        'title' => ts('Material Authorization'),
+        'module' => 'afsearchAcknowledgementForLogisticsData',
+        'directive' => 'afsearch-acknowledgement-for-logistics-data',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      ],
       'materialContribution' => [
         'title' => ts('Material Contribution'),
         'module' => 'afsearchDroppingCenterMaterialContributions',
@@ -512,7 +524,7 @@ class DroppingCenterService extends AutoSubscriber {
         'module' => 'afsearchFeedback',
         'directive' => 'afsearch-feedback',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-      ],   
+      ],
     ];
 
     foreach ($tabConfigs as $key => $config) {
