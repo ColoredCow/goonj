@@ -146,9 +146,8 @@ function goonj_induction_slot_details() {
             ->addSelect('id', 'activity_date_time', 'status_id:name', 'Induction_Fields.Goonj_Office', 'Induction_Fields.Assign')
             ->addWhere('source_contact_id', '=', $source_contact_id)
             ->addWhere('activity_type_id:name', '=', 'Induction')
-            ->setLimit(1)
             ->execute()
-            ->first();
+            ->single();
 		\Civi::log()->info('inductionActivity', ['inductionActivity'=>$inductionActivity]);
 
         // Exit if no activity found or the status is not "To be Scheduled"
@@ -185,7 +184,6 @@ function goonj_induction_slot_details() {
         // Fetch the email template
         $template = \Civi\Api4\MessageTemplate::get(FALSE)
             ->addWhere('msg_title', 'LIKE', $templateTitle . '%')
-            ->setLimit(1)
             ->execute()
             ->single();
 
@@ -195,8 +193,8 @@ function goonj_induction_slot_details() {
                 ->addSelect('email.email')
                 ->addJoin('Email AS email', 'LEFT')
                 ->addWhere('id', '=', $inductionActivity['Induction_Fields.Assign'])
-                ->setLimit(1)
-                ->execute()->single();
+                ->execute()
+				->single();
 
             // Prepare email parameters
             $emailParams = [
