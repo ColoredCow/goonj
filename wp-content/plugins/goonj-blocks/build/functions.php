@@ -74,7 +74,6 @@ function generate_induction_slots($contactId = null, $days = 30) {
         $statesWithMixedInductionTypes = \Civi\Api4\StateProvince::get(FALSE)
             ->addWhere('country_id.name', '=', 'India')
             ->addWhere('name', 'IN', ['Bihar', 'Jharkhand', 'Orissa'])
-            ->setLimit(3)
             ->execute()
             ->column('id');
 
@@ -134,7 +133,8 @@ function generate_slots($assignedOfficeId, $maxSlots, $inductionType, $startDate
             ->addSelect('display_name', 'Goonj_Office_Details.Physical_Induction_Slot_Days:name', 'Goonj_Office_Details.Physical_Induction_Slot_Time', 'Goonj_Office_Details.Online_Induction_Slot_Days:name', 'Goonj_Office_Details.Online_Induction_Slot_Time')
             ->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_Office')
             ->addWhere('id', '=', $assignedOfficeId)
-            ->execute()->first();
+            ->execute()
+            ->single();
         
         if (empty($officeDetails) || empty($assignedOfficeId)) {
             \Civi::log()->info('Office Details not found', ['assignedOfficeId' => $assignedOfficeId]);
@@ -159,7 +159,6 @@ function generate_slots($assignedOfficeId, $maxSlots, $inductionType, $startDate
             ->addWhere('status_id:name', '=', 'Scheduled')
             ->addWhere('Induction_Fields.Goonj_Office', '=', $assignedOfficeId)
             ->addWhere('activity_date_time', '>', (new DateTime('today midnight'))->format('Y-m-d H:i:s'))
-            ->setLimit(60)
             ->execute();
 
         // Create a set of scheduled activity dates for quick lookup
@@ -216,7 +215,3 @@ function generateActivitySlots(&$slots, $maxSlots, $validInductionDays, $hour, $
         }
     }
 }
-
-
-
-
