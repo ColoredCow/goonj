@@ -2,6 +2,7 @@
 
 use Civi\Api4\Activity;
 use Civi\Api4\MessageTemplate;
+use Civi\InductionService;
 
 /**
  * Goonjcustom.InductionSlotBookingFollowUp API specification (optional)
@@ -35,58 +36,8 @@ function _civicrm_api3_goonjcustom_induction_slot_booking_follow_up_cron_spec(&$
  */
 function civicrm_api3_goonjcustom_induction_slot_booking_follow_up_cron($params) {
     $returnValues = [];
-
-    // Configurable number of days to check for scheduling
-    $followUpDays = 7;
-
-    // Calculate the timestamp for 7 days ago from the current date
-    $followUpTimestamp = strtotime("-$followUpDays days");
-
-    $batchSize = 25;
-    $offset = 0;
-
     try {
-        // Retrieve the email template for follow-up.
-        $template = MessageTemplate::get(FALSE)
-            ->addSelect('id', 'msg_subject')
-            ->addWhere('msg_title', 'LIKE', 'Induction_slot_booking_follow_up_email%')
-            ->execute()->single();
-
-        do {
-            // Retrieve a batch of unscheduled induction activities older than 7 days
-            $unscheduledInductionActivities = Activity::get(FALSE)
-                ->addSelect('id', 'source_contact_id', 'created_date')
-                ->addWhere('activity_type_id:name', '=', 'Induction')
-                ->addWhere('status_id:name', '=', 'To be scheduled')
-                ->addWhere('created_date', '<', date('Y-m-d H:i:s', $followUpTimestamp))
-                ->setLimit($batchSize)
-                ->setOffset($offset)
-                ->execute();
-
-            // Process each activity in the batch
-            foreach ($unscheduledInductionActivities as $activity) {
-                // Check if an followup email has already been sent to avoid duplication.
-                $emailActivities = Activity::get(FALSE)
-                    ->addWhere('activity_type_id:name', '=', 'Email')
-                    ->addWhere('subject', '=', $template['msg_subject'])
-                    ->addWhere('source_contact_id', '=', $activity['source_contact_id'])
-                    ->execute()->single();
-
-                if (!$emailActivities) {
-                    $emailParams = [
-                        'contact_id' => $activity['source_contact_id'],
-                        'template_id' => $template['id'],
-                    ];
-                    $emailResult = civicrm_api3('Email', 'send', $emailParams);
-                }
-
-            }
-
-            // Move to the next batch by increasing the offset
-            $offset += $batchSize;
-
-        } while (count($unscheduledInductionActivities) === $batchSize);
-
+        InductionService::sendFollowUpEmails();
     } catch (Exception $e) {
         // Log any errors encountered during the process.
         \Civi::log()->error('Error in follow-up cron: ' . $e->getMessage());

@@ -447,4 +447,55 @@ class InductionService extends AutoSubscriber {
     self::createInduction(self::$transitionedVolunteerId, $stateId);
   }
 
+  /**
+   *
+   */
+  public static function sendFollowUpEmails() {
+    $followUpDays = 7;
+    $followUpTimestamp = strtotime("-{$followUpDays} days");
+  
+    // Retrieve the email template for follow-up.
+    $template = MessageTemplate::get(FALSE)
+      ->addSelect('id', 'msg_subject')
+      ->addWhere('msg_title', 'LIKE', 'Induction_slot_booking_follow_up_email%')
+      ->execute()->single();
+  
+    $batchSize = 25;
+    $offset = 0;
+  
+    do {
+      // Retrieve a batch of unscheduled induction activities older than 7 days
+      $unscheduledInductionActivities = Activity::get(FALSE)
+        ->addSelect('id', 'source_contact_id', 'created_date')
+        ->addWhere('activity_type_id:name', '=', 'Induction')
+        ->addWhere('status_id:name', '=', 'To be scheduled')
+        ->addWhere('created_date', '<', date('Y-m-d H:i:s', $followUpTimestamp))
+        ->setLimit($batchSize)
+        ->setOffset($offset)
+        ->execute();
+  
+      // Process each activity in the batch
+      foreach ($unscheduledInductionActivities as $activity) {
+        // Check if a follow-up email has already been sent to avoid duplication.
+        $emailActivities = Activity::get(FALSE)
+          ->addWhere('activity_type_id:name', '=', 'Email')
+          ->addWhere('subject', '=', $template['msg_subject'])
+          ->addWhere('source_contact_id', '=', $activity['source_contact_id'])
+          ->execute()->single();
+  
+        if (!$emailActivities) {
+          $emailParams = [
+            'contact_id' => $activity['source_contact_id'],
+            'template_id' => $template['id'],
+          ];
+          civicrm_api3('Email', 'send', $emailParams);
+        }
+      }
+  
+      // Move to the next batch by increasing the offset
+      $offset += $batchSize;
+  
+    } while (count($unscheduledInductionActivities) === $batchSize);
+  }
+
 }
