@@ -35,7 +35,6 @@ function _civicrm_api3_goonjcustom_induction_slot_booking_follow_up_cron_spec(&$
  */
 function civicrm_api3_goonjcustom_induction_slot_booking_follow_up_cron($params) {
     $returnValues = [];
-    \Civi::log()->info('Check for unscheduled induction activities');
 
     // Configurable number of days to check for scheduling
     $followUpDays = 7;
