@@ -36,6 +36,8 @@ function civicrm_api3_goonjcustom_update_induction_status_no_show_cron($params) 
     $returnValues = [];
 
     $followUpDays = 30;
+
+    // Calculate the timestamp for 30 days ago from the current date
     $followUpTimestamp = strtotime("-$followUpDays days");
 
     $batchSize = 25;

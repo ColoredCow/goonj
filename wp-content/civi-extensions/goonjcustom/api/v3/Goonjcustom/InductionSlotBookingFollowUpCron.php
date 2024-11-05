@@ -39,6 +39,8 @@ function civicrm_api3_goonjcustom_induction_slot_booking_follow_up_cron($params)
 
     // Configurable number of days to check for scheduling
     $followUpDays = 7;
+
+    // Calculate the timestamp for 7 days ago from the current date
     $followUpTimestamp = strtotime("-$followUpDays days");
 
     $batchSize = 25;
