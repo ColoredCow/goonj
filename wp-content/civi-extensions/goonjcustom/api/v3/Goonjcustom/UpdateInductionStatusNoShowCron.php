@@ -62,8 +62,7 @@ function civicrm_api3_goonjcustom_update_induction_status_no_show_cron($params) 
               ->addWhere('activity_type_id:label', '=', 'Email')
               ->addWhere('created_date', '<', date('Y-m-d H:i:s', $followUpTimestamp))
               ->setLimit($batchSize)
-              ->setOffset($offset)
-              ->execute();
+              ->setOffset($offset)->execute();
 
             foreach ($followUpEmailActivities as $activity) {
 

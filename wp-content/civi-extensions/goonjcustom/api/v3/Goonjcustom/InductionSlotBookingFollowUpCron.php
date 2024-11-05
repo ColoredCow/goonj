@@ -49,9 +49,7 @@ function civicrm_api3_goonjcustom_induction_slot_booking_follow_up_cron($params)
         $template = MessageTemplate::get(FALSE)
             ->addSelect('id', 'msg_subject')
             ->addWhere('msg_title', 'LIKE', 'Induction_slot_booking_follow_up_email%')
-            ->setLimit(1)
-            ->execute()
-            ->single();
+            ->execute()->single();
 
         do {
             // Retrieve a batch of unscheduled induction activities older than 7 days
@@ -71,8 +69,7 @@ function civicrm_api3_goonjcustom_induction_slot_booking_follow_up_cron($params)
                     ->addWhere('activity_type_id:name', '=', 'Email')
                     ->addWhere('subject', '=', $template['msg_subject'])
                     ->addWhere('source_contact_id', '=', $activity['source_contact_id'])
-                    ->setLimit(1)
-                    ->execute()->first();
+                    ->execute()->single();
 
                 if (!$emailActivities) {
                     $emailParams = [
