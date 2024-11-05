@@ -130,25 +130,32 @@ function goonjcustom_evaluate_tokens(TokenValueEvent $e) {
 
       $row->tokens('contact', 'inductionDetails', $inductionDetailsMarkup);
 			// Fetch induction activity details
-			$inductionActivity = \Civi\Api4\Activity::get(FALSE)
-					->addSelect('activity_date_time', 'Induction_Fields.Goonj_Office')
-					->addWhere('activity_type_id:name', '=', 'Induction')
-					->addWhere('source_contact_id', '=', $contactId)
-					->execute()->single();
+			$inductionActivities = \Civi\Api4\Activity::get(FALSE)
+				->addSelect('activity_date_time', 'Induction_Fields.Goonj_Office')
+				->addWhere('activity_type_id:name', '=', 'Induction')
+				->addWhere('source_contact_id', '=', $contactId)
+				->execute();
 
+			if ($inductionActivities->count() === 0) {
+				$row->tokens('contact', 'inductionDateTime', 'Not Scheduled');
+				$row->tokens('contact', 'inductionOnlineMeetlink', '');
+				return;
+			}
+
+			$inductionActivity = $inductionActivities->first();
 			$inductionDateTime = $inductionActivity['activity_date_time'] ?? 'Not Scheduled';
 			$inductionGoonjOffice = $inductionActivity['Induction_Fields.Goonj_Office'] ?? '';
 
 			// Fetch office online meet link details if induction office is specified
 			$inductionOnlineMeetlink = '';
 			if ($inductionGoonjOffice) {
-					$officeDetails = \Civi\Api4\Contact::get(FALSE)
-							->addSelect('Goonj_Office_Details.Induction_Meeting_Access_Link')
-							->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_Office')
-							->addWhere('id', '=', $inductionGoonjOffice)
-							->execute()->single();
+				$officeDetails = \Civi\Api4\Contact::get(FALSE)
+					->addSelect('Goonj_Office_Details.Induction_Meeting_Access_Link')
+					->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_Office')
+					->addWhere('id', '=', $inductionGoonjOffice)
+					->execute()->single();
 
-					$inductionOnlineMeetlink = $officeDetails['Goonj_Office_Details.Induction_Meeting_Access_Link'] ?? '';
+				$inductionOnlineMeetlink = $officeDetails['Goonj_Office_Details.Induction_Meeting_Access_Link'] ?? '';
 			}
 
 			// Assign tokens
