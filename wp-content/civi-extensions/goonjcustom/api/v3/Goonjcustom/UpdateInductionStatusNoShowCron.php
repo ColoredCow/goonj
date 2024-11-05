@@ -48,16 +48,14 @@ function civicrm_api3_goonjcustom_update_induction_status_no_show_cron($params) 
         $template = MessageTemplate::get(FALSE)
             ->addSelect('id', 'msg_subject')
             ->addWhere('msg_title', 'LIKE', 'Induction_slot_booking_follow_up_email%')
-            ->setLimit(1)
-            ->execute()
-            ->single();
+            ->execute()->single();
 
         if (!$template) {
             throw new \Exception('Follow-up email template not found.');
         }
 
         do {
-            // Fetch email activities in the current batch that were sent within the specified follow-up period
+            // Fetch email activities older than 30 days
             $followUpEmailActivities = Activity::get(TRUE)
               ->addSelect('source_contact_id', 'activity_date_time')
               ->addWhere('subject', '=', $template['msg_subject'])
