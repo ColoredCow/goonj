@@ -78,7 +78,6 @@ function civicrm_api3_goonjcustom_induction_slot_booking_follow_up_cron($params)
                         'template_id' => $template['id'],
                     ];
                     $emailResult = civicrm_api3('Email', 'send', $emailParams);
-                    \Civi::log()->info('Follow-up email sent', ['result' => $emailResult]);
                 }
 
             }

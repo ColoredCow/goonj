@@ -112,7 +112,5 @@ function civicrm_api3_goonjcustom_update_induction_status_no_show_cron($params) 
         return civicrm_api3_create_error($e->getMessage());
     }
 
-    \Civi::log()->info('Induction slot booking follow-up cron job completed successfully.');
-
     return civicrm_api3_create_success($returnValues, $params, 'Goonjcustom', 'update_induction_status_no_show_cron');
 }
