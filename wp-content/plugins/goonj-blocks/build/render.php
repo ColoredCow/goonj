@@ -8,11 +8,16 @@
 require_once __DIR__ . '/functions.php';
 $target        = get_query_var('target');
 $action_target = get_query_var('action_target');
+$source_contact_id = $action_target['id'] ?? null;
+
+$slots = generate_induction_slots($source_contact_id);
+
 
 $headings = [
   'collection-camp' => 'Collection Camp',
   'dropping-center' => 'Dropping Center',
   'processing-center' => 'Processing Center',
+  'induction-schedule' => 'Induction Schedule',
 ];
 
 $heading_text = $headings[$target];
@@ -142,4 +147,45 @@ if (in_array($target, ['collection-camp', 'dropping-center'])) :
                 <?php esc_html_e('Material Contribution', 'goonj-blocks'); ?>
             </a>
         </div>
-  <?php endif;
+  <?php elseif ('induction-schedule' === $target) : ?>
+    <div class="wp-block-gb-slots-wrapper">
+        <?php if (!empty($slots) && in_array($slots['status'], ['Scheduled', 'Completed'])) : ?>
+            <h2 class="wp-block-gb-heading"><?php esc_html_e('Your Induction Status', 'goonj-blocks'); ?></h2>
+            <p>
+                <?php
+                echo esc_html__('Induction Status: ', 'goonj-blocks') . esc_html($slots['status']);
+                echo '<br>';
+                echo esc_html__('Induction Date and Time: ', 'goonj-blocks') . esc_html($slots['date']);
+                ?>
+            </p>
+        <?php else : ?>
+            <h2 class="wp-block-gb-heading"><?php esc_html_e('Available Induction Slots', 'goonj-blocks'); ?></h2>
+            <div class="wp-block-gb-slots-grid">
+                <?php foreach ($slots as $slot) : ?>
+                    <div class="wp-block-gb-slot-box">
+                        <h4 class="wp-block-gb-slot-day"><?php echo esc_html($slot['day']); ?></h4>
+                        <p class="wp-block-gb-slot-date"><?php echo esc_html($slot['date']); ?></p>
+                        <p class="wp-block-gb-slot-time"><?php echo esc_html($slot['time']); ?></p>
+
+                        <?php
+                        $book_slot_link = sprintf(
+                            '/induction-schedule/success/?source_contact_id=%s&slot_date=%s&slot_time=%s&induction_type=%s',
+                            $action_target['id'],
+                            urlencode($slot['date']),
+                            urlencode($slot['time']),
+                            urldecode($slot['induction_type']),
+                        );
+
+                        $is_disabled = ($slot['activity_count'] > 20); // Mark slot as disabled if full
+                        ?>
+
+                        <a href="<?php echo esc_url($is_disabled ? '#' : $book_slot_link); ?>"
+                        class="wp-block-gb-action-button <?php echo $is_disabled ? 'disabled' : ''; ?>">
+                            <?php echo $is_disabled ? esc_html__('Slot Full', 'goonj-blocks') : esc_html__('Book Slot', 'goonj-blocks'); ?>
+                        </a>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    </div>
+  <?php endif; ?>

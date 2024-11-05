@@ -65,7 +65,9 @@ function goonjcustom_civicrm_container(ContainerBuilder $container) {
  */
 function goonjcustom_register_tokens(TokenRegisterEvent $e) {
   $e->entity('contact')
-    ->register('inductionDetails', ts('Induction details'));
+    ->register('inductionDetails', ts('Induction details'))
+    ->register('inductionDateTime', ts('Induction Scheduled Date & Time'))
+    ->register('inductionOnlineMeetlink', ts('Induction Online Meet link'));
 }
 
 /**
@@ -127,6 +129,39 @@ function goonjcustom_evaluate_tokens(TokenValueEvent $e) {
       }
 
       $row->tokens('contact', 'inductionDetails', $inductionDetailsMarkup);
+			// Fetch induction activity details
+			$inductionActivities = \Civi\Api4\Activity::get(FALSE)
+				->addSelect('activity_date_time', 'Induction_Fields.Goonj_Office')
+				->addWhere('activity_type_id:name', '=', 'Induction')
+				->addWhere('source_contact_id', '=', $contactId)
+				->execute();
+
+			if ($inductionActivities->count() === 0) {
+				$row->tokens('contact', 'inductionDateTime', 'Not Scheduled');
+				$row->tokens('contact', 'inductionOnlineMeetlink', '');
+				return;
+			}
+
+			$inductionActivity = $inductionActivities->first();
+			$inductionDateTime = $inductionActivity['activity_date_time'] ?? 'Not Scheduled';
+			$inductionGoonjOffice = $inductionActivity['Induction_Fields.Goonj_Office'] ?? '';
+
+			// Fetch office online meet link details if induction office is specified
+			$inductionOnlineMeetlink = '';
+			if ($inductionGoonjOffice) {
+				$officeDetails = \Civi\Api4\Contact::get(FALSE)
+					->addSelect('Goonj_Office_Details.Induction_Meeting_Access_Link')
+					->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_Office')
+					->addWhere('id', '=', $inductionGoonjOffice)
+					->execute()->single();
+
+				$inductionOnlineMeetlink = $officeDetails['Goonj_Office_Details.Induction_Meeting_Access_Link'] ?? '';
+			}
+
+			// Assign tokens
+			$row->tokens('contact', 'inductionDateTime', $inductionDateTime);
+			$row->tokens('contact', 'inductionOnlineMeetlink', $inductionOnlineMeetlink);
+
     }
   }
 }

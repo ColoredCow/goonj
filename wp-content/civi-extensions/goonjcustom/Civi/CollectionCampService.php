@@ -85,22 +85,34 @@ class CollectionCampService extends AutoSubscriber {
       //   'directive' => 'afsearch-collection-camp-activity',
       //   'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
       // ],
+      'logistics' => [
+        'title' => ts('Logistics'),
+        'module' => 'afsearchCollectionCampLogistics',
+        'directive' => 'afsearch-collection-camp-logistics',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      ],
       'eventVolunteers' => [
         'title' => ts('Event Volunteers'),
         'module' => 'afsearchEventVolunteer',
         'directive' => 'afsearch-event-volunteer',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
       ],
+      'vehicleDispatch' => [
+        'title' => ts('Dispatch'),
+        'module' => 'afsearchCampVehicleDispatchData',
+        'directive' => 'afsearch-camp-vehicle-dispatch-data',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      ],
+      'materialAuthorization' => [
+        'title' => ts('Material Authorization'),
+        'module' => 'afsearchAcknowledgementForLogisticsData',
+        'directive' => 'afsearch-acknowledgement-for-logistics-data',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      ],
       'materialContribution' => [
         'title' => ts('Material Contribution'),
         'module' => 'afsearchCollectionCampMaterialContributions',
         'directive' => 'afsearch-collection-camp-material-contributions',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-      ],
-      'logistics' => [
-        'title' => ts('Logistics'),
-        'module' => 'afsearchCollectionCampLogistics',
-        'directive' => 'afsearch-collection-camp-logistics',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
       ],
       'campOutcome' => [

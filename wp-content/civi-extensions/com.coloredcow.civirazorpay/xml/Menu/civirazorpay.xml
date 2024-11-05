@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<menu>
+  <item>
+    <path>civicrm/razorpay/payment</path>
+    <page_callback>CRM_Civirazorpay_Page_Payment</page_callback>
+    <title>Payment</title>
+    <access_callback>1</access_callback>
+    <is_public>true</is_public>
+  </item>
+</menu>
