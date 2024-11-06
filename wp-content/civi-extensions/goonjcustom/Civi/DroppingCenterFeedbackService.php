@@ -32,6 +32,8 @@ class DroppingCenterFeedbackService {
         return;
       }
 
+      Civi::log()->info('trigger email');
+
       self::sendFeedbackEmail($organizingContactName, $droppingCenterId, $contactEmailId, $from);
 
       // Update status if the email is sent.
@@ -39,6 +41,8 @@ class DroppingCenterFeedbackService {
         ->addValue('Status.Feedback_Email_Delivered', 1)
         ->addWhere('Dropping_Center_Meta.Dropping_Center', '=', $droppingCenterId)
         ->execute();
+      
+        Civi::log()->info('update Feedback_Email_Delivered');
     }
   }
 

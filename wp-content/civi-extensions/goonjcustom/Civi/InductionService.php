@@ -447,4 +447,126 @@ class InductionService extends AutoSubscriber {
     self::createInduction(self::$transitionedVolunteerId, $stateId);
   }
 
+  /**
+   *
+   */
+  public static function sendFollowUpEmails() {
+    $followUpDays = 7;
+    $followUpTimestamp = strtotime("-{$followUpDays} days");
+  
+    // Retrieve the email template for follow-up.
+    $template = MessageTemplate::get(FALSE)
+      ->addSelect('id', 'msg_subject')
+      ->addWhere('msg_title', 'LIKE', 'Induction_slot_booking_follow_up_email%')
+      ->execute()->single();
+  
+    $batchSize = 25;
+    $offset = 0;
+  
+    do {
+      // Retrieve a batch of unscheduled induction activities older than 7 days
+      $unscheduledInductionActivities = Activity::get(FALSE)
+        ->addSelect('id', 'source_contact_id', 'created_date')
+        ->addWhere('activity_type_id:name', '=', 'Induction')
+        ->addWhere('status_id:name', '=', 'To be scheduled')
+        ->addWhere('created_date', '<', date('Y-m-d H:i:s', $followUpTimestamp))
+        ->setLimit($batchSize)
+        ->setOffset($offset)
+        ->execute();
+  
+      // Process each activity in the batch
+      foreach ($unscheduledInductionActivities as $activity) {
+        // Check if a follow-up email has already been sent to avoid duplication.
+        $emailActivities = Activity::get(FALSE)
+          ->addWhere('activity_type_id:name', '=', 'Email')
+          ->addWhere('subject', '=', $template['msg_subject'])
+          ->addWhere('source_contact_id', '=', $activity['source_contact_id'])
+          ->execute()->single();
+  
+        if (!$emailActivities) {
+          $emailParams = [
+            'contact_id' => $activity['source_contact_id'],
+            'template_id' => $template['id'],
+          ];
+          civicrm_api3('Email', 'send', $emailParams);
+        }
+      }
+  
+      // Move to the next batch by increasing the offset
+      $offset += $batchSize;
+  
+    } while (count($unscheduledInductionActivities) === $batchSize);
+  }
+
+  /**
+   *
+   */
+  public static function updateInductionStatusNoShow() {
+		$followUpDays = 30;
+		$followUpTimestamp = strtotime("-$followUpDays days");
+		$batchSize = 25;
+		$offset = 0;
+
+		try {
+			// Fetch the follow-up message template
+			$template = MessageTemplate::get(FALSE)
+				->addSelect('id', 'msg_subject')
+				->addWhere('msg_title', 'LIKE', 'Induction_slot_booking_follow_up_email%')
+				->execute()->single();
+
+			if (!$template) {
+				throw new \Exception('Follow-up email template not found.');
+			}
+
+			do {
+				// Fetch email activities older than 30 days
+				$followUpEmailActivities = Activity::get(TRUE)
+					->addSelect('source_contact_id', 'activity_date_time')
+					->addWhere('subject', '=', $template['msg_subject'])
+					->addWhere('activity_type_id:label', '=', 'Email')
+					->addWhere('created_date', '<', date('Y-m-d H:i:s', $followUpTimestamp))
+					->setLimit($batchSize)
+					->setOffset($offset)->execute();
+
+				foreach ($followUpEmailActivities as $activity) {
+					// Fetch the associated induction activity
+					$inductionActivity = Activity::get(FALSE)
+						->addSelect('id', 'source_contact_id', 'status_id:name')
+						->addWhere('activity_type_id:name', '=', 'Induction')
+						->addWhere('source_contact_id', '=', $activity['source_contact_id'])
+						->execute()
+						->single();
+
+					if (!$inductionActivity) {
+						\Civi::log()->info('No induction activity found for source contact', [
+							'source_contact_id' => $activity['source_contact_id'],
+						]);
+						continue;
+					}
+
+					// Check if the status is 'Completed' or 'Scheduled'
+					if (in_array($inductionActivity['status_id:name'], ['Completed', 'Scheduled'])) {
+						\Civi::log()->info('Induction activity is already completed or scheduled, skipping', [
+							'inductionActivityId' => $inductionActivity['id'],
+							'status' => $inductionActivity['status_id:name']
+						]);
+						continue;
+					}
+
+					// Update the induction status to 'No_show'
+					$updateResult = Activity::update(FALSE)
+						->addValue('status_id:name', 'No_show')
+						->addWhere('id', '=', $inductionActivity['id'])
+						->execute();
+				}
+
+				// Increment the offset by the batch size
+				$offset += $batchSize;
+			} while (count($followUpEmailActivities) === $batchSize);
+
+		} catch (\Exception $e) {
+			\Civi::log()->error('Error in updating induction status: ' . $e->getMessage());
+			throw $e;
+		}
+	}
 }
