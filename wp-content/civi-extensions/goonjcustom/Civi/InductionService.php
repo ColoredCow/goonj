@@ -502,7 +502,6 @@ class InductionService extends AutoSubscriber {
    *
    */
   public static function updateInductionStatusNoShow() {
-    \Civi::log()->info('cjecka');
 		$followUpDays = 30;
 		$followUpTimestamp = strtotime("-$followUpDays days");
 		$batchSize = 25;
@@ -559,11 +558,6 @@ class InductionService extends AutoSubscriber {
 						->addValue('status_id:name', 'No_show')
 						->addWhere('id', '=', $inductionActivity['id'])
 						->execute();
-
-					\Civi::log()->info('Induction activity status updated to No_show', [
-						'inductionActivityId' => $inductionActivity['id'],
-						'updateResult' => $updateResult
-					]);
 				}
 
 				// Increment the offset by the batch size
@@ -571,9 +565,8 @@ class InductionService extends AutoSubscriber {
 			} while (count($followUpEmailActivities) === $batchSize);
 
 		} catch (\Exception $e) {
-			// Log any errors encountered during the process
 			\Civi::log()->error('Error in updating induction status: ' . $e->getMessage());
-			throw $e; // Re-throw the exception to handle it at a higher level
+			throw $e;
 		}
 	}
 }
