@@ -541,6 +541,7 @@ class InductionService extends AutoSubscriber {
 
 
           $inductionActivity = $inductionActivities->first();
+
 					if (!$inductionActivity) {
 						\Civi::log()->info('No induction activity found for source contact', [
 							'source_contact_id' => $activity['source_contact_id'],
