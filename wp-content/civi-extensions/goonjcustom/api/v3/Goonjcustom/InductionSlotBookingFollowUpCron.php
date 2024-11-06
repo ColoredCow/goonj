@@ -39,7 +39,6 @@ function civicrm_api3_goonjcustom_induction_slot_booking_follow_up_cron($params)
     try {
         InductionService::sendFollowUpEmails();
     } catch (Exception $e) {
-        // Log any errors encountered during the process.
         \Civi::log()->error('Error in follow-up cron: ' . $e->getMessage());
         return civicrm_api3_create_error($e->getMessage());
     }

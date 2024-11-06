@@ -38,7 +38,6 @@ function civicrm_api3_goonjcustom_update_induction_status_no_show_cron($params) 
     try {
         InductionService::updateInductionStatusNoShow();
     } catch (\Exception $e) {
-        // Log any errors encountered during the process
         \Civi::log()->error('Error in follow-up cron: ' . $e->getMessage());
         return civicrm_api3_create_error($e->getMessage());
     }
