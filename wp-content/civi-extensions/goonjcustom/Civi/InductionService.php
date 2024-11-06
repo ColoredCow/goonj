@@ -473,7 +473,7 @@ class InductionService extends AutoSubscriber {
         ->setLimit($batchSize)
         ->setOffset($offset)
         ->execute();
-  
+
       // Process each activity in the batch
       foreach ($unscheduledInductionActivities as $activity) {
         // Check if a follow-up email has already been sent to avoid duplication.
@@ -481,9 +481,11 @@ class InductionService extends AutoSubscriber {
           ->addWhere('activity_type_id:name', '=', 'Email')
           ->addWhere('subject', '=', $template['msg_subject'])
           ->addWhere('source_contact_id', '=', $activity['source_contact_id'])
-          ->execute()->single();
+          ->execute();
+
+        $emailActivity = $emailActivities->first();
   
-        if (!$emailActivities) {
+        if (!$emailActivity) {
           $emailParams = [
             'contact_id' => $activity['source_contact_id'],
             'template_id' => $template['id'],
@@ -523,32 +525,25 @@ class InductionService extends AutoSubscriber {
 				$followUpEmailActivities = Activity::get(TRUE)
 					->addSelect('source_contact_id', 'activity_date_time')
 					->addWhere('subject', '=', $template['msg_subject'])
-					->addWhere('activity_type_id:label', '=', 'Email')
+					->addWhere('activity_type_id:name', '=', 'Email')
 					->addWhere('created_date', '<', date('Y-m-d H:i:s', $followUpTimestamp))
 					->setLimit($batchSize)
 					->setOffset($offset)->execute();
 
 				foreach ($followUpEmailActivities as $activity) {
 					// Fetch the associated induction activity
-					$inductionActivity = Activity::get(FALSE)
+					$inductionActivities = Activity::get(FALSE)
 						->addSelect('id', 'source_contact_id', 'status_id:name')
 						->addWhere('activity_type_id:name', '=', 'Induction')
 						->addWhere('source_contact_id', '=', $activity['source_contact_id'])
-						->execute()
-						->single();
+            ->addWhere('status_id:name', '=', 'To be scheduled')
+						->execute();
 
+
+          $inductionActivity = $inductionActivities->first();
 					if (!$inductionActivity) {
 						\Civi::log()->info('No induction activity found for source contact', [
 							'source_contact_id' => $activity['source_contact_id'],
-						]);
-						continue;
-					}
-
-					// Check if the status is 'Completed' or 'Scheduled'
-					if (in_array($inductionActivity['status_id:name'], ['Completed', 'Scheduled'])) {
-						\Civi::log()->info('Induction activity is already completed or scheduled, skipping', [
-							'inductionActivityId' => $inductionActivity['id'],
-							'status' => $inductionActivity['status_id:name']
 						]);
 						continue;
 					}
