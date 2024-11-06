@@ -46,16 +46,11 @@ function civicrm_api3_goonjcustom_feedback_dropping_center_cron($params) {
 
   $statusName = $optionValues['value'];
 
-  $droppingCenterMeta = EckEntity::get('Dropping_Center_Meta', FALSE)
+  $droppingCenterMeta = EckEntity::get('Dropping_Center_Meta', TRUE)
     ->addSelect('Dropping_Center_Meta.Dropping_Center', 'Dropping_Center_Meta.Dropping_Center.Collection_Camp_Core_Details.Contact_Id', 'Status.Feedback_Email_Delivered', 'Dropping_Center_Meta.Dropping_Center.Collection_Camp_Core_Details.Status')
     ->addWhere('subtype', '=', $statusName)
-    ->addWhere('Status.Status:name', '=', 'Parmanently_Closed')
+    ->addWhere('Status.Status:name', '=', 'Permanently_Closed')
     ->execute();
-
-  Civi::log()->info('Dropping Center Meta data retrieved', [
-    'status_name' => $statusName,
-    'data' => $droppingCenterMeta,
-  ]);
 
   $from = HelperService::getDefaultFromEmail();
 
@@ -65,14 +60,6 @@ function civicrm_api3_goonjcustom_feedback_dropping_center_cron($params) {
       $initiatorId = $meta['Dropping_Center_Meta.Dropping_Center.Collection_Camp_Core_Details.Contact_Id'];
       $status = $meta['Status.Feedback_Email_Delivered'];
       $authorizedStatus = $meta['Dropping_Center_Meta.Dropping_Center.Collection_Camp_Core_Details.Status'];
-      // Log these details for debugging.
-      Civi::log()->info('Dropping Center Meta details', [
-        'Dropping Center ID' => $droppingCenterId,
-        'Initiator ID' => $initiatorId,
-        'Feedback Email Delivered Status' => $status,
-        'Authorized Status' => $authorizedStatus,
-      ]);
-
       // Trigger only if the status is 'authorized'.
       if ($authorizedStatus === 'authorized') {
         DroppingCenterFeedbackService::processDroppingCenterStatus($droppingCenterId, $initiatorId, $status, $from);
