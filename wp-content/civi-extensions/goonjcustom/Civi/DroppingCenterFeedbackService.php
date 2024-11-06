@@ -41,6 +41,8 @@ class DroppingCenterFeedbackService {
         ->addValue('Status.Feedback_Email_Delivered', 1)
         ->addWhere('Dropping_Center_Meta.Dropping_Center', '=', $droppingCenterId)
         ->execute();
+      
+        Civi::log()->info('update Feedback_Email_Delivered');
     }
   }
 
