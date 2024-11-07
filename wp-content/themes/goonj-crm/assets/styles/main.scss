@@ -597,6 +597,10 @@ form input {
   form .crm-contribution-thankyou-form-block fieldset fieldset .header-dark {
     width: 100% !important;
   }
+  
+  form .crm-contribution-thankyou-form-block .crm-group.billing_name_address-group {
+    display: none !important;
+  }
 
   @media (min-width: 375px) and (max-width: 768px) { 
     form .crm-contribution-thankyou-form-block fieldset fieldset div {
