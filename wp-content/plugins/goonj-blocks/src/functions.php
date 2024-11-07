@@ -68,7 +68,7 @@ function generate_induction_slots($contactId = null, $days = 30) {
         $inductionSlotStartDate = (new DateTime($contactData['Individual_fields.Created_Date']))->modify('+1 day');
         $physicalInductionType = 'Processing_Unit';
         $onlineInductionType = 'Online_only_selected_by_Urban_P';
-        $defaultMaxSlot = 30;
+        $defaultMaxSlot = 15;
 
         // List of states with both physical and online inductions based on cities
         $statesWithMixedInductionTypes = \Civi\Api4\StateProvince::get(FALSE)
