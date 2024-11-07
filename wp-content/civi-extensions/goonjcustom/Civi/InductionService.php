@@ -402,6 +402,11 @@ class InductionService extends AutoSubscriber {
     if ($op !== 'edit' || $objectName !== 'Individual') {
       return FALSE;
     }
+    // Check if 'entryURL' is set and contains '/contribute'.
+    if (isset($params['entryURL']) && strpos($params['entryURL'], '/contribute') !== FALSE) {
+      // Return if '/contribute' is found in the entryURL.
+      return FALSE;
+    }
 
     $newSubtypes = $params['contact_sub_type'] ?? [];
 
