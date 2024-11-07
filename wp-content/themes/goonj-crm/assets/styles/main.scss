@@ -582,10 +582,10 @@ form input {
   font-size: 14px;
   line-height: 16px;
 }
+
 #crm-container .crm-title {
   display: none !important;
 }
-
 // End of CSS for the Contribution Page
 
 // CSS for the Contribution ThankYou Page
@@ -593,9 +593,11 @@ form input {
   form .crm-contribution-thankyou-form-block fieldset fieldset legend {
     display: none !important;
   }
+
   form .crm-contribution-thankyou-form-block fieldset fieldset .header-dark {
     width: 100% !important;
   }
+
   @media (min-width: 375px) and (max-width: 768px) { 
     form .crm-contribution-thankyou-form-block fieldset fieldset div {
       padding: 5px 113px 0px 0px !important;
@@ -604,7 +606,6 @@ form input {
   }
 }
 // End of CSS for the Contribution ThankYou Page
-
 
 @media (max-width: 768px) {
   .wp-block-gb-slots-wrapper .wp-block-gb-slots-grid {
