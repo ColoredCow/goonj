@@ -65,6 +65,11 @@ function generate_induction_slots($contactId = null, $days = 30) {
         }
 
         $contactStateId = intval($contactData['address_primary.state_province_id']);
+
+        // Capitalize first letter of each word
+        $contactCityFormatted = ucwords(strtolower($contactData['address_primary.city']));
+
+        
         $inductionSlotStartDate = (new DateTime($contactData['Individual_fields.Created_Date']))->modify('+1 day');
         $physicalInductionType = 'Processing_Unit';
         $onlineInductionType = 'Online_only_selected_by_Urban_P';
@@ -95,7 +100,9 @@ function generate_induction_slots($contactId = null, $days = 30) {
             ->addSelect('id', 'display_name')
             ->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_Office')
             ->addWhere('address_primary.state_province_id', '=', $contactStateId)
+            ->addWhere('address_primary.city', 'LIKE', $contactCityFormatted . '%')
             ->execute();
+
 
         if ($officeContact->count() === 0) {
             // generate online induction slots for state having no office
