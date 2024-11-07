@@ -77,6 +77,21 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
   /**
    *
    */
+  public function handlePaymentNotification() {
+    \Civi::log()->debug('handlePaymentNotification called');
+
+    http_response_code(200);
+    $rawData = file_get_contents("php://input");
+    $event = json_decode($rawData, TRUE);
+
+    \Civi::log()->debug([
+      '$event' => $event,
+    ]);
+  }
+
+  /**
+   *
+   */
   public function checkConfig() {
     // @todo
     return [];
