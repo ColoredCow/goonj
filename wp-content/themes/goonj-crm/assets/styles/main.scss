@@ -629,14 +629,42 @@ form input {
     line-height: 16px;
   }
 
+  form .crm-contribution-thankyou-form-block fieldset fieldset div{
+    margin: 12px !important;
+    padding: 11px 3px 10px 0px !important;
+    margin-left: 0px !important;
+    width: 100% !important;
+    margin-bottom: -18px !important;
+  }
+
+  form .crm-contribution-thankyou-form-block fieldset fieldset div .label label{
+    font-weight: 600 !important;
+  }
+
+  form .crm-contribution-thankyou-form-block .crm-group .header-dark{
+    padding-left: 6px !important;
+  }
+
+  form .crm-contribution-thankyou-form-block fieldset {
+    border-top: none !important;
+  }
+
   @media (min-width: 375px) and (max-width: 768px) { 
     form .crm-contribution-thankyou-form-block fieldset fieldset div {
       padding: 5px 113px 0px 0px !important;
       flex: none !important;
+      margin: 1px !important;
+    }
+    form .crm-contribution-thankyou-form-block fieldset fieldset .header-dark {
+      width: 57% !important;
     }
   }
 }
 // End of CSS for the Contribution ThankYou Page
+
+#crm-container .crm-public-footer {
+  display: none !important;
+}
 
 @media (max-width: 768px) {
   .wp-block-gb-slots-wrapper .wp-block-gb-slots-grid {
