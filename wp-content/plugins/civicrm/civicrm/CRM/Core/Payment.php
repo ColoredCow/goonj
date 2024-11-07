@@ -1636,9 +1636,6 @@ abstract class CRM_Core_Payment {
         $params['processor_id'] = $_GET['processor_id'] = $lastParam;
       }
       else {
-        \Civi::log()->debug(__FUNCTION__, [
-          'params' => $params
-        ]);
         self::logPaymentNotification($params);
         throw new CRM_Core_Exception("Either 'processor_id' (recommended) or 'processor_name' (deprecated) is required for payment callback.");
       }

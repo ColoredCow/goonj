@@ -13,6 +13,11 @@ use Razorpay\Api\Api;
 class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
   const CHARSET = 'utf-8';
 
+  // Define constants for contribution statuses.
+  const CONTRIB_STATUS_COMPLETED = 1;
+  const CONTRIB_STATUS_PENDING = 2;
+  const CONTRIB_STATUS_FAILED = 4;
+
   protected $_mode = NULL;
 
   /**
@@ -52,15 +57,12 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
       throw new PaymentProcessorException('Error creating Razorpay order: ' . $e->getMessage());
     }
 
-    // Pending.
-    $contributionStatusId = 2;
-
     // Save the Razorpay order ID in the contribution record.
     try {
       $result = civicrm_api3('Contribution', 'create', [
         'id' => $params['contributionID'],
         'trxn_id' => $order->id,
-        'contribution_status_id' => $contributionStatusId,
+        'contribution_status_id' => self::CONTRIB_STATUS_PENDING,
       ]);
     }
     catch (CiviCRM_API3_Exception $e) {
@@ -149,21 +151,17 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
         'credit_card_pan' => $last4CardDigits,
       ]);
 
-      // Update the contribution status to Completed.
       civicrm_api3('Contribution', 'create', [
         'id' => $contributionID,
-      // 1 for Completed
-        'contribution_status_id' => 1,
+        'contribution_status_id' => self::CONTRIB_STATUS_COMPLETED,
       ]);
 
       \Civi::log()->info("Contribution ID $contributionID updated to Completed.");
     }
     else {
-      // Update contribution status to indicate failure.
       civicrm_api3('Contribution', 'create', [
         'id' => $contributionID,
-      // 4 for Failed
-        'contribution_status_id' => 4,
+        'contribution_status_id' => self::CONTRIB_STATUS_FAILED,
       ]);
 
       \Civi::log()->info("Contribution ID $contributionID updated to Failed.");
