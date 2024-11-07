@@ -103,7 +103,9 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
       ]);
     }
     catch (CiviCRM_API3_Exception $e) {
-      \Civi::log()->error('Error fetching payment processor details: ' . $e->getMessage());
+      \Civi::log()->error('Error fetching payment processor details: ', [
+        'error' => $e,
+      ]);
       throw new CRM_Core_Exception('Could not fetch payment processor details');
     }
 
@@ -133,13 +135,7 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
     $amount = $params['payload']['payment']['entity']['amount'] / 100;
     $last4CardDigits = $params['payload']['payment']['entity']['card']['last4'] ?? NULL;
 
-    $contribution = Contribution::get(FALSE)
-      ->addWhere('trxn_id', '=', $razorpayOrderId)
-      ->addWhere('is_test', '=', TRUE)
-      ->setLimit(1)
-      ->execute()
-      ->single();
-
+    $contribution = $this->getContributionByOrderId($razorpayOrderId);
     $contributionID = $contribution['id'];
     $contactID = $contribution['contact_id'];
 
@@ -174,6 +170,22 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
     }
 
     CRM_Utils_System::civiExit();
+  }
+
+  /**
+   *
+   */
+  private function getContributionByOrderId($razorpayOrderId) {
+    $isTestMode = $this->_mode === 'test';
+
+    $contribution = Contribution::get(FALSE)
+      ->addWhere('trxn_id', '=', $razorpayOrderId)
+      ->addWhere('is_test', '=', $isTestMode ? TRUE : FALSE)
+      ->setLimit(1)
+      ->execute()
+      ->single();
+
+    return $contribution;
   }
 
   /**
