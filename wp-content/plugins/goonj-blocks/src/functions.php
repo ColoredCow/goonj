@@ -169,7 +169,7 @@ function generate_slots($assignedOfficeId, $maxSlots, $inductionType, $startDate
         // Generate slots
         generateActivitySlots($slots, $maxSlots, $validInductionDays, $hour, $minute, $startDate, $scheduledActivityDates, $slotCount, $highActivityCountDays, $inductionType);
 
-        if ($highActivityCountDays >= 23) {
+        if ($highActivityCountDays >= 8) {
             $slotCount = 0;
             $startDate = new DateTime(end($slots)['date']);
             generateActivitySlots($slots, $highActivityCountDays, $validInductionDays, $hour, $minute, $startDate, $scheduledActivityDates, $slotCount, $highActivityCountDays, $inductionType);
@@ -198,13 +198,15 @@ function generateActivitySlots(&$slots, $maxSlots, $validInductionDays, $hour, $
             // Determine activity count based on scheduled activities
             $activityCount = count(array_filter($scheduledActivityDates, fn($scheduledActivityDate) => $scheduledActivityDate === $activityDate));
 
-            $slots[] = [
-                'day' => $dayName,
-                'date' => $date->format('d-m-Y'),
-                'time' => $date->format('h:i A'),
-                'activity_count' => $activityCount,
-                'induction_type' => $inductionType,
-            ];
+            if ($activityCount < 20){
+                $slots[] = [
+                    'day' => $dayName,
+                    'date' => $date->format('d-m-Y'),
+                    'time' => $date->format('h:i A'),
+                    'activity_count' => $activityCount,
+                    'induction_type' => $inductionType,
+                ];
+            }
             $slotCount++;
 
             // Count days with activity count greater than 20
