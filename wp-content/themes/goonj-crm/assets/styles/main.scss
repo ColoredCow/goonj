@@ -602,6 +602,15 @@ form input {
     display: none !important;
   }
 
+  form .crm-contribution-thankyou-form-block fieldset fieldset div .content {
+    margin-left: 0 !important;
+  }
+
+  form .crm-contribution-thankyou-form-block #thankyou_text p {
+    place-self: center !important;
+    margin-bottom: 50px;
+  }
+
   @media (min-width: 375px) and (max-width: 768px) { 
     form .crm-contribution-thankyou-form-block fieldset fieldset div {
       padding: 5px 113px 0px 0px !important;
