@@ -611,6 +611,24 @@ form input {
     margin-bottom: 50px;
   }
 
+  form .crm-contribution-thankyou-form-block .help .bold p, 
+  form .crm-contribution-thankyou-form-block .crm-group .header-dark,
+  form .crm-contribution-thankyou-form-block .crm-group .display-block,
+  form .crm-contribution-thankyou-form-block fieldset fieldset div, 
+  form .crm-contribution-thankyou-form-block .crm-group .crm-section div{
+    font-weight: 400;
+    font-family: 'Open Sans', sans-serif !important;
+    font-size: 14px;
+    line-height: 16px;
+  }
+
+  form .crm-contribution-thankyou-form-block .help div{
+    font-weight: 400;
+    font-family: 'Open Sans', sans-serif !important;
+    font-size: 12px;
+    line-height: 16px;
+  }
+
   @media (min-width: 375px) and (max-width: 768px) { 
     form .crm-contribution-thankyou-form-block fieldset fieldset div {
       padding: 5px 113px 0px 0px !important;
