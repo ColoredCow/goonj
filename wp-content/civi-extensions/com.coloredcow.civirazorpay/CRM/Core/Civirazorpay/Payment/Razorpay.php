@@ -78,15 +78,72 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
    *
    */
   public function handlePaymentNotification() {
-    \Civi::log()->debug('handlePaymentNotification called');
+    $paymentProcessorID = isset($_GET['processor_id']) ? (int) $_GET['processor_id'] : 0;
 
-    http_response_code(200);
+    if (!$paymentProcessorID) {
+      throw new CRM_Core_Exception("Missing or invalid payment processor ID");
+    }
+
+    try {
+      $this->_paymentProcessor = civicrm_api3('payment_processor', 'getsingle', [
+        'id' => $paymentProcessorID,
+      ]);
+    }
+    catch (CiviCRM_API3_Exception $e) {
+      \Civi::log()->error('Error fetching payment processor details: ' . $e->getMessage());
+      throw new CRM_Core_Exception('Could not fetch payment processor details');
+    }
+
     $rawData = file_get_contents("php://input");
     $event = json_decode($rawData, TRUE);
 
-    \Civi::log()->debug([
-      '$event' => $event,
-    ]);
+    \Civi::log()->info('Razorpay IPN received', ['rawData' => $rawData, 'parsedEvent' => $event]);
+
+    $this->processPaymentNotification($params);
+  }
+
+  /**
+   * Update CiviCRM based on outcome of the transaction processing.
+   *
+   * @param array $params
+   *
+   * @throws CRM_Core_Exception
+   * @throws CiviCRM_API3_Exception
+   */
+  public function processPaymentNotification(array $params): void {
+    // Obviously all the below variables need to be extracted from the params.
+    if ($isSuccess) {
+      civicrm_api3('Payment', 'create', [
+        'contribution_id' => $contributionID,
+        'total_amount' => $totalAmount,
+        'payment_instrument_id' => $this->_paymentProcessor['payment_instrment_id'],
+        'trxn_id' => $trxnID,
+        'credit_card_pan' => $last4CardsOfCardIfReturnedHere,
+      ]);
+      // Perhaps you are saving a payment token for future use (a token
+      // is a string provided by the processor to allow you to recharge the card)
+      $paymentToken = civicrm_api3('PaymentToken', 'create', [
+        'contact_id' => $params['contact_id'],
+        'token' => $params['token'],
+        'payment_processor_id' => $params['payment_processor_id'] ?? $this->_paymentProcessor['id'],
+        'created_id' => CRM_Core_Session::getLoggedInContactID() ?? $params['contact_id'],
+        'email' => $params['email'],
+        'billing_first_name' => $params['billing_first_name'] ?? NULL,
+        'billing_middle_name' => $params['billing_middle_name'] ?? NULL,
+        'billing_last_name' => $params['billing_last_name'] ?? NULL,
+        'expiry_date' => $this->getCreditCardExpiry($params),
+        'masked_account_number' => $this->getMaskedCreditCardNumber($params),
+        'ip_address' => CRM_Utils_System::ipAddress(),
+      ]);
+    }
+
+    if ($thisIsABrowserIwantToRedirect) {
+      // This url was stored in the doPayment example above.
+      $redirectURL = CRM_Core_Session::singleton()->get("ipn_success_url_{$this->transaction_id}");
+      CRM_Utils_System::redirect($redirectUrl);
+    }
+    // Or perhaps just exit out for a server call.
+    CRM_Utils_System::civiExit();
   }
 
   /**
