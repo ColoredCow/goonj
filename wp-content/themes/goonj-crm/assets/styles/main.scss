@@ -1,4 +1,5 @@
 @use "variables";
+@use "contribution";
 @each $size, $length in variables.$sizes {
   .w-#{$size} {
     width: $length !important;
@@ -295,7 +296,7 @@ form input {
   margin-left: 0 !important;
 }
 .font-sans {
-  font-family: Open Sans !important;
+  font-family: 'Open Sans', sans-serif !important;
 }
 .mobile-margins-l24-r30 {
   margin-left: 24px !important;
