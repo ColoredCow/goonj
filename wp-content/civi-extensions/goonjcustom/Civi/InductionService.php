@@ -525,6 +525,12 @@ class InductionService extends AutoSubscriber {
 				throw new \Exception('Follow-up email template not found.');
 			}
 
+			$unscheduledInductionContactIds = Activity::get(FALSE)
+				->addSelect('source_contact_id')
+				->addWhere('activity_type_id:name', '=', 'Induction')
+				->addWhere('status_id:name', '=', 'To be scheduled')
+				->execute()->column('source_contact_id');
+
 			do {
 				// Fetch email activities older than 30 days
 				$followUpEmailActivities = Activity::get(TRUE)
@@ -532,6 +538,7 @@ class InductionService extends AutoSubscriber {
 					->addWhere('subject', '=', $template['msg_subject'])
 					->addWhere('activity_type_id:name', '=', 'Email')
 					->addWhere('created_date', '<', date('Y-m-d H:i:s', $followUpTimestamp))
+					->addWhere('source_contact_id', 'IN',$unscheduledInductionContactIds )
 					->setLimit($batchSize)
 					->setOffset($offset)->execute();
 
@@ -541,9 +548,8 @@ class InductionService extends AutoSubscriber {
 						->addSelect('id', 'source_contact_id', 'status_id:name')
 						->addWhere('activity_type_id:name', '=', 'Induction')
 						->addWhere('source_contact_id', '=', $activity['source_contact_id'])
-            ->addWhere('status_id:name', '=', 'To be scheduled')
+						->addWhere('status_id:name', '=', 'To be scheduled')
 						->execute();
-
 
           $inductionActivity = $inductionActivities->first();
 
