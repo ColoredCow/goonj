@@ -533,7 +533,7 @@ class InductionService extends AutoSubscriber {
 
 			do {
 				// Fetch email activities older than 30 days
-				$followUpEmailActivities = Activity::get(TRUE)
+				$followUpEmailActivities = Activity::get(FALSE)
 					->addSelect('source_contact_id', 'activity_date_time')
 					->addWhere('subject', '=', $template['msg_subject'])
 					->addWhere('activity_type_id:name', '=', 'Email')
