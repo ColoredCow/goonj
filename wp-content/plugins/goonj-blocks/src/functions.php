@@ -65,10 +65,14 @@ function generate_induction_slots($contactId = null, $days = 30) {
         }
 
         $contactStateId = intval($contactData['address_primary.state_province_id']);
+
+        // Capitalize first letter of each word
+        $contactCityFormatted = ucwords(strtolower($contactData['address_primary.city']));
+
         $inductionSlotStartDate = (new DateTime($contactData['Individual_fields.Created_Date']))->modify('+1 day');
         $physicalInductionType = 'Processing_Unit';
         $onlineInductionType = 'Online_only_selected_by_Urban_P';
-        $defaultMaxSlot = 30;
+        $defaultMaxSlot = 15;
 
         // List of states with both physical and online inductions based on cities
         $statesWithMixedInductionTypes = \Civi\Api4\StateProvince::get(FALSE)
@@ -95,6 +99,7 @@ function generate_induction_slots($contactId = null, $days = 30) {
             ->addSelect('id', 'display_name')
             ->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_Office')
             ->addWhere('address_primary.state_province_id', '=', $contactStateId)
+            ->addWhere('address_primary.city', 'LIKE', $contactCityFormatted . '%')
             ->execute();
 
         if ($officeContact->count() === 0) {
@@ -169,7 +174,7 @@ function generate_slots($assignedOfficeId, $maxSlots, $inductionType, $startDate
         // Generate slots
         generateActivitySlots($slots, $maxSlots, $validInductionDays, $hour, $minute, $startDate, $scheduledActivityDates, $slotCount, $highActivityCountDays, $inductionType);
 
-        if ($highActivityCountDays >= 23) {
+        if ($highActivityCountDays >= 8) {
             $slotCount = 0;
             $startDate = new DateTime(end($slots)['date']);
             generateActivitySlots($slots, $highActivityCountDays, $validInductionDays, $hour, $minute, $startDate, $scheduledActivityDates, $slotCount, $highActivityCountDays, $inductionType);
@@ -198,13 +203,15 @@ function generateActivitySlots(&$slots, $maxSlots, $validInductionDays, $hour, $
             // Determine activity count based on scheduled activities
             $activityCount = count(array_filter($scheduledActivityDates, fn($scheduledActivityDate) => $scheduledActivityDate === $activityDate));
 
-            $slots[] = [
-                'day' => $dayName,
-                'date' => $date->format('d-m-Y'),
-                'time' => $date->format('h:i A'),
-                'activity_count' => $activityCount,
-                'induction_type' => $inductionType,
-            ];
+            if ($activityCount < 20){
+                $slots[] = [
+                    'day' => $dayName,
+                    'date' => $date->format('d-m-Y'),
+                    'time' => $date->format('h:i A'),
+                    'activity_count' => $activityCount,
+                    'induction_type' => $inductionType,
+                ];
+            }
             $slotCount++;
 
             // Count days with activity count greater than 20
