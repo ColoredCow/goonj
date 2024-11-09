@@ -111,10 +111,8 @@ class InductionService extends AutoSubscriber {
 
     // Check if an induction activity already exists
     if ($contactInductionExists->count() > 0) {
-      // If an induction activity exists, return immediately
       return;
     }
-    \Civi::log()->info('Activity created', ['contactInductionExists'=>$contactInductionExists, 'sourceContactId'=>$sourceContactId,'targetContactId'=>$targetContactId, 'coordinatorId'=>$coordinatorId, 'placeholderActivityDate'=>$placeholderActivityDate   ]);
 
     Activity::create(FALSE)
       ->addValue('activity_type_id:name', self::INDUCTION_ACTIVITY_TYPE_NAME)
@@ -143,8 +141,7 @@ class InductionService extends AutoSubscriber {
       \Civi::log()->info('state not found', ['VolunteerId' => self::$volunteerId, 'stateId' => $stateId]);
       return FALSE;
     }
-    \Civi::log()->info('create Induction volunteer', ['volunteerId'=>$objectId]);
-    \Civi::log()->info('debugging', ['op'=>$op , 'objectName'=>$objectName, 'objectId'=>$objectId , 'objectRef'=>$objectRef ]);
+
     self::createInduction(self::$volunteerId, $stateId);
   }
 
@@ -463,8 +460,7 @@ class InductionService extends AutoSubscriber {
       \Civi::log()->info(['State not found :', ['contactId' => $contact['id'], 'StateId' => $stateId]]);
       return FALSE;
     }
-    \Civi::log()->info('create Induction volunteer transition', ['contactId'=>$objectId]);
-    \Civi::log()->info('debugging', ['op'=>$op , 'objectName'=>$objectName, 'objectId'=>$objectId , 'objectRef'=>$objectRef ]);
+
     self::createInduction(self::$transitionedVolunteerId, $stateId);
   }
 
@@ -525,7 +521,6 @@ class InductionService extends AutoSubscriber {
    *
    */
   public static function updateInductionStatusNoShow() {
-    \Civi::log()->info('updateInductionStatusNoShow');
 		$followUpDays = 30;
 		$followUpTimestamp = strtotime("-$followUpDays days");
 		$batchSize = 25;
@@ -567,7 +562,6 @@ class InductionService extends AutoSubscriber {
 						->addWhere('source_contact_id', '=', $activity['source_contact_id'])
 						->addWhere('status_id:name', '=', 'To be scheduled')
 						->execute();
-          \Civi::log()->info('inductionActivities', ['inductionActivities'=>$inductionActivities]);
 
           $inductionActivity = $inductionActivities->first();
 
@@ -577,13 +571,13 @@ class InductionService extends AutoSubscriber {
 						]);
 						continue;
 					}
-          \Civi::log()->info('inductionActivity', ['inductionActivity'=>$inductionActivity]);
+
 					// Update the induction status to 'No_show'
 					$updateResult = Activity::update(FALSE)
 						->addValue('status_id:name', 'No_show')
 						->addWhere('id', '=', $inductionActivity['id'])
 						->execute();
-          \Civi::log()->info('updateResult', ['updateResult'=>$updateResult]);
+
 				}
 
 				// Increment the offset by the batch size
