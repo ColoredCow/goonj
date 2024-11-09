@@ -57,10 +57,12 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
       throw new PaymentProcessorException('Error creating Razorpay order: ' . $e->getMessage());
     }
 
+    $contributionId = $params['contributionID'];
+
     // Save the Razorpay order ID in the contribution record.
     try {
       $result = civicrm_api3('Contribution', 'create', [
-        'id' => $params['contributionID'],
+        'id' => $contributionId,
         'trxn_id' => $order->id,
         'contribution_status_id' => self::CONTRIB_STATUS_PENDING,
       ]);
@@ -73,10 +75,8 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
     $redirectUrl = CRM_Utils_System::url(
         'civicrm/razorpay/payment',
         [
-          'order_id' => $order->id,
-          'amount' => $params['amount'] * 100,
-          'currency' => 'INR',
-          'qfKey' => $params['qfKey'],
+          'contribution' => $contributionId,
+          'processor' => $this->_paymentProcessor['id'],
         ],
         // Absolute URL.
         TRUE,
@@ -126,14 +126,10 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
    * @throws CiviCRM_API3_Exception
    */
   public function processPaymentNotification(array $params): void {
-    \Civi::log()->info('Processing Razorpay IPN', $params);
-
     $isSuccess = $params['event'] === 'payment.captured';
 
-    // Extract required details from the payload.
     $razorpayOrderId = $params['payload']['payment']['entity']['order_id'] ?? NULL;
     $razorpayPaymentId = $params['payload']['payment']['entity']['id'] ?? NULL;
-    // Convert to full currency units.
     $amount = $params['payload']['payment']['entity']['amount'] / 100;
     $last4CardDigits = $params['payload']['payment']['entity']['card']['last4'] ?? NULL;
 
@@ -142,7 +138,6 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
     $contactID = $contribution['contact_id'];
 
     if ($isSuccess) {
-      // Record a completed payment.
       civicrm_api3('Payment', 'create', [
         'contribution_id' => $contributionID,
         'total_amount' => $amount,
