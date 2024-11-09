@@ -102,7 +102,19 @@ class InductionService extends AutoSubscriber {
     $targetContactId = ($sourceContactId === $contactId) ? $contactId : $contactId;
 
     $placeholderActivityDate = self::getPlaceholderActivityDate();
-    \Civi::log()->info('Activity created', ['sourceContactId'=>$sourceContactId,'targetContactId'=>$targetContactId, 'coordinatorId'=>$coordinatorId, 'placeholderActivityDate'=>$placeholderActivityDate   ]);
+
+    // Fetch induction activities for the target contact
+    $contactInductionExists = Activity::get(FALSE)
+      ->addWhere('activity_type_id:name', '=', 'Induction')
+      ->addWhere('target_contact_id', '=', $targetContactId)
+      ->execute();
+
+    // Check if an induction activity already exists
+    if ($contactInductionExists->count() > 0) {
+      // If an induction activity exists, return immediately
+      return;
+    }
+    \Civi::log()->info('Activity created', ['contactInductionExists'=>$contactInductionExists, 'sourceContactId'=>$sourceContactId,'targetContactId'=>$targetContactId, 'coordinatorId'=>$coordinatorId, 'placeholderActivityDate'=>$placeholderActivityDate   ]);
 
     Activity::create(FALSE)
       ->addValue('activity_type_id:name', self::INDUCTION_ACTIVITY_TYPE_NAME)
