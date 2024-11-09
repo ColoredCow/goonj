@@ -3,27 +3,24 @@
 /**
  *
  */
+
+use Civi\Api4\Contribution;
+use Civi\Api4\Email;
+use Civi\Api4\PaymentProcessor;
+
+/**
+ *
+ */
 class CRM_Civirazorpay_Page_Payment extends CRM_Core_Page {
 
   /**
    *
    */
   public function run() {
-    $orderId = CRM_Utils_Request::retrieve('order_id', 'String', $this);
-    $amount = CRM_Utils_Request::retrieve('amount', 'Integer', $this);
-    $currency = CRM_Utils_Request::retrieve('currency', 'String', $this);
-    $qfKey = CRM_Utils_Request::retrieve('qfKey', 'String', $this);
+    $contributionId = CRM_Utils_Request::retrieve('contribution', 'Integer', $this);
+    $paymentProcessorId = CRM_Utils_Request::retrieve('processor', 'Integer', $this);
 
-    $apiKey = $this->_paymentProcessor['user_name'];
-
-    $data = [
-      'apiKey' => $apiKey,
-      'amount' => $amount,
-      'currency' => $currency,
-      'orderId' => $orderId,
-      'qfKey' => $qfKey,
-      'email' => $this->getUserEmail($qfKey),
-    ];
+    $data = $this->getDataForTemplate($contributionId, $paymentProcessorId);
 
     $this->assign($data);
 
@@ -31,10 +28,40 @@ class CRM_Civirazorpay_Page_Payment extends CRM_Core_Page {
   }
 
   /**
+   * Retrieve contribution details and primary email from contact.
    *
+   * @param int $contributionId
+   *   The contribution ID to retrieve.
+   *
+   * @return array
+   *   Array containing amount, currency, email, and order ID.
    */
-  public function getUserEmail($qfKey) {
-    return 'abhip099@gmail.com';
+  public function getDataForTemplate($contributionId, $paymentProcessorId) {
+    $contribution = Contribution::get(FALSE)
+      ->addSelect('total_amount', 'currency', 'contact_id', 'trxn_id', 'payment_processor_id')
+      ->addWhere('id', '=', $contributionId)
+      ->execute()->single();
+
+    $email = Email::get(FALSE)
+      ->addWhere('is_primary', '=', TRUE)
+      ->addWhere('contact_id', '=', $contribution['contact_id'])
+      ->execute()->single();
+
+    $organizationName = CRM_Core_BAO_Domain::getDomain()->name;
+
+    $paymentProcessor = PaymentProcessor::get(FALSE)
+      ->addSelect('user_name')
+      ->addWhere('id', '=', $paymentProcessorId)
+      ->execute()->single();
+
+    return [
+      'amount' => $contribution['total_amount'] * 100,
+      'currency' => $contribution['currency'],
+      'email' => $email['email'],
+      'orderId' => $contribution['trxn_id'],
+      'organizationName' => $organizationName,
+      'apiKey' => $paymentProcessor['user_name'],
+    ];
   }
 
 }
