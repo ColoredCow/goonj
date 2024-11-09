@@ -71,12 +71,15 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
       throw new PaymentProcessorException('Error updating contribution with Razorpay order ID: ' . $e->getMessage());
     }
 
+    $qfKey = $params['qfKey'];
+
     // Build the URL to redirect to the custom payment processing page.
     $redirectUrl = CRM_Utils_System::url(
         'civicrm/razorpay/payment',
         [
           'contribution' => $contributionId,
           'processor' => $this->_paymentProcessor['id'],
+          'qfKey' => $qfKey,
         ],
         // Absolute URL.
         TRUE,

@@ -19,8 +19,9 @@ class CRM_Civirazorpay_Page_Payment extends CRM_Core_Page {
   public function run() {
     $contributionId = CRM_Utils_Request::retrieve('contribution', 'Integer', $this);
     $paymentProcessorId = CRM_Utils_Request::retrieve('processor', 'Integer', $this);
+    $qfKey = CRM_Utils_Request::retrieve('qfKey', 'String', $this);
 
-    $data = $this->getDataForTemplate($contributionId, $paymentProcessorId);
+    $data = $this->getDataForTemplate($contributionId, $paymentProcessorId, $qfKey);
 
     $this->assign($data);
 
@@ -36,7 +37,7 @@ class CRM_Civirazorpay_Page_Payment extends CRM_Core_Page {
    * @return array
    *   Array containing amount, currency, email, and order ID.
    */
-  public function getDataForTemplate($contributionId, $paymentProcessorId) {
+  public function getDataForTemplate($contributionId, $paymentProcessorId, $qfKey) {
     $contribution = Contribution::get(FALSE)
       ->addSelect('total_amount', 'currency', 'contact_id', 'trxn_id', 'payment_processor_id')
       ->addWhere('id', '=', $contributionId)
@@ -61,6 +62,7 @@ class CRM_Civirazorpay_Page_Payment extends CRM_Core_Page {
       'orderId' => $contribution['trxn_id'],
       'organizationName' => $organizationName,
       'apiKey' => $paymentProcessor['user_name'],
+      'qfKey' => $qfKey,
     ];
   }
 

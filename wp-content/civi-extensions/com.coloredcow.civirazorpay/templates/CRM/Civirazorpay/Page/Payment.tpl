@@ -6,7 +6,8 @@
      data-currency="{$currency}"
      data-order-id="{$orderId}"
      data-email="{$email}"
-     data-organization-name="{$organizationName}">
+     data-organization-name="{$organizationName}"
+     data-qf-key="{$qfKey}">
 </div>
 
 {literal}
