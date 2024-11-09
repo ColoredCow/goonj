@@ -130,7 +130,7 @@ class InductionService extends AutoSubscriber {
       \Civi::log()->info('state not found', ['VolunteerId' => self::$volunteerId, 'stateId' => $stateId]);
       return FALSE;
     }
-    \Civi::log()->info('create Induction volunteer transition', ['self::$volunteerId'=>$self::$volunteerId]);
+    \Civi::log()->info('create Induction volunteer transition', ['volunteerId'=>$self::$volunteerId]);
     self::createInduction(self::$volunteerId, $stateId);
   }
 
