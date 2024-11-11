@@ -97,6 +97,10 @@
       top: 22px !important;
     }
 
+    form .crm-contribution-main-form-block .crm-public-form-item fieldset > div:nth-last-child(-n+2) {
+      display: none;
+    }  
+
     @media (min-width: 480px) {
         form .crm-contribution-main-form-block .crm-public-form-item .crm-profile div .label {
         text-align: justify !important;
