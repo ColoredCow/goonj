@@ -57,7 +57,7 @@ function generate_induction_slots($contactId = null, $days = 30) {
 
         // If the induction activity status is 'Scheduled' or 'Completed', return the details
 
-        if (in_array($inductionActivity['status_id:name'], ['Scheduled', 'Completed'])) {
+        if (in_array($inductionActivity['status_id:name'], ['Scheduled', 'Completed', 'No_show', 'Cancelled'])) {
             return [
                 'status' => $inductionActivity['status_id:name'],
                 'date' => (new DateTime($inductionActivity['activity_date_time']))->format('d-m-Y H:i')
