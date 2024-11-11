@@ -75,6 +75,24 @@ $pu_material_contribution_check_link = sprintf(
     $action_target['id']
 );
 
+$puSourceField = CustomField::get(FALSE)
+  ->addSelect('id')
+  ->addWhere('custom_group_id:name', '=', 'Contribution_Details')
+  ->addWhere('name', '=', 'PU_Source')
+  ->execute()->single();
+
+$puSourceFieldId = 'custom_' . $puSourceField['id'];
+
+$pu_donation_link = add_query_arg(
+    [
+      'reset' => 1,
+      'action' => 'preview',
+      'id' => 1,
+      $puSourceFieldId => $source_contact_id,
+    ],
+    home_url('/civicrm/contribute/transact/')
+);
+
 $target_data = [
   'dropping-center' => [
     'volunteer_name' => 'Collection_Camp_Core_Details.Contact_Id.display_name',
@@ -171,6 +189,9 @@ if (in_array($target, ['collection-camp', 'dropping-center'])) :
             </a>
             <a href="<?php echo esc_url($pu_material_contribution_check_link); ?>" class="wp-block-gb-action-button">
                 <?php esc_html_e('Material Contribution', 'goonj-blocks'); ?>
+            </a>
+            <a href="<?php echo esc_url($pu_donation_link); ?>" class="wp-block-gb-action-button">
+                <?php esc_html_e('Monetary/Donation', 'goonj-blocks'); ?>
             </a>
         </div>
   <?php elseif ('induction-schedule' === $target) : ?>
