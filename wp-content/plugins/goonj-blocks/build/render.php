@@ -6,9 +6,11 @@
  */
 
 require_once __DIR__ . '/functions.php';
-$target        = get_query_var('target');
-$action_target = get_query_var('action_target');
-$source_contact_id = $action_target['id'] ?? null;
+use Civi\Api4\CustomField;
+
+$target            = get_query_var('target');
+$action_target     = get_query_var('action_target');
+$source_contact_id = $action_target['id'] ?? NULL;
 
 $slots = generate_induction_slots($source_contact_id);
 
@@ -37,13 +39,21 @@ $material_contribution_link = sprintf(
     $action_target['Collection_Camp_Intent_Details.City'],
 );
 
+$sourceField = CustomField::get(FALSE)
+  ->addSelect('id')
+  ->addWhere('custom_group_id:name', '=', 'Contribution_Details')
+  ->addWhere('name', '=', 'Source')
+  ->execute()->single();
+
+$sourceFieldId = 'custom_' . $sourceField['id'];
+
 $donation_link = add_query_arg(
-    array(
-        'reset' => 1,
-        'action' => 'preview',
-        'id' => 1,
-        'custom_528' => $source_contact_id
-    ),
+    [
+      'reset' => 1,
+      'action' => 'preview',
+      'id' => 1,
+      $sourceFieldId => $source_contact_id,
+    ],
     home_url('/civicrm/contribute/transact/')
 );
 
@@ -73,13 +83,13 @@ $target_data = [
     'contribution_link' => $dropping_center_material_contribution_link,
   ],
   'collection-camp' => [
-        'start_time' => 'Collection_Camp_Intent_Details.Start_Date',
-        'end_time' => 'Collection_Camp_Intent_Details.End_Date',
-        'address' => 'Collection_Camp_Intent_Details.Location_Area_of_camp',
-        'address_label' => 'Address of the camp',
-        'contribution_link' => $material_contribution_link,
-        'donation_link' => $donation_link,
-    ],
+    'start_time' => 'Collection_Camp_Intent_Details.Start_Date',
+    'end_time' => 'Collection_Camp_Intent_Details.End_Date',
+    'address' => 'Collection_Camp_Intent_Details.Location_Area_of_camp',
+    'address_label' => 'Address of the camp',
+    'contribution_link' => $material_contribution_link,
+    'donation_link' => $donation_link,
+  ],
 ];
 
 if (in_array($target, ['collection-camp', 'dropping-center'])) :
@@ -203,4 +213,4 @@ if (in_array($target, ['collection-camp', 'dropping-center'])) :
             </div>
         <?php endif; ?>
     </div>
-  <?php endif; ?>
+  <?php endif;
