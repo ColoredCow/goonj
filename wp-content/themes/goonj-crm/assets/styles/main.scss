@@ -499,11 +499,20 @@ form input {
   line-height: 22px !important;
 }
 
+.wp-block-gb-goonj-blocks {
+  flex-wrap: nowrap !important;
+}
+
+.wp-block-gb-action-button {
+	padding: 16px 15px !important;
+}
+
 @media (min-width: 375px) and (max-width: 768px) { 
   .wp-block-gb-goonj-blocks {
       width: 90% !important;
       gap: 5px !important;
       justify-content: center !important;
+      flex-wrap: wrap !important;
   }
   .container {
     max-width: 86%;
