@@ -162,11 +162,9 @@ if (in_array($target, ['collection-camp', 'dropping-center'])) :
             <p>To schedule your Induction/Orientation please get in touch with the Goonj team on :</p>
                 <div class="contact-info">
                     <div class="contact-item">
-                        <img src="https://goonj-crm.staging.coloredcow.com/wp-content/uploads/2024/08/email-icon.png" alt="Email Icon" class="icon">
                         <a href="mailto:mail@goonj.org" class="contact-link">mail@goonj.org</a>
                     </div>
                     <div class="contact-item">
-                        <img src="https://goonj-crm.staging.coloredcow.com/wp-content/uploads/2024/08/phone-icon.png" alt="Phone Icon" class="icon">
                         <a href="tel:01141401216" class="contact-link">011-41401216</a>
                     </div>
                 </div>
