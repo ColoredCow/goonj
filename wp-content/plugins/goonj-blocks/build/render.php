@@ -37,6 +37,16 @@ $material_contribution_link = sprintf(
     $action_target['Collection_Camp_Intent_Details.City'],
 );
 
+$donation_link = add_query_arg(
+    array(
+        'reset' => 1,
+        'action' => 'preview',
+        'id' => 1,
+        'custom_528' => $source_contact_id
+    ),
+    home_url('/civicrm/contribute/transact/')
+);
+
 $dropping_center_material_contribution_link = sprintf(
     '/dropping-center-contribution?source=%s&target_id=%s&state_province_id=%s&city=%s',
     $action_target['title'],
@@ -63,12 +73,13 @@ $target_data = [
     'contribution_link' => $dropping_center_material_contribution_link,
   ],
   'collection-camp' => [
-    'start_time' => 'Collection_Camp_Intent_Details.Start_Date',
-    'end_time' => 'Collection_Camp_Intent_Details.End_Date',
-    'address' => 'Collection_Camp_Intent_Details.Location_Area_of_camp',
-    'address_label' => 'Address of the camp',
-    'contribution_link' => $material_contribution_link,
-  ],
+        'start_time' => 'Collection_Camp_Intent_Details.Start_Date',
+        'end_time' => 'Collection_Camp_Intent_Details.End_Date',
+        'address' => 'Collection_Camp_Intent_Details.Location_Area_of_camp',
+        'address_label' => 'Address of the camp',
+        'contribution_link' => $material_contribution_link,
+        'donation_link' => $donation_link,
+    ],
 ];
 
 if (in_array($target, ['collection-camp', 'dropping-center'])) :
@@ -88,6 +99,7 @@ if (in_array($target, ['collection-camp', 'dropping-center'])) :
   $contribution_link = $target_info['contribution_link'];
   $address_label = $target_info['address_label'];
   $volunteer_name = $action_target[$target_info['volunteer_name']];
+  $donation_link = $target_info['donation_link'];
 
   ?>
     <div class="wp-block-gb-heading-wrapper">
@@ -128,6 +140,9 @@ if (in_array($target, ['collection-camp', 'dropping-center'])) :
         </a>
         <a href="<?php echo esc_url($contribution_link ?? '#'); ?>" class="wp-block-gb-action-button">
             <?php esc_html_e('Record your Material Contribution', 'goonj-blocks'); ?>
+        </a>
+        <a href="<?php echo esc_url($donation_link); ?>" class="wp-block-gb-action-button">
+            <?php esc_html_e('Monetary/Donation', 'goonj-blocks'); ?>
         </a>
     </div>
   <?php elseif ('processing-center' === $target) : ?>
