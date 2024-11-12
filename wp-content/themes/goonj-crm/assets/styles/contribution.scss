@@ -7,6 +7,7 @@
     form .crm-contribution-main-form-block #priceset-div .crm-section .crm-section,
     form .crm-contribution-main-form-block .crm-public-form-item {
         display: grid !important;
+        border-top: none !important
     }
 
     form .crm-contribution-main-form-block #priceset-div .crm-section .crm-section .content,
@@ -31,6 +32,11 @@
         width: 50% !important;
         font-family: 'Open Sans', sans-serif !important;
         line-height: 16px !important;
+        padding-left: 0 !important;
+    }
+
+    form .crm-contribution-main-form-block fieldset .payment_processor-section .label label {
+      display: none !important;
     }
 
     form .crm-contribution-main-form-block .crm-public-form-item .crm-profile {
