@@ -171,7 +171,7 @@ if (in_array($target, ['collection-camp', 'dropping-center'])) :
             <?php esc_html_e('Record your Material Contribution', 'goonj-blocks'); ?>
         </a>
         <a href="<?php echo esc_url($donation_link); ?>" class="wp-block-gb-action-button">
-            <?php esc_html_e('Monetary/Donation', 'goonj-blocks'); ?>
+            <?php esc_html_e('Monetary Contribution', 'goonj-blocks'); ?>
         </a>
     </div>
   <?php elseif ('processing-center' === $target) : ?>
@@ -191,7 +191,7 @@ if (in_array($target, ['collection-camp', 'dropping-center'])) :
                 <?php esc_html_e('Material Contribution', 'goonj-blocks'); ?>
             </a>
             <a href="<?php echo esc_url($pu_donation_link); ?>" class="wp-block-gb-action-button">
-                <?php esc_html_e('Monetary/Donation', 'goonj-blocks'); ?>
+                <?php esc_html_e('Monetary Contribution', 'goonj-blocks'); ?>
             </a>
         </div>
   <?php elseif ('induction-schedule' === $target) : ?>
