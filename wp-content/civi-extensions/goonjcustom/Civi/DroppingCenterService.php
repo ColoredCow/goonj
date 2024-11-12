@@ -525,7 +525,7 @@ class DroppingCenterService extends AutoSubscriber {
         'directive' => 'afsearch-feedback',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
       ],
-      'monetary' => [
+      'monetaryContribution' => [
         'title' => ts('Monetary Contribution'),
         'module' => 'afsearchMonetaryContribution',
         'directive' => 'afsearch-monetary-contribution',
