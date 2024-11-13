@@ -6,9 +6,11 @@
  */
 
 require_once __DIR__ . '/functions.php';
-$target        = get_query_var('target');
-$action_target = get_query_var('action_target');
-$source_contact_id = $action_target['id'] ?? null;
+use Civi\Api4\CustomField;
+
+$target            = get_query_var('target');
+$action_target     = get_query_var('action_target');
+$source_contact_id = $action_target['id'] ?? NULL;
 
 $slots = generate_induction_slots($source_contact_id);
 
@@ -37,6 +39,24 @@ $material_contribution_link = sprintf(
     $action_target['Collection_Camp_Intent_Details.City'],
 );
 
+$sourceField = CustomField::get(FALSE)
+  ->addSelect('id')
+  ->addWhere('custom_group_id:name', '=', 'Contribution_Details')
+  ->addWhere('name', '=', 'Source')
+  ->execute()->single();
+
+$sourceFieldId = 'custom_' . $sourceField['id'];
+
+$donation_link = add_query_arg(
+    [
+      'reset' => 1,
+      'action' => 'preview',
+      'id' => 1,
+      $sourceFieldId => $source_contact_id,
+    ],
+    home_url('/civicrm/contribute/transact/')
+);
+
 $dropping_center_material_contribution_link = sprintf(
     '/dropping-center-contribution?source=%s&target_id=%s&state_province_id=%s&city=%s',
     $action_target['title'],
@@ -55,12 +75,31 @@ $pu_material_contribution_check_link = sprintf(
     $action_target['id']
 );
 
+$puSourceField = CustomField::get(FALSE)
+  ->addSelect('id')
+  ->addWhere('custom_group_id:name', '=', 'Contribution_Details')
+  ->addWhere('name', '=', 'PU_Source')
+  ->execute()->single();
+
+$puSourceFieldId = 'custom_' . $puSourceField['id'];
+
+$pu_donation_link = add_query_arg(
+    [
+      'reset' => 1,
+      'action' => 'preview',
+      'id' => 1,
+      $puSourceFieldId => $source_contact_id,
+    ],
+    home_url('/civicrm/contribute/transact/')
+);
+
 $target_data = [
   'dropping-center' => [
     'volunteer_name' => 'Collection_Camp_Core_Details.Contact_Id.display_name',
     'address' => 'Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_',
     'address_label' => 'Goonj volunteer run dropping center (Address)',
     'contribution_link' => $dropping_center_material_contribution_link,
+    'donation_link' => $donation_link,
   ],
   'collection-camp' => [
     'start_time' => 'Collection_Camp_Intent_Details.Start_Date',
@@ -68,6 +107,7 @@ $target_data = [
     'address' => 'Collection_Camp_Intent_Details.Location_Area_of_camp',
     'address_label' => 'Address of the camp',
     'contribution_link' => $material_contribution_link,
+    'donation_link' => $donation_link,
   ],
 ];
 
@@ -88,6 +128,7 @@ if (in_array($target, ['collection-camp', 'dropping-center'])) :
   $contribution_link = $target_info['contribution_link'];
   $address_label = $target_info['address_label'];
   $volunteer_name = $action_target[$target_info['volunteer_name']];
+  $donation_link = $target_info['donation_link'];
 
   ?>
     <div class="wp-block-gb-heading-wrapper">
@@ -129,6 +170,9 @@ if (in_array($target, ['collection-camp', 'dropping-center'])) :
         <a href="<?php echo esc_url($contribution_link ?? '#'); ?>" class="wp-block-gb-action-button">
             <?php esc_html_e('Record your Material Contribution', 'goonj-blocks'); ?>
         </a>
+        <a href="<?php echo esc_url($donation_link); ?>" class="wp-block-gb-action-button">
+            <?php esc_html_e('Monetary Contribution', 'goonj-blocks'); ?>
+        </a>
     </div>
   <?php elseif ('processing-center' === $target) : ?>
         <table class="wp-block-gb-table">
@@ -145,6 +189,9 @@ if (in_array($target, ['collection-camp', 'dropping-center'])) :
             </a>
             <a href="<?php echo esc_url($pu_material_contribution_check_link); ?>" class="wp-block-gb-action-button">
                 <?php esc_html_e('Material Contribution', 'goonj-blocks'); ?>
+            </a>
+            <a href="<?php echo esc_url($pu_donation_link); ?>" class="wp-block-gb-action-button">
+                <?php esc_html_e('Monetary Contribution', 'goonj-blocks'); ?>
             </a>
         </div>
   <?php elseif ('induction-schedule' === $target) : ?>
@@ -200,4 +247,4 @@ if (in_array($target, ['collection-camp', 'dropping-center'])) :
             </div>
         <?php endif; ?>
     </div>
-  <?php endif; ?>
+  <?php endif;
