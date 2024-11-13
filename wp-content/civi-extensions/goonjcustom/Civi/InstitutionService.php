@@ -30,12 +30,6 @@ class InstitutionService extends AutoSubscriber {
     'Default Coordinator of',
   ];
 
-
-
-  private static $individualId = NULL;
-  private static $collectionCampAddress = NULL;
-  private static $fromAddress = NULL;
-
   /**
    *
    */
