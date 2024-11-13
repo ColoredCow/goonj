@@ -41,7 +41,7 @@ class InstitutionService extends AutoSubscriber {
    */
   public static function getSubscribedEvents() {
     return [
-      '&hook_civicrm_custom' => [
+      '&hook_civicrm_post' => [
         ['setOfficeDetails'],
       ],
     ];
@@ -54,26 +54,28 @@ class InstitutionService extends AutoSubscriber {
    *   The type of operation being performed.
    * @param string $objectName
    *   The custom group ID.
-   * @param int $objectId
-   *   The entityID of the row in the custom table.
+   * @param int $contactId
+   *   The contactId of the row in the custom table.
    * @param object $objectRef
    *   The parameters that were sent into the calling function.
    */
-  public static function setOfficeDetails($op, $groupID, $entityID, &$params) {
-    if ($op !== 'create') {
-      return;
+  public static function setOfficeDetails(string $op, string $objectName, int $contactId, &$objectRef) {
+
+    if ($op !== 'create' || $objectName !== 'Address') {
+      return FALSE;
     }
 
-    if (!($stateField = self::findStateField($params, $entityID))) {
-      return;
-    }
+    $stateId = $objectRef->state_province_id;
 
-    $stateId = $stateField['value'];
-    $institutionContactId = $stateField['entity_id'];
+    $contactId = $objectRef->contact_id;
 
     if (!$stateId) {
-      \CRM_Core_Error::debug_log_message('Cannot assign Goonj Office to institution: ' . $institutionContactId);
-      \CRM_Core_Error::debug_log_message('No state provided on the intent for institution: ' . $institutionContactId);
+      return;
+    }
+
+    if (!$stateId) {
+      \CRM_Core_Error::debug_log_message('Cannot assign Goonj Office to institution id: ' . $contactId);
+      \CRM_Core_Error::debug_log_message('No state provided on the intent for institution id: ' . $contactId);
       return FALSE;
     }
 
@@ -86,6 +88,8 @@ class InstitutionService extends AutoSubscriber {
 
     $stateOffice = $officesFound->first();
 
+    error_log("stateOffice: " . print_r($stateOffice, TRUE));
+
     // If no state office is found, assign the fallback state office.
     if (!$stateOffice) {
       $stateOffice = self::getFallbackOffice();
@@ -95,10 +99,10 @@ class InstitutionService extends AutoSubscriber {
 
     Organization::update(TRUE)
       ->addValue('Review.Goonj_Office', $stateOfficeId)
-      ->addWhere('id', '=', $institutionContactId)
+      ->addWhere('id', '=', $contactId)
       ->execute();
     // Get the relationship type name based on the institution type.
-    $relationshipTypeName = self::getRelationshipTypeName($entityID);
+    $relationshipTypeName = self::getRelationshipTypeName($contactId);
 
     $coordinators = Relationship::get(FALSE)
       ->addWhere('contact_id_b', '=', $stateOfficeId)
@@ -109,7 +113,7 @@ class InstitutionService extends AutoSubscriber {
     $coordinatorCount = $coordinators->count();
 
     if ($coordinatorCount === 0) {
-      $coordinator = self::getFallbackCoordinator($entityID);
+      $coordinator = self::getFallbackCoordinator($contactId);
     }
     elseif ($coordinatorCount > 1) {
       $randomIndex = rand(0, $coordinatorCount - 1);
@@ -128,7 +132,7 @@ class InstitutionService extends AutoSubscriber {
 
     Organization::update(TRUE)
       ->addValue('Review.Coordinating_POC', $coordinatorId)
-      ->addWhere('id', '=', $institutionContactId)
+      ->addWhere('id', '=', $contactId)
       ->execute();
 
     return TRUE;
@@ -142,8 +146,8 @@ class InstitutionService extends AutoSubscriber {
    *   The type of operation being performed.
    * @param string $objectName
    *   The custom group ID.
-   * @param int $objectId
-   *   The entityID of the row in the custom table.
+   * @param int $contactId
+   *   The contactId of the row in the custom table.
    * @param object $objectRef
    *   The parameters that were sent into the calling function.
    */
@@ -151,28 +155,6 @@ class InstitutionService extends AutoSubscriber {
   /**
    *
    */
-  private static function findStateField(array $array, $entityID) {
-    $instituteStateField = Contact::get(FALSE)
-      ->addSelect('address_primary.state_province_id', 'address_primary.state_province_id:label')
-      ->addWhere('contact_sub_type', '=', 'Institute')
-      ->addWhere('id', '=', $entityID)
-      ->execute();
-
-    if (!$instituteStateField) {
-      return FALSE;
-    }
-
-    // $stateFieldId = $instituteStateField['address_primary.state_province_id'];
-    $stateFieldId = 1098;
-
-    foreach ($array as $item) {
-      if ($item['entity_table'] === 'civicrm_contact') {
-        return $item;
-      }
-    }
-
-    return FALSE;
-  }
 
   /**
    *
@@ -189,11 +171,11 @@ class InstitutionService extends AutoSubscriber {
   /**
    *
    */
-  private static function getFallbackCoordinator($entityID) {
+  private static function getFallbackCoordinator($contactId) {
     $fallbackOffice = self::getFallbackOffice();
 
     // Get the relationship type name based on the institution type.
-    $relationshipTypeName = self::getRelationshipTypeName($entityID);
+    $relationshipTypeName = self::getRelationshipTypeName($contactId);
 
     $fallbackCoordinators = Relationship::get(FALSE)
       ->addWhere('contact_id_b', '=', $fallbackOffice['id'])
@@ -212,10 +194,10 @@ class InstitutionService extends AutoSubscriber {
   /**
    *
    */
-  private static function getRelationshipTypeName($entityID) {
+  private static function getRelationshipTypeName($contactId) {
     $organizations = Organization::get(TRUE)
       ->addSelect('Institute_Registration.Type_of_Institution:label')
-      ->addWhere('id', '=', $entityID)
+      ->addWhere('id', '=', $contactId)
       ->execute()->single();
 
     $typeOfInstitution = $organizations['Institute_Registration.Type_of_Institution:label'];
