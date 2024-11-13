@@ -236,9 +236,16 @@ class CollectionCampService extends AutoSubscriber {
    *
    */
   public static function individualCreated(string $op, string $objectName, int $objectId, &$objectRef) {
+    error_log("op11: " . print_r($op, TRUE));
+    error_log("objectName11: " . print_r($objectName, TRUE));
+
     if ($op !== 'create' || $objectName !== 'Individual') {
       return FALSE;
     }
+
+    error_log("self: " . print_r(self::$individualId, TRUE));
+    error_log("objectId222: " . print_r($objectId, TRUE));
+
 
     self::$individualId = $objectId;
   }
@@ -247,15 +254,42 @@ class CollectionCampService extends AutoSubscriber {
    *
    */
   public static function assignChapterGroupToIndividual(string $op, string $objectName, int $objectId, &$objectRef) {
-    if ($op !== 'create' || $objectName !== 'Address') {
+    error_log("op: " . print_r($op, TRUE));
+    error_log("objectName: " . print_r($objectName, TRUE));
+    
+    if ($op !== 'create' || $objectName !== 'Contribution') {
       return FALSE;
     }
 
-    if (self::$individualId !== $objectRef->contact_id || !$objectRef->is_primary) {
+    error_log("op: " . print_r($op, TRUE));
+    error_log("objectName: " . print_r($objectName, TRUE));
+    error_log("individualId: " . print_r(self::$individualId, TRUE));
+    error_log("objectRef: " . print_r($objectRef->is_primary, TRUE));
+    error_log("contact_id: " . print_r($objectRef->contact_id, TRUE));
+    // error_log("objectReftarun: " . print_r($objectRef, TRUE));
+
+
+    if (self::$individualId !== $objectRef->contact_id || !$objectRef->contact_id) {
       return FALSE;
     }
+
+    error_log("working here");
+
+    $contactId = $objectRef->contact_id;
+
+    $addresses = \Civi\Api4\Address::get(TRUE)
+      ->addSelect('state_province_id')
+      ->addWhere('contact_id', '=', 15837)
+      ->execute()->first();
+
+    $stateIdNew = $addresses['state_province_id'];
+    error_log("stateIdNew: " . print_r($stateIdNew, TRUE)); // Getting state id from here...
+
 
     $stateId = $objectRef->state_province_id;
+
+    error_log("stateId: " . print_r($stateId, TRUE));
+
 
     $stateContactGroups = Group::get(FALSE)
       ->addSelect('id')
