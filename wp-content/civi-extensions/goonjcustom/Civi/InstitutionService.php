@@ -22,7 +22,7 @@ class InstitutionService extends AutoSubscriber {
     'Education Coordinator of',
   // For Government Entity.
     'Government Coordinator of',
-  // For Hospital (spelling corrected from Hosptial)
+  // For Hospital.
     'Hospital Coordinator of',
   // For NGO.
     'NGO Coordinator of',
