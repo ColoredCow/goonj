@@ -135,7 +135,7 @@ function generate_slots($assignedOfficeId, $maxSlots, $inductionType, $startDate
     try {
         // Fetch office induction details for induction scheduling
         $officeDetails = \Civi\Api4\Contact::get(FALSE)
-            ->addSelect('display_name', 'Goonj_Office_Details.Physical_Induction_Slot_Days:name', 'Goonj_Office_Details.Physical_Induction_Slot_Time', 'Goonj_Office_Details.Online_Induction_Slot_Days:name', 'Goonj_Office_Details.Online_Induction_Slot_Time')
+            ->addSelect('display_name', 'Goonj_Office_Details.Physical_Induction_Slot_Days:name', 'Goonj_Office_Details.Physical_Induction_Slot_Time', 'Goonj_Office_Details.Online_Induction_Slot_Days:name', 'Goonj_Office_Details.Online_Induction_Slot_Time', 'Goonj_Office_Details.Holiday_Dates')
             ->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_Office')
             ->addWhere('id', '=', $assignedOfficeId)
             ->execute()->single();
@@ -145,6 +145,7 @@ function generate_slots($assignedOfficeId, $maxSlots, $inductionType, $startDate
             return FALSE;
         }
 
+        $holidayDates = $officeDetails['Goonj_Office_Details.Holiday_Dates'];
         // Determine valid induction days and time based on induction type
         $validInductionDays = ($inductionType === 'Processing_Unit')
             ? $officeDetails['Goonj_Office_Details.Physical_Induction_Slot_Days:name']
@@ -172,12 +173,12 @@ function generate_slots($assignedOfficeId, $maxSlots, $inductionType, $startDate
         }
 
         // Generate slots
-        generateActivitySlots($slots, $maxSlots, $validInductionDays, $hour, $minute, $startDate, $scheduledActivityDates, $slotCount, $highActivityCountDays, $inductionType);
+        generateActivitySlots($slots, $maxSlots, $validInductionDays, $hour, $minute, $startDate, $scheduledActivityDates, $slotCount, $highActivityCountDays, $inductionType, $holidayDates);
 
         if ($highActivityCountDays >= 8) {
             $slotCount = 0;
             $startDate = new DateTime(end($slots)['date']);
-            generateActivitySlots($slots, $highActivityCountDays, $validInductionDays, $hour, $minute, $startDate, $scheduledActivityDates, $slotCount, $highActivityCountDays, $inductionType);
+            generateActivitySlots($slots, $highActivityCountDays, $validInductionDays, $hour, $minute, $startDate, $scheduledActivityDates, $slotCount, $highActivityCountDays, $inductionType, $holidayDates);
         }
 
         return $slots;
@@ -190,8 +191,14 @@ function generate_slots($assignedOfficeId, $maxSlots, $inductionType, $startDate
     }
 }
 
-function generateActivitySlots(&$slots, $maxSlots, $validInductionDays, $hour, $minute, $startDate, $scheduledActivityDates, &$slotCount, &$highActivityCountDays, $inductionType) {
+function generateActivitySlots(&$slots, $maxSlots, $validInductionDays, $hour, $minute, $startDate, $scheduledActivityDates, &$slotCount, &$highActivityCountDays, $inductionType, $holidayDates) {
     $maxDays = 365;
+    $holidayDatesArray = [];
+
+    if(!empty($holidayDates)){
+        $holidayDatesArray = array_map('trim', explode(',', $holidayDates));
+    }
+
     for ($i = 0; $i < $maxDays && $slotCount < $maxSlots; $i++) {
         $date = (clone $startDate)->modify("+{$i} days");
         $dayName = $date->format('l');
@@ -199,6 +206,11 @@ function generateActivitySlots(&$slots, $maxSlots, $validInductionDays, $hour, $
         if (in_array($dayName, $validInductionDays)) {
             $date->setTime((int)$hour, (int)$minute);
             $activityDate = $date->format('Y-m-d');
+
+            // Skip the slot date if any date in the holiday dates array
+            if(in_array($activityDate, $holidayDatesArray)){
+                continue;
+            }
 
             // Determine activity count based on scheduled activities
             $activityCount = count(array_filter($scheduledActivityDates, fn($scheduledActivityDate) => $scheduledActivityDate === $activityDate));
