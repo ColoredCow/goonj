@@ -63,3 +63,45 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }, 1000);
 });
+
+// Add validation for the phone number and PAN card on contribution form.
+
+document.addEventListener("DOMContentLoaded", function () {
+	// Define validation configurations for each field
+	const fields = [
+		{
+			labelText: "Mobile Number",
+			regex: /^\d{10}$/,
+			errorMessage: "Please enter a valid 10-digit mobile number.",
+		},
+		{
+			labelText: "Enter PAN Card Number",
+			regex: /^[A-Z]{5}[0-9]{4}[A-Z]$/,
+			errorMessage: "Please enter a valid PAN card number in the format ABCDE1234F.",
+		}
+	];
+
+	fields.forEach(field => {
+		// Select the label by labelText and find the associated input
+		const label = Array.from(document.querySelectorAll("label")).find(el => el.textContent.includes(field.labelText));
+		if (label) {
+			const input = document.querySelector(`input[name="${label.getAttribute("for")}"]`);
+
+			if (input) {
+				const form = input.closest("form");
+
+				// Attach validation on form submission
+				if (form) {
+					form.addEventListener("submit", function (event) {
+						const value = input.value;
+						if (!field.regex.test(value)) {
+							event.preventDefault();
+							alert(field.errorMessage);
+							input.focus();
+						}
+					});
+				}
+			}
+		}
+	});
+});
