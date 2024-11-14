@@ -57,8 +57,8 @@ class MaterialContributionService extends AutoSubscriber {
     }
 
     // Hack: Retrieve the most recent "Material Contribution" activity for this contact.
-    $activities = Activity::get(TRUE)
-      ->addSelect('*', 'contact.display_name', 'Material_Contribution.Delivered_By', 'Material_Contribution.Delivered_By_Contact', 'Material_Contribution.Goonj_Office')
+    $activities = Activity::get(FALSE)
+      ->addSelect('*', 'contact.display_name', 'Material_Contribution.Delivered_By', 'Material_Contribution.Delivered_By_Contact', 'Material_Contribution.Goonj_Office', 'Material_Contribution.Entity_Type:name', 'Material_Contribution.Collection_Camp.subtype:name')
       ->addJoin('ActivityContact AS activity_contact', 'LEFT')
       ->addJoin('Contact AS contact', 'LEFT')
       ->addWhere('source_contact_id', '=', $params['contactId'])
@@ -71,12 +71,13 @@ class MaterialContributionService extends AutoSubscriber {
     $contribution = $activities->first();
 
     $goonjOfficeId = $contribution['Material_Contribution.Goonj_Office'];
+    $subtype = $contribution['Material_Contribution.Collection_Camp.subtype:name'];
     $contactData = Contact::get(FALSE)
       ->addSelect('email_primary.email', 'phone_primary.phone')
       ->addWhere('id', '=', $params['contactId'])
       ->execute()->single();
 
-    $locationAreaOfCamp = self::getContributionCity($contribution);
+    $locationAreaOfCamp = self::getContributionCity($contribution, $subtype);
 
     $email = $contactData['email_primary.email'] ?? 'N/A';
     $phone = $contactData['phone_primary.phone'] ?? 'N/A';
@@ -94,36 +95,40 @@ class MaterialContributionService extends AutoSubscriber {
   /**
    *
    */
-  private static function getContributionCity($contribution) {
+  private static function getContributionCity($contribution, $subtype) {
     $officeId = $contribution['Material_Contribution.Goonj_Office'];
 
-    if (!$officeId) {
-      // Check for collection camp.
-      $activity = Activity::get(FALSE)
-        ->addSelect('Material_Contribution.Collection_Camp')
-        ->addWhere('id', '=', $contribution['id'])
+    if ($officeId) {
+      $organization = Organization::get(FALSE)
+        ->addSelect('address_primary.street_address')
+        ->addWhere('id', '=', $officeId)
         ->execute()->single();
-
-      // If no collection camp is found, return an empty string.
-      if (empty($activity['Material_Contribution.Collection_Camp'])) {
-        return '';
-      }
-
-      // Fetch the city of the collection camp¯.
-      $collectionCamp = EckEntity::get('Collection_Camp', TRUE)
-        ->addSelect('Collection_Camp_Intent_Details.Location_Area_of_camp')
-        ->addWhere('id', '=', $activity['Material_Contribution.Collection_Camp'])
-        ->execute()->single();
-
-      return $collectionCamp['Collection_Camp_Intent_Details.Location_Area_of_camp'] ?? 'N/A';
+      return $organization['address_primary.street_address'] ?? '';
     }
 
-    $organization = Organization::get(FALSE)
-      ->addSelect('address_primary.city')
-      ->addWhere('id', '=', $officeId)
+    $campField = ($subtype == 'Collection_Camp')
+        ? 'Material_Contribution.Collection_Camp'
+        : 'Material_Contribution.Dropping_Center';
+
+    $activity = Activity::get(FALSE)
+      ->addSelect($campField)
+      ->addWhere('id', '=', $contribution['id'])
       ->execute()->single();
 
-    return $organization['address_primary.city'] ?? '';
+    if (empty($activity[$campField])) {
+      return '';
+    }
+
+    $addressField = ($subtype == 'Collection_Camp')
+        ? 'Collection_Camp_Intent_Details.Location_Area_of_camp'
+        : 'Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_';
+
+    $collectionCamp = EckEntity::get('Collection_Camp', TRUE)
+      ->addSelect($addressField)
+      ->addWhere('id', '=', $activity[$campField])
+      ->execute()->single();
+
+    return $collectionCamp[$addressField] ?? 'N/A';
   }
 
   /**
@@ -182,6 +187,9 @@ class MaterialContributionService extends AutoSubscriber {
               text-align: left;
               font-weight: bold;
             }
+            /* .table-cell {
+              text-align: left;
+            } */
           </style>
           <!-- Table rows for each item -->
           <tr>
