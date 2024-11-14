@@ -6,6 +6,7 @@ require_once __DIR__ . '/../../../../wp-content/civi-extensions/goonjcustom/vend
 
 use Civi\Afform\Event\AfformSubmitEvent;
 use Civi\Api4\Activity;
+use Civi\Api4\Address;
 use Civi\Api4\Contact;
 use Civi\Api4\CustomField;
 use Civi\Api4\EckEntity;
@@ -48,6 +49,7 @@ class CollectionCampService extends AutoSubscriber {
         ['assignChapterGroupToIndividual'],
         ['reGenerateCollectionCampQr'],
         ['updateCampStatusOnOutcomeFilled'],
+        ['assignChapterGroupToIndividualForContribution'],
       ],
       '&hook_civicrm_pre' => [
         ['generateCollectionCampQr'],
@@ -255,8 +257,56 @@ class CollectionCampService extends AutoSubscriber {
       return FALSE;
     }
 
-    $stateId = $objectRef->state_province_id;
+    $groupId = self::getChapterGroupForState($objectRef->state_province_id);
 
+    if ($groupId) {
+      GroupContact::create(FALSE)
+        ->addValue('contact_id', self::$individualId)
+        ->addValue('group_id', $groupId)
+        ->addValue('status', 'Added')
+        ->execute();
+    }
+  }
+
+  /**
+   *
+   */
+  public static function assignChapterGroupToIndividualForContribution(string $op, string $objectName, int $objectId, &$objectRef) {
+    if ($op !== 'create' || $objectName !== 'Contribution') {
+      return FALSE;
+    }
+
+    if (self::$individualId !== $objectRef->contact_id || !$objectRef->contact_id) {
+      return FALSE;
+    }
+
+    $contactId = $objectRef->contact_id;
+
+    $address = Address::get(FALSE)
+      ->addSelect('state_province_id')
+      ->addWhere('contact_id', '=', $contactId)
+      ->addWhere('is_primary', '=', 1)
+      ->execute()->first();
+
+    $stateId = $address['state_province_id'] ?? NULL;
+
+    if ($stateId) {
+      $groupId = self::getChapterGroupForState($stateId);
+
+      if ($groupId) {
+        GroupContact::create(FALSE)
+          ->addValue('contact_id', self::$individualId)
+          ->addValue('group_id', $groupId)
+          ->addValue('status', 'Added')
+          ->execute();
+      }
+    }
+  }
+
+  /**
+   *
+   */
+  private static function getChapterGroupForState($stateId) {
     $stateContactGroups = Group::get(FALSE)
       ->addSelect('id')
       ->addWhere('Chapter_Contact_Group.Use_Case', '=', 'chapter-contacts')
@@ -278,14 +328,7 @@ class CollectionCampService extends AutoSubscriber {
       \Civi::log()->info('Assigning fallback chapter contact group: ' . $stateContactGroup['title']);
     }
 
-    $groupId = $stateContactGroup['id'];
-
-    $groupContactResult = GroupContact::create(FALSE)
-      ->addValue('contact_id', self::$individualId)
-      ->addValue('group_id', $groupId)
-      ->addValue('status', 'Added')
-      ->execute();
-
+    return $stateContactGroup ? $stateContactGroup['id'] : NULL;
   }
 
   /**
