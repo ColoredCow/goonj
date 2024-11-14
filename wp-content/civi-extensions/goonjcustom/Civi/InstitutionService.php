@@ -69,7 +69,7 @@ class InstitutionService extends AutoSubscriber {
 
     if (!$stateId) {
       \CRM_Core_Error::debug_log_message('Cannot assign Goonj Office to institution id: ' . $contactId);
-      return FALSE;
+      return;
     }
 
     $officesFound = Contact::get(FALSE)
@@ -80,8 +80,6 @@ class InstitutionService extends AutoSubscriber {
       ->execute();
 
     $stateOffice = $officesFound->first();
-
-    error_log("stateOffice: " . print_r($stateOffice, TRUE));
 
     // If no state office is found, assign the fallback state office.
     if (!$stateOffice) {
