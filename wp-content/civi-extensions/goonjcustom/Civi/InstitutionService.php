@@ -88,7 +88,7 @@ class InstitutionService extends AutoSubscriber {
 
     $stateOfficeId = $stateOffice['id'];
 
-    Organization::update(TRUE)
+    Organization::update(FALSE)
       ->addValue('Review.Goonj_Office', $stateOfficeId)
       ->addWhere('id', '=', $contactId)
       ->execute();
@@ -121,7 +121,7 @@ class InstitutionService extends AutoSubscriber {
 
     $coordinatorId = $coordinator['contact_id_a'];
 
-    Organization::update(TRUE)
+    Organization::update(FALSE)
       ->addValue('Review.Coordinating_POC', $coordinatorId)
       ->addWhere('id', '=', $contactId)
       ->execute();
