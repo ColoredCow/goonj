@@ -13,7 +13,10 @@ use Civi\Core\Service\AutoSubscriber;
 class InstitutionService extends AutoSubscriber {
 
   const FALLBACK_OFFICE_NAME = 'Delhi';
-  
+
+  /**
+   *
+   */
   public static function getSubscribedEvents() {
     return [
       '&hook_civicrm_post' => [
@@ -73,6 +76,7 @@ class InstitutionService extends AutoSubscriber {
       ->addValue('Review.Goonj_Office', $stateOfficeId)
       ->addWhere('id', '=', $contactId)
       ->execute();
+
     // Get the relationship type name based on the institution type.
     $relationshipTypeName = self::getRelationshipTypeName($contactId);
 
@@ -123,7 +127,6 @@ class InstitutionService extends AutoSubscriber {
    * @param object $objectRef
    *   The parameters that were sent into the calling function.
    */
-
   private static function getFallbackOffice() {
     $fallbackOffices = Contact::get(FALSE)
       ->addSelect('id')
@@ -132,7 +135,10 @@ class InstitutionService extends AutoSubscriber {
 
     return $fallbackOffices->first();
   }
-  
+
+  /**
+   *
+   */
   private static function getFallbackCoordinator($contactId) {
     $fallbackOffice = self::getFallbackOffice();
 
@@ -153,6 +159,9 @@ class InstitutionService extends AutoSubscriber {
     return $coordinator;
   }
 
+  /**
+   *
+   */
   private static function getRelationshipTypeName($contactId) {
     $organization = Organization::get(TRUE)
       ->addSelect('Institute_Registration.Type_of_Institution:label')
@@ -176,6 +185,5 @@ class InstitutionService extends AutoSubscriber {
     // Return the corresponding relationship type, or default if not found.
     return $typeToRelationshipMap[$firstWord] ?? 'Default Coordinator of';
   }
-
 
 }
