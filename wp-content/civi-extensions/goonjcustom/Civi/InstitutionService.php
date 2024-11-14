@@ -69,7 +69,6 @@ class InstitutionService extends AutoSubscriber {
 
     if (!$stateId) {
       \CRM_Core_Error::debug_log_message('Cannot assign Goonj Office to institution id: ' . $contactId);
-      \CRM_Core_Error::debug_log_message('No state provided on the intent for institution id: ' . $contactId);
       return FALSE;
     }
 
