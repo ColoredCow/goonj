@@ -39,7 +39,7 @@ class InstitutionService extends AutoSubscriber {
    */
   public static function setOfficeDetails(string $op, string $objectName, int $contactId, &$objectRef) {
 
-    if ($op !== 'create' || $objectName !== 'Address' && $objectRef->afform_name !== 'afformInstituteRegistration1') {
+    if ($op !== 'create' || $objectName !== 'Address' || $objectRef->afform_name !== 'afformInstituteRegistration1') {
       return FALSE;
     }
 
