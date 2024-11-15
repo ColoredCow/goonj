@@ -58,7 +58,7 @@ class MaterialContributionService extends AutoSubscriber {
 
     // Hack: Retrieve the most recent "Material Contribution" activity for this contact.
     $activities = Activity::get(FALSE)
-      ->addSelect('*', 'contact.display_name', 'Material_Contribution.Delivered_By', 'Material_Contribution.Delivered_By_Contact', 'Material_Contribution.Goonj_Office', 'Material_Contribution.Entity_Type:name', 'Material_Contribution.Collection_Camp.subtype:name')
+      ->addSelect('*', 'contact.display_name', 'Material_Contribution.Delivered_By', 'Material_Contribution.Delivered_By_Contact', 'Material_Contribution.Goonj_Office', 'Material_Contribution.Collection_Camp.subtype:name')
       ->addJoin('ActivityContact AS activity_contact', 'LEFT')
       ->addJoin('Contact AS contact', 'LEFT')
       ->addWhere('source_contact_id', '=', $params['contactId'])
@@ -128,7 +128,7 @@ class MaterialContributionService extends AutoSubscriber {
       ->addWhere('id', '=', $activity[$campField])
       ->execute()->single();
 
-    return $collectionCamp[$addressField] ?? 'N/A';
+    return $collectionCamp[$addressField] ?? '';
   }
 
   /**
@@ -187,9 +187,6 @@ class MaterialContributionService extends AutoSubscriber {
               text-align: left;
               font-weight: bold;
             }
-            /* .table-cell {
-              text-align: left;
-            } */
           </style>
           <!-- Table rows for each item -->
           <tr>
