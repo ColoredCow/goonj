@@ -20,8 +20,8 @@ function _civicrm_api3_goonjcustom_induction_reschedule_cron_spec(&$spec) {
 /**
  * Goonjcustom.induction_slot_booking_follow_up_cron API implementation.
  *
- * This function checks for unscheduled induction activities older than 7 days 
- * and sends follow-up emails to the respective contacts if they haven't already 
+ * This function checks for not visited induction activities older than 1 days 
+ * and sends reschedule emails to the respective contacts if they haven't already 
  * received one.
  *
  * @param array $params

@@ -85,13 +85,13 @@ class InductionService extends AutoSubscriber {
       \Civi::log()->info('Induction already exists for contact', ['id' => $contactId]);
       return FALSE;
     }
-    \Civi::log()->info('check4');
+
     $office = self::findOfficeForState($stateId);
     if (!$office) {
       \Civi::log()->info('Cannot find office for: ' . $stateId);
       return FALSE;
     }
-    \Civi::log()->info('check5');
+
     $coordinatorId = self::findCoordinatorForOffice($office['id']);
     if (!$coordinatorId) {
       \Civi::log()->info('Cannot found induction coordinator for office:', ['id' => $office['id']]);
@@ -113,7 +113,7 @@ class InductionService extends AutoSubscriber {
     if ($contactInductionExists->count() > 0) {
       return;
     }
-    \Civi::log()->info('check6');
+
     Activity::create(FALSE)
       ->addValue('activity_type_id:name', self::INDUCTION_ACTIVITY_TYPE_NAME)
       ->addValue('status_id:name', self::INDUCTION_DEFAULT_STATUS_NAME)
@@ -131,20 +131,20 @@ class InductionService extends AutoSubscriber {
    * Handles induction creation for a volunteer.
    */
   public static function createInductionForVolunteer(string $op, string $objectName, int $objectId, &$objectRef) {
-    \Civi::log()->info('check1');
+
     if ($op !== 'create' || $objectName !== 'Address' || self::$volunteerId !== $objectRef->contact_id || !$objectRef->is_primary) {
       return FALSE;
     }
-    \Civi::log()->info('check2');
+
     $stateId = $objectRef->state_province_id;
 
     if (!$stateId) {
       \Civi::log()->info('state not found', ['VolunteerId' => self::$volunteerId, 'stateId' => $stateId]);
       return FALSE;
     }
-    \Civi::log()->info('check3');
+
     self::createInduction(self::$volunteerId, $stateId);
-    \Civi::log()->info('check4');
+
   }
 
   /**
@@ -492,13 +492,12 @@ class InductionService extends AutoSubscriber {
         ->setLimit($batchSize)
         ->setOffset($offset)
         ->execute();
-      \Civi::log()->info('unscheduledInductionActivities', ['unscheduledInductionActivities'=>$unscheduledInductionActivities]);
+
 
       // Process each activity in the batch
       foreach ($unscheduledInductionActivities as $activity) {
         // Check if a reschedule email has already been sent and handled
         if (self::handleRescheduleEmailActivity($activity['source_contact_id'], $activity['id'])) {
-          \Civi::log()->info('Skipping follow-up email due to existing reschedule email activity');
           continue;
         }
 
@@ -607,69 +606,66 @@ public static function sendInductionRescheduleEmail() {
   $rescheduleEmailDelayDays = 1;
   $rescheduleEmailTimestamp = strtotime("-{$rescheduleEmailDelayDays} days");
 
-  // Retrieve the email template for follow-up.
+  // Retrieve the email template for reschedule-email.
   $template = MessageTemplate::get(FALSE)
     ->addSelect('id', 'msg_subject')
     ->addWhere('msg_title', 'LIKE', 'Induction_reschedule_slot_booking%')
     ->execute()->single();
-  \Civi::log()->info('template', ['template'=>$template]);
 
   $batchSize = 25;
   $offset = 0;
 
   do {
-    // Retrieve a batch of unscheduled induction activities older than 7 days
+    // Retrieve a batch of not visited induction activities older than 1 days
     $notVisitedInductionActivities = Activity::get(FALSE)
-      ->addSelect('id', 'source_contact_id', 'created_date')
-      ->addWhere('activity_type_id:name', '=', 'Induction')
-      ->addWhere('status_id:name', '=', 'Not Visited')
-      ->addWhere('modified_date', '<', date('Y-m-d H:i:s', $rescheduleEmailTimestamp))
-      ->setLimit($batchSize)
-      ->setOffset($offset)
-      ->execute();
+        ->addSelect('id', 'source_contact_id', 'created_date')
+        ->addWhere('activity_type_id:name', '=', 'Induction')
+        ->addWhere('status_id:name', '=', 'Not Visited')
+        ->addWhere('modified_date', '<', date('Y-m-d H:i:s', $rescheduleEmailTimestamp))
+        ->setLimit($batchSize)
+        ->setOffset($offset)
+        ->execute();
 
-    \Civi::log()->info('notVisitedInductionActivities', ['notVisitedInductionActivities'=>$notVisitedInductionActivities]);
-
-    // // Process each activity in the batch
     foreach ($notVisitedInductionActivities as $activity) {
-      // Check if a follow-up email has already been sent to avoid duplication.
-      $emailActivities = Activity::get(FALSE)
-        ->addWhere('activity_type_id:name', '=', 'Email')
-        ->addWhere('subject', '=', $template['msg_subject'])
-        ->addWhere('source_contact_id', '=', $activity['source_contact_id'])
-        ->execute();
+        // Check if a follow-up email has already been sent
+        $emailActivities = Activity::get(FALSE)
+            ->addWhere('activity_type_id:name', '=', 'Email')
+            ->addWhere('subject', '=', $template['msg_subject'])
+            ->addWhere('source_contact_id', '=', $activity['source_contact_id'])
+            ->execute();
 
-      \Civi::log()->info('emailActivities', ['emailActivities'=>$emailActivities]);
+        $emailActivity = $emailActivities->first();
 
-      $emailActivity = $emailActivities->first();
+        if ($emailActivity) {
+            // If an email already exists, mark activity as 'No Show'
+            $updateResult = Activity::update(FALSE)
+                ->addValue('status_id:name', 'No_show')
+                ->addWhere('id', '=', $activity['id'])
+                ->execute();
+            continue;
+        }
 
-      if (!$emailActivity) {
-        \Civi::log()->info('activity', ['activity'=>$activity]);
-
+        // If no email exists, mark activity for to be scheduled and send the email
         $updateResult = Activity::update(FALSE)
-        ->addValue('status_id:name', 'To be scheduled')
-        ->addWhere('id', '=', $activity['id'])
-        ->execute();
+            ->addValue('status_id:name', 'To be scheduled')
+            ->addWhere('id', '=', $activity['id'])
+            ->execute();
+
+        if ($updateResult->isError()) {
+            continue;
+        }
+
         $emailParams = [
-          'contact_id' => $activity['source_contact_id'],
-          'template_id' => $template['id'],
+            'contact_id' => $activity['source_contact_id'],
+            'template_id' => $template['id'],
         ];
-        civicrm_api3('Email', 'send', $emailParams);
-      }
 
-      if (!empty($emailActivity)){
-        \Civi::log()->info('check email sent for rescheduling');
-        $updateResult = Activity::update(FALSE)
-        ->addValue('status_id:name', 'No_show')
-        ->addWhere('id', '=', $activity['id'])
-        ->execute();
-      }
+        $emailResult = civicrm_api3('Email', 'send', $emailParams);
     }
 
-    // Move to the next batch by increasing the offset
     $offset += $batchSize;
 
-  } while (count($notVisitedInductionActivities) === $batchSize);
+} while (count($notVisitedInductionActivities) === $batchSize);
 }
 
 /**
