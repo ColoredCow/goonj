@@ -38,14 +38,19 @@ class InstitutionService extends AutoSubscriber {
    *   The parameters that were sent into the calling function.
    */
   public static function setOfficeDetails(string $op, string $objectName, int $contactId, &$objectRef) {
-
-    if ($op !== 'create' || $objectName !== 'Address' || $objectRef->afform_name !== 'afformInstituteRegistration1') {
+    error_log("stobjectRef->afform_nameteId: " . print_r($objectRef->afform_name, TRUE));
+    if ($op !== 'create' || $objectName !== 'Address' && $objectRef->afform_name !== 'afformInstituteRegistration1') {
+      error_log("debuging " . print_r($objectRef->afform_name, TRUE));
       return FALSE;
     }
 
     $stateId = $objectRef->state_province_id;
 
+    error_log("stateId: " . print_r($stateId, TRUE));
+
     $contactId = $objectRef->contact_id;
+
+    error_log("contactId: " . print_r($contactId, TRUE));
 
     if (!$stateId) {
       return;
@@ -62,6 +67,8 @@ class InstitutionService extends AutoSubscriber {
       ->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_Office')
       ->addWhere('Goonj_Office_Details.Institution_Catchment', 'CONTAINS', $stateId)
       ->execute();
+
+      error_log("officesFound: " . print_r($officesFound, TRUE));
 
     $stateOffice = $officesFound->first();
 
