@@ -38,7 +38,8 @@ class InstitutionService extends AutoSubscriber {
    *   The parameters that were sent into the calling function.
    */
   public static function setOfficeDetails(string $op, string $objectName, int $contactId, &$objectRef) {
-    error_log("stobjectRef->afform_nameteId: " . print_r($objectRef->afform_name, TRUE));
+    \Civi::log()->info("stobjectRef->afform_name: " . print_r($objectRef->afform_name, TRUE));
+
     if ($op !== 'create' || $objectName !== 'Address' && $objectRef->afform_name !== 'afformInstituteRegistration1') {
       error_log("debuging " . print_r($objectRef->afform_name, TRUE));
       return FALSE;
@@ -46,11 +47,11 @@ class InstitutionService extends AutoSubscriber {
 
     $stateId = $objectRef->state_province_id;
 
-    error_log("stateId: " . print_r($stateId, TRUE));
+    \Civi::log()->info("stateId: " . print_r($stateId, TRUE));
 
     $contactId = $objectRef->contact_id;
 
-    error_log("contactId: " . print_r($contactId, TRUE));
+    \Civi::log()->info("contactId: " . print_r($contactId, TRUE));
 
     if (!$stateId) {
       return;
@@ -68,7 +69,8 @@ class InstitutionService extends AutoSubscriber {
       ->addWhere('Goonj_Office_Details.Institution_Catchment', 'CONTAINS', $stateId)
       ->execute();
 
-      error_log("officesFound: " . print_r($officesFound, TRUE));
+      \Civi::log()->info("officesFound: " . print_r($officesFound, TRUE));
+
 
     $stateOffice = $officesFound->first();
 
@@ -84,7 +86,8 @@ class InstitutionService extends AutoSubscriber {
       ->addWhere('id', '=', $contactId)
       ->execute();
 
-      error_log("updateGoonjOffice: " . print_r($updateGoonjOffice, TRUE));
+      \Civi::log()->info("updateGoonjOffice: " . print_r($updateGoonjOffice, TRUE));
+
 
     // Get the relationship type name based on the institution type.
     $relationshipTypeName = self::getRelationshipTypeName($contactId);
