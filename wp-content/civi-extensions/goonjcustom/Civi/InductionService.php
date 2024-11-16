@@ -131,7 +131,6 @@ class InductionService extends AutoSubscriber {
    * Handles induction creation for a volunteer.
    */
   public static function createInductionForVolunteer(string $op, string $objectName, int $objectId, &$objectRef) {
-
     if ($op !== 'create' || $objectName !== 'Address' || self::$volunteerId !== $objectRef->contact_id || !$objectRef->is_primary) {
       return FALSE;
     }
@@ -144,7 +143,6 @@ class InductionService extends AutoSubscriber {
     }
 
     self::createInduction(self::$volunteerId, $stateId);
-
   }
 
   /**
@@ -492,7 +490,6 @@ class InductionService extends AutoSubscriber {
         ->setLimit($batchSize)
         ->setOffset($offset)
         ->execute();
-
 
       // Process each activity in the batch
       foreach ($unscheduledInductionActivities as $activity) {
