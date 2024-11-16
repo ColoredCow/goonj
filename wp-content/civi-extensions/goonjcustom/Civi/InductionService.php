@@ -608,6 +608,7 @@ public static function sendInductionRescheduleEmail() {
     ->addSelect('id', 'msg_subject')
     ->addWhere('msg_title', 'LIKE', 'Induction_reschedule_slot_booking%')
     ->execute()->single();
+  \Civi::log()->info('template', ['template'=>$template]);
 
   $batchSize = 25;
   $offset = 0;
@@ -622,6 +623,7 @@ public static function sendInductionRescheduleEmail() {
         ->setLimit($batchSize)
         ->setOffset($offset)
         ->execute();
+    \Civi::log()->info('notVisitedInductionActivities', ['notVisitedInductionActivities'=>$notVisitedInductionActivities]);
 
     foreach ($notVisitedInductionActivities as $activity) {
         // Check if a follow-up email has already been sent
@@ -632,13 +634,14 @@ public static function sendInductionRescheduleEmail() {
             ->execute();
 
         $emailActivity = $emailActivities->first();
-
+        \Civi::log()->info('emailActivities', ['emailActivities'=>$emailActivities]);
         if ($emailActivity) {
             // If an email already exists, mark activity as 'No Show'
             $updateResult = Activity::update(FALSE)
                 ->addValue('status_id:name', 'No_show')
                 ->addWhere('id', '=', $activity['id'])
                 ->execute();
+            \Civi::log()->info('updateResult1', ['updateResult1'=>$updateResult]);
             continue;
         }
 
@@ -647,10 +650,7 @@ public static function sendInductionRescheduleEmail() {
             ->addValue('status_id:name', 'To be scheduled')
             ->addWhere('id', '=', $activity['id'])
             ->execute();
-
-        if ($updateResult->isError()) {
-            continue;
-        }
+        \Civi::log()->info('updateResult2', ['updateResult2'=>$updateResult]);
 
         $emailParams = [
             'contact_id' => $activity['source_contact_id'],
@@ -658,6 +658,7 @@ public static function sendInductionRescheduleEmail() {
         ];
 
         $emailResult = civicrm_api3('Email', 'send', $emailParams);
+        \Civi::log()->info('emailResult', ['emailResult'=>$emailResult]);
     }
 
     $offset += $batchSize;
