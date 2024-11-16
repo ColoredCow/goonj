@@ -1,17 +1,17 @@
 <?xml version="1.0"?>
 <extension key="com.coloredcow.civirazorpay" type="module">
   <file>civirazorpay</file>
-  <name>com.coloredcow.civirazorpay</name>
-  <description>FIXME</description>
+  <name>Razorpay Payment Processor</name>
+  <description>Accept payments using https://razorpay.com/</description>
   <license>AGPL-3.0</license>
   <maintainer>
     <author>pokhiii</author>
     <email>pokhi@coloredcow.com</email>
   </maintainer>
   <urls>
-    <url desc="Main Extension Page">http://FIXME</url>
-    <url desc="Documentation">http://FIXME</url>
-    <url desc="Support">http://FIXME</url>
+    <url desc="Main Extension Page">hhttps://lab.civicrm.org/extensions/civirazorpay</url>
+    <url desc="Documentation">https://lab.civicrm.org/extensions/civirazorpay/-/blob/main/README.md</url>
+    <url desc="Support">https://lab.civicrm.org/extensions/civirazorpay/-/issues</url>
     <url desc="Licensing">http://www.gnu.org/licenses/agpl-3.0.html</url>
   </urls>
   <releaseDate>2024-11-01</releaseDate>
@@ -20,7 +20,7 @@
   <compatibility>
     <ver>5.77</ver>
   </compatibility>
-  <comments>This is a new, undeveloped module</comments>
+  <comments>Original Author: Pokhi (ColoredCow)</comments>
   <classloader>
     <psr0 prefix="CRM_" path="."/>
     <psr4 prefix="Civi\" path="Civi"/>
