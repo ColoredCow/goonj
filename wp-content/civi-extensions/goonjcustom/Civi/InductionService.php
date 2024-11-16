@@ -648,10 +648,6 @@ public static function sendInductionRescheduleEmail() {
             ->addWhere('id', '=', $activity['id'])
             ->execute();
 
-        if ($updateResult->isError()) {
-            continue;
-        }
-
         $emailParams = [
             'contact_id' => $activity['source_contact_id'],
             'template_id' => $template['id'],
