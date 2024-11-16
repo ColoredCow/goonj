@@ -79,10 +79,12 @@ class InstitutionService extends AutoSubscriber {
 
     $stateOfficeId = $stateOffice['id'];
 
-    Organization::update(FALSE)
+    $updateGoonjOffice = Organization::update(FALSE)
       ->addValue('Review.Goonj_Office', $stateOfficeId)
       ->addWhere('id', '=', $contactId)
       ->execute();
+
+      error_log("updateGoonjOffice: " . print_r($updateGoonjOffice, TRUE));
 
     // Get the relationship type name based on the institution type.
     $relationshipTypeName = self::getRelationshipTypeName($contactId);
