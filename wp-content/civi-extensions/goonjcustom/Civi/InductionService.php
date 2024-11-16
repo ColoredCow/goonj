@@ -493,6 +493,11 @@ class InductionService extends AutoSubscriber {
 
       // Process each activity in the batch
       foreach ($unscheduledInductionActivities as $activity) {
+        // Check if a reschedule email has already been sent and handled
+        if (self::handleRescheduleEmailActivity($activity['source_contact_id'], $activity['id'])) {
+          continue;
+        }
+
         // Check if a follow-up email has already been sent to avoid duplication.
         $emailActivities = Activity::get(FALSE)
           ->addWhere('activity_type_id:name', '=', 'Email')
@@ -589,4 +594,109 @@ class InductionService extends AutoSubscriber {
 			throw $e;
 		}
 	}
+
+
+/**
+ *
+ */
+public static function sendInductionRescheduleEmail() {
+  $rescheduleEmailDelayDays = 1;
+  $rescheduleEmailTimestamp = strtotime("-{$rescheduleEmailDelayDays} days");
+
+  // Retrieve the email template for reschedule-email.
+  $template = MessageTemplate::get(FALSE)
+    ->addSelect('id', 'msg_subject')
+    ->addWhere('msg_title', 'LIKE', 'Induction_reschedule_slot_booking%')
+    ->execute()->single();
+
+  $batchSize = 25;
+  $offset = 0;
+
+  do {
+    // Retrieve a batch of not visited induction activities older than 1 days
+    $notVisitedInductionActivities = Activity::get(FALSE)
+        ->addSelect('id', 'source_contact_id', 'created_date')
+        ->addWhere('activity_type_id:name', '=', 'Induction')
+        ->addWhere('status_id:name', '=', 'Not Visited')
+        ->addWhere('modified_date', '<', date('Y-m-d H:i:s', $rescheduleEmailTimestamp))
+        ->setLimit($batchSize)
+        ->setOffset($offset)
+        ->execute();
+
+    foreach ($notVisitedInductionActivities as $activity) {
+        // Check if a follow-up email has already been sent
+        $emailActivities = Activity::get(FALSE)
+            ->addWhere('activity_type_id:name', '=', 'Email')
+            ->addWhere('subject', '=', $template['msg_subject'])
+            ->addWhere('source_contact_id', '=', $activity['source_contact_id'])
+            ->execute();
+
+        $emailActivity = $emailActivities->first();
+
+        if ($emailActivity) {
+            // If an email already exists, mark activity as 'No Show'
+            $updateResult = Activity::update(FALSE)
+                ->addValue('status_id:name', 'No_show')
+                ->addWhere('id', '=', $activity['id'])
+                ->execute();
+            continue;
+        }
+
+        // If no email exists, mark activity for to be scheduled and send the email
+        $updateResult = Activity::update(FALSE)
+            ->addValue('status_id:name', 'To be scheduled')
+            ->addWhere('id', '=', $activity['id'])
+            ->execute();
+
+        if ($updateResult->isError()) {
+            continue;
+        }
+
+        $emailParams = [
+            'contact_id' => $activity['source_contact_id'],
+            'template_id' => $template['id'],
+        ];
+
+        $emailResult = civicrm_api3('Email', 'send', $emailParams);
+    }
+
+    $offset += $batchSize;
+
+} while (count($notVisitedInductionActivities) === $batchSize);
+}
+
+/**
+ *
+ */
+public static function handleRescheduleEmailActivity($contactId, $activityId) {
+  $template = MessageTemplate::get(FALSE)
+    ->addSelect('id', 'msg_subject')
+    ->addWhere('msg_title', 'LIKE', 'Induction_reschedule_slot_booking%')
+    ->execute()->single();
+
+  $emailActivities = Activity::get(FALSE)
+    ->addWhere('activity_type_id:name', '=', 'Email')
+    ->addWhere('subject', '=', $template['msg_subject'])
+    ->addWhere('source_contact_id', '=', $contactId)
+    ->execute();
+
+  $emailActivity = $emailActivities->first();
+
+  if (!empty($emailActivity)) {
+    // Update the activity status to 'No_show' if a reschedule email was sent
+    $updateResult = Activity::update(FALSE)
+      ->addValue('status_id:name', 'No_show')
+      ->addWhere('id', '=', $activityId)
+      ->execute();
+
+    // Return true if the update was successful
+    if ($updateResult) {
+      return true;
+    }
+  }
+
+  // Return false if no reschedule email activity exists or update failed
+  return false;
+}
+
 }
