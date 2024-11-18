@@ -2,20 +2,21 @@
 
 namespace Civi;
 
-use Civi\Api4\CustomField;
-use Civi\Api4\StateProvince;
-use Civi\Traits\CollectionSource;
-use Civi\Api4\EckEntity;
 use Civi\Api4\Contact;
+use Civi\Api4\CustomField;
+use Civi\Api4\EckEntity;
+use Civi\Api4\StateProvince;
 use Civi\Core\Service\AutoSubscriber;
+use Civi\Traits\CollectionSource;
 
 /**
  *
  */
 class InstitutionCollectionCampService extends AutoSubscriber {
-    use CollectionSource;
-    const ENTITY_SUBTYPE_NAME = 'Institution_Collection_Camp';
-    const FALLBACK_OFFICE_NAME = 'Delhi';
+  use CollectionSource;
+  const ENTITY_SUBTYPE_NAME = 'Institution_Collection_Camp';
+  const FALLBACK_OFFICE_NAME = 'Delhi';
+
   /**
    *
    */
@@ -23,7 +24,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     return [
       '&hook_civicrm_fieldOptions' => 'setIndianStateOptions',
       '&hook_civicrm_custom' => 'setOfficeDetails',
-    ];  
+    ];
   }
 
   /**
@@ -63,6 +64,9 @@ class InstitutionCollectionCampService extends AutoSubscriber {
 
   }
 
+  /**
+   *
+   */
   private static function findStateField(array $array) {
     $institutionCollectionCampStateField = CustomField::get(FALSE)
       ->addSelect('id')
@@ -87,6 +91,9 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     return FALSE;
   }
 
+  /**
+   *
+   */
   private static function getFallbackOffice() {
     $fallbackOffices = Contact::get(FALSE)
       ->addSelect('id')
@@ -96,7 +103,9 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     return $fallbackOffices->first();
   }
 
-
+  /**
+   *
+   */
   public static function setOfficeDetails($op, $groupID, $entityID, &$params) {
     if ($op !== 'create' || self::getEntitySubtypeName($entityID) !== self::ENTITY_SUBTYPE_NAME) {
       return;
@@ -143,4 +152,5 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       ->addWhere('id', '=', $institutionCollectionCampId)
       ->execute();
   }
+
 }
