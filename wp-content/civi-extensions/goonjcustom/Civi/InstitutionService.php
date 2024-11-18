@@ -37,7 +37,7 @@ class InstitutionService extends AutoSubscriber {
    * @param object $objectRef
    *   The parameters that were sent into the calling function.
    */
-  public static function setOfficeDetails(string $op, string $objectName, int $contactId, &$objectRef) {
+  public static function setOfficeDetails(string $op, string $objectName, int $objectId, &$objectRef) {
 
     if ($objectName !== 'AfformSubmission') {
       return;
