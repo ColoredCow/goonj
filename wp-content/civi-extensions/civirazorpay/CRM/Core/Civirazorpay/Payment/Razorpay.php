@@ -29,7 +29,7 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
   }
 
   /**
-   * Process payment by creating an order in Razorpay and injecting checkout script.
+   * Process payment by creating an order or subscription in Razorpay.
    *
    * @param array $params
    *   Payment parameters.
@@ -42,54 +42,82 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
     $apiSecret = $this->_paymentProcessor['password'];
     $api = new Api($apiKey, $apiSecret);
 
-    // Create Razorpay order.
-    try {
-      $order = $api->order->create([
-      // Amount in paise.
-        'amount' => $params['amount'] * 100,
-        'currency' => 'INR',
-        'receipt' => 'RCPT-' . uniqid(),
-      // Auto-capture on payment success.
-        'payment_capture' => 1,
-      ]);
+    if (!empty($params['is_recur'])) {
+      $planId = 'plan_PKj1USZWhqBzxr';
+      try {
+        $subscription = $api->subscription->create([
+          'plan_id' => $planId,
+          'customer_notify' => 1,
+        // NULL for unlimited, or a specific number for limited billing cycles.
+          'total_count' => NULL,
+          'quantity' => 1,
+          'notes' => [
+            'contribution_id' => $params['contributionID'],
+          ],
+        ]);
+      }
+      catch (\Exception $e) {
+        throw new PaymentProcessorException('Error creating Razorpay subscription: ' . $e->getMessage());
+      }
+
+      // Save subscription details to the contribution record.
+      try {
+        civicrm_api3('ContributionRecur', 'create', [
+          'id' => $params['contributionRecurID'],
+          'processor_id' => $subscription->id,
+          'processor_name' => 'Razorpay',
+        ]);
+      }
+      catch (CiviCRM_API3_Exception $e) {
+        throw new PaymentProcessorException('Error updating recurring contribution record: ' . $e->getMessage());
+      }
+
+      // Redirect user to Razorpay hosted payment page.
+      $redirectUrl = $subscription->short_url;
+      CRM_Utils_System::redirect($redirectUrl);
     }
-    catch (\Exception $e) {
-      throw new PaymentProcessorException('Error creating Razorpay order: ' . $e->getMessage());
+    else {
+      // Handle one-time payment.
+      try {
+        $order = $api->order->create([
+        // Amount in paise.
+          'amount' => $params['amount'] * 100,
+          'currency' => 'INR',
+          'receipt' => 'RCPT-' . uniqid(),
+          'payment_capture' => 1,
+        ]);
+      }
+      catch (\Exception $e) {
+        throw new PaymentProcessorException('Error creating Razorpay order: ' . $e->getMessage());
+      }
+
+      // Save the Razorpay order ID in the contribution record.
+      try {
+        $result = civicrm_api3('Contribution', 'create', [
+          'id' => $params['contributionID'],
+          'trxn_id' => $order->id,
+          'contribution_status_id' => self::CONTRIB_STATUS_PENDING,
+        ]);
+      }
+      catch (CiviCRM_API3_Exception $e) {
+        throw new PaymentProcessorException('Error updating contribution with Razorpay order ID: ' . $e->getMessage());
+      }
+
+      // Redirect user to custom Razorpay payment processing page.
+      $redirectUrl = CRM_Utils_System::url(
+          'civicrm/razorpay/payment',
+          [
+            'contribution' => $params['contributionID'],
+            'processor' => $this->_paymentProcessor['id'],
+            'qfKey' => $params['qfKey'],
+          ],
+          TRUE,
+          NULL,
+          FALSE
+        );
+
+      CRM_Utils_System::redirect($redirectUrl);
     }
-
-    $contributionId = $params['contributionID'];
-
-    // Save the Razorpay order ID in the contribution record.
-    try {
-      $result = civicrm_api3('Contribution', 'create', [
-        'id' => $contributionId,
-        'trxn_id' => $order->id,
-        'contribution_status_id' => self::CONTRIB_STATUS_PENDING,
-      ]);
-    }
-    catch (CiviCRM_API3_Exception $e) {
-      throw new PaymentProcessorException('Error updating contribution with Razorpay order ID: ' . $e->getMessage());
-    }
-
-    $qfKey = $params['qfKey'];
-
-    // Build the URL to redirect to the custom payment processing page.
-    $redirectUrl = CRM_Utils_System::url(
-        'civicrm/razorpay/payment',
-        [
-          'contribution' => $contributionId,
-          'processor' => $this->_paymentProcessor['id'],
-          'qfKey' => $qfKey,
-        ],
-        // Absolute URL.
-        TRUE,
-        // Fragment.
-        NULL,
-        // Add SID if enabled in Civi.
-        FALSE
-    );
-
-    CRM_Utils_System::redirect($redirectUrl);
   }
 
   /**
