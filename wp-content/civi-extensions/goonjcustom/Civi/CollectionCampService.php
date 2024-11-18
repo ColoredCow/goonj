@@ -80,13 +80,6 @@ class CollectionCampService extends AutoSubscriber {
       return;
     }
 
-    // Get the current logged-in user's contact ID and permissions.
-    $currentUserId = \CRM_Core_Session::getLoggedInContactID();
-    if (!$currentUserId) {
-      \Civi::log()->error('No CiviCRM user context available.');
-      return;
-    }
-
     $hasGoonjChapterAdminPermission = \CRM_Core_Permission::check('goonj_chapter_admin');
     $hasAccountTeamPermission = \CRM_Core_Permission::check('account_team');
 
