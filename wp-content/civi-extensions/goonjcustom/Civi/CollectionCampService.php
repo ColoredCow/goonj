@@ -80,20 +80,17 @@ class CollectionCampService extends AutoSubscriber {
       return;
     }
 
-    // Get the current user's roles.
-    try {
-      $currentUser = wp_get_current_user();
-      if (!$currentUser) {
-        throw new \RuntimeException('WordPress user context not available');
-      }
-      $userRoles = $currentUser->roles;
-    }
-    catch (\Exception $e) {
-      \Civi::log()->error('Failed to get WordPress user roles: ' . $e->getMessage());
+    // Get the current logged-in user's contact ID and permissions.
+    $currentUserId = \CRM_Core_Session::getLoggedInContactID();
+    if (!$currentUserId) {
+      \Civi::log()->error('No CiviCRM user context available.');
+      return;
     }
 
-    // Determine role-based exclusions.
-    $skipMonetaryContributionTab = in_array('goonj_chapter_admin', $userRoles);
+    $hasGoonjChapterAdminPermission = \CRM_Core_Permission::check('goonj_chapter_admin');
+    $hasAccountTeamPermission = \CRM_Core_Permission::check('account_team');
+
+    $skipMonetaryContributionTab = $hasGoonjChapterAdminPermission;
 
     $accountTeamExcludedTabs = [
       'activities',
@@ -105,7 +102,7 @@ class CollectionCampService extends AutoSubscriber {
       'campOutcome',
       'campFeedback',
     ];
-    $skipAccountTeamTabs = in_array('account_team', $userRoles);
+    $skipAccountTeamTabs = $hasAccountTeamPermission;
 
     $tabConfigs = [
       // 'activities' => [
