@@ -14,6 +14,7 @@ return [
             'class_name' => 'Civirazorpay_Payment_Razorpay',
             'billing_mode' => 4, // Redirect
             'payment_type' => 1, // 1 = Credit Card
+            'is_recur' => TRUE,
         ],
     ],
 ];
