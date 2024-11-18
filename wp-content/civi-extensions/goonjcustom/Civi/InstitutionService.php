@@ -40,9 +40,13 @@ class InstitutionService extends AutoSubscriber {
   public static function setOfficeDetails(string $op, string $objectName, int $contactId, &$objectRef) {
     \Civi::log()->info("stobjectRef->afform_name: " . print_r($objectRef->afform_name, TRUE));
 
-    if ($op !== 'create' || $objectName !== 'Address' && $objectRef->afform_name !== 'afformInstituteRegistration1') {
+    if ($op !== 'create' || $objectName !== 'Address') {
       error_log("debuging " . print_r($objectRef->afform_name, TRUE));
       return FALSE;
+    }
+
+    if ($objectRef->afform_name !== 'afformInstituteRegistration1') {
+      return;
     }
 
     $stateId = $objectRef->state_province_id;
