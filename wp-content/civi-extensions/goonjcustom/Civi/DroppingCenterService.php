@@ -466,8 +466,16 @@ class DroppingCenterService extends AutoSubscriber {
     }
 
     // Get the current user's roles.
-    $currentUser = wp_get_current_user();
-    $userRoles = $currentUser->roles;
+    try {
+      $currentUser = wp_get_current_user();
+      if (!$currentUser) {
+        throw new \RuntimeException('WordPress user context not available');
+      }
+      $userRoles = $currentUser->roles;
+    }
+    catch (\Exception $e) {
+      \Civi::log()->error('Failed to get WordPress user roles: ' . $e->getMessage());
+    }
 
     // Determine role-based exclusions.
     $skipMonetaryContributionTab = in_array('goonj_chapter_admin', $userRoles);
