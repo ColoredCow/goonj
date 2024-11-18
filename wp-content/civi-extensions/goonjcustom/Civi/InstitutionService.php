@@ -39,11 +39,21 @@ class InstitutionService extends AutoSubscriber {
    */
   public static function setOfficeDetails(string $op, string $objectName, int $contactId, &$objectRef) {
 
-    if ($op !== 'create' || $objectName !== 'Address' || $objectRef->afform_name !== 'afformInstituteRegistration1') {
-      return FALSE;
+    if ($objectName !== 'AfformSubmission') {
+      return;
     }
 
-    $stateId = $objectRef->state_province_id;
+    $afformName = $objectRef->afform_name;
+
+    if ($afformName !== 'afformInstituteRegistration1') {
+      return;
+    }
+
+    $jsonData = $objectRef->data;
+
+    $dataArray = json_decode($jsonData, TRUE);
+
+    $stateId = $dataArray['Organization1'][0]['joins']['Address'][0]['state_province_id'];
 
     $contactId = $objectRef->contact_id;
 
