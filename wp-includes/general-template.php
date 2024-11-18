@@ -1122,7 +1122,7 @@ function get_custom_logo( $blog_id = 0 ) {
 
 				$html = sprintf(
 					'<a href="%1$s" class="custom-logo-link" rel="home"%2$s>%3$s</a>',
-					esc_url( home_url( '/' ) ),
+					esc_url( ( 'https://goonj.org/' ) ),
 					$aria_current,
 					$image
 				);
