@@ -88,6 +88,12 @@ class CollectionCampService extends AutoSubscriber {
     $skipMonetaryContributionTab = in_array('goonj_chapter_admin', $userRoles);
 
     $tabConfigs = [
+      // 'activities' => [
+      //   'title' => ts('Activities'),
+      //   'module' => 'afsearchCollectionCampActivity',
+      //   'directive' => 'afsearch-collection-camp-activity',
+      //   'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      // ],
       'logistics' => [
         'title' => ts('Logistics'),
         'module' => 'afsearchCollectionCampLogistics',
