@@ -469,8 +469,22 @@ class DroppingCenterService extends AutoSubscriber {
     $currentUser = wp_get_current_user();
     $userRoles = $currentUser->roles;
 
-    // Skip "Monetary Contribution" tab if the user has 'goonj_chapter_admin' role.
+    // Determine role-based exclusions.
     $skipMonetaryContributionTab = in_array('goonj_chapter_admin', $userRoles);
+
+    $accountTeamExcludedTabs = [
+      'logistics',
+      'eventCoordinators',
+      'vehicleDispatch',
+      'materialAuthorization',
+      'materialContribution',
+      'status',
+      'visit',
+      'donation',
+      'outcome',
+      'feedback',
+    ];
+    $skipAccountTeamTabs = in_array('account_team', $userRoles);
 
     $tabConfigs = [
       'logistics' => [
@@ -542,8 +556,13 @@ class DroppingCenterService extends AutoSubscriber {
     ];
 
     foreach ($tabConfigs as $key => $config) {
-      // Skip the 'monetaryContribution' tab if the user has the 'goonj_chapter_admin' role.
+      // Skip the 'monetaryContribution' tab for 'goonj_chapter_admin'.
       if ($skipMonetaryContributionTab && $key === 'monetaryContribution') {
+        continue;
+      }
+
+      // Skip specific tabs for 'account_team'.
+      if ($skipAccountTeamTabs && in_array($key, $accountTeamExcludedTabs)) {
         continue;
       }
 
