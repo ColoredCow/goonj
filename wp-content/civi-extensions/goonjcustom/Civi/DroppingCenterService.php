@@ -465,102 +465,90 @@ class DroppingCenterService extends AutoSubscriber {
       return;
     }
 
-    $hasGoonjChapterAdminPermission = \CRM_Core_Permission::check('goonj_chapter_admin');
-    $hasAccountTeamPermission = \CRM_Core_Permission::check('account_team');
-
-    $skipMonetaryContributionTab = $hasGoonjChapterAdminPermission;
-
-    $accountTeamExcludedTabs = [
-      'logistics',
-      'eventCoordinators',
-      'vehicleDispatch',
-      'materialAuthorization',
-      'materialContribution',
-      'status',
-      'visit',
-      'donation',
-      'outcome',
-      'feedback',
-    ];
-    $skipAccountTeamTabs = $hasAccountTeamPermission;
-
     $tabConfigs = [
       'logistics' => [
         'title' => ts('Logistics'),
         'module' => 'afsearchLogistics',
         'directive' => 'afsearch-logistics',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
       ],
       'eventCoordinators' => [
         'title' => ts('Event Coordinators'),
         'module' => 'afsearchCoordinator',
         'directive' => 'afsearch-coordinator',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
       ],
       'vehicleDispatch' => [
         'title' => ts('Dispatch'),
         'module' => 'afsearchCampVehicleDispatchData',
         'directive' => 'afsearch-camp-vehicle-dispatch-data',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
       ],
       'materialAuthorization' => [
         'title' => ts('Material Authorization'),
         'module' => 'afsearchAcknowledgementForLogisticsData',
         'directive' => 'afsearch-acknowledgement-for-logistics-data',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
       ],
       'materialContribution' => [
         'title' => ts('Material Contribution'),
         'module' => 'afsearchDroppingCenterMaterialContributions',
         'directive' => 'afsearch-dropping-center-material-contributions',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
       ],
       'status' => [
         'title' => ts('Status'),
         'module' => 'afsearchStatus',
         'directive' => 'afsearch-status',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
       ],
       'visit' => [
         'title' => ts('Visit'),
         'module' => 'afsearchVisitList',
         'directive' => 'afsearch-visit-list',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
       ],
       'donation' => [
         'title' => ts('Donation'),
         'module' => 'afsearchDonation',
         'directive' => 'afsearch-donation',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
       ],
       'outcome' => [
         'title' => ts('Outcome'),
         'module' => 'afformDroppingCenterOutcome',
         'directive' => 'afform-dropping-center-outcome',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCampService.tpl',
+        'permissions' => ['goonj_chapter_admin'],
       ],
       'feedback' => [
         'title' => ts('Feedback'),
         'module' => 'afsearchFeedback',
         'directive' => 'afsearch-feedback',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
       ],
       'monetaryContribution' => [
         'title' => ts('Monetary Contribution'),
         'module' => 'afsearchMonetaryContribution',
         'directive' => 'afsearch-monetary-contribution',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['account_team'],
       ],
     ];
 
     foreach ($tabConfigs as $key => $config) {
-      // Skip the 'monetaryContribution' tab for 'goonj_chapter_admin'.
-      if ($skipMonetaryContributionTab && $key === 'monetaryContribution') {
-        continue;
-      }
-
-      // Skip specific tabs for 'account_team'.
-      if ($skipAccountTeamTabs && in_array($key, $accountTeamExcludedTabs)) {
+      // Skip if the current user does not have the required permissions.
+      $hasPermission = \CRM_Core_Permission::check($config['permissions']);
+      if (!$hasPermission) {
         continue;
       }
 
