@@ -80,13 +80,14 @@ class CollectionCampService extends AutoSubscriber {
       return;
     }
 
+    // Get the current user's roles.
+    $currentUser = wp_get_current_user();
+    $userRoles = $currentUser->roles;
+
+    // Skip "Monetary Contribution" tab if the user has 'goonj_chapter_admin' role.
+    $skipMonetaryContributionTab = in_array('goonj_chapter_admin', $userRoles);
+
     $tabConfigs = [
-      // 'activities' => [
-      //   'title' => ts('Activities'),
-      //   'module' => 'afsearchCollectionCampActivity',
-      //   'directive' => 'afsearch-collection-camp-activity',
-      //   'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-      // ],
       'logistics' => [
         'title' => ts('Logistics'),
         'module' => 'afsearchCollectionCampLogistics',
@@ -138,6 +139,11 @@ class CollectionCampService extends AutoSubscriber {
     ];
 
     foreach ($tabConfigs as $key => $config) {
+      // Skip the 'monetaryContribution' tab if the user has the 'goonj_chapter_admin' role.
+      if ($skipMonetaryContributionTab && $key === 'monetaryContribution') {
+        continue;
+      }
+
       $tabs[$key] = [
         'id' => $key,
         'title' => $config['title'],
