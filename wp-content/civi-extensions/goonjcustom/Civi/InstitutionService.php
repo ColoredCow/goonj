@@ -45,9 +45,7 @@ class InstitutionService extends AutoSubscriber {
 
     $stateId = $objectRef->state_province_id;
 
-
     $contactId = $objectRef->contact_id;
-
 
     if (!$stateId) {
       return;
@@ -65,8 +63,6 @@ class InstitutionService extends AutoSubscriber {
       ->addWhere('Goonj_Office_Details.Institution_Catchment', 'CONTAINS', $stateId)
       ->execute();
 
-
-
     $stateOffice = $officesFound->first();
 
     // If no state office is found, assign the fallback state office.
@@ -80,8 +76,6 @@ class InstitutionService extends AutoSubscriber {
       ->addValue('Review.Goonj_Office', $stateOfficeId)
       ->addWhere('id', '=', $contactId)
       ->execute();
-
-
 
     // Get the relationship type name based on the institution type.
     $relationshipTypeName = self::getRelationshipTypeName($contactId);
