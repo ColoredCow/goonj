@@ -37,25 +37,26 @@ class InstitutionService extends AutoSubscriber {
    * @param object $objectRef
    *   The parameters that were sent into the calling function.
    */
-  public static function setOfficeDetails(string $op, string $objectName, int $objectId, &$objectRef) {
+  public static function setOfficeDetails(string $op, string $objectName, int $contactId, &$objectRef) {
 
-    if ($objectName !== 'AfformSubmission') {
+    if ($op !== 'create' || $objectName !== 'Address') {
       return;
     }
-
-    $afformName = $objectRef->afform_name;
-
-    if ($afformName !== 'afformInstituteRegistration1') {
-      return;
-    }
-
-    $jsonData = $objectRef->data;
-
-    $dataArray = json_decode($jsonData, TRUE);
-
-    $stateId = $dataArray['Organization1'][0]['joins']['Address'][0]['state_province_id'];
 
     $contactId = $objectRef->contact_id;
+
+    $contacts = Contact::get(FALSE)
+      ->addSelect('contact_sub_type')
+      ->addWhere('id', '=', $contactId)
+      ->execute()->single();
+
+    $contactSubType = $contacts['contact_sub_type'];
+
+    if (!in_array('Institute', $contactSubType)) {
+      return;
+    }
+
+    $stateId = $objectRef->state_province_id;
 
     if (!$stateId) {
       return;
@@ -173,7 +174,7 @@ class InstitutionService extends AutoSubscriber {
    *
    */
   private static function getRelationshipTypeName($contactId) {
-    $organization = Organization::get(TRUE)
+    $organization = Organization::get(FALSE)
       ->addSelect('Institute_Registration.Type_of_Institution:label')
       ->addWhere('id', '=', $contactId)
       ->execute()->single();
