@@ -364,7 +364,7 @@ class DroppingCenterService extends AutoSubscriber {
     }
 
     $droppingCenterData = EckEntity::get('Collection_Camp', TRUE)
-      ->addSelect('Collection_Camp_Core_Details.Contact_Id', 'Dropping_Centre.Goonj_Office','Dropping_Centre.Goonj_Office.display_name')
+      ->addSelect('Collection_Camp_Core_Details.Contact_Id', 'Dropping_Centre.Goonj_Office', 'Dropping_Centre.Goonj_Office.display_name')
       ->addWhere('id', '=', $droppingCenterId)
       ->execute()->single();
 
@@ -394,7 +394,7 @@ class DroppingCenterService extends AutoSubscriber {
    */
   public static function sendDispatchEmail($email, $initiatorName, $droppingCenterId, $contactId, $goonjOffice, $goonjOfficeName) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
-    $vehicleDispatchFormUrl = $homeUrl . '/vehicle-dispatch/#?Camp_Vehicle_Dispatch.Collection_Camp=' . $droppingCenterId . '&Camp_Vehicle_Dispatch.Filled_by=' . $contactId . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $goonjOffice . '&Camp_Vehicle_Dispatch.Goonj_Office_Name=' . $goonjOfficeName  . '&Eck_Collection_Camp1=' . $droppingCenterId;
+    $vehicleDispatchFormUrl = $homeUrl . '/vehicle-dispatch/#?Camp_Vehicle_Dispatch.Collection_Camp=' . $droppingCenterId . '&Camp_Vehicle_Dispatch.Filled_by=' . $contactId . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $goonjOffice . '&Camp_Vehicle_Dispatch.Goonj_Office_Name=' . $goonjOfficeName . '&Eck_Collection_Camp1=' . $droppingCenterId;
 
     $emailHtml = "
     <html>
@@ -464,6 +464,14 @@ class DroppingCenterService extends AutoSubscriber {
     if (!self::isViewingDroppingCenter($tabsetName, $context)) {
       return;
     }
+
+    // Get the current user's roles.
+    $currentUser = wp_get_current_user();
+    $userRoles = $currentUser->roles;
+
+    // Skip "Monetary Contribution" tab if the user has 'goonj_chapter_admin' role.
+    $skipMonetaryContributionTab = in_array('goonj_chapter_admin', $userRoles);
+
     $tabConfigs = [
       'logistics' => [
         'title' => ts('Logistics'),
@@ -534,6 +542,11 @@ class DroppingCenterService extends AutoSubscriber {
     ];
 
     foreach ($tabConfigs as $key => $config) {
+      // Skip the 'monetaryContribution' tab if the user has the 'goonj_chapter_admin' role.
+      if ($skipMonetaryContributionTab && $key === 'monetaryContribution') {
+        continue;
+      }
+
       $tabs[$key] = [
         'id' => $key,
         'title' => $config['title'],
