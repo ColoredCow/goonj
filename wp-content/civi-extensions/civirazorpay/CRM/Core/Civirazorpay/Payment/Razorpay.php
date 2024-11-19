@@ -110,15 +110,12 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
         ]);
       }
       catch (\Exception $e) {
-        \Civi::log()->debug('error creating razorpay subscription', [
-          'e' => $e,
-        ]);
         throw new PaymentProcessorException('Error creating Razorpay subscription: ' . $e->getMessage());
       }
 
       ContributionRecur::update(FALSE)
+        ->addValue('processor_id', $subscription->id)
         ->addWhere('id', '=', $params['contributionRecurID'])
-        ->addWhere('processor_id', '=', $subscription->id)
         ->execute();
 
       $redirectUrl = $subscription->short_url;
