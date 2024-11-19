@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../../../../lib/razorpay/Razorpay.php';
 
 use Civi\Api4\Contribution;
+use Civi\Api4\ContributionRecur;
 use Civi\Payment\Exception\PaymentProcessorException;
 use Razorpay\Api\Api;
 
@@ -54,19 +55,6 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
       $selectedPlan = NULL;
 
       foreach ($savedPlans as $plan) {
-        \Civi::log()->debug(__FUNCTION__, [
-          'selectedPlan' => $selectedPlan,
-          'planAmount' => $plan['amount'],
-          'paramsAmount' => $params['amount'],
-          'planFrequencyUnit' => $plan['frequency_unit'],
-          'paramsFrequencyUnit' => $params['frequency_unit'],
-          'planFrequencyInterval' => $plan['frequency_interval'],
-          'paramsFrequencyInterval' => $params['frequency_interval'],
-          'amount' => intval($plan['amount'] == $params['amount']),
-          'frequency_unit' => intval($plan['frequency_unit'] == $params['frequency_unit']),
-          'frequency_interval' => intval($plan['frequency_interval'] == $params['frequency_interval']),
-        ]);
-
         if (
           $plan['amount'] == $params['amount'] &&
           $plan['frequency_unit'] == $params['frequency_unit'] &&
@@ -77,42 +65,30 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
         }
       }
 
-      \Civi::log()->debug('selected plan', [
-        'selectedPlan' => $selectedPlan,
-      ]);
-
-      // If no matching plan is found, create a new one.
       if (!$selectedPlan) {
         try {
-
-          \Civi::log()->debug('no selected plan. create one', [
-            'params' => $params,
+          $newPlan = $api->plan->create([
+            'period' => $params['frequency'],
+            'interval' => $params['interval'],
+            'item' => [
+              'name' => "Plan for {$params['amount']} INR every {$params['interval']} {$params['frequency']}",
+              'amount' => $params['amount'] * 100,
+              'currency' => 'INR',
+              'description' => "Recurring payment of {$params['amount']} INR",
+            ],
           ]);
 
-          // $newPlan = $api->plan->create([
-          //   'period' => $params['frequency'],
-          //   'interval' => $params['interval'],
-          //   'item' => [
-          //     'name' => "Plan for {$params['amount']} INR every {$params['interval']} {$params['frequency']}",
-          //     'amount' => $params['amount'] * 100,
-          //     'currency' => 'INR',
-          //     'description' => "Recurring payment of {$params['amount']} INR",
-          //   ],
-          // ]);
-          // // Save the new plan to Razorpay settings.
-          // $savedPlans[] = [
-          //   'id' => $newPlan->id,
-          //   'amount' => $params['amount'],
-          //   'frequency' => $params['frequency'],
-          //   'interval' => $params['interval'],
-          // ];
-          // Civi::settings()->set('razorpay_subscription_plans', $savedPlans);
-          // $selectedPlan = [
-          //   'id' => $newPlan->id,
-          //   'amount' => $params['amount'],
-          //   'frequency' => $params['frequency'],
-          //   'interval' => $params['interval'],
-          // ];
+          $selectedPlan = [
+            'id' => $newPlan->id,
+            'amount' => $params['amount'],
+            'frequency' => $params['frequency'],
+            'interval' => $params['interval'],
+          ];
+
+          $savedPlans[] = $selectedPlan;
+
+          Civi::settings()->set('razorpay_subscription_plans', $savedPlans);
+
         }
         catch (\Exception $e) {
           throw new PaymentProcessorException('Error creating Razorpay subscription plan: ' . $e->getMessage());
@@ -121,9 +97,7 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
 
       try {
         $planId = $selectedPlan['id'];
-        \Civi::log()->debug('creating razorpay subscription', [
-          'plan_id' => $planId,
-        ]);
+
         $subscription = $api->subscription->create([
           'plan_id' => $planId,
           'customer_notify' => 1,
@@ -142,17 +116,10 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
         throw new PaymentProcessorException('Error creating Razorpay subscription: ' . $e->getMessage());
       }
 
-      // Save subscription details to the contribution record.
-      try {
-        civicrm_api3('ContributionRecur', 'create', [
-          'id' => $params['contributionRecurID'],
-          'processor_id' => $subscription->id,
-          'processor_name' => 'Razorpay',
-        ]);
-      }
-      catch (CiviCRM_API3_Exception $e) {
-        throw new PaymentProcessorException('Error updating recurring contribution record: ' . $e->getMessage());
-      }
+      ContributionRecur::update(FALSE)
+        ->addWhere('id', '=', $params['contributionRecurID'])
+        ->addWhere('processor_id', '=', $subscription->id)
+        ->execute();
 
       $redirectUrl = $subscription->short_url;
       CRM_Utils_System::redirect($redirectUrl);
