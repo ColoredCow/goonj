@@ -84,11 +84,6 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
             'frequency' => $params['frequency'],
             'interval' => $params['interval'],
           ];
-
-          $savedPlans[] = $selectedPlan;
-
-          Civi::settings()->set('razorpay_subscription_plans', $savedPlans);
-
         }
         catch (\Exception $e) {
           throw new PaymentProcessorException('Error creating Razorpay subscription plan: ' . $e->getMessage());
