@@ -43,7 +43,19 @@ class InstitutionService extends AutoSubscriber {
       return;
     }
 
+    $stateId = $objectRef->state_province_id;
+
+    if (!$stateId) {
+      \CRM_Core_Error::debug_log_message('Cannot assign Goonj Office to institution id: ' . $contactId);
+      return;
+    }
+
     $contactId = $objectRef->contact_id;
+
+    if (!$contactId) {
+      \CRM_Core_Error::debug_log_message('Contact id not found');
+      return;
+    }
 
     $contacts = Contact::get(FALSE)
       ->addSelect('contact_sub_type')
@@ -53,17 +65,6 @@ class InstitutionService extends AutoSubscriber {
     $contactSubType = $contacts['contact_sub_type'];
 
     if (!in_array('Institute', $contactSubType)) {
-      return;
-    }
-
-    $stateId = $objectRef->state_province_id;
-
-    if (!$stateId) {
-      return;
-    }
-
-    if (!$stateId) {
-      \CRM_Core_Error::debug_log_message('Cannot assign Goonj Office to institution id: ' . $contactId);
       return;
     }
 
