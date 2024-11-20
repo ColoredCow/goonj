@@ -10,7 +10,6 @@ use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
 
-
 /**
  *
  */
@@ -34,7 +33,9 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     ];
   }
 
-
+  /**
+   *
+   */
   public static function generateInstitutionCollectionCampQr(string $op, string $objectName, $objectId, &$objectRef) {
     if ($objectName !== 'Eck_Collection_Camp' || !$objectId || !self::isCurrentSubtype($objectRef)) {
       return;
@@ -60,6 +61,9 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     }
   }
 
+  /**
+   *
+   */
   private static function generateInstitutionCollectionCampQrCode($id) {
     $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
     $data = "{$baseUrl}actions/insititution-collection-camp/{$id}";
