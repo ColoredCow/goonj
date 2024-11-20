@@ -448,8 +448,7 @@ class CollectionCampService extends AutoSubscriber {
         ->addWhere('option_group_id:name', '=', 'eck_sub_types')
         ->addWhere('grouping', '=', 'Collection_Camp')
         ->addWhere('name', '=', 'Institution_Collection_Camp')
-        ->execute()
-        ->single();
+        ->execute()->single();
 
       return $objectRef['Institution_Collection_Camp_Intent.State'] ?? NULL;
     }
@@ -459,8 +458,7 @@ class CollectionCampService extends AutoSubscriber {
       ->addWhere('option_group_id:name', '=', 'eck_sub_types')
       ->addWhere('grouping', '=', 'Collection_Camp')
       ->addWhere('name', '=', 'Dropping_Center')
-      ->execute()
-      ->single();
+      ->execute()->single();
     // Subtype for 'Dropping Centre'.
     if ($subtypeId == $optionValue['value']) {
       return $objectRef['Dropping_Centre.State'] ?? NULL;
