@@ -8,13 +8,17 @@ use Civi\Api4\EckEntity;
 use Civi\Api4\StateProvince;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
+use Civi\Traits\QrCodeable;
+
 
 /**
  *
  */
 class InstitutionCollectionCampService extends AutoSubscriber {
+  use QrCodeable;
   use CollectionSource;
   const ENTITY_SUBTYPE_NAME = 'Institution_Collection_Camp';
+  const ENTITY_NAME = 'Collection_Camp';
   const FALLBACK_OFFICE_NAME = 'Delhi';
 
   /**
@@ -23,8 +27,47 @@ class InstitutionCollectionCampService extends AutoSubscriber {
   public static function getSubscribedEvents() {
     return [
       '&hook_civicrm_fieldOptions' => 'setIndianStateOptions',
+      '&hook_civicrm_pre' => 'generateDroppingCenterQr',
       '&hook_civicrm_custom' => 'setOfficeDetails',
     ];
+  }
+
+
+  public static function generateDroppingCenterQr(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($objectName !== 'Eck_Collection_Camp' || !$objectId || !self::isCurrentSubtype($objectRef)) {
+      return;
+    }
+
+    $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
+    if (!$newStatus) {
+      return;
+    }
+
+    $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id')
+      ->addWhere('id', '=', $objectId)
+      ->execute();
+
+    $currentCollectionCamp = $collectionCamps->first();
+    $currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
+    $collectionCampId = $currentCollectionCamp['id'];
+
+    // Check for status change.
+    if ($currentStatus !== $newStatus && $newStatus === 'authorized') {
+      self::generateDroppingCenterQrCode($collectionCampId);
+    }
+  }
+
+  private static function generateDroppingCenterQrCode($id) {
+    $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+    $data = "{$baseUrl}actions/insititution-collection-camp/{$id}";
+
+    $saveOptions = [
+      'customGroupName' => 'Collection_Camp_QR_Code',
+      'customFieldName' => 'QR_Code',
+    ];
+
+    self::generateQrCode($data, $id, $saveOptions);
   }
 
   /**
