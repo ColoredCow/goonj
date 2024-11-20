@@ -8,6 +8,7 @@ use Civi\Api4\CustomField;
 use Civi\Api4\MessageTemplate;
 use Civi\Api4\Relationship;
 use Civi\Core\Service\AutoSubscriber;
+use Civi\Api4\StateProvince;
 
 /**
  *
@@ -190,9 +191,43 @@ class InductionService extends AutoSubscriber {
       return FALSE;
     }
 
+    $contactData = Contact::get(FALSE)
+      ->addSelect('address_primary.state_province_id', 'address_primary.city', 'Individual_fields.Created_Date')
+      ->addWhere('id', '=', $volunteerId)
+      ->execute()->single();
+
+    $contactStateId = intval($contactData['address_primary.state_province_id']);
+    $contactCityFormatted = ucwords(strtolower($contactData['address_primary.city']));
+    $statesWithMixedInductionTypes = StateProvince::get(FALSE)
+      ->addWhere('country_id.name', '=', 'India')
+      ->addWhere('name', 'IN', ['Bihar', 'Jharkhand', 'Orissa'])
+      ->execute()
+      ->column('id');
+    $templateName='New_Volunteer_Registration%';
+
+    if (in_array($contactStateId, $statesWithMixedInductionTypes)) {
+        $contactCity = isset($contactData['address_primary.city']) ? strtolower($contactData['address_primary.city']) : '';
+        if (in_array($contactCity, ['patna', 'ranchi', 'bhubaneshwar'])) {
+            return;
+        }
+        $templateName='New_Volunteer_Registration_Online%';
+    }
+
+    // Determine if a Goonj office exists in the contact's state and schedule accordingly
+    $officeContact = Contact::get(FALSE)
+      ->addSelect('id', 'display_name')
+      ->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_Office')
+      ->addWhere('address_primary.state_province_id', '=', $contactStateId)
+      ->addWhere('address_primary.city', 'LIKE', $contactCityFormatted . '%')
+      ->execute();
+
+    if ($officeContact->count() === 0) {
+        $templateName='New_Volunteer_Registration_Online%';
+    }
+
     // Retrieve the email template.
     $template = MessageTemplate::get(FALSE)
-      ->addWhere('msg_title', 'LIKE', 'New_Volunteer_Registration%')
+      ->addWhere('msg_title', 'LIKE', $templateName)
       ->setLimit(1)
       ->execute()->single();
 
