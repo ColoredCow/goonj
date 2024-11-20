@@ -372,11 +372,13 @@ class CollectionCampService extends AutoSubscriber {
 
         $collectionCampsCreatedDate = $collectionCamp['created_date'] ?? NULL;
 
+        $campTitle = $collectionCamp['title'] ?? NULL;
+
         // Get the year.
         $year = date('Y', strtotime($collectionCampsCreatedDate));
 
         // Fetch the state ID.
-        $stateId = self::getStateIdForSubtype($objectRef, $subtypeId);
+        $stateId = self::getStateIdForSubtype($objectRef, $subtypeId, $campTitle);
 
         if (!$stateId) {
           return;
@@ -439,20 +441,33 @@ class CollectionCampService extends AutoSubscriber {
   /**
    *
    */
-  public static function getStateIdForSubtype(array $objectRef, int $subtypeId): ?int {
-    $optionValue = OptionValue::get(TRUE)
-      ->addSelect('value')
-      ->addWhere('option_group_id:name', '=', 'eck_sub_types')
-      ->addWhere('grouping', '=', 'Collection_Camp')
-      ->addWhere('name', '=', 'Dropping_Center')
-      ->execute()->single();
-
-    // Subtype for 'Dropping Centre'.
-    if ($subtypeId == $optionValue['value']) {
-      return $objectRef['Dropping_Centre.State'] ?? NULL;
+  public static function getStateIdForSubtype(array $objectRef, int $subtypeId, ?string $campTitle): ?int {
+    if ($campTitle === 'Institution Collection Camp') {
+        $optionValue = OptionValue::get(TRUE)
+            ->addSelect('value')
+            ->addWhere('option_group_id:name', '=', 'eck_sub_types')
+            ->addWhere('grouping', '=', 'Collection_Camp')
+            ->addWhere('name', '=', 'Institution_Collection_Camp')
+            ->execute()
+            ->single();
+        
+        return $objectRef['Institution_Collection_Camp_Intent.State'] ?? NULL;
     }
+
+    $optionValue = OptionValue::get(TRUE)
+        ->addSelect('value')
+        ->addWhere('option_group_id:name', '=', 'eck_sub_types')
+        ->addWhere('grouping', '=', 'Collection_Camp')
+        ->addWhere('name', '=', 'Dropping_Center')
+        ->execute()
+        ->single();
+    
+    if ($subtypeId === $optionValue['value']) {
+        return $objectRef['Dropping_Centre.State'] ?? NULL;
+    }
+
     return $objectRef['Collection_Camp_Intent_Details.State'] ?? NULL;
-  }
+}
 
   /**
    * This hook is called after a db write on entities.
@@ -485,6 +500,9 @@ class CollectionCampService extends AutoSubscriber {
     $currentCollectionCamp = $collectionCamps->first();
     $currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
     $contactId = $currentCollectionCamp['Collection_Camp_Core_Details.Contact_Id'];
+    if(!$contactId){
+      return;
+    }
     $collectionCampTitle = $currentCollectionCamp['title'];
     $collectionCampId = $currentCollectionCamp['id'];
 
