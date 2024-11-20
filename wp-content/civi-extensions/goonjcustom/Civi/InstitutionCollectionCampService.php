@@ -28,14 +28,14 @@ class InstitutionCollectionCampService extends AutoSubscriber {
   public static function getSubscribedEvents() {
     return [
       '&hook_civicrm_fieldOptions' => 'setIndianStateOptions',
-      '&hook_civicrm_pre' => 'generateDroppingCenterQr',
+      '&hook_civicrm_pre' => 'generateInstitutionCollectionCampQr',
       '&hook_civicrm_custom' => 'setOfficeDetails',
       '&hook_civicrm_tabset' => 'InstitutionCollectionCampTabset',
     ];
   }
 
 
-  public static function generateDroppingCenterQr(string $op, string $objectName, $objectId, &$objectRef) {
+  public static function generateInstitutionCollectionCampQr(string $op, string $objectName, $objectId, &$objectRef) {
     if ($objectName !== 'Eck_Collection_Camp' || !$objectId || !self::isCurrentSubtype($objectRef)) {
       return;
     }
@@ -56,11 +56,11 @@ class InstitutionCollectionCampService extends AutoSubscriber {
 
     // Check for status change.
     if ($currentStatus !== $newStatus && $newStatus === 'authorized') {
-      self::generateDroppingCenterQrCode($collectionCampId);
+      self::generateInstitutionCollectionCampQrCode($collectionCampId);
     }
   }
 
-  private static function generateDroppingCenterQrCode($id) {
+  private static function generateInstitutionCollectionCampQrCode($id) {
     $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
     $data = "{$baseUrl}actions/insititution-collection-camp/{$id}";
 
