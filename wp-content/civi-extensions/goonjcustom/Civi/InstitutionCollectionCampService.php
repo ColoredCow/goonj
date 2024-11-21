@@ -19,7 +19,6 @@ class InstitutionCollectionCampService extends AutoSubscriber {
   const ENTITY_SUBTYPE_NAME = 'Institution_Collection_Camp';
   const ENTITY_NAME = 'Collection_Camp';
   const FALLBACK_OFFICE_NAME = 'Delhi';
-  const ENTITY_NAME = 'Collection_Camp';
 
   /**
    *
