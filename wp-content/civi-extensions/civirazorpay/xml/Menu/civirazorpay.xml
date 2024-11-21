@@ -7,10 +7,4 @@
     <access_callback>1</access_callback>
     <is_public>true</is_public>
   </item>
-  <item>
-    <path>civicrm/admin/razorpay/settings</path>
-    <page_callback>CRM_Civirazorpay_Form_RazorpaySettings</page_callback>
-    <title>Razorpay Settings</title>
-    <access_arguments>access CiviCRM</access_arguments>
-  </item>
 </menu>
