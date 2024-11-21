@@ -442,30 +442,35 @@ class CollectionCampService extends AutoSubscriber {
    *
    */
   public static function getStateIdForSubtype(array $objectRef, int $subtypeId, ?string $campTitle): ?int {
+    // Fetch option value based on camp title.
     if ($campTitle === 'Institution Collection Camp') {
-      $optionValue = OptionValue::get(TRUE)
-        ->addSelect('value')
-        ->addWhere('option_group_id:name', '=', 'eck_sub_types')
-        ->addWhere('grouping', '=', 'Collection_Camp')
-        ->addWhere('name', '=', 'Institution_Collection_Camp')
-        ->execute()->single();
-
-      return $objectRef['Institution_Collection_Camp_Intent.State'] ?? NULL;
+      $institutionOptionValue = self::getOptionValue('Institution_Collection_Camp');
+      if ($subtypeId == $institutionOptionValue['value']) {
+        return $objectRef['Institution_Collection_Camp_Intent.State'] ?? NULL;
+      }
     }
 
-    $optionValue = OptionValue::get(TRUE)
-      ->addSelect('value')
-      ->addWhere('option_group_id:name', '=', 'eck_sub_types')
-      ->addWhere('grouping', '=', 'Collection_Camp')
-      ->addWhere('name', '=', 'Dropping_Center')
-      ->execute()->single();
-
-    // Subtype for 'Dropping Centre'.
-    if ($subtypeId == $optionValue['value']) {
+    // Fetch option value for Dropping Centre.
+    $droppingCenterOptionValue = self::getOptionValue('Dropping_Center');
+    if ($subtypeId == $droppingCenterOptionValue['value']) {
       return $objectRef['Dropping_Centre.State'] ?? NULL;
     }
 
+    // Default state for other camps.
     return $objectRef['Collection_Camp_Intent_Details.State'] ?? NULL;
+  }
+
+  /**
+   * Helper function to fetch option value by name.
+   */
+  private static function getOptionValue(string $name): ?array {
+    return OptionValue::get(FALSE)
+      ->addSelect('value')
+      ->addWhere('option_group_id:name', '=', 'eck_sub_types')
+      ->addWhere('grouping', '=', 'Collection_Camp')
+      ->addWhere('name', '=', $name)
+      ->execute()
+      ->single();
   }
 
   /**
