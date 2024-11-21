@@ -16,7 +16,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
   use CollectionSource;
   const ENTITY_SUBTYPE_NAME = 'Institution_Collection_Camp';
   const FALLBACK_OFFICE_NAME = 'Delhi';
-  const ENTITY_NAME='Collection_Camp';
+  const ENTITY_NAME = 'Collection_Camp';
 
   /**
    *
@@ -155,6 +155,9 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       ->execute();
   }
 
+  /**
+   *
+   */
   private static function isViewingCollectionCamp($tabsetName, $context) {
     if ($tabsetName !== 'civicrm/eck/entity' || empty($context) || $context['entity_type']['name'] !== self::ENTITY_NAME) {
       return FALSE;
@@ -173,7 +176,9 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     return (int) $entitySubtypeValue === $subtypeId;
   }
 
-
+  /**
+   *
+   */
   public static function InstitutionCollectionCampTabset($tabsetName, &$tabs, $context) {
     if (!self::isViewingCollectionCamp($tabsetName, $context)) {
       return;
