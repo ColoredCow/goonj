@@ -28,7 +28,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       '&hook_civicrm_fieldOptions' => 'setIndianStateOptions',
       '&hook_civicrm_pre' => 'generateInstitutionCollectionCampQr',
       '&hook_civicrm_custom' => 'setOfficeDetails',
-      '&hook_civicrm_tabset' => 'InstitutionCollectionCampTabset',
+      '&hook_civicrm_tabset' => 'institutionCollectionCampTabset',
     ];
   }
 
@@ -224,7 +224,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
   /**
    *
    */
-  public static function InstitutionCollectionCampTabset($tabsetName, &$tabs, $context) {
+  public static function institutionCollectionCampTabset($tabsetName, &$tabs, $context) {
     if (!self::isViewingInstituteCollectionCamp($tabsetName, $context)) {
       return;
     }
