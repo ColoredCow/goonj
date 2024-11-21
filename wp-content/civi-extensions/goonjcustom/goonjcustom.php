@@ -6,6 +6,7 @@
 
 require_once 'goonjcustom.civix.php';
 
+use Civi\InductionService;
 use Civi\Api4\Address;
 use Civi\Api4\Contact;
 use Civi\Token\Event\TokenRegisterEvent;
@@ -96,6 +97,10 @@ function goonjcustom_evaluate_tokens(TokenValueEvent $e) {
 
     $statedata = $contacts->first();
     $stateId = $statedata['address_primary.state_province_id'];
+    $office = InductionService::findOfficeForState($stateId);
+    \Civi::log()->info('office', ['office'=>$office]);
+    $coordinatorId = InductionService::findCoordinatorForOffice($office['id']);
+    \Civi::log()->info('coordinatorId', ['coordinatorId'=>$coordinatorId]);
 
     $processingCenters = Contact::get(FALSE)
       ->addSelect('Goonj_Office_Details.Days_for_Induction', '*', 'custom.*', 'addressee_id', 'id')

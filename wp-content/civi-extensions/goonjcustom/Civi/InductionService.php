@@ -156,7 +156,7 @@ class InductionService extends AutoSubscriber {
   /**
    * Find office based on state.
    */
-  private static function findOfficeForState($stateId) {
+  public static function findOfficeForState($stateId) {
     return Contact::get(FALSE)
       ->addSelect('id')
       ->addWhere('contact_type', '=', 'Organization')
@@ -168,7 +168,7 @@ class InductionService extends AutoSubscriber {
   /**
    * Find coordinator for office.
    */
-  private static function findCoordinatorForOffice($officeId) {
+  public static function findCoordinatorForOffice($officeId) {
     $coordinators = Relationship::get(FALSE)
       ->addWhere('contact_id_b', '=', $officeId)
       ->addWhere('relationship_type_id:name', '=', self::RELATIONSHIP_TYPE_NAME)
@@ -213,6 +213,11 @@ class InductionService extends AutoSubscriber {
     ];
 
     self::queueInductionEmail($emailParams);
+    civicrm_api3('Email', 'send', $emailParams);
+    // Contact::update(FALSE)
+    //   ->addValue('Individual_fields.Volunteer_Registration_Email_Sent', 1)
+    //   ->addWhere('id', '=', $volunteerId)
+    //   ->execute();
     return TRUE;
   }
 
@@ -275,6 +280,7 @@ class InductionService extends AutoSubscriber {
     if ($op !== 'create' || $objectName !== 'Email' || !$objectId || $objectRef->contact_id !== self::$volunteerId) {
       return;
     }
+    \Civi::log()->info('check email triggered here ');
 
     self::sendInductionEmail(self::$volunteerId);
   }
@@ -286,7 +292,14 @@ class InductionService extends AutoSubscriber {
     if ($op !== 'edit' || $objectName !== 'Individual' || (int) self::$transitionedVolunteerId !== (int) $objectRef->id) {
       return FALSE;
     }
-
+    \Civi::log()->info('check email triggered here transitioned');
+    $contacts = Contact::get(FALSE)
+      ->addWhere('contact_sub_type:name', '=', 'Volunteer')
+      ->execute();
+    $contact = $contacts->first();
+    if (!empty($contact)) {
+      return FALSE; // Return the contact if it exists
+    }
     self::sendInductionEmail(self::$transitionedVolunteerId);
   }
 
@@ -402,14 +415,17 @@ class InductionService extends AutoSubscriber {
    */
   private static function isEmailAlreadySent($contactId) {
 
-    $volunteerEmailActivity = Activity::get(FALSE)
-      ->addWhere('activity_type_id:name', '=', 'Email')
-      ->addWhere('subject', 'LIKE', '%Volunteering with Goonj%')
-      ->addWhere('target_contact_id', '=', $contactId)
-      ->setLimit(1)
-      ->execute();
+    $contactDetails = Contact::get(FALSE)
+      ->addSelect('Individual_fields.Volunteer_Registration_Email_Sent')
+      ->addWhere('id', '=', $contactId)
+      ->execute()->single();
+    $isEmailSent = $contactDetails['Individual_fields.Volunteer_Registration_Email_Sent'] ?? null ;
 
-    return $volunteerEmailActivity->count() > 0;
+    if (!empty($isEmailSent)) {
+      return TRUE; // Email already sent
+    }
+
+    return FALSE;
   }
 
   /**
@@ -495,6 +511,7 @@ class InductionService extends AutoSubscriber {
         ->setLimit($batchSize)
         ->setOffset($offset)
         ->execute();
+      \Civi::log()->info('unscheduledInductionActivities', ['unscheduledInductionActivities'=>$unscheduledInductionActivities]);
 
       // Process each activity in the batch
       foreach ($unscheduledInductionActivities as $activity) {
@@ -502,6 +519,7 @@ class InductionService extends AutoSubscriber {
         if (self::handleRescheduleEmailActivity($activity['source_contact_id'], $activity['id'])) {
           continue;
         }
+        \Civi::log()->info('check');
 
         // Check if a follow-up email has already been sent to avoid duplication.
         $emailActivities = Activity::get(FALSE)
@@ -509,15 +527,29 @@ class InductionService extends AutoSubscriber {
           ->addWhere('subject', '=', $template['msg_subject'])
           ->addWhere('source_contact_id', '=', $activity['source_contact_id'])
           ->execute();
+        \Civi::log()->info('check2');
 
         $emailActivity = $emailActivities->first();
+        \Civi::log()->info('check3', ['sorcecontactid'=>$activity['source_contact_id']]);
+        $contacts = Contact::get(FALSE)
+          ->addSelect('Individual_fields.Induction_slot_booking_follow_up_email_sent')
+          ->addWhere('id', '=',$activity['source_contact_id'] )
+          ->execute()->single();
+        \Civi::log()->info('check4');
+        $isMailSent = $contacts['Individual_fields.Induction_slot_booking_follow_up_email_sent']?? null;
+        \Civi::log()->info('check', ['isMailSent'=>$isMailSent]);
   
-        if (!$emailActivity) {
+        if (empty($isMailSent)) { 
           $emailParams = [
             'contact_id' => $activity['source_contact_id'],
             'template_id' => $template['id'],
           ];
           civicrm_api3('Email', 'send', $emailParams);
+          $contact = Contact::update(FALSE)
+            ->addValue('Individual_fields.Induction_slot_booking_follow_up_email_sent', 1)
+            ->addWhere('id', '=', $activity['source_contact_id'])
+            ->execute();
+          \Civi::log()->info('contact', ['contact'=>$contact]);
         }
       }
   
@@ -553,23 +585,31 @@ class InductionService extends AutoSubscriber {
 				->addWhere('status_id:name', '=', 'To be scheduled')
 				->execute()->column('source_contact_id');
 
+      // $contacts = Contact::get(FALSE)
+      // ->addWhere('Individual_fields.Induction_slot_booking_follow_up_email_sent', '=', 1)
+      // ->addWhere('id', 'IN', $unscheduledInductionContactIds )
+      // ->addWhere('modified_date', '<', date('Y-m-d H:i:s', $followUpTimestamp))
+      // ->execute();
+      // \Civi::log()->info('contacts', ['contacts'=>$contacts]);
+      // return;
+
 			do {
 				// Fetch email activities older than 30 days
-				$followUpEmailActivities = Activity::get(FALSE)
-					->addSelect('source_contact_id', 'activity_date_time')
-					->addWhere('subject', '=', $template['msg_subject'])
-					->addWhere('activity_type_id:name', '=', 'Email')
-					->addWhere('created_date', '<', date('Y-m-d H:i:s', $followUpTimestamp))
-					->addWhere('source_contact_id', 'IN',$unscheduledInductionContactIds )
+
+        $contacts = Contact::get(FALSE)
+          ->addWhere('Individual_fields.Induction_slot_booking_follow_up_email_sent', '=', 1)
+          ->addWhere('id', 'IN', $unscheduledInductionContactIds )
+          ->addWhere('modified_date', '<', date('Y-m-d H:i:s', $followUpTimestamp))
 					->setLimit($batchSize)
 					->setOffset($offset)->execute();
+        \Civi::log()->info('contacts', ['contacts'=>$contacts]);
 
-				foreach ($followUpEmailActivities as $activity) {
+				foreach ($contacts as $contact) {
 					// Fetch the associated induction activity
 					$inductionActivities = Activity::get(FALSE)
 						->addSelect('id', 'source_contact_id', 'status_id:name')
 						->addWhere('activity_type_id:name', '=', 'Induction')
-						->addWhere('source_contact_id', '=', $activity['source_contact_id'])
+						->addWhere('source_contact_id', '=', $contact['id'])
 						->addWhere('status_id:name', '=', 'To be scheduled')
 						->execute();
 
@@ -577,7 +617,7 @@ class InductionService extends AutoSubscriber {
 
 					if (!$inductionActivity) {
 						\Civi::log()->info('No induction activity found for source contact', [
-							'source_contact_id' => $activity['source_contact_id'],
+							'source_contact_id' => $contact['id'],
 						]);
 						continue;
 					}
@@ -587,12 +627,13 @@ class InductionService extends AutoSubscriber {
 						->addValue('status_id:name', 'No_show')
 						->addWhere('id', '=', $inductionActivity['id'])
 						->execute();
+          \Civi::log()->info('updateResult', ['updateResult'=>$updateResult]);
 
 				}
 
 				// Increment the offset by the batch size
 				$offset += $batchSize;
-			} while (count($followUpEmailActivities) === $batchSize);
+			} while (count($contacts) === $batchSize);
 
 		} catch (\Exception $e) {
 			\Civi::log()->error('Error in updating induction status: ' . $e->getMessage());
@@ -638,7 +679,14 @@ public static function sendInductionRescheduleEmail() {
 
         $emailActivity = $emailActivities->first();
 
-        if ($emailActivity) {
+        $contacts = Contact::get(FALSE)
+          ->addSelect('Individual_fields.Induction_Reschedule_Email_Sent')
+          ->addWhere('id', '=',$scheduledInductionActivity['source_contact_id'] )
+          ->execute()->single();
+        \Civi::log()->info('check4');
+        $isMailSent = $contacts['Individual_fields.Induction_Reschedule_Email_Sent']?? null;
+        \Civi::log()->info('check', ['isMailSent'=>$isMailSent]);
+        if (empty($isMailSent)) {
             // If an email already exists, mark activity as 'No Show'
             $updateResult = Activity::update(FALSE)
                 ->addValue('status_id:name', 'No_show')
@@ -659,6 +707,10 @@ public static function sendInductionRescheduleEmail() {
         ];
 
         $emailResult = civicrm_api3('Email', 'send', $emailParams);
+        $contact = Contact::update(FALSE)
+          ->addValue('Individual_fields.Induction_Reschedule_Email_Sent', 1)
+          ->addWhere('id', '=', $activity['source_contact_id'])
+          ->execute();
     }
 
     $offset += $batchSize;
@@ -700,7 +752,7 @@ public static function handleRescheduleEmailActivity($contactId, $activityId) {
   return false;
 }
 
-public static function sendReminderEmails()
+public static function sendRemainderEmails()
 {
     $startOfDay = (new \DateTime())->setTime(0, 0, 0);
     $endOfDay = (new \DateTime())->setTime(23, 59, 59);
@@ -736,13 +788,28 @@ public static function sendReminderEmails()
                 ->execute();
 
             $emailActivity = $emailActivities->first();
+            \Civi::log()->info('check3', ['sorcecontactid'=>$scheduledInductionActivity['source_contact_id']]);
+            $contacts = Contact::get(FALSE)
+              ->addSelect('Individual_fields.Induction_Remainder_Email_Sent_on_Induction_Day')
+              ->addWhere('id', '=',$scheduledInductionActivity['source_contact_id'] )
+              ->execute()->single();
+            \Civi::log()->info('check4');
+            $isMailSent = $contacts['Individual_fields.Induction_Remainder_Email_Sent_on_Induction_Day']?? null;
+            \Civi::log()->info('check', ['isMailSent'=>$isMailSent]);
+      
 
-            if (!$emailActivity) {
+
+            if (empty($isMailSent)) { 
                 $emailParams = [
                     'contact_id'  => $scheduledInductionActivity['source_contact_id'],
                     'template_id' => $template['id'],
                 ];
                 $result = civicrm_api3('Email', 'send', $emailParams);
+                $contact = Contact::update(FALSE)
+                  ->addValue('Individual_fields.Induction_Remainder_Email_Sent_on_Induction_Day', 1)
+                  ->addWhere('id', '=', $scheduledInductionActivity['source_contact_id'])
+                  ->execute();
+                \Civi::log()->info('contact', ['contact'=>$contact]);
             }
         } catch (\Exception $e) {
             // Log the error for debugging purposes

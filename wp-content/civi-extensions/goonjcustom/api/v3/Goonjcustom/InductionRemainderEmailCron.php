@@ -5,7 +5,7 @@ use Civi\Api4\MessageTemplate;
 use Civi\InductionService;
 
 /**
- * Goonjcustom.InductionRemainderEmail to Volunteer API specification (optional)
+ * Goonjcustom.InductionRemainderEmail to Volunteer on Induction Day API specification (optional)
  * This is used for documentation and validation.
  *
  * @param array $spec
@@ -20,9 +20,8 @@ function _civicrm_api3_goonjcustom_induction_remainder_email_cron_spec(&$spec) {
 /**
  * Goonjcustom.induction_remainder_email_cron API implementation.
  *
- * This function checks for unscheduled induction activities older than 7 days 
- * and sends follow-up emails to the respective contacts if they haven't already 
- * received one.
+ * This function checks for scheduled induction for current day
+ * and send emails to the respective contacts 
  *
  * @param array $params
  *   Parameters passed to the API call.
