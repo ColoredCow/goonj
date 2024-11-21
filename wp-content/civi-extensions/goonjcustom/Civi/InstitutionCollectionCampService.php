@@ -16,6 +16,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
   use CollectionSource;
   const ENTITY_SUBTYPE_NAME = 'Institution_Collection_Camp';
   const FALLBACK_OFFICE_NAME = 'Delhi';
+  const ENTITY_NAME='Collection_Camp';
 
   /**
    *
@@ -24,6 +25,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     return [
       '&hook_civicrm_fieldOptions' => 'setIndianStateOptions',
       '&hook_civicrm_custom' => 'setOfficeDetails',
+      '&hook_civicrm_tabset' => 'InstitutionCollectionCampTabset',
     ];
   }
 
@@ -151,6 +153,53 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       ->addValue('Institution_Collection_Camp_Intent.Camp_Type', $isPublicDriveOpen)
       ->addWhere('id', '=', $institutionCollectionCampId)
       ->execute();
+  }
+
+  private static function isViewingCollectionCamp($tabsetName, $context) {
+    if ($tabsetName !== 'civicrm/eck/entity' || empty($context) || $context['entity_type']['name'] !== self::ENTITY_NAME) {
+      return FALSE;
+    }
+
+    $entityId = $context['entity_id'];
+
+    $entity = EckEntity::get(self::ENTITY_NAME, TRUE)
+      ->addWhere('id', '=', $entityId)
+      ->execute()->single();
+
+    $entitySubtypeValue = $entity['subtype'];
+
+    $subtypeId = self::getSubtypeId();
+
+    return (int) $entitySubtypeValue === $subtypeId;
+  }
+
+
+  public static function InstitutionCollectionCampTabset($tabsetName, &$tabs, $context) {
+    if (!self::isViewingCollectionCamp($tabsetName, $context)) {
+      return;
+    }
+
+    $tabConfigs = [
+      'logistics' => [
+        'title' => ts('Logistics'),
+        'module' => 'afsearchInstitutionCollectionCampLogistics',
+        'directive' => 'afsearch-institution-collection-camp-logistics',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      ],
+    ];
+
+    foreach ($tabConfigs as $key => $config) {
+      $tabs[$key] = [
+        'id' => $key,
+        'title' => $config['title'],
+        'is_active' => 1,
+        'template' => $config['template'],
+        'module' => $config['module'],
+        'directive' => $config['directive'],
+      ];
+
+      \Civi::service('angularjs.loader')->addModules($config['module']);
+    }
   }
 
 }
