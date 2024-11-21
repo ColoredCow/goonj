@@ -44,14 +44,13 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       return;
     }
 
-    $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
+    $collectionCamp = EckEntity::get('Collection_Camp', TRUE)
       ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id')
       ->addWhere('id', '=', $objectId)
-      ->execute();
+      ->execute()->first();
 
-    $currentCollectionCamp = $collectionCamps->first();
-    $currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
-    $collectionCampId = $currentCollectionCamp['id'];
+    $currentStatus = $collectionCamp['Collection_Camp_Core_Details.Status'];
+    $collectionCampId = $collectionCamp['id'];
 
     // Check for status change.
     if ($currentStatus !== $newStatus && $newStatus === 'authorized') {
