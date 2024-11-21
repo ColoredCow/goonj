@@ -1,7 +1,7 @@
 <?php
 
 namespace Civi;
-
+use Civi\DateTime;
 use Civi\Api4\Activity;
 use Civi\Api4\Contact;
 use Civi\Api4\CustomField;
@@ -190,40 +190,11 @@ class InductionService extends AutoSubscriber {
     if (self::isEmailAlreadySent($volunteerId)) {
       return FALSE;
     }
-
-    $contactData = Contact::get(FALSE)
-      ->addSelect('address_primary.state_province_id', 'address_primary.city', 'Individual_fields.Created_Date')
-      ->addWhere('id', '=', $volunteerId)
-      ->execute()->single();
-
-    $contactStateId = intval($contactData['address_primary.state_province_id']);
-    $contactCityFormatted = ucwords(strtolower($contactData['address_primary.city']));
-    $statesWithMixedInductionTypes = StateProvince::get(FALSE)
-      ->addWhere('country_id.name', '=', 'India')
-      ->addWhere('name', 'IN', ['Bihar', 'Jharkhand', 'Orissa'])
-      ->execute()
-      ->column('id');
-    $templateName='New_Volunteer_Registration%';
-
-    if (in_array($contactStateId, $statesWithMixedInductionTypes)) {
-        $contactCity = isset($contactData['address_primary.city']) ? strtolower($contactData['address_primary.city']) : '';
-        if (in_array($contactCity, ['patna', 'ranchi', 'bhubaneshwar'])) {
-            return;
-        }
-        $templateName='New_Volunteer_Registration_Online%';
-    }
-
-    // Determine if a Goonj office exists in the contact's state and schedule accordingly
-    $officeContact = Contact::get(FALSE)
-      ->addSelect('id', 'display_name')
-      ->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_Office')
-      ->addWhere('address_primary.state_province_id', '=', $contactStateId)
-      ->addWhere('address_primary.city', 'LIKE', $contactCityFormatted . '%')
-      ->execute();
-
-    if ($officeContact->count() === 0) {
-        $templateName='New_Volunteer_Registration_Online%';
-    }
+    $inductionType = self::fetchTypeOfInduction($volunteerId);
+    // Set the template name based on induction type
+    $templateName = ($inductionType === 'Offline') 
+        ? 'New_Volunteer_Registration%' 
+        : 'New_Volunteer_Registration_Online%';
 
     // Retrieve the email template.
     $template = MessageTemplate::get(FALSE)
@@ -728,6 +699,108 @@ public static function handleRescheduleEmailActivity($contactId, $activityId) {
 
   // Return false if no reschedule email activity exists or update failed
   return false;
+}
+
+public static function sendRemainderEmails(){
+
+  $startOfDay = (new \DateTime())->setTime(0, 0, 0);
+  $endOfDay = (new \DateTime())->setTime(23, 59, 59);
+  $scheduledInductionActivities = Activity::get(FALSE)
+    ->addSelect('source_contact_id', 'Induction_Fields.Assign')
+    ->addWhere('activity_type_id:name', '=', 'Induction')
+    ->addWhere('status_id:name', '=', 'Scheduled')
+    ->addWhere('activity_date_time', '>=', $startOfDay->format('Y-m-d H:i:s'))
+    ->addWhere('activity_date_time', '<=', $endOfDay->format('Y-m-d H:i:s'))
+    ->execute();
+  \Civi::log()->info('scheduledInductionActivities', ['scheduledInductionActivities'=>$scheduledInductionActivities]);
+
+  foreach ($scheduledInductionActivities as $scheduledInductionActivitie) {
+    $inductionType = self::fetchTypeOfInduction($scheduledInductionActivitie['source_contact_id']);
+
+    $templateName = ($inductionType === 'Offline') 
+    ? 'Remainder_For_Volunteer_Induction_Scheduled_for_Today%' 
+    : 'Remainder_For_Volunteer_Induction_Scheduled_Online_for_Today%';
+    \Civi::log()->info('templateName', ['templateName'=>$templateName]);
+    $template = MessageTemplate::get(FALSE)
+    ->addWhere('msg_title', 'LIKE', $templateName)
+    ->setLimit(1)
+    ->execute()->single();
+
+    $emailActivities = Activity::get(FALSE)
+      ->addWhere('activity_type_id:name', '=', 'Email')
+      ->addWhere('subject', '=', $template['msg_subject'])
+      ->addWhere('source_contact_id', '=', $scheduledInductionActivitie['source_contact_id'])
+      ->execute();
+    \Civi::log()->info('emailActivities', ['emailActivities'=>$emailActivities]);
+    $emailActivity = $emailActivities->first();
+    \Civi::log()->info('emailActivity', ['emailActivity'=>$emailActivity]);
+    if (!$emailActivity) {
+      $emailParams = [
+        'contact_id' => $scheduledInductionActivitie['source_contact_id'],
+        'template_id' => $template['id'],
+      ];
+      $result = civicrm_api3('Email', 'send', $emailParams);
+      \Civi::log()->info('result', ['result'=>$result]);
+    }
+
+
+  }
+
+  \Civi::log()->info('scheduledInductionActivities', ['scheduledInductionActivities'=>$scheduledInductionActivities]);
+}
+
+/**
+ * Fetch the type of induction for a given volunteer.
+ *
+ * @param int $volunteerId The ID of the volunteer.
+ * @return string The type of induction ('Offline' or 'Online').
+ */
+public static function fetchTypeOfInduction($volunteerId)
+{
+    $inductionType = 'Offline';
+
+    // Fetch contact data
+    $contactData = Contact::get(FALSE)
+        ->addSelect('address_primary.state_province_id', 'address_primary.city', 'Individual_fields.Created_Date')
+        ->addWhere('id', '=', $volunteerId)
+        ->execute()
+        ->single();
+
+    $contactStateId = intval($contactData['address_primary.state_province_id']);
+    $contactCityFormatted = ucwords(strtolower($contactData['address_primary.city']));
+
+    // States with mixed induction types
+    $statesWithMixedInductionTypes = StateProvince::get(FALSE)
+        ->addWhere('country_id.name', '=', 'India')
+        ->addWhere('name', 'IN', ['Bihar', 'Jharkhand', 'Orissa'])
+        ->execute()
+        ->column('id');
+
+    // Check if the contact's state and city match special conditions
+    if (in_array($contactStateId, $statesWithMixedInductionTypes)) {
+        $contactCity = isset($contactData['address_primary.city']) ? strtolower($contactData['address_primary.city']) : '';
+        if (in_array($contactCity, ['patna', 'ranchi', 'bhubaneshwar'])) {
+            return $inductionType;
+        }
+        $inductionType = 'Online';
+        return $inductionType;
+    }
+
+    // Check if a Goonj office exists in the contact's state
+    $officeContact = Contact::get(FALSE)
+        ->addSelect('id', 'display_name')
+        ->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_Office')
+        ->addWhere('address_primary.state_province_id', '=', $contactStateId)
+        ->addWhere('address_primary.city', 'LIKE', $contactCityFormatted . '%')
+        ->execute();
+
+    // If no Goonj office exists, induction is online
+    if ($officeContact->count() === 0) {
+        $inductionType = 'Online';
+        return $inductionType;
+    }
+
+    return $inductionType;
 }
 
 }
