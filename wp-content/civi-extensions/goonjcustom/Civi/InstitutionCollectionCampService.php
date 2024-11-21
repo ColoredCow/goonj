@@ -158,7 +158,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
   /**
    *
    */
-  private static function isViewingCollectionCamp($tabsetName, $context) {
+  private static function isViewingInstituteCollectionCamp($tabsetName, $context) {
     if ($tabsetName !== 'civicrm/eck/entity' || empty($context) || $context['entity_type']['name'] !== self::ENTITY_NAME) {
       return FALSE;
     }
@@ -180,7 +180,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
    *
    */
   public static function InstitutionCollectionCampTabset($tabsetName, &$tabs, $context) {
-    if (!self::isViewingCollectionCamp($tabsetName, $context)) {
+    if (!self::isViewingInstituteCollectionCamp($tabsetName, $context)) {
       return;
     }
 
