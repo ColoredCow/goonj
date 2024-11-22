@@ -20,6 +20,7 @@ use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
+use CRM_Core_Permission;
 
 /**
  *
@@ -157,6 +158,14 @@ class CollectionCampService extends AutoSubscriber {
     ];
 
     foreach ($tabConfigs as $key => $config) {
+      // Check if the user is an admin.
+      $isAdmin = CRM_Core_Permission::check('administer CiviCRM');
+
+      // Skip the "monetaryContributionForUrbanOps" tab for admins.
+      if ($key == 'monetaryContributionForUrbanOps' && $isAdmin) {
+        continue;
+      }
+
       // Skip if the current user does not have the required permissions.
       $hasPermission = \CRM_Core_Permission::check($config['permissions']);
       if (!$hasPermission) {
