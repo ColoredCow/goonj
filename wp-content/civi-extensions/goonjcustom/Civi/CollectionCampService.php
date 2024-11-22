@@ -1348,7 +1348,7 @@ class CollectionCampService extends AutoSubscriber {
   }
 
   /**
-   * Implements hook_civicrm_buildForm.
+   * Implements hook_civicrm_buildForm().
    *
    * Auto-fills custom fields in the form based on the provided parameters.
    *
