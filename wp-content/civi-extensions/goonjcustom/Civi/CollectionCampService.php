@@ -1358,8 +1358,8 @@ class CollectionCampService extends AutoSubscriber {
    *   The form object.
    */
   public function autofillMonetaryFormSource($formName, &$form) {
-    $custom554 = NULL;
-    $custom555 = NULL;
+    $campSource = NULL;
+    $puSource = NULL;
 
     // Fetching custom field for collection source.
     $sourceField = CustomField::get(FALSE)
@@ -1382,32 +1382,32 @@ class CollectionCampService extends AutoSubscriber {
     // Determine the parameter to use based on the form and query parameters.
     if ($formName === 'CRM_Contribute_Form_Contribution') {
       if (isset($_GET[$sourceFieldId])) {
-        $custom554 = $_GET[$sourceFieldId];
-        $_SESSION['custom_554'] = $custom554;
+        $campSource = $_GET[$sourceFieldId];
+        $_SESSION['camp_source'] = $campSource;
         // Ensure only one session value is active.
-        unset($_SESSION['custom_555']);
+        unset($_SESSION['pu_source']);
       }
       elseif (isset($_GET[$puSourceFieldId])) {
-        $custom555 = $_GET[$puSourceFieldId];
-        $_SESSION['custom_555'] = $custom555;
+        $puSource = $_GET[$puSourceFieldId];
+        $_SESSION['pu_source'] = $puSource;
         // Ensure only one session value is active.
-        unset($_SESSION['custom_554']);
+        unset($_SESSION['camp_source']);
       }
     }
     else {
       // Retrieve from session if not provided in query parameters.
-      $custom554 = $_SESSION['custom_554'] ?? NULL;
-      $custom555 = $_SESSION['custom_555'] ?? NULL;
+      $campSource = $_SESSION['camp_source'] ?? NULL;
+      $puSource = $_SESSION['pu_source'] ?? NULL;
     }
 
     // Autofill logic for the custom fields.
     if ($formName === 'CRM_Custom_Form_CustomDataByType') {
       $autoFillData = [];
-      if (!empty($custom554)) {
-        $autoFillData[$sourceFieldId] = $custom554;
+      if (!empty($campSource)) {
+        $autoFillData[$sourceFieldId] = $campSource;
       }
-      elseif (!empty($custom555)) {
-        $autoFillData[$puSourceFieldId] = $custom555;
+      elseif (!empty($puSource)) {
+        $autoFillData[$puSourceFieldId] = $puSource;
       }
 
       // Set default values for the specified fields.
