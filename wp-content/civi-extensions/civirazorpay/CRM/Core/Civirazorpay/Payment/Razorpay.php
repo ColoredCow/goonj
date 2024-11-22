@@ -94,17 +94,17 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
           ->addWhere('id', '=', $params['contributionRecurID'])
           ->execute();
 
-        // $redirectUrl = $subscription->short_url;
         $redirectUrl = CRM_Utils_System::url(
-          'civicrm/razorpay/payment',
-          [
-            'contributionRecur' => $params['contributionRecurID'],
-            'processor' => $this->_paymentProcessor['id'],
-            'qfKey' => $params['qfKey'],
-          ],
-          TRUE,
-          NULL,
-          FALSE
+            'civicrm/razorpay/payment',
+            [
+              'contribution' => $params['contributionRecurID'],
+              'processor' => $this->_paymentProcessor['id'],
+              'qfKey' => $params['qfKey'],
+              'isRecur' => 1,
+            ],
+            TRUE,
+            NULL,
+            FALSE
         );
 
         CRM_Utils_System::redirect($redirectUrl);
@@ -125,25 +125,24 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
           'payment_capture' => 1,
         ]);
 
-        // Save the Razorpay order ID in the contribution record.
         civicrm_api3('Contribution', 'create', [
           'id' => $params['contributionID'],
           'trxn_id' => $order->id,
           'contribution_status_id' => self::CONTRIB_STATUS_PENDING,
         ]);
 
-        // Redirect the user to a custom Razorpay payment page.
         $redirectUrl = CRM_Utils_System::url(
-              'civicrm/razorpay/payment',
-              [
-                'contribution' => $params['contributionID'],
-                'processor' => $this->_paymentProcessor['id'],
-                'qfKey' => $params['qfKey'],
-              ],
-              TRUE,
-              NULL,
-              FALSE
-          );
+          'civicrm/razorpay/payment',
+          [
+            'contribution' => $params['contributionID'],
+            'processor' => $this->_paymentProcessor['id'],
+            'qfKey' => $params['qfKey'],
+            'isRecur' => 0,
+          ],
+          TRUE,
+          NULL,
+          FALSE
+        );
 
         CRM_Utils_System::redirect($redirectUrl);
       }
@@ -190,8 +189,41 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
    * @throws CiviCRM_API3_Exception
    */
   public function processPaymentNotification(array $params): void {
-    $isSuccess = $params['event'] === 'payment.captured';
+    if (isset($event['event'])) {
+      switch ($event['event']) {
+        case 'payment.captured':
+          $this->processOneTimePayment($event);
+          break;
 
+        case 'subscription.activated':
+          $this->processSubscriptionActivated($event);
+          break;
+
+        case 'subscription.charged':
+          $this->processSubscriptionCharged($event);
+          break;
+
+        case 'subscription.completed':
+          $this->processSubscriptionCompleted($event);
+          break;
+
+        default:
+          \Civi::log()->warning('Unhandled webhook event: ' . $event['event']);
+          break;
+      }
+    }
+    else {
+      \Civi::log()->error('Invalid Razorpay webhook payload', [
+        'payload' => $event,
+      ]);
+    }
+
+  }
+
+  /**
+   *
+   */
+  private function processOneTimePayment($params) {
     $razorpayOrderId = $params['payload']['payment']['entity']['order_id'] ?? NULL;
     $razorpayPaymentId = $params['payload']['payment']['entity']['id'] ?? NULL;
     $amount = $params['payload']['payment']['entity']['amount'] / 100;
@@ -201,30 +233,18 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
     $contributionID = $contribution['id'];
     $contactID = $contribution['contact_id'];
 
-    if ($isSuccess) {
-      civicrm_api3('Payment', 'create', [
-        'contribution_id' => $contributionID,
-        'total_amount' => $amount,
-        'payment_instrument_id' => $this->_paymentProcessor['payment_instrument_id'],
-        'trxn_id' => $razorpayPaymentId,
-        'credit_card_pan' => $last4CardDigits,
-      ]);
+    civicrm_api3('Payment', 'create', [
+      'contribution_id' => $contributionID,
+      'total_amount' => $amount,
+      'payment_instrument_id' => $this->_paymentProcessor['payment_instrument_id'],
+      'trxn_id' => $razorpayPaymentId,
+      'credit_card_pan' => $last4CardDigits,
+    ]);
 
-      civicrm_api3('Contribution', 'create', [
-        'id' => $contributionID,
-        'contribution_status_id' => self::CONTRIB_STATUS_COMPLETED,
-      ]);
-
-      \Civi::log()->info("Contribution ID $contributionID updated to Completed.");
-    }
-    else {
-      civicrm_api3('Contribution', 'create', [
-        'id' => $contributionID,
-        'contribution_status_id' => self::CONTRIB_STATUS_FAILED,
-      ]);
-
-      \Civi::log()->info("Contribution ID $contributionID updated to Failed.");
-    }
+    civicrm_api3('Contribution', 'create', [
+      'id' => $contributionID,
+      'contribution_status_id' => self::CONTRIB_STATUS_COMPLETED,
+    ]);
 
     CRM_Utils_System::civiExit();
   }
