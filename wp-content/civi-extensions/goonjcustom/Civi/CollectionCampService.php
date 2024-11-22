@@ -75,7 +75,6 @@ class CollectionCampService extends AutoSubscriber {
     ];
   }
 
-
   /**
    *
    */
