@@ -14,10 +14,10 @@ $source_contact_id = $action_target['id'] ?? NULL;
 
 $slots = generate_induction_slots($source_contact_id);
 
-
 $headings = [
   'collection-camp' => 'Collection Camp',
   'dropping-center' => 'Dropping Center',
+  'institution-collection-camp' => 'Collection Camp',
   'processing-center' => 'Processing Center',
   'induction-schedule' => 'Induction Schedule',
 ];
@@ -37,6 +37,14 @@ $material_contribution_link = sprintf(
     $action_target['id'],
     $action_target['Collection_Camp_Intent_Details.State'],
     $action_target['Collection_Camp_Intent_Details.City'],
+);
+
+$institution_collection_camp_material_contribution_link = sprintf(
+    '/institution-collection-camp-contribution?source=%s&target_id=%s&state_province_id=%s&city=%s',
+    $action_target['title'],
+    $action_target['id'],
+    $action_target['Institution_Collection_Camp_Intent.State'],
+    $action_target['Institution_Collection_Camp_Intent.District_City'],
 );
 
 $sourceField = CustomField::get(FALSE)
@@ -109,9 +117,17 @@ $target_data = [
     'contribution_link' => $material_contribution_link,
     'donation_link' => $donation_link,
   ],
+  'institution-collection-camp' => [
+    'start_time' => 'Institution_Collection_Camp_Intent.Collections_will_start_on_Date',
+    'end_time' => 'Institution_Collection_Camp_Intent.Collections_will_end_on_Date_',
+    'address' => 'Institution_Collection_Camp_Intent.Collection_Camp_Address',
+    'address_label' => 'Address of the camp',
+    'contribution_link' => $institution_collection_camp_material_contribution_link,
+    'donation_link' => $donation_link,
+  ],
 ];
 
-if (in_array($target, ['collection-camp', 'dropping-center'])) :
+if (in_array($target, ['collection-camp','institution-collection-camp', 'dropping-center'])) :
   $target_info = $target_data[$target];
 
   try {
@@ -143,7 +159,7 @@ if (in_array($target, ['collection-camp', 'dropping-center'])) :
             </tr>
             <?php endif; ?>
 
-            <?php if ($target === 'collection-camp') : ?>
+            <?php if ($target === 'collection-camp' || $target === 'institution-collection-camp') : ?>
             <tr class="wp-block-gb-table-row">
                 <td class="wp-block-gb-table-cell wp-block-gb-table-header">From</td>
                 <td class="wp-block-gb-table-cell"><?php echo gb_format_date($start_date); ?></td>
