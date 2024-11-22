@@ -510,6 +510,7 @@ class InductionService extends AutoSubscriber {
         ->setLimit($batchSize)
         ->setOffset($offset)
         ->execute();
+      \Civi::log()->info('unscheduledInductionActivities', ['unscheduledInductionActivities'=>$unscheduledInductionActivities]);
 
       // Process each activity in the batch
       foreach ($unscheduledInductionActivities as $activity) {
@@ -700,7 +701,7 @@ public static function handleRescheduleEmailActivity($contactId, $activityId) {
 
   $contacts = Contact::get(FALSE)
     ->addSelect('Individual_fields.Induction_Reschedule_Email_Sent')
-    ->addWhere('id', '=',$activity['source_contact_id'] )
+    ->addWhere('id', '=',$contactId)
     ->execute()->single();
 
   $isMailSent = $contacts['Individual_fields.Induction_Reschedule_Email_Sent']?? null;
