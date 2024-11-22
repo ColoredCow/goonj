@@ -3,6 +3,7 @@
 namespace Civi\Traits;
 
 use Civi\Api4\OptionValue;
+use Civi\Api4\Organization;
 
 /**
  *
@@ -49,15 +50,10 @@ trait CollectionSource {
    *
    */
   public static function getContactSubtypeName($entityID) {
-    $getSubtypeName = civicrm_api4('Organization', 'get', [
-      'select' => [
-        'contact_sub_type',
-      ],
-      'where' => [
-              ['id', '=', $entityID],
-      ],
-      'checkPermissions' => FALSE,
-    ]);
+    $getSubtypeName = Organization::get(FALSE)
+      ->addSelect('contact_sub_type')
+      ->addWhere('id', '=', $entityID)
+      ->execute()->single();
 
     $entityData = $getSubtypeName[0]['contact_sub_type'] ?? [];
 
