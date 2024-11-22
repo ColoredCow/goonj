@@ -1416,7 +1416,6 @@ class CollectionCampService extends AutoSubscriber {
           foreach ($form->_elements as $element) {
             if (isset($element->_attributes['name']) && $element->_attributes['name'] === $fieldName) {
               $form->setDefaults([$fieldName => $value]);
-              error_log("Auto-filled $fieldName with value $value.");
             }
           }
         }
