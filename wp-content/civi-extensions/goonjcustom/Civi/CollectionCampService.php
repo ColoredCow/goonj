@@ -1368,7 +1368,7 @@ class CollectionCampService extends AutoSubscriber {
       ->addWhere('name', '=', 'Source')
       ->execute()->single();
 
-    $sourceFieldId = 'custom_' . $sourceField['id'] . '_-1';
+    $sourceFieldId = 'custom_' . $sourceField['id'];
 
     // Fetching custom field for goonj offfice.
     $puSourceField = CustomField::get(FALSE)
@@ -1377,7 +1377,7 @@ class CollectionCampService extends AutoSubscriber {
       ->addWhere('name', '=', 'PU_Source')
       ->execute()->single();
 
-    $puSourceFieldId = 'custom_' . $puSourceField['id'] . '_-1';
+    $puSourceFieldId = 'custom_' . $puSourceField['id'];
 
     // Determine the parameter to use based on the form and query parameters.
     if ($formName === 'CRM_Contribute_Form_Contribution') {
@@ -1414,7 +1414,11 @@ class CollectionCampService extends AutoSubscriber {
       foreach ($autoFillData as $fieldName => $value) {
         if (isset($form->_elements) && is_array($form->_elements)) {
           foreach ($form->_elements as $element) {
-            if (isset($element->_attributes['name']) && $element->_attributes['name'] === $fieldName) {
+            if (!isset($element->_attributes['data-api-params'])) {
+              continue;
+            }
+            $apiParams = json_decode($element->_attributes['data-api-params'], TRUE);
+            if ($apiParams['fieldName'] === 'Contribution.Contribution_Details.Source') {
               $form->setDefaults([$fieldName => $value]);
             }
           }
