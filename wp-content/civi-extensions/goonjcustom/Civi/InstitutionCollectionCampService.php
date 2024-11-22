@@ -8,13 +8,16 @@ use Civi\Api4\EckEntity;
 use Civi\Api4\StateProvince;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
+use Civi\Traits\QrCodeable;
 
 /**
  *
  */
 class InstitutionCollectionCampService extends AutoSubscriber {
+  use QrCodeable;
   use CollectionSource;
   const ENTITY_SUBTYPE_NAME = 'Institution_Collection_Camp';
+  const ENTITY_NAME = 'Collection_Camp';
   const FALLBACK_OFFICE_NAME = 'Delhi';
 
   /**
@@ -23,8 +26,52 @@ class InstitutionCollectionCampService extends AutoSubscriber {
   public static function getSubscribedEvents() {
     return [
       '&hook_civicrm_fieldOptions' => 'setIndianStateOptions',
+      '&hook_civicrm_pre' => 'generateInstitutionCollectionCampQr',
       '&hook_civicrm_custom' => 'setOfficeDetails',
+      '&hook_civicrm_tabset' => 'institutionCollectionCampTabset',
     ];
+  }
+
+  /**
+   *
+   */
+  public static function generateInstitutionCollectionCampQr(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($objectName !== 'Eck_Collection_Camp' || !$objectId || !self::isCurrentSubtype($objectRef)) {
+      return;
+    }
+
+    $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
+    if (!$newStatus) {
+      return;
+    }
+
+    $collectionCamp = EckEntity::get('Collection_Camp', TRUE)
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id')
+      ->addWhere('id', '=', $objectId)
+      ->execute()->first();
+
+    $currentStatus = $collectionCamp['Collection_Camp_Core_Details.Status'];
+    $collectionCampId = $collectionCamp['id'];
+
+    // Check for status change.
+    if ($currentStatus !== $newStatus && $newStatus === 'authorized') {
+      self::generateInstitutionCollectionCampQrCode($collectionCampId);
+    }
+  }
+
+  /**
+   *
+   */
+  private static function generateInstitutionCollectionCampQrCode($id) {
+    $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+    $data = "{$baseUrl}actions/institution-collection-camp/{$id}";
+
+    $saveOptions = [
+      'customGroupName' => 'Collection_Camp_QR_Code',
+      'customFieldName' => 'QR_Code',
+    ];
+
+    self::generateQrCode($data, $id, $saveOptions);
   }
 
   /**
@@ -151,6 +198,58 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       ->addValue('Institution_Collection_Camp_Intent.Camp_Type', $isPublicDriveOpen)
       ->addWhere('id', '=', $institutionCollectionCampId)
       ->execute();
+  }
+
+  /**
+   *
+   */
+  private static function isViewingInstituteCollectionCamp($tabsetName, $context) {
+    if ($tabsetName !== 'civicrm/eck/entity' || empty($context) || $context['entity_type']['name'] !== self::ENTITY_NAME) {
+      return FALSE;
+    }
+
+    $entityId = $context['entity_id'];
+
+    $entity = EckEntity::get(self::ENTITY_NAME, TRUE)
+      ->addWhere('id', '=', $entityId)
+      ->execute()->single();
+
+    $entitySubtypeValue = $entity['subtype'];
+
+    $subtypeId = self::getSubtypeId();
+
+    return (int) $entitySubtypeValue === $subtypeId;
+  }
+
+  /**
+   *
+   */
+  public static function institutionCollectionCampTabset($tabsetName, &$tabs, $context) {
+    if (!self::isViewingInstituteCollectionCamp($tabsetName, $context)) {
+      return;
+    }
+
+    $tabConfigs = [
+      'logistics' => [
+        'title' => ts('Logistics'),
+        'module' => 'afsearchInstitutionCollectionCampLogistics',
+        'directive' => 'afsearch-institution-collection-camp-logistics',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      ],
+    ];
+
+    foreach ($tabConfigs as $key => $config) {
+      $tabs[$key] = [
+        'id' => $key,
+        'title' => $config['title'],
+        'is_active' => 1,
+        'template' => $config['template'],
+        'module' => $config['module'],
+        'directive' => $config['directive'],
+      ];
+
+      \Civi::service('angularjs.loader')->addModules($config['module']);
+    }
   }
 
 }
