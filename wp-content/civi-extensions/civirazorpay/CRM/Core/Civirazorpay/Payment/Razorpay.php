@@ -188,7 +188,7 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
    * @throws CRM_Core_Exception
    * @throws CiviCRM_API3_Exception
    */
-  public function processPaymentNotification(array $params): void {
+  public function processPaymentNotification(array $event): void {
     if (isset($event['event'])) {
       switch ($event['event']) {
         case 'payment.captured':
