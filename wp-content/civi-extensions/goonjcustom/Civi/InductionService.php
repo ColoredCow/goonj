@@ -646,22 +646,24 @@ public static function sendInductionRescheduleEmail() {
         ->setLimit($batchSize)
         ->setOffset($offset)
         ->execute();
+    \Civi::log()->info('notVisitedInductionActivities', ['notVisitedInductionActivities'=>$notVisitedInductionActivities]);
 
     foreach ($notVisitedInductionActivities as $activity) {
         $contacts = Contact::get(FALSE)
           ->addSelect('Individual_fields.Induction_Reschedule_Email_Sent')
           ->addWhere('id', '=',$activity['source_contact_id'] )
           ->execute()->single();
+        \Civi::log()->info('contacts', ['contacts'=>$contacts, 'activity'=>$activity]);
 
         $isMailSent = $contacts['Individual_fields.Induction_Reschedule_Email_Sent']?? null;
 
-        if (empty($isMailSent)) {
-            // If an email already exists, mark activity as 'No Show'
-            $updateResult = Activity::update(FALSE)
-                ->addValue('status_id:name', 'No_show')
-                ->addWhere('id', '=', $activity['id'])
-                ->execute();
-            continue;
+        if (!empty($isMailSent)) {
+          // If an email has been sent, mark activity as 'No Show'
+          $updateResult = Activity::update(FALSE)
+              ->addValue('status_id:name', 'No_show')
+              ->addWhere('id', '=', $activity['id'])
+              ->execute();
+          continue;
         }
 
         // If no email exists, mark activity for to be scheduled and send the email
@@ -696,15 +698,14 @@ public static function handleRescheduleEmailActivity($contactId, $activityId) {
     ->addWhere('msg_title', 'LIKE', 'Induction_reschedule_slot_booking%')
     ->execute()->single();
 
-  $emailActivities = Activity::get(FALSE)
-    ->addWhere('activity_type_id:name', '=', 'Email')
-    ->addWhere('subject', '=', $template['msg_subject'])
-    ->addWhere('source_contact_id', '=', $contactId)
-    ->execute();
+  $contacts = Contact::get(FALSE)
+    ->addSelect('Individual_fields.Induction_Reschedule_Email_Sent')
+    ->addWhere('id', '=',$activity['source_contact_id'] )
+    ->execute()->single();
 
-  $emailActivity = $emailActivities->first();
+  $isMailSent = $contacts['Individual_fields.Induction_Reschedule_Email_Sent']?? null;
 
-  if (!empty($emailActivity)) {
+  if (!empty($isMailSent)) {
     // Update the activity status to 'No_show' if a reschedule email was sent
     $updateResult = Activity::update(FALSE)
       ->addValue('status_id:name', 'No_show')
