@@ -159,7 +159,7 @@ if (in_array($target, ['collection-camp','institution-collection-camp', 'droppin
             </tr>
             <?php endif; ?>
 
-            <?php if ($target === 'collection-camp' || $target === 'institution-collection-camp') : ?>
+        <?php if (in_array($target, ['collection-camp', 'institution-collection-camp'])) : ?>
             <tr class="wp-block-gb-table-row">
                 <td class="wp-block-gb-table-cell wp-block-gb-table-header">From</td>
                 <td class="wp-block-gb-table-cell"><?php echo gb_format_date($start_date); ?></td>
