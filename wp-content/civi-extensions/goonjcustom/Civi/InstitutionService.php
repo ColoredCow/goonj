@@ -73,12 +73,6 @@ class InstitutionService extends AutoSubscriber {
       return;
     }
 
-    Organization::update('Organization', FALSE)
-      ->addValue('Review.Status', 1)
-      ->addValue('Review.Initiated_by', 1)
-      ->addWhere('id', '=', $contactId)
-      ->execute();
-
     if (!($stateField = self::findStateField($params))) {
       return;
     }
@@ -86,9 +80,16 @@ class InstitutionService extends AutoSubscriber {
     $stateId = $stateField['value'];
     $contactId = $stateField['entity_id'];
 
-    if (!$stateId) {
+    if (!$contactId) {
+      \CRM_Core_Error::debug_log_message('contactId not found: ' . $contactId);
       return;
     }
+
+    Organization::update('Organization', FALSE)
+      ->addValue('Review.Status', 1)
+      ->addValue('Review.Initiated_by', 1)
+      ->addWhere('id', '=', $contactId)
+      ->execute();
 
     if (!$stateId) {
       \CRM_Core_Error::debug_log_message('Cannot assign Goonj Office to institution id: ' . $contactId);

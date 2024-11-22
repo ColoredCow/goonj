@@ -54,9 +54,10 @@ trait CollectionSource {
       ->addSelect('contact_sub_type')
       ->addWhere('id', '=', $entityID)
       ->execute()->single();
-
-    $entityData = $getSubtypeName[0]['contact_sub_type'] ?? [];
-
+    error_log("getSubtypeName: " . print_r($getSubtypeName, TRUE));
+    $entityData = $getSubtypeName['contact_sub_type'] ?? [];
+    error_log("entityData: " . print_r($entityData, TRUE));
+    error_log("entityData[0]: " . print_r($entityData[0], TRUE));
     return $entityData[0] ?? NULL;
   }
 
