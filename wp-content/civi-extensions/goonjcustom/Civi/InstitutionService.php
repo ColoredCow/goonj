@@ -73,6 +73,12 @@ class InstitutionService extends AutoSubscriber {
       return;
     }
 
+    Organization::update('Organization', FALSE)
+      ->addValue('Review.Status', 1)
+      ->addValue('Review.Initiated_by', 1)
+      ->addWhere('id', '=', $contactId)
+      ->execute();
+
     if (!($stateField = self::findStateField($params))) {
       return;
     }
@@ -137,12 +143,6 @@ class InstitutionService extends AutoSubscriber {
     }
 
     $coordinatorId = $coordinator['contact_id_a'];
-
-    Organization::update('Organization', FALSE)
-      ->addValue('Review.Status', 1)
-      ->addValue('Review.Initiated_by', 1)
-      ->addWhere('id', '=', $contactId)
-      ->execute();
 
     Organization::update('Organization', FALSE)
       ->addValue('Review.Coordinating_POC', $coordinatorId)
