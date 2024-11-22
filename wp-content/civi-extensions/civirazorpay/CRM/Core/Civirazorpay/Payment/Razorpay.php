@@ -94,7 +94,19 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
           ->addWhere('id', '=', $params['contributionRecurID'])
           ->execute();
 
-        $redirectUrl = $subscription->short_url;
+        // $redirectUrl = $subscription->short_url;
+        $redirectUrl = CRM_Utils_System::url(
+          'civicrm/razorpay/payment',
+          [
+            'contributionRecur' => $params['contributionRecurID'],
+            'processor' => $this->_paymentProcessor['id'],
+            'qfKey' => $params['qfKey'],
+          ],
+          TRUE,
+          NULL,
+          FALSE
+        );
+
         CRM_Utils_System::redirect($redirectUrl);
       }
       catch (\Exception $e) {
