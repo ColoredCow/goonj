@@ -79,7 +79,7 @@ class CollectionCampService extends AutoSubscriber {
   /**
    * Implements hook_civicrm_buildForm.
    *
-   * Auto-fills custom fields in the form.
+   * Auto-fills custom fields in the form based on the provided parameters.
    *
    * @param string $formName
    *   The name of the form being built.
@@ -88,29 +88,41 @@ class CollectionCampService extends AutoSubscriber {
    */
   public function autofillMonetaryFormSource($formName, &$form) {
     $custom554 = NULL;
+    $custom555 = NULL;
 
-    // Check if this is the initial form that provides the value.
-    if ($formName === 'CRM_Contribute_Form_Contribution' && isset($_GET['custom_554_-1'])) {
-      $custom554 = $_GET['custom_554_-1'];
-      // Store the value in the session for subsequent use.
-      $_SESSION['custom_554'] = $custom554;
+    // Determine the parameter to use based on the form and query parameters.
+    if ($formName === 'CRM_Contribute_Form_Contribution') {
+      if (isset($_GET['custom_554_-1'])) {
+        $custom554 = $_GET['custom_554_-1'];
+        $_SESSION['custom_554'] = $custom554;
+        // Ensure only one session value is active.
+        unset($_SESSION['custom_555']);
+      }
+      elseif (isset($_GET['custom_555_-1'])) {
+        $custom555 = $_GET['custom_555_-1'];
+        $_SESSION['custom_555'] = $custom555;
+        // Ensure only one session value is active.
+        unset($_SESSION['custom_554']);
+      }
     }
     else {
-      // Retrieve the value from the session.
+      // Retrieve from session if not provided in query parameters.
       $custom554 = $_SESSION['custom_554'] ?? NULL;
+      $custom555 = $_SESSION['custom_555'] ?? NULL;
     }
 
-    if (empty($custom554)) {
-      return;
-    }
+    error_log("_GET: " . print_r($_GET, TRUE));
 
+    // Autofill logic for the custom fields.
     if ($formName === 'CRM_Custom_Form_CustomDataByType') {
-      $autoFillData = [
-      // Autofills the Collection camp and Droppung center.
-        'custom_554_-1' => $custom554,
-      // Autofills the Office.
-        'custom_555_-1' => '19',
-      ];
+      $autoFillData = [];
+      if (!empty($custom554)) {
+        $autoFillData['custom_554_-1'] = $custom554;
+      }
+      elseif (!empty($custom555)) {
+        $autoFillData['custom_555_-1'] = $custom555;
+      }
+
       error_log("autoFillData: " . print_r($autoFillData, TRUE));
 
       // Set default values for the specified fields.
