@@ -11,6 +11,7 @@ use Civi\Api4\StateProvince;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
+use CRM_Core_Permission;
 
 /**
  *
