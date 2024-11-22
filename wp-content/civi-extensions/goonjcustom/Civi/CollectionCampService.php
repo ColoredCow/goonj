@@ -69,7 +69,62 @@ class CollectionCampService extends AutoSubscriber {
         ['setEventVolunteersAddress', 8],
       ],
       '&hook_civicrm_tabset' => 'collectionCampTabset',
+      '&hook_civicrm_buildForm' => [
+        ['autofillMonetaryFormSource'],
+
+      ],
     ];
+  }
+
+  /**
+   * Implements hook_civicrm_buildForm.
+   *
+   * Auto-fills custom fields in the form.
+   *
+   * @param string $formName
+   *   The name of the form being built.
+   * @param object $form
+   *   The form object.
+   */
+  public function autofillMonetaryFormSource($formName, &$form) {
+    $custom554 = NULL;
+
+    // Check if this is the initial form that provides the value.
+    if ($formName === 'CRM_Contribute_Form_Contribution' && isset($_GET['custom_554_-1'])) {
+      $custom554 = $_GET['custom_554_-1'];
+      // Store the value in the session for subsequent use.
+      $_SESSION['custom_554'] = $custom554;
+    }
+    else {
+      // Retrieve the value from the session.
+      $custom554 = $_SESSION['custom_554'] ?? NULL;
+    }
+
+    if (empty($custom554)) {
+      return;
+    }
+
+    if ($formName === 'CRM_Custom_Form_CustomDataByType') {
+      $autoFillData = [
+      // Autofills the Collection camp and Droppung center.
+        'custom_554_-1' => $custom554,
+      // Autofills the Office.
+        'custom_555_-1' => '19',
+      ];
+      error_log("autoFillData: " . print_r($autoFillData, TRUE));
+
+      // Set default values for the specified fields.
+      foreach ($autoFillData as $fieldName => $value) {
+        if (isset($form->_elements) && is_array($form->_elements)) {
+          foreach ($form->_elements as $element) {
+            if (isset($element->_attributes['name']) && $element->_attributes['name'] === $fieldName) {
+              $form->setDefaults([$fieldName => $value]);
+              error_log("Auto-filled $fieldName with value $value.");
+            }
+          }
+        }
+      }
+    }
   }
 
   /**
