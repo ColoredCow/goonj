@@ -1358,7 +1358,7 @@ class CollectionCampService extends AutoSubscriber {
    *   The form object.
    */
   public function autofillMonetaryFormSource($formName, &$form) {
-    if (!in_array($formName, ['CRM_Contribute_Form_Contribution', 'CRM_Custom_Form_CustomDataByType']) {
+    if (!in_array($formName, ['CRM_Contribute_Form_Contribution', 'CRM_Custom_Form_CustomDataByType'])) {
       return;
     }
 
