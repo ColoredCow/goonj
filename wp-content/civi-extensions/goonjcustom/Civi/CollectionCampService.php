@@ -20,6 +20,7 @@ use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
+use CRM_Core_Permission;
 
 /**
  *
@@ -69,6 +70,9 @@ class CollectionCampService extends AutoSubscriber {
         ['setEventVolunteersAddress', 8],
       ],
       '&hook_civicrm_tabset' => 'collectionCampTabset',
+      '&hook_civicrm_buildForm' => [
+        ['autofillMonetaryFormSource'],
+      ],
     ];
   }
 
@@ -86,58 +90,84 @@ class CollectionCampService extends AutoSubscriber {
       //   'module' => 'afsearchCollectionCampActivity',
       //   'directive' => 'afsearch-collection-camp-activity',
       //   'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      //   'permissions' => ['goonj_chapter_admin'],
       // ],
       'logistics' => [
         'title' => ts('Logistics'),
         'module' => 'afsearchCollectionCampLogistics',
         'directive' => 'afsearch-collection-camp-logistics',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
       ],
       'eventVolunteers' => [
         'title' => ts('Event Volunteers'),
         'module' => 'afsearchEventVolunteer',
         'directive' => 'afsearch-event-volunteer',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
       ],
       'vehicleDispatch' => [
         'title' => ts('Dispatch'),
         'module' => 'afsearchCampVehicleDispatchData',
         'directive' => 'afsearch-camp-vehicle-dispatch-data',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
       ],
       'materialAuthorization' => [
         'title' => ts('Material Authorization'),
         'module' => 'afsearchAcknowledgementForLogisticsData',
         'directive' => 'afsearch-acknowledgement-for-logistics-data',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
       ],
       'materialContribution' => [
         'title' => ts('Material Contribution'),
         'module' => 'afsearchCollectionCampMaterialContributions',
         'directive' => 'afsearch-collection-camp-material-contributions',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
       ],
       'campOutcome' => [
         'title' => ts('Camp Outcome'),
         'module' => 'afsearchCampOutcome',
         'directive' => 'afsearch-camp-outcome',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
       ],
       'campFeedback' => [
         'title' => ts('Volunteer Feedback'),
         'module' => 'afsearchVolunteerFeedback',
         'directive' => 'afsearch-volunteer-feedback',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
       ],
       'monetaryContribution' => [
         'title' => ts('Monetary Contribution'),
         'module' => 'afsearchMonetaryContribution',
         'directive' => 'afsearch-monetary-contribution',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['account_team'],
+      ],
+      'monetaryContributionForUrbanOps' => [
+        'title' => ts('Monetary Contribution'),
+        'module' => 'afsearchMonetaryContributionForUrbanOps',
+        'directive' => 'afsearch-monetary-contribution-for-urban-ops',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
       ],
     ];
 
     foreach ($tabConfigs as $key => $config) {
+      $isAdmin = CRM_Core_Permission::check('admin');
+      if ($key == 'monetaryContributionForUrbanOps' && $isAdmin) {
+        continue;
+      }
+
+      $hasPermission = \CRM_Core_Permission::check($config['permissions']);
+      if (!$hasPermission) {
+        continue;
+      }
+
       $tabs[$key] = [
         'id' => $key,
         'title' => $config['title'],
@@ -1320,6 +1350,91 @@ class CollectionCampService extends AutoSubscriber {
       'newStatus' => $newStatus,
       'currentStatus' => $currentStatus,
     ];
+  }
+
+  /**
+   * Implements hook_civicrm_buildForm().
+   *
+   * Auto-fills custom fields in the form based on the provided parameters.
+   *
+   * @param string $formName
+   *   The name of the form being built.
+   * @param object $form
+   *   The form object.
+   */
+  public function autofillMonetaryFormSource($formName, &$form) {
+    if (!in_array($formName, ['CRM_Contribute_Form_Contribution', 'CRM_Custom_Form_CustomDataByType'])) {
+      return;
+    }
+
+    $campSource = NULL;
+    $puSource = NULL;
+
+    // Fetching custom field for collection source.
+    $sourceField = CustomField::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('custom_group_id:name', '=', 'Contribution_Details')
+      ->addWhere('name', '=', 'Source')
+      ->execute()->single();
+
+    $sourceFieldId = 'custom_' . $sourceField['id'];
+
+    // Fetching custom field for goonj offfice.
+    $puSourceField = CustomField::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('custom_group_id:name', '=', 'Contribution_Details')
+      ->addWhere('name', '=', 'PU_Source')
+      ->execute()->single();
+
+    $puSourceFieldId = 'custom_' . $puSourceField['id'];
+
+    // Determine the parameter to use based on the form and query parameters.
+    if ($formName === 'CRM_Contribute_Form_Contribution') {
+      if (isset($_GET[$sourceFieldId])) {
+        $campSource = $_GET[$sourceFieldId];
+        $_SESSION['camp_source'] = $campSource;
+        // Ensure only one session value is active.
+        unset($_SESSION['pu_source']);
+      }
+      elseif (isset($_GET[$puSourceFieldId])) {
+        $puSource = $_GET[$puSourceFieldId];
+        $_SESSION['pu_source'] = $puSource;
+        // Ensure only one session value is active.
+        unset($_SESSION['camp_source']);
+      }
+    }
+    else {
+      // Retrieve from session if not provided in query parameters.
+      $campSource = $_SESSION['camp_source'] ?? NULL;
+      $puSource = $_SESSION['pu_source'] ?? NULL;
+    }
+
+    // Autofill logic for the custom fields.
+    if ($formName === 'CRM_Custom_Form_CustomDataByType') {
+      $autoFillData = [];
+      if (!empty($campSource)) {
+        $autoFillData[$sourceFieldId] = $campSource;
+      }
+      elseif (!empty($puSource)) {
+        $autoFillData[$puSourceFieldId] = $puSource;
+      }
+
+      // Set default values for the specified fields.
+      foreach ($autoFillData as $fieldName => $value) {
+        if (isset($form->_elements) && is_array($form->_elements)) {
+          foreach ($form->_elements as $element) {
+            if (!isset($element->_attributes['data-api-params'])) {
+              continue;
+            }
+            $apiParams = json_decode($element->_attributes['data-api-params'], TRUE);
+            if ($apiParams['fieldName'] === 'Contribution.Contribution_Details.Source') {
+              $formFieldName = $fieldName . '_-1';
+              $form->setDefaults([$formFieldName => $value]);
+            }
+          }
+        }
+      }
+    }
   }
 
 }
