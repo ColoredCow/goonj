@@ -71,73 +71,10 @@ class CollectionCampService extends AutoSubscriber {
       '&hook_civicrm_tabset' => 'collectionCampTabset',
       '&hook_civicrm_buildForm' => [
         ['autofillMonetaryFormSource'],
-
       ],
     ];
   }
 
-  /**
-   * Implements hook_civicrm_buildForm.
-   *
-   * Auto-fills custom fields in the form based on the provided parameters.
-   *
-   * @param string $formName
-   *   The name of the form being built.
-   * @param object $form
-   *   The form object.
-   */
-  public function autofillMonetaryFormSource($formName, &$form) {
-    $custom554 = NULL;
-    $custom555 = NULL;
-
-    // Determine the parameter to use based on the form and query parameters.
-    if ($formName === 'CRM_Contribute_Form_Contribution') {
-      if (isset($_GET['custom_554_-1'])) {
-        $custom554 = $_GET['custom_554_-1'];
-        $_SESSION['custom_554'] = $custom554;
-        // Ensure only one session value is active.
-        unset($_SESSION['custom_555']);
-      }
-      elseif (isset($_GET['custom_555_-1'])) {
-        $custom555 = $_GET['custom_555_-1'];
-        $_SESSION['custom_555'] = $custom555;
-        // Ensure only one session value is active.
-        unset($_SESSION['custom_554']);
-      }
-    }
-    else {
-      // Retrieve from session if not provided in query parameters.
-      $custom554 = $_SESSION['custom_554'] ?? NULL;
-      $custom555 = $_SESSION['custom_555'] ?? NULL;
-    }
-
-    error_log("_GET: " . print_r($_GET, TRUE));
-
-    // Autofill logic for the custom fields.
-    if ($formName === 'CRM_Custom_Form_CustomDataByType') {
-      $autoFillData = [];
-      if (!empty($custom554)) {
-        $autoFillData['custom_554_-1'] = $custom554;
-      }
-      elseif (!empty($custom555)) {
-        $autoFillData['custom_555_-1'] = $custom555;
-      }
-
-      error_log("autoFillData: " . print_r($autoFillData, TRUE));
-
-      // Set default values for the specified fields.
-      foreach ($autoFillData as $fieldName => $value) {
-        if (isset($form->_elements) && is_array($form->_elements)) {
-          foreach ($form->_elements as $element) {
-            if (isset($element->_attributes['name']) && $element->_attributes['name'] === $fieldName) {
-              $form->setDefaults([$fieldName => $value]);
-              error_log("Auto-filled $fieldName with value $value.");
-            }
-          }
-        }
-      }
-    }
-  }
 
   /**
    *
@@ -1409,6 +1346,69 @@ class CollectionCampService extends AutoSubscriber {
       'newStatus' => $newStatus,
       'currentStatus' => $currentStatus,
     ];
+  }
+
+  /**
+   * Implements hook_civicrm_buildForm.
+   *
+   * Auto-fills custom fields in the form based on the provided parameters.
+   *
+   * @param string $formName
+   *   The name of the form being built.
+   * @param object $form
+   *   The form object.
+   */
+  public function autofillMonetaryFormSource($formName, &$form) {
+    $custom554 = NULL;
+    $custom555 = NULL;
+
+    // Determine the parameter to use based on the form and query parameters.
+    if ($formName === 'CRM_Contribute_Form_Contribution') {
+      if (isset($_GET['custom_554_-1'])) {
+        $custom554 = $_GET['custom_554_-1'];
+        $_SESSION['custom_554'] = $custom554;
+        // Ensure only one session value is active.
+        unset($_SESSION['custom_555']);
+      }
+      elseif (isset($_GET['custom_555_-1'])) {
+        $custom555 = $_GET['custom_555_-1'];
+        $_SESSION['custom_555'] = $custom555;
+        // Ensure only one session value is active.
+        unset($_SESSION['custom_554']);
+      }
+    }
+    else {
+      // Retrieve from session if not provided in query parameters.
+      $custom554 = $_SESSION['custom_554'] ?? NULL;
+      $custom555 = $_SESSION['custom_555'] ?? NULL;
+    }
+
+    error_log("_GET: " . print_r($_GET, TRUE));
+
+    // Autofill logic for the custom fields.
+    if ($formName === 'CRM_Custom_Form_CustomDataByType') {
+      $autoFillData = [];
+      if (!empty($custom554)) {
+        $autoFillData['custom_554_-1'] = $custom554;
+      }
+      elseif (!empty($custom555)) {
+        $autoFillData['custom_555_-1'] = $custom555;
+      }
+
+      error_log("autoFillData: " . print_r($autoFillData, TRUE));
+
+      // Set default values for the specified fields.
+      foreach ($autoFillData as $fieldName => $value) {
+        if (isset($form->_elements) && is_array($form->_elements)) {
+          foreach ($form->_elements as $element) {
+            if (isset($element->_attributes['name']) && $element->_attributes['name'] === $fieldName) {
+              $form->setDefaults([$fieldName => $value]);
+              error_log("Auto-filled $fieldName with value $value.");
+            }
+          }
+        }
+      }
+    }
   }
 
 }
