@@ -553,6 +553,14 @@ class DroppingCenterService extends AutoSubscriber {
     ];
 
     foreach ($tabConfigs as $key => $config) {
+      // Check if the user is an admin.
+      $isAdmin = \CRM_Core_Permission::check('admin');
+
+      // Skip the "monetaryContributionForUrbanOps" tab for admins.
+      if ($key == 'monetaryContributionForUrbanOps' && $isAdmin) {
+        continue;
+      }
+
       // Skip if the current user does not have the required permissions.
       $hasPermission = \CRM_Core_Permission::check($config['permissions']);
       if (!$hasPermission) {
