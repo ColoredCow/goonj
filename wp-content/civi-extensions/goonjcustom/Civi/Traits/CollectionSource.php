@@ -48,6 +48,25 @@ trait CollectionSource {
   /**
    *
    */
+  public static function getContactSubtypeName($entityID) {
+    $getSubtypeName = civicrm_api4('Organization', 'get', [
+      'select' => [
+        'contact_sub_type',
+      ],
+      'where' => [
+              ['id', '=', $entityID],
+      ],
+      'checkPermissions' => FALSE,
+    ]);
+
+    $entityData = $getSubtypeName[0]['contact_sub_type'] ?? [];
+
+    return $entityData[0] ?? NULL;
+  }
+
+  /**
+   *
+   */
   private static function isCurrentSubtype($objectRef) {
     if (empty($objectRef['subtype'])) {
       return FALSE;
