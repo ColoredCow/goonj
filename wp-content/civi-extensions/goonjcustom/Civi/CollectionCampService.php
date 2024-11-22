@@ -1382,8 +1382,6 @@ class CollectionCampService extends AutoSubscriber {
       $custom555 = $_SESSION['custom_555'] ?? NULL;
     }
 
-    error_log("_GET: " . print_r($_GET, TRUE));
-
     // Autofill logic for the custom fields.
     if ($formName === 'CRM_Custom_Form_CustomDataByType') {
       $autoFillData = [];
@@ -1393,8 +1391,6 @@ class CollectionCampService extends AutoSubscriber {
       elseif (!empty($custom555)) {
         $autoFillData['custom_555_-1'] = $custom555;
       }
-
-      error_log("autoFillData: " . print_r($autoFillData, TRUE));
 
       // Set default values for the specified fields.
       foreach ($autoFillData as $fieldName => $value) {
