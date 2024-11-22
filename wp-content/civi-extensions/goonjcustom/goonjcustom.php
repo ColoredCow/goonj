@@ -71,8 +71,8 @@ function goonjcustom_register_tokens(TokenRegisterEvent $e) {
     ->register('inductionOnlineMeetlink', ts('Induction Online Meet link'))
     ->register('inductionOfficeAddress', ts('Induction Office Address'))
     ->register('inductionOfficeCity', ts('Induction Office City'))
-    ->register('inductionAssigneeFirstName', ts('Induction Assignee First Name'))
-    ->register('inductionAssigneePhone', ts('Induction Assignee Phone'));
+    ->register('urbanOpsName', ts('Urban Ops Name'))
+    ->register('urbanOpsPhone', ts('Urban Ops Phone'));
 }
 
 /**
@@ -97,10 +97,6 @@ function goonjcustom_evaluate_tokens(TokenValueEvent $e) {
 
     $statedata = $contacts->first();
     $stateId = $statedata['address_primary.state_province_id'];
-    $office = InductionService::findOfficeForState($stateId);
-    \Civi::log()->info('office', ['office'=>$office]);
-    $coordinatorId = InductionService::findCoordinatorForOffice($office['id']);
-    \Civi::log()->info('coordinatorId', ['coordinatorId'=>$coordinatorId]);
 
     $processingCenters = Contact::get(FALSE)
       ->addSelect('Goonj_Office_Details.Days_for_Induction', '*', 'custom.*', 'addressee_id', 'id')
@@ -140,7 +136,7 @@ function goonjcustom_evaluate_tokens(TokenValueEvent $e) {
       $row->tokens('contact', 'inductionDetails', $inductionDetailsMarkup);
 			// Fetch induction activity details
 			$inductionActivities = \Civi\Api4\Activity::get(FALSE)
-				->addSelect('activity_date_time', 'Induction_Fields.Goonj_Office', 'Induction_Fields.Assign')
+				->addSelect('activity_date_time', 'Induction_Fields.Goonj_Office')
 				->addWhere('activity_type_id:name', '=', 'Induction')
 				->addWhere('source_contact_id', '=', $contactId)
 				->execute();
@@ -154,27 +150,14 @@ function goonjcustom_evaluate_tokens(TokenValueEvent $e) {
 			$inductionActivity = $inductionActivities->first();
 			$inductionDateTime = $inductionActivity['activity_date_time'] ?? 'Not Scheduled';
 			$inductionGoonjOffice = $inductionActivity['Induction_Fields.Goonj_Office'] ?? '';
-      $inductionAssigneeId = $inductionActivity['Induction_Fields.Assign']?? '';
 
 			// Fetch office online meet link details if induction office is specified
 			$inductionOnlineMeetlink = '';
       $completeAddress = '';
       $inductionOfficeCity = '';
-      $inductionAssigneeFirstName = '';
-      $inductionAssigneePhone = '70423 99564';
+      $urbanOpsName = '';
+      $urbanOpsPhone = '';
 
-      if( $inductionAssigneeId){
-        $assigneeDetails = \Civi\Api4\Contact::get(FALSE)
-          ->addSelect('first_name', 'phone.phone')
-          ->addJoin('Phone AS phone', 'LEFT')
-          ->addWhere('id', '=', $inductionAssigneeId)
-          ->execute()->single();
-
-        $inductionAssigneeFirstName = $assigneeDetails['first_name'] ?? '';
-
-        $inductionAssigneePhone = $assigneeDetails['phone.phone'] ?? '';
-
-      }
 
 			if ($inductionGoonjOffice) {
 				$officeDetails = \Civi\Api4\Contact::get(FALSE)
@@ -197,13 +180,28 @@ function goonjcustom_evaluate_tokens(TokenValueEvent $e) {
 
 			}
 
+      $office = InductionService::findOfficeForState($stateId);
+
+      $coordinatorId = InductionService::findCoordinatorForOffice($office['id']);
+
+  
+      $coordinatorDetails = Contact::get(FALSE)
+        ->addSelect('phone.phone', 'display_name')
+        ->addJoin('Phone AS phone', 'LEFT')
+        ->addWhere('id', '=', $coordinatorId)
+        ->execute();
+      $coordinatorDetail = $coordinatorDetails->first();
+
+      $urbanOpsName = $coordinatorDetail['display_name'] ?? '';
+      $urbanOpsPhone = $coordinatorDetail['phone.phone'] ?? '';
+
 			// Assign tokens
 			$row->tokens('contact', 'inductionDateTime', $inductionDateTime);
 			$row->tokens('contact', 'inductionOnlineMeetlink', $inductionOnlineMeetlink);
       $row->tokens('contact', 'inductionOfficeAddress', $completeAddress);
       $row->tokens('contact', 'inductionOfficeCity', $inductionOfficeCity);
-      $row->tokens('contact', 'inductionAssigneeFirstName', $inductionAssigneeFirstName);
-      $row->tokens('contact', 'inductionAssigneePhone', $inductionAssigneePhone);
+      $row->tokens('contact', 'urbanOpsName', $urbanOpsName);
+      $row->tokens('contact', 'urbanOpsPhone', $urbanOpsPhone);
     }
   }
 }
