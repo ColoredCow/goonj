@@ -4,7 +4,8 @@
  *
  */
 
-use Civi\Api4;
+use Civi\Api4\Contribution;
+use Civi\Api4\ContributionRecur;
 use Civi\Api4\Email;
 use Civi\Api4\PaymentProcessor;
 
@@ -24,11 +25,9 @@ class CRM_Civirazorpay_Page_Payment extends CRM_Core_Page {
 
     $data = [];
     if ($contributionId) {
-      // One-time payment.
       $data = $this->getDataForTemplate($contributionId, $paymentProcessorId, $qfKey, FALSE);
     }
     elseif ($contributionRecurId) {
-      // Recurring payment.
       $data = $this->getDataForTemplate($contributionRecurId, $paymentProcessorId, $qfKey, TRUE);
     }
     else {
@@ -55,17 +54,27 @@ class CRM_Civirazorpay_Page_Payment extends CRM_Core_Page {
         ? ['amount', 'currency', 'contact_id', 'processor_id']
         : ['total_amount', 'currency', 'contact_id', 'trxn_id', 'payment_processor_id'];
 
-    $contribution = Api4::$entity::get(FALSE)
-      ->addSelect(...$fields)
-      ->addWhere('id', '=', $id)
-      ->execute()
-      ->single();
+    if ($isRecur) {
+      $contribution = ContributionRecur::get(FALSE)
+        ->addSelect(...$fields)
+        ->addWhere('id', '=', $id)
+        ->execute()
+        ->single();
+    }
+    else {
+      $contribution = Contribution::get(FALSE)
+        ->addSelect(...$fields)
+        ->addWhere('id', '=', $id)
+        ->execute()
+        ->single();
+    }
 
     $email = $this->getPrimaryEmail($contribution['contact_id']);
     $organizationName = CRM_Core_BAO_Domain::getDomain()->name;
     $paymentProcessor = $this->getPaymentProcessor($paymentProcessorId);
 
     return [
+      'isRecur' => $isRecur,
       'amount' => ($isRecur ? $contribution['amount'] : $contribution['total_amount']) * 100,
       'currency' => $contribution['currency'],
       'email' => $email,
