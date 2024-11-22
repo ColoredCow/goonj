@@ -1361,16 +1361,34 @@ class CollectionCampService extends AutoSubscriber {
     $custom554 = NULL;
     $custom555 = NULL;
 
+    // Fetching custom field for collection source.
+    $sourceField = CustomField::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('custom_group_id:name', '=', 'Contribution_Details')
+      ->addWhere('name', '=', 'Source')
+      ->execute()->single();
+
+    $sourceFieldId = 'custom_' . $sourceField['id'] . '_-1';
+
+    // Fetching custom field for goonj offfice.
+    $puSourceField = CustomField::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('custom_group_id:name', '=', 'Contribution_Details')
+      ->addWhere('name', '=', 'PU_Source')
+      ->execute()->single();
+
+    $puSourceFieldId = 'custom_' . $puSourceField['id'] . '_-1';
+
     // Determine the parameter to use based on the form and query parameters.
     if ($formName === 'CRM_Contribute_Form_Contribution') {
-      if (isset($_GET['custom_554_-1'])) {
-        $custom554 = $_GET['custom_554_-1'];
+      if (isset($_GET[$sourceFieldId])) {
+        $custom554 = $_GET[$sourceFieldId];
         $_SESSION['custom_554'] = $custom554;
         // Ensure only one session value is active.
         unset($_SESSION['custom_555']);
       }
-      elseif (isset($_GET['custom_555_-1'])) {
-        $custom555 = $_GET['custom_555_-1'];
+      elseif (isset($_GET[$puSourceFieldId])) {
+        $custom555 = $_GET[$puSourceFieldId];
         $_SESSION['custom_555'] = $custom555;
         // Ensure only one session value is active.
         unset($_SESSION['custom_554']);
@@ -1386,10 +1404,10 @@ class CollectionCampService extends AutoSubscriber {
     if ($formName === 'CRM_Custom_Form_CustomDataByType') {
       $autoFillData = [];
       if (!empty($custom554)) {
-        $autoFillData['custom_554_-1'] = $custom554;
+        $autoFillData[$sourceFieldId] = $custom554;
       }
       elseif (!empty($custom555)) {
-        $autoFillData['custom_555_-1'] = $custom555;
+        $autoFillData[$puSourceFieldId] = $custom555;
       }
 
       // Set default values for the specified fields.
