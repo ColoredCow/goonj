@@ -1051,9 +1051,14 @@ class CollectionCampService extends AutoSubscriber {
    *   The reference to the object.
    */
   public static function createActivityForCollectionCamp(string $op, string $objectName, $objectId, &$objectRef) {
-    if ($objectName != 'Eck_Collection_Camp') {
+    if ($objectName != 'Eck_Collection_Camp' || self::getEntitySubtypeName($objectId) !== self::ENTITY_SUBTYPE_NAME) {
       return;
     }
+
+    error_log("op: " . print_r($op, TRUE));
+    error_log("objectName: " . print_r($objectName, TRUE));
+    error_log("objectRef: " . print_r($objectRef, TRUE));
+    error_log("objectId: " . print_r($objectId, TRUE));
 
     $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
 
