@@ -518,15 +518,6 @@ class InductionService extends AutoSubscriber {
           continue;
         }
 
-        // Check if a follow-up email has already been sent to avoid duplication.
-        $emailActivities = Activity::get(FALSE)
-          ->addWhere('activity_type_id:name', '=', 'Email')
-          ->addWhere('subject', '=', $template['msg_subject'])
-          ->addWhere('source_contact_id', '=', $activity['source_contact_id'])
-          ->execute();
-
-        $emailActivity = $emailActivities->first();
-
         $contacts = Contact::get(FALSE)
           ->addSelect('Individual_fields.Induction_slot_booking_follow_up_email_sent')
           ->addWhere('id', '=',$activity['source_contact_id'] )
@@ -657,18 +648,9 @@ public static function sendInductionRescheduleEmail() {
         ->execute();
 
     foreach ($notVisitedInductionActivities as $activity) {
-        // Check if a follow-up email has already been sent
-        $emailActivities = Activity::get(FALSE)
-            ->addWhere('activity_type_id:name', '=', 'Email')
-            ->addWhere('subject', '=', $template['msg_subject'])
-            ->addWhere('source_contact_id', '=', $activity['source_contact_id'])
-            ->execute();
-
-        $emailActivity = $emailActivities->first();
-
         $contacts = Contact::get(FALSE)
           ->addSelect('Individual_fields.Induction_Reschedule_Email_Sent')
-          ->addWhere('id', '=',$scheduledInductionActivity['source_contact_id'] )
+          ->addWhere('id', '=',$activity['source_contact_id'] )
           ->execute()->single();
 
         $isMailSent = $contacts['Individual_fields.Induction_Reschedule_Email_Sent']?? null;
@@ -767,14 +749,6 @@ public static function sendRemainderEmails()
                 ->single();
 
             $searchableSubject = str_replace('{contact.first_name}', '%', $template['msg_subject']);
-
-            $emailActivities = Activity::get(FALSE)
-                ->addWhere('activity_type_id:name', '=', 'Email')
-                ->addWhere('subject', 'LIKE', $searchableSubject)
-                ->addWhere('source_contact_id', '=', $scheduledInductionActivity['source_contact_id'])
-                ->execute();
-
-            $emailActivity = $emailActivities->first();
 
             $contacts = Contact::get(FALSE)
               ->addSelect('Individual_fields.Induction_Remainder_Email_Sent_on_Induction_Day')
