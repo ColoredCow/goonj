@@ -510,7 +510,6 @@ class InductionService extends AutoSubscriber {
         ->setLimit($batchSize)
         ->setOffset($offset)
         ->execute();
-      \Civi::log()->info('unscheduledInductionActivities', ['unscheduledInductionActivities'=>$unscheduledInductionActivities]);
 
       // Process each activity in the batch
       foreach ($unscheduledInductionActivities as $activity) {
@@ -574,7 +573,6 @@ class InductionService extends AutoSubscriber {
 				->addWhere('activity_type_id:name', '=', 'Induction')
 				->addWhere('status_id:name', '=', 'To be scheduled')
 				->execute()->column('source_contact_id');
-      \Civi::log()->info('unscheduledInductionContactIds', ['unscheduledInductionContactIds'=>$unscheduledInductionContactIds] );
 
 			do {
 				// Fetch email activities older than 30 days
@@ -584,7 +582,6 @@ class InductionService extends AutoSubscriber {
           ->addWhere('modified_date', '<', date('Y-m-d H:i:s', $followUpTimestamp))
 					->setLimit($batchSize)
 					->setOffset($offset)->execute();
-        \Civi::log()->info('contacts', ['contacts'=>$contacts] );
 
 				foreach ($contacts as $contact) {
 					// Fetch the associated induction activity
@@ -596,7 +593,6 @@ class InductionService extends AutoSubscriber {
 						->execute();
 
           $inductionActivity = $inductionActivities->first();
-          \Civi::log()->info('inductionActivity', ['inductionActivity'=>$inductionActivity]);
 
 					if (!$inductionActivity) {
 						\Civi::log()->info('No induction activity found for source contact', [
@@ -610,8 +606,6 @@ class InductionService extends AutoSubscriber {
 						->addValue('status_id:name', 'No_show')
 						->addWhere('id', '=', $inductionActivity['id'])
 						->execute();
-          \Civi::log()->info('updateResult', ['updateResult'=>$updateResult]);
-
 				}
 
 				// Increment the offset by the batch size
@@ -651,14 +645,12 @@ public static function sendInductionRescheduleEmail() {
         ->setLimit($batchSize)
         ->setOffset($offset)
         ->execute();
-    \Civi::log()->info('notVisitedInductionActivities', ['notVisitedInductionActivities'=>$notVisitedInductionActivities]);
 
     foreach ($notVisitedInductionActivities as $activity) {
         $contacts = Contact::get(FALSE)
           ->addSelect('Individual_fields.Induction_Reschedule_Email_Sent')
           ->addWhere('id', '=',$activity['source_contact_id'] )
           ->execute()->single();
-        \Civi::log()->info('contacts', ['contacts'=>$contacts, 'activity'=>$activity]);
 
         $isMailSent = $contacts['Individual_fields.Induction_Reschedule_Email_Sent']?? null;
 
