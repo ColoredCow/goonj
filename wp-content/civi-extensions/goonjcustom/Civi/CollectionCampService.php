@@ -1423,7 +1423,7 @@ class CollectionCampService extends AutoSubscriber {
             }
             $apiParams = json_decode($element->_attributes['data-api-params'], TRUE);
             if ($apiParams['fieldName'] === 'Contribution.Contribution_Details.Source') {
-              $formFieldName = $fieldName . '_+1';
+              $formFieldName = $fieldName . '_-1';
               $form->setDefaults([$formFieldName => $value]);
             }
           }
