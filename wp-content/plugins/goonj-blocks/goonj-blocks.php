@@ -90,7 +90,7 @@ function gb_goonj_blocks_check_action_target_exists() {
 		'Institution_Collection_Camp_Intent.Collections_will_end_on_Date_',
 		'Institution_Collection_Camp_Intent.Collection_Camp_Address'
 	);
-	
+
 	switch ( $target ) {
 		case 'induction-schedule':
 			$result = \Civi\Api4\Contact::get(FALSE)
