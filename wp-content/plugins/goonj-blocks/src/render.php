@@ -45,7 +45,6 @@ $institution_collection_camp_register_link = sprintf(
     $action_target['Institution_Collection_Camp_Intent.District_City'],
 );
 
-
 $material_contribution_link = sprintf(
     '/collection-camp-contribution?source=%s&target_id=%s&state_province_id=%s&city=%s',
     $action_target['title'],
