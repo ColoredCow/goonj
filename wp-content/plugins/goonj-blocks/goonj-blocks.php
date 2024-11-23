@@ -31,7 +31,7 @@ add_action( 'init', 'gb_goonj_blocks_block_init' );
 
 add_action( 'init', 'gb_goonj_blocks_custom_rewrite_rules' );
 function gb_goonj_blocks_custom_rewrite_rules() {
-	$actions = array('collection-camp', 'dropping-center', 'processing-center', 'induction-schedule');
+	$actions = array('collection-camp', 'dropping-center', 'processing-center', 'induction-schedule', 'institution-collection-camp');
 	foreach ( $actions as $action ) {
 		add_rewrite_rule(
 			'^actions/' . $action . '/([0-9]+)/?',
@@ -86,6 +86,9 @@ function gb_goonj_blocks_check_action_target_exists() {
 		'Dropping_Centre.State',
 		'Dropping_Centre.District_City',
 		'Collection_Camp_Core_Details.Contact_Id.display_name',
+		'Institution_Collection_Camp_Intent.Collections_will_start_on_Date',
+		'Institution_Collection_Camp_Intent.Collections_will_end_on_Date_',
+		'Institution_Collection_Camp_Intent.Collection_Camp_Address'
 	);
 
 	switch ( $target ) {
@@ -102,6 +105,7 @@ function gb_goonj_blocks_check_action_target_exists() {
 			}
 			break;
 		case 'collection-camp':
+		case 'institution-collection-camp':
 		case 'dropping-center':
 			$result = \Civi\Api4\EckEntity::get( 'Collection_Camp', false )
 				->selectRowCount()
