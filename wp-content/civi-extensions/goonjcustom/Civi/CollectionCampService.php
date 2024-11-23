@@ -402,11 +402,13 @@ class CollectionCampService extends AutoSubscriber {
 
         $collectionCampsCreatedDate = $collectionCamp['created_date'] ?? NULL;
 
+        $campTitle = $collectionCamp['title'] ?? NULL;
+
         // Get the year.
         $year = date('Y', strtotime($collectionCampsCreatedDate));
 
         // Fetch the state ID.
-        $stateId = self::getStateIdForSubtype($objectRef, $subtypeId);
+        $stateId = self::getStateIdForSubtype($objectRef, $subtypeId, $campTitle);
 
         if (!$stateId) {
           return;
@@ -469,19 +471,36 @@ class CollectionCampService extends AutoSubscriber {
   /**
    *
    */
-  public static function getStateIdForSubtype(array $objectRef, int $subtypeId): ?int {
-    $optionValue = OptionValue::get(TRUE)
+  public static function getStateIdForSubtype(array $objectRef, int $subtypeId, ?string $campTitle): ?int {
+    // Fetch option value based on camp title.
+    if ($campTitle === 'Institution Collection Camp') {
+      $institutionOptionValue = self::getOptionValue('Institution_Collection_Camp');
+      if ($subtypeId == $institutionOptionValue['value']) {
+        return $objectRef['Institution_Collection_Camp_Intent.State'] ?? NULL;
+      }
+    }
+
+    // Fetch option value for Dropping Centre.
+    $droppingCenterOptionValue = self::getOptionValue('Dropping_Center');
+    if ($subtypeId == $droppingCenterOptionValue['value']) {
+      return $objectRef['Dropping_Centre.State'] ?? NULL;
+    }
+
+    // Default state for other camps.
+    return $objectRef['Collection_Camp_Intent_Details.State'] ?? NULL;
+  }
+
+  /**
+   * Helper function to fetch option value by name.
+   */
+  private static function getOptionValue(string $name): ?array {
+    return OptionValue::get(FALSE)
       ->addSelect('value')
       ->addWhere('option_group_id:name', '=', 'eck_sub_types')
       ->addWhere('grouping', '=', 'Collection_Camp')
-      ->addWhere('name', '=', 'Dropping_Center')
-      ->execute()->single();
-
-    // Subtype for 'Dropping Centre'.
-    if ($subtypeId == $optionValue['value']) {
-      return $objectRef['Dropping_Centre.State'] ?? NULL;
-    }
-    return $objectRef['Collection_Camp_Intent_Details.State'] ?? NULL;
+      ->addWhere('name', '=', $name)
+      ->execute()
+      ->single();
   }
 
   /**
@@ -515,6 +534,9 @@ class CollectionCampService extends AutoSubscriber {
     $currentCollectionCamp = $collectionCamps->first();
     $currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
     $contactId = $currentCollectionCamp['Collection_Camp_Core_Details.Contact_Id'];
+    if (!$contactId) {
+      return;
+    }
     $collectionCampTitle = $currentCollectionCamp['title'];
     $collectionCampId = $currentCollectionCamp['id'];
 
@@ -752,7 +774,7 @@ class CollectionCampService extends AutoSubscriber {
    *   The parameters that were sent into the calling function.
    */
   public static function linkInductionWithCollectionCamp($op, $groupID, $entityID, &$params) {
-    if ($op !== 'create') {
+    if ($op !== 'create' || self::getEntitySubtypeName($entityID) !== self::ENTITY_SUBTYPE_NAME) {
       return;
     }
 
@@ -1059,7 +1081,7 @@ class CollectionCampService extends AutoSubscriber {
    *   The reference to the object.
    */
   public static function createActivityForCollectionCamp(string $op, string $objectName, $objectId, &$objectRef) {
-    if ($objectName != 'Eck_Collection_Camp') {
+    if ($objectName != 'Eck_Collection_Camp' || self::getEntitySubtypeName($objectId) !== self::ENTITY_SUBTYPE_NAME) {
       return;
     }
 

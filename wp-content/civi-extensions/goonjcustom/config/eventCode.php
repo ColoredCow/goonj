@@ -9,6 +9,7 @@ return [
   'Chaupal' => 'Chaupal',
   'Chuppi Todo Baithak-NJPC' => 'CTB',
   'Collection Camp' => 'CC',
+  'Institution Collection Camp' => 'CC',
   'Corporate Meet' => 'CM',
   'Disaster Exhibition' => 'DE',
   'Dropping Center' => 'DC',
