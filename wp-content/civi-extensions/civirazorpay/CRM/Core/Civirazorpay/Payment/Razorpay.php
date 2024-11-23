@@ -189,6 +189,9 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
    * @throws CiviCRM_API3_Exception
    */
   public function processPaymentNotification(array $event): void {
+    \Civi::log()->info(__METHOD__, [
+      'event' => $event,
+    ]);
     if (isset($event['event'])) {
       switch ($event['event']) {
         case 'payment.captured':
@@ -230,23 +233,135 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
     $last4CardDigits = $params['payload']['payment']['entity']['card']['last4'] ?? NULL;
 
     $contribution = $this->getContributionByOrderId($razorpayOrderId);
-    $contributionID = $contribution['id'];
-    $contactID = $contribution['contact_id'];
 
-    civicrm_api3('Payment', 'create', [
-      'contribution_id' => $contributionID,
-      'total_amount' => $amount,
-      'payment_instrument_id' => $this->_paymentProcessor['payment_instrument_id'],
-      'trxn_id' => $razorpayPaymentId,
-      'credit_card_pan' => $last4CardDigits,
-    ]);
+    if ($contribution) {
+      $contributionID = $contribution['id'];
+      $contactID = $contribution['contact_id'];
 
-    civicrm_api3('Contribution', 'create', [
-      'id' => $contributionID,
-      'contribution_status_id' => self::CONTRIB_STATUS_COMPLETED,
-    ]);
+      civicrm_api3('Payment', 'create', [
+        'contribution_id' => $contributionID,
+        'total_amount' => $amount,
+        'payment_instrument_id' => $this->_paymentProcessor['payment_instrument_id'],
+        'trxn_id' => $razorpayPaymentId,
+        'credit_card_pan' => $last4CardDigits,
+      ]);
+
+      civicrm_api3('Contribution', 'create', [
+        'id' => $contributionID,
+        'contribution_status_id' => self::CONTRIB_STATUS_COMPLETED,
+      ]);
+    }
 
     CRM_Utils_System::civiExit();
+  }
+
+  /**
+   *
+   */
+  private function processSubscriptionCharged($event) {
+    $subscriptionId = $event['payload']['subscription']['entity']['id'];
+    $paymentId = $event['payload']['payment']['entity']['id'];
+    $amount = $event['payload']['payment']['entity']['amount'] / 100;
+    $transactionDate = date('Y-m-d H:i:s', $event['payload']['payment']['entity']['created_at']);
+    $last4CardDigits = $event['payload']['payment']['entity']['card']['last4'] ?? NULL;
+
+    \Civi::log()->info(__METHOD__, [
+      'subscriptionId' => $subscriptionId,
+    ]);
+
+    $isTestMode = $this->_mode === 'test';
+
+    $recurringContribution = $this->getContributionRecurBySubId($subscriptionId);
+
+    if ($recurringContribution) {
+      $contactId = $recurringContribution['contact_id'];
+      $financialTypeId = $recurringContribution['financial_type_id'];
+
+      try {
+        // Create a new contribution record for this charge.
+        $newContribution = civicrm_api3('Contribution', 'create', [
+          'contact_id' => $contactId,
+          'financial_type_id' => $financialTypeId,
+          'total_amount' => $amount,
+          'contribution_recur_id' => $recurringContribution['id'],
+        // Completed.
+          'contribution_status_id' => 1,
+          'trxn_id' => $paymentId,
+          'receive_date' => $transactionDate,
+        ]);
+
+        // Create a Payment entity for this transaction.
+        civicrm_api3('Payment', 'create', [
+          'contribution_id' => $newContribution['id'],
+          'total_amount' => $amount,
+          'payment_instrument_id' => $this->_paymentProcessor['payment_instrument_id'],
+          'trxn_id' => $paymentId,
+          'credit_card_pan' => $last4CardDigits,
+        ]);
+
+        \Civi::log()->info("Recurring payment processed: $paymentId for subscription $subscriptionId", [
+          'contribution_id' => $newContribution['id'],
+          'amount' => $amount,
+        ]);
+      }
+      catch (\Exception $e) {
+        \Civi::log()->error("Failed to create Contribution or Payment for recurring payment: $paymentId", [
+          'error' => $e->getMessage(),
+          'subscription_id' => $subscriptionId,
+        ]);
+      }
+    }
+    else {
+      \Civi::log()->error("Failed to find ContributionRecur record for subscription: $subscriptionId");
+    }
+  }
+
+  /**
+   *
+   */
+  private function processSubscriptionActivated($event) {
+    $subscriptionId = $event['payload']['subscription']['entity']['id'];
+    $startDate = date('Y-m-d H:i:s', $event['payload']['subscription']['entity']['start_at']);
+    $endDate = date('Y-m-d H:i:s', $event['payload']['subscription']['entity']['end_at']);
+    // 2 = Active, 3 = Cancelled/Pending
+    $status = $event['payload']['subscription']['entity']['status'] === 'active' ? 2 : 3;
+
+    // Update the ContributionRecur record in CiviCRM.
+    try {
+      ContributionRecur::update(FALSE)
+        ->addValue('processor_id', $subscriptionId)
+        ->addValue('contribution_status_id', $status)
+        ->addValue('start_date', $startDate)
+        ->addValue('end_date', $endDate)
+        ->addWhere('processor_id', '=', $subscriptionId)
+        ->execute();
+
+      \Civi::log()->info("Subscription activated: $subscriptionId", [
+        'start_date' => $startDate,
+        'end_date' => $endDate,
+      ]);
+    }
+    catch (\Exception $e) {
+      \Civi::log()->error("Failed to update ContributionRecur for subscription activation: $subscriptionId", [
+        'error' => $e->getMessage(),
+      ]);
+    }
+  }
+
+  /**
+   *
+   */
+  private function processSubscriptionCompleted($event) {
+    $subscriptionId = $event['payload']['subscription']['entity']['id'];
+
+    // Update the ContributionRecur record to mark the subscription as complete.
+    ContributionRecur::update(FALSE)
+    // Completed/Ended status.
+      ->addValue('contribution_status_id', 5)
+      ->addWhere('processor_id', '=', $subscriptionId)
+      ->execute();
+
+    \Civi::log()->info("Subscription completed: $subscriptionId");
   }
 
   /**
@@ -260,9 +375,25 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
       ->addWhere('is_test', '=', $isTestMode ? TRUE : FALSE)
       ->setLimit(1)
       ->execute()
-      ->single();
+      ->first();
 
     return $contribution;
+  }
+
+  /**
+   *
+   */
+  private function getContributionRecurBySubId($razorpaySubId) {
+    $isTestMode = $this->_mode === 'test';
+
+    $contributionRecur = ContributionRecur::get(FALSE)
+      ->addWhere('trxn_id', '=', $razorpaySubId)
+      ->addWhere('is_test', '=', $isTestMode ? TRUE : FALSE)
+      ->setLimit(1)
+      ->execute()
+      ->first();
+
+    return $contributionRecur;
   }
 
   /**
