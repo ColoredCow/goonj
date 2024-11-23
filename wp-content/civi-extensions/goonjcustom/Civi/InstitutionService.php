@@ -3,26 +3,56 @@
 namespace Civi;
 
 use Civi\Api4\Contact;
+use Civi\Api4\CustomField;
 use Civi\Api4\Organization;
 use Civi\Api4\Relationship;
 use Civi\Core\Service\AutoSubscriber;
+use Civi\Traits\CollectionSource;
 
 /**
  *
  */
 class InstitutionService extends AutoSubscriber {
-
+  use CollectionSource;
   const FALLBACK_OFFICE_NAME = 'Delhi';
+  const ENTITY_SUBTYPE_NAME = 'Institute';
 
   /**
    *
    */
   public static function getSubscribedEvents() {
     return [
-      '&hook_civicrm_post' => [
+      '&hook_civicrm_custom' => [
         ['setOfficeDetails'],
       ],
     ];
+  }
+
+  /**
+   *
+   */
+  private static function findStateField(array $array) {
+    $institutionCollectionCampStateField = CustomField::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('name', '=', 'state')
+      ->addWhere('custom_group_id:name', '=', 'Institute_Registration')
+      ->execute()
+      ->first();
+
+    if (!$institutionCollectionCampStateField) {
+      return FALSE;
+    }
+
+    $stateFieldId = $institutionCollectionCampStateField['id'];
+
+    foreach ($array as $item) {
+      if ($item['entity_table'] === 'civicrm_contact' &&
+            $item['custom_field_id'] === $stateFieldId) {
+        return $item;
+      }
+    }
+
+    return FALSE;
   }
 
   /**
@@ -37,29 +67,29 @@ class InstitutionService extends AutoSubscriber {
    * @param object $objectRef
    *   The parameters that were sent into the calling function.
    */
-  public static function setOfficeDetails(string $op, string $objectName, int $objectId, &$objectRef) {
+  public static function setOfficeDetails($op, $groupID, $entityID, &$params) {
 
-    if ($objectName !== 'AfformSubmission') {
+    if ($op !== 'create' || self::getContactSubtypeName($entityID) !== self::ENTITY_SUBTYPE_NAME) {
       return;
     }
 
-    $afformName = $objectRef->afform_name;
-
-    if ($afformName !== 'afformInstituteRegistration1') {
+    if (!($stateField = self::findStateField($params))) {
       return;
     }
 
-    $jsonData = $objectRef->data;
+    $stateId = $stateField['value'];
+    $contactId = $stateField['entity_id'];
 
-    $dataArray = json_decode($jsonData, TRUE);
-
-    $stateId = $dataArray['Organization1'][0]['joins']['Address'][0]['state_province_id'];
-
-    $contactId = $objectRef->contact_id;
-
-    if (!$stateId) {
+    if (!$contactId) {
+      \CRM_Core_Error::debug_log_message('contactId not found: ' . $contactId);
       return;
     }
+
+    Organization::update('Organization', FALSE)
+      ->addValue('Review.Status', 1)
+      ->addValue('Review.Initiated_by', 1)
+      ->addWhere('id', '=', $contactId)
+      ->execute();
 
     if (!$stateId) {
       \CRM_Core_Error::debug_log_message('Cannot assign Goonj Office to institution id: ' . $contactId);
@@ -89,7 +119,6 @@ class InstitutionService extends AutoSubscriber {
 
     // Get the relationship type name based on the institution type.
     $relationshipTypeName = self::getRelationshipTypeName($contactId);
-
     $coordinators = Relationship::get(FALSE)
       ->addWhere('contact_id_b', '=', $stateOfficeId)
       ->addWhere('relationship_type_id:name', '=', $relationshipTypeName)
@@ -116,7 +145,7 @@ class InstitutionService extends AutoSubscriber {
 
     $coordinatorId = $coordinator['contact_id_a'];
 
-    Organization::update(FALSE)
+    Organization::update('Organization', FALSE)
       ->addValue('Review.Coordinating_POC', $coordinatorId)
       ->addWhere('id', '=', $contactId)
       ->execute();
@@ -173,10 +202,14 @@ class InstitutionService extends AutoSubscriber {
    *
    */
   private static function getRelationshipTypeName($contactId) {
-    $organization = Organization::get(TRUE)
+    $organization = Organization::get(FALSE)
       ->addSelect('Institute_Registration.Type_of_Institution:label')
       ->addWhere('id', '=', $contactId)
       ->execute()->single();
+
+    if (!$organization) {
+      return;
+    }
 
     $typeOfInstitution = $organization['Institute_Registration.Type_of_Institution:label'];
 
@@ -191,7 +224,6 @@ class InstitutionService extends AutoSubscriber {
     ];
 
     $firstWord = strtok($typeOfInstitution, ' ');
-
     // Return the corresponding relationship type, or default if not found.
     return $typeToRelationshipMap[$firstWord] ?? 'Default Coordinator of';
   }
