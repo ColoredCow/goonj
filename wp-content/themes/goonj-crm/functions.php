@@ -557,7 +557,7 @@ function goonj_redirect_after_individual_creation() {
 				}
 				case 'institution-collection-camp':
 					if ( ! $source ) {
-						\Civi::log()->warning('Source is missing for material contribution flow', ['individualId' => $_GET['individualId']]);
+						\Civi::log()->info('Source is missing for material contribution flow', ['individualId' => $_GET['individualId']]);
 						return;
 					}
 					// If the individual was created during a material contribution process,
