@@ -86,6 +86,8 @@ function gb_goonj_blocks_check_action_target_exists() {
 		'Dropping_Centre.State',
 		'Dropping_Centre.District_City',
 		'Collection_Camp_Core_Details.Contact_Id.display_name',
+		'Institution_Collection_Camp_Intent.State',
+		'Institution_Collection_Camp_Intent.District_City',
 		'Institution_Collection_Camp_Intent.Collections_will_start_on_Date',
 		'Institution_Collection_Camp_Intent.Collections_will_end_on_Date_',
 		'Institution_Collection_Camp_Intent.Collection_Camp_Address'

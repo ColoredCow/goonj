@@ -24,12 +24,27 @@ $headings = [
 
 $heading_text = $headings[$target];
 
-$register_link = sprintf(
+$collection_camp_register_link = sprintf(
     '/volunteer-registration/form/#?source=%s&state_province_id=%s&city=%s',
     $action_target['title'],
     $action_target['Collection_Camp_Intent_Details.State'],
     $action_target['Collection_Camp_Intent_Details.City'],
 );
+
+$dropping_center_register_link = sprintf(
+    '/volunteer-registration/form/#?source=%s&state_province_id=%s&city=%s',
+    $action_target['title'],
+    $action_target['Dropping_Centre.State'],
+    $action_target['Dropping_Centre.District_City'],
+);
+
+$institution_collection_camp_register_link = sprintf(
+    '/volunteer-registration/form/#?source=%s&state_province_id=%s&city=%s',
+    $action_target['title'],
+    $action_target['Institution_Collection_Camp_Intent.State'],
+    $action_target['Institution_Collection_Camp_Intent.District_City'],
+);
+
 
 $material_contribution_link = sprintf(
     '/collection-camp-contribution?source=%s&target_id=%s&state_province_id=%s&city=%s',
@@ -108,6 +123,7 @@ $target_data = [
     'address_label' => 'Goonj volunteer run dropping center (Address)',
     'contribution_link' => $dropping_center_material_contribution_link,
     'donation_link' => $donation_link,
+    'register_link' => $dropping_center_register_link,
   ],
   'collection-camp' => [
     'start_time' => 'Collection_Camp_Intent_Details.Start_Date',
@@ -116,6 +132,7 @@ $target_data = [
     'address_label' => 'Address of the camp',
     'contribution_link' => $material_contribution_link,
     'donation_link' => $donation_link,
+    'register_link' => $collection_camp_register_link,
   ],
   'institution-collection-camp' => [
     'start_time' => 'Institution_Collection_Camp_Intent.Collections_will_start_on_Date',
@@ -124,6 +141,7 @@ $target_data = [
     'address_label' => 'Address of the camp',
     'contribution_link' => $institution_collection_camp_material_contribution_link,
     'donation_link' => $donation_link,
+    'register_link' => $institution_collection_camp_register_link,
   ],
 ];
 
@@ -145,6 +163,7 @@ if (in_array($target, ['collection-camp','institution-collection-camp', 'droppin
   $address_label = $target_info['address_label'];
   $volunteer_name = $action_target[$target_info['volunteer_name']];
   $donation_link = $target_info['donation_link'];
+  $register_link = $target_info['register_link'];
 
   ?>
     <div class="wp-block-gb-heading-wrapper">
