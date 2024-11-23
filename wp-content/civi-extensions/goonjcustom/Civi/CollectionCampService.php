@@ -769,7 +769,7 @@ class CollectionCampService extends AutoSubscriber {
    *   The parameters that were sent into the calling function.
    */
   public static function linkInductionWithCollectionCamp($op, $groupID, $entityID, &$params) {
-    if ($op !== 'create') {
+    if ($op !== 'create' || self::getEntitySubtypeName($entityID) !== self::ENTITY_SUBTYPE_NAME) {
       return;
     }
 
