@@ -270,21 +270,27 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
     try {
       ContributionRecur::update(FALSE)
         ->addWhere('processor_id', '=', $subscriptionId)
-        ->addValue('contribution_status_id', 2) // Set to "In Progress" or equivalent
+      // Set to "In Progress" or equivalent.
+        ->addValue('contribution_status_id', 2)
         ->execute();
 
       \Civi::log()->info("Subscription activated: {$subscriptionId}");
-    } catch (Exception $e) {
+    }
+    catch (Exception $e) {
       \Civi::log()->error("Failed to update ContributionRecur for subscription: {$subscriptionId}", [
         'error' => $e->getMessage(),
       ]);
     }
   }
 
+  /**
+   *
+   */
   private function processSubscriptionCharged(array $event) {
     $subscriptionId = $event['payload']['subscription']['entity']['id'] ?? NULL;
     $paymentId = $event['payload']['payment']['entity']['id'] ?? NULL;
-    $amount = $event['payload']['payment']['entity']['amount'] / 100; // Convert from paise to INR
+    // Convert from paise to INR.
+    $amount = $event['payload']['payment']['entity']['amount'] / 100;
 
     if (!$subscriptionId || !$paymentId) {
       \Civi::log()->error("Missing subscription or payment ID in charged event");
@@ -302,34 +308,40 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
       $contactId = $recurringContribution['contact_id'];
       $financialTypeId = $recurringContribution['financial_type_id'];
 
-      // Create a new contribution for the payment.
-      $newContribution = civicrm_api3('Contribution', 'create', [
-        'contact_id' => $contactId,
-        'financial_type_id' => $financialTypeId,
-        'total_amount' => $amount,
-        'contribution_recur_id' => $recurringContribution['id'],
-        'contribution_status_id' => 1, // Completed
-        'trxn_id' => $paymentId,
-        'receive_date' => date('Y-m-d H:i:s'),
-        'is_test' => $recurringContribution['is_test'],
-      ]);
+      $pendingContribution = $this->getContributionByRecurId($recurringContribution['id']);
 
-      // Record the payment in the Payment entity.
+      if (!$pendingContribution) {
+        $contributionToUpdate = civicrm_api3('Contribution', 'create', [
+          'contact_id' => $contactId,
+          'financial_type_id' => $financialTypeId,
+          'total_amount' => $amount,
+          'contribution_recur_id' => $recurringContribution['id'],
+        // Completed.
+          'contribution_status_id' => 1,
+          'trxn_id' => $paymentId,
+          'receive_date' => date('Y-m-d H:i:s'),
+          'is_test' => $recurringContribution['is_test'],
+        ]);
+      }
+      else {
+        $contributionToUpdate = $pendingContribution;
+      }
+
       civicrm_api3('Payment', 'create', [
-        'contribution_id' => $newContribution['id'],
+        'contribution_id' => $contributionToUpdate['id'],
         'total_amount' => $amount,
         'payment_instrument_id' => $recurringContribution['payment_instrument_id'] ?? NULL,
         'trxn_id' => $paymentId,
       ]);
 
       \Civi::log()->info("Recurring payment processed: {$paymentId} for subscription: {$subscriptionId}");
-    } catch (Exception $e) {
+    }
+    catch (Exception $e) {
       \Civi::log()->error("Failed to process recurring payment for subscription: {$subscriptionId}", [
         'error' => $e->getMessage(),
       ]);
     }
   }
-
 
   /**
    *
@@ -366,14 +378,31 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
   /**
    *
    */
+  private function getContributionByRecurId($recurId) {
+    $isTestMode = $this->_mode === 'test';
+
+    $contribution = Contribution::get(FALSE)
+      ->addWhere('contribution_recur_id', '=', $recurId)
+    // Pending.
+      ->addWhere('contribution_status_id', '=', 2)
+      ->addWhere('is_test', '=', $isTestMode ? TRUE : FALSE)
+      ->execute()
+      ->first();
+
+    return $contribution;
+  }
+
+  /**
+   *
+   */
   private function getContributionRecurBySubId($subscriptionId) {
     $isTestMode = $this->_mode === 'test';
 
     $recurringContribution = ContributionRecur::get(FALSE)
-        ->addWhere('processor_id', '=', $subscriptionId)
-        ->addWhere('is_test', '=', $isTestMode ? TRUE : FALSE)
-        ->execute()
-        ->first();
+      ->addWhere('processor_id', '=', $subscriptionId)
+      ->addWhere('is_test', '=', $isTestMode ? TRUE : FALSE)
+      ->execute()
+      ->first();
 
     return $recurringContribution;
   }
