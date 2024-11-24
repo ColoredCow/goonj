@@ -189,9 +189,6 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
    * @throws CiviCRM_API3_Exception
    */
   public function processPaymentNotification(array $event): void {
-    \Civi::log()->info(__METHOD__, [
-      'event' => $event,
-    ]);
     if (isset($event['event'])) {
       switch ($event['event']) {
         case 'payment.captured':
@@ -308,7 +305,7 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
       $contactId = $recurringContribution['contact_id'];
       $financialTypeId = $recurringContribution['financial_type_id'];
 
-      $pendingContribution = $this->getContributionByRecurId($recurringContribution['id']);
+      $pendingContribution = $this->getPendingContributionByRecurId($recurringContribution['id']);
 
       if (!$pendingContribution) {
         $contributionToUpdate = civicrm_api3('Contribution', 'create', [
@@ -316,8 +313,7 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
           'financial_type_id' => $financialTypeId,
           'total_amount' => $amount,
           'contribution_recur_id' => $recurringContribution['id'],
-        // Completed.
-          'contribution_status_id' => 1,
+          'contribution_status_id' => self::CONTRIB_STATUS_COMPLETED,
           'trxn_id' => $paymentId,
           'receive_date' => date('Y-m-d H:i:s'),
           'is_test' => $recurringContribution['is_test'],
@@ -349,10 +345,8 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
   private function processSubscriptionCompleted($event) {
     $subscriptionId = $event['payload']['subscription']['entity']['id'];
 
-    // Update the ContributionRecur record to mark the subscription as complete.
     ContributionRecur::update(FALSE)
-    // Completed/Ended status.
-      ->addValue('contribution_status_id', 5)
+      ->addValue('contribution_status_id', self::CONTRIB_STATUS_COMPLETED)
       ->addWhere('processor_id', '=', $subscriptionId)
       ->execute();
 
@@ -378,13 +372,12 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
   /**
    *
    */
-  private function getContributionByRecurId($recurId) {
+  private function getPendingContributionByRecurId($recurId) {
     $isTestMode = $this->_mode === 'test';
 
     $contribution = Contribution::get(FALSE)
       ->addWhere('contribution_recur_id', '=', $recurId)
-    // Pending.
-      ->addWhere('contribution_status_id', '=', 2)
+      ->addWhere('contribution_status_id', '=', self::CONTRIB_STATUS_PENDING)
       ->addWhere('is_test', '=', $isTestMode ? TRUE : FALSE)
       ->execute()
       ->first();
