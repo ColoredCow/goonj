@@ -50,7 +50,7 @@ trait CollectionSource {
    *
    */
   public static function getContactSubtypeName($entityID) {
-    \Civi::log()->debug(__METHOD__, ['entityId' => $entityId]);
+    \Civi::log()->debug(__METHOD__, ['entityId' => $entityID]);
 
     if (!$entityID) {
       return FALSE;
