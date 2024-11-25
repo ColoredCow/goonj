@@ -49,22 +49,20 @@ trait CollectionSource {
   /**
    *
    */
-  public static function getContactSubtypeName($entityID) {
-    \Civi::log()->debug(__METHOD__, ['entityId' => $entityID]);
+  public static function getOrgSubtypeName($entityID) {
+    $organization = Organization::get(FALSE)
+      ->addSelect('contact_sub_type')
+      ->addWhere('id', '=', $entityID)
+      ->execute()
+      ->first();
 
-    if (!$entityID) {
+    if (!$organization) {
       return FALSE;
     }
 
-    $getSubtypeName = Organization::get(FALSE)
-      ->addSelect('contact_sub_type')
-      ->addWhere('id', '=', $entityID)
-      ->execute()->single();
+    $subType = $organization['contact_sub_type'];
 
-    \Civi::log()->debug(__METHOD__, ['getSubtypeName' => $getSubtypeName]);
-
-    $entityData = $getSubtypeName['contact_sub_type'] ?? [];
-    return $entityData[0] ?? NULL;
+    return $subType;
   }
 
   /**

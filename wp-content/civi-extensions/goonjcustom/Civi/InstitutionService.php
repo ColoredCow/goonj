@@ -71,7 +71,7 @@ class InstitutionService extends AutoSubscriber {
 
     \Civi::log()->debug('1');
 
-    if ($op !== 'create' || !$entityID || self::getContactSubtypeName($entityID) !== self::ENTITY_SUBTYPE_NAME) {
+    if ($op !== 'create' || self::getOrgSubtypeName($entityID) !== self::ENTITY_SUBTYPE_NAME) {
       return;
     }
 
