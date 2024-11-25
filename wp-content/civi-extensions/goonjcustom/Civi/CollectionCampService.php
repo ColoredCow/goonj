@@ -1258,6 +1258,30 @@ class CollectionCampService extends AutoSubscriber {
   }
 
   /**
+   *
+   */
+  public static function updateContributionCount($collectionCamp) {
+    $contributions = Contribution::get(FALSE)
+      ->addSelect('total_amount')
+      ->addWhere('Contribution_Details.Source', '=', $collectionCamp['id'])
+      ->addWhere('is_test', '=', TRUE)
+      ->execute();
+
+    // Initialize sum variable.
+    $totalSum = 0;
+
+    // Iterate through the results and sum the total_amount.
+    foreach ($contributions as $contribution) {
+      $totalSum += $contribution['total_amount'];
+    }
+
+    EckEntity::update('Collection_Camp', FALSE)
+      ->addValue('Camp_Outcome.Monitory_Contribution', $totalSum)
+      ->addWhere('id', '=', $collectionCamp['id'])
+      ->execute();
+  }
+
+  /**
    * This hook is called after a db write on entities.
    *
    * @param string $op
