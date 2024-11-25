@@ -50,10 +50,14 @@ trait CollectionSource {
    *
    */
   public static function getContactSubtypeName($entityID) {
+    \Civi::log()->debug(__METHOD__, ['entityId' => $entityId]);
+
     $getSubtypeName = Organization::get(FALSE)
       ->addSelect('contact_sub_type')
       ->addWhere('id', '=', $entityID)
       ->execute()->single();
+
+    \Civi::log()->debug(__METHOD__, ['getSubtypeName' => $getSubtypeName]);
 
     $entityData = $getSubtypeName['contact_sub_type'] ?? [];
     return $entityData[0] ?? NULL;
