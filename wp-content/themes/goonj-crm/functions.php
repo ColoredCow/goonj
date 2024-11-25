@@ -403,6 +403,8 @@ function goonj_handle_user_identification_form() {
 				$redirect_url = home_url( '/dropping-center/waiting-induction/' );
 			} elseif ( $purpose === 'volunteer-registration' ) {
 				$redirect_url = home_url( '/volunteer-registration/waiting-induction/' );
+			} elseif ( $purpose === 'goonj-activities' ) {
+				$redirect_url = home_url( '/goonj-activities/waiting-induction' );
 			} else {
 				$redirect_url = home_url( '/collection-camp/waiting-induction/' );
 			}
