@@ -69,21 +69,33 @@ class InstitutionService extends AutoSubscriber {
    */
   public static function setOfficeDetails($op, $groupID, $entityID, &$params) {
 
+    \Civi::log()->debug(__METHOD__, '1');
+
     if ($op !== 'create' || self::getContactSubtypeName($entityID) !== self::ENTITY_SUBTYPE_NAME) {
       return;
     }
+
+    \Civi::log()->debug(__METHOD__, '2');
+
 
     if (!($stateField = self::findStateField($params))) {
       return;
     }
 
+    \Civi::log()->debug(__METHOD__, '3');
+
+
     $stateId = $stateField['value'];
     $contactId = $stateField['entity_id'];
+
+    \Civi::log()->debug(__METHOD__, '4');
 
     if (!$contactId) {
       \CRM_Core_Error::debug_log_message('contactId not found: ' . $contactId);
       return;
     }
+
+    \Civi::log()->debug(__METHOD__, '5');
 
     Organization::update('Organization', FALSE)
       ->addValue('Review.Status', 1)
@@ -91,10 +103,14 @@ class InstitutionService extends AutoSubscriber {
       ->addWhere('id', '=', $contactId)
       ->execute();
 
+      \Civi::log()->debug(__METHOD__, '6');
+
     if (!$stateId) {
       \CRM_Core_Error::debug_log_message('Cannot assign Goonj Office to institution id: ' . $contactId);
       return;
     }
+
+    \Civi::log()->debug(__METHOD__, '7');
 
     $officesFound = Contact::get(FALSE)
       ->addSelect('id')
@@ -103,12 +119,18 @@ class InstitutionService extends AutoSubscriber {
       ->addWhere('Goonj_Office_Details.Institution_Catchment', 'CONTAINS', $stateId)
       ->execute();
 
-    $stateOffice = $officesFound->first();
+      \Civi::log()->debug(__METHOD__, '8');
+
+      $stateOffice = $officesFound->first();
+
+      \Civi::log()->debug(__METHOD__, '9');
 
     // If no state office is found, assign the fallback state office.
     if (!$stateOffice) {
       $stateOffice = self::getFallbackOffice();
     }
+
+    \Civi::log()->debug(__METHOD__, '10');
 
     $stateOfficeId = $stateOffice['id'];
 
@@ -116,6 +138,8 @@ class InstitutionService extends AutoSubscriber {
       ->addValue('Review.Goonj_Office', $stateOfficeId)
       ->addWhere('id', '=', $contactId)
       ->execute();
+
+      \Civi::log()->debug(__METHOD__, '11');
 
     // Get the relationship type name based on the institution type.
     $relationshipTypeName = self::getRelationshipTypeName($contactId);
@@ -125,17 +149,22 @@ class InstitutionService extends AutoSubscriber {
       ->addWhere('is_current', '=', TRUE)
       ->execute();
 
+      \Civi::log()->debug(__METHOD__, '12');
+
     $coordinatorCount = $coordinators->count();
 
     if ($coordinatorCount === 0) {
       $coordinator = self::getFallbackCoordinator($contactId);
+      \Civi::log()->debug(__METHOD__, '13');
     }
     elseif ($coordinatorCount > 1) {
       $randomIndex = rand(0, $coordinatorCount - 1);
       $coordinator = $coordinators->itemAt($randomIndex);
+      \Civi::log()->debug(__METHOD__, '14');
     }
     else {
       $coordinator = $coordinators->first();
+      \Civi::log()->debug(__METHOD__, '15');
     }
 
     if (!$coordinator) {
@@ -143,12 +172,17 @@ class InstitutionService extends AutoSubscriber {
       return FALSE;
     }
 
+
+    \Civi::log()->debug(__METHOD__, '16');
+
     $coordinatorId = $coordinator['contact_id_a'];
 
     Organization::update('Organization', FALSE)
       ->addValue('Review.Coordinating_POC', $coordinatorId)
       ->addWhere('id', '=', $contactId)
       ->execute();
+
+      \Civi::log()->debug(__METHOD__, '17');
 
     return TRUE;
 
