@@ -71,19 +71,17 @@ class InstitutionService extends AutoSubscriber {
 
     \Civi::log()->debug('1');
 
-    if ($op !== 'create' || self::getContactSubtypeName($entityID) !== self::ENTITY_SUBTYPE_NAME) {
+    if ($op !== 'create' || !$entityID || self::getContactSubtypeName($entityID) !== self::ENTITY_SUBTYPE_NAME) {
       return;
     }
 
     \Civi::log()->debug('2');
-
 
     if (!($stateField = self::findStateField($params))) {
       return;
     }
 
     \Civi::log()->debug('3');
-
 
     $stateId = $stateField['value'];
     $contactId = $stateField['entity_id'];
@@ -103,7 +101,7 @@ class InstitutionService extends AutoSubscriber {
       ->addWhere('id', '=', $contactId)
       ->execute();
 
-      \Civi::log()->debug('6');
+    \Civi::log()->debug('6');
 
     if (!$stateId) {
       \CRM_Core_Error::debug_log_message('Cannot assign Goonj Office to institution id: ' . $contactId);
@@ -119,11 +117,11 @@ class InstitutionService extends AutoSubscriber {
       ->addWhere('Goonj_Office_Details.Institution_Catchment', 'CONTAINS', $stateId)
       ->execute();
 
-      \Civi::log()->debug('8');
+    \Civi::log()->debug('8');
 
-      $stateOffice = $officesFound->first();
+    $stateOffice = $officesFound->first();
 
-      \Civi::log()->debug('9');
+    \Civi::log()->debug('9');
 
     // If no state office is found, assign the fallback state office.
     if (!$stateOffice) {
@@ -139,7 +137,7 @@ class InstitutionService extends AutoSubscriber {
       ->addWhere('id', '=', $contactId)
       ->execute();
 
-      \Civi::log()->debug('11');
+    \Civi::log()->debug('11');
 
     // Get the relationship type name based on the institution type.
     $relationshipTypeName = self::getRelationshipTypeName($contactId);
@@ -149,7 +147,7 @@ class InstitutionService extends AutoSubscriber {
       ->addWhere('is_current', '=', TRUE)
       ->execute();
 
-      \Civi::log()->debug('12');
+    \Civi::log()->debug('12');
 
     $coordinatorCount = $coordinators->count();
 
@@ -172,7 +170,6 @@ class InstitutionService extends AutoSubscriber {
       return FALSE;
     }
 
-
     \Civi::log()->debug('16');
 
     $coordinatorId = $coordinator['contact_id_a'];
@@ -182,7 +179,7 @@ class InstitutionService extends AutoSubscriber {
       ->addWhere('id', '=', $contactId)
       ->execute();
 
-      \Civi::log()->debug('17');
+    \Civi::log()->debug('17');
 
     return TRUE;
 

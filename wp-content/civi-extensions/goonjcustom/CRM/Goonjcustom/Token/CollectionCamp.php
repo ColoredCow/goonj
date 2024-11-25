@@ -197,7 +197,7 @@ class CRM_Goonjcustom_Token_CollectionCamp extends AbstractTokenSubscriber {
       $collectionSource['Collection_Camp_Intent_Details.District'],
       $collectionSource['Collection_Camp_Intent_Details.City'],
       // CRM_Core_PseudoConstant::stateProvince($collectionSource['Collection_Camp_Intent_Details.State']),.
-      // $collectionSource['Collection_Camp_Intent_Details.Pin_Code'],
+      // $collectionSource['Collection_Camp_Intent_Details.Pin_Code'],.
     ];
 
     return join(', ', array_filter($addressParts));
