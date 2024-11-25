@@ -23,7 +23,7 @@ class InstitutionService extends AutoSubscriber {
   public static function getSubscribedEvents() {
     return [
       '&hook_civicrm_custom' => [
-        ['setOfficeDetails'],
+        // ['setOfficeDetails'],
       ],
     ];
   }
