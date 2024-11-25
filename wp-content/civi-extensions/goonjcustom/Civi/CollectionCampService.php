@@ -1464,7 +1464,7 @@ class CollectionCampService extends AutoSubscriber {
    *
    */
   public function suppressEmailIfPanCardMissing(&$params, $context = NULL) {
-    if (!$params['valueName'] === 'contribution_online_receipt') {
+    if ($params['valueName'] !== 'contribution_online_receipt') {
       return;
     }
 
