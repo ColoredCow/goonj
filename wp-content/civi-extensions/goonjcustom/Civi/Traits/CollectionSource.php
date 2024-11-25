@@ -3,6 +3,7 @@
 namespace Civi\Traits;
 
 use Civi\Api4\OptionValue;
+use Civi\Api4\Organization;
 
 /**
  *
@@ -43,6 +44,19 @@ trait CollectionSource {
     $entityData = $getSubtypeName[0] ?? [];
 
     return $entityData['subtype:name'] ?? NULL;
+  }
+
+  /**
+   *
+   */
+  public static function getContactSubtypeName($entityID) {
+    $getSubtypeName = Organization::get(FALSE)
+      ->addSelect('contact_sub_type')
+      ->addWhere('id', '=', $entityID)
+      ->execute()->single();
+
+    $entityData = $getSubtypeName['contact_sub_type'] ?? [];
+    return $entityData[0] ?? NULL;
   }
 
   /**

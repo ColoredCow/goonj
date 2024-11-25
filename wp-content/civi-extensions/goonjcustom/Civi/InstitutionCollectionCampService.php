@@ -129,8 +129,8 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     $stateFieldId = $institutionCollectionCampStateField['id'];
 
     foreach ($array as $item) {
-      if ($item['entity_table'] === 'civicrm_eck_collection_camp' &&
-            $item['custom_field_id'] === $stateFieldId) {
+      if (isset($item['entity_table']) && $item['entity_table'] === 'civicrm_eck_collection_camp' &&
+          isset($item['custom_field_id']) && $item['custom_field_id'] === $stateFieldId) {
         return $item;
       }
     }
@@ -234,6 +234,12 @@ class InstitutionCollectionCampService extends AutoSubscriber {
         'title' => ts('Logistics'),
         'module' => 'afsearchInstitutionCollectionCampLogistics',
         'directive' => 'afsearch-institution-collection-camp-logistics',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      ],
+      'materialContribution' => [
+        'title' => ts('Material Contribution'),
+        'module' => 'afsearchInstitutionCollectionCampMaterialContribution',
+        'directive' => 'afsearch-institution-collection-camp-material-contribution',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
       ],
     ];

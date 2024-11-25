@@ -19,20 +19,12 @@ class CRM_Civirazorpay_Page_Payment extends CRM_Core_Page {
    */
   public function run() {
     $contributionId = CRM_Utils_Request::retrieve('contribution', 'Integer', $this);
-    $contributionRecurId = CRM_Utils_Request::retrieve('contributionRecur', 'Integer', $this);
+    $isRecur = CRM_Utils_Request::retrieve('isRecur', 'Integer', $this);
+
     $paymentProcessorId = CRM_Utils_Request::retrieve('processor', 'Integer', $this);
     $qfKey = CRM_Utils_Request::retrieve('qfKey', 'String', $this);
 
-    $data = [];
-    if ($contributionId) {
-      $data = $this->getDataForTemplate($contributionId, $paymentProcessorId, $qfKey, FALSE);
-    }
-    elseif ($contributionRecurId) {
-      $data = $this->getDataForTemplate($contributionRecurId, $paymentProcessorId, $qfKey, TRUE);
-    }
-    else {
-      throw new CRM_Core_Exception('Missing required parameter: contribution or contributionRecur');
-    }
+    $data = $this->getDataForTemplate($contributionId, $paymentProcessorId, $qfKey, (bool) $isRecur);
 
     $this->assign($data);
     parent::run();
@@ -48,26 +40,17 @@ class CRM_Civirazorpay_Page_Payment extends CRM_Core_Page {
    *   Array containing amount, currency, email, and order ID.
    */
   public function getDataForTemplate($id, $paymentProcessorId, $qfKey, $isRecur) {
-    $entity = $isRecur ? 'ContributionRecur' : 'Contribution';
+    $entityClass = $isRecur ? ContributionRecur::class : Contribution::class;
 
     $fields = $isRecur
         ? ['amount', 'currency', 'contact_id', 'processor_id']
         : ['total_amount', 'currency', 'contact_id', 'trxn_id', 'payment_processor_id'];
 
-    if ($isRecur) {
-      $contribution = ContributionRecur::get(FALSE)
-        ->addSelect(...$fields)
-        ->addWhere('id', '=', $id)
-        ->execute()
-        ->single();
-    }
-    else {
-      $contribution = Contribution::get(FALSE)
-        ->addSelect(...$fields)
-        ->addWhere('id', '=', $id)
-        ->execute()
-        ->single();
-    }
+    $contribution = $entityClass::get(FALSE)
+      ->addSelect(...$fields)
+      ->addWhere('id', '=', $id)
+      ->execute()
+      ->single();
 
     $email = $this->getPrimaryEmail($contribution['contact_id']);
     $organizationName = CRM_Core_BAO_Domain::getDomain()->name;
