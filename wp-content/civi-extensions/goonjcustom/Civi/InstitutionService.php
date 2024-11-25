@@ -68,21 +68,12 @@ class InstitutionService extends AutoSubscriber {
    *   The parameters that were sent into the calling function.
    */
   public static function setOfficeDetails($op, $groupID, $entityID, &$params) {
-    error_log("updateOrganization: " . print_r(self::getOrgSubtypeName($entityID), TRUE));
-
     if ($op !== 'create' || self::getOrgSubtypeName($entityID) !== self::ENTITY_SUBTYPE_NAME) {
       return;
     }
-    error_log("entityID: " . print_r($entityID, TRUE));
-    error_log("groupID: " . print_r($groupID, TRUE));
-    error_log("params: " . print_r($params, TRUE));
-
     if (!($stateField = self::findStateField($params))) {
       return;
     }
-
-    error_log("stateId: " . print_r($stateId, TRUE));
-    error_log("contactId: " . print_r($contactId, TRUE));
 
     $stateId = $stateField['value'];
     $contactId = $stateField['entity_id'];
