@@ -29,7 +29,35 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       '&hook_civicrm_pre' => 'generateInstitutionCollectionCampQr',
       '&hook_civicrm_custom' => 'setOfficeDetails',
       '&hook_civicrm_tabset' => 'institutionCollectionCampTabset',
+      '&hook_civicrm_post' => [
+        ['setOrganizationNameForCollectionCamp'],
+      ],
     ];
+  }
+
+  /**
+   *
+   */
+  public static function setOrganizationNameForCollectionCamp(string $op, string $objectName, int $objectId, &$objectRef) {
+    // Check if afform_name is set and matches the required value.
+    if (empty($objectRef->afform_name) || $objectRef->afform_name !== 'afformInstitutionCollectionCampIntentVerification') {
+      return;
+    }
+
+    $data = json_decode($objectRef->data, TRUE);
+
+    // Retrieve organizationId and entityId, return if not set.
+    $organizationId = $data['Organization1'][0]['fields']['id'] ?? NULL;
+    $entityId = $data['Eck_Collection_Camp1'][0]['fields']['id'] ?? NULL;
+
+    if (!$organizationId || !$entityId) {
+      return;
+    }
+
+    EckEntity::update('Collection_Camp', TRUE)
+      ->addValue('Institution_collection_camp_Review.Institution_Name', $organizationId)
+      ->addWhere('id', '=', $entityId)
+      ->execute();
   }
 
   /**
