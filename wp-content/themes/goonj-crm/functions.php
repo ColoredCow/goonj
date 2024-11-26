@@ -438,6 +438,11 @@ function goonj_handle_user_identification_form() {
 			exit;
 		}
 
+		if ( $purpose === 'goonj-activities' ) {
+			wp_redirect( get_home_url() . '/goonj-activities/intent/#?Collection_Camp_Core_Details.Contact_Id=' . $found_contacts['id']. '&Goonj_Activities.Name=' . $display_name . '&Goonj_Activities.Contact_Number=' . $phone);
+			exit;
+		}
+
 		if ( $purpose === 'volunteer-registration' ) {
 			wp_redirect( get_home_url() . '/volunteer-registration/already-inducted/' );
 			exit;
