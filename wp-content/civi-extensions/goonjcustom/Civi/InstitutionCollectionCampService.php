@@ -31,7 +31,10 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       '&hook_civicrm_post' => 'setOrganizationId',
       '&hook_civicrm_custom' => 'setOfficeDetails',
       '&hook_civicrm_tabset' => 'institutionCollectionCampTabset',
-      '&hook_civicrm_pre' => 'setOrganizationNameForCollectionCamp',
+      'hook_civicrm_pre' => [
+        'setOrganizationNameForCollectionCamp',
+        'generateInstitutionCollectionCampQr',
+      ],
     ];
   }
 
