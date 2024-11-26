@@ -73,7 +73,6 @@ class CollectionCampService extends AutoSubscriber {
       '&hook_civicrm_buildForm' => [
         ['autofillMonetaryFormSource'],
       ],
-      '&hook_civicrm_alterMailParams' => 'suppressEmailIfPanCardMissing',
     ];
   }
 
@@ -1481,40 +1480,6 @@ class CollectionCampService extends AutoSubscriber {
           }
         }
       }
-    }
-  }
-
-  /**
-   *
-   */
-  public function suppressEmailIfPanCardMissing(&$params, $context = NULL) {
-    if ($params['valueName'] !== 'contribution_online_receipt') {
-      return;
-    }
-
-    $contributionId = $params['tplParams']['contributionID'] ?? NULL;
-
-    if (!$contributionId) {
-      return;
-    }
-
-    try {
-      $contribution = Contribution::get(FALSE)
-        ->addSelect('Contribution_Details.PAN_Card_Number')
-        ->addWhere('id', '=', $contributionId)
-        ->execute()
-        ->single();
-
-      $panCard = $contribution['Contribution_Details.PAN_Card_Number'] ?? '';
-
-      if (empty($panCard)) {
-        // Modify params to suppress email (set the toEmail as null, or mark as test)
-        // Empty out the recipient email address.
-        $params['toEmail'] = '';
-      }
-    }
-    catch (Exception $e) {
-      \Civi::log()->error("Error retrieving contribution data for ID $contributionId: " . $e->getMessage());
     }
   }
 
