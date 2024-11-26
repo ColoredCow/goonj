@@ -10,6 +10,7 @@ use Civi\Api4\Group;
 use Civi\Api4\GroupContact;
 use Civi\Api4\MessageTemplate;
 use Civi\Api4\OptionValue;
+use Civi\Api4\Relationship;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 
@@ -288,12 +289,13 @@ class CollectionBaseService extends AutoSubscriber {
     }
 
     $currentCollectionCamp = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id')
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id', 'Institution_collection_camp_Review.Institution_Name.id', 'subtype:name')
       ->addWhere('id', '=', $objectId)
       ->execute()->single();
 
+    $initiatorId = self::getInitiatorId($currentCollectionCamp);
+
     $currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
-    $initiatorId = $currentCollectionCamp['Collection_Camp_Core_Details.Contact_Id'];
 
     if (!in_array($newStatus, ['authorized', 'unauthorized'])) {
       return;
@@ -315,24 +317,48 @@ class CollectionBaseService extends AutoSubscriber {
     }
 
     $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id', 'subtype')
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id', 'Institution_collection_camp_Review.Institution_Name.id', 'subtype', 'subtype:name')
       ->addWhere('id', '=', $objectRef->id)
       ->execute()->single();
 
-    $initiator = $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
-    $subtype = $collectionCamp['subtype'];
+    $initiatorId = self::getInitiatorId($collectionCamp);
 
     $collectionSourceId = $collectionCamp['id'];
+    $subtype = $collectionCamp['subtype'];
 
     if (!self::$authorizationEmailQueued) {
-      self::queueAuthorizationEmail($initiator, $subtype, self::$collectionAuthorizedStatus, $collectionSourceId);
+      self::queueAuthorizationEmail($initiatorId, $subtype, self::$collectionAuthorizedStatus, $collectionSourceId);
     }
+  }
+
+  /**
+   *
+   */
+  private static function getInitiatorId(array $collectionCamp) {
+    $subtypeName = $collectionCamp['subtype:name'];
+
+    if ($subtypeName === 'Institution_Collection_Camp') {
+      $organizationid = $collectionCamp['Institution_collection_camp_Review.Institution_Name.id'];
+      $relationships = Relationship::get(FALSE)
+        ->addWhere('contact_id_a', '=', $organizationid)
+        ->addWhere('relationship_type_id:name', '=', 'Institution POC of')
+        ->execute();
+
+      // Assign contact_id_b as initiator if found.
+      if (isset($relationships[0]['contact_id_b'])) {
+        return $relationships[0]['contact_id_b'];
+      }
+    }
+
+    // If the subtype is not 'Institution_Collection_Camp', or no relationship was found, use the default contact_id.
+    return $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
   }
 
   /**
    * Send Authorization Email to contact.
    */
   private static function queueAuthorizationEmail($initiatorId, $subtype, $status, $collectionSourceId) {
+
     try {
       $params = [
         'initiatorId' => $initiatorId,
@@ -373,7 +399,6 @@ class CollectionBaseService extends AutoSubscriber {
   public static function processQueuedEmail($queue, $params) {
     try {
       $emailParams = self::getAuthorizationEmailParams($params);
-
       civicrm_api3('MessageTemplate', 'send', $emailParams);
     }
     catch (\Exception $ex) {
@@ -388,13 +413,13 @@ class CollectionBaseService extends AutoSubscriber {
     $collectionSourceId = $params['collectionSourceId'];
     $collectionSourceType = $params['subtype'];
     $status = $params['status'];
+
     $initiatorId = $params['initiatorId'];
 
     $collectionCampSubtypes = OptionValue::get(FALSE)
       ->addWhere('option_group_id:name', '=', 'eck_sub_types')
       ->addWhere('grouping', '=', 'Collection_Camp')
       ->execute();
-
     foreach ($collectionCampSubtypes as $subtype) {
       $subtypeValue = $subtype['value'];
       $subtypeName = $subtype['name'];
@@ -404,7 +429,6 @@ class CollectionBaseService extends AutoSubscriber {
     }
 
     $msgTitleStartsWith = $mapper[$collectionSourceType][$status] . '%';
-
     $messageTemplates = MessageTemplate::get(FALSE)
       ->addSelect('id')
       ->addWhere('msg_title', 'LIKE', $msgTitleStartsWith)
@@ -418,7 +442,6 @@ class CollectionBaseService extends AutoSubscriber {
       ->addWhere('contact_id', '=', $initiatorId)
       ->addWhere('is_primary', '=', TRUE)
       ->execute()->single();
-
     $fromEmail = OptionValue::get(FALSE)
       ->addSelect('label')
       ->addWhere('option_group_id:name', '=', 'from_email_address')
