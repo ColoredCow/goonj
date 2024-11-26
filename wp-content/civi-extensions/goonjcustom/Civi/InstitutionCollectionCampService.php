@@ -28,49 +28,32 @@ class InstitutionCollectionCampService extends AutoSubscriber {
   public static function getSubscribedEvents() {
     return [
       '&hook_civicrm_fieldOptions' => 'setIndianStateOptions',
-      '&hook_civicrm_post' => 'setOrganizationId',
+      '&hook_civicrm_post' => 'setOrganizationNameForCollectionCamp',
       '&hook_civicrm_custom' => 'setOfficeDetails',
       '&hook_civicrm_tabset' => 'institutionCollectionCampTabset',
-      '&hook_civicrm_pre' => [
-        ['setOrganizationNameForCollectionCamp'],
-        ['generateInstitutionCollectionCampQr'],
-      ],
+      '&hook_civicrm_pre' => 'generateInstitutionCollectionCampQr',
     ];
   }
 
   /**
    *
    */
-  public static function setOrganizationId(string $op, string $objectName, int $objectId, &$objectRef) {
-    if ($objectName !== 'Organization' || !$objectRef->id) {
+  public static function setOrganizationNameForCollectionCamp(string $op, string $objectName, int $objectId, &$objectRef) {
+    // Check if afform_name is set and matches the required value.
+    if (empty($objectRef->afform_name) || $objectRef->afform_name !== 'afformInstitutionCollectionCampIntentVerification') {
       return;
     }
 
-    self::$organizationId = $objectRef->id;
+    $data = json_decode($objectRef->data, TRUE);
+    // Retrieve organizationId and entityId, return if not set.
+    $organizationId = $data['Organization1'][0]['fields']['id'] ?? NULL;
+    $entityId = $data['Eck_Collection_Camp1'][0]['fields']['id'] ?? NULL;
 
-  }
-
-  /**
-   *
-   */
-  public static function setOrganizationNameForCollectionCamp(string $op, string $objectName, $objectId, &$objectRef) {
-
-    if (!self::$organizationId) {
-      \Civi::log()->error('Organization ID is not set', ['organizationId' => self::$organizationId]);
+    if (!$organizationId || !$entityId) {
       return;
     }
-
-    // Retrieve the collection camp entity ID.
-    $entityId = $objectRef['data']['Eck_Collection_Camp1'][0]['fields']['id'] ?? NULL;
-
-    if (!$entityId) {
-      \Civi::log()->error('Collection Camp ID is not set', ['entityId' => $entityId]);
-      return;
-    }
-
     EckEntity::update('Collection_Camp', TRUE)
-    // Use self::$test (Organization ID)
-      ->addValue('Institution_collection_camp_Review.Institution_Name', self::$organizationId)
+      ->addValue('Institution_collection_camp_Review.Institution_Name', $organizationId)
       ->addWhere('id', '=', $entityId)
       ->execute();
   }
