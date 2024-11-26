@@ -35,6 +35,7 @@ function generate_induction_slots($contactId = null, $days = 30) {
         $contactData = \Civi\Api4\Contact::get(FALSE)
             ->addSelect('address_primary.state_province_id', 'address_primary.city', 'Individual_fields.Created_Date')
             ->addWhere('id', '=', $contactId)
+            ->addWhere('contact_sub_type', '=', 'Volunteer')
             ->execute()->single();
 
         if (empty($contactData)) {
