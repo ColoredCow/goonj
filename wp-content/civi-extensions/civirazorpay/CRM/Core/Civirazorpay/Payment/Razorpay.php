@@ -48,9 +48,7 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
    * @return array
    */
   public function doPayment(&$params, $component = 'contribute') {
-    $apiKey = $this->_paymentProcessor['user_name'];
-    $apiSecret = $this->_paymentProcessor['password'];
-    $api = new Api($apiKey, $apiSecret);
+    $api = $this->initializeApi();
 
     if (!empty($params['is_recur'])) {
       try {
@@ -82,7 +80,7 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
 
         $subscription = $api->subscription->create([
           'plan_id' => $newPlan->id,
-          'customer_notify' => 1,
+          'customer_notify' => 0,
         // Hardcoded to 12 cycles (e.g., one year)
           'total_count' => 12,
           'quantity' => 1,
