@@ -646,7 +646,7 @@ class CollectionCampService extends AutoSubscriber {
 
     try {
       $collectionCampId = $objectRef->id;
-      $collectionCamp = EckEntity::get('Collection_Camp', TRUE)
+      $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
         ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_QR_Code.QR_Code')
         ->addWhere('id', '=', $collectionCampId)
         ->execute()->single();
@@ -844,7 +844,7 @@ class CollectionCampService extends AutoSubscriber {
   /**
    *
    */
-  private static function findCollectionCampInitiatorContact(array $array) {
+  public static function findCollectionCampInitiatorContact(array $array) {
     $filteredItems = array_filter($array, fn($item) => $item['entity_table'] === 'civicrm_eck_collection_camp');
 
     if (empty($filteredItems)) {

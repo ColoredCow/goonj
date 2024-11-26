@@ -257,7 +257,7 @@ class GoonjActivitiesService extends AutoSubscriber {
     $stateOfficeId = $stateOffice['id'];
 
     $rs = EckEntity::update('Collection_Camp', FALSE)
-      ->addValue('Collection_Camp_Intent_Details.Goonj_Office', $stateOfficeId)
+      ->addValue('Goonj_Activities.Goonj_Office', $stateOfficeId)
       ->addWhere('id', '=', $goonjActivitiesId)
       ->execute();
     \Civi::log()->info('rs', ['rs'=>$rs]);
@@ -265,9 +265,9 @@ class GoonjActivitiesService extends AutoSubscriber {
     $coordinators = Relationship::get(FALSE)
       ->addWhere('contact_id_b', '=', $stateOfficeId)
       ->addWhere('relationship_type_id:name', '=', self::RELATIONSHIP_TYPE_NAME)
-      ->addWhere('is_current', '=', TRUE)
       ->execute();
-    \Civi::log()->info('coordinators', ['coordinators'=>$coordinators]);
+    $RELATIONSHIP_TYPE_NAME = self::RELATIONSHIP_TYPE_NAME;
+    \Civi::log()->info('coordinators', ['coordinators'=>$coordinators, 'stateOfficeId'=>$stateOfficeId, 'self::RELATIONSHIP_TYPE_NAME'=>$RELATIONSHIP_TYPE_NAME]);
 
     $coordinatorCount = $coordinators->count();
 
@@ -290,7 +290,7 @@ class GoonjActivitiesService extends AutoSubscriber {
     $coordinatorId = $coordinator['contact_id_a'];
 
     $rs1 = EckEntity::update('Collection_Camp', FALSE)
-      ->addValue('Collection_Camp_Intent_Details.Coordinating_Urban_POC', $coordinatorId)
+      ->addValue('Goonj_Activities.Coordinating_Urban_Poc', $coordinatorId)
       ->addWhere('id', '=', $goonjActivitiesId)
       ->execute();
     \Civi::log()->info('rs1', ['rs1'=>$rs1]);
