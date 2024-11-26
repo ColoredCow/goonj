@@ -20,7 +20,8 @@ class CollectionBaseService extends AutoSubscriber {
   use CollectionSource;
 
   const ENTITY_NAME = 'Collection_Camp';
-  const INTENT_CUSTOM_GROUP_NAME = 'Collection_Camp_Intent_Details';
+  const COLLECTION_CAMP_CUSTOM_GROUP_NAME = 'Collection_Camp_Intent_Details';
+  const DROPPING_CENTER_CUSTOM_GROUP_NAME = 'Dropping_Centre';
 
   private static $stateCustomFieldDbDetails = [];
   private static $collectionAuthorized = NULL;
@@ -246,11 +247,12 @@ class CollectionBaseService extends AutoSubscriber {
    */
   private static function getStateFieldDbDetails() {
     if (empty(self::$stateCustomFieldDbDetails)) {
-      $customField = CustomField::get(FALSE)
-        ->addSelect('column_name', 'custom_group_id.table_name')
-        ->addWhere('custom_group_id.name', '=', self::INTENT_CUSTOM_GROUP_NAME)
-        ->addWhere('name', '=', 'state')
-        ->execute()->single();
+      $customField = self::getCustomFieldDetails(self::COLLECTION_CAMP_CUSTOM_GROUP_NAME);
+
+      // If no result is found for the primary group, fallback to the 'Dropping_Center_Intent'.
+      if (empty($customField)) {
+        $customField = self::getCustomFieldDetails(self::DROPPING_CENTER_CUSTOM_GROUP_NAME);
+      }
 
       self::$stateCustomFieldDbDetails = [
         'tableName' => $customField['custom_group_id.table_name'],
@@ -261,6 +263,17 @@ class CollectionBaseService extends AutoSubscriber {
 
     return self::$stateCustomFieldDbDetails;
 
+  }
+
+  /**
+   *
+   */
+  private static function getCustomFieldDetails($customGroupName) {
+    return CustomField::get(FALSE)
+      ->addSelect('column_name', 'custom_group_id.table_name')
+      ->addWhere('custom_group_id.name', '=', $customGroupName)
+      ->addWhere('name', '=', 'state')
+      ->execute()->single();
   }
 
   /**
