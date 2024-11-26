@@ -32,15 +32,17 @@ function generate_induction_slots($contactId = null, $days = 30) {
 
     try {
         // Fetch necessary contact details for slot generation
-        $contactData = \Civi\Api4\Contact::get(FALSE)
+        $contactDetails = \Civi\Api4\Contact::get(FALSE)
             ->addSelect('address_primary.state_province_id', 'address_primary.city', 'Individual_fields.Created_Date')
             ->addWhere('id', '=', $contactId)
             ->addWhere('contact_sub_type', '=', 'Volunteer')
-            ->execute()->single();
+            ->execute();
+        
+        $contactData = $contactDetails->first();
 
         if (empty($contactData)) {
             \Civi::log()->info('Contact not found', ['contactId' => $contactId]);
-            return [];
+            return;
         }
 
         // Retrieve induction activity for the contact
