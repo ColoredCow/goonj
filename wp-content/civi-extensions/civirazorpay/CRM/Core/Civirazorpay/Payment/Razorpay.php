@@ -465,11 +465,7 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
     // Use Razorpay API to cancel the subscription.
     try {
       $api = $this->initializeApi();
-      $subscription = $api->subscription->fetch($subscriptionId);
-      if (!$subscription->isDeleted()) {
-        $subscription->cancel();
-        \Civi::log()->info("Subscription successfully cancelled in Razorpay: $subscriptionId");
-      }
+      $subscription = $api->subscription->fetch($subscriptionId)->cancel();
     }
     catch (Exception $e) {
       $errorMessage = ts('Could not cancel Razorpay subscription: %1', [1 => $e->getMessage()]);
