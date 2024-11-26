@@ -4,6 +4,7 @@ require_once __DIR__ . '/../../../../lib/razorpay/Razorpay.php';
 
 use Civi\Api4\Contribution;
 use Civi\Api4\ContributionRecur;
+use Civi\Payment\PropertyBag;
 use Civi\Payment\Exception\PaymentProcessorException;
 use Razorpay\Api\Api;
 
@@ -17,6 +18,7 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
   // Define constants for contribution statuses.
   const CONTRIB_STATUS_COMPLETED = 1;
   const CONTRIB_STATUS_PENDING = 2;
+  const CONTRIB_STATUS_CANCELLED = 3;
   const CONTRIB_STATUS_FAILED = 4;
 
   protected $_mode = NULL;
@@ -431,6 +433,78 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
    */
   protected function supportsCancelRecurringNotifyOptional() {
     return TRUE;
+  }
+
+  /**
+   * Cancel a recurring contribution in Razorpay.
+   *
+   * @param \Civi\Payment\PropertyBag $propertyBag
+   *
+   * @return array|null[]
+   *
+   * @throws \Civi\Payment\Exception\PaymentProcessorException
+   */
+  public function doCancelRecurring(PropertyBag $propertyBag) {
+    if (!$propertyBag->has('isNotifyProcessorOnCancelRecur')) {
+      $propertyBag->setIsNotifyProcessorOnCancelRecur(TRUE);
+    }
+    $notifyProcessor = $propertyBag->getIsNotifyProcessorOnCancelRecur();
+
+    if (!$notifyProcessor) {
+      return ['message' => ts('Successfully cancelled the subscription in CiviCRM ONLY.')];
+    }
+
+    if (!$propertyBag->has('recurProcessorID')) {
+      $errorMessage = ts('The recurring contribution cannot be cancelled (No reference (processor_id) found).');
+      \Civi::log()->error($errorMessage);
+      throw new PaymentProcessorException($errorMessage);
+    }
+
+    $subscriptionId = $propertyBag->getRecurProcessorID();
+
+    // Use Razorpay API to cancel the subscription.
+    try {
+      $api = $this->initializeApi();
+      $subscription = $api->subscription->fetch($subscriptionId);
+      if (!$subscription->isDeleted()) {
+        $subscription->cancel();
+        \Civi::log()->info("Subscription successfully cancelled in Razorpay: $subscriptionId");
+      }
+    }
+    catch (Exception $e) {
+      $errorMessage = ts('Could not cancel Razorpay subscription: %1', [1 => $e->getMessage()]);
+      \Civi::log()->error($errorMessage);
+      throw new PaymentProcessorException($errorMessage);
+    }
+
+    // Update the ContributionRecur record in CiviCRM to reflect cancellation.
+    try {
+      ContributionRecur::update(FALSE)
+        ->addWhere('processor_id', '=', $subscriptionId)
+      // Cancelled.
+        ->addValue('contribution_status_id', self::CONTRIB_STATUS_CANCELLED)
+        ->addValue('cancel_date', date('Y-m-d H:i:s'))
+        ->execute();
+    }
+    catch (Exception $e) {
+      \Civi::log()->error('Failed to update ContributionRecur cancellation in CiviCRM.', [
+        'subscription_id' => $subscriptionId,
+        'error' => $e->getMessage(),
+      ]);
+    }
+
+    return ['message' => ts('Successfully cancelled the subscription at Razorpay.')];
+  }
+
+  /**
+   *
+   */
+  private function initializeApi() {
+    $apiKey = $this->_paymentProcessor['user_name'];
+    $apiSecret = $this->_paymentProcessor['password'];
+    $api = new Api($apiKey, $apiSecret);
+
+    return $api;
   }
 
 }
