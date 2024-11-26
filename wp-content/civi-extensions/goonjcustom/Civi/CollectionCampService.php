@@ -1263,7 +1263,7 @@ class CollectionCampService extends AutoSubscriber {
     $contributions = Contribution::get(FALSE)
       ->addSelect('total_amount')
       ->addWhere('Contribution_Details.Source', '=', $collectionCamp['id'])
-      ->addWhere('is_test', '=', TRUE)
+      ->addWhere('is_test', 'IS NOT NULL')
       ->execute();
 
     // Initialize sum variable.
