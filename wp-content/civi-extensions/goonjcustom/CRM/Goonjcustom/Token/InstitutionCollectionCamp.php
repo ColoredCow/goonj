@@ -55,7 +55,7 @@ class CRM_Goonjcustom_Token_InstitutionCollectionCamp extends AbstractTokenSubsc
       ->execute()->single();
 
     $collectionSource = array_merge($currentCustomData, $newCustomData);
-    error_log("collectionSource: " . print_r($collectionSource, TRUE));
+
     switch ($field) {
       case 'venue':
         $value = $this->formatVenue($collectionSource);
