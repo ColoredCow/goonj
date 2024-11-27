@@ -242,6 +242,18 @@ class InstitutionCollectionCampService extends AutoSubscriber {
         'directive' => 'afsearch-institution-collection-camp-material-contribution',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
       ],
+      'vehicleDispatch' => [
+        'title' => ts('Dispatch'),
+        'module' => 'afsearchInstitutionCampVehicleDispatchData',
+        'directive' => 'afsearch-institution-camp-vehicle-dispatch-data',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      ],
+      'materialAuthorization' => [
+        'title' => ts('Material Authorization'),
+        'module' => 'afsearchInstitutionCampAcknowledgementDispatch',
+        'directive' => 'afsearch-institution-camp-acknowledgement-dispatch',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      ],
     ];
 
     foreach ($tabConfigs as $key => $config) {
