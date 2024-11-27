@@ -20,7 +20,6 @@ use Civi\Traits\CollectionSource;
 class CollectionBaseService extends AutoSubscriber {
   use CollectionSource;
 
-  const ENTITY_NAME = 'Collection_Camp';
   const INTENT_CUSTOM_GROUP_NAME = 'Collection_Camp_Intent_Details';
 
   private static $stateCustomFieldDbDetails = [];
@@ -68,12 +67,10 @@ class CollectionBaseService extends AutoSubscriber {
    *
    */
   private static function generateBaseFileName($collectionSourceId) {
-    if (self::getEntitySubtypeName($collectionSourceId) == self::ENTITY_NAME) {
-      $baseFileName = "collection_camp_{$collectionSourceId}.png";
-    }
-    else {
-      $baseFileName = "Institution_collection_camp_{$collectionSourceId}.png";
-    }
+    // Get the entity subtype name for the collection source.
+    $entitySubtype = self::getEntitySubtypeName($collectionSourceId);
+
+    $baseFileName = strtolower($entitySubtype) . "_{$collectionSourceId}.png";
 
     return $baseFileName;
   }
