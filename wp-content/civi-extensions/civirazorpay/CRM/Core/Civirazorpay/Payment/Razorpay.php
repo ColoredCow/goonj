@@ -4,8 +4,8 @@ require_once __DIR__ . '/../../../../lib/razorpay/Razorpay.php';
 
 use Civi\Api4\Contribution;
 use Civi\Api4\ContributionRecur;
-use Civi\Payment\PropertyBag;
 use Civi\Payment\Exception\PaymentProcessorException;
+use Civi\Payment\PropertyBag;
 use Razorpay\Api\Api;
 
 /**
@@ -36,6 +36,50 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
    */
   public function supportsRecurring() {
     return TRUE;
+  }
+
+  /**
+   * Does this processor support cancelling recurring contributions through code.
+   *
+   * If the processor returns true it must be possible to take action from within CiviCRM
+   * that will result in no further payments being processed.
+   *
+   * @return bool
+   */
+  protected function supportsCancelRecurring() {
+    return TRUE;
+  }
+
+  /**
+   * Does the processor support the user having a choice as to whether to cancel the recurring with the processor?
+   *
+   * If this returns TRUE then there will be an option to send a cancellation request in the cancellation form.
+   *
+   * This would normally be false for processors where CiviCRM maintains the schedule.
+   *
+   * @return bool
+   */
+  protected function supportsCancelRecurringNotifyOptional() {
+    return TRUE;
+  }
+
+  /**
+   *
+   */
+  public function checkConfig() {
+    // @todo
+    return [];
+  }
+
+  /**
+   *
+   */
+  private function initializeApi() {
+    $apiKey = $this->_paymentProcessor['user_name'];
+    $apiSecret = $this->_paymentProcessor['password'];
+    $api = new Api($apiKey, $apiSecret);
+
+    return $api;
   }
 
   /**
@@ -401,39 +445,6 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
   }
 
   /**
-   *
-   */
-  public function checkConfig() {
-    // @todo
-    return [];
-  }
-
-  /**
-   * Does this processor support cancelling recurring contributions through code.
-   *
-   * If the processor returns true it must be possible to take action from within CiviCRM
-   * that will result in no further payments being processed.
-   *
-   * @return bool
-   */
-  protected function supportsCancelRecurring() {
-    return TRUE;
-  }
-
-  /**
-   * Does the processor support the user having a choice as to whether to cancel the recurring with the processor?
-   *
-   * If this returns TRUE then there will be an option to send a cancellation request in the cancellation form.
-   *
-   * This would normally be false for processors where CiviCRM maintains the schedule.
-   *
-   * @return bool
-   */
-  protected function supportsCancelRecurringNotifyOptional() {
-    return TRUE;
-  }
-
-  /**
    * Cancel a recurring contribution in Razorpay.
    *
    * @param \Civi\Payment\PropertyBag $propertyBag
@@ -488,17 +499,6 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
     }
 
     return ['message' => ts('Successfully cancelled the subscription at Razorpay.')];
-  }
-
-  /**
-   *
-   */
-  private function initializeApi() {
-    $apiKey = $this->_paymentProcessor['user_name'];
-    $apiSecret = $this->_paymentProcessor['password'];
-    $api = new Api($apiKey, $apiSecret);
-
-    return $api;
   }
 
 }
