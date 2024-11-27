@@ -115,6 +115,7 @@ class MaterialContributionService extends AutoSubscriber {
         ->execute()->single();
       return $organization['address_primary.street_address'] ?? '';
     }
+
     $campField = ($subtype == 'Collection_Camp')
     ? 'Material_Contribution.Collection_Camp'
     : (($subtype == 'Dropping_Center')
@@ -139,6 +140,7 @@ class MaterialContributionService extends AutoSubscriber {
         : (($subtype == 'Institution_Collection_Camp')
             ? 'Institution_Collection_Camp_Intent.Collection_Camp_Address'
             : NULL));
+
     $collectionCamp = EckEntity::get('Collection_Camp', TRUE)
       ->addSelect($addressField)
       ->addWhere('id', '=', $activity[$campField])
