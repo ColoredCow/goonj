@@ -13,6 +13,7 @@ return [
   'Corporate Meet' => 'CM',
   'Disaster Exhibition' => 'DE',
   'Dropping Center' => 'DC',
+  'Goonj Activities'=> 'GA',
   'Field Visit' => 'FV',
   'GBG Stall' => 'GBG',
   'Jagriti Yatra' => 'JY',

@@ -23,7 +23,8 @@ trait CollectionSource {
 
       self::$subtypeId = (int) $subtype['value'];
     }
-
+    $subtypeIdd = self::$subtypeId;
+    \Civi::log()->info('subtypeId', ['subtypeIdss'=>$subtypeIdd]);
     return self::$subtypeId;
   }
 

@@ -375,6 +375,7 @@ class CollectionCampService extends AutoSubscriber {
    */
   public static function generateCollectionCampCode(string $op, string $objectName, $objectId, &$objectRef) {
     $statusDetails = self::checkCampStatusAndIds($objectName, $objectId, $objectRef);
+    \Civi::log()->info('statusDetails', ['statusDetails'=>$statusDetails]);
 
     if (!$statusDetails) {
       return;
@@ -437,6 +438,7 @@ class CollectionCampService extends AutoSubscriber {
 
         // Fetch the event code.
         $eventCode = $config['event_codes'][$currentTitle] ?? 'UNKNOWN';
+        \Civi::log()->info('eventCode', ['eventCode'=>$eventCode]);
 
         // Modify the title to include the year, state code, event code, and camp Id.
         $newTitle = $year . '/' . $stateCode . '/' . $eventCode . '/' . $campId;
@@ -472,11 +474,19 @@ class CollectionCampService extends AutoSubscriber {
    *
    */
   public static function getStateIdForSubtype(array $objectRef, int $subtypeId, ?string $campTitle): ?int {
+    \Civi::log()->info('campTitle', ['campTitle'=>$campTitle]);
     // Fetch option value based on camp title.
     if ($campTitle === 'Institution Collection Camp') {
       $institutionOptionValue = self::getOptionValue('Institution_Collection_Camp');
       if ($subtypeId == $institutionOptionValue['value']) {
         return $objectRef['Institution_Collection_Camp_Intent.State'] ?? NULL;
+      }
+    }
+
+    if ($campTitle === 'Goonj Activities') {
+      $goonjActivitiesOptionValue = self::getOptionValue('Goonj_Activities');
+      if ($subtypeId == $goonjActivitiesOptionValue['value']) {
+        return $objectRef['Goonj_Activities.State'] ?? NULL;
       }
     }
 
@@ -646,7 +656,7 @@ class CollectionCampService extends AutoSubscriber {
 
     try {
       $collectionCampId = $objectRef->id;
-      $collectionCamp = EckEntity::get('Collection_Camp', TRUE)
+      $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
         ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_QR_Code.QR_Code')
         ->addWhere('id', '=', $collectionCampId)
         ->execute()->single();
