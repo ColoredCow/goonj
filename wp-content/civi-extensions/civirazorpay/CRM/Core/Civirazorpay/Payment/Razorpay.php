@@ -525,7 +525,7 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
    *       installments, {membershipType|only if mode=auto_renew},
    *       selfService (bool) - TRUE if user doesn't have "edit contributions" permission.
    *         ie. they are accessing via a "self-service" link from an email receipt or similar.
-   *   - cancelRecurNotSupportedText
+   *   - cancelRecurNotSupportedText.
    *
    * @param array $params
    *   Parameters for the field, context specific.
@@ -538,7 +538,7 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
     switch ($context) {
       case 'contributionPageRecurringHelp':
         if ($params['is_recur_installments']) {
-          return ts('You can specify the number of installments for your contribution, or you can leave the number of installments blank to default to 36. In either case, you can choose to cancel at any time.');
+          return ts('Please specify the number of times you want your recurring contribution to renew. You can choose to cancel at any time.');
         }
     }
     return $text;
