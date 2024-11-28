@@ -41,11 +41,9 @@ function civicrm_api3_goonjcustom_institution_collection_camp_cron($params) {
     ->addWhere('grouping', '=', 'Collection_Camp')
     ->setLimit(1)
     ->execute()->single();
-    error_log("optionValues: " . print_r($optionValues, TRUE));
   $collectionCampSubtype = $optionValues['value'];
-  error_log("collectionCampSubtype: " . print_r($collectionCampSubtype, TRUE));
-//   $today = new DateTimeImmutable();
-//   $endOfDay = $today->setTime(23, 59, 59)->format('Y-m-d H:i:s');
+  $today = new DateTimeImmutable();
+  $endOfDay = $today->setTime(23, 59, 59)->format('Y-m-d H:i:s');
 
   $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
     ->addSelect(
@@ -61,7 +59,7 @@ function civicrm_api3_goonjcustom_institution_collection_camp_cron($params) {
     )
     ->addWhere('Collection_Camp_Core_Details.Status', '=', 'authorized')
     ->addWhere('subtype', '=', $collectionCampSubtype)
-    // ->addWhere('Institution_Collection_Camp_Intent.Collections_will_start_on_Date', '<=', $endOfDay)
+    ->addWhere('Institution_Collection_Camp_Intent.Collections_will_start_on_Date', '<=', $endOfDay)
     ->addWhere('Institution_Collection_Camp_Logistics.Camp_to_be_attended_by', 'IS NOT EMPTY')
     ->addWhere('Institution_collection_camp_Review.Camp_Status', '!=', 'aborted')
     ->addClause('OR',
@@ -71,11 +69,8 @@ function civicrm_api3_goonjcustom_institution_collection_camp_cron($params) {
     ->execute();
 
   foreach ($collectionCamps as $camp) {
-    error_log("collectionCamps: " . print_r($collectionCamps, TRUE));
     try {
-        InstitutionCollectionCampService::sendLogisticsEmail($camp);
-    //   CollectionCampService::updateContributorCount($camp);
-
+      InstitutionCollectionCampService::sendLogisticsEmail($camp);
     }
     catch (\Exception $e) {
       \Civi::log()->info('Error processing camp', [
