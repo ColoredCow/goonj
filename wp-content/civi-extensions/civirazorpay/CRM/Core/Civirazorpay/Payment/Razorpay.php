@@ -122,11 +122,12 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
 
         \Civi::log()->info("Razorpay subscription plan created: $newPlan->id");
 
+        $installmentCount = $this->prepareInstallmentCount($params);
+
         $subscription = $api->subscription->create([
           'plan_id' => $newPlan->id,
           'customer_notify' => 0,
-        // Hardcoded to 12 cycles (e.g., one year)
-          'total_count' => 12,
+          'total_count' => $installmentCount,
           'quantity' => 1,
           'notes' => [
             'contribution_id' => $params['contributionID'],
@@ -499,6 +500,48 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
     }
 
     return ['message' => ts('Successfully cancelled the subscription at Razorpay.')];
+  }
+
+  /**
+   *
+   */
+  private function prepareInstallmentCount($params) {
+    return $params['installments'] ?? 36;
+  }
+
+  /**
+   * Get help text information (help, description, etc.) about this payment,
+   * to display to the user.
+   *
+   * @param string $context
+   *   Context of the text.
+   *   Only explicitly supported contexts are handled without error.
+   *   Currently supported:
+   *   - contributionPageRecurringHelp (params: is_recur_installments, is_email_receipt)
+   *   - contributionPageContinueText (params: amount, is_payment_to_existing)
+   *   - cancelRecurDetailText:
+   *     params:
+   *       mode, amount, currency, frequency_interval, frequency_unit,
+   *       installments, {membershipType|only if mode=auto_renew},
+   *       selfService (bool) - TRUE if user doesn't have "edit contributions" permission.
+   *         ie. they are accessing via a "self-service" link from an email receipt or similar.
+   *   - cancelRecurNotSupportedText
+   *
+   * @param array $params
+   *   Parameters for the field, context specific.
+   *
+   * @return string
+   */
+  public function getText($context, $params) {
+    $text = parent::getText($context, $params);
+
+    switch ($context) {
+      case 'contributionPageRecurringHelp':
+        if ($params['is_recur_installments']) {
+          return ts('You can specify the number of installments for your contribution, or you can leave the number of installments blank to default to 36. In either case, you can choose to cancel at any time.');
+        }
+    }
+    return $text;
   }
 
 }
