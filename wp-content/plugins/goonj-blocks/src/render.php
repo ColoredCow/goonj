@@ -20,6 +20,7 @@ $headings = [
   'institution-collection-camp' => 'Collection Camp',
   'processing-center' => 'Processing Center',
   'induction-schedule' => 'Induction Schedule',
+  'goonj-activities' => 'Goonj Activities'
 ];
 
 $heading_text = $headings[$target];
@@ -36,6 +37,13 @@ $dropping_center_register_link = sprintf(
     $action_target['title'],
     $action_target['Dropping_Centre.State'],
     $action_target['Dropping_Centre.District_City'],
+);
+
+$goonj_activities_register_link = sprintf(
+    '/volunteer-registration/form/#?source=%s&state_province_id=%s&city=%s',
+    $action_target['title'],
+    $action_target['Goonj_Activities.State'],
+    $action_target['Goonj_Activities.District_City'],
 );
 
 $institution_collection_camp_register_link = sprintf(
@@ -142,9 +150,17 @@ $target_data = [
     'donation_link' => $donation_link,
     'register_link' => $institution_collection_camp_register_link,
   ],
+  'goonj-activities' => [
+    'start_time' => 'Goonj_Activities.Start_Date',
+    'end_time' => 'Goonj_Activities.End_Date',
+    'address' => 'Goonj_Activities.Where_do_you_wish_to_organise_the_activity_',
+    'address_label' => 'Address of the camp',
+    'donation_link' => $donation_link,
+    'register_link' => $goonj_activities_register_link,
+  ],
 ];
 
-if (in_array($target, ['collection-camp','institution-collection-camp', 'dropping-center'])) :
+if (in_array($target, ['collection-camp','institution-collection-camp', 'dropping-center', 'goonj-activities'])) :
   $target_info = $target_data[$target];
 
   try {
@@ -177,7 +193,7 @@ if (in_array($target, ['collection-camp','institution-collection-camp', 'droppin
             </tr>
             <?php endif; ?>
 
-            <?php if ($target === 'collection-camp' || $target === 'institution-collection-camp') : ?>
+            <?php if ($target === 'collection-camp' || $target === 'institution-collection-camp' || $target === 'goonj-activities') : ?>
             <tr class="wp-block-gb-table-row">
                 <td class="wp-block-gb-table-cell wp-block-gb-table-header">From</td>
                 <td class="wp-block-gb-table-cell"><?php echo gb_format_date($start_date); ?></td>
@@ -201,9 +217,11 @@ if (in_array($target, ['collection-camp','institution-collection-camp', 'droppin
         <a href="<?php echo esc_url($register_link); ?>" class="wp-block-gb-action-button">
             <?php esc_html_e('Volunteer with Goonj', 'goonj-blocks'); ?>
         </a>
-        <a href="<?php echo esc_url($contribution_link ?? '#'); ?>" class="wp-block-gb-action-button">
-            <?php esc_html_e('Record your Material Contribution', 'goonj-blocks'); ?>
-        </a>
+        <?php if ($target !== 'goonj-activities'): ?>
+            <a href="<?php echo esc_url($contribution_link ?? '#'); ?>" class="wp-block-gb-action-button">
+                <?php esc_html_e('Record your Material Contribution', 'goonj-blocks'); ?>
+            </a>
+        <?php endif; ?>
         <a href="<?php echo esc_url($donation_link); ?>" class="wp-block-gb-action-button">
             <?php esc_html_e('Monetary Contribution', 'goonj-blocks'); ?>
         </a>
