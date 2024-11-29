@@ -496,9 +496,6 @@ class GoonjActivitiesService extends AutoSubscriber {
    *   The reference to the object.
    */
   public static function generateGoonjActivitiesQr(string $op, string $objectName, $objectId, &$objectRef) {
-    if ($objectRef['subtype']) {
-      !self::isCurrentSubtype($objectRef);
-    }
     if ($objectName !== 'Eck_Collection_Camp' || !$objectId || !self::isCurrentSubtype($objectRef)) {
       return;
     }
