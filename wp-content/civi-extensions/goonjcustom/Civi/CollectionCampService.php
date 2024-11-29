@@ -375,7 +375,6 @@ class CollectionCampService extends AutoSubscriber {
    */
   public static function generateCollectionCampCode(string $op, string $objectName, $objectId, &$objectRef) {
     $statusDetails = self::checkCampStatusAndIds($objectName, $objectId, $objectRef);
-    \Civi::log()->info('statusDetails', ['statusDetails'=>$statusDetails]);
 
     if (!$statusDetails) {
       return;
@@ -438,7 +437,6 @@ class CollectionCampService extends AutoSubscriber {
 
         // Fetch the event code.
         $eventCode = $config['event_codes'][$currentTitle] ?? 'UNKNOWN';
-        \Civi::log()->info('eventCode', ['eventCode'=>$eventCode]);
 
         // Modify the title to include the year, state code, event code, and camp Id.
         $newTitle = $year . '/' . $stateCode . '/' . $eventCode . '/' . $campId;
@@ -474,7 +472,6 @@ class CollectionCampService extends AutoSubscriber {
    *
    */
   public static function getStateIdForSubtype(array $objectRef, int $subtypeId, ?string $campTitle): ?int {
-    \Civi::log()->info('campTitle', ['campTitle'=>$campTitle]);
     // Fetch option value based on camp title.
     if ($campTitle === 'Institution Collection Camp') {
       $institutionOptionValue = self::getOptionValue('Institution_Collection_Camp');
