@@ -2,20 +2,18 @@
 
 namespace Civi;
 
+use Civi\Afform\Event\AfformSubmitEvent;
+use Civi\Api4\Activity;
 use Civi\Api4\Contact;
 use Civi\Api4\CustomField;
 use Civi\Api4\EckEntity;
-use Civi\Api4\Email;
-use Civi\Api4\Relationship;
 use Civi\Api4\OptionValue;
-use Civi\Api4\Activity;
+use Civi\Api4\Relationship;
 use Civi\Api4\StateProvince;
+use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
-use Civi\Afform\Event\AfformSubmitEvent;
 use Civi\Traits\QrCodeable;
-use Civi\Api4\Utils\CoreUtil;
-use Civi\CollectionCampService;
 
 /**
  *
@@ -39,7 +37,7 @@ class GoonjActivitiesService extends AutoSubscriber {
       '&hook_civicrm_fieldOptions' => 'setIndianStateOptions',
       'civi.afform.submit' => [
         ['setGoonjActivitiesAddress', 9],
-        ['setActivitiesVolunteersAddress', 8]
+        ['setActivitiesVolunteersAddress', 8],
       ],
       '&hook_civicrm_custom' => [
         ['setOfficeDetails'],
@@ -49,7 +47,8 @@ class GoonjActivitiesService extends AutoSubscriber {
       '&hook_civicrm_tabset' => 'goonjActivitiesTabset',
       '&hook_civicrm_pre' => [
         ['generateGoonjActivitiesQr'],
-      ]
+        ['createActivityForGoonjActivityCollectionCamp'],
+      ],
     ];
   }
 
@@ -90,7 +89,7 @@ class GoonjActivitiesService extends AutoSubscriber {
 
   }
 
-    /**
+  /**
    *
    */
   public static function setGoonjActivitiesAddress(AfformSubmitEvent $event) {
@@ -125,7 +124,7 @@ class GoonjActivitiesService extends AutoSubscriber {
     }
   }
 
-    /**
+  /**
    *
    */
   public static function setActivitiesVolunteersAddress(AfformSubmitEvent $event) {
@@ -152,7 +151,7 @@ class GoonjActivitiesService extends AutoSubscriber {
 
   }
 
-    /**
+  /**
    * This hook is called after the database write on a custom table.
    *
    * @param string $op
@@ -291,7 +290,7 @@ class GoonjActivitiesService extends AutoSubscriber {
 
   }
 
-    /**
+  /**
    *
    */
   private static function findStateField(array $array) {
@@ -328,7 +327,7 @@ class GoonjActivitiesService extends AutoSubscriber {
     return $fallbackOffices->first();
   }
 
-    /**
+  /**
    *
    */
   private static function getFallbackCoordinator() {
@@ -347,7 +346,7 @@ class GoonjActivitiesService extends AutoSubscriber {
     return $coordinator;
   }
 
-    /**
+  /**
    *
    */
   private static function findGoonjActivitiesInitiatorContact(array $array) {
@@ -388,6 +387,13 @@ class GoonjActivitiesService extends AutoSubscriber {
     }
 
     $tabConfigs = [
+      'activities' => [
+        'title' => ts('Activities'),
+        'module' => 'afsearchCollectionCampActivity',
+        'directive' => 'afsearch-collection-camp-activity',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
+      ],
       'logistics' => [
         'title' => ts('Logistics'),
         'module' => 'afsearchCollectionCampLogistics',
@@ -490,7 +496,7 @@ class GoonjActivitiesService extends AutoSubscriber {
    *   The reference to the object.
    */
   public static function generateGoonjActivitiesQr(string $op, string $objectName, $objectId, &$objectRef) {
-    if($objectRef['subtype']){
+    if ($objectRef['subtype']) {
       !self::isCurrentSubtype($objectRef);
     }
     if ($objectName !== 'Eck_Collection_Camp' || !$objectId || !self::isCurrentSubtype($objectRef)) {
@@ -521,7 +527,7 @@ class GoonjActivitiesService extends AutoSubscriber {
     }
   }
 
-    /**
+  /**
    *
    */
   private static function generateGoonjActivitiesQrCode($id) {
@@ -536,4 +542,84 @@ class GoonjActivitiesService extends AutoSubscriber {
     self::generateQrCode($data, $id, $saveOptions);
 
   }
+
+  /**
+   * This hook is called after a db write on entities.
+   *
+   * @param string $op
+   *   The type of operation being performed.
+   * @param string $objectName
+   *   The name of the object.
+   * @param int $objectId
+   *   The unique identifier for the object.
+   * @param object $objectRef
+   *   The reference to the object.
+   */
+  public static function createActivityForGoonjActivityCollectionCamp(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($objectName != 'Eck_Collection_Camp' || self::getEntitySubtypeName($objectId) !== self::ENTITY_SUBTYPE_NAME) {
+      return;
+    }
+
+    $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
+
+    if (!$newStatus || !$objectId) {
+      return;
+    }
+
+    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id', 'title')
+      ->addWhere('id', '=', $objectId)
+      ->execute()->single();
+
+    $currentStatus = $collectionCamp['Collection_Camp_Core_Details.Status'];
+
+    if ($currentStatus === $newStatus || $newStatus !== 'authorized') {
+      return;
+    }
+
+    // // Check for status change.
+    // // Access the id within the decoded data.
+    $campId = $objectRef['id'];
+
+    if ($campId === NULL) {
+      return;
+    }
+
+    $activities = $objectRef['Goonj_Activities.How_do_you_want_to_engage_with_Goonj_'];
+    $startDate = $objectRef['Goonj_Activities.Start_Date'];
+    $endDate = $objectRef['Goonj_Activities.End_Date'];
+    $initiator = $objectRef['Collection_Camp_Core_Details.Contact_Id'];
+
+    foreach ($activities as $activityName) {
+      // Check if the activity is 'Others'.
+      if ($activityName == 'Other') {
+        $otherActivity = $objectRef['Goonj_Activities.Other_Activity_Details'] ?? '';
+
+        if ($otherActivity) {
+          // Use the 'Other_activity' field as the title.
+          $activityName = $otherActivity;
+        }
+        else {
+          continue;
+        }
+      }
+
+      $optionValue = OptionValue::get(TRUE)
+        ->addSelect('value')
+        ->addWhere('option_group_id:name', '=', 'eck_sub_types')
+        ->addWhere('grouping', '=', 'Collection_Camp_Activity')
+        ->addWhere('name', '=', 'Goonj_Activities')
+        ->execute()->single();
+
+      $results = EckEntity::create('Collection_Camp_Activity', TRUE)
+        ->addValue('title', $activityName)
+        ->addValue('subtype', $optionValue['value'])
+        ->addValue('Collection_Camp_Activity.Collection_Camp_Id', $campId)
+        ->addValue('Collection_Camp_Activity.Start_Date', $startDate)
+        ->addValue('Collection_Camp_Activity.End_Date', $endDate)
+        ->addValue('Collection_Camp_Activity.Organizing_Person', $initiator)
+        ->execute();
+    }
+  }
+
 }
