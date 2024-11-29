@@ -9,7 +9,7 @@ use Civi\Api4\OptionValue;
 use Civi\InstitutionCollectionCampService;
 
 /**
- * Goonjcustom.CollectionCampCron API specification (optional)
+ * Goonjcustom.InstitutionCollectionCampCron API specification (optional)
  * This is used for documentation and validation.
  *
  * @param array $spec
