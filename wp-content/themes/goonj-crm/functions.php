@@ -398,21 +398,20 @@ function goonj_handle_user_identification_form() {
 		// If the volunteer is not inducted,
 		// 1. Trigger an email for Induction
 		// 2. Change volunteer status to "Waiting for Induction"
-		\Civi::log()->info('volunter', ['232323'=>goonj_is_volunteer_inducted( $found_contacts )]);
-		// if ( ! goonj_is_volunteer_inducted( $found_contacts ) ) {
-		// 	if ( $purpose === 'dropping-center' ) {
-		// 		$redirect_url = home_url( '/dropping-center/waiting-induction/' );
-		// 	} elseif ( $purpose === 'volunteer-registration' ) {
-		// 		$redirect_url = home_url( '/volunteer-registration/waiting-induction/' );
-		// 	} elseif ( $purpose === 'goonj-activities' ) {
-		// 		$redirect_url = home_url( '/goonj-activities/waiting-induction' );
-		// 	} else {
-		// 		$redirect_url = home_url( '/collection-camp/waiting-induction/' );
-		// 	}
+		if ( ! goonj_is_volunteer_inducted( $found_contacts ) ) {
+			if ( $purpose === 'dropping-center' ) {
+				$redirect_url = home_url( '/dropping-center/waiting-induction/' );
+			} elseif ( $purpose === 'volunteer-registration' ) {
+				$redirect_url = home_url( '/volunteer-registration/waiting-induction/' );
+			} elseif ( $purpose === 'goonj-activities' ) {
+				$redirect_url = home_url( '/goonj-activities/waiting-induction' );
+			} else {
+				$redirect_url = home_url( '/collection-camp/waiting-induction/' );
+			}
 
-		// 	wp_redirect( $redirect_url );
-		// 	exit;
-		// }
+			wp_redirect( $redirect_url );
+			exit;
+		}
 
 		// If we are here, then it means the user exists as an inducted volunteer.
 		// Fetch the most recent collection camp activity based on the creation date
