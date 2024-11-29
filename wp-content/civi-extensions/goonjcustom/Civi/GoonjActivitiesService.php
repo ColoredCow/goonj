@@ -388,13 +388,6 @@ class GoonjActivitiesService extends AutoSubscriber {
     }
 
     $tabConfigs = [
-      // 'activities' => [
-      //   'title' => ts('Activities'),
-      //   'module' => 'afsearchCollectionCampActivity',
-      //   'directive' => 'afsearch-collection-camp-activity',
-      //   'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-      //   'permissions' => ['goonj_chapter_admin'],
-      // ],
       'logistics' => [
         'title' => ts('Logistics'),
         'module' => 'afsearchCollectionCampLogistics',
@@ -497,15 +490,12 @@ class GoonjActivitiesService extends AutoSubscriber {
    *   The reference to the object.
    */
   public static function generateGoonjActivitiesQr(string $op, string $objectName, $objectId, &$objectRef) {
-    // \Civi::log()->info('op', ['op'=>$op,'objectName'=>$objectName,'objectId'=>$objectId , 'objectRef'=>$objectRef ]);
     if($objectRef['subtype']){
       !self::isCurrentSubtype($objectRef);
-      // \Civi::log()->info('op', ['op'=>$op,'objectName'=>$objectName,'objectId'=>$objectId , 'objectRef'=>$objectRef ]);
     }
     if ($objectName !== 'Eck_Collection_Camp' || !$objectId || !self::isCurrentSubtype($objectRef)) {
       return;
     }
-    // \Civi::log()->info('checkingggg');
 
     $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
 
