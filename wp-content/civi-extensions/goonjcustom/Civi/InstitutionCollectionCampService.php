@@ -256,7 +256,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       $today = new \DateTimeImmutable();
       $endOfToday = $today->setTime(23, 59, 59);
       if (!$logisticEmailSent && $startDate <= $endOfToday) {
-        if (!$selfManagedBy && !$campAttendedById) {
+        if (!$selfManagedBy && $campAttendedById) {
           $recipient = Contact::get(FALSE)
             ->addSelect('email.email', 'display_name')
             ->addJoin('Email AS email', 'LEFT')
