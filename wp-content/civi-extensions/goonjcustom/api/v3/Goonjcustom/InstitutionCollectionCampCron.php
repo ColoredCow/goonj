@@ -41,6 +41,7 @@ function civicrm_api3_goonjcustom_institution_collection_camp_cron($params) {
     ->addWhere('grouping', '=', 'Collection_Camp')
     ->setLimit(1)
     ->execute()->single();
+
   $collectionCampSubtype = $optionValues['value'];
   $today = new DateTimeImmutable();
   $endOfDay = $today->setTime(23, 59, 59)->format('Y-m-d H:i:s');
