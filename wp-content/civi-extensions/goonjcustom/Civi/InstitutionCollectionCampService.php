@@ -571,6 +571,12 @@ class InstitutionCollectionCampService extends AutoSubscriber {
         'directive' => 'afsearch-institution-camp-acknowledgement-dispatch',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
       ],
+      'campOutcome' => [
+        'title' => ts('Camp Outcome'),
+        'module' => 'afsearchInstitutionCampOutcome',
+        'directive' => 'afsearch-institution-camp-outcome',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      ],
     ];
 
     foreach ($tabConfigs as $key => $config) {
