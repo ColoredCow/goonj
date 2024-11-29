@@ -44,8 +44,7 @@ function civicrm_api3_goonjcustom_institution_collection_camp_cron($params) {
   $collectionCampSubtype = $optionValues['value'];
   $today = new DateTimeImmutable();
   $endOfDay = $today->setTime(23, 59, 59)->format('Y-m-d H:i:s');
-  error_log("endOfDay: " . print_r($endOfDay, TRUE));
-  error_log("endOfDay: " . print_r($endOfDay, TRUE));
+
   $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
     ->addSelect(
       'title',
