@@ -45,7 +45,13 @@ function civirazorpay_civicrm_buildForm($formName, &$form) {
   if ($formName === 'CRM_Contribute_Form_Contribution_Main') {
     if ($form->elementExists('installments')) {
       $form->setDefaults(['installments' => 36]);
-      $form->addRule('installments', ts('The number of installments is required.'), 'required');
+
+      $form->addFormRule(function($fields) {
+        if (!empty($fields['is_recur']) && empty($fields['installments'])) {
+          return ['installments' => ts('The number of installments is required when recurring contribution is selected.')];
+        }
+        return TRUE;
+      });
     }
   }
 }

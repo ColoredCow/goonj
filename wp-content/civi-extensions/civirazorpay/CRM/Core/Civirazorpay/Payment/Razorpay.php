@@ -7,6 +7,7 @@ use Civi\Api4\ContributionRecur;
 use Civi\Payment\Exception\PaymentProcessorException;
 use Civi\Payment\PropertyBag;
 use Razorpay\Api\Api;
+use Razorpay\Api\Errors\SignatureVerificationError;
 
 /**
  * Class CRM_Core_Civirazorpay_Payment_Razorpay
@@ -80,6 +81,28 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
     $api = new Api($apiKey, $apiSecret);
 
     return $api;
+  }
+
+  /**
+   * Validates the webhook signature using Razorpay's PHP SDK.
+   *
+   * @param string $webhookBody
+   *   The raw webhook body received from Razorpay.
+   * @param string|null $webhookSignature
+   *   The signature sent in the `X-Razorpay-Signature` header.
+   * @param string $webhookSecret
+   *   The webhook secret key configured in Razorpay.
+   *
+   * @throws CRM_Core_Exception
+   *   Throws an exception if the signature is invalid or missing.
+   */
+  private function validateWebhook($webhookBody, $webhookSignature, $webhookSecret) {
+    if (empty($webhookSignature)) {
+      throw new CRM_Core_Exception("Missing Razorpay webhook signature.");
+    }
+
+    $api = $this->initializeApi();
+    $api->utility->verifyWebhookSignature($webhookBody, $webhookSignature, $webhookSecret);
   }
 
   /**
@@ -198,6 +221,13 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
   }
 
   /**
+   * @return string
+   */
+  public function getWebhookSecret(): string {
+    return trim($this->_paymentProcessor['signature'] ?? '');
+  }
+
+  /**
    *
    */
   public function handlePaymentNotification() {
@@ -221,6 +251,20 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
 
     $rawData = file_get_contents("php://input");
     $event = json_decode($rawData, TRUE);
+
+    $webhookSecret = $this->getWebhookSecret();
+
+    if (!empty($webhookSecret)) {
+      $sigHeader = $_SERVER['HTTP_X_RAZORPAY_SIGNATURE'];
+      try {
+        $this->validateWebhook($rawData, $sigHeader, $webhookSecret);
+      }
+      catch (SignatureVerificationError $e) {
+        \Civi::log('razorpay')->error($this->getLogPrefix() . 'webhook signature validation error: ' . $e->getMessage());
+        http_response_code(400);
+        exit();
+      }
+    }
 
     $this->processPaymentNotification($event);
   }
@@ -542,6 +586,13 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
         }
     }
     return $text;
+  }
+
+  /**
+   * @return string
+   */
+  public function getLogPrefix(): string {
+    return 'Razorpay(' . $this->getID() . '): ';
   }
 
 }
