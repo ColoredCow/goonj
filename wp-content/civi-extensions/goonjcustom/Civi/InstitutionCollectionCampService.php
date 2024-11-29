@@ -81,7 +81,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
   /**
    *
    */
-  private static function findOfficeId(array $array) {
+  private static function getOfficeId(array $array) {
     $filteredItems = array_filter($array, fn($item) => $item['entity_table'] === 'civicrm_eck_collection_source_vehicle_dispatch');
 
     if (empty($filteredItems)) {
@@ -117,7 +117,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     if ($op !== 'create') {
       return;
     }
-    if (!($goonjField = self::findOfficeId($params))) {
+    if (!($goonjField = self::getOfficeId($params))) {
       return;
     }
 
