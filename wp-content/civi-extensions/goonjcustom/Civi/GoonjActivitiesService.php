@@ -251,7 +251,7 @@ class GoonjActivitiesService extends AutoSubscriber {
 
     $stateOfficeId = $stateOffice['id'];
 
-    $rs = EckEntity::update('Collection_Camp', FALSE)
+    EckEntity::update('Collection_Camp', FALSE)
       ->addValue('Goonj_Activities.Goonj_Office', $stateOfficeId)
       ->addWhere('id', '=', $goonjActivitiesId)
       ->execute();
@@ -282,7 +282,7 @@ class GoonjActivitiesService extends AutoSubscriber {
 
     $coordinatorId = $coordinator['contact_id_a'];
 
-    $rs1 = EckEntity::update('Collection_Camp', FALSE)
+    EckEntity::update('Collection_Camp', FALSE)
       ->addValue('Goonj_Activities.Coordinating_Urban_Poc', $coordinatorId)
       ->addWhere('id', '=', $goonjActivitiesId)
       ->execute();
@@ -300,7 +300,7 @@ class GoonjActivitiesService extends AutoSubscriber {
       ->addWhere('name', '=', 'State')
       ->addWhere('custom_group_id:name', '=', 'Goonj_Activities')
       ->execute()
-      ->first()['id'] ?? NULL;
+      ->first()['id'];
 
     if (!$stateFieldId) {
       return FALSE;
