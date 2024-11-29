@@ -338,7 +338,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
           }
 
           $mailParams = [
-            'subject' => 'Dummy Outcome Notification for Self Managed Camp: ' . $campCode,
+            'subject' => 'Outcome Notification for Self Managed Camp: ' . $campCode,
             'from' => $from,
             'toEmail' => $recipientEmail,
             'replyTo' => $from,
