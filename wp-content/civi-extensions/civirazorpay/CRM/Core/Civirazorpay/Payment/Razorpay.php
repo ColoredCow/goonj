@@ -5,6 +5,7 @@ require_once __DIR__ . '/../../../../lib/razorpay/Razorpay.php';
 use Civi\Api4\Contribution;
 use Civi\Api4\ContributionRecur;
 use Civi\Payment\Exception\PaymentProcessorException;
+use Civi\Payment\PropertyBag;
 use Razorpay\Api\Api;
 
 /**
@@ -17,6 +18,7 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
   // Define constants for contribution statuses.
   const CONTRIB_STATUS_COMPLETED = 1;
   const CONTRIB_STATUS_PENDING = 2;
+  const CONTRIB_STATUS_CANCELLED = 3;
   const CONTRIB_STATUS_FAILED = 4;
 
   protected $_mode = NULL;
@@ -37,6 +39,50 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
   }
 
   /**
+   * Does this processor support cancelling recurring contributions through code.
+   *
+   * If the processor returns true it must be possible to take action from within CiviCRM
+   * that will result in no further payments being processed.
+   *
+   * @return bool
+   */
+  protected function supportsCancelRecurring() {
+    return TRUE;
+  }
+
+  /**
+   * Does the processor support the user having a choice as to whether to cancel the recurring with the processor?
+   *
+   * If this returns TRUE then there will be an option to send a cancellation request in the cancellation form.
+   *
+   * This would normally be false for processors where CiviCRM maintains the schedule.
+   *
+   * @return bool
+   */
+  protected function supportsCancelRecurringNotifyOptional() {
+    return TRUE;
+  }
+
+  /**
+   *
+   */
+  public function checkConfig() {
+    // @todo
+    return [];
+  }
+
+  /**
+   *
+   */
+  private function initializeApi() {
+    $apiKey = $this->_paymentProcessor['user_name'];
+    $apiSecret = $this->_paymentProcessor['password'];
+    $api = new Api($apiKey, $apiSecret);
+
+    return $api;
+  }
+
+  /**
    * Process payment by creating an order or subscription in Razorpay.
    *
    * @param array $params
@@ -46,9 +92,7 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
    * @return array
    */
   public function doPayment(&$params, $component = 'contribute') {
-    $apiKey = $this->_paymentProcessor['user_name'];
-    $apiSecret = $this->_paymentProcessor['password'];
-    $api = new Api($apiKey, $apiSecret);
+    $api = $this->initializeApi();
 
     if (!empty($params['is_recur'])) {
       try {
@@ -78,11 +122,12 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
 
         \Civi::log()->info("Razorpay subscription plan created: $newPlan->id");
 
+        $installmentCount = $this->prepareInstallmentCount($params);
+
         $subscription = $api->subscription->create([
           'plan_id' => $newPlan->id,
-          'customer_notify' => 1,
-        // Hardcoded to 12 cycles (e.g., one year)
-          'total_count' => 12,
+          'customer_notify' => 0,
+          'total_count' => $installmentCount,
           'quantity' => 1,
           'notes' => [
             'contribution_id' => $params['contributionID'],
@@ -401,11 +446,102 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
   }
 
   /**
+   * Cancel a recurring contribution in Razorpay.
+   *
+   * @param \Civi\Payment\PropertyBag $propertyBag
+   *
+   * @return array|null[]
+   *
+   * @throws \Civi\Payment\Exception\PaymentProcessorException
+   */
+  public function doCancelRecurring(PropertyBag $propertyBag) {
+    if (!$propertyBag->has('isNotifyProcessorOnCancelRecur')) {
+      $propertyBag->setIsNotifyProcessorOnCancelRecur(TRUE);
+    }
+    $notifyProcessor = $propertyBag->getIsNotifyProcessorOnCancelRecur();
+
+    if (!$notifyProcessor) {
+      return ['message' => ts('Successfully cancelled the subscription in CiviCRM ONLY.')];
+    }
+
+    if (!$propertyBag->has('recurProcessorID')) {
+      $errorMessage = ts('The recurring contribution cannot be cancelled (No reference (processor_id) found).');
+      \Civi::log()->error($errorMessage);
+      throw new PaymentProcessorException($errorMessage);
+    }
+
+    $subscriptionId = $propertyBag->getRecurProcessorID();
+
+    // Use Razorpay API to cancel the subscription.
+    try {
+      $api = $this->initializeApi();
+      $subscription = $api->subscription->fetch($subscriptionId)->cancel();
+    }
+    catch (Exception $e) {
+      $errorMessage = ts('Could not cancel Razorpay subscription: %1', [1 => $e->getMessage()]);
+      \Civi::log()->error($errorMessage);
+      throw new PaymentProcessorException($errorMessage);
+    }
+
+    // Update the ContributionRecur record in CiviCRM to reflect cancellation.
+    try {
+      ContributionRecur::update(FALSE)
+        ->addWhere('processor_id', '=', $subscriptionId)
+      // Cancelled.
+        ->addValue('contribution_status_id', self::CONTRIB_STATUS_CANCELLED)
+        ->addValue('cancel_date', date('Y-m-d H:i:s'))
+        ->execute();
+    }
+    catch (Exception $e) {
+      \Civi::log()->error('Failed to update ContributionRecur cancellation in CiviCRM.', [
+        'subscription_id' => $subscriptionId,
+        'error' => $e->getMessage(),
+      ]);
+    }
+
+    return ['message' => ts('Successfully cancelled the subscription at Razorpay.')];
+  }
+
+  /**
    *
    */
-  public function checkConfig() {
-    // @todo
-    return [];
+  private function prepareInstallmentCount($params) {
+    return $params['installments'] ?? 36;
+  }
+
+  /**
+   * Get help text information (help, description, etc.) about this payment,
+   * to display to the user.
+   *
+   * @param string $context
+   *   Context of the text.
+   *   Only explicitly supported contexts are handled without error.
+   *   Currently supported:
+   *   - contributionPageRecurringHelp (params: is_recur_installments, is_email_receipt)
+   *   - contributionPageContinueText (params: amount, is_payment_to_existing)
+   *   - cancelRecurDetailText:
+   *     params:
+   *       mode, amount, currency, frequency_interval, frequency_unit,
+   *       installments, {membershipType|only if mode=auto_renew},
+   *       selfService (bool) - TRUE if user doesn't have "edit contributions" permission.
+   *         ie. they are accessing via a "self-service" link from an email receipt or similar.
+   *   - cancelRecurNotSupportedText.
+   *
+   * @param array $params
+   *   Parameters for the field, context specific.
+   *
+   * @return string
+   */
+  public function getText($context, $params) {
+    $text = parent::getText($context, $params);
+
+    switch ($context) {
+      case 'contributionPageRecurringHelp':
+        if ($params['is_recur_installments']) {
+          return ts('Please specify the number of times you want your recurring contribution to renew. You can choose to cancel at any time.');
+        }
+    }
+    return $text;
   }
 
 }

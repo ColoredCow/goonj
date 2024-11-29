@@ -292,7 +292,16 @@ function goonj_handle_user_identification_form() {
 					);
 					$redirect_url = $volunteer_registration_url;
 					break;
-				
+				case 'goonj-activities':
+					$volunteer_registration_url = sprintf(
+						'/volunteer-registration/form/#?email=%s&phone=%s&message=%s&Volunteer_fields.Which_activities_are_you_interested_in_=%s',
+						$email,
+						$phone,
+						'goonj-activities',
+						'27'
+					);
+					$redirect_url = $volunteer_registration_url;
+					break;
 				// Contact does not exist and the purpose is not defined.
 				// Redirect to volunteer registration with collection camp activity selected.
 				default:
@@ -394,6 +403,8 @@ function goonj_handle_user_identification_form() {
 				$redirect_url = home_url( '/dropping-center/waiting-induction/' );
 			} elseif ( $purpose === 'volunteer-registration' ) {
 				$redirect_url = home_url( '/volunteer-registration/waiting-induction/' );
+			} elseif ( $purpose === 'goonj-activities' ) {
+				$redirect_url = home_url( '/goonj-activities/waiting-induction' );
 			} else {
 				$redirect_url = home_url( '/collection-camp/waiting-induction/' );
 			}
@@ -424,6 +435,11 @@ function goonj_handle_user_identification_form() {
 
 		if ( $purpose === 'dropping-center' ) {
 			wp_redirect( get_home_url() . '/dropping-center/intent/#?Collection_Camp_Core_Details.Contact_Id=' . $found_contacts['id'] . '&Dropping_Centre.Name=' . $display_name . '&Dropping_Centre.Contact_Number=' . $phone);
+			exit;
+		}
+
+		if ( $purpose === 'goonj-activities' ) {
+			wp_redirect( get_home_url() . '/goonj-activities/intent/#?Collection_Camp_Core_Details.Contact_Id=' . $found_contacts['id']. '&Goonj_Activities.Name=' . $display_name . '&Goonj_Activities.Contact_Number=' . $phone);
 			exit;
 		}
 
