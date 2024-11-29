@@ -81,6 +81,38 @@ class InstitutionCollectionCampService extends AutoSubscriber {
   /**
    *
    */
+  private static function findOfficeId(array $array) {
+    $filteredItems = array_filter($array, fn($item) => $item['entity_table'] === 'civicrm_eck_collection_source_vehicle_dispatch');
+
+    if (empty($filteredItems)) {
+      return FALSE;
+    }
+
+    $goonjOfficeId = CustomField::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('custom_group_id:name', '=', 'Camp_Vehicle_Dispatch')
+      ->addWhere('name', '=', 'To_which_PU_Center_material_is_being_sent')
+      ->execute()
+      ->first();
+
+    if (!$goonjOfficeId) {
+      return FALSE;
+    }
+
+    $goonjOfficeFieldId = $goonjOfficeId['id'];
+
+    $goonjOfficeIndex = array_search(TRUE, array_map(fn($item) =>
+        $item['entity_table'] === 'civicrm_eck_collection_source_vehicle_dispatch' &&
+        $item['custom_field_id'] == $goonjOfficeFieldId,
+        $filteredItems
+    ));
+
+    return $goonjOfficeIndex !== FALSE ? $filteredItems[$goonjOfficeIndex] : FALSE;
+  }
+
+  /**
+   *
+   */
   public static function mailNotificationToMmt($op, $groupID, $entityID, &$params) {
     if ($op !== 'create') {
       return;
@@ -223,9 +255,8 @@ class InstitutionCollectionCampService extends AutoSubscriber {
 
       $today = new \DateTimeImmutable();
       $endOfToday = $today->setTime(23, 59, 59);
-
       if (!$logisticEmailSent && $startDate <= $endOfToday) {
-        if (!$selfManagedBy) {
+        if (!$selfManagedBy && !$campAttendedById) {
           $recipient = Contact::get(FALSE)
             ->addSelect('email.email', 'display_name')
             ->addJoin('Email AS email', 'LEFT')
@@ -279,12 +310,17 @@ class InstitutionCollectionCampService extends AutoSubscriber {
             'from' => $from,
             'toEmail' => $recipientEmail,
             'replyTo' => $from,
-            'html' => self::getLogisticsEmailHtml($recipientName, $campId, $coordinatingPOCId, $campOffice, $campCode, $campAddress),
+            'html' => self::sendDispatchEmail($recipientName, $campId, $coordinatingPOCId, $campOffice, $campCode, $campAddress),
           ];
 
-          $emailSendResult = \CRM_Utils_Mail::send($mailParams);
-          if ($emailSendResult) {
-            \Civi::log()->info("dispatch email sent for self-managed collection camp: $campId");
+          $dispatchEmailSendResult = \CRM_Utils_Mail::send($mailParams);
+
+          if ($dispatchEmailSendResult) {
+            \Civi::log()->info("dispatch email sent for collection camp: $campId");
+            EckEntity::update('Collection_Camp', FALSE)
+              ->addValue('Institution_Collection_Camp_Logistics.Email_Sent', 1)
+              ->addWhere('id', '=', $campId)
+              ->execute();
           }
 
           $recipient = Contact::get(FALSE)
@@ -309,9 +345,13 @@ class InstitutionCollectionCampService extends AutoSubscriber {
             'html' => self::sendOutcomeEmail($recipientName, $campId, $coordinatingPOCId, $campCode, $campAddress,),
           ];
 
-          $emailSendResult = \CRM_Utils_Mail::send($mailParams);
-          if ($emailSendResult) {
-            \Civi::log()->info("outcome email sent for self-managed collection camp: $campId");
+          $outcomeEmailSendResult = \CRM_Utils_Mail::send($mailParams);
+          if ($outcomeEmailSendResult) {
+            \Civi::log()->info("dispatch email sent for collection camp: $campId");
+            EckEntity::update('Collection_Camp', FALSE)
+              ->addValue('Institution_Collection_Camp_Logistics.Email_Sent', 1)
+              ->addWhere('id', '=', $campId)
+              ->execute();
           }
         }
       }
