@@ -44,7 +44,8 @@ function civicrm_api3_goonjcustom_institution_collection_camp_cron($params) {
   $collectionCampSubtype = $optionValues['value'];
   $today = new DateTimeImmutable();
   $endOfDay = $today->setTime(23, 59, 59)->format('Y-m-d H:i:s');
-
+  error_log("endOfDay: " . print_r($endOfDay, TRUE));
+  error_log("endOfDay: " . print_r($endOfDay, TRUE));
   $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
     ->addSelect(
       'title',
@@ -60,8 +61,8 @@ function civicrm_api3_goonjcustom_institution_collection_camp_cron($params) {
     )
     ->addWhere('Collection_Camp_Core_Details.Status', '=', 'authorized')
     ->addWhere('subtype', '=', $collectionCampSubtype)
-    ->addWhere('Institution_Collection_Camp_Intent.Collections_will_start_on_Date', '<=', $endOfDay)
-    ->addWhere('Institution_Collection_Camp_Logistics.Camp_to_be_attended_by', 'IS NOT EMPTY')
+    ->addWhere('Institution_Collection_Camp_Intent.Collections_will_start_on_Date_', '<=', $endOfDay)
+    ->addWhere('Institution_Collection_Camp_Logistics.Self_Managed_by_Institution', 'IS NOT EMPTY')
     ->addWhere('Institution_collection_camp_Review.Camp_Status', '!=', 'aborted')
     ->addClause('OR',
       ['Institution_Collection_Camp_Logistics.Email_Sent', 'IS NULL'],
