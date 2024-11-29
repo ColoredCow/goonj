@@ -275,11 +275,11 @@ class InstitutionCollectionCampService extends AutoSubscriber {
 
           $from = HelperService::getDefaultFromEmail();
           $mailParams = [
-            'subject' => 'Dummy Dispatch Notification for Self Managed Camp: ' . $campCode,
+            'subject' => 'Dispatch Notification for Self Managed Camp: ' . $campCode,
             'from' => $from,
             'toEmail' => $recipientEmail,
             'replyTo' => $from,
-            'html' => self::getDummyDispatchEmailHtml($recipientName, $campId, $coordinatingPOCId, $campOffice, $campCode, $campAddress),
+            'html' => self::getLogisticsEmailHtml($recipientName, $campId, $coordinatingPOCId, $campOffice, $campCode, $campAddress),
           ];
 
           $emailSendResult = \CRM_Utils_Mail::send($mailParams);
