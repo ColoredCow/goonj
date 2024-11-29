@@ -105,6 +105,11 @@ $pu_material_contribution_check_link = sprintf(
     $action_target['id']
 );
 
+$attendee_activity_feedback_link = sprintf(
+    '/attendee-activity-feedback/#?Eck_Collection_Camp1=%s',
+    $action_target['id'],
+);
+
 $puSourceField = CustomField::get(FALSE)
   ->addSelect('id')
   ->addWhere('custom_group_id:name', '=', 'Contribution_Details')
@@ -157,6 +162,8 @@ $target_data = [
     'address_label' => 'Address of the camp',
     'donation_link' => $donation_link,
     'register_link' => $goonj_activities_register_link,
+    'include_attendee_feedback_link' => $attendee_activity_feedback_link,
+    'should_include_attendee_feedback'=> $action_target['Goonj_Activities.Include_Attendee_Feedback_Form']
   ],
 ];
 
@@ -179,6 +186,8 @@ if (in_array($target, ['collection-camp','institution-collection-camp', 'droppin
   $volunteer_name = $action_target[$target_info['volunteer_name']];
   $donation_link = $target_info['donation_link'];
   $register_link = $target_info['register_link'];
+  $include_attendee_feedback_link = $target_info['include_attendee_feedback_link'];
+  $should_include_attendee_feedback = $target_info['should_include_attendee_feedback'];
 
   ?>
     <div class="wp-block-gb-heading-wrapper">
@@ -225,6 +234,11 @@ if (in_array($target, ['collection-camp','institution-collection-camp', 'droppin
         <a href="<?php echo esc_url($donation_link); ?>" class="wp-block-gb-action-button">
             <?php esc_html_e('Monetary Contribution', 'goonj-blocks'); ?>
         </a>
+        <?php if ($should_include_attendee_feedback): ?>
+            <a href="<?php echo esc_url($include_attendee_feedback_link ?? '#'); ?>" class="wp-block-gb-action-button">
+                <?php esc_html_e('Record Attendee Feedback', 'goonj-blocks'); ?>
+            </a>
+        <?php endif; ?>
     </div>
   <?php elseif ('processing-center' === $target) : ?>
         <table class="wp-block-gb-table">

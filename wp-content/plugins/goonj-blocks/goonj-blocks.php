@@ -91,6 +91,7 @@ function gb_goonj_blocks_check_action_target_exists() {
 		'Goonj_Activities.Start_Date',
 		'Goonj_Activities.End_Date',
 		'Goonj_Activities.Where_do_you_wish_to_organise_the_activity_',
+		'Goonj_Activities.Include_Attendee_Feedback_Form'
 	);
 
 	switch ( $target ) {
