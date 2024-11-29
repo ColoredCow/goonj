@@ -62,7 +62,7 @@ function civicrm_api3_goonjcustom_institution_collection_camp_cron($params) {
     ->addWhere('Collection_Camp_Core_Details.Status', '=', 'authorized')
     ->addWhere('subtype', '=', $collectionCampSubtype)
     ->addWhere('Institution_Collection_Camp_Intent.Collections_will_start_on_Date_', '<=', $endOfDay)
-    ->addWhere('Institution_Collection_Camp_Logistics.Self_Managed_by_Institution', 'IS NOT EMPTY')
+    ->addWhere('Institution_Collection_Camp_Logistics.Self_Managed_by_Institution', 'IS NOT NULL')
     ->addWhere('Institution_collection_camp_Review.Camp_Status', '!=', 'aborted')
     ->addClause('OR',
       ['Institution_Collection_Camp_Logistics.Email_Sent', 'IS NULL'],
