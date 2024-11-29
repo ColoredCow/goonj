@@ -226,7 +226,6 @@ class InstitutionCollectionCampService extends AutoSubscriber {
 
       if (!$logisticEmailSent && $startDate <= $endOfToday) {
         if (!$selfManagedBy) {
-          // Send to the camp attended by POC.
           $recipient = Contact::get(FALSE)
             ->addSelect('email.email', 'display_name')
             ->addJoin('Email AS email', 'LEFT')
@@ -237,7 +236,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
           $recipientName = $recipient['display_name'];
 
           if (!$recipientEmail) {
-            throw new \Exception('Recipient email missing');
+            \Civi::log()->info("Recipient email missing: $campId");
           }
           $from = HelperService::getDefaultFromEmail();
           $mailParams = [
@@ -260,7 +259,6 @@ class InstitutionCollectionCampService extends AutoSubscriber {
           }
         }
         else {
-          // Send dispatch email to Institution POC if self-managed.
           $recipient = Contact::get(FALSE)
             ->addSelect('email.email', 'display_name')
             ->addJoin('Email AS email', 'LEFT')
@@ -276,7 +274,6 @@ class InstitutionCollectionCampService extends AutoSubscriber {
           }
 
           $from = HelperService::getDefaultFromEmail();
-          // Prepare dummy dispatch email.
           $mailParams = [
             'subject' => 'Dummy Dispatch Notification for Self Managed Camp: ' . $campCode,
             'from' => $from,
@@ -285,13 +282,11 @@ class InstitutionCollectionCampService extends AutoSubscriber {
             'html' => self::getDummyDispatchEmailHtml($recipientName, $campId, $coordinatingPOCId, $campOffice, $campCode, $campAddress),
           ];
 
-          // Send dummy dispatch email.
           $emailSendResult = \CRM_Utils_Mail::send($mailParams);
           if ($emailSendResult) {
             \Civi::log()->info("dispatch email sent for self-managed collection camp: $campId");
           }
 
-          // Send dummy outcome email to Coordinating POC.
           $recipient = Contact::get(FALSE)
             ->addSelect('email.email', 'display_name')
             ->addJoin('Email AS email', 'LEFT')
@@ -306,7 +301,6 @@ class InstitutionCollectionCampService extends AutoSubscriber {
             return;
           }
 
-          // Prepare dummy outcome email.
           $mailParams = [
             'subject' => 'Dummy Outcome Notification for Self Managed Camp: ' . $campCode,
             'from' => $from,
@@ -315,7 +309,6 @@ class InstitutionCollectionCampService extends AutoSubscriber {
             'html' => self::sendOutcomeEmail($recipientName, $campId, $coordinatingPOCId, $campCode, $campAddress,),
           ];
 
-          // Send dummy outcome email.
           $emailSendResult = \CRM_Utils_Mail::send($mailParams);
           if ($emailSendResult) {
             \Civi::log()->info("outcome email sent for self-managed collection camp: $campId");
@@ -355,10 +348,8 @@ class InstitutionCollectionCampService extends AutoSubscriber {
   private static function sendOutcomeEmail($contactName, $collectionCampId, $coordinatingPOCId, $campCode, $campAddress) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
 
-    // Construct URL for the outcome form.
     $campOutcomeFormUrl = $homeUrl . '/institution-camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $campAttendedById;
 
-    // Construct outcome email HTML.
     $html = "
   <p>Dear $contactName,</p>
   <p>Thank you for attending the camp <strong>$campCode</strong> at <strong>$campAddress</strong>. There is one form that requires your attention after the camp:</p>
@@ -378,12 +369,10 @@ class InstitutionCollectionCampService extends AutoSubscriber {
   private static function getLogisticsEmailHtml($contactName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
 
-    // Construct URLs for the dispatch and outcome forms.
     $campVehicleDispatchFormUrl = $homeUrl . 'institution-camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp=' . $collectionCampId . '&Camp_Vehicle_Dispatch.Filled_by=' . $campAttendedById . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice . '&Eck_Collection_Camp1=' . $collectionCampId;
 
     $campOutcomeFormUrl = $homeUrl . '/institution-camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $campAttendedById;
 
-    // Construct email HTML.
     $html = "
     <p>Dear $contactName,</p>
     <p>Thank you for attending the camp <strong>$campCode</strong> at <strong>$campAddress</strong>. There are two forms that require your attention during and after the camp:</p>
