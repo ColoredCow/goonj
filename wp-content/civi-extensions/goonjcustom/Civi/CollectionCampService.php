@@ -480,6 +480,13 @@ class CollectionCampService extends AutoSubscriber {
       }
     }
 
+    if ($campTitle === 'Goonj Activities') {
+      $goonjActivitiesOptionValue = self::getOptionValue('Goonj_Activities');
+      if ($subtypeId == $goonjActivitiesOptionValue['value']) {
+        return $objectRef['Goonj_Activities.State'] ?? NULL;
+      }
+    }
+
     // Fetch option value for Dropping Centre.
     $droppingCenterOptionValue = self::getOptionValue('Dropping_Center');
     if ($subtypeId == $droppingCenterOptionValue['value']) {
@@ -646,7 +653,7 @@ class CollectionCampService extends AutoSubscriber {
 
     try {
       $collectionCampId = $objectRef->id;
-      $collectionCamp = EckEntity::get('Collection_Camp', TRUE)
+      $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
         ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_QR_Code.QR_Code')
         ->addWhere('id', '=', $collectionCampId)
         ->execute()->single();
