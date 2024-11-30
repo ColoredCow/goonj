@@ -25,6 +25,9 @@ class InstitutionService extends AutoSubscriber {
       '&hook_civicrm_custom' => [
         ['setOfficeDetails'],
       ],
+      '&hook_civicrm_post' => [
+        ['assignChapterGroupToIndividual'],
+      ],
     ];
   }
 
@@ -53,6 +56,75 @@ class InstitutionService extends AutoSubscriber {
     }
 
     return FALSE;
+  }
+
+  private static function getChapterGroupForState($stateId) {
+    $stateContactGroups = Group::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('Chapter_Contact_Group.Use_Case', '=', 'chapter-contacts')
+      ->addWhere('Chapter_Contact_Group.Contact_Catchment', 'CONTAINS', $stateId)
+      ->execute();
+    $stateContactGroup = $stateContactGroups->first();
+
+    if (!$stateContactGroup) {
+      \CRM_Core_Error::debug_log_message('No chapter contact group found for state ID: ' . $stateId);
+
+      $fallbackGroups = Group::get(FALSE)
+        ->addWhere('Chapter_Contact_Group.Use_Case', '=', 'chapter-contacts')
+        ->addWhere('Chapter_Contact_Group.Fallback_Chapter', '=', 1)
+        ->execute();
+      $stateContactGroup = $fallbackGroups->first();
+
+      \Civi::log()->info('Assigning fallback chapter contact group: ' . $stateContactGroup['title']);
+    }
+
+    return $stateContactGroup ? $stateContactGroup['id'] : NULL;
+  }
+
+  /**
+   *
+   */
+  public static function assignChapterGroupToIndividual(string $op, string $objectName, int $objectId, &$objectRef) {
+    error_log("objectName: " . print_r($objectName, TRUE));
+    error_log("objectRef: " . print_r($objectRef, TRUE));
+    error_log("objectId: " . print_r($objectId, TRUE));
+    return;
+    if ($objectName !== 'Eck_Collection_Camp' || empty($objectRef['title']) || $objectRef['title'] !== 'Institution Collection Camp') {
+      return FALSE;
+    }
+    $stateId = $objectRef['Institution_Collection_Camp_Intent.State'];
+    $contactId = $objectRef['Institution_Collection_Camp_Intent.Institution_POC'];
+    $organizationId = $objectRef['Institution_Collection_Camp_Intent.Organization_Name'];
+
+    if (!$stateId || !$contactId) {
+      \Civi::log()->info("Missing Contact ID and State ID");
+      return FALSE;
+    }
+    $groupId = self::getChapterGroupForState($stateId);
+
+    if ($groupId) {
+      self::addContactToGroup($contactId, $groupId);
+      if ($organizationId) {
+        self::addContactToGroup($organizationId, $groupId);
+      }
+    }
+  }
+
+  /**
+   *
+   */
+  private static function addContactToGroup($contactId, $groupId) {
+    if ($contactId && $groupId) {
+      GroupContact::create(FALSE)
+        ->addValue('contact_id', $contactId)
+        ->addValue('group_id', $groupId)
+        ->addValue('status', 'Added')
+        ->execute();
+      \Civi::log()->info("Added contact_id: $contactId to group_id: $groupId");
+    }
+    else {
+      \Civi::log()->info("Failed to add contact to group. Invalid contact_id or group_id");
+    }
   }
 
   /**

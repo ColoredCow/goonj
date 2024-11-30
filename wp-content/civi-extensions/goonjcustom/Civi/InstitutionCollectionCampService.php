@@ -48,23 +48,18 @@ class InstitutionCollectionCampService extends AutoSubscriber {
    *
    */
   private static function getChapterGroupForState($stateId) {
-    $stateContactGroups = Group::get(FALSE)
+    $stateContactGroup = Group::get(FALSE)
       ->addSelect('id')
       ->addWhere('Chapter_Contact_Group.Use_Case', '=', 'chapter-contacts')
       ->addWhere('Chapter_Contact_Group.Contact_Catchment', 'CONTAINS', $stateId)
-      ->execute();
-    $stateContactGroup = $stateContactGroups->first();
+      ->execute()->first();
 
     if (!$stateContactGroup) {
-      \CRM_Core_Error::debug_log_message('No chapter contact group found for state ID: ' . $stateId);
-
-      $fallbackGroups = Group::get(FALSE)
+      $stateContactGroup = Group::get(FALSE)
         ->addWhere('Chapter_Contact_Group.Use_Case', '=', 'chapter-contacts')
         ->addWhere('Chapter_Contact_Group.Fallback_Chapter', '=', 1)
-        ->execute();
-      $stateContactGroup = $fallbackGroups->first();
+        ->execute()->first();
 
-      \Civi::log()->info('Assigning fallback chapter contact group: ' . $stateContactGroup['title']);
     }
 
     return $stateContactGroup ? $stateContactGroup['id'] : NULL;
@@ -99,16 +94,16 @@ class InstitutionCollectionCampService extends AutoSubscriber {
    *
    */
   private static function addContactToGroup($contactId, $groupId) {
-    if ($contactId && $groupId) {
+    try {
       GroupContact::create(FALSE)
         ->addValue('contact_id', $contactId)
         ->addValue('group_id', $groupId)
         ->addValue('status', 'Added')
         ->execute();
-      \Civi::log()->info("Added contact_id: $contactId to group_id: $groupId");
+      \Civi::log()->info("Successfully added contact_id: $contactId to group_id: $groupId.");
     }
-    else {
-      \Civi::log()->info("Failed to add contact to group. Invalid contact_id or group_id");
+    catch (Exception $e) {
+      \Civi::log()->error("Error adding contact_id: $contactId to group_id: $groupId. Exception: " . $e->getMessage());
     }
   }
 
