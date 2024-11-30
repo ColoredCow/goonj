@@ -166,7 +166,6 @@ $target_data = [
     'should_include_attendee_feedback'=> $action_target['Goonj_Activities.Include_Attendee_Feedback_Form']
   ],
 ];
-\Civi::log()->info('target_data', ['target_data'=>$target_data]);
 
 if (in_array($target, ['collection-camp','institution-collection-camp', 'dropping-center', 'goonj-activities'])) :
   $target_info = $target_data[$target];
