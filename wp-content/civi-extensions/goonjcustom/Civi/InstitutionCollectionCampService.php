@@ -34,8 +34,8 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       '&hook_civicrm_fieldOptions' => 'setIndianStateOptions',
       '&hook_civicrm_pre' => [
         ['assignChapterGroupToIndividual'],
+        ['generateInstitutionCollectionCampQr'],
       ],
-      '&hook_civicrm_pre' => 'generateInstitutionCollectionCampQr',
       '&hook_civicrm_custom' => [
         ['setOfficeDetails'],
         ['mailNotificationToMmt'],
