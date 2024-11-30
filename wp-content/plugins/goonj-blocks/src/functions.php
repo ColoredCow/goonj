@@ -108,7 +108,7 @@ function generate_induction_slots($contactId = null, $days = 30) {
         // Check if the result has any rows
         if ($officeContact->count() > 0) {
             // Extract the first row (assuming one result, based on rowCount => 1)
-            $officeContactData = $officeContact[0];
+            $officeContactData = $officeContact->first();
         
             // Add the primary city to the array
             if (!empty($officeContactData['address_primary.city'])) {
