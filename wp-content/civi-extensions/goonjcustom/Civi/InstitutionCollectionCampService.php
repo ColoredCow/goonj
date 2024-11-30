@@ -35,7 +35,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       '&hook_civicrm_pre' => [
         ['assignChapterGroupToIndividual'],
       ],
-      // '&hook_civicrm_pre' => 'generateInstitutionCollectionCampQr',
+      '&hook_civicrm_pre' => 'generateInstitutionCollectionCampQr',
       '&hook_civicrm_custom' => [
         ['setOfficeDetails'],
         ['mailNotificationToMmt'],
