@@ -9,7 +9,7 @@ use Civi\Api4\EckEntity;
 use Civi\Api4\OptionValue;
 
 /**
- * Goonjcustom.VolunteerFeedbackCollectionCampCron API specification (optional)
+ * Goonjcustom.InstitutionCampFeedbackCron API specification (optional)
  * This is used for documentation and validation.
  *
  * @param array $spec
@@ -22,7 +22,7 @@ function _civicrm_api3_goonjcustom_institution_camp_feedback_cron_spec(&$spec) {
 }
 
 /**
- * Goonjcustom.CollectionCampCron API.
+ * Goonjcustom.InstitutionCampFeedbackCron API.
  *
  * @param array $params
  *
