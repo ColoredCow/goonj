@@ -6,6 +6,9 @@ use Civi\Api4\Contact;
 use Civi\Api4\CustomField;
 use Civi\Api4\EckEntity;
 use Civi\Api4\StateProvince;
+use Civi\Api4\OptionValue;
+use Civi\Api4\Relationship;
+use Civi\Api4\Email;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
@@ -575,6 +578,12 @@ class InstitutionCollectionCampService extends AutoSubscriber {
         'title' => ts('Camp Outcome'),
         'module' => 'afsearchInstitutionCampOutcome',
         'directive' => 'afsearch-institution-camp-outcome',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      ],
+      'campFeedback' => [
+        'title' => ts('Volunteer Feedback'),
+        'module' => 'afsearchInstitutionCollectionCampFeedback',
+        'directive' => 'afsearch-institution-collection-camp-feedback',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
       ],
     ];
