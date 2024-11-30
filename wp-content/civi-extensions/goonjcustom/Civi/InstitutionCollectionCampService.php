@@ -321,8 +321,27 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       $selfManagedBy = $collectionCamp['Institution_Collection_Camp_Logistics.Self_Managed_by_Institution'];
       $institutionPOCId = $collectionCamp['Institution_Collection_Camp_Intent.Institution_POC'];
       $coordinatingPOCId = $collectionCamp['Institution_collection_camp_Review.Coordinating_POC'];
+      $organizationId = $collectionCamp['Institution_Collection_Camp_Intent.Organization_Name'];
 
       $startDate = new \DateTime($collectionCamp['Institution_Collection_Camp_Intent.Collections_will_start_on_Date_']);
+
+      $contacts = Contact::get(FALSE)
+        ->addSelect('email.email', 'phone.phone')
+        ->addJoin('Email AS email', 'LEFT')
+        ->addJoin('Phone AS phone', 'LEFT')
+        ->addWhere('id', '=', $institutionPOCId)
+        ->execute()->single();
+
+      $pocEmail = $contacts['email.email'];
+      $pocContactNumber = $contacts['phone.phone'];
+
+      $organization = Contact::get(FALSE)
+        ->addSelect('Institute_Registration.Legal_Name_of_Institute', 'Institute_Registration.Address')
+        ->addWhere('id', '=', $organizationId)
+        ->execute()->single();
+
+      $nameOfInstitution = $organization['Institute_Registration.Legal_Name_of_Institute'];
+      $addressOfInstitution = $organization['Institute_Registration.Address'];
 
       $today = new \DateTimeImmutable();
       $endOfToday = $today->setTime(23, 59, 59);
@@ -346,7 +365,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
             'from' => $from,
             'toEmail' => $recipientEmail,
             'replyTo' => $from,
-            'html' => self::getLogisticsEmailHtml($recipientName, $campId, $campAttendedById, $campOffice, $campCode, $campAddress),
+            'html' => self::getLogisticsEmailHtml($recipientName, $campId, $campAttendedById, $campOffice, $campCode, $campAddress, $pocEmail, $pocContactNumber, $nameOfInstitution, $addressOfInstitution),
           ];
 
           // Send logistics email.
@@ -381,7 +400,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
             'from' => $from,
             'toEmail' => $recipientEmail,
             'replyTo' => $from,
-            'html' => self::sendDispatchEmail($recipientName, $campId, $coordinatingPOCId, $campOffice, $campCode, $campAddress),
+            'html' => self::sendDispatchEmail($recipientName, $campId, $coordinatingPOCId, $campOffice, $campCode, $campAddress, $pocEmail, $pocContactNumber, $nameOfInstitution, $addressOfInstitution),
           ];
 
           $dispatchEmailSendResult = \CRM_Utils_Mail::send($mailParams);
@@ -435,10 +454,17 @@ class InstitutionCollectionCampService extends AutoSubscriber {
   /**
    *
    */
-  private static function sendDispatchEmail($contactName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress) {
+  private static function sendDispatchEmail($contactName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress, $pocEmail, $pocContactNumber, $nameOfInstitution, $addressOfInstitution) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
 
-    $campVehicleDispatchFormUrl = $homeUrl . 'institution-camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp=' . $collectionCampId . '&Camp_Vehicle_Dispatch.Filled_by=' . $campAttendedById . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice . '&Eck_Collection_Camp1=' . $collectionCampId;
+    $campVehicleDispatchFormUrl = $homeUrl . 'institution-camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp=' . $collectionCampId
+    . '&Camp_Vehicle_Dispatch.Filled_by=' . $campAttendedById
+    . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice
+    . '&Eck_Collection_Camp1=' . $collectionCampId
+    . '&Camp_Institution_Data.Name_of_the_institution=' . $nameOfInstitution
+    . '&Camp_Institution_Data.Address=' . $addressOfInstitution
+    . '&Camp_Institution_Data.Email=' . $pocEmail
+    . '&Camp_Institution_Data.Contact_Number=' . $pocContactNumber;
 
     $html = "
   <p>Dear $contactName,</p>
@@ -477,10 +503,18 @@ class InstitutionCollectionCampService extends AutoSubscriber {
   /**
    * Generates the logistics email HTML content.
    */
-  private static function getLogisticsEmailHtml($contactName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress) {
+  private static function getLogisticsEmailHtml($contactName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress, $pocEmail, $pocContactNumber, $nameOfInstitution, $addressOfInstitution) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
 
-    $campVehicleDispatchFormUrl = $homeUrl . 'institution-camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp=' . $collectionCampId . '&Camp_Vehicle_Dispatch.Filled_by=' . $campAttendedById . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice . '&Eck_Collection_Camp1=' . $collectionCampId;
+    $campVehicleDispatchFormUrl = $homeUrl
+    . 'institution-camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp=' . $collectionCampId
+    . '&Camp_Vehicle_Dispatch.Filled_by=' . $campAttendedById
+    . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice
+    . '&Eck_Collection_Camp1=' . $collectionCampId
+    . '&Camp_Institution_Data.Name_of_the_institution=' . $nameOfInstitution
+    . '&Camp_Institution_Data.Address=' . $addressOfInstitution
+    . '&Camp_Institution_Data.Email=' . $pocEmail
+    . '&Camp_Institution_Data.Contact_Number=' . $pocContactNumber;
 
     $campOutcomeFormUrl = $homeUrl . '/institution-camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $campAttendedById;
 
