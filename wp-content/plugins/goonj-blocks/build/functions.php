@@ -102,13 +102,9 @@ function generate_induction_slots($contactId = null, $days = 30) {
             ->addSelect('id', 'display_name', 'Goonj_Office_Details.Other_Induction_Cities', 'address_primary.city')
             ->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_Office')
             ->addWhere('address_primary.state_province_id', '=', $contactStateId)
-            // ->addWhere('address_primary.city', 'LIKE', $contactCityFormatted . '%')
             ->execute();
-        \Civi::log()->info('officeContact', ['officeContact'=>$officeContact]);
-        $officeContactInductionCities = [];
 
         $officeContactInductionCities = [];
-
         // Check if the result has any rows
         if ($officeContact->count() > 0) {
             // Extract the first row (assuming one result, based on rowCount => 1)
@@ -132,22 +128,16 @@ function generate_induction_slots($contactId = null, $days = 30) {
             $officeContactInductionCities = array_values($officeContactInductionCities);
         }
         
-        // Log the result for debugging
-        \Civi::log()->info('officeContactInductionCities', ['officeContactInductionCities' => $officeContactInductionCities, 'contactCityFormatted'=>$contactCityFormatted]);
-        
-        
-
-        if ($officeContact->count() === 0 ) {
-            // generate online induction slots for state having no office
+        if ($officeContact->count() === 0) {
+            // Generate online induction slots for state having no office
             return generate_slots($assignedOfficeId, $defaultMaxSlot, $onlineInductionType, $inductionSlotStartDate);
         }
+        
         if (in_array(strtolower($contactCityFormatted), $officeContactInductionCities)) {
             return generate_slots($assignedOfficeId, $defaultMaxSlot, $physicalInductionType, $inductionSlotStartDate);
-        }else{
+        } else {
             return generate_slots($assignedOfficeId, $defaultMaxSlot, $onlineInductionType, $inductionSlotStartDate);
-        }
-        // generate physical induction slots having office in their states
-        // return generate_slots($assignedOfficeId, $defaultMaxSlot, $physicalInductionType, $inductionSlotStartDate);
+        }        
     } catch (\Exception $e) {
         \Civi::log()->error('Error generating induction slots', [
             'contactId' => $contactId,
