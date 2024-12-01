@@ -207,7 +207,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     }
 
     $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Institution_Collection_Camp_Intent.Collection_Camp_Address', 'title', 'Institution_collection_camp_Review.Coordinating_POC', 'Institution_Collection_Camp_Intent.Organization_Name')
+      ->addSelect('Institution_Collection_Camp_Intent.Collection_Camp_Address', 'title')
       ->addWhere('id', '=', $collectionCampId)
       ->execute()->single();
 
@@ -217,27 +217,6 @@ class InstitutionCollectionCampService extends AutoSubscriber {
 
     $campCode = $collectionCamp['title'];
     $campAddress = $collectionCamp['Institution_Collection_Camp_Intent.Collection_Camp_Address'];
-
-    $coordinatingPOCId = $collectionCamp['Institution_collection_camp_Review.Coordinating_POC'];
-    $organizationId = $collectionCamp['Institution_Collection_Camp_Intent.Organization_Name'];
-
-    $contacts = Contact::get(FALSE)
-      ->addSelect('email.email', 'phone.phone')
-      ->addJoin('Email AS email', 'LEFT')
-      ->addJoin('Phone AS phone', 'LEFT')
-      ->addWhere('id', '=', $institutionPOCId)
-      ->execute()->single();
-
-    $pocEmail = $contacts['email.email'];
-    $pocContactNumber = $contacts['phone.phone'];
-
-    $organization = Contact::get(FALSE)
-      ->addSelect('Institute_Registration.Legal_Name_of_Institute', 'Institute_Registration.Address')
-      ->addWhere('id', '=', $organizationId)
-      ->execute()->single();
-
-    $nameOfInstitution = $organization['Institute_Registration.Legal_Name_of_Institute'];
-    $addressOfInstitution = $organization['Institute_Registration.Address'];
 
     $coordinators = Relationship::get(FALSE)
       ->addWhere('contact_id_b', '=', $goonjFieldId)
@@ -279,18 +258,9 @@ class InstitutionCollectionCampService extends AutoSubscriber {
   /**
    *
    */
-  public static function sendEmailToMmt($collectionCampId, $campCode, $campAddress, $vehicleDispatchId, $pocEmail, $pocContactNumber, $nameOfInstitution, $addressOfInstitution) {
+  public static function sendEmailToMmt($collectionCampId, $campCode, $campAddress, $vehicleDispatchId) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
-    $materialdispatchUrl = $homeUrl
-    . 'institution-camp-acknowledgement-dispatch/#?Eck_Collection_Source_Vehicle_Dispatch1=' . $vehicleDispatchId
-    . '&Camp_Vehicle_Dispatch.Collection_Camp=' . $collectionCampId
-    . '&id=' . $vehicleDispatchId
-    . '&Eck_Collection_Camp1=' . $collectionCampId
-    . '&Camp_Institution_Data.Name_of_the_institution=' . $nameOfInstitution
-    . '&Camp_Institution_Data.Address=' . $addressOfInstitution
-    . '&Camp_Institution_Data.Email=' . $pocEmail
-    . '&Camp_Institution_Data.Contact_Number=' . $pocContactNumber;
-
+    $materialdispatchUrl = $homeUrl . 'institution-camp-acknowledgement-dispatch/#?Eck_Collection_Source_Vehicle_Dispatch1=' . $vehicleDispatchId . '&Camp_Vehicle_Dispatch.Collection_Camp=' . $collectionCampId . '&id=' . $vehicleDispatchId . '&Eck_Collection_Camp1=' . $collectionCampId;
     $html = "
     <p>Dear MMT team,</p>
     <p>This is to inform you that a vehicle has been sent from camp <strong>$campCode</strong> at <strong>$campAddress</strong>.</p>
