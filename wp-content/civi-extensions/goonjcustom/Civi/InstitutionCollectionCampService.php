@@ -575,11 +575,104 @@ class InstitutionCollectionCampService extends AutoSubscriber {
   /**
    *
    */
+  public static function assignCoordinatorByRelationshipType($stateOfficeId, $registrationType, $collectionCampId) {
+    // Define the mapping of registration categories to relationship type names.
+    $relationshipTypeMap = [
+      'A_Corporate_organisation' => 'Corporate Organisation Coordinator of',
+      'A_School' => 'School Coordinator of',
+      'A_College_University' => 'University/College Coordinator of',
+    ];
+
+    $registrationCategorySelection = $registrationType['Institution_Collection_Camp_Intent.You_wish_to_register_as:name'];
+
+    $registrationCategorySelection = trim($registrationCategorySelection);
+
+    if (array_key_exists($registrationCategorySelection, $relationshipTypeMap)) {
+      $relationshipTypeName = $relationshipTypeMap[$registrationCategorySelection];
+    }
+    else {
+      $relationshipTypeName = 'Other Entities Coordinator of';
+    }
+
+    // Retrieve the coordinators for the selected relationship type.
+    $coordinators = Relationship::get(FALSE)
+      ->addWhere('contact_id_b', '=', $stateOfficeId)
+      ->addWhere('relationship_type_id:name', '=', $relationshipTypeName)
+      ->addWhere('is_current', '=', TRUE)
+      ->execute();
+
+    $coordinator = self::getCoordinator($stateOfficeId, $relationshipTypeName, $coordinators);
+    if (!$coordinator) {
+      \CRM_Core_Error::debug_log_message('No coordinator available to assign.');
+      return FALSE;
+    }
+
+    // Assign the coordinator to the collection camp.
+    EckEntity::update('Collection_Camp', FALSE)
+      ->addValue('Institution_collection_camp_Review.Coordinating_POC', $coordinator['contact_id_a'])
+      ->addWhere('id', '=', $collectionCampId)
+      ->execute();
+
+    return TRUE;
+  }
+
+  /**
+   *
+   */
+  public static function getCoordinator($stateOfficeId, $relationshipTypeName, $existingCoordinators = NULL) {
+    if (!$existingCoordinators) {
+      $existingCoordinators = Relationship::get(FALSE)
+        ->addWhere('contact_id_b', '=', $stateOfficeId)
+        ->addWhere('relationship_type_id:name', '=', $relationshipTypeName)
+        ->addWhere('is_current', '=', TRUE)
+        ->execute();
+    }
+
+    if ($existingCoordinators->count() === 0) {
+      return self::getFallbackCoordinator($relationshipTypeName);
+    }
+
+    $coordinatorCount = $existingCoordinators->count();
+    return $existingCoordinators->count() > 1
+        ? $existingCoordinators->itemAt(rand(0, $coordinatorCount - 1))
+        : $existingCoordinators->first();
+  }
+
+  /**
+   *
+   */
+  public static function getFallbackCoordinator($relationshipTypeName) {
+    $fallbackOffice = self::getFallbackOffice();
+    if (!$fallbackOffice) {
+      \CRM_Core_Error::debug_log_message('No fallback office found.');
+      return FALSE;
+    }
+
+    // Retrieve fallback coordinators associated with the fallback office and relationship type.
+    $fallbackCoordinators = Relationship::get(FALSE)
+      ->addWhere('contact_id_b', '=', $fallbackOffice['id'])
+      ->addWhere('relationship_type_id:name', '=', $relationshipTypeName)
+      ->addWhere('is_current', '=', TRUE)
+      ->execute();
+
+    // If no coordinators found, return false.
+    if ($fallbackCoordinators->count() === 0) {
+      \CRM_Core_Error::debug_log_message('No fallback coordinators found.');
+      return FALSE;
+    }
+
+    // Randomly select a fallback coordinator if more than one is found.
+    $randomIndex = rand(0, $fallbackCoordinators->count() - 1);
+    return $fallbackCoordinators->itemAt($randomIndex);
+  }
+
+  /**
+   *
+   */
   public static function setOfficeDetails($op, $groupID, $entityID, &$params) {
     if ($op !== 'create' || self::getEntitySubtypeName($entityID) !== self::ENTITY_SUBTYPE_NAME) {
       return;
     }
-
     if (!($stateField = self::findStateField($params))) {
       return;
     }
@@ -608,18 +701,24 @@ class InstitutionCollectionCampService extends AutoSubscriber {
 
     $stateOffice = $officesFound->first();
 
-    // If no state office is found, assign the fallback state office.
     if (!$stateOffice) {
       $stateOffice = self::getFallbackOffice();
     }
 
     $stateOfficeId = $stateOffice['id'];
-
     EckEntity::update('Collection_Camp', FALSE)
       ->addValue('Institution_collection_camp_Review.Goonj_Office', $stateOfficeId)
       ->addValue('Institution_Collection_Camp_Intent.Camp_Type', $isPublicDriveOpen)
       ->addWhere('id', '=', $institutionCollectionCampId)
       ->execute();
+
+    $registrationType = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect('Institution_Collection_Camp_Intent.You_wish_to_register_as:name')
+      ->addWhere('id', '=', $entityID)
+      ->execute()->single();
+
+    return self::assignCoordinatorByRelationshipType($stateOfficeId, $registrationType, $institutionCollectionCampId);
+
   }
 
   /**
