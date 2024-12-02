@@ -145,10 +145,6 @@ class InstitutionService extends AutoSubscriber {
       return FALSE;
     }
 
-    \Civi::log()->info('Organization created: ', [
-      'id' => $objectId,
-      'subtypes' => $objectRef->contact_sub_type,
-    ]);
     $subTypes = $objectRef->contact_sub_type;
 
     if (empty($subTypes)) {
@@ -165,10 +161,6 @@ class InstitutionService extends AutoSubscriber {
     }
 
     self::$organizationId = $objectId;
-
-    \Civi::log()->info('Organization set: ', [
-      'id' => self::$organizationId,
-    ]);
   }
 
   /**
@@ -203,7 +195,6 @@ class InstitutionService extends AutoSubscriber {
       ->execute();
 
     if (!$stateId) {
-      \Civi::log()->info('state not found', ['organizationId' => self::$organizationId, 'stateId' => $stateId]);
       return FALSE;
     }
 
