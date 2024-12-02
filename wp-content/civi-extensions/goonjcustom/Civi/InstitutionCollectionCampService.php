@@ -756,40 +756,70 @@ class InstitutionCollectionCampService extends AutoSubscriber {
         'module' => 'afsearchInstitutionCollectionCampLogistics',
         'directive' => 'afsearch-institution-collection-camp-logistics',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
       ],
       'materialContribution' => [
         'title' => ts('Material Contribution'),
         'module' => 'afsearchInstitutionCollectionCampMaterialContribution',
         'directive' => 'afsearch-institution-collection-camp-material-contribution',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
       ],
       'vehicleDispatch' => [
         'title' => ts('Dispatch'),
         'module' => 'afsearchInstitutionCampVehicleDispatchData',
         'directive' => 'afsearch-institution-camp-vehicle-dispatch-data',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
       ],
       'materialAuthorization' => [
         'title' => ts('Material Authorization'),
         'module' => 'afsearchInstitutionCampAcknowledgementDispatch',
         'directive' => 'afsearch-institution-camp-acknowledgement-dispatch',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
       ],
       'campOutcome' => [
         'title' => ts('Camp Outcome'),
         'module' => 'afsearchInstitutionCampOutcome',
         'directive' => 'afsearch-institution-camp-outcome',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
       ],
       'campFeedback' => [
         'title' => ts('Volunteer Feedback'),
         'module' => 'afsearchInstitutionCollectionCampFeedback',
         'directive' => 'afsearch-institution-collection-camp-feedback',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
+      ],
+      'monetaryContribution' => [
+        'title' => ts('Monetary Contribution'),
+        'module' => 'afsearchMonetaryContribution',
+        'directive' => 'afsearch-monetary-contribution',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['account_team'],
+      ],
+      'monetaryContributionForUrbanOps' => [
+        'title' => ts('Monetary Contribution'),
+        'module' => 'afsearchMonetaryContributionForUrbanOps',
+        'directive' => 'afsearch-monetary-contribution-for-urban-ops',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
       ],
     ];
 
     foreach ($tabConfigs as $key => $config) {
+      $isAdmin = \CRM_Core_Permission::check('admin');
+      if ($key == 'monetaryContributionForUrbanOps' && $isAdmin) {
+        continue;
+      }
+
+      $hasPermission = \CRM_Core_Permission::check($config['permissions']);
+      if (!$hasPermission) {
+        continue;
+      }
+
       $tabs[$key] = [
         'id' => $key,
         'title' => $config['title'],
