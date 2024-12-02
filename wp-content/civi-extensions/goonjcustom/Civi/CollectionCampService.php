@@ -73,6 +73,9 @@ class CollectionCampService extends AutoSubscriber {
       '&hook_civicrm_buildForm' => [
         ['autofillMonetaryFormSource'],
       ],
+      '&hook_civicrm_alterMailParams' => [
+        ['alterReceiptMail'],
+      ],
     ];
   }
 
@@ -1488,6 +1491,17 @@ class CollectionCampService extends AutoSubscriber {
         }
       }
     }
+  }
+
+  /**
+   *
+   */
+  public static function alterReceiptMail(&$params, $context) {
+    if (!empty($params['workflow']) && $params['workflow'] === 'contribution_online_receipt') {
+      $params['text'] = "Thank you";
+      $params['html'] = "<p>Thank you (Tarun testing mail content)</p>";
+    }
+
   }
 
 }
