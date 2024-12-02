@@ -16,16 +16,16 @@ class InstitutionService extends AutoSubscriber {
   use CollectionSource;
   const FALLBACK_OFFICE_NAME = 'Delhi';
   const ENTITY_SUBTYPE_NAME = 'Institute';
+  private static $organizationId = NULL;
 
   /**
    *
    */
   public static function getSubscribedEvents() {
     return [
-      '&hook_civicrm_custom' => [
-        ['setOfficeDetails'],
-      ],
       '&hook_civicrm_post' => [
+        ['organisationCreated'],
+        ['setOfficeDetails'],
         ['assignChapterGroupToIndividual'],
       ],
     ];
@@ -58,6 +58,9 @@ class InstitutionService extends AutoSubscriber {
     return FALSE;
   }
 
+  /**
+   *
+   */
   private static function getChapterGroupForState($stateId) {
     $stateContactGroups = Group::get(FALSE)
       ->addSelect('id')
@@ -85,9 +88,6 @@ class InstitutionService extends AutoSubscriber {
    *
    */
   public static function assignChapterGroupToIndividual(string $op, string $objectName, int $objectId, &$objectRef) {
-    error_log("objectName: " . print_r($objectName, TRUE));
-    error_log("objectRef: " . print_r($objectRef, TRUE));
-    error_log("objectId: " . print_r($objectId, TRUE));
     return;
     if ($objectName !== 'Eck_Collection_Camp' || empty($objectRef['title']) || $objectRef['title'] !== 'Institution Collection Camp') {
       return FALSE;
@@ -139,34 +139,47 @@ class InstitutionService extends AutoSubscriber {
    * @param object $objectRef
    *   The parameters that were sent into the calling function.
    */
-  public static function setOfficeDetails($op, $groupID, $entityID, &$params) {
+  public static function organisationCreated(string $op, string $objectName, int $objectId, &$objectRef) {
 
-    if ($op !== 'create' || self::getOrgSubtypeName($entityID) !== self::ENTITY_SUBTYPE_NAME) {
-      return;
+    if ($op !== 'create' || $objectName !== 'Organization') {
+      return FALSE;
     }
 
-    if (!($stateField = self::findStateField($params))) {
-      return;
+    \Civi::log()->info('Organisation created: ', [
+      'id' => $objectId,
+      'subtypes' => $objectRef->contact_sub_type,
+    ]);
+    $subTypes = $objectRef->contact_sub_type;
+
+    if (empty($subTypes)) {
+      return FALSE;
     }
 
-    $stateId = $stateField['value'];
-    $contactId = $stateField['entity_id'];
+    // The ASCII control character \x01 represents the "Start of Header".
+    // It is used to separate values internally by CiviCRM for multiple subtypes.
+    $subtypes = explode("\x01", $subTypes);
+    $subtypes = array_filter($subtypes);
 
-    if (!$contactId) {
-      \CRM_Core_Error::debug_log_message('contactId not found: ' . $contactId);
-      return;
+    if (!in_array('Institute', $subtypes)) {
+      return FALSE;
     }
 
-    Organization::update('Organization', FALSE)
-      ->addValue('Review.Status', 1)
-      ->addValue('Review.Initiated_by', 1)
-      ->addWhere('id', '=', $contactId)
-      ->execute();
+    self::$organizationId = $objectId;
 
-    if (!$stateId) {
-      \CRM_Core_Error::debug_log_message('Cannot assign Goonj Office to institution id: ' . $contactId);
-      return;
+    \Civi::log()->info('Organisation set: ', [
+      'id' => self::$organizationId,
+    ]);
+  }
+
+  /**
+   *
+   */
+  public static function setOfficeDetails(string $op, string $objectName, int $objectId, &$objectRef) {
+    if ($op !== 'create' || $objectName !== 'Address' || self::$organizationId !== $objectRef->contact_id || !$objectRef->is_primary) {
+      return FALSE;
     }
+
+    $stateId = $objectRef->state_province_id;
 
     $officesFound = Contact::get(FALSE)
       ->addSelect('id')
@@ -184,13 +197,18 @@ class InstitutionService extends AutoSubscriber {
 
     $stateOfficeId = $stateOffice['id'];
 
-    $updateGoonjOffice = Organization::update(FALSE)
+    Organization::update(FALSE)
       ->addValue('Review.Goonj_Office', $stateOfficeId)
-      ->addWhere('id', '=', $contactId)
+      ->addWhere('id', '=', self::$organizationId)
       ->execute();
 
+    if (!$stateId) {
+      \Civi::log()->info('state not found', ['organizationId' => self::$organizationId, 'stateId' => $stateId]);
+      return FALSE;
+    }
+
     // Get the relationship type name based on the institution type.
-    $relationshipTypeName = self::getRelationshipTypeName($contactId);
+    $relationshipTypeName = self::getRelationshipTypeName(self::$organizationId);
     $coordinators = Relationship::get(FALSE)
       ->addWhere('contact_id_b', '=', $stateOfficeId)
       ->addWhere('relationship_type_id:name', '=', $relationshipTypeName)
@@ -200,7 +218,7 @@ class InstitutionService extends AutoSubscriber {
     $coordinatorCount = $coordinators->count();
 
     if ($coordinatorCount === 0) {
-      $coordinator = self::getFallbackCoordinator($contactId);
+      $coordinator = self::getFallbackCoordinator(self::$organizationId);
     }
     elseif ($coordinatorCount > 1) {
       $randomIndex = rand(0, $coordinatorCount - 1);
@@ -219,11 +237,10 @@ class InstitutionService extends AutoSubscriber {
 
     Organization::update('Organization', FALSE)
       ->addValue('Review.Coordinating_POC', $coordinatorId)
-      ->addWhere('id', '=', $contactId)
+      ->addWhere('id', '=', self::$organizationId)
       ->execute();
 
     return TRUE;
-
   }
 
   /**
