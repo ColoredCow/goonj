@@ -600,6 +600,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       ->addWhere('relationship_type_id:name', '=', $relationshipTypeName)
       ->addWhere('is_current', '=', TRUE)
       ->execute();
+
     $coordinator = self::getCoordinator($stateOfficeId, $relationshipTypeName, $coordinators);
     if (!$coordinator) {
       \CRM_Core_Error::debug_log_message('No coordinator available to assign.');
