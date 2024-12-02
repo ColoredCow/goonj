@@ -24,7 +24,7 @@ class InstitutionService extends AutoSubscriber {
   public static function getSubscribedEvents() {
     return [
       '&hook_civicrm_post' => [
-        ['organisationCreated'],
+        ['organizationCreated'],
         ['setOfficeDetails'],
         ['assignChapterGroupToIndividual'],
       ],
@@ -139,13 +139,13 @@ class InstitutionService extends AutoSubscriber {
    * @param object $objectRef
    *   The parameters that were sent into the calling function.
    */
-  public static function organisationCreated(string $op, string $objectName, int $objectId, &$objectRef) {
+  public static function organizationCreated(string $op, string $objectName, int $objectId, &$objectRef) {
 
     if ($op !== 'create' || $objectName !== 'Organization') {
       return FALSE;
     }
 
-    \Civi::log()->info('Organisation created: ', [
+    \Civi::log()->info('Organization created: ', [
       'id' => $objectId,
       'subtypes' => $objectRef->contact_sub_type,
     ]);
@@ -166,7 +166,7 @@ class InstitutionService extends AutoSubscriber {
 
     self::$organizationId = $objectId;
 
-    \Civi::log()->info('Organisation set: ', [
+    \Civi::log()->info('Organization set: ', [
       'id' => self::$organizationId,
     ]);
   }
