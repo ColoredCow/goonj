@@ -183,13 +183,11 @@ class CollectionBaseService extends AutoSubscriber {
    *
    */
   public static function aclCollectionCamp($entity, &$clauses, $userId, $conditions) {
-    // Ensure that this applies only for 'Eck_Collection_Camp' entity.
     if ($entity !== 'Eck_Collection_Camp') {
       return FALSE;
     }
 
     try {
-      // Fetch team group contacts for the user.
       $teamGroupContacts = GroupContact::get(FALSE)
         ->addSelect('group_id')
         ->addWhere('contact_id', '=', $userId)
@@ -199,14 +197,12 @@ class CollectionBaseService extends AutoSubscriber {
 
       $teamGroupContact = $teamGroupContacts->first();
 
-      // If no team group contact is found, return FALSE.
       if (!$teamGroupContact) {
         return FALSE;
       }
 
       $groupId = $teamGroupContact['group_id'];
 
-      // Fetch controlled states by the group.
       $chapterGroups = Group::get(FALSE)
         ->addSelect('Chapter_Contact_Group.States_controlled')
         ->addWhere('id', '=', $groupId)
@@ -215,13 +211,11 @@ class CollectionBaseService extends AutoSubscriber {
       $group = $chapterGroups->first();
       $statesControlled = $group['Chapter_Contact_Group.States_controlled'];
 
-      // If no states are controlled, restrict access by returning an empty clause.
       if (empty($statesControlled)) {
         $clauses['id'][] = 'IN (null)';
         return TRUE;
       }
 
-      // Process the controlled states.
       $statesControlled = array_unique($statesControlled);
       $statesList = implode(',', array_map('intval', $statesControlled));
 
@@ -232,7 +226,6 @@ class CollectionBaseService extends AutoSubscriber {
       self::applyAclClause($clauses, 'Dropping_Centre', $statesList);
     }
     catch (\Exception $e) {
-      // Log the error for debugging.
       \Civi::log()->warning("Unable to apply ACL on collection camp for user $userId. " . $e->getMessage());
       return FALSE;
     }
