@@ -2,7 +2,9 @@
 
 namespace Civi;
 
+use Civi\Api4\Activity;
 use Civi\Api4\Contact;
+use Civi\Api4\Contribution;
 use Civi\Api4\CustomField;
 use Civi\Api4\EckEntity;
 use Civi\Api4\Email;
@@ -260,7 +262,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
    */
   public static function sendEmailToMmt($collectionCampId, $campCode, $campAddress, $vehicleDispatchId) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
-    $materialdispatchUrl = $homeUrl . 'institution-camp-acknowledgement-dispatch/#?Eck_Collection_Source_Vehicle_Dispatch1=' . $vehicleDispatchId . '&Camp_Vehicle_Dispatch.Collection_Camp=' . $collectionCampId . '&id=' . $vehicleDispatchId . '&Eck_Collection_Camp1=' . $collectionCampId;
+    $materialdispatchUrl = $homeUrl . 'institution-camp-acknowledgement-dispatch/#?Eck_Collection_Source_Vehicle_Dispatch1=' . $vehicleDispatchId . '&Camp_Vehicle_Dispatch.Collection_Camp=' . $collectionCampId . '&id=' . $vehicleDispatchId . '&Eck_Collection_Source_Vehicle_Dispatch_Eck_Collection_Camp_Collection_Camp_01.id=' . $collectionCampId;
     $html = "
     <p>Dear MMT team,</p>
     <p>This is to inform you that a vehicle has been sent from camp <strong>$campCode</strong> at <strong>$campAddress</strong>.</p>
@@ -575,11 +577,104 @@ class InstitutionCollectionCampService extends AutoSubscriber {
   /**
    *
    */
+  public static function assignCoordinatorByRelationshipType($stateOfficeId, $registrationType, $collectionCampId) {
+    // Define the mapping of registration categories to relationship type names.
+    $relationshipTypeMap = [
+      'A_Corporate_organisation' => 'Corporate Organisation Coordinator of',
+      'A_School' => 'School Coordinator of',
+      'A_College_University' => 'University/College Coordinator of',
+    ];
+
+    $registrationCategorySelection = $registrationType['Institution_Collection_Camp_Intent.You_wish_to_register_as:name'];
+
+    $registrationCategorySelection = trim($registrationCategorySelection);
+
+    if (array_key_exists($registrationCategorySelection, $relationshipTypeMap)) {
+      $relationshipTypeName = $relationshipTypeMap[$registrationCategorySelection];
+    }
+    else {
+      $relationshipTypeName = 'Other Entities Coordinator of';
+    }
+
+    // Retrieve the coordinators for the selected relationship type.
+    $coordinators = Relationship::get(FALSE)
+      ->addWhere('contact_id_b', '=', $stateOfficeId)
+      ->addWhere('relationship_type_id:name', '=', $relationshipTypeName)
+      ->addWhere('is_current', '=', TRUE)
+      ->execute();
+
+    $coordinator = self::getCoordinator($stateOfficeId, $relationshipTypeName, $coordinators);
+    if (!$coordinator) {
+      \CRM_Core_Error::debug_log_message('No coordinator available to assign.');
+      return FALSE;
+    }
+
+    // Assign the coordinator to the collection camp.
+    EckEntity::update('Collection_Camp', FALSE)
+      ->addValue('Institution_collection_camp_Review.Coordinating_POC', $coordinator['contact_id_a'])
+      ->addWhere('id', '=', $collectionCampId)
+      ->execute();
+
+    return TRUE;
+  }
+
+  /**
+   *
+   */
+  public static function getCoordinator($stateOfficeId, $relationshipTypeName, $existingCoordinators = NULL) {
+    if (!$existingCoordinators) {
+      $existingCoordinators = Relationship::get(FALSE)
+        ->addWhere('contact_id_b', '=', $stateOfficeId)
+        ->addWhere('relationship_type_id:name', '=', $relationshipTypeName)
+        ->addWhere('is_current', '=', TRUE)
+        ->execute();
+    }
+
+    if ($existingCoordinators->count() === 0) {
+      return self::getFallbackCoordinator($relationshipTypeName);
+    }
+
+    $coordinatorCount = $existingCoordinators->count();
+    return $existingCoordinators->count() > 1
+        ? $existingCoordinators->itemAt(rand(0, $coordinatorCount - 1))
+        : $existingCoordinators->first();
+  }
+
+  /**
+   *
+   */
+  public static function getFallbackCoordinator($relationshipTypeName) {
+    $fallbackOffice = self::getFallbackOffice();
+    if (!$fallbackOffice) {
+      \CRM_Core_Error::debug_log_message('No fallback office found.');
+      return FALSE;
+    }
+
+    // Retrieve fallback coordinators associated with the fallback office and relationship type.
+    $fallbackCoordinators = Relationship::get(FALSE)
+      ->addWhere('contact_id_b', '=', $fallbackOffice['id'])
+      ->addWhere('relationship_type_id:name', '=', $relationshipTypeName)
+      ->addWhere('is_current', '=', TRUE)
+      ->execute();
+
+    // If no coordinators found, return false.
+    if ($fallbackCoordinators->count() === 0) {
+      \CRM_Core_Error::debug_log_message('No fallback coordinators found.');
+      return FALSE;
+    }
+
+    // Randomly select a fallback coordinator if more than one is found.
+    $randomIndex = rand(0, $fallbackCoordinators->count() - 1);
+    return $fallbackCoordinators->itemAt($randomIndex);
+  }
+
+  /**
+   *
+   */
   public static function setOfficeDetails($op, $groupID, $entityID, &$params) {
     if ($op !== 'create' || self::getEntitySubtypeName($entityID) !== self::ENTITY_SUBTYPE_NAME) {
       return;
     }
-
     if (!($stateField = self::findStateField($params))) {
       return;
     }
@@ -608,18 +703,24 @@ class InstitutionCollectionCampService extends AutoSubscriber {
 
     $stateOffice = $officesFound->first();
 
-    // If no state office is found, assign the fallback state office.
     if (!$stateOffice) {
       $stateOffice = self::getFallbackOffice();
     }
 
     $stateOfficeId = $stateOffice['id'];
-
     EckEntity::update('Collection_Camp', FALSE)
       ->addValue('Institution_collection_camp_Review.Goonj_Office', $stateOfficeId)
       ->addValue('Institution_Collection_Camp_Intent.Camp_Type', $isPublicDriveOpen)
       ->addWhere('id', '=', $institutionCollectionCampId)
       ->execute();
+
+    $registrationType = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect('Institution_Collection_Camp_Intent.You_wish_to_register_as:name')
+      ->addWhere('id', '=', $entityID)
+      ->execute()->single();
+
+    return self::assignCoordinatorByRelationshipType($stateOfficeId, $registrationType, $institutionCollectionCampId);
+
   }
 
   /**
@@ -646,6 +747,47 @@ class InstitutionCollectionCampService extends AutoSubscriber {
   /**
    *
    */
+  public static function updateContributorCount($collectionCamp) {
+    $activities = Activity::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('Material_Contribution.Institution_Collection_Camp', '=', $collectionCamp['id'])
+      ->execute();
+
+    $contributorCount = count($activities);
+
+    EckEntity::update('Collection_Camp', FALSE)
+      ->addValue('Camp_Outcome.Number_of_Contributors', $contributorCount)
+      ->addWhere('id', '=', $collectionCamp['id'])
+      ->execute();
+  }
+
+  /**
+   *
+   */
+  public static function updateContributionCount($collectionCamp) {
+    $contributions = Contribution::get(FALSE)
+      ->addSelect('total_amount')
+      ->addWhere('Contribution_Details.Source', '=', $collectionCamp['id'])
+      ->addWhere('is_test', 'IS NOT NULL')
+      ->execute();
+
+    // Initialize sum variable.
+    $totalSum = 0;
+
+    // Iterate through the results and sum the total_amount.
+    foreach ($contributions as $contribution) {
+      $totalSum += $contribution['total_amount'];
+    }
+
+    EckEntity::update('Collection_Camp', FALSE)
+      ->addValue('Camp_Outcome.Monitory_Contribution', $totalSum)
+      ->addWhere('id', '=', $collectionCamp['id'])
+      ->execute();
+  }
+
+  /**
+   *
+   */
   public static function institutionCollectionCampTabset($tabsetName, &$tabs, $context) {
     if (!self::isViewingInstituteCollectionCamp($tabsetName, $context)) {
       return;
@@ -657,40 +799,70 @@ class InstitutionCollectionCampService extends AutoSubscriber {
         'module' => 'afsearchInstitutionCollectionCampLogistics',
         'directive' => 'afsearch-institution-collection-camp-logistics',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
       ],
       'materialContribution' => [
         'title' => ts('Material Contribution'),
         'module' => 'afsearchInstitutionCollectionCampMaterialContribution',
         'directive' => 'afsearch-institution-collection-camp-material-contribution',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
       ],
       'vehicleDispatch' => [
         'title' => ts('Dispatch'),
         'module' => 'afsearchInstitutionCampVehicleDispatchData',
         'directive' => 'afsearch-institution-camp-vehicle-dispatch-data',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
       ],
       'materialAuthorization' => [
         'title' => ts('Material Authorization'),
         'module' => 'afsearchInstitutionCampAcknowledgementDispatch',
         'directive' => 'afsearch-institution-camp-acknowledgement-dispatch',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
       ],
       'campOutcome' => [
         'title' => ts('Camp Outcome'),
         'module' => 'afsearchInstitutionCampOutcome',
         'directive' => 'afsearch-institution-camp-outcome',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
       ],
       'campFeedback' => [
         'title' => ts('Volunteer Feedback'),
         'module' => 'afsearchInstitutionCollectionCampFeedback',
         'directive' => 'afsearch-institution-collection-camp-feedback',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
+      ],
+      'monetaryContribution' => [
+        'title' => ts('Monetary Contribution'),
+        'module' => 'afsearchMonetaryContribution',
+        'directive' => 'afsearch-monetary-contribution',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['account_team'],
+      ],
+      'monetaryContributionForUrbanOps' => [
+        'title' => ts('Monetary Contribution'),
+        'module' => 'afsearchMonetaryContributionForUrbanOps',
+        'directive' => 'afsearch-monetary-contribution-for-urban-ops',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
       ],
     ];
 
     foreach ($tabConfigs as $key => $config) {
+      $isAdmin = \CRM_Core_Permission::check('admin');
+      if ($key == 'monetaryContributionForUrbanOps' && $isAdmin) {
+        continue;
+      }
+
+      $hasPermission = \CRM_Core_Permission::check($config['permissions']);
+      if (!$hasPermission) {
+        continue;
+      }
+
       $tabs[$key] = [
         'id' => $key,
         'title' => $config['title'],

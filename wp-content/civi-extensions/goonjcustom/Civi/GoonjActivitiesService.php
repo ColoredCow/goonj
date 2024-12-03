@@ -396,8 +396,8 @@ class GoonjActivitiesService extends AutoSubscriber {
       ],
       'logistics' => [
         'title' => ts('Logistics'),
-        'module' => 'afsearchCollectionCampLogistics',
-        'directive' => 'afsearch-collection-camp-logistics',
+        'module' => 'afsearchGoonjActivitiesLogistics',
+        'directive' => 'afsearch-goonj-activities-logistics',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin'],
       ],

@@ -823,45 +823,19 @@ class InductionService extends AutoSubscriber {
       return $inductionType;
     }
 
-    // Check if a Goonj office exists in the contact's state.
-    $officeContact = Contact::get(FALSE)
-      ->addSelect('id', 'display_name', 'Goonj_Office_Details.Other_Induction_Cities', 'address_primary.city')
+    $officeContact = \Civi\Api4\Contact::get(FALSE)
       ->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_Office')
-      ->addWhere('address_primary.state_province_id', '=', $contactStateId)
+      ->addClause('OR', ['Goonj_Office_Details.Other_Induction_Cities', 'CONTAINS', $contactCityFormatted], ['address_primary.city', 'CONTAINS', $contactCityFormatted])
       ->execute();
-
-    $officeContactInductionCities = [];
-
-    // Check if the result has any rows.
-    if ($officeContact->count() > 0) {
-      // Extract the first row (assuming one result, based on rowCount => 1)
-      $officeContactData = $officeContact->first();
-
-      // Add the primary city to the array.
-      if (!empty($officeContactData['address_primary.city'])) {
-        $officeContactInductionCities[] = $officeContactData['address_primary.city'];
-      }
-
-      // Add the other induction cities to the array.
-      if (!empty($officeContactData['Goonj_Office_Details.Other_Induction_Cities'])) {
-        // Split the string into an array and merge it.
-        $otherCities = array_map('trim', explode(',', $officeContactData['Goonj_Office_Details.Other_Induction_Cities']));
-        $officeContactInductionCities = array_merge($officeContactInductionCities, $otherCities);
-      }
-
-      // Convert all cities to lowercase, remove duplicates, and re-index the array.
-      $officeContactInductionCities = array_map('strtolower', $officeContactInductionCities);
-      $officeContactInductionCities = array_unique($officeContactInductionCities);
-      $officeContactInductionCities = array_values($officeContactInductionCities);
-    }
 
     // If no Goonj office exists, induction is online.
     if ($officeContact->count() === 0) {
       $inductionType = 'Online';
       return $inductionType;
     }
+    $officeDetails = $officeContact->first();
 
-    if (in_array(strtolower($contactCityFormatted), $officeContactInductionCities)) {
+    if (!empty($officeDetails)) {
       return $inductionType;
     }
     else {
