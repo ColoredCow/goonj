@@ -73,6 +73,9 @@ class CollectionCampService extends AutoSubscriber {
       '&hook_civicrm_buildForm' => [
         ['autofillMonetaryFormSource'],
       ],
+      '&hook_civicrm_alterMailParams' => [
+        ['alterReceiptMail'],
+      ],
     ];
   }
 
@@ -1487,6 +1490,27 @@ class CollectionCampService extends AutoSubscriber {
           }
         }
       }
+    }
+  }
+
+  /**
+   *
+   */
+  public static function alterReceiptMail(&$params, $context) {
+    if (!empty($params['workflow']) && $params['workflow'] === 'contribution_online_receipt') {
+      // Extract donor name or use a default value.
+      $donorName = !empty($params['tplParams']['displayName']) ? $params['tplParams']['displayName'] : 'Valued Supporter';
+
+      // Set the email content.
+      $params['text'] = "Dear $donorName,\n\nThank you for your contribution. Your support means a lot to us.\n\nWe have attached your contribution receipt to this email for your reference.\n\nWarm regards,\nThe Goonj Team";
+
+      $params['html'] = "
+            <p>Dear <strong>$donorName</strong>,</p>
+            <p>Thank you for your contribution. Your support means a lot to us.</p>
+            <p>We have attached your contribution receipt to this email for your reference.</p>
+            <p>Warm regards,</p>
+            <p><strong>The Goonj Team</strong></p>
+        ";
     }
   }
 
