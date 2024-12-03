@@ -151,7 +151,7 @@ function goonjcustom_evaluate_tokens(TokenValueEvent $e) {
 			$inductionActivity = $inductionActivities->first();
 			$inductionDateTimeString = $inductionActivity['activity_date_time'] ?? 'Not Scheduled';
       if ($inductionDateTimeString !== 'Not Scheduled') {
-        $inductionDateTime = (new DateTime($inductionDateTimeString))->format('g:i A');
+        $inductionDateTime = (new DateTime($inductionDateTimeString))->format('Y-m-d g:i A');
       } else {
           $inductionDateTime = 'Not Scheduled';
       }
