@@ -2,8 +2,10 @@
 
 namespace Civi\Traits;
 
+use Civi\Api4\EckEntity;
 use Civi\Api4\OptionValue;
 use Civi\Api4\Organization;
+use Civi\Api4\StateProvince;
 
 /**
  *
@@ -164,7 +166,7 @@ trait CollectionSource {
   }
 
   /**
-   * Check the status of a Collection Camp and return status details.
+   * Check the status and return status details.
    *
    * @param string $objectName
    *   The name of the object being processed.
@@ -238,14 +240,15 @@ trait CollectionSource {
   /**
    * Helper function to fetch option value by name.
    */
-  private static function getSourceTypeName(string $sourceTypeId): ?array {
+  private static function getSourceTypeName(string $sourceTypeId): ?string {
 
     $sourceType = OptionValue::get(TRUE)
       ->addSelect('name')
       ->addWhere('option_group_id:name', '=', 'eck_sub_types')
       ->addWhere('grouping', '=', 'Collection_Camp')
       ->addWhere('value', '=', $sourceTypeId)
-      ->single();
+      ->execute()->single();
+
     return $sourceType['name'];
   }
 
