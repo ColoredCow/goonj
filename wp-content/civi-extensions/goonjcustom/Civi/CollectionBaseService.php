@@ -179,18 +179,21 @@ class CollectionBaseService extends AutoSubscriber {
     }
   }
 
+  /**
+   *
+   */
   private static function getCustomGroupName(array $conditions) {
     error_log("array: " . print_r($conditions, TRUE));
     // Check the conditions or any other parameter that identifies the subtype
-    // For example, if the conditions contain a custom field or subtype identifier, use it
+    // For example, if the conditions contain a custom field or subtype identifier, use it.
     if (isset($conditions['custom_group_name'])) {
       error_log("Name_of_log: " . print_r($conditions['custom_group_name'], TRUE));
-        return $conditions['custom_group_name'];
+      return $conditions['custom_group_name'];
     }
-    // Default behavior if no condition matches
-    return 'Collection_Camp_Intent_Details'; // Or handle accordingly
-}
-
+    // Default behavior if no condition matches.
+    // Or handle accordingly.
+    return 'Collection_Camp_Intent_Details';
+  }
 
   /**
    *
@@ -201,7 +204,7 @@ class CollectionBaseService extends AutoSubscriber {
     }
 
     try {
-      // Get team group contacts for the user
+      // Get team group contacts for the user.
       $teamGroupContacts = GroupContact::get(FALSE)
         ->addSelect('group_id')
         ->addWhere('contact_id', '=', $userId)
@@ -217,7 +220,7 @@ class CollectionBaseService extends AutoSubscriber {
 
       $groupId = $teamGroupContact['group_id'];
 
-      // Get controlled states by the group
+      // Get controlled states by the group.
       $chapterGroups = Group::get(FALSE)
         ->addSelect('Chapter_Contact_Group.States_controlled')
         ->addWhere('id', '=', $groupId)
@@ -234,7 +237,7 @@ class CollectionBaseService extends AutoSubscriber {
       $statesControlled = array_unique($statesControlled);
       $statesList = implode(',', array_map('intval', $statesControlled));
 
-      // Apply the clause for Collection Camp Intent
+      // Apply the clause for Collection Camp Intent.
       $stateField = self::getStateFieldDbDetails('Collection_Camp_Intent_Details');
       $clauseString = sprintf(
         'IN (SELECT entity_id FROM %1$s WHERE %2$s IN (%3$s))',
@@ -244,7 +247,7 @@ class CollectionBaseService extends AutoSubscriber {
       );
       $clauses['id'][] = $clauseString;
 
-      // Apply the clause for Dropping Centre
+      // Apply the clause for Dropping Centre.
       $stateFieldDroppingCentre = self::getStateFieldDbDetails('Dropping_Centre');
       $clauseStringDroppingCentre = sprintf(
         'IN (SELECT entity_id FROM %1$s WHERE %2$s IN (%3$s))',
@@ -259,8 +262,7 @@ class CollectionBaseService extends AutoSubscriber {
     }
 
     return TRUE;
-}
-
+  }
 
   /**
    *
@@ -280,12 +282,12 @@ class CollectionBaseService extends AutoSubscriber {
     }
 
     return self::$stateCustomFieldDbDetails[$customGroupName];
-}
-
+  }
 
   /**
    *
    */
+
   /**
    * This hook is called after a db write on entities.
    *
