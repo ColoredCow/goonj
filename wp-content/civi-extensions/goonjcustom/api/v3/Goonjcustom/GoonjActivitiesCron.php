@@ -45,6 +45,7 @@ function civicrm_api3_goonjcustom_goonj_activities_cron($params) {
 
 
   $collectionCampSubtype = $optionValues['value'];
+  \Civi::log()->info('optionValues', ['optionValues'=>$collectionCampSubtype]);
   $today = new DateTimeImmutable();
   $endOfDay = $today->setTime(23, 59, 59)->format('Y-m-d H:i:s');
 
@@ -58,7 +59,7 @@ function civicrm_api3_goonjcustom_goonj_activities_cron($params) {
       'Goonj_Activities.Goonj_Office',
       'Goonj_Activities.Where_do_you_wish_to_organise_the_activity_',
       'Collection_Camp_Core_Details.Contact_Id',
-      'Goonj_Activities.Select_Attendee_Outcome_Form'
+      'Goonj_Activities.Select_Goonj_POC_Attendee_Outcome_Form'
     )
     ->addWhere('Collection_Camp_Core_Details.Status', '=', 'authorized')
     ->addWhere('subtype', '=', $collectionCampSubtype)
@@ -69,6 +70,7 @@ function civicrm_api3_goonjcustom_goonj_activities_cron($params) {
       ['Logistics_Coordination.Email_Sent', '=', 0]
     )
     ->execute();
+  \Civi::log()->info('collectionCamps', ['collectionCamps'=>$collectionCamps]);
 
 
   foreach ($collectionCamps as $camp) {

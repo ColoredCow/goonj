@@ -632,6 +632,7 @@ class GoonjActivitiesService extends AutoSubscriber {
       $activityAddress = $collectionCamp['Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'];
       $activityAttendedById = $collectionCamp['Logistics_Coordination.Camp_to_be_attended_by'];
       $logisticEmailSent = $collectionCamp['Logistics_Coordination.Email_Sent'];
+      $outcomeFormLink = $collectionCamp['Goonj_Activities.Select_Goonj_POC_Attendee_Outcome_Form'];
 
       $startDate = new \DateTime($collectionCamp['Goonj_Activities.Start_Date']);
 
@@ -640,7 +641,7 @@ class GoonjActivitiesService extends AutoSubscriber {
       $endOfToday = $today->setTime(23, 59, 59);
 
 
-      if (!$logisticEmailSent && $startDate <= $endOfToday) {
+      if (true) {
         $campAttendedBy = Contact::get(FALSE)
           ->addSelect('email.email', 'display_name')
           ->addJoin('Email AS email', 'LEFT')
@@ -659,7 +660,7 @@ class GoonjActivitiesService extends AutoSubscriber {
           'from' => self::getFromAddress(),
           'toEmail' => $attendeeEmail,
           'replyTo' => self::getFromAddress(),
-          'html' => self::getLogisticsEmailHtml($attendeeName, $campId, $activityAttendedById, $activityOffice, $activityCode, $activityAddress),
+          'html' => self::getLogisticsEmailHtml($attendeeName, $campId, $activityAttendedById, $activityOffice, $activityCode, $activityAddress, $outcomeFormLink),
         ];
 
         $emailSendResult = \CRM_Utils_Mail::send($mailParams);
@@ -693,13 +694,11 @@ class GoonjActivitiesService extends AutoSubscriber {
     /**
    *
    */
-  private static function getLogisticsEmailHtml($contactName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress) {
+  private static function getLogisticsEmailHtml($contactName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress, $outcomeFormLink) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
     // Construct the full URLs for the forms.
-    // $campVehicleDispatchFormUrl = $homeUrl . 'camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp=' . $collectionCampId . '&Camp_Vehicle_Dispatch.Filled_by=' . $campAttendedById . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice . '&Eck_Collection_Camp1=' . $collectionCampId;
-
-    $campOutcomeFormUrl = $homeUrl . '/goonj-activity-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $campAttendedById;
-
+    $campOutcomeFormUrl = $homeUrl . $outcomeFormLink . '#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $campAttendedById;
+    \Civi::log()->info('campOutcomeFormUrl', ['campOutcomeFormUrl'=>$campOutcomeFormUrl]);
     $html = "
     <p>Dear $contactName,</p>
     <p>Thank you for attending the goonj activity <strong>$campCode</strong> at <strong>$campAddress</strong>. Their is one forms that require your attention during and after the goonj activity:</p>
