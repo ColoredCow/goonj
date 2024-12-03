@@ -182,29 +182,14 @@ class CollectionBaseService extends AutoSubscriber {
   /**
    *
    */
-  private static function getCustomGroupName(array $conditions) {
-    error_log("array: " . print_r($conditions, TRUE));
-    // Check the conditions or any other parameter that identifies the subtype
-    // For example, if the conditions contain a custom field or subtype identifier, use it.
-    if (isset($conditions['custom_group_name'])) {
-      error_log("Name_of_log: " . print_r($conditions['custom_group_name'], TRUE));
-      return $conditions['custom_group_name'];
-    }
-    // Default behavior if no condition matches.
-    // Or handle accordingly.
-    return 'Collection_Camp_Intent_Details';
-  }
-
-  /**
-   *
-   */
   public static function aclCollectionCamp($entity, &$clauses, $userId, $conditions) {
+    // Ensure that this applies only for 'Eck_Collection_Camp' entity.
     if ($entity !== 'Eck_Collection_Camp') {
       return FALSE;
     }
 
     try {
-      // Get team group contacts for the user.
+      // Fetch team group contacts for the user.
       $teamGroupContacts = GroupContact::get(FALSE)
         ->addSelect('group_id')
         ->addWhere('contact_id', '=', $userId)
@@ -214,13 +199,14 @@ class CollectionBaseService extends AutoSubscriber {
 
       $teamGroupContact = $teamGroupContacts->first();
 
+      // If no team group contact is found, return FALSE.
       if (!$teamGroupContact) {
         return FALSE;
       }
 
       $groupId = $teamGroupContact['group_id'];
 
-      // Get controlled states by the group.
+      // Fetch controlled states by the group.
       $chapterGroups = Group::get(FALSE)
         ->addSelect('Chapter_Contact_Group.States_controlled')
         ->addWhere('id', '=', $groupId)
@@ -229,36 +215,26 @@ class CollectionBaseService extends AutoSubscriber {
       $group = $chapterGroups->first();
       $statesControlled = $group['Chapter_Contact_Group.States_controlled'];
 
+      // If no states are controlled, restrict access by returning an empty clause.
       if (empty($statesControlled)) {
         $clauses['id'][] = 'IN (null)';
         return TRUE;
       }
 
+      // Process the controlled states.
       $statesControlled = array_unique($statesControlled);
       $statesList = implode(',', array_map('intval', $statesControlled));
 
       // Apply the clause for Collection Camp Intent.
-      $stateField = self::getStateFieldDbDetails('Collection_Camp_Intent_Details');
-      $clauseString = sprintf(
-        'IN (SELECT entity_id FROM %1$s WHERE %2$s IN (%3$s))',
-        $stateField['tableName'],
-        $stateField['columnName'],
-        $statesList
-      );
-      $clauses['id'][] = $clauseString;
+      self::applyAclClause($clauses, 'Collection_Camp_Intent_Details', $statesList);
 
       // Apply the clause for Dropping Centre.
-      $stateFieldDroppingCentre = self::getStateFieldDbDetails('Dropping_Centre');
-      $clauseStringDroppingCentre = sprintf(
-        'IN (SELECT entity_id FROM %1$s WHERE %2$s IN (%3$s))',
-        $stateFieldDroppingCentre['tableName'],
-        $stateFieldDroppingCentre['columnName'],
-        $statesList
-      );
-      $clauses['id'][] = $clauseStringDroppingCentre;
+      self::applyAclClause($clauses, 'Dropping_Centre', $statesList);
     }
     catch (\Exception $e) {
-      \Civi::log()->warning("Unable to apply acl on collection camp for user $userId. " . $e->getMessage());
+      // Log the error for debugging.
+      \Civi::log()->warning("Unable to apply ACL on collection camp for user $userId. " . $e->getMessage());
+      return FALSE;
     }
 
     return TRUE;
@@ -267,7 +243,25 @@ class CollectionBaseService extends AutoSubscriber {
   /**
    *
    */
-  private static function getStateFieldDbDetails($customGroupName = self::INTENT_CUSTOM_GROUP_NAME) {
+  private static function applyAclClause(&$clauses, $customGroupName, $statesList) {
+    $stateField = self::getStateFieldDbDetails($customGroupName);
+
+    if ($stateField) {
+      $clauseString = sprintf(
+        'IN (SELECT entity_id FROM %1$s WHERE %2$s IN (%3$s))',
+        $stateField['tableName'],
+        $stateField['columnName'],
+        $statesList
+      );
+
+      $clauses['id'][] = $clauseString;
+    }
+  }
+
+  /**
+   *
+   */
+  private static function getStateFieldDbDetails($customGroupName) {
     if (empty(self::$stateCustomFieldDbDetails[$customGroupName])) {
       $customField = CustomField::get(FALSE)
         ->addSelect('column_name', 'custom_group_id.table_name')
@@ -275,10 +269,15 @@ class CollectionBaseService extends AutoSubscriber {
         ->addWhere('name', '=', 'state')
         ->execute()->single();
 
-      self::$stateCustomFieldDbDetails[$customGroupName] = [
-        'tableName' => $customField['custom_group_id.table_name'],
-        'columnName' => $customField['column_name'],
-      ];
+      if (!empty($customField)) {
+        self::$stateCustomFieldDbDetails[$customGroupName] = [
+          'tableName' => $customField['custom_group_id.table_name'],
+          'columnName' => $customField['column_name'],
+        ];
+      }
+      else {
+        return NULL;
+      }
     }
 
     return self::$stateCustomFieldDbDetails[$customGroupName];
