@@ -58,6 +58,9 @@ class InstitutionService extends AutoSubscriber {
     return FALSE;
   }
 
+  /**
+   *
+   */
   private static function getChapterGroupForState($stateId) {
     $stateContactGroups = Group::get(FALSE)
       ->addSelect('id')

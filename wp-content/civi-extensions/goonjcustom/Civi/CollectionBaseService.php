@@ -37,6 +37,7 @@ class CollectionBaseService extends AutoSubscriber {
       '&hook_civicrm_pre' => [
         ['handleAuthorizationEmails'],
         ['checkIfPosterNeedsToBeGenerated'],
+        ['generateCollectionSourceCode'],
       ],
       '&hook_civicrm_post' => [
         ['maybeGeneratePoster', 20],
