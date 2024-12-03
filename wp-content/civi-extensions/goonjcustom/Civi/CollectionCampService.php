@@ -487,6 +487,13 @@ class CollectionCampService extends AutoSubscriber {
       }
     }
 
+    if ($campTitle === 'Institution Dropping Center') {
+      $institutionDroppingCenterOptionValue = self::getOptionValue('Institution_Dropping_Center');
+      if ($subtypeId == $institutionDroppingCenterOptionValue['value']) {
+        return $objectRef['Institution_Dropping_Center_Intent.State'] ?? NULL;
+      }
+    }
+
     // Fetch option value for Dropping Centre.
     $droppingCenterOptionValue = self::getOptionValue('Dropping_Center');
     if ($subtypeId == $droppingCenterOptionValue['value']) {
