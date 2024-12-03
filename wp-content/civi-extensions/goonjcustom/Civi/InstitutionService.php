@@ -85,9 +85,6 @@ class InstitutionService extends AutoSubscriber {
    *
    */
   public static function assignChapterGroupToIndividual(string $op, string $objectName, int $objectId, &$objectRef) {
-    error_log("objectName: " . print_r($objectName, TRUE));
-    error_log("objectRef: " . print_r($objectRef, TRUE));
-    error_log("objectId: " . print_r($objectId, TRUE));
     return;
     if ($objectName !== 'Eck_Collection_Camp' || empty($objectRef['title']) || $objectRef['title'] !== 'Institution Collection Camp') {
       return FALSE;

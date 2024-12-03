@@ -8,17 +8,20 @@ use Civi\Api4\EckEntity;
 use Civi\Api4\StateProvince;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
+use Civi\Traits\QrCodeable;
 
 /**
  *
  */
 class InstitutionDroppingCenterService extends AutoSubscriber {
+  use QrCodeable;
   use CollectionSource;
   /**
    *
    */
 
   const ENTITY_SUBTYPE_NAME = 'Institution_Dropping_Center';
+  const ENTITY_NAME = 'Collection_Camp';
   const FALLBACK_OFFICE_NAME = 'Delhi';
 
   /**
@@ -30,6 +33,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       '&hook_civicrm_custom' => [
         ['setOfficeDetails'],
       ],
+      '&hook_civicrm_pre' => 'generateInstitutionDroppingCenterQr',
     ];
   }
 
@@ -147,6 +151,49 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       ->addValue('Institution_Dropping_Center_Review.Goonj_Office', $stateOfficeId)
       ->addWhere('id', '=', $institutionDroppingCenterId)
       ->execute();
+  }
+
+  /**
+   *
+   */
+  public static function generateInstitutionDroppingCenterQr(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($objectName !== 'Eck_Collection_Camp' || !$objectId || !self::isCurrentSubtype($objectRef)) {
+      return;
+    }
+
+    $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
+    if (!$newStatus) {
+      return;
+    }
+
+    $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
+      ->addSelect('Collection_Camp_Core_Details.Status')
+      ->addWhere('id', '=', $objectId)
+      ->execute();
+
+    $currentCollectionCamp = $collectionCamps->first();
+    $currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
+    $collectionCampId = $currentCollectionCamp['id'];
+
+    // Check for status change.
+    if ($currentStatus !== $newStatus && $newStatus === 'authorized') {
+      self::generateInstitutionDroppingCenterQrCode($collectionCampId);
+    }
+  }
+
+  /**
+   *
+   */
+  private static function generateInstitutionDroppingCenterQrCode($id) {
+    $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+    $data = "{$baseUrl}actions/institution-dropping-center/{$id}";
+
+    $saveOptions = [
+      'customGroupName' => 'Collection_Camp_QR_Code',
+      'customFieldName' => 'QR_Code',
+    ];
+
+    self::generateQrCode($data, $id, $saveOptions);
   }
 
 }
