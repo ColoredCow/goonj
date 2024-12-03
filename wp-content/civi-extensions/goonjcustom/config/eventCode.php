@@ -10,6 +10,7 @@ return [
   'Chuppi Todo Baithak-NJPC' => 'CTB',
   'Collection Camp' => 'CC',
   'Institution Collection Camp' => 'CC',
+  'Institution Dropping Center' => 'DC',
   'Corporate Meet' => 'CM',
   'Disaster Exhibition' => 'DE',
   'Dropping Center' => 'DC',
