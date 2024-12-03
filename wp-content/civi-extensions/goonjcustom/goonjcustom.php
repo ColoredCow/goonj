@@ -149,7 +149,12 @@ function goonjcustom_evaluate_tokens(TokenValueEvent $e) {
 			}
 
 			$inductionActivity = $inductionActivities->first();
-			$inductionDateTime = $inductionActivity['activity_date_time'] ?? 'Not Scheduled';
+			$inductionDateTimeString = $inductionActivity['activity_date_time'] ?? 'Not Scheduled';
+      if ($inductionDateTimeString !== 'Not Scheduled') {
+        $inductionDateTime = (new DateTime($inductionDateTimeString))->format('g:i A');
+      } else {
+          $inductionDateTime = 'Not Scheduled';
+      }
 			$inductionGoonjOffice = $inductionActivity['Induction_Fields.Goonj_Office'] ?? '';
 
 			// Fetch office online meet link details if induction office is specified
