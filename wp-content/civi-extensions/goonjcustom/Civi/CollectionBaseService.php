@@ -286,14 +286,6 @@ class CollectionBaseService extends AutoSubscriber {
   /**
    *
    */
-  private static function getCustomFieldDetails($customGroupName) {
-    return CustomField::get(FALSE)
-      ->addSelect('column_name', 'custom_group_id.table_name')
-      ->addWhere('custom_group_id.name', '=', $customGroupName)
-      ->addWhere('name', '=', 'state')
-      ->execute()->single();
-  }
-
   /**
    * This hook is called after a db write on entities.
    *
