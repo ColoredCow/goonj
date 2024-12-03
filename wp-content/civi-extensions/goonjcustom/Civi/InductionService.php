@@ -862,8 +862,7 @@ class InductionService extends AutoSubscriber {
 
     if (!empty($officeDetails)) {
       return $inductionType;
-    }
-    else {
+    } else {
       $inductionType = 'Online';
       return $inductionType;
     }
