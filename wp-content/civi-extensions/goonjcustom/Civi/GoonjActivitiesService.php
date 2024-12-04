@@ -9,7 +9,6 @@ use Civi\Api4\CustomField;
 use Civi\Api4\EckEntity;
 use Civi\Api4\OptionValue;
 use Civi\Api4\Relationship;
-use Civi\Api4\StateProvince;
 use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
@@ -34,7 +33,6 @@ class GoonjActivitiesService extends AutoSubscriber {
    */
   public static function getSubscribedEvents() {
     return [
-      '&hook_civicrm_fieldOptions' => 'setIndianStateOptions',
       'civi.afform.submit' => [
         ['setGoonjActivitiesAddress', 9],
         ['setActivitiesVolunteersAddress', 8],
@@ -50,43 +48,6 @@ class GoonjActivitiesService extends AutoSubscriber {
         ['createActivityForGoonjActivityCollectionCamp'],
       ],
     ];
-  }
-
-  /**
-   *
-   */
-  public static function setIndianStateOptions(string $entity, string $field, array &$options, array $params) {
-    if ($entity !== 'Eck_Collection_Camp') {
-      return;
-    }
-
-    $customStateFields = CustomField::get(FALSE)
-      ->addWhere('custom_group_id:name', '=', 'Goonj_Activities')
-      ->addWhere('name', '=', 'State')
-      ->execute();
-
-    $stateField = $customStateFields->first();
-
-    $stateFieldId = $stateField['id'];
-
-    if ($field !== "custom_$stateFieldId") {
-      return;
-    }
-
-    $activeIndianStates = StateProvince::get(FALSE)
-      ->addWhere('country_id.iso_code', '=', 'IN')
-      ->addOrderBy('name', 'ASC')
-      ->execute();
-
-    $stateOptions = [];
-    foreach ($activeIndianStates as $state) {
-      if ($state['is_active']) {
-        $stateOptions[$state['id']] = $state['name'];
-      }
-    }
-
-    $options = $stateOptions;
-
   }
 
   /**

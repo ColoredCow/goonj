@@ -13,6 +13,7 @@ use Civi\Api4\OptionValue;
 use Civi\Api4\Relationship;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
+use Civi\Api4\StateProvince;
 
 /**
  *
@@ -43,6 +44,7 @@ class CollectionBaseService extends AutoSubscriber {
         ['maybeGeneratePoster', 20],
         ['handleAuthorizationEmailsPost', 10],
       ],
+      '&hook_civicrm_fieldOptions' => 'setIndianStateOptions',
     ];
   }
 
@@ -481,6 +483,53 @@ class CollectionBaseService extends AutoSubscriber {
     }
 
     return $emailParams;
+  }
+
+  /**
+   *
+   */
+  public static function setIndianStateOptions(string $entity, string $field, ?array &$options, array $params) {
+    if ($entity !== 'Eck_Collection_Camp') {
+      return;
+    }
+
+    $stateFieldNames = self::getStateFieldNames();
+
+    if (!in_array($field, $stateFieldNames)) {
+      return;
+    }
+
+    $indianStates = StateProvince::get(FALSE)
+      ->addWhere('country_id.iso_code', '=', 'IN')
+      ->addOrderBy('name', 'ASC')
+      ->execute();
+
+    $stateOptions = [];
+    foreach ($indianStates as $state) {
+      if ($state['is_active']) {
+        $stateOptions[$state['id']] = $state['name'];
+      }
+    }
+
+    $options = $stateOptions;
+
+  }
+
+  /**
+   *
+   */
+  public static function getStateFieldNames() {
+    $stateGroupNameMapper = [
+      'Collection_Camp' => 'Collection_Camp_Intent_Details',
+      'Dropping_Center' => 'Dropping_Centre',
+      'Institution_Collection_Camp' => 'Institution_Collection_Camp_Intent',
+      'Goonj_Activities' => 'Goonj_Activities',
+      'Institution_Dropping_Center' => 'Institution_Dropping_Center_Intent',
+    ];
+
+    $statefieldNames = array_map(fn ($field) => "{$field}.State", $stateGroupNameMapper);
+
+    return $statefieldNames;
   }
 
 }
