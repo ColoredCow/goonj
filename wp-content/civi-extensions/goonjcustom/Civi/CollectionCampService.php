@@ -22,6 +22,7 @@ use Civi\Core\Service\AutoSubscriber;
 use CRM_Core_Action;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
+
 /**
  *
  */
