@@ -71,6 +71,7 @@ class MaterialContributionService extends AutoSubscriber {
     $contribution = $activities->first();
 
     $goonjOfficeId = $contribution['Material_Contribution.Goonj_Office'];
+
     $subtype = NULL;
     if (!empty($contribution['Material_Contribution.Collection_Camp.subtype:name'])) {
       $subtype = $contribution['Material_Contribution.Collection_Camp.subtype:name'];
@@ -117,6 +118,7 @@ class MaterialContributionService extends AutoSubscriber {
     }
 
     $campField = ($subtype == 'Collection_Camp')
+
     ? 'Material_Contribution.Collection_Camp'
     : (($subtype == 'Dropping_Center')
         ? 'Material_Contribution.Dropping_Center'
@@ -134,6 +136,7 @@ class MaterialContributionService extends AutoSubscriber {
     }
 
     $addressField = ($subtype == 'Collection_Camp')
+
     ? 'Collection_Camp_Intent_Details.Location_Area_of_camp'
     : (($subtype == 'Dropping_Center')
         ? 'Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_'
