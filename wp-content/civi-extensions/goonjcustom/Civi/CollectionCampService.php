@@ -16,7 +16,6 @@ use Civi\Api4\Group;
 use Civi\Api4\GroupContact;
 use Civi\Api4\OptionValue;
 use Civi\Api4\Relationship;
-use Civi\Api4\StateProvince;
 use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
@@ -63,7 +62,6 @@ class CollectionCampService extends AutoSubscriber {
         ['linkInductionWithCollectionCamp'],
         ['mailNotificationToMmt'],
       ],
-      '&hook_civicrm_fieldOptions' => 'setIndianStateOptions',
       'civi.afform.submit' => [
         ['setCollectionCampAddress', 9],
         ['setEventVolunteersAddress', 8],
@@ -762,43 +760,6 @@ class CollectionCampService extends AutoSubscriber {
     $coordinator = $fallbackCoordinators->itemAt($randomIndex);
 
     return $coordinator;
-  }
-
-  /**
-   *
-   */
-  public static function setIndianStateOptions(string $entity, string $field, array &$options, array $params) {
-    if ($entity !== 'Eck_Collection_Camp') {
-      return;
-    }
-
-    $intentStateFields = CustomField::get(FALSE)
-      ->addWhere('custom_group_id:name', '=', 'Collection_Camp_Intent_Details')
-      ->addWhere('name', '=', 'State')
-      ->execute();
-
-    $stateField = $intentStateFields->first();
-
-    $statefieldId = $stateField['id'];
-
-    if ($field !== "custom_$statefieldId") {
-      return;
-    }
-
-    $indianStates = StateProvince::get(FALSE)
-      ->addWhere('country_id.iso_code', '=', 'IN')
-      ->addOrderBy('name', 'ASC')
-      ->execute();
-
-    $stateOptions = [];
-    foreach ($indianStates as $state) {
-      if ($state['is_active']) {
-        $stateOptions[$state['id']] = $state['name'];
-      }
-    }
-
-    $options = $stateOptions;
-
   }
 
   /**
