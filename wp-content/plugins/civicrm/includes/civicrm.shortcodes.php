@@ -345,6 +345,8 @@ class CiviCRM_For_WordPress_Shortcodes {
    */
   public function render_single($atts) {
 
+    global $post;
+
     // Do not parse Shortcodes in REST context for PUT, POST and DELETE methods.
     // Nonce is not necessary here.
     // phpcs:ignore WordPress.Security.NonceVerification.Missing
@@ -358,23 +360,54 @@ class CiviCRM_For_WordPress_Shortcodes {
       return $shortcode;
     }
 
-    // Check if we've already parsed this Shortcode.
-    global $post;
-    if (is_object($post)) {
-      if (!empty($this->shortcode_markup)) {
-        if (isset($this->shortcode_markup[$post->ID])) {
+    // Get the Shortcode Theme Compatibility setting.
+    $theme_mode = $this->civi->admin->get_theme_compatibility_mode();
 
-          // Set counter flag.
-          if (!isset($this->shortcode_in_post[$post->ID])) {
-            $this->shortcode_in_post[$post->ID] = 0;
+    // Check the chosen theme compatibility scenario.
+    if ($theme_mode === 'loop') {
+      $theme_check = in_the_loop();
+    }
+    else {
+      $theme_check = ('the_content' === current_filter()) ? TRUE : FALSE;
+    }
+
+    /**
+     * Filters the chosen theme compatibility check.
+     *
+     * If neither 'loop' nor 'filter' work for your theme, you can implement a custom
+     * theme compatibility check using this filter. You will most likely have to dig
+     * into how your theme renders content to find out what check to implement.
+     *
+     * @since 5.80
+     *
+     * @param bool $theme_check True if the check has passed, false otherwise.
+     * @param bool $theme_mode The Shortcode Theme Compatibility setting.
+     */
+    $theme_check = apply_filters('civicrm_theme_compatibility_mode', $theme_check, $theme_mode);
+
+    /*
+     * Check if we've already rendered this Shortcode by parsing post content in
+     * The Loop in `prerender()` above. CiviCRM Shortcodes that are rendered via
+     * `do_shortcode('[civicrm ...]')` elsewhere (e.g. in a template) will never
+     * have been prerendered and cannot be present in the Shortcode markup array.
+     */
+    if ($theme_check) {
+      if (is_object($post)) {
+        if (!empty($this->shortcode_markup)) {
+          if (isset($this->shortcode_markup[$post->ID])) {
+
+            // Set counter flag.
+            if (!isset($this->shortcode_in_post[$post->ID])) {
+              $this->shortcode_in_post[$post->ID] = 0;
+            }
+            else {
+              $this->shortcode_in_post[$post->ID]++;
+            }
+
+            // This Shortcode must have been rendered.
+            return $this->shortcode_markup[$post->ID][$this->shortcode_in_post[$post->ID]];
+
           }
-          else {
-            $this->shortcode_in_post[$post->ID]++;
-          }
-
-          // This Shortcode must have been rendered.
-          return $this->shortcode_markup[$post->ID][$this->shortcode_in_post[$post->ID]];
-
         }
       }
     }
