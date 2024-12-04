@@ -1531,7 +1531,6 @@ class CollectionCampService extends AutoSubscriber {
         // Set the default value for 'financial_type_id'.
         $defaults = [];
         // Example: 'Donation' (adjust ID as per your requirement)
-        error_log("defaults: " . print_r($defaults['financial_type_id'], TRUE));
         $defaults['financial_type_id'] = 1;
         $form->setDefaults($defaults);
       }
