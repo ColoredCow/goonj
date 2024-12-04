@@ -22,6 +22,7 @@ use Civi\Core\Service\AutoSubscriber;
 use CRM_Core_Action;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
+
 /**
  *
  */
@@ -54,11 +55,10 @@ class CollectionCampService extends AutoSubscriber {
       ['assignChapterGroupToIndividualForContribution'],
       ],
       '&hook_civicrm_pre' => [
-      ['generateCollectionCampQr'],
-      ['linkCollectionCampToContact'],
-      ['generateCollectionCampCode'],
-      ['createActivityForCollectionCamp'],
-      ['updateCampStatusAfterAuth'],
+        ['generateCollectionCampQr'],
+        ['linkCollectionCampToContact'],
+        ['createActivityForCollectionCamp'],
+        ['updateCampStatusAfterAuth'],
       ],
       '&hook_civicrm_custom' => [
       ['setOfficeDetails'],
@@ -364,162 +364,6 @@ class CollectionCampService extends AutoSubscriber {
     }
 
     return $stateContactGroup ? $stateContactGroup['id'] : NULL;
-  }
-
-  /**
-   * This hook is called after a db write on entities.
-   *
-   * @param string $op
-   *   The type of operation being performed.
-   * @param string $objectName
-   *   The name of the object.
-   * @param int $objectId
-   *   The unique identifier for the object.
-   * @param object $objectRef
-   *   The reference to the object.
-   */
-  public static function generateCollectionCampCode(string $op, string $objectName, $objectId, &$objectRef) {
-    $statusDetails = self::checkCampStatusAndIds($objectName, $objectId, $objectRef);
-
-    if (!$statusDetails) {
-      return;
-    }
-
-    $newStatus = $statusDetails['newStatus'];
-    $currentStatus = $statusDetails['currentStatus'];
-
-    if ($currentStatus !== $newStatus) {
-      if ($newStatus === 'authorized') {
-        $subtypeId = $objectRef['subtype'] ?? NULL;
-        if ($subtypeId === NULL) {
-          return;
-        }
-
-        $campId = $objectRef['id'] ?? NULL;
-        if ($campId === NULL) {
-          return;
-        }
-
-        // Fetch the collection camp details.
-        $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
-          ->addWhere('id', '=', $campId)
-          ->execute()->single();
-
-        $collectionCampsCreatedDate = $collectionCamp['created_date'] ?? NULL;
-
-        $campTitle = $collectionCamp['title'] ?? NULL;
-
-        // Get the year.
-        $year = date('Y', strtotime($collectionCampsCreatedDate));
-
-        // Fetch the state ID.
-        $stateId = self::getStateIdForSubtype($objectRef, $subtypeId, $campTitle);
-
-        if (!$stateId) {
-          return;
-        }
-
-        // Fetch the state abbreviation.
-        $stateProvince = StateProvince::get(FALSE)
-          ->addWhere('id', '=', $stateId)
-          ->execute()->single();
-
-        if (empty($stateProvince)) {
-          return;
-        }
-
-        $stateAbbreviation = $stateProvince['abbreviation'] ?? NULL;
-        if (!$stateAbbreviation) {
-          return;
-        }
-
-        // Fetch the Goonj-specific state code.
-        $config = self::getConfig();
-        $stateCode = $config['state_codes'][$stateAbbreviation] ?? 'UNKNOWN';
-
-        // Get the current event title.
-        $currentTitle = $objectRef['title'] ?? 'Collection Camp';
-
-        // Fetch the event code.
-        $eventCode = $config['event_codes'][$currentTitle] ?? 'UNKNOWN';
-
-        // Modify the title to include the year, state code, event code, and camp Id.
-        $newTitle = $year . '/' . $stateCode . '/' . $eventCode . '/' . $campId;
-        $objectRef['title'] = $newTitle;
-
-        // Save the updated title back to the Collection Camp entity.
-        EckEntity::update('Collection_Camp')
-          ->addWhere('id', '=', $campId)
-          ->addValue('title', $newTitle)
-          ->execute();
-      }
-    }
-  }
-
-  /**
-   *
-   */
-  private static function getConfig() {
-    // Get the path to the CiviCRM extensions directory.
-    $extensionsDir = \CRM_Core_Config::singleton()->extensionsDir;
-
-    // Relative path to the extension's config directory.
-    $extensionPath = $extensionsDir . 'goonjcustom/config/';
-
-    // Include and return the configuration files.
-    return [
-      'state_codes' => include $extensionPath . 'constants.php',
-      'event_codes' => include $extensionPath . 'eventCode.php',
-    ];
-  }
-
-  /**
-   *
-   */
-  public static function getStateIdForSubtype(array $objectRef, int $subtypeId, ?string $campTitle): ?int {
-    // Fetch option value based on camp title.
-    if ($campTitle === 'Institution Collection Camp') {
-      $institutionOptionValue = self::getOptionValue('Institution_Collection_Camp');
-      if ($subtypeId == $institutionOptionValue['value']) {
-        return $objectRef['Institution_Collection_Camp_Intent.State'] ?? NULL;
-      }
-    }
-
-    if ($campTitle === 'Goonj Activities') {
-      $goonjActivitiesOptionValue = self::getOptionValue('Goonj_Activities');
-      if ($subtypeId == $goonjActivitiesOptionValue['value']) {
-        return $objectRef['Goonj_Activities.State'] ?? NULL;
-      }
-    }
-
-    if ($campTitle === 'Institution Dropping Center') {
-      $institutionDroppingCenterOptionValue = self::getOptionValue('Institution_Dropping_Center');
-      if ($subtypeId == $institutionDroppingCenterOptionValue['value']) {
-        return $objectRef['Institution_Dropping_Center_Intent.State'] ?? NULL;
-      }
-    }
-
-    // Fetch option value for Dropping Centre.
-    $droppingCenterOptionValue = self::getOptionValue('Dropping_Center');
-    if ($subtypeId == $droppingCenterOptionValue['value']) {
-      return $objectRef['Dropping_Centre.State'] ?? NULL;
-    }
-
-    // Default state for other camps.
-    return $objectRef['Collection_Camp_Intent_Details.State'] ?? NULL;
-  }
-
-  /**
-   * Helper function to fetch option value by name.
-   */
-  private static function getOptionValue(string $name): ?array {
-    return OptionValue::get(FALSE)
-      ->addSelect('value')
-      ->addWhere('option_group_id:name', '=', 'eck_sub_types')
-      ->addWhere('grouping', '=', 'Collection_Camp')
-      ->addWhere('name', '=', $name)
-      ->execute()
-      ->single();
   }
 
   /**
@@ -1378,43 +1222,6 @@ class CollectionCampService extends AutoSubscriber {
     catch (\Exception $e) {
       \Civi::log()->error("Exception occurred while updating camp status for campId: $collectionCampId. Error: " . $e->getMessage());
     }
-  }
-
-  /**
-   * Check the status of a Collection Camp and return status details.
-   *
-   * @param string $objectName
-   *   The name of the object being processed.
-   * @param int $objectId
-   *   The ID of the object being processed.
-   * @param array &$objectRef
-   *   A reference to the object data.
-   *
-   * @return array|null
-   *   An array containing the new and current status if valid, or NULL if invalid.
-   */
-  public static function checkCampStatusAndIds(string $objectName, $objectId, &$objectRef) {
-    if ($objectName != 'Eck_Collection_Camp') {
-      return NULL;
-    }
-
-    $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
-
-    if (!$newStatus || !$objectId) {
-      return NULL;
-    }
-
-    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Collection_Camp_Core_Details.Status')
-      ->addWhere('id', '=', $objectId)
-      ->execute()->single();
-
-    $currentStatus = $collectionCamp['Collection_Camp_Core_Details.Status'] ?? '';
-
-    return [
-      'newStatus' => $newStatus,
-      'currentStatus' => $currentStatus,
-    ];
   }
 
   /**
