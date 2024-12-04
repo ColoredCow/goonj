@@ -528,7 +528,7 @@ class InductionService extends AutoSubscriber {
 
         $isMailSent = $contacts['Individual_fields.Induction_slot_booking_follow_up_email_sent'] ?? NULL;
 
-        if (empty($isMailSent)) {
+        if (in_array($isMailSent, [NULL, false], true)) {
 
           $emailParams = [
             'contact_id' => $activity['source_contact_id'],
@@ -760,7 +760,7 @@ class InductionService extends AutoSubscriber {
 
         $isMailSent = $contacts['Individual_fields.Induction_Remainder_Email_Sent_on_Induction_Day'] ?? NULL;
 
-        if (empty($isMailSent)) {
+        if (in_array($isMailSent, [NULL, false], true)) {
           $emailParams = [
             'contact_id'  => $scheduledInductionActivity['source_contact_id'],
             'template_id' => $template['id'],
