@@ -527,7 +527,12 @@ class CollectionBaseService extends AutoSubscriber {
       'Institution_Dropping_Center' => 'Institution_Dropping_Center_Intent',
     ];
 
-    $statefieldNames = array_map(fn ($field) => "{$field}.State", $stateGroupNameMapper);
+    $intentStateFields = CustomField::get(FALSE)
+      ->addWhere('custom_group_id:name', 'IN', array_values($stateGroupNameMapper))
+      ->addWhere('name', '=', 'State')
+      ->execute();
+
+    $statefieldNames = array_map(fn ($field) => 'custom_' . $field['id'], $intentStateFields->jsonSerialize());
 
     return $statefieldNames;
   }
