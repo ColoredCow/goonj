@@ -92,7 +92,7 @@ $api->invoice->fetch($invoiceId);
     "comment": null,
     "created_at": 1653596202,
     "currency": "INR",
-    "currency_symbol": "₹",
+    "currency_symbol": "INR",
     "customer_details": {
         "billing_address": null,
         "contact": "99991111999",
@@ -253,7 +253,7 @@ $api->invoice->fetch($invoiceId)->edit(array('line_items' => array(array('id' =>
   "amount_paid": null,
   "amount_due": null,
   "currency": "INR",
-  "currency_symbol": "₹",
+  "currency_symbol": "INR",
   "description": "This is a test invoice.",
   "notes": {
     "updated-key": "An updated note."
@@ -379,7 +379,7 @@ $api->invoice->fetch($invoiceId)->issue();
   "amount_paid": 0,
   "amount_due": 600,
   "currency": "INR",
-  "currency_symbol": "₹",
+  "currency_symbol": "INR",
   "description": "This is a test invoice.",
   "notes": {
     "updated-key": "An updated note."
@@ -439,7 +439,7 @@ $api->invoice->fetch($invoiceId)->cancel();
     "comment": null,
     "created_at": 1653596202,
     "currency": "INR",
-    "currency_symbol": "₹",
+    "currency_symbol": "INR",
     "customer_details": {
         "billing_address": null,
         "contact": "99991111999",
