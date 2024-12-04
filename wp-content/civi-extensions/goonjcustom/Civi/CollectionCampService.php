@@ -35,6 +35,7 @@ class CollectionCampService extends AutoSubscriber {
   const ENTITY_NAME = 'Collection_Camp';
   const ENTITY_SUBTYPE_NAME = 'Collection_Camp';
   const MATERIAL_RELATIONSHIP_TYPE_NAME = 'Material Management Team of';
+  const DEFAULT_FINANCIAL_TYPE_ID = 1;
 
   private static $individualId = NULL;
   private static $collectionCampAddress = NULL;
@@ -1531,7 +1532,7 @@ class CollectionCampService extends AutoSubscriber {
         // Set the default value for 'financial_type_id'.
         $defaults = [];
         // Example: 'Donation' (adjust ID as per your requirement)
-        $defaults['financial_type_id'] = 1;
+        $defaults['financial_type_id'] = self::DEFAULT_FINANCIAL_TYPE_ID;
         $form->setDefaults($defaults);
       }
     }
