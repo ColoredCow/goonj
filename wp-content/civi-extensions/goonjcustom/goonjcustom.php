@@ -6,6 +6,7 @@
 
 require_once 'goonjcustom.civix.php';
 
+use Civi\InductionService;
 use Civi\Api4\Address;
 use Civi\Api4\Contact;
 use Civi\Token\Event\TokenRegisterEvent;
@@ -23,6 +24,7 @@ function goonjcustom_civicrm_config(&$config): void {
 
   \Civi::dispatcher()->addSubscriber(new CRM_Goonjcustom_Token_CollectionCamp());
   \Civi::dispatcher()->addSubscriber(new CRM_Goonjcustom_Token_DroppingCenter());
+  Civi::dispatcher()->addSubscriber(new CRM_Goonjcustom_Token_InstitutionCollectionCamp());
 }
 
 /**
@@ -67,7 +69,11 @@ function goonjcustom_register_tokens(TokenRegisterEvent $e) {
   $e->entity('contact')
     ->register('inductionDetails', ts('Induction details'))
     ->register('inductionDateTime', ts('Induction Scheduled Date & Time'))
-    ->register('inductionOnlineMeetlink', ts('Induction Online Meet link'));
+    ->register('inductionOnlineMeetlink', ts('Induction Online Meet link'))
+    ->register('inductionOfficeAddress', ts('Induction Office Address'))
+    ->register('inductionOfficeCity', ts('Induction Office City'))
+    ->register('urbanOpsName', ts('Urban Ops Name'))
+    ->register('urbanOpsPhone', ts('Urban Ops Phone'));
 }
 
 /**
@@ -143,25 +149,65 @@ function goonjcustom_evaluate_tokens(TokenValueEvent $e) {
 			}
 
 			$inductionActivity = $inductionActivities->first();
-			$inductionDateTime = $inductionActivity['activity_date_time'] ?? 'Not Scheduled';
+			$inductionDateTimeString = $inductionActivity['activity_date_time'] ?? 'Not Scheduled';
+      if ($inductionDateTimeString !== 'Not Scheduled') {
+        $inductionDateTime = (new DateTime($inductionDateTimeString))->format('Y-m-d g:i A');
+      } else {
+          $inductionDateTime = 'Not Scheduled';
+      }
 			$inductionGoonjOffice = $inductionActivity['Induction_Fields.Goonj_Office'] ?? '';
 
 			// Fetch office online meet link details if induction office is specified
 			$inductionOnlineMeetlink = '';
+      $completeAddress = '';
+      $inductionOfficeCity = '';
+      $urbanOpsName = '';
+      $urbanOpsPhone = '';
+
+
 			if ($inductionGoonjOffice) {
 				$officeDetails = \Civi\Api4\Contact::get(FALSE)
-					->addSelect('Goonj_Office_Details.Induction_Meeting_Access_Link')
+					->addSelect('Goonj_Office_Details.Induction_Meeting_Access_Link', 'address_primary.city')
 					->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_Office')
 					->addWhere('id', '=', $inductionGoonjOffice)
 					->execute()->single();
 
 				$inductionOnlineMeetlink = $officeDetails['Goonj_Office_Details.Induction_Meeting_Access_Link'] ?? '';
+        $inductionOfficeCity = $officeDetails['address_primary.city'] ?? '';
+
+        $addresses = \Civi\Api4\Address::get( false )
+          ->addWhere( 'contact_id', '=', $officeDetails['id'] )
+          ->addWhere( 'is_primary', '=', true )
+          ->setLimit( 1 )
+          ->execute();
+
+        $address = $addresses->count() > 0 ? $addresses->first() : null;
+        $completeAddress = CRM_Utils_Address::format($address);
+
 			}
+
+      $office = InductionService::findOfficeForState($stateId);
+
+      $coordinatorId = InductionService::findCoordinatorForOffice($office['id']);
+
+  
+      $coordinatorDetails = Contact::get(FALSE)
+        ->addSelect('phone.phone', 'display_name')
+        ->addJoin('Phone AS phone', 'LEFT')
+        ->addWhere('id', '=', $coordinatorId)
+        ->execute();
+      $coordinatorDetail = $coordinatorDetails->first();
+
+      $urbanOpsName = $coordinatorDetail['display_name'] ?? '';
+      $urbanOpsPhone = $coordinatorDetail['phone.phone'] ?? '';
 
 			// Assign tokens
 			$row->tokens('contact', 'inductionDateTime', $inductionDateTime);
 			$row->tokens('contact', 'inductionOnlineMeetlink', $inductionOnlineMeetlink);
-
+      $row->tokens('contact', 'inductionOfficeAddress', $completeAddress);
+      $row->tokens('contact', 'inductionOfficeCity', $inductionOfficeCity);
+      $row->tokens('contact', 'urbanOpsName', $urbanOpsName);
+      $row->tokens('contact', 'urbanOpsPhone', $urbanOpsPhone);
     }
   }
 }

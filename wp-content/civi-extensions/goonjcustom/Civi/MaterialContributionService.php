@@ -58,7 +58,7 @@ class MaterialContributionService extends AutoSubscriber {
 
     // Hack: Retrieve the most recent "Material Contribution" activity for this contact.
     $activities = Activity::get(FALSE)
-      ->addSelect('*', 'contact.display_name', 'Material_Contribution.Delivered_By', 'Material_Contribution.Delivered_By_Contact', 'Material_Contribution.Goonj_Office', 'Material_Contribution.Collection_Camp.subtype:name')
+      ->addSelect('*', 'contact.display_name', 'Material_Contribution.Delivered_By', 'Material_Contribution.Delivered_By_Contact', 'Material_Contribution.Goonj_Office', 'Material_Contribution.Collection_Camp.subtype:name', 'Material_Contribution.Institution_Collection_Camp.subtype:name', 'Material_Contribution.Dropping_Center.subtype:name')
       ->addJoin('ActivityContact AS activity_contact', 'LEFT')
       ->addJoin('Contact AS contact', 'LEFT')
       ->addWhere('source_contact_id', '=', $params['contactId'])
@@ -71,7 +71,18 @@ class MaterialContributionService extends AutoSubscriber {
     $contribution = $activities->first();
 
     $goonjOfficeId = $contribution['Material_Contribution.Goonj_Office'];
-    $subtype = $contribution['Material_Contribution.Collection_Camp.subtype:name'];
+
+    $subtype = NULL;
+    if (!empty($contribution['Material_Contribution.Collection_Camp.subtype:name'])) {
+      $subtype = $contribution['Material_Contribution.Collection_Camp.subtype:name'];
+    }
+    elseif (!empty($contribution['Material_Contribution.Institution_Collection_Camp.subtype:name'])) {
+      $subtype = $contribution['Material_Contribution.Institution_Collection_Camp.subtype:name'];
+    }
+    elseif (!empty($contribution['Material_Contribution.Dropping_Center.subtype:name'])) {
+      $subtype = $contribution['Material_Contribution.Dropping_Center.subtype:name'];
+    }
+
     $contactData = Contact::get(FALSE)
       ->addSelect('email_primary.email', 'phone_primary.phone')
       ->addWhere('id', '=', $params['contactId'])
@@ -107,8 +118,13 @@ class MaterialContributionService extends AutoSubscriber {
     }
 
     $campField = ($subtype == 'Collection_Camp')
-        ? 'Material_Contribution.Collection_Camp'
-        : 'Material_Contribution.Dropping_Center';
+
+    ? 'Material_Contribution.Collection_Camp'
+    : (($subtype == 'Dropping_Center')
+        ? 'Material_Contribution.Dropping_Center'
+        : (($subtype == 'Institution_Collection_Camp')
+            ? 'Material_Contribution.Institution_Collection_Camp'
+            : NULL));
 
     $activity = Activity::get(FALSE)
       ->addSelect($campField)
@@ -120,8 +136,13 @@ class MaterialContributionService extends AutoSubscriber {
     }
 
     $addressField = ($subtype == 'Collection_Camp')
-        ? 'Collection_Camp_Intent_Details.Location_Area_of_camp'
-        : 'Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_';
+
+    ? 'Collection_Camp_Intent_Details.Location_Area_of_camp'
+    : (($subtype == 'Dropping_Center')
+        ? 'Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_'
+        : (($subtype == 'Institution_Collection_Camp')
+            ? 'Institution_Collection_Camp_Intent.Collection_Camp_Address'
+            : NULL));
 
     $collectionCamp = EckEntity::get('Collection_Camp', TRUE)
       ->addSelect($addressField)

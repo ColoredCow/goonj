@@ -6,7 +6,9 @@ require_once __DIR__ . '/../../../../wp-content/civi-extensions/goonjcustom/vend
 
 use Civi\Afform\Event\AfformSubmitEvent;
 use Civi\Api4\Activity;
+use Civi\Api4\Address;
 use Civi\Api4\Contact;
+use Civi\Api4\Contribution;
 use Civi\Api4\CustomField;
 use Civi\Api4\EckEntity;
 use Civi\Api4\Email;
@@ -14,9 +16,9 @@ use Civi\Api4\Group;
 use Civi\Api4\GroupContact;
 use Civi\Api4\OptionValue;
 use Civi\Api4\Relationship;
-use Civi\Api4\StateProvince;
 use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
+use CRM_Core_Action;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
 
@@ -33,6 +35,7 @@ class CollectionCampService extends AutoSubscriber {
   const ENTITY_NAME = 'Collection_Camp';
   const ENTITY_SUBTYPE_NAME = 'Collection_Camp';
   const MATERIAL_RELATIONSHIP_TYPE_NAME = 'Material Management Team of';
+  const DEFAULT_FINANCIAL_TYPE_ID = 1;
 
   private static $individualId = NULL;
   private static $collectionCampAddress = NULL;
@@ -44,29 +47,35 @@ class CollectionCampService extends AutoSubscriber {
   public static function getSubscribedEvents() {
     return [
       '&hook_civicrm_post' => [
-        ['individualCreated'],
-        ['assignChapterGroupToIndividual'],
-        ['reGenerateCollectionCampQr'],
-        ['updateCampStatusOnOutcomeFilled'],
+      ['individualCreated'],
+      ['assignChapterGroupToIndividual'],
+      ['reGenerateCollectionCampQr'],
+      ['updateCampStatusOnOutcomeFilled'],
+      ['assignChapterGroupToIndividualForContribution'],
       ],
       '&hook_civicrm_pre' => [
         ['generateCollectionCampQr'],
         ['linkCollectionCampToContact'],
-        ['generateCollectionCampCode'],
         ['createActivityForCollectionCamp'],
         ['updateCampStatusAfterAuth'],
       ],
       '&hook_civicrm_custom' => [
-        ['setOfficeDetails'],
-        ['linkInductionWithCollectionCamp'],
-        ['mailNotificationToMmt'],
+      ['setOfficeDetails'],
+      ['linkInductionWithCollectionCamp'],
+      ['mailNotificationToMmt'],
       ],
-      '&hook_civicrm_fieldOptions' => 'setIndianStateOptions',
       'civi.afform.submit' => [
-        ['setCollectionCampAddress', 9],
-        ['setEventVolunteersAddress', 8],
+      ['setCollectionCampAddress', 9],
+      ['setEventVolunteersAddress', 8],
       ],
       '&hook_civicrm_tabset' => 'collectionCampTabset',
+      '&hook_civicrm_buildForm' => [
+      ['autofillMonetaryFormSource'],
+      ['autofillFinancialType'],
+      ],
+      '&hook_civicrm_alterMailParams' => [
+      ['alterReceiptMail'],
+      ],
     ];
   }
 
@@ -79,57 +88,89 @@ class CollectionCampService extends AutoSubscriber {
     }
 
     $tabConfigs = [
-      // 'activities' => [
-      //   'title' => ts('Activities'),
-      //   'module' => 'afsearchCollectionCampActivity',
-      //   'directive' => 'afsearch-collection-camp-activity',
-      //   'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-      // ],
+    // 'activities' => [
+    //   'title' => ts('Activities'),
+    //   'module' => 'afsearchCollectionCampActivity',
+    //   'directive' => 'afsearch-collection-camp-activity',
+    //   'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+    //   'permissions' => ['goonj_chapter_admin'],
+    // ],
       'logistics' => [
         'title' => ts('Logistics'),
         'module' => 'afsearchCollectionCampLogistics',
         'directive' => 'afsearch-collection-camp-logistics',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
       ],
       'eventVolunteers' => [
         'title' => ts('Event Volunteers'),
         'module' => 'afsearchEventVolunteer',
         'directive' => 'afsearch-event-volunteer',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
       ],
       'vehicleDispatch' => [
         'title' => ts('Dispatch'),
         'module' => 'afsearchCampVehicleDispatchData',
         'directive' => 'afsearch-camp-vehicle-dispatch-data',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
       ],
       'materialAuthorization' => [
         'title' => ts('Material Authorization'),
         'module' => 'afsearchAcknowledgementForLogisticsData',
         'directive' => 'afsearch-acknowledgement-for-logistics-data',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
       ],
       'materialContribution' => [
         'title' => ts('Material Contribution'),
         'module' => 'afsearchCollectionCampMaterialContributions',
         'directive' => 'afsearch-collection-camp-material-contributions',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
       ],
       'campOutcome' => [
         'title' => ts('Camp Outcome'),
         'module' => 'afsearchCampOutcome',
         'directive' => 'afsearch-camp-outcome',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
       ],
       'campFeedback' => [
         'title' => ts('Volunteer Feedback'),
         'module' => 'afsearchVolunteerFeedback',
         'directive' => 'afsearch-volunteer-feedback',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
+      ],
+      'monetaryContribution' => [
+        'title' => ts('Monetary Contribution'),
+        'module' => 'afsearchMonetaryContribution',
+        'directive' => 'afsearch-monetary-contribution',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['account_team'],
+      ],
+      'monetaryContributionForUrbanOps' => [
+        'title' => ts('Monetary Contribution'),
+        'module' => 'afsearchMonetaryContributionForUrbanOps',
+        'directive' => 'afsearch-monetary-contribution-for-urban-ops',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin'],
       ],
     ];
 
     foreach ($tabConfigs as $key => $config) {
+      $isAdmin = \CRM_Core_Permission::check('admin');
+      if ($key == 'monetaryContributionForUrbanOps' && $isAdmin) {
+        continue;
+      }
+
+      $hasPermission = \CRM_Core_Permission::check($config['permissions']);
+      if (!$hasPermission) {
+        continue;
+      }
+
       $tabs[$key] = [
         'id' => $key,
         'title' => $config['title'],
@@ -249,8 +290,56 @@ class CollectionCampService extends AutoSubscriber {
       return FALSE;
     }
 
-    $stateId = $objectRef->state_province_id;
+    $groupId = self::getChapterGroupForState($objectRef->state_province_id);
 
+    if ($groupId) {
+      GroupContact::create(FALSE)
+        ->addValue('contact_id', self::$individualId)
+        ->addValue('group_id', $groupId)
+        ->addValue('status', 'Added')
+        ->execute();
+    }
+  }
+
+  /**
+   *
+   */
+  public static function assignChapterGroupToIndividualForContribution(string $op, string $objectName, int $objectId, &$objectRef) {
+    if ($op !== 'create' || $objectName !== 'Contribution') {
+      return FALSE;
+    }
+
+    if (self::$individualId !== $objectRef->contact_id || !$objectRef->contact_id) {
+      return FALSE;
+    }
+
+    $contactId = $objectRef->contact_id;
+
+    $address = Address::get(FALSE)
+      ->addSelect('state_province_id')
+      ->addWhere('contact_id', '=', $contactId)
+      ->addWhere('is_primary', '=', 1)
+      ->execute()->first();
+
+    $stateId = $address['state_province_id'] ?? NULL;
+
+    if ($stateId) {
+      $groupId = self::getChapterGroupForState($stateId);
+
+      if ($groupId) {
+        GroupContact::create(FALSE)
+          ->addValue('contact_id', self::$individualId)
+          ->addValue('group_id', $groupId)
+          ->addValue('status', 'Added')
+          ->execute();
+      }
+    }
+  }
+
+  /**
+   *
+   */
+  private static function getChapterGroupForState($stateId) {
     $stateContactGroups = Group::get(FALSE)
       ->addSelect('id')
       ->addWhere('Chapter_Contact_Group.Use_Case', '=', 'chapter-contacts')
@@ -272,137 +361,7 @@ class CollectionCampService extends AutoSubscriber {
       \Civi::log()->info('Assigning fallback chapter contact group: ' . $stateContactGroup['title']);
     }
 
-    $groupId = $stateContactGroup['id'];
-
-    $groupContactResult = GroupContact::create(FALSE)
-      ->addValue('contact_id', self::$individualId)
-      ->addValue('group_id', $groupId)
-      ->addValue('status', 'Added')
-      ->execute();
-
-  }
-
-  /**
-   * This hook is called after a db write on entities.
-   *
-   * @param string $op
-   *   The type of operation being performed.
-   * @param string $objectName
-   *   The name of the object.
-   * @param int $objectId
-   *   The unique identifier for the object.
-   * @param object $objectRef
-   *   The reference to the object.
-   */
-  public static function generateCollectionCampCode(string $op, string $objectName, $objectId, &$objectRef) {
-    $statusDetails = self::checkCampStatusAndIds($objectName, $objectId, $objectRef);
-
-    if (!$statusDetails) {
-      return;
-    }
-
-    $newStatus = $statusDetails['newStatus'];
-    $currentStatus = $statusDetails['currentStatus'];
-
-    if ($currentStatus !== $newStatus) {
-      if ($newStatus === 'authorized') {
-        $subtypeId = $objectRef['subtype'] ?? NULL;
-        if ($subtypeId === NULL) {
-          return;
-        }
-
-        $campId = $objectRef['id'] ?? NULL;
-        if ($campId === NULL) {
-          return;
-        }
-
-        // Fetch the collection camp details.
-        $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
-          ->addWhere('id', '=', $campId)
-          ->execute()->single();
-
-        $collectionCampsCreatedDate = $collectionCamp['created_date'] ?? NULL;
-
-        // Get the year.
-        $year = date('Y', strtotime($collectionCampsCreatedDate));
-
-        // Fetch the state ID.
-        $stateId = self::getStateIdForSubtype($objectRef, $subtypeId);
-
-        if (!$stateId) {
-          return;
-        }
-
-        // Fetch the state abbreviation.
-        $stateProvince = StateProvince::get(FALSE)
-          ->addWhere('id', '=', $stateId)
-          ->execute()->single();
-
-        if (empty($stateProvince)) {
-          return;
-        }
-
-        $stateAbbreviation = $stateProvince['abbreviation'] ?? NULL;
-        if (!$stateAbbreviation) {
-          return;
-        }
-
-        // Fetch the Goonj-specific state code.
-        $config = self::getConfig();
-        $stateCode = $config['state_codes'][$stateAbbreviation] ?? 'UNKNOWN';
-
-        // Get the current event title.
-        $currentTitle = $objectRef['title'] ?? 'Collection Camp';
-
-        // Fetch the event code.
-        $eventCode = $config['event_codes'][$currentTitle] ?? 'UNKNOWN';
-
-        // Modify the title to include the year, state code, event code, and camp Id.
-        $newTitle = $year . '/' . $stateCode . '/' . $eventCode . '/' . $campId;
-        $objectRef['title'] = $newTitle;
-
-        // Save the updated title back to the Collection Camp entity.
-        EckEntity::update('Collection_Camp')
-          ->addWhere('id', '=', $campId)
-          ->addValue('title', $newTitle)
-          ->execute();
-      }
-    }
-  }
-
-  /**
-   *
-   */
-  private static function getConfig() {
-    // Get the path to the CiviCRM extensions directory.
-    $extensionsDir = \CRM_Core_Config::singleton()->extensionsDir;
-
-    // Relative path to the extension's config directory.
-    $extensionPath = $extensionsDir . 'goonjcustom/config/';
-
-    // Include and return the configuration files.
-    return [
-      'state_codes' => include $extensionPath . 'constants.php',
-      'event_codes' => include $extensionPath . 'eventCode.php',
-    ];
-  }
-
-  /**
-   *
-   */
-  public static function getStateIdForSubtype(array $objectRef, int $subtypeId): ?int {
-    $optionValue = OptionValue::get(TRUE)
-      ->addSelect('value')
-      ->addWhere('option_group_id:name', '=', 'eck_sub_types')
-      ->addWhere('grouping', '=', 'Collection_Camp')
-      ->addWhere('name', '=', 'Dropping_Center')
-      ->execute()->single();
-
-    // Subtype for 'Dropping Centre'.
-    if ($subtypeId == $optionValue['value']) {
-      return $objectRef['Dropping_Centre.State'] ?? NULL;
-    }
-    return $objectRef['Collection_Camp_Intent_Details.State'] ?? NULL;
+    return $stateContactGroup ? $stateContactGroup['id'] : NULL;
   }
 
   /**
@@ -436,6 +395,9 @@ class CollectionCampService extends AutoSubscriber {
     $currentCollectionCamp = $collectionCamps->first();
     $currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
     $contactId = $currentCollectionCamp['Collection_Camp_Core_Details.Contact_Id'];
+    if (!$contactId) {
+      return;
+    }
     $collectionCampTitle = $currentCollectionCamp['title'];
     $collectionCampId = $currentCollectionCamp['id'];
 
@@ -545,7 +507,7 @@ class CollectionCampService extends AutoSubscriber {
 
     try {
       $collectionCampId = $objectRef->id;
-      $collectionCamp = EckEntity::get('Collection_Camp', TRUE)
+      $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
         ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_QR_Code.QR_Code')
         ->addWhere('id', '=', $collectionCampId)
         ->execute()->single();
@@ -673,7 +635,7 @@ class CollectionCampService extends AutoSubscriber {
    *   The parameters that were sent into the calling function.
    */
   public static function linkInductionWithCollectionCamp($op, $groupID, $entityID, &$params) {
-    if ($op !== 'create') {
+    if ($op !== 'create' || self::getEntitySubtypeName($entityID) !== self::ENTITY_SUBTYPE_NAME) {
       return;
     }
 
@@ -732,7 +694,7 @@ class CollectionCampService extends AutoSubscriber {
 
     foreach ($array as $item) {
       if ($item['entity_table'] === 'civicrm_eck_collection_camp' &&
-            $item['custom_field_id'] === $stateFieldId) {
+          $item['custom_field_id'] === $stateFieldId) {
         return $item;
       }
     }
@@ -764,9 +726,9 @@ class CollectionCampService extends AutoSubscriber {
     $contactFieldId = $collectionCampContactId['id'];
 
     $contactItemIndex = array_search(TRUE, array_map(fn($item) =>
-        $item['entity_table'] === 'civicrm_eck_collection_camp' &&
-        $item['custom_field_id'] == $contactFieldId,
-        $filteredItems
+      $item['entity_table'] === 'civicrm_eck_collection_camp' &&
+      $item['custom_field_id'] == $contactFieldId,
+      $filteredItems
     ));
 
     return $contactItemIndex !== FALSE ? $filteredItems[$contactItemIndex] : FALSE;
@@ -801,43 +763,6 @@ class CollectionCampService extends AutoSubscriber {
     $coordinator = $fallbackCoordinators->itemAt($randomIndex);
 
     return $coordinator;
-  }
-
-  /**
-   *
-   */
-  public static function setIndianStateOptions(string $entity, string $field, array &$options, array $params) {
-    if ($entity !== 'Eck_Collection_Camp') {
-      return;
-    }
-
-    $intentStateFields = CustomField::get(FALSE)
-      ->addWhere('custom_group_id:name', '=', 'Collection_Camp_Intent_Details')
-      ->addWhere('name', '=', 'State')
-      ->execute();
-
-    $stateField = $intentStateFields->first();
-
-    $statefieldId = $stateField['id'];
-
-    if ($field !== "custom_$statefieldId") {
-      return;
-    }
-
-    $indianStates = StateProvince::get(FALSE)
-      ->addWhere('country_id.iso_code', '=', 'IN')
-      ->addOrderBy('name', 'ASC')
-      ->execute();
-
-    $stateOptions = [];
-    foreach ($indianStates as $state) {
-      if ($state['is_active']) {
-        $stateOptions[$state['id']] = $state['name'];
-      }
-    }
-
-    $options = $stateOptions;
-
   }
 
   /**
@@ -914,7 +839,7 @@ class CollectionCampService extends AutoSubscriber {
       'toEmail' => $mmtEmail,
       'replyTo' => $fromEmail['label'],
       'html' => self::goonjcustom_material_management_email_html($collectionCampId, $campCode, $campAddress, $vehicleDispatchId),
-        // 'messageTemplateID' => 76, // Uncomment if using a message template
+      // 'messageTemplateID' => 76, // Uncomment if using a message template
     ];
     \CRM_Utils_Mail::send($mailParams);
 
@@ -959,9 +884,9 @@ class CollectionCampService extends AutoSubscriber {
     $goonjOfficeFieldId = $goonjOfficeId['id'];
 
     $goonjOfficeIndex = array_search(TRUE, array_map(fn($item) =>
-        $item['entity_table'] === 'civicrm_eck_collection_source_vehicle_dispatch' &&
-        $item['custom_field_id'] == $goonjOfficeFieldId,
-        $filteredItems
+      $item['entity_table'] === 'civicrm_eck_collection_source_vehicle_dispatch' &&
+      $item['custom_field_id'] == $goonjOfficeFieldId,
+      $filteredItems
     ));
 
     return $goonjOfficeIndex !== FALSE ? $filteredItems[$goonjOfficeIndex] : FALSE;
@@ -980,7 +905,7 @@ class CollectionCampService extends AutoSubscriber {
    *   The reference to the object.
    */
   public static function createActivityForCollectionCamp(string $op, string $objectName, $objectId, &$objectRef) {
-    if ($objectName != 'Eck_Collection_Camp') {
+    if ($objectName != 'Eck_Collection_Camp' || self::getEntitySubtypeName($objectId) !== self::ENTITY_SUBTYPE_NAME) {
       return;
     }
 
@@ -1156,6 +1081,30 @@ class CollectionCampService extends AutoSubscriber {
   }
 
   /**
+   *
+   */
+  public static function updateContributionCount($collectionCamp) {
+    $contributions = Contribution::get(FALSE)
+      ->addSelect('total_amount')
+      ->addWhere('Contribution_Details.Source', '=', $collectionCamp['id'])
+      ->addWhere('is_test', 'IS NOT NULL')
+      ->execute();
+
+    // Initialize sum variable.
+    $totalSum = 0;
+
+    // Iterate through the results and sum the total_amount.
+    foreach ($contributions as $contribution) {
+      $totalSum += $contribution['total_amount'];
+    }
+
+    EckEntity::update('Collection_Camp', FALSE)
+      ->addValue('Camp_Outcome.Monitory_Contribution', $totalSum)
+      ->addWhere('id', '=', $collectionCamp['id'])
+      ->execute();
+  }
+
+  /**
    * This hook is called after a db write on entities.
    *
    * @param string $op
@@ -1237,40 +1186,131 @@ class CollectionCampService extends AutoSubscriber {
   }
 
   /**
-   * Check the status of a Collection Camp and return status details.
+   * Implements hook_civicrm_buildForm().
    *
-   * @param string $objectName
-   *   The name of the object being processed.
-   * @param int $objectId
-   *   The ID of the object being processed.
-   * @param array &$objectRef
-   *   A reference to the object data.
+   * Auto-fills custom fields in the form based on the provided parameters.
    *
-   * @return array|null
-   *   An array containing the new and current status if valid, or NULL if invalid.
+   * @param string $formName
+   *   The name of the form being built.
+   * @param object $form
+   *   The form object.
    */
-  public static function checkCampStatusAndIds(string $objectName, $objectId, &$objectRef) {
-    if ($objectName != 'Eck_Collection_Camp') {
-      return NULL;
+  public function autofillMonetaryFormSource($formName, &$form) {
+    if (!in_array($formName, ['CRM_Contribute_Form_Contribution', 'CRM_Custom_Form_CustomDataByType'])) {
+      return;
     }
 
-    $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
+    $campSource = NULL;
+    $puSource = NULL;
 
-    if (!$newStatus || !$objectId) {
-      return NULL;
-    }
-
-    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Collection_Camp_Core_Details.Status')
-      ->addWhere('id', '=', $objectId)
+    // Fetching custom field for collection source.
+    $sourceField = CustomField::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('custom_group_id:name', '=', 'Contribution_Details')
+      ->addWhere('name', '=', 'Source')
       ->execute()->single();
 
-    $currentStatus = $collectionCamp['Collection_Camp_Core_Details.Status'] ?? '';
+    $sourceFieldId = 'custom_' . $sourceField['id'];
 
-    return [
-      'newStatus' => $newStatus,
-      'currentStatus' => $currentStatus,
-    ];
+    // Fetching custom field for goonj offfice.
+    $puSourceField = CustomField::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('custom_group_id:name', '=', 'Contribution_Details')
+      ->addWhere('name', '=', 'PU_Source')
+      ->execute()->single();
+
+    $puSourceFieldId = 'custom_' . $puSourceField['id'];
+
+    // Determine the parameter to use based on the form and query parameters.
+    if ($formName === 'CRM_Contribute_Form_Contribution') {
+      if (isset($_GET[$sourceFieldId])) {
+        $campSource = $_GET[$sourceFieldId];
+        $_SESSION['camp_source'] = $campSource;
+        // Ensure only one session value is active.
+        unset($_SESSION['pu_source']);
+      }
+      elseif (isset($_GET[$puSourceFieldId])) {
+        $puSource = $_GET[$puSourceFieldId];
+        $_SESSION['pu_source'] = $puSource;
+        // Ensure only one session value is active.
+        unset($_SESSION['camp_source']);
+      }
+    }
+    else {
+      // Retrieve from session if not provided in query parameters.
+      $campSource = $_SESSION['camp_source'] ?? NULL;
+      $puSource = $_SESSION['pu_source'] ?? NULL;
+    }
+
+    // Autofill logic for the custom fields.
+    if ($formName === 'CRM_Custom_Form_CustomDataByType') {
+      $autoFillData = [];
+      if (!empty($campSource)) {
+        $autoFillData[$sourceFieldId] = $campSource;
+      }
+      elseif (!empty($puSource)) {
+        $autoFillData[$puSourceFieldId] = $puSource;
+      }
+
+      // Set default values for the specified fields.
+      foreach ($autoFillData as $fieldName => $value) {
+        if (isset($form->_elements) && is_array($form->_elements)) {
+          foreach ($form->_elements as $element) {
+            if (!isset($element->_attributes['data-api-params'])) {
+              continue;
+            }
+            $apiParams = json_decode($element->_attributes['data-api-params'], TRUE);
+            if ($apiParams['fieldName'] === 'Contribution.Contribution_Details.Source') {
+              $formFieldName = $fieldName . '_-1';
+              $form->setDefaults([$formFieldName => $value]);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   *
+   */
+  public static function alterReceiptMail(&$params, $context) {
+    if (!empty($params['workflow']) && $params['workflow'] === 'contribution_online_receipt') {
+      // Extract donor name or use a default value.
+      $donorName = !empty($params['tplParams']['displayName']) ? $params['tplParams']['displayName'] : 'Valued Supporter';
+
+      // Set the email content.
+      $params['text'] = "Dear $donorName,\n\nThank you for your contribution. Your support means a lot to us.\n\nWe have attached your contribution receipt to this email for your reference.\n\nWarm regards,\nThe Goonj Team";
+
+      $params['html'] = "
+            <p>Dear <strong>$donorName</strong>,</p>
+            <p>Thank you for your contribution. Your support means a lot to us.</p>
+            <p>We have attached your contribution receipt to this email for your reference.</p>
+            <p>Warm regards,</p>
+            <p><strong>The Goonj Team</strong></p>
+        ";
+    }
+  }
+
+  /**
+   * Implements hook_civicrm_buildForm().
+   *
+   * Auto-fills custom fields in the form based on the provided parameters.
+   *
+   * @param string $formName
+   *   The name of the form being built.
+   * @param object $form
+   *   The form object.
+   */
+  public function autofillFinancialType($formName, &$form) {
+    if ($formName === 'CRM_Contribute_Form_Contribution') {
+      if ($form->getAction() == \CRM_Core_Action::ADD) {
+        // Set the default value for 'financial_type_id'.
+        $defaults = [];
+        // Example: 'Donation' (adjust ID as per your requirement)
+        $defaults['financial_type_id'] = self::DEFAULT_FINANCIAL_TYPE_ID;
+        $form->setDefaults($defaults);
+      }
+    }
   }
 
 }

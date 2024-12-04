@@ -1,4 +1,5 @@
 @use "variables";
+@use "contribution";
 @each $size, $length in variables.$sizes {
   .w-#{$size} {
     width: $length !important;
@@ -295,7 +296,7 @@ form input {
   margin-left: 0 !important;
 }
 .font-sans {
-  font-family: Open Sans !important;
+  font-family: 'Open Sans', sans-serif !important;
 }
 .mobile-margins-l24-r30 {
   margin-left: 24px !important;
@@ -498,11 +499,21 @@ form input {
   line-height: 22px !important;
 }
 
+.wp-block-gb-goonj-blocks {
+  flex-wrap: nowrap !important;
+}
+
+.wp-block-gb-action-button {
+  padding: 14px 5px !important;
+  font-size: 15px !important;
+}
+
 @media (min-width: 375px) and (max-width: 768px) { 
   .wp-block-gb-goonj-blocks {
       width: 90% !important;
       gap: 5px !important;
       justify-content: center !important;
+      flex-wrap: wrap !important;
   }
   .container {
     max-width: 86%;
