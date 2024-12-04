@@ -823,7 +823,7 @@ class InductionService extends AutoSubscriber {
       return $inductionType;
     }
 
-    $officeContact = \Civi\Api4\Contact::get(FALSE)
+    $officeContact = Contact::get(FALSE)
       ->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_Office')
       ->addClause('OR', ['Goonj_Office_Details.Other_Induction_Cities', 'CONTAINS', $contactCityFormatted], ['address_primary.city', 'CONTAINS', $contactCityFormatted])
       ->execute();
@@ -837,7 +837,8 @@ class InductionService extends AutoSubscriber {
 
     if (!empty($officeDetails)) {
       return $inductionType;
-    } else {
+    }
+    else {
       $inductionType = 'Online';
       return $inductionType;
     }
