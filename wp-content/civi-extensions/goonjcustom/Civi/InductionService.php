@@ -521,10 +521,16 @@ class InductionService extends AutoSubscriber {
           continue;
         }
 
-        $contacts = Contact::get(FALSE)
+        $contactsDetails = Contact::get(FALSE)
           ->addSelect('Individual_fields.Induction_slot_booking_follow_up_email_sent')
           ->addWhere('id', '=', $activity['source_contact_id'])
-          ->execute()->single();
+          ->execute();
+
+        $contacts = $contactsDetails->first();
+
+        if (empty($contacts)) {
+            return FALSE;
+        }
 
         $isMailSent = $contacts['Individual_fields.Induction_slot_booking_follow_up_email_sent'] ?? NULL;
 
@@ -650,10 +656,16 @@ class InductionService extends AutoSubscriber {
         ->execute();
 
       foreach ($notVisitedInductionActivities as $activity) {
-        $contacts = Contact::get(FALSE)
+        $contactsDetails = Contact::get(FALSE)
           ->addSelect('Individual_fields.Induction_Reschedule_Email_Sent')
           ->addWhere('id', '=', $activity['source_contact_id'])
-          ->execute()->single();
+          ->execute();
+
+        $contacts = $contactsDetails->first();
+
+        if (empty($contacts)) {
+            return FALSE;
+        }
 
         $isMailSent = $contacts['Individual_fields.Induction_Reschedule_Email_Sent'] ?? NULL;
 
@@ -698,27 +710,33 @@ class InductionService extends AutoSubscriber {
       ->addWhere('msg_title', 'LIKE', 'Induction_reschedule_slot_booking%')
       ->execute()->single();
 
-    $contacts = Contact::get(FALSE)
+    $contactsDetails = Contact::get(FALSE)
       ->addSelect('Individual_fields.Induction_Reschedule_Email_Sent')
       ->addWhere('id', '=', $contactId)
-      ->execute()->single();
+      ->execute();
+
+    $contacts = $contactsDetails->first();
+
+    // Check if the contact exists before proceeding.
+    if (empty($contacts)) {
+        return FALSE; // Return false if contact does not exist.
+    }
 
     $isMailSent = $contacts['Individual_fields.Induction_Reschedule_Email_Sent'] ?? NULL;
 
     if (!empty($isMailSent)) {
-      // Update the activity status to 'No_show' if a reschedule email was sent.
-      $updateResult = Activity::update(FALSE)
-        ->addValue('status_id:name', 'No_show')
-        ->addWhere('id', '=', $activityId)
-        ->execute();
+        // Update the activity status to 'No_show' if a reschedule email was sent.
+        $updateResult = Activity::update(FALSE)
+            ->addValue('status_id:name', 'No_show')
+            ->addWhere('id', '=', $activityId)
+            ->execute();
 
-      // Return true if the update was successful.
-      if ($updateResult) {
-        return TRUE;
-      }
+        // Return true if the update was successful.
+        if ($updateResult) {
+            return TRUE;
+        }
     }
 
-    // Return false if no reschedule email activity exists or update failed.
     return FALSE;
   }
 
@@ -753,10 +771,16 @@ class InductionService extends AutoSubscriber {
 
         $searchableSubject = str_replace('{contact.first_name}', '%', $template['msg_subject']);
 
-        $contacts = Contact::get(FALSE)
+        $contactsDetails = Contact::get(FALSE)
           ->addSelect('Individual_fields.Induction_Remainder_Email_Sent_on_Induction_Day')
           ->addWhere('id', '=', $scheduledInductionActivity['source_contact_id'])
-          ->execute()->single();
+          ->execute();
+
+        $contacts = $contactsDetails->first();
+
+        if (empty($contacts)) {
+            return FALSE;
+        }
 
         $isMailSent = $contacts['Individual_fields.Induction_Remainder_Email_Sent_on_Induction_Day'] ?? NULL;
 
