@@ -20,8 +20,6 @@ use Civi\Api4\StateProvince;
 class CollectionBaseService extends AutoSubscriber {
   use CollectionSource;
 
-  const INTENT_CUSTOM_GROUP_NAME = 'Collection_Camp_Intent_Details';
-
   private static $stateCustomFieldDbDetails = [];
   private static $collectionAuthorized = NULL;
   private static $collectionAuthorizedStatus = NULL;
@@ -247,13 +245,7 @@ class CollectionBaseService extends AutoSubscriber {
    *
    */
   private static function getStateFieldDbDetails() {
-    $stateGroupNameMapper = [
-      'Collection_Camp' => 'Collection_Camp_Intent_Details',
-      'Dropping_Center' => 'Dropping_Centre',
-        // 'Institution_Collection_Camp' => 'Institution_Collection_Camp_Intent',
-        // 'Goonj_Activities' => 'Goonj_Activities',
-        // 'Institution_Dropping_Center' => 'Institution_Dropping_Center_Intent',
-    ];
+    $stateGroupNameMapper = self::getStateGroupNameMapper();
 
     $stateFields = [];
     foreach ($stateGroupNameMapper as $subtype => $groupName) {
@@ -509,13 +501,7 @@ class CollectionBaseService extends AutoSubscriber {
    *
    */
   public static function getStateFieldNames() {
-    $stateGroupNameMapper = [
-      'Collection_Camp' => 'Collection_Camp_Intent_Details',
-      'Dropping_Center' => 'Dropping_Centre',
-      'Institution_Collection_Camp' => 'Institution_Collection_Camp_Intent',
-      'Goonj_Activities' => 'Goonj_Activities',
-      'Institution_Dropping_Center' => 'Institution_Dropping_Center_Intent',
-    ];
+    $stateGroupNameMapper = self::getStateGroupNameMapper();
 
     $intentStateFields = CustomField::get(FALSE)
       ->addWhere('custom_group_id:name', 'IN', array_values($stateGroupNameMapper))
@@ -525,6 +511,19 @@ class CollectionBaseService extends AutoSubscriber {
     $statefieldNames = array_map(fn ($field) => 'custom_' . $field['id'], $intentStateFields->jsonSerialize());
 
     return $statefieldNames;
+  }
+
+  /**
+   *
+   */
+  private static function getStateGroupNameMapper() {
+    return [
+      'Collection_Camp' => 'Collection_Camp_Intent_Details',
+      'Dropping_Center' => 'Dropping_Centre',
+      'Institution_Collection_Camp' => 'Institution_Collection_Camp_Intent',
+      'Goonj_Activities' => 'Goonj_Activities',
+      'Institution_Dropping_Center' => 'Institution_Dropping_Center_Intent',
+    ];
   }
 
 }
