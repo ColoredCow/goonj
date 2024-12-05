@@ -90,7 +90,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     }
 
     $stateId = $stateField['value'];
-    $institutioninstitutionDroppingCenterId = $stateField['entity_id'];
+    $institutionDroppingCenterId = $stateField['entity_id'];
 
     if (!$stateId) {
       \CRM_Core_Error::debug_log_message('State ID not found, unable to assign Goonj Office.');
@@ -115,7 +115,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
 
     EckEntity::update('Collection_Camp', FALSE)
       ->addValue('Institution_Dropping_Center_Review.Goonj_Office', $stateOfficeId)
-      ->addWhere('id', '=', $institutioninstitutionDroppingCenterId)
+      ->addWhere('id', '=', $institutionDroppingCenterId)
       ->execute();
   }
 
