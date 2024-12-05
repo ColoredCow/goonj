@@ -5,6 +5,8 @@ namespace Civi;
 use Civi\Api4\Contact;
 use Civi\Api4\CustomField;
 use Civi\Api4\EckEntity;
+use Civi\Api4\Email;
+use Civi\Api4\Relationship;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
@@ -22,6 +24,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
   const ENTITY_SUBTYPE_NAME = 'Institution_Dropping_Center';
   const ENTITY_NAME = 'Collection_Camp';
   const FALLBACK_OFFICE_NAME = 'Delhi';
+  const MATERIAL_RELATIONSHIP_TYPE_NAME = 'Material Management Team of';
 
   /**
    *
@@ -31,7 +34,9 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       '&hook_civicrm_tabset' => 'institutionDroppingCenterTabset',
       '&hook_civicrm_custom' => [
         ['setOfficeDetails'],
+        ['mailNotificationToMmt'],
       ],
+      '&hook_civicrm_post' => 'processDispatchEmail',
       '&hook_civicrm_pre' => 'generateInstitutionDroppingCenterQr',
     ];
   }
@@ -156,6 +161,203 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     ];
 
     self::generateQrCode($data, $id, $saveOptions);
+  }
+
+  /**
+   *
+   */
+  public static function processDispatchEmail(string $op, string $objectName, int $objectId, &$objectRef) {
+
+    if ($objectName !== 'AfformSubmission') {
+      return;
+    }
+
+    $afformName = $objectRef->afform_name;
+
+    if ($afformName !== 'afformNotifyDispatchViaEmail') {
+      return;
+    }
+
+    $jsonData = $objectRef->data;
+    $dataArray = json_decode($jsonData, TRUE);
+
+    $institutionDroppingCenterId = $dataArray['Eck_Collection_Camp1'][0]['fields']['id'];
+    $isSelfManaged = $dataArray['Eck_Collection_Camp1'][0]['fields']['Institution_Collection_Camp_Logistics.Self_Managed_by_Institution'];
+    $campAttendedBy = $dataArray['Eck_Collection_Camp1'][0]['fields']['Institution_Dropping_Center_Logistics.Camp_to_be_attended_by'];
+
+    if (!$institutionDroppingCenterId) {
+      return;
+    }
+
+    $droppingCenterData = EckEntity::get('Collection_Camp', TRUE)
+      ->addSelect('Institution_Dropping_Center_Intent.Institution_POC')
+      ->addWhere('id', '=', $institutionDroppingCenterId)
+      ->execute()
+      ->single();
+
+    $pocId = $droppingCenterData['Institution_Dropping_Center_Intent.Institution_POC'];
+
+    $recipientId = $isSelfManaged ? $pocId : $campAttendedBy;
+    if (!$recipientId) {
+      return;
+    }
+
+    $recipientContactInfo = Contact::get(TRUE)
+      ->addSelect('email_primary.email', 'phone_primary.phone', 'display_name')
+      ->addWhere('id', '=', $recipientId)
+      ->execute()->single();
+
+    $email = $recipientContactInfo['email_primary.email'];
+    $phone = $recipientContactInfo['phone_primary.phone'];
+    $initiatorName = $recipientContactInfo['display_name'];
+
+    // Send the dispatch email.
+    self::sendDispatchEmail($email, $initiatorName, $institutionDroppingCenterId, $recipientId, NULL);
+  }
+
+  /**
+   *
+   */
+  public static function sendDispatchEmail($email, $initiatorName, $institutionDroppingCenterId, $contactId, $goonjOffice) {
+    $homeUrl = \CRM_Utils_System::baseCMSURL();
+    $vehicleDispatchFormUrl = $homeUrl . '/institution-dropping-center-vehicle-dispatch/#?Camp_Vehicle_Dispatch.Collection_Camp=' . $institutionDroppingCenterId . '&Camp_Vehicle_Dispatch.Filled_by=' . $contactId . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $goonjOffice . '&Eck_Collection_Camp1=' . $institutionDroppingCenterId;
+
+    $emailHtml = "
+    <html>
+    <body>
+    <p>Dear {$initiatorName},</p>
+    <p>Thank you so much for your invaluable efforts in running the Goonj Dropping Center. 
+    Your dedication plays a crucial role in our work, and we deeply appreciate your continued support.</p>
+    <p>Please fill out this Dispatch Form – <a href='{$vehicleDispatchFormUrl}'>Link</a> once the vehicle is loaded and ready to head to Goonj’s processing center. 
+    This will help us to verify and acknowledge the materials as soon as they arrive.</p>
+    <p>We truly appreciate your cooperation and continued commitment to our cause.</p>
+    <p>Warm Regards,<br>Team Goonj..</p>
+    </body>
+    </html>
+    ";
+    $from = HelperService::getDefaultFromEmail();
+    $mailParams = [
+      'subject' => 'Kindly fill the Dispatch Form for Material Pickup',
+      'from' => $from,
+      'toEmail' => $email,
+      'html' => $emailHtml,
+    ];
+
+    \CRM_Utils_Mail::send($mailParams);
+  }
+
+  /**
+   *
+   */
+  private static function findOfficeId(array $array) {
+
+    $filteredItems = array_filter($array, fn($item) => $item['entity_table'] === 'civicrm_eck_collection_source_vehicle_dispatch');
+    if (empty($filteredItems)) {
+      return FALSE;
+    }
+    $goonjOfficeField = CustomField::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('custom_group_id:name', '=', 'Camp_Vehicle_Dispatch')
+      ->addWhere('name', '=', 'To_which_PU_Center_material_is_being_sent')
+      ->execute()
+      ->first();
+
+    if (!$goonjOfficeField) {
+      return FALSE;
+    }
+
+    $goonjOfficeFieldId = $goonjOfficeField['id'];
+
+    $goonjOfficeIndex = array_search(TRUE, array_map(fn($item) =>
+        $item['entity_table'] === 'civicrm_eck_collection_source_vehicle_dispatch' &&
+        $item['custom_field_id'] == $goonjOfficeFieldId,
+        $filteredItems
+    ));
+
+    return $goonjOfficeIndex !== FALSE ? $filteredItems[$goonjOfficeIndex] : FALSE;
+  }
+
+  /**
+   *
+   */
+  public static function mailNotificationToMmt($op, $groupID, $entityID, &$params) {
+    if ($op !== 'create') {
+      return;
+    }
+
+    if (!($goonjField = self::findOfficeId($params))) {
+      return;
+    }
+
+    $goonjFieldId = $goonjField['value'];
+    $vehicleDispatchId = $goonjField['entity_id'];
+
+    $collectionSourceVehicleDispatch = EckEntity::get('Collection_Source_Vehicle_Dispatch', FALSE)
+      ->addSelect('Camp_Vehicle_Dispatch.Collection_Camp')
+      ->addWhere('id', '=', $vehicleDispatchId)
+      ->execute()->first();
+
+    $institutionDroppingCenterId = $collectionSourceVehicleDispatch['Camp_Vehicle_Dispatch.Collection_Camp'];
+
+    if (self::getEntitySubtypeName($institutionDroppingCenterId) !== self::ENTITY_SUBTYPE_NAME) {
+      return;
+    }
+
+    $institutionDroppingCenter = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect('Institution_Dropping_Center_Intent.Dropping_Center_Address', 'title')
+      ->addWhere('id', '=', $institutionDroppingCenterId)
+      ->execute()->single();
+
+    $institutionDroppingCenter = $institutionDroppingCenter['title'];
+    $institutionDroppingCenterAddress = $institutionDroppingCenter['Institution_Dropping_Center_Intent.Dropping_Center_Address'];
+
+    $coordinators = Relationship::get(FALSE)
+      ->addWhere('contact_id_b', '=', $goonjFieldId)
+      ->addWhere('relationship_type_id:name', '=', self::MATERIAL_RELATIONSHIP_TYPE_NAME)
+      ->addWhere('is_current', '=', TRUE)
+      ->execute()->first();
+
+    $mmtId = $coordinators['contact_id_a'];
+
+    if (empty($mmtId)) {
+      return;
+    }
+
+    $email = Email::get(FALSE)
+      ->addSelect('email')
+      ->addWhere('contact_id', '=', $mmtId)
+      ->execute()->single();
+
+    $mmtEmail = $email['email'];
+    $from = HelperService::getDefaultFromEmail();
+    $mailParams = [
+      'subject' => 'Dropping Center Material Acknowledgement - ' . $institutionDroppingCenterAddress,
+      'from' => $from,
+      'toEmail' => $mmtEmail,
+      'replyTo' => $fromEmail['label'],
+      'html' => self::getMmtEmailHtml($institutionDroppingCenterId, $institutionDroppingCenter, $institutionDroppingCenterAddress, $vehicleDispatchId, $mmtId),
+    ];
+    \CRM_Utils_Mail::send($mailParams);
+
+  }
+
+  /**
+   *
+   */
+  public static function getMmtEmailHtml($institutionDroppingCenterId, $institutionDroppingCenter, $institutionDroppingCenterAddress, $vehicleDispatchId, $mmtId) {
+    $homeUrl = \CRM_Utils_System::baseCMSURL();
+    $materialdispatchUrl = $homeUrl . '/dropping-center-acknowledgement-for-dispatch/#?Eck_Collection_Source_Vehicle_Dispatch1=' . $vehicleDispatchId
+        . '&Camp_Vehicle_Dispatch.Collection_Camp=' . $institutionDroppingCenterId
+        . '&id=' . $vehicleDispatchId
+        . '&Eck_Collection_Camp1=' . $institutionDroppingCenterId
+        . '&Acknowledgement_For_Logistics.Verified_By=' . $mmtId;
+    $html = "
+    <p>Dear MMT team,</p>
+    <p>This is to inform you that a vehicle has been sent from the dropping center <strong>$institutionDroppingCenter</strong> at <strong>$institutionDroppingCenterAddress</strong>.</p>
+    <p>Kindly acknowledge the details by clicking on this form <a href=\"$materialdispatchUrl\"> Link </a> when it is received at the center.</p>
+    <p>Warm regards,<br>Urban Relations Team</p>";
+
+    return $html;
   }
 
   /**

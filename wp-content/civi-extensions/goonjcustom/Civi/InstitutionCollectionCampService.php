@@ -204,7 +204,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     $nameOfInstitution = $collectionSourceVehicleDispatch['Camp_Institution_Data.Name_of_the_institution'];
     $addressOfInstitution = $collectionSourceVehicleDispatch['Camp_Institution_Data.Address'];
     $pocEmail = $collectionSourceVehicleDispatch['Camp_Institution_Data.Email'];
-    $pocContactNumber = $collectionSourceVehicleDispatch['Camp_Institution_Data.Contact_Numbe'];
+    $pocContactNumber = $collectionSourceVehicleDispatch['Camp_Institution_Data.Contact_Number'];
 
     if (self::getEntitySubtypeName($collectionCampId) !== self::ENTITY_SUBTYPE_NAME) {
       return;
