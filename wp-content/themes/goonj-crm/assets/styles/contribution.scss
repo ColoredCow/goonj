@@ -4,13 +4,17 @@
         display: none !important;
     }
 
-    form .crm-contribution-main-form-block #priceset-div .crm-section .crm-section,
     form .crm-contribution-main-form-block .crm-public-form-item {
-        border-top: none !important;
+      border-top: none !important;
+    }
+
+    form .crm-contribution-main-form-block .crm-public-form-item.crm-section.is_recur-section {
+      display: grid !important;
     }
 
     form .crm-contribution-main-form-block #priceset-div .crm-section .crm-section {
-      display: grid !important;;
+      display: grid !important;
+      border-top: none !important;
     }
 
     form .crm-contribution-main-form-block #priceset-div .crm-section .crm-section .content,
