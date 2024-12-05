@@ -16,10 +16,8 @@ use Civi\Api4\Group;
 use Civi\Api4\GroupContact;
 use Civi\Api4\OptionValue;
 use Civi\Api4\Relationship;
-use Civi\Api4\StateProvince;
 use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
-use CRM_Core_Action;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
 
@@ -65,7 +63,6 @@ class CollectionCampService extends AutoSubscriber {
       ['linkInductionWithCollectionCamp'],
       ['mailNotificationToMmt'],
       ],
-      '&hook_civicrm_fieldOptions' => 'setIndianStateOptions',
       'civi.afform.submit' => [
       ['setCollectionCampAddress', 9],
       ['setEventVolunteersAddress', 8],
@@ -102,49 +99,49 @@ class CollectionCampService extends AutoSubscriber {
         'module' => 'afsearchCollectionCampLogistics',
         'directive' => 'afsearch-collection-camp-logistics',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'eventVolunteers' => [
         'title' => ts('Event Volunteers'),
         'module' => 'afsearchEventVolunteer',
         'directive' => 'afsearch-event-volunteer',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'vehicleDispatch' => [
         'title' => ts('Dispatch'),
         'module' => 'afsearchCampVehicleDispatchData',
         'directive' => 'afsearch-camp-vehicle-dispatch-data',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'materialAuthorization' => [
         'title' => ts('Material Authorization'),
         'module' => 'afsearchAcknowledgementForLogisticsData',
         'directive' => 'afsearch-acknowledgement-for-logistics-data',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'materialContribution' => [
         'title' => ts('Material Contribution'),
         'module' => 'afsearchCollectionCampMaterialContributions',
         'directive' => 'afsearch-collection-camp-material-contributions',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'campOutcome' => [
         'title' => ts('Camp Outcome'),
         'module' => 'afsearchCampOutcome',
         'directive' => 'afsearch-camp-outcome',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'campFeedback' => [
         'title' => ts('Volunteer Feedback'),
         'module' => 'afsearchVolunteerFeedback',
         'directive' => 'afsearch-volunteer-feedback',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'monetaryContribution' => [
         'title' => ts('Monetary Contribution'),
@@ -158,7 +155,7 @@ class CollectionCampService extends AutoSubscriber {
         'module' => 'afsearchMonetaryContributionForUrbanOps',
         'directive' => 'afsearch-monetary-contribution-for-urban-ops',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
     ];
 
@@ -168,8 +165,8 @@ class CollectionCampService extends AutoSubscriber {
         continue;
       }
 
-      $hasPermission = \CRM_Core_Permission::check($config['permissions']);
-      if (!$hasPermission) {
+      if (!\CRM_Core_Permission::checkAnyPerm($config['permissions'])) {
+        // Does not permission; just continue.
         continue;
       }
 
@@ -768,43 +765,6 @@ class CollectionCampService extends AutoSubscriber {
   }
 
   /**
-   *
-   */
-  public static function setIndianStateOptions(string $entity, string $field, array &$options, array $params) {
-    if ($entity !== 'Eck_Collection_Camp') {
-      return;
-    }
-
-    $intentStateFields = CustomField::get(FALSE)
-      ->addWhere('custom_group_id:name', '=', 'Collection_Camp_Intent_Details')
-      ->addWhere('name', '=', 'State')
-      ->execute();
-
-    $stateField = $intentStateFields->first();
-
-    $statefieldId = $stateField['id'];
-
-    if ($field !== "custom_$statefieldId") {
-      return;
-    }
-
-    $indianStates = StateProvince::get(FALSE)
-      ->addWhere('country_id.iso_code', '=', 'IN')
-      ->addOrderBy('name', 'ASC')
-      ->execute();
-
-    $stateOptions = [];
-    foreach ($indianStates as $state) {
-      if ($state['is_active']) {
-        $stateOptions[$state['id']] = $state['name'];
-      }
-    }
-
-    $options = $stateOptions;
-
-  }
-
-  /**
    * This hook is called after the database write on a custom table.
    *
    * @param string $op
@@ -1313,12 +1273,30 @@ class CollectionCampService extends AutoSubscriber {
    *
    */
   public static function alterReceiptMail(&$params, $context) {
+    // Handle contribution_online_receipt workflow.
     if (!empty($params['workflow']) && $params['workflow'] === 'contribution_online_receipt') {
       // Extract donor name or use a default value.
       $donorName = !empty($params['tplParams']['displayName']) ? $params['tplParams']['displayName'] : 'Valued Supporter';
 
       // Set the email content.
       $params['text'] = "Dear $donorName,\n\nThank you for your contribution. Your support means a lot to us.\n\nWe have attached your contribution receipt to this email for your reference.\n\nWarm regards,\nThe Goonj Team";
+
+      $params['html'] = "
+            <p>Dear <strong>$donorName</strong>,</p>
+            <p>Thank you for your contribution. Your support means a lot to us.</p>
+            <p>We have attached your contribution receipt to this email for your reference.</p>
+            <p>Warm regards,</p>
+            <p><strong>The Goonj Team</strong></p>
+        ";
+    }
+
+    // Handle contribution_offline_receipt workflow.
+    if (!empty($params['workflow']) && $params['workflow'] === 'contribution_offline_receipt') {
+      // Extract donor name or use a default value.
+      $donorName = !empty($params['toName']) ? $params['toName'] : 'Valued Supporter';
+
+      // Set the email content.
+      $params['text'] = "Dear $donorName,\n\nThank you for your offline contribution. Your support means a lot to us.\n\nWe have attached your contribution receipt to this email for your reference.\n\nWarm regards,\nThe Goonj Team";
 
       $params['html'] = "
             <p>Dear <strong>$donorName</strong>,</p>

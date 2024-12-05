@@ -9,7 +9,6 @@ use Civi\Api4\CustomField;
 use Civi\Api4\EckEntity;
 use Civi\Api4\OptionValue;
 use Civi\Api4\Relationship;
-use Civi\Api4\StateProvince;
 use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
@@ -34,7 +33,6 @@ class GoonjActivitiesService extends AutoSubscriber {
    */
   public static function getSubscribedEvents() {
     return [
-      '&hook_civicrm_fieldOptions' => 'setIndianStateOptions',
       'civi.afform.submit' => [
         ['setGoonjActivitiesAddress', 9],
         ['setActivitiesVolunteersAddress', 8],
@@ -50,43 +48,6 @@ class GoonjActivitiesService extends AutoSubscriber {
         ['createActivityForGoonjActivityCollectionCamp'],
       ],
     ];
-  }
-
-  /**
-   *
-   */
-  public static function setIndianStateOptions(string $entity, string $field, array &$options, array $params) {
-    if ($entity !== 'Eck_Collection_Camp') {
-      return;
-    }
-
-    $customStateFields = CustomField::get(FALSE)
-      ->addWhere('custom_group_id:name', '=', 'Goonj_Activities')
-      ->addWhere('name', '=', 'State')
-      ->execute();
-
-    $stateField = $customStateFields->first();
-
-    $stateFieldId = $stateField['id'];
-
-    if ($field !== "custom_$stateFieldId") {
-      return;
-    }
-
-    $activeIndianStates = StateProvince::get(FALSE)
-      ->addWhere('country_id.iso_code', '=', 'IN')
-      ->addOrderBy('name', 'ASC')
-      ->execute();
-
-    $stateOptions = [];
-    foreach ($activeIndianStates as $state) {
-      if ($state['is_active']) {
-        $stateOptions[$state['id']] = $state['name'];
-      }
-    }
-
-    $options = $stateOptions;
-
   }
 
   /**
@@ -392,35 +353,35 @@ class GoonjActivitiesService extends AutoSubscriber {
         'module' => 'afsearchCollectionCampActivity',
         'directive' => 'afsearch-collection-camp-activity',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'logistics' => [
         'title' => ts('Logistics'),
         'module' => 'afsearchGoonjActivitiesLogistics',
         'directive' => 'afsearch-goonj-activities-logistics',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'eventVolunteers' => [
         'title' => ts('Event Volunteers'),
         'module' => 'afsearchEventVolunteer',
         'directive' => 'afsearch-event-volunteer',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'campOutcome' => [
         'title' => ts('Outcome'),
         'module' => 'afsearchCampOutcome',
         'directive' => 'afsearch-camp-outcome',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'campFeedback' => [
         'title' => ts('Volunteer Feedback'),
         'module' => 'afsearchVolunteerFeedback',
         'directive' => 'afsearch-volunteer-feedback',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'monetaryContribution' => [
         'title' => ts('Monetary Contribution'),
@@ -434,7 +395,7 @@ class GoonjActivitiesService extends AutoSubscriber {
         'module' => 'afsearchMonetaryContributionForUrbanOps',
         'directive' => 'afsearch-monetary-contribution-for-urban-ops',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
     ];
 
@@ -444,8 +405,8 @@ class GoonjActivitiesService extends AutoSubscriber {
         continue;
       }
 
-      $hasPermission = \CRM_Core_Permission::check($config['permissions']);
-      if (!$hasPermission) {
+      if (!\CRM_Core_Permission::checkAnyPerm($config['permissions'])) {
+        // Does not permission; just continue.
         continue;
       }
 

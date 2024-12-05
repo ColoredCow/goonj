@@ -521,14 +521,20 @@ class InductionService extends AutoSubscriber {
           continue;
         }
 
-        $contacts = Contact::get(FALSE)
+        $contactsDetails = Contact::get(FALSE)
           ->addSelect('Individual_fields.Induction_slot_booking_follow_up_email_sent')
           ->addWhere('id', '=', $activity['source_contact_id'])
-          ->execute()->single();
+          ->execute();
+
+        $contacts = $contactsDetails->first();
+
+        if (empty($contacts)) {
+          return FALSE;
+        }
 
         $isMailSent = $contacts['Individual_fields.Induction_slot_booking_follow_up_email_sent'] ?? NULL;
 
-        if (empty($isMailSent)) {
+        if (in_array($isMailSent, [NULL, FALSE], TRUE)) {
 
           $emailParams = [
             'contact_id' => $activity['source_contact_id'],
@@ -650,10 +656,16 @@ class InductionService extends AutoSubscriber {
         ->execute();
 
       foreach ($notVisitedInductionActivities as $activity) {
-        $contacts = Contact::get(FALSE)
+        $contactsDetails = Contact::get(FALSE)
           ->addSelect('Individual_fields.Induction_Reschedule_Email_Sent')
           ->addWhere('id', '=', $activity['source_contact_id'])
-          ->execute()->single();
+          ->execute();
+
+        $contacts = $contactsDetails->first();
+
+        if (empty($contacts)) {
+          return FALSE;
+        }
 
         $isMailSent = $contacts['Individual_fields.Induction_Reschedule_Email_Sent'] ?? NULL;
 
@@ -698,10 +710,18 @@ class InductionService extends AutoSubscriber {
       ->addWhere('msg_title', 'LIKE', 'Induction_reschedule_slot_booking%')
       ->execute()->single();
 
-    $contacts = Contact::get(FALSE)
+    $contactsDetails = Contact::get(FALSE)
       ->addSelect('Individual_fields.Induction_Reschedule_Email_Sent')
       ->addWhere('id', '=', $contactId)
-      ->execute()->single();
+      ->execute();
+
+    $contacts = $contactsDetails->first();
+
+    // Check if the contact exists before proceeding.
+    if (empty($contacts)) {
+      // Return false if contact does not exist.
+      return FALSE;
+    }
 
     $isMailSent = $contacts['Individual_fields.Induction_Reschedule_Email_Sent'] ?? NULL;
 
@@ -718,7 +738,6 @@ class InductionService extends AutoSubscriber {
       }
     }
 
-    // Return false if no reschedule email activity exists or update failed.
     return FALSE;
   }
 
@@ -753,14 +772,20 @@ class InductionService extends AutoSubscriber {
 
         $searchableSubject = str_replace('{contact.first_name}', '%', $template['msg_subject']);
 
-        $contacts = Contact::get(FALSE)
+        $contactsDetails = Contact::get(FALSE)
           ->addSelect('Individual_fields.Induction_Remainder_Email_Sent_on_Induction_Day')
           ->addWhere('id', '=', $scheduledInductionActivity['source_contact_id'])
-          ->execute()->single();
+          ->execute();
+
+        $contacts = $contactsDetails->first();
+
+        if (empty($contacts)) {
+          return FALSE;
+        }
 
         $isMailSent = $contacts['Individual_fields.Induction_Remainder_Email_Sent_on_Induction_Day'] ?? NULL;
 
-        if (empty($isMailSent)) {
+        if (in_array($isMailSent, [NULL, FALSE], TRUE)) {
           $emailParams = [
             'contact_id'  => $scheduledInductionActivity['source_contact_id'],
             'template_id' => $template['id'],
@@ -823,7 +848,7 @@ class InductionService extends AutoSubscriber {
       return $inductionType;
     }
 
-    $officeContact = \Civi\Api4\Contact::get(FALSE)
+    $officeContact = Contact::get(FALSE)
       ->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_Office')
       ->addClause('OR', ['Goonj_Office_Details.Other_Induction_Cities', 'CONTAINS', $contactCityFormatted], ['address_primary.city', 'CONTAINS', $contactCityFormatted])
       ->execute();
@@ -837,7 +862,8 @@ class InductionService extends AutoSubscriber {
 
     if (!empty($officeDetails)) {
       return $inductionType;
-    } else {
+    }
+    else {
       $inductionType = 'Online';
       return $inductionType;
     }
