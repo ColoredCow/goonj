@@ -202,7 +202,6 @@ function generateActivitySlots(&$slots, $maxSlots, $validInductionDays, $hour, $
 
     $currentDate = new DateTime();
 
-    // // Ensure start date is not in the past
     if ($startDate < $currentDate) {
         $startDate = clone $currentDate;
     }
