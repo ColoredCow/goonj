@@ -517,7 +517,6 @@ class InductionService extends AutoSubscriber {
       // Process each activity in the batch.
       foreach ($unscheduledInductionActivities as $activity) {
         // Check if a reschedule email has already been sent and handled.
-        \Civi::log()->info('source_contact_id', ['source_contact_id'=>$activity['source_contact_id']]);
         if (self::handleRescheduleEmailActivity($activity['source_contact_id'], $activity['id'])) {
           continue;
         }
