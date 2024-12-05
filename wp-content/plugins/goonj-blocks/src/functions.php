@@ -200,6 +200,13 @@ function generateActivitySlots(&$slots, $maxSlots, $validInductionDays, $hour, $
     $maxDays = 365;
     $holidayDatesArray = [];
 
+    $currentDate = new DateTime();
+
+    // // Ensure start date is not in the past
+    if ($startDate < $currentDate) {
+        $startDate = clone $currentDate;
+    }
+
     if(!empty($holidayDates)){
         $holidayDatesArray = array_map('trim', explode(',', $holidayDates));
     }
