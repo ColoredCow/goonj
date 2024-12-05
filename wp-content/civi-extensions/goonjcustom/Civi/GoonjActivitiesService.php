@@ -406,7 +406,7 @@ class GoonjActivitiesService extends AutoSubscriber {
       }
 
       if (!\CRM_Core_Permission::checkAnyPerm($config['permissions'])) {
-        // does not permission; just continue
+        // Does not permission; just continue.
         continue;
       }
 

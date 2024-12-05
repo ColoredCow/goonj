@@ -18,7 +18,6 @@ use Civi\Api4\OptionValue;
 use Civi\Api4\Relationship;
 use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
-use CRM_Core_Action;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
 
