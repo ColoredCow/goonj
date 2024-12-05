@@ -171,9 +171,6 @@ class CollectionCampService extends AutoSubscriber {
         continue;
       }
 
-      if (!$hasPermission) {
-          continue;
-      }
 
       $tabs[$key] = [
         'id' => $key,
