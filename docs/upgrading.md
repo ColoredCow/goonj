@@ -8,7 +8,7 @@ NOTE: Custom field validation has been added to meet project requirements and pr
 
 Modified File2: `wp-content/plugins/civicrm/civicrm/templates/CRM/Contribute/Form/Contribution/ThankYou.tpl`
 
-PR: [Remove frequency for amount from thankyou page]((https://github.com/ColoredCow/goonj/pull/442)).
+PR: [Remove frequency for amount from thankyou page](https://github.com/ColoredCow/goonj/pull/442).
 
 # Action Required Before Upgrading CiviCRM Plugin
 
