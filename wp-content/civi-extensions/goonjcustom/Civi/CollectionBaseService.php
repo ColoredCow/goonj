@@ -547,6 +547,7 @@ class CollectionBaseService extends AutoSubscriber {
    */
   public static function getStateFieldNames() {
     $stateGroupNameMapper = self::getStateGroupNameMapper();
+
     $intentStateFields = CustomField::get(FALSE)
       ->addWhere('custom_group_id:name', 'IN', array_values($stateGroupNameMapper))
       ->addWhere('name', '=', 'State')
