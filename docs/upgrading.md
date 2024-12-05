@@ -6,6 +6,10 @@ PR: [Field Validation](https://github.com/ColoredCow/goonj/pull/129).
 
 NOTE: Custom field validation has been added to meet project requirements and priorities. This change should be revisited and replaced with a more robust solution in the future.
 
+Modified File2: `wp-content/plugins/civicrm/civicrm/templates/CRM/Contribute/Form/Contribution/ThankYou.tpl`
+
+PR: [Remove frequency for amount from thankyou page]([https://github.com/ColoredCow/goonj/pull/129](https://github.com/ColoredCow/goonj/pull/442)).
+
 # Action Required Before Upgrading CiviCRM Plugin
 
 Action Required: During the CiviCRM plugin upgrade, make sure to preserve or re-implement the custom validation changes. Failure to do so will result in the loss of essential validation features.
