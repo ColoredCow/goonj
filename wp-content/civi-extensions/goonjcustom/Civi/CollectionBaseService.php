@@ -218,14 +218,21 @@ class CollectionBaseService extends AutoSubscriber {
       $statesControlled = array_unique($statesControlled);
       $statesList = implode(',', array_map('intval', $statesControlled));
 
-      $stateField = self::getStateFieldDbDetails();
+      $stateFields = self::getStateFieldDbDetails();
 
-      $clauseString = sprintf(
-      'IN (SELECT entity_id FROM `%1$s` WHERE `%2$s` IN (%3$s))',
-      $stateField['tableName'],
-      $stateField['columnName'],
-      $statesList,
-      );
+      $clausesArray = [];
+      foreach ($stateFields as $stateField) {
+        $selectQueries[] = sprintf(
+            'SELECT entity_id FROM `%1$s` WHERE `%2$s` IN (%3$s)',
+            $stateField['tableName'],
+            $stateField['columnName'],
+            $statesList,
+        );
+      }
+
+      $concatenatedQuery = implode(' UNION ', $selectQueries);
+
+      $clauseString = "IN ($concatenatedQuery)";
 
       $clauses['id'][] = $clauseString;
     }
@@ -240,22 +247,37 @@ class CollectionBaseService extends AutoSubscriber {
    *
    */
   private static function getStateFieldDbDetails() {
-    if (empty(self::$stateCustomFieldDbDetails)) {
+    $stateGroupNameMapper = [
+      'Collection_Camp' => 'Collection_Camp_Intent_Details',
+      'Dropping_Center' => 'Dropping_Centre',
+        // 'Institution_Collection_Camp' => 'Institution_Collection_Camp_Intent',
+        // 'Goonj_Activities' => 'Goonj_Activities',
+        // 'Institution_Dropping_Center' => 'Institution_Dropping_Center_Intent',
+    ];
+
+    $stateFields = [];
+    foreach ($stateGroupNameMapper as $subtype => $groupName) {
       $customField = CustomField::get(FALSE)
         ->addSelect('column_name', 'custom_group_id.table_name')
-        ->addWhere('custom_group_id.name', '=', self::INTENT_CUSTOM_GROUP_NAME)
+        ->addWhere('custom_group_id.name', '=', $groupName)
         ->addWhere('name', '=', 'state')
-        ->execute()->single();
+        ->execute()
+        ->single();
 
-      self::$stateCustomFieldDbDetails = [
-        'tableName' => $customField['custom_group_id.table_name'],
-        'columnName' => $customField['column_name'],
-      ];
+      \Civi::log()->info(__METHOD__, [
+        'groupName' => $groupName,
+        'customField' => $customField,
+      ]);
 
+      if ($customField) {
+        $stateFields[] = [
+          'tableName' => $customField['custom_group_id.table_name'],
+          'columnName' => $customField['column_name'],
+        ];
+      }
     }
 
-    return self::$stateCustomFieldDbDetails;
-
+    return $stateFields;
   }
 
   /**
