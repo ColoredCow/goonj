@@ -100,49 +100,49 @@ class CollectionCampService extends AutoSubscriber {
         'module' => 'afsearchCollectionCampLogistics',
         'directive' => 'afsearch-collection-camp-logistics',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'eventVolunteers' => [
         'title' => ts('Event Volunteers'),
         'module' => 'afsearchEventVolunteer',
         'directive' => 'afsearch-event-volunteer',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'vehicleDispatch' => [
         'title' => ts('Dispatch'),
         'module' => 'afsearchCampVehicleDispatchData',
         'directive' => 'afsearch-camp-vehicle-dispatch-data',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'materialAuthorization' => [
         'title' => ts('Material Authorization'),
         'module' => 'afsearchAcknowledgementForLogisticsData',
         'directive' => 'afsearch-acknowledgement-for-logistics-data',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'materialContribution' => [
         'title' => ts('Material Contribution'),
         'module' => 'afsearchCollectionCampMaterialContributions',
         'directive' => 'afsearch-collection-camp-material-contributions',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'campOutcome' => [
         'title' => ts('Camp Outcome'),
         'module' => 'afsearchCampOutcome',
         'directive' => 'afsearch-camp-outcome',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'campFeedback' => [
         'title' => ts('Volunteer Feedback'),
         'module' => 'afsearchVolunteerFeedback',
         'directive' => 'afsearch-volunteer-feedback',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'monetaryContribution' => [
         'title' => ts('Monetary Contribution'),
@@ -156,7 +156,7 @@ class CollectionCampService extends AutoSubscriber {
         'module' => 'afsearchMonetaryContributionForUrbanOps',
         'directive' => 'afsearch-monetary-contribution-for-urban-ops',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
     ];
 
@@ -166,8 +166,8 @@ class CollectionCampService extends AutoSubscriber {
         continue;
       }
 
-      $hasPermission = \CRM_Core_Permission::check($config['permissions']);
-      if (!$hasPermission) {
+      if (!\CRM_Core_Permission::checkAnyPerm($config['permissions'])) {
+        // does not permission; just continue
         continue;
       }
 

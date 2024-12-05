@@ -514,6 +514,9 @@ class InductionService extends AutoSubscriber {
         ->setOffset($offset)
         ->execute();
 
+        $count = count($unscheduledInductionActivities);
+        \Civi::log()->info("Retrieved {$count} unscheduled induction activities.", ['count' => $count]);
+
       // Process each activity in the batch.
       foreach ($unscheduledInductionActivities as $activity) {
         // Check if a reschedule email has already been sent and handled.
