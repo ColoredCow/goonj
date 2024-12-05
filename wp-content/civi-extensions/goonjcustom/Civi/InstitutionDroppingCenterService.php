@@ -6,10 +6,10 @@ use Civi\Api4\Contact;
 use Civi\Api4\CustomField;
 use Civi\Api4\EckEntity;
 use Civi\Api4\Email;
+use Civi\Api4\Relationship;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
-use Civi\Api4\Relationship;
 
 /**
  *
@@ -162,6 +162,9 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     self::generateQrCode($data, $id, $saveOptions);
   }
 
+  /**
+   *
+   */
   public static function processDispatchEmail(string $op, string $objectName, int $objectId, &$objectRef) {
 
     if ($objectName !== 'AfformSubmission') {
@@ -177,37 +180,43 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     $jsonData = $objectRef->data;
     $dataArray = json_decode($jsonData, TRUE);
 
-    $institutionDroppingCenterId = $dataArray['Eck_Collection_Camp1'][0]['fields']['id'] ?? NULL;
+    $institutionDroppingCenterId = $dataArray['Eck_Collection_Camp1'][0]['fields']['id'];
+    $isSelfManaged = $dataArray['Eck_Collection_Camp1'][0]['fields']['Institution_Collection_Camp_Logistics.Self_Managed_by_Institution'];
+    $campAttendedBy = $dataArray['Eck_Collection_Camp1'][0]['fields']['Institution_Dropping_Center_Logistics.Camp_to_be_attended_by'];
 
     if (!$institutionDroppingCenterId) {
       return;
     }
 
     $droppingCenterData = EckEntity::get('Collection_Camp', TRUE)
-      ->addSelect('Institution_Dropping_Center_Logistics.Self_Managed_by_Institution', 'Institution_Dropping_Center_Intent.Institution_POC', 'Institution_Dropping_Center_Review.Goonj_Office')
+      ->addSelect('Institution_Dropping_Center_Intent.Institution_POC')
       ->addWhere('id', '=', $institutionDroppingCenterId)
-      ->execute()->single();
+      ->execute()
+      ->single();
 
-    $goonjOffice = $droppingCenterData['Institution_Dropping_Center_Review.Goonj_Office'];
-    $contactId = $droppingCenterData['Institution_Dropping_Center_Intent.Institution_POC'];
+    $pocId = $droppingCenterData['Institution_Dropping_Center_Intent.Institution_POC'];
 
-    if (!$contactId) {
+    $recipientId = $isSelfManaged ? $pocId : $campAttendedBy;
+    if (!$recipientId) {
       return;
     }
 
-    $contactInfo = Contact::get(TRUE)
+    $recipientContactInfo = Contact::get(TRUE)
       ->addSelect('email_primary.email', 'phone_primary.phone', 'display_name')
-      ->addWhere('id', '=', $contactId)
+      ->addWhere('id', '=', $recipientId)
       ->execute()->single();
 
-    $email = $contactInfo['email_primary.email'];
-    $phone = $contactInfo['phone_primary.phone'];
-    $initiatorName = $contactInfo['display_name'];
+    $email = $recipientContactInfo['email_primary.email'];
+    $phone = $recipientContactInfo['phone_primary.phone'];
+    $initiatorName = $recipientContactInfo['display_name'];
 
     // Send the dispatch email.
-    self::sendDispatchEmail($email, $initiatorName, $institutionDroppingCenterId, $contactId, $goonjOffice);
+    self::sendDispatchEmail($email, $initiatorName, $institutionDroppingCenterId, $recipientId, NULL);
   }
 
+  /**
+   *
+   */
   public static function sendDispatchEmail($email, $initiatorName, $institutionDroppingCenterId, $contactId, $goonjOffice) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
     $vehicleDispatchFormUrl = $homeUrl . '/institution-dropping-center-vehicle-dispatch/#?Camp_Vehicle_Dispatch.Collection_Camp=' . $institutionDroppingCenterId . '&Camp_Vehicle_Dispatch.Filled_by=' . $contactId . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $goonjOffice . '&Eck_Collection_Camp1=' . $institutionDroppingCenterId;
@@ -236,6 +245,9 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     \CRM_Utils_Mail::send($mailParams);
   }
 
+  /**
+   *
+   */
   private static function findOfficeId(array $array) {
 
     $filteredItems = array_filter($array, fn($item) => $item['entity_table'] === 'civicrm_eck_collection_source_vehicle_dispatch');
@@ -264,6 +276,9 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     return $goonjOfficeIndex !== FALSE ? $filteredItems[$goonjOfficeIndex] : FALSE;
   }
 
+  /**
+   *
+   */
   public static function mailNotificationToMmt($op, $groupID, $entityID, &$params) {
     if ($op !== 'create') {
       return;
