@@ -11,9 +11,9 @@ use Civi\Api4\GroupContact;
 use Civi\Api4\MessageTemplate;
 use Civi\Api4\OptionValue;
 use Civi\Api4\Relationship;
-use Civi\Api4\StateProvince;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
+use Civi\Api4\StateProvince;
 
 /**
  *
@@ -21,6 +21,7 @@ use Civi\Traits\CollectionSource;
 class CollectionBaseService extends AutoSubscriber {
   use CollectionSource;
 
+  const INTENT_CUSTOM_GROUP_NAME = 'Collection_Camp_Intent_Details';
 
   private static $stateCustomFieldDbDetails = [];
   private static $collectionAuthorized = NULL;
@@ -218,21 +219,14 @@ class CollectionBaseService extends AutoSubscriber {
       $statesControlled = array_unique($statesControlled);
       $statesList = implode(',', array_map('intval', $statesControlled));
 
-      $stateFields = self::getStateFieldDbDetails();
+      $stateField = self::getStateFieldDbDetails();
 
-      $clausesArray = [];
-      foreach ($stateFields as $stateField) {
-        $selectQueries[] = sprintf(
-            'SELECT entity_id FROM `%1$s` WHERE `%2$s` IN (%3$s)',
-            $stateField['tableName'],
-            $stateField['columnName'],
-            $statesList,
-        );
-      }
-
-      $concatenatedQuery = implode(' UNION ', $selectQueries);
-
-      $clauseString = "IN ($concatenatedQuery)";
+      $clauseString = sprintf(
+      'IN (SELECT entity_id FROM `%1$s` WHERE `%2$s` IN (%3$s))',
+      $stateField['tableName'],
+      $stateField['columnName'],
+      $statesList,
+      );
 
       $clauses['id'][] = $clauseString;
     }
@@ -248,29 +242,21 @@ class CollectionBaseService extends AutoSubscriber {
    */
   private static function getStateFieldDbDetails() {
     if (empty(self::$stateCustomFieldDbDetails)) {
-      $stateGroupNameMapper = self::getStateGroupNameMapper();
+      $customField = CustomField::get(FALSE)
+        ->addSelect('column_name', 'custom_group_id.table_name')
+        ->addWhere('custom_group_id.name', '=', self::INTENT_CUSTOM_GROUP_NAME)
+        ->addWhere('name', '=', 'state')
+        ->execute()->single();
 
-      $stateFields = [];
-      foreach ($stateGroupNameMapper as $subtype => $groupName) {
-        $customField = CustomField::get(FALSE)
-          ->addSelect('column_name', 'custom_group_id.table_name')
-          ->addWhere('custom_group_id.name', '=', $groupName)
-          ->addWhere('name', '=', 'state')
-          ->execute()
-          ->single();
+      self::$stateCustomFieldDbDetails = [
+        'tableName' => $customField['custom_group_id.table_name'],
+        'columnName' => $customField['column_name'],
+      ];
 
-        if ($customField) {
-          $stateFields[] = [
-            'tableName' => $customField['custom_group_id.table_name'],
-            'columnName' => $customField['column_name'],
-          ];
-        }
-      }
-
-      self::$stateCustomFieldDbDetails = $stateFields;
     }
 
     return self::$stateCustomFieldDbDetails;
+
   }
 
   /**
@@ -532,21 +518,14 @@ class CollectionBaseService extends AutoSubscriber {
   /**
    *
    */
-  private static function getStateGroupNameMapper() {
-    return [
+  public static function getStateFieldNames() {
+    $stateGroupNameMapper = [
       'Collection_Camp' => 'Collection_Camp_Intent_Details',
       'Dropping_Center' => 'Dropping_Centre',
       'Institution_Collection_Camp' => 'Institution_Collection_Camp_Intent',
       'Goonj_Activities' => 'Goonj_Activities',
       'Institution_Dropping_Center' => 'Institution_Dropping_Center_Intent',
     ];
-  }
-
-  /**
-   *
-   */
-  public static function getStateFieldNames() {
-    $stateGroupNameMapper = self::getStateGroupNameMapper();
 
     $intentStateFields = CustomField::get(FALSE)
       ->addWhere('custom_group_id:name', 'IN', array_values($stateGroupNameMapper))
