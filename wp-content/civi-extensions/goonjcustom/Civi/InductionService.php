@@ -528,7 +528,6 @@ class InductionService extends AutoSubscriber {
 
         $contacts = $contactsDetails->first();
 
-
         if (empty($contacts)) {
             return FALSE;
         }
@@ -664,7 +663,6 @@ class InductionService extends AutoSubscriber {
 
         $contacts = $contactsDetails->first();
 
-
         if (empty($contacts)) {
             return FALSE;
         }
@@ -716,6 +714,7 @@ class InductionService extends AutoSubscriber {
       ->addSelect('Individual_fields.Induction_Reschedule_Email_Sent')
       ->addWhere('id', '=', $contactId)
       ->execute();
+
     $contacts = $contactsDetails->first();
 
     // Check if the contact exists before proceeding.
@@ -778,7 +777,6 @@ class InductionService extends AutoSubscriber {
           ->execute();
 
         $contacts = $contactsDetails->first();
-
 
         if (empty($contacts)) {
             return FALSE;
