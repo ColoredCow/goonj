@@ -166,7 +166,7 @@ class CollectionCampService extends AutoSubscriber {
         continue;
       }
 
-      if (\CRM_Core_Permission::checkAnyPerm($config['permissions'])) {
+      if (!\CRM_Core_Permission::checkAnyPerm($config['permissions'])) {
         // does not permission; just continue
         continue;
       }
