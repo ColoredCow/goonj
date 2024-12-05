@@ -351,8 +351,8 @@ class GoonjActivitiesService extends AutoSubscriber {
     $tabConfigs = [
       'activities' => [
         'title' => ts('Activities'),
-        'module' => 'afsearchCollectionCampActivity',
-        'directive' => 'afsearch-collection-camp-activity',
+        'module' => 'afsearchGoonjAllActivity',
+        'directive' => 'afsearch-goonj-all-activity',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
@@ -658,8 +658,9 @@ class GoonjActivitiesService extends AutoSubscriber {
   private static function getLogisticsEmailHtml($contactName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress, $outcomeFormLink) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
     // Construct the full URLs for the forms.
-    $campOutcomeFormUrl = $homeUrl . $outcomeFormLink . '#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $campAttendedById;
-    \Civi::log()->info('campOutcomeFormUrl', ['campOutcomeFormUrl'=>$campOutcomeFormUrl]);
+    // $campOutcomeFormUrl = $homeUrl . $outcomeFormLink . '#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $campAttendedById;
+    // \Civi::log()->info('campOutcomeFormUrl', ['campOutcomeFormUrl'=>$campOutcomeFormUrl]);
+    $campOutcomeFormUrl = $homeUrl . '/goonj-activity-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $campAttendedById;
     $html = "
     <p>Dear $contactName,</p>
     <p>Thank you for attending the goonj activity <strong>$campCode</strong> at <strong>$campAddress</strong>. Their is one forms that require your attention during and after the goonj activity:</p>

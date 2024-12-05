@@ -114,7 +114,8 @@ function goonjcustom_volunteer_feedback_collection_activity_email_html($organizi
   $homeUrl = \CRM_Utils_System::baseCMSURL();
 
   // URL for the volunteer feedback form.
-  $campVolunteerFeedback = $homeUrl . $volunteerFeedbackForm . '#?Eck_Collection_Camp1=' . $collectionCampId;
+  // $campVolunteerFeedback = $homeUrl . $volunteerFeedbackForm . '#?Eck_Collection_Camp1=' . $collectionCampId;
+  $campVolunteerFeedback = $homeUrl . 'volunteer-activity-feedback/#?Eck_Collection_Camp1=' . $collectionCampId;
 
   $html = "
       <p>Dear $organizingContactName,</p>
