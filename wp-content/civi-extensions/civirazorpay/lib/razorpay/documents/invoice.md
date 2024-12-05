@@ -21,7 +21,7 @@ $api->invoice->create(array ('type' => 'invoice','description' => 'Invoice for t
 |sms_notify           | array  | Details of the line item that is billed in the invoice.  |
 |email_notify           | array  | Details of the line item that is billed in the invoice.  |
 |partial_payment | boolean  | Indicates whether customers can make partial payments on the invoice . Possible values: true - Customer can make partial payments. false (default) - Customer cannot make partial payments. |
-| currency*   | string  | The currency of the payment (defaults to ₹)  |
+| currency*   | string  | The currency of the payment (defaults to INR)  |
 
 
 Request #2
@@ -40,7 +40,7 @@ $api->invoice->create(array ('type' => 'invoice','date' => 1589994898, 'customer
 | customer*     | array | All parameters listed [here](https://razorpay.com/docs/api/payments/invoices/#create-an-invoice) are supported           |
 | line_items    | array | All parameters listed [here](https://razorpay.com/docs/api/payments/invoices/#create-an-invoice) are supported |
 | sms_notify  | boolean  | SMS notifications are to be sent by Razorpay (default : 1)  |
-| currency*  (conditionally mandatory) | string  | The 3-letter ISO currency code for the payment. Currently, only `₹` is supported. |
+| currency*  (conditionally mandatory) | string  | The 3-letter ISO currency code for the payment. Currently, only `INR` is supported. |
 | email_notify | boolean  | Email notifications are to be sent by Razorpay (default : 1)  |
 | expire_by    | integer | The timestamp, in Unix format, till when the customer can make the authorization payment. |
 
@@ -91,8 +91,8 @@ $api->invoice->fetch($invoiceId);
     "cancelled_at": null,
     "comment": null,
     "created_at": 1653596202,
-    "currency": "₹",
-    "currency_symbol": "₹",
+    "currency": "INR",
+    "currency_symbol": "INR",
     "customer_details": {
         "billing_address": null,
         "contact": "99991111999",
@@ -122,7 +122,7 @@ $api->invoice->fetch($invoiceId);
     "line_items": [
         {
             "amount": 1000,
-            "currency": "₹",
+            "currency": "INR",
             "description": null,
             "gross_amount": 1000,
             "hsn_code": null,
@@ -169,7 +169,7 @@ $api->invoice->fetch($invoiceId);
 ### Update invoice
 
 ```php
-$api->invoice->fetch($invoiceId)->edit(array('line_items' => array(array('id' => 'li_DAweOizsysoJU6','name' => 'Book / English August - Updated name and quantity','quantity' => 1),array('name' => 'Book / A Wild Sheep Chase','amount' => 200,'currency' => '₹','quantity' => 1)),'notes' => array('updated-key' => 'An updated note.')));
+$api->invoice->fetch($invoiceId)->edit(array('line_items' => array(array('id' => 'li_DAweOizsysoJU6','name' => 'Book / English August - Updated name and quantity','quantity' => 1),array('name' => 'Book / A Wild Sheep Chase','amount' => 200,'currency' => 'INR','quantity' => 1)),'notes' => array('updated-key' => 'An updated note.')));
 ```
 
 **Parameters:**
@@ -223,7 +223,7 @@ $api->invoice->fetch($invoiceId)->edit(array('line_items' => array(array('id' =>
       "tax_amount": 0,
       "taxable_amount": 400,
       "net_amount": 400,
-      "currency": "₹",
+      "currency": "INR",
       "type": "invoice",
       "tax_inclusive": false,
       "hsn_code": null,
@@ -252,8 +252,8 @@ $api->invoice->fetch($invoiceId)->edit(array('line_items' => array(array('id' =>
   "amount": 600,
   "amount_paid": null,
   "amount_due": null,
-  "currency": "₹",
-  "currency_symbol": "₹",
+  "currency": "INR",
+  "currency_symbol": "INR",
   "description": "This is a test invoice.",
   "notes": {
     "updated-key": "An updated note."
@@ -328,7 +328,7 @@ $api->invoice->fetch($invoiceId)->issue();
       "tax_amount": 0,
       "taxable_amount": 400,
       "net_amount": 400,
-      "currency": "₹",
+      "currency": "INR",
       "type": "invoice",
       "tax_inclusive": false,
       "hsn_code": null,
@@ -349,7 +349,7 @@ $api->invoice->fetch($invoiceId)->issue();
       "tax_amount": 0,
       "taxable_amount": 200,
       "net_amount": 200,
-      "currency": "₹",
+      "currency": "INR",
       "type": "invoice",
       "tax_inclusive": false,
       "hsn_code": null,
@@ -378,8 +378,8 @@ $api->invoice->fetch($invoiceId)->issue();
   "amount": 600,
   "amount_paid": 0,
   "amount_due": 600,
-  "currency": "₹",
-  "currency_symbol": "₹",
+  "currency": "INR",
+  "currency_symbol": "INR",
   "description": "This is a test invoice.",
   "notes": {
     "updated-key": "An updated note."
@@ -438,8 +438,8 @@ $api->invoice->fetch($invoiceId)->cancel();
     "cancelled_at": 1654159207,
     "comment": null,
     "created_at": 1653596202,
-    "currency": "₹",
-    "currency_symbol": "₹",
+    "currency": "INR",
+    "currency_symbol": "INR",
     "customer_details": {
         "billing_address": null,
         "contact": "99991111999",
@@ -469,7 +469,7 @@ $api->invoice->fetch($invoiceId)->cancel();
     "line_items": [
         {
             "amount": 1000,
-            "currency": "₹",
+            "currency": "INR",
             "description": null,
             "gross_amount": 1000,
             "hsn_code": null,
