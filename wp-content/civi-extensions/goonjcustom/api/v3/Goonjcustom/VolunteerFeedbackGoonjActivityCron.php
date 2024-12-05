@@ -52,7 +52,7 @@ function civicrm_api3_goonjcustom_volunteer_feedback_goonj_activity_cron($params
     ->addSelect('Goonj_Activities.End_Date', 'Logistics_Coordination.Feedback_Email_Sent', 'Collection_Camp_Core_Details.Contact_Id', 'Goonj_Activities.Where_do_you_wish_to_organise_the_activity_', 'Goonj_Activities.Select_Volunteer_Feedback_Form')
     ->addWhere('Collection_Camp_Core_Details.Status', '=', 'authorized')
     ->addWhere('subtype', '=', $collectionCampSubtype)
-    // ->addWhere('Collection_Camp_Intent_Details.End_Date', '<=', $endOfDay)
+    ->addWhere('Collection_Camp_Intent_Details.End_Date', '<=', $endOfDay)
     ->execute();
 
   [$defaultFromName, $defaultFromEmail] = CRM_Core_BAO_Domain::getNameAndEmail();
@@ -66,8 +66,7 @@ function civicrm_api3_goonjcustom_volunteer_feedback_goonj_activity_cron($params
       $feedbackEmailSent = $camp['Logistics_Coordination.Feedback_Email_Sent'];
       $initiatorId = $camp['Collection_Camp_Core_Details.Contact_Id'];
       $campAddress = $camp['Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'];
-      $volunteerFeedbackForm = $camp['Goonj_Activities.Select_Volunteer_Feedback_Form'];
-      \Civi::log()->info('volunteerFeedbackForm', ['volunteerFeedbackForm'=>$volunteerFeedbackForm]);
+      $volunteerFeedbackForm = $camp['Goonj_Activities.Select_Volunteer_Feedback_Form'] ?? NULL;
 
       // Get recipient email and name.
       $campAttendedBy = Contact::get(TRUE)
@@ -80,7 +79,7 @@ function civicrm_api3_goonjcustom_volunteer_feedback_goonj_activity_cron($params
       $organizingContactName = $campAttendedBy['display_name'];
 
       // Send email if the end date is today or earlier.
-      if (true) {
+      if (!$feedbackEmailSent && $endDateFormatted <= $todayFormatted) {
         $mailParams = [
           'subject' => 'Thank You for Organizing the Goonj Activity! Share Your Feedback.',
           'from' => $from,
@@ -110,11 +109,11 @@ function civicrm_api3_goonjcustom_volunteer_feedback_goonj_activity_cron($params
 /**
  *
  */
-function goonjcustom_volunteer_feedback_collection_activity_email_html($organizingContactName, $collectionCampId, $campAddress, $volunteerFeedbackForm ) {
+function goonjcustom_volunteer_feedback_collection_activity_email_html($organizingContactName, $collectionCampId, $campAddress, $volunteerFeedbackForm) {
   $homeUrl = \CRM_Utils_System::baseCMSURL();
 
   // URL for the volunteer feedback form.
-  // $campVolunteerFeedback = $homeUrl . $volunteerFeedbackForm . '#?Eck_Collection_Camp1=' . $collectionCampId;
+  // $campVolunteerFeedback = $homeUrl . $volunteerFeedbackForm . '#?Eck_Collection_Camp1=' . $collectionCampId;.
   $campVolunteerFeedback = $homeUrl . 'volunteer-activity-feedback/#?Eck_Collection_Camp1=' . $collectionCampId;
 
   $html = "

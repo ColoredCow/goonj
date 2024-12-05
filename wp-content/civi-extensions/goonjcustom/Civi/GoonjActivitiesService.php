@@ -407,7 +407,7 @@ class GoonjActivitiesService extends AutoSubscriber {
       }
 
       if (!\CRM_Core_Permission::checkAnyPerm($config['permissions'])) {
-        // does not permission; just continue
+        // Does not permission; just continue.
         continue;
       }
 
@@ -581,7 +581,6 @@ class GoonjActivitiesService extends AutoSubscriber {
     }
   }
 
-
   /**
    *
    */
@@ -597,12 +596,10 @@ class GoonjActivitiesService extends AutoSubscriber {
 
       $startDate = new \DateTime($collectionCamp['Goonj_Activities.Start_Date']);
 
-
       $today = new \DateTimeImmutable();
       $endOfToday = $today->setTime(23, 59, 59);
 
-
-      if (true) {
+      if (!$logisticEmailSent && $startDate <= $endOfToday) {
         $campAttendedBy = Contact::get(FALSE)
           ->addSelect('email.email', 'display_name')
           ->addJoin('Email AS email', 'LEFT')
@@ -652,14 +649,12 @@ class GoonjActivitiesService extends AutoSubscriber {
     return self::$fromAddress;
   }
 
-    /**
+  /**
    *
    */
   private static function getLogisticsEmailHtml($contactName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress, $outcomeFormLink) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
     // Construct the full URLs for the forms.
-    // $campOutcomeFormUrl = $homeUrl . $outcomeFormLink . '#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $campAttendedById;
-    // \Civi::log()->info('campOutcomeFormUrl', ['campOutcomeFormUrl'=>$campOutcomeFormUrl]);
     $campOutcomeFormUrl = $homeUrl . '/goonj-activity-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $campAttendedById;
     $html = "
     <p>Dear $contactName,</p>
@@ -674,4 +669,5 @@ class GoonjActivitiesService extends AutoSubscriber {
 
     return $html;
   }
+
 }

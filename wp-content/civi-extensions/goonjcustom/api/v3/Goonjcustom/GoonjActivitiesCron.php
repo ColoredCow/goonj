@@ -43,12 +43,10 @@ function civicrm_api3_goonjcustom_goonj_activities_cron($params) {
     ->setLimit(1)
     ->execute()->single();
 
-
   $collectionCampSubtype = $optionValues['value'];
-  \Civi::log()->info('optionValues', ['optionValues'=>$collectionCampSubtype]);
+
   $today = new DateTimeImmutable();
   $endOfDay = $today->setTime(23, 59, 59)->format('Y-m-d H:i:s');
-
 
   $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
     ->addSelect(
@@ -63,21 +61,18 @@ function civicrm_api3_goonjcustom_goonj_activities_cron($params) {
     )
     ->addWhere('Collection_Camp_Core_Details.Status', '=', 'authorized')
     ->addWhere('subtype', '=', $collectionCampSubtype)
-    // ->addWhere('Goonj_Activities.Start_Date', '<=', $endOfDay)
+    ->addWhere('Goonj_Activities.Start_Date', '<=', $endOfDay)
     ->addWhere('Logistics_Coordination.Camp_to_be_attended_by', 'IS NOT EMPTY')
     ->addClause('OR',
       ['Logistics_Coordination.Email_Sent', 'IS NULL'],
       ['Logistics_Coordination.Email_Sent', '=', 0]
     )
     ->execute();
-  \Civi::log()->info('collectionCamps', ['collectionCamps'=>$collectionCamps]);
-
 
   foreach ($collectionCamps as $camp) {
 
     try {
       GoonjActivitiesService::sendActivityLogisticsEmail($camp);
-    //   GoonjActivitiesService::updateContributionCount($camp);
     }
     catch (\Exception $e) {
       \Civi::log()->info('Error Goonj Activities Cron', [
