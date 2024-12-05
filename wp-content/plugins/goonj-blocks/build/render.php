@@ -106,9 +106,11 @@ $pu_material_contribution_check_link = sprintf(
 );
 
 $attendee_activity_feedback_link = sprintf(
-    '/attendee-activity-feedback/#?Eck_Collection_Camp1=%s',
-    $action_target['id'],
+    '%s#?Eck_Collection_Camp1=%s',
+    $action_target['Goonj_Activities.Select_Attendee_feedback_form'],
+    $action_target['id']
 );
+
 
 $puSourceField = CustomField::get(FALSE)
   ->addSelect('id')
