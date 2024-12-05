@@ -245,31 +245,35 @@ class CollectionBaseService extends AutoSubscriber {
    *
    */
   private static function getStateFieldDbDetails() {
-    $stateGroupNameMapper = self::getStateGroupNameMapper();
+    if (empty(self::$stateCustomFieldDbDetails)) {
+      $stateGroupNameMapper = self::getStateGroupNameMapper();
 
-    $stateFields = [];
-    foreach ($stateGroupNameMapper as $subtype => $groupName) {
-      $customField = CustomField::get(FALSE)
-        ->addSelect('column_name', 'custom_group_id.table_name')
-        ->addWhere('custom_group_id.name', '=', $groupName)
-        ->addWhere('name', '=', 'state')
-        ->execute()
-        ->single();
+      $stateFields = [];
+      foreach ($stateGroupNameMapper as $subtype => $groupName) {
+        $customField = CustomField::get(FALSE)
+          ->addSelect('column_name', 'custom_group_id.table_name')
+          ->addWhere('custom_group_id.name', '=', $groupName)
+          ->addWhere('name', '=', 'state')
+          ->execute()
+          ->single();
 
-      \Civi::log()->info(__METHOD__, [
-        'groupName' => $groupName,
-        'customField' => $customField,
-      ]);
+        \Civi::log()->info(__METHOD__, [
+          'groupName' => $groupName,
+          'customField' => $customField,
+        ]);
 
-      if ($customField) {
-        $stateFields[] = [
-          'tableName' => $customField['custom_group_id.table_name'],
-          'columnName' => $customField['column_name'],
-        ];
+        if ($customField) {
+          $stateFields[] = [
+            'tableName' => $customField['custom_group_id.table_name'],
+            'columnName' => $customField['column_name'],
+          ];
+        }
       }
+
+      self::$stateCustomFieldDbDetails = $stateFields;
     }
 
-    return $stateFields;
+    return self::$stateCustomFieldDbDetails;
   }
 
   /**
