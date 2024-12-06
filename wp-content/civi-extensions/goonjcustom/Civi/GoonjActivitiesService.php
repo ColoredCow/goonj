@@ -13,7 +13,6 @@ use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
-use Civi\HelperService;
 
 /**
  *
@@ -645,8 +644,7 @@ class GoonjActivitiesService extends AutoSubscriber {
 
   }
 
-
-    /**
+  /**
    *
    */
   public static function sendActivityVolunteerFeedbackEmail($collectionCamp) {
@@ -721,16 +719,15 @@ class GoonjActivitiesService extends AutoSubscriber {
   }
 
   /**
- *
- */
-private static function goonjcustom_volunteer_feedback_collection_activity_email_html($organizingContactName, $collectionCampId, $campAddress, $volunteerFeedbackForm) {
-  $homeUrl = \CRM_Utils_System::baseCMSURL();
+   *
+   */
+  private static function goonjcustom_volunteer_feedback_collection_activity_email_html($organizingContactName, $collectionCampId, $campAddress, $volunteerFeedbackForm) {
+    $homeUrl = \CRM_Utils_System::baseCMSURL();
 
-  // URL for the volunteer feedback form.
-  $campVolunteerFeedback = $homeUrl . $volunteerFeedbackForm . '#?Eck_Collection_Camp1=' . $collectionCampId;
+    // URL for the volunteer feedback form.
+    $campVolunteerFeedback = $homeUrl . $volunteerFeedbackForm . '#?Eck_Collection_Camp1=' . $collectionCampId;
 
-
-  $html = "
+    $html = "
       <p>Dear $organizingContactName,</p>
       <p>Thank you for stepping up and organising the recent goonj activity  at <strong>$campAddress</strong>! Your time, effort, and enthusiasm made all the difference, and we hope that it was a meaningful effort for you as well.</p>
       <p>To help us improve, we’d love to hear your thoughts and experiences. Kindly take a few minutes to fill out our feedback form. Your input will be valuable to us:</p>
@@ -739,7 +736,7 @@ private static function goonjcustom_volunteer_feedback_collection_activity_email
       <p>We look forward to continuing this journey together!</p>
       <p>Warm Regards,<br>Team Goonj</p>";
 
-  return $html;
-}
+    return $html;
+  }
 
 }

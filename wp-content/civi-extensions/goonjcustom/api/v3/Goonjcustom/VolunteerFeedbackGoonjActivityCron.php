@@ -4,11 +4,9 @@
  * @file
  */
 
-use Civi\Api4\Contact;
 use Civi\Api4\EckEntity;
 use Civi\Api4\OptionValue;
 use Civi\GoonjActivitiesService;
-
 
 /**
  * Goonjcustom.VolunteerFeedbackCollectionCampCron API specification (optional)
@@ -55,7 +53,6 @@ function civicrm_api3_goonjcustom_volunteer_feedback_goonj_activity_cron($params
     ->addWhere('subtype', '=', $collectionCampSubtype)
     ->addWhere('Collection_Camp_Intent_Details.End_Date', '<=', $endOfDay)
     ->execute();
-
 
   foreach ($collectionCamps as $camp) {
     try {
