@@ -148,23 +148,18 @@
     color: $gray-darker;
     font-family: $font-family-base;
     font-size: $font-size-base;
-    height: auto !important;
     margin-bottom: 0;
     margin-top: 0;
-    padding: 30px;
+    padding: 10px;
     position: static;
     z-index: 1;
 
-    .button:not(.hr-job-info-close) {
+    .button {
       @extend .btn-primary; /* stylelint-disable-line scss/at-extend-no-missing-placeholder */
     }
 
     .crm-block {
       box-shadow: none;
-    }
-
-    .crm-submit-buttons {
-      display: none;
     }
 
     tr,
@@ -177,11 +172,6 @@
       margin-left: -20px;
       margin-right: -20px;
     }
-  }
-
-  .ui-dialog-content[id*='crm-ajax-dialog'] {
-    background: $crm-white;
-    padding: 10px 20px 0;
   }
 
   .ui-dialog-buttonpane {
