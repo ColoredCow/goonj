@@ -196,11 +196,15 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     $vehicleDispatchId = $goonjField['entity_id'];
 
     $collectionSourceVehicleDispatch = EckEntity::get('Collection_Source_Vehicle_Dispatch', FALSE)
-      ->addSelect('Camp_Vehicle_Dispatch.Collection_Camp')
+      ->addSelect('Camp_Vehicle_Dispatch.Collection_Camp', 'Camp_Institution_Data.Name_of_the_institution', 'Camp_Institution_Data.Address', 'Camp_Institution_Data.Email', 'Camp_Institution_Data.Contact_Number')
       ->addWhere('id', '=', $vehicleDispatchId)
       ->execute()->first();
 
     $collectionCampId = $collectionSourceVehicleDispatch['Camp_Vehicle_Dispatch.Collection_Camp'];
+    $nameOfInstitution = $collectionSourceVehicleDispatch['Camp_Institution_Data.Name_of_the_institution'];
+    $addressOfInstitution = $collectionSourceVehicleDispatch['Camp_Institution_Data.Address'];
+    $pocEmail = $collectionSourceVehicleDispatch['Camp_Institution_Data.Email'];
+    $pocContactNumber = $collectionSourceVehicleDispatch['Camp_Institution_Data.Contact_Number'];
 
     if (self::getEntitySubtypeName($collectionCampId) !== self::ENTITY_SUBTYPE_NAME) {
       return;
@@ -249,7 +253,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       'from' => $fromEmail['label'],
       'toEmail' => $mmtEmail,
       'replyTo' => $fromEmail['label'],
-      'html' => self::sendEmailToMmt($collectionCampId, $campCode, $campAddress, $vehicleDispatchId),
+      'html' => self::sendEmailToMmt($collectionCampId, $campCode, $campAddress, $vehicleDispatchId, $nameOfInstitution, $addressOfInstitution, $pocEmail, $pocContactNumber),
     ];
     \CRM_Utils_Mail::send($mailParams);
 
@@ -260,7 +264,15 @@ class InstitutionCollectionCampService extends AutoSubscriber {
    */
   public static function sendEmailToMmt($collectionCampId, $campCode, $campAddress, $vehicleDispatchId) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
-    $materialdispatchUrl = $homeUrl . 'institution-camp-acknowledgement-dispatch/#?Eck_Collection_Source_Vehicle_Dispatch1=' . $vehicleDispatchId . '&Camp_Vehicle_Dispatch.Collection_Camp=' . $collectionCampId . '&id=' . $vehicleDispatchId . '&Eck_Collection_Source_Vehicle_Dispatch_Eck_Collection_Camp_Collection_Camp_01.id=' . $collectionCampId;
+    $materialdispatchUrl = $homeUrl . 'institution-camp-acknowledgement-dispatch/#?Eck_Collection_Source_Vehicle_Dispatch1=' . $vehicleDispatchId
+    . '&Camp_Vehicle_Dispatch.Collection_Camp=' . $collectionCampId
+    . '&id=' . $vehicleDispatchId
+    . '&Eck_Collection_Source_Vehicle_Dispatch_Eck_Collection_Camp_Collection_Camp_01.id=' . $collectionCampId
+    . '&Camp_Institution_Data.Name_of_the_institution=' . $nameOfInstitution
+    . '&Camp_Institution_Data.Address=' . $addressOfInstitution
+    . '&Camp_Institution_Data.Email=' . $pocEmail
+    . '&Camp_Institution_Data.Contact_Number=' . $pocContactNumber;
+
     $html = "
     <p>Dear MMT team,</p>
     <p>This is to inform you that a vehicle has been sent from camp <strong>$campCode</strong> at <strong>$campAddress</strong>.</p>
@@ -760,42 +772,42 @@ class InstitutionCollectionCampService extends AutoSubscriber {
         'module' => 'afsearchInstitutionCollectionCampLogistics',
         'directive' => 'afsearch-institution-collection-camp-logistics',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'materialContribution' => [
         'title' => ts('Material Contribution'),
         'module' => 'afsearchInstitutionCollectionCampMaterialContribution',
         'directive' => 'afsearch-institution-collection-camp-material-contribution',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'vehicleDispatch' => [
         'title' => ts('Dispatch'),
         'module' => 'afsearchInstitutionCampVehicleDispatchData',
         'directive' => 'afsearch-institution-camp-vehicle-dispatch-data',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'materialAuthorization' => [
         'title' => ts('Material Authorization'),
         'module' => 'afsearchInstitutionCampAcknowledgementDispatch',
         'directive' => 'afsearch-institution-camp-acknowledgement-dispatch',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'campOutcome' => [
         'title' => ts('Camp Outcome'),
         'module' => 'afsearchInstitutionCampOutcome',
         'directive' => 'afsearch-institution-camp-outcome',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'campFeedback' => [
         'title' => ts('Volunteer Feedback'),
         'module' => 'afsearchInstitutionCollectionCampFeedback',
         'directive' => 'afsearch-institution-collection-camp-feedback',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'monetaryContribution' => [
         'title' => ts('Monetary Contribution'),
@@ -809,7 +821,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
         'module' => 'afsearchMonetaryContributionForUrbanOps',
         'directive' => 'afsearch-monetary-contribution-for-urban-ops',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
     ];
 
@@ -819,8 +831,8 @@ class InstitutionCollectionCampService extends AutoSubscriber {
         continue;
       }
 
-      $hasPermission = \CRM_Core_Permission::check($config['permissions']);
-      if (!$hasPermission) {
+      if (!\CRM_Core_Permission::checkAnyPerm($config['permissions'])) {
+        // Does not permission; just continue.
         continue;
       }
 

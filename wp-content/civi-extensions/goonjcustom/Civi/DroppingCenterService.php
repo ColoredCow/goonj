@@ -432,70 +432,70 @@ class DroppingCenterService extends AutoSubscriber {
         'module' => 'afsearchLogistics',
         'directive' => 'afsearch-logistics',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'eventCoordinators' => [
         'title' => ts('Event Coordinators'),
         'module' => 'afsearchCoordinator',
         'directive' => 'afsearch-coordinator',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'vehicleDispatch' => [
         'title' => ts('Dispatch'),
         'module' => 'afsearchCampVehicleDispatchData',
         'directive' => 'afsearch-camp-vehicle-dispatch-data',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'materialAuthorization' => [
         'title' => ts('Material Authorization'),
         'module' => 'afsearchAcknowledgementForLogisticsData',
         'directive' => 'afsearch-acknowledgement-for-logistics-data',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'materialContribution' => [
         'title' => ts('Material Contribution'),
         'module' => 'afsearchDroppingCenterMaterialContributions',
         'directive' => 'afsearch-dropping-center-material-contributions',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'status' => [
         'title' => ts('Status'),
         'module' => 'afsearchStatus',
         'directive' => 'afsearch-status',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'visit' => [
         'title' => ts('Visit'),
         'module' => 'afsearchVisitList',
         'directive' => 'afsearch-visit-list',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
-      'donation' => [
-        'title' => ts('Donation'),
+      'donationBox' => [
+        'title' => ts('Donation Box'),
         'module' => 'afsearchDonation',
         'directive' => 'afsearch-donation',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'outcome' => [
         'title' => ts('Outcome'),
         'module' => 'afformDroppingCenterOutcome',
         'directive' => 'afform-dropping-center-outcome',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCampService.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'feedback' => [
         'title' => ts('Feedback'),
         'module' => 'afsearchFeedback',
         'directive' => 'afsearch-feedback',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'monetaryContribution' => [
         'title' => ts('Monetary Contribution'),
@@ -509,7 +509,7 @@ class DroppingCenterService extends AutoSubscriber {
         'module' => 'afsearchMonetaryContributionForUrbanOps',
         'directive' => 'afsearch-monetary-contribution-for-urban-ops',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
     ];
 
@@ -519,8 +519,8 @@ class DroppingCenterService extends AutoSubscriber {
         continue;
       }
 
-      $hasPermission = \CRM_Core_Permission::check($config['permissions']);
-      if (!$hasPermission) {
+      if (!\CRM_Core_Permission::checkAnyPerm($config['permissions'])) {
+        // Does not permission; just continue.
         continue;
       }
 
