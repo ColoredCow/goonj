@@ -8,6 +8,13 @@
 class CRM_Civirules_BAO_CiviRulesCondition extends CRM_Civirules_DAO_Condition {
 
   /**
+   * Cache for CiviRule Condition ID - class name mapping
+   *
+   * @var array
+   */
+  protected static $conditionClassNames = [];
+
+  /**
    * Function to get values
    *
    * @return array $result found rows with data
@@ -139,21 +146,26 @@ class CRM_Civirules_BAO_CiviRulesCondition extends CRM_Civirules_DAO_Condition {
    * @throws Exception if abort is set to true and class does not exist or is not valid
    */
   public static function getConditionObjectById(int $conditionID, bool $abort=TRUE) {
-    $condition = new CRM_Civirules_BAO_Condition();
-    $condition->id = $conditionID;
-    if (!$condition->find(TRUE)) {
-      if ($abort) {
-        throw new Exception('CiviRule could not find condition');
+    if (isset(self::$conditionClassNames[$conditionID])) {
+      $className = self::$conditionClassNames[$conditionID];
+    } else {
+      $condition = new CRM_Civirules_BAO_Condition();
+      $condition->id = $conditionID;
+      if (!$condition->find(TRUE)) {
+        if ($abort) {
+          throw new Exception('CiviRule could not find condition');
+        }
+        return FALSE;
       }
-      return FALSE;
-    }
 
-    $className = $condition->class_name;
-    if (!class_exists($className)) {
-      if ($abort) {
-        throw new Exception('CiviRule condition class "' . $className . '" does not exist');
+      $className = $condition->class_name;
+      if (!class_exists($className)) {
+        if ($abort) {
+          throw new Exception('CiviRule condition class "' . $className . '" does not exist');
+        }
+        return FALSE;
       }
-      return FALSE;
+      self::$conditionClassNames[$conditionID] = $className;
     }
 
     $object = new $className();

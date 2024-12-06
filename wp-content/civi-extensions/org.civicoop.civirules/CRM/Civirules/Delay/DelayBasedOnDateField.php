@@ -50,7 +50,7 @@ class CRM_Civirules_Delay_DelayBasedOnDateField extends CRM_Civirules_Delay_Dela
       $customFieldId = (int) str_replace("custom_", "", $field);
       if ($customFieldId) {
         try {
-          $customField = Civi\Api4\CustomField::get()
+          $customField = Civi\Api4\CustomField::get(FALSE)
             ->addSelect('custom_group_id:name', 'name')
             ->addWhere('id', '=', $customFieldId)
             ->setLimit(1)
@@ -60,7 +60,7 @@ class CRM_Civirules_Delay_DelayBasedOnDateField extends CRM_Civirules_Delay_Dela
             switch ($entity) {
               case "Activity":
                 try {
-                  $customData = Civi\Api4\Activity::get()
+                  $customData = Civi\Api4\Activity::get(FALSE)
                     ->addSelect($customFieldName)
                     ->addWhere('id', '=', $data['id'])
                     ->setLimit(1)

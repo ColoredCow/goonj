@@ -102,7 +102,7 @@ class CRM_CivirulesPostTrigger_ContactCustomDataChanged extends CRM_Civirules_Tr
       foreach ($params as $field) {
         if (!empty($field['custom_field_id'])) {
           $value = $field['value'];
-          if ($field['type'] == 'Timestamp') {
+          if ($field['type'] === 'Timestamp' && is_string($value)) {
             $date = \DateTime::createFromFormat('YmdHis', $value);
             $value = $date ? $date->format('Y-m-d H:i:s') : NULL;
           }

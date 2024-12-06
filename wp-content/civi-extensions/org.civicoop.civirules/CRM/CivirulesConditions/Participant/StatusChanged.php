@@ -24,7 +24,7 @@ class CRM_CivirulesConditions_Participant_StatusChanged extends CRM_CivirulesCon
    * @return string
    */
   protected function getEntityStatusFieldName() {
-    return 'participant_status_id';
+    return 'status_id';
   }
 
   /**

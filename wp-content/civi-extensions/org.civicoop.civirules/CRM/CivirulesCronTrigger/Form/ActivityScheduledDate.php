@@ -20,7 +20,7 @@ class CRM_CivirulesCronTrigger_Form_ActivityScheduledDate extends CRM_CivirulesC
     ]);
 
     $this->add('select', 'interval_unit', ts('Interval'), CRM_CivirulesCronTrigger_ActivityScheduledDate::intervals(), TRUE);
-    $this->add('text', 'interval', ts('Interval'), TRUE);
+    $this->add('text', 'interval', ts('Interval'), [], TRUE);
     $this->addRule('interval', ts('Interval should be a numeric value'), 'numeric');
   }
 

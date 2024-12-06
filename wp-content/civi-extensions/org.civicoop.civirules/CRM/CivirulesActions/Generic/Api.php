@@ -94,15 +94,9 @@ abstract class CRM_CivirulesActions_Generic_Api extends CRM_Civirules_Action {
       case 3:
         try {
           civicrm_api3($entity, $action, $params);
-        } catch (Exception $e) {
-          $formattedParams = '';
-          foreach($params as $key => $param) {
-            if (strlen($formattedParams)) {
-              $formattedParams .= ', ';
-            }
-            $formattedParams .= "{$key}=\"$param\"";
-          }
-          $message = "Civirules api3 action exception: {$e->getMessage()}. API call: {$entity}.{$action} with params: {$formattedParams}";
+        }
+        catch (Exception $e) {
+          $message = "Civirules api3 action exception: {$e->getMessage()}. API call: {$entity}.{$action} with params: " . print_r($params, TRUE);
           \Civi::log('civirules')->error($message);
           throw new Exception($message);
         }
@@ -113,7 +107,7 @@ abstract class CRM_CivirulesActions_Generic_Api extends CRM_Civirules_Action {
           civicrm_api4($entity, $action, $params);
         }
         catch (Exception $e) {
-          $message = "Civirules api4 action exception: {$e->getMessage()}. API call: {$entity}.{$action} with params: " . print_r($params,TRUE);
+          $message = "Civirules api4 action exception: {$e->getMessage()}. API call: {$entity}.{$action} with params: " . print_r($params, TRUE);
           \Civi::log('civirules')->error($message);
           throw new Exception($message);
         }

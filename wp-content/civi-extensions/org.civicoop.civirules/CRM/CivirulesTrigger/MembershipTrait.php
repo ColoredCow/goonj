@@ -38,9 +38,10 @@ trait CRM_CivirulesTrigger_MembershipTrait {
       $membershipID = $triggerData->getEntityId();
       // Retrieve the membership entity
       $lineItem = LineItem::get(FALSE)
+        ->addSelect('contribution_id')
         ->addWhere('entity_table:name', '=', 'civicrm_membership')
         ->addWhere('entity_id', '=', $membershipID)
-        ->addOrderBy('id', 'DESC')
+        ->addOrderBy('contribution_id.receive_date', 'DESC')
         ->execute()
         ->first();
       if (!empty($lineItem['contribution_id'])) {

@@ -30,8 +30,10 @@ class CRM_CivirulesPostTrigger_EntityTag extends CRM_Civirules_Trigger_Post {
    * @param string $eventID
    */
   public function triggerTrigger($op, $objectName, $objectId, $objectRef, $eventID) {
-
     $entity = CRM_Civirules_Utils_ObjectName::convertToEntity($objectName);
+    if (empty($objectId) && !empty($objectRef->entity_id) && !empty($objectRef->entity_table)) {
+      $objectId = CRM_Civirules_Utils_PreData::getEntityTagId($objectRef->entity_table, $objectRef->entity_id);
+    }
 
     $entityTags = array();
     // $objectRef is either an object or an array.
@@ -61,7 +63,14 @@ class CRM_CivirulesPostTrigger_EntityTag extends CRM_Civirules_Trigger_Post {
       if ($entityTag['entity_table'] != 'civicrm_contact') {
         continue;
       }
-      $this->setTriggerData(new CRM_Civirules_TriggerData_Post($entity, $objectId, $entityTag));
+      if ($op === 'edit' || $op === 'delete') {
+        //set also original data with an edit event
+        $oldData = CRM_Civirules_Utils_PreData::getPreData($entity, $objectId, $eventID);
+        $triggerData = new CRM_Civirules_TriggerData_Edit($entity, $objectId, $entityTag, $oldData);
+      } else {
+        $triggerData = new CRM_Civirules_TriggerData_Post($entity, $objectId, $entityTag);
+      }
+      $this->setTriggerData($triggerData);
       parent::triggerTrigger($op, $objectName, $objectId, $objectRef, $eventID);
     }
 

@@ -92,7 +92,7 @@ class CRM_Civirules_Form_RuleView extends CRM_Core_Form {
             break;
 
           case 'last_trigger_contactname':
-            $row['last_trigger_contact'] = $triggerDetail['last_trigger_contact_link'];
+            $row['last_trigger_contact'] = $triggerDetail['last_trigger_contact_link'] ?? '';
             break;
 
           case 'last_trigger_date':
