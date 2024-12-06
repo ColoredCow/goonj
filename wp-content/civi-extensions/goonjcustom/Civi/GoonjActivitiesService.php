@@ -664,7 +664,6 @@ class GoonjActivitiesService extends AutoSubscriber {
     // Construct the full URLs for the forms.
     $campOutcomeFormUrl = $homeUrl . $outcomeFormLink . '#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $campAttendedById;
 
-    // $campOutcomeFormUrl = $homeUrl . '/goonj-activity-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $campAttendedById;
     $html = "
     <p>Dear $contactName,</p>
     <p>Thank you for attending the goonj activity <strong>$campCode</strong> at <strong>$campAddress</strong>. Their is one forms that require your attention during and after the goonj activity:</p>
