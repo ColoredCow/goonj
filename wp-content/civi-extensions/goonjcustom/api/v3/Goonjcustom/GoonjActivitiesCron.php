@@ -9,7 +9,7 @@ use Civi\Api4\OptionValue;
 use Civi\GoonjActivitiesService;
 
 /**
- * Goonjcustom.CollectionCampCron API specification (optional)
+ * Goonjcustom.GoonjActivitiesCampCron API specification (optional)
  * This is used for documentation and validation.
  *
  * @param array $spec
@@ -22,7 +22,7 @@ function _civicrm_api3_goonjcustom_goonj_activities_cron_spec(&$spec) {
 }
 
 /**
- * Goonjcustom.CollectionCampCron API.
+ * Goonjcustom.GoonjActivitiesCampCron API.
  *
  * @param array $params
  *
@@ -40,7 +40,6 @@ function civicrm_api3_goonjcustom_goonj_activities_cron($params) {
     ->addWhere('option_group_id:name', '=', 'eck_sub_types')
     ->addWhere('name', '=', 'Goonj_activities')
     ->addWhere('grouping', '=', 'Collection_Camp')
-    ->setLimit(1)
     ->execute()->single();
 
   $collectionCampSubtype = $optionValues['value'];
