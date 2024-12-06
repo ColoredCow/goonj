@@ -199,10 +199,9 @@ function generate_slots($assignedOfficeId, $maxSlots, $inductionType, $startDate
 function generateActivitySlots(&$slots, $maxSlots, $validInductionDays, $hour, $minute, $startDate, $scheduledActivityDates, &$slotCount, &$highActivityCountDays, $inductionType, $holidayDates) {
     $maxDays = 365;
     $holidayDatesArray = [];
-    \Civi::log()->info('startDate', ['startDate'=>$startDate]);
+
     $currentDate = new DateTime();
 
-    // // Ensure start date is not in the past
     if ($startDate < $currentDate) {
         $startDate = clone $currentDate;
     }
