@@ -1,4 +1,5 @@
 {
     "name": "civicrm/emailapi",
-    "description": "API to send an email to a contact"
+    "description": "API to send an email to a contact",
+    "type": "civicrm-ext"
 }

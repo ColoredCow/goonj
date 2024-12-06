@@ -24,8 +24,7 @@ class CRM_Emailapi_Activity {
    * @param array $params
    *
    * @return int|NULL
-   * @throws \API_Exception
-   * @throws \CiviCRM_API3_Exception
+   * @throws \CRM_Core_Exception
    * @throws \Civi\API\Exception\UnauthorizedException
    */
   public function createActivity($params) {
@@ -113,7 +112,7 @@ class CRM_Emailapi_Activity {
    * @return string
    *   e.g. "Smith, Bob<bob.smith@example.com>".
    *
-   * @throws \API_Exception
+   * @throws \CRM_Core_Exception
    * @throws \Civi\API\Exception\UnauthorizedException
    */
   protected function getEmailString(array $emailIDs): string {

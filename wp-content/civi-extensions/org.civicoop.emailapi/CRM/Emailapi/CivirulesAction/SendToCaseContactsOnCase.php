@@ -1,11 +1,11 @@
 <?php
 /**
- * @author Jaap Jansma <jaap.jansma@civicoop.org>
+ * @author Hitesh Jain <hitesh@compuco.io>
  * @license AGPL-3.0
  */
 use CRM_Emailapi_ExtensionUtil as E;
 
-class CRM_Emailapi_CivirulesAction_SendToRolesOnCase extends CRM_Civirules_Action {
+class CRM_Emailapi_CivirulesAction_SendToCaseContactsOnCase extends CRM_Civirules_Action {
 
   protected static $alreadySend = [];
 
@@ -20,8 +20,8 @@ class CRM_Emailapi_CivirulesAction_SendToRolesOnCase extends CRM_Civirules_Actio
     $case = $triggerData->getEntityData('Case');
     $actionParams['case_id'] = $case['id'];
 
-    // Find the related contact(s)
-    $related_contacts = $this->getRelatedContacts($case['id'], $actionParams['relationship_type']);
+    // Find Case contact(s)
+    $related_contacts = $this->getCaseContacts($case['id']);
     foreach($related_contacts as $related_contact_id) {
       // Make sure an email is only send once for a case.
       if (isset(self::$alreadySend[$case['id']][$related_contact_id])) {
@@ -48,31 +48,26 @@ class CRM_Emailapi_CivirulesAction_SendToRolesOnCase extends CRM_Civirules_Actio
     }
   }
 
-  protected function getRelatedContacts($case_id, $relationship_type) {
-    $dir = 'b';
-    if (stripos($relationship_type, 'b_') === 0) {
-      $dir = 'a';
-    }
-    $relationship_type_id = substr($relationship_type, 2);
-    $sql = "SELECT contact_id_{$dir} AS contact_id
-        FROM civicrm_relationship r
-        INNER JOIN civicrm_contact c ON c.id = r.contact_id_{$dir}
-        WHERE is_active = 1 AND (start_date IS NULL OR start_date <= CURRENT_DATE()) AND (end_date IS NULL OR end_date >= CURRENT_DATE())
-        AND c.is_deleted = 0
-        AND case_id = %1";
-    $sqlParams[1] = [$case_id, 'Integer'];
-    if ($relationship_type_id) {
-      $sql .= " AND relationship_type_id = %2";
-      $sqlParams[2] = [$relationship_type_id, 'Integer'];
-    }
-    $dao = CRM_Core_DAO::executeQuery($sql,$sqlParams);
+  /**
+   * Fetch all the case contacts for particular case id.
+   *
+   * @param string $caseId
+   *   Case id.
+   *
+   * @return array
+   *   Case contacts results.
+   */
+  protected function getCaseContacts($caseId) {
     $contacts = [];
-    if ($dao) {
-      while($dao->fetch()) {
-        if (!in_array($dao->contact_id, $contacts)) {
-          $contacts[] = $dao->contact_id;
-        }
-      }
+    $caseContacts = civicrm_api4('CaseContact', 'get', [
+      'where' => [
+        ['case_id', '=', $caseId],
+      ],
+      'checkPermissions' => FALSE,
+    ]);
+
+    foreach ($caseContacts as $caseContact) {
+      $contacts[] = $caseContact['contact_id'];
     }
     return $contacts;
   }

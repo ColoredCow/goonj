@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## Version 2.16.0 (2024-11-08)
+
+* Replace legacy exceptions.
+* Update to EntityFrameworkV2.
+
+## Version 2.15 (2024-09-05)
+
+* Fixed notice in Send Email API
+* Added event tokens to the form processor action
+* Fixed issue in Send to contact reference field
+
 ## Version 2.14 (2024-03-09)
 
 * PHP8.2 + Smarty3+ compatibility.
