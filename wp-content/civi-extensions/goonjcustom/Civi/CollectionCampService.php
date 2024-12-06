@@ -35,6 +35,7 @@ class CollectionCampService extends AutoSubscriber {
   const ENTITY_SUBTYPE_NAME = 'Collection_Camp';
   const MATERIAL_RELATIONSHIP_TYPE_NAME = 'Material Management Team of';
   const DEFAULT_FINANCIAL_TYPE_ID = 1;
+  const ACCOUNTS_TEAM_EMAIL = '"Goonj Accounts Team" <accounts@goonj.org>';
 
   private static $individualId = NULL;
   private static $collectionCampAddress = NULL;
@@ -1347,7 +1348,7 @@ class CollectionCampService extends AutoSubscriber {
       if ($form->getAction() == \CRM_Core_Action::ADD) {
         // Set the default value for 'Receipt From'.
         $defaults = [];
-        $defaults['from_email_address'] = '"Goonj Accounts Team" <accounts@goonj.org>';
+        $defaults['from_email_address'] = self::ACCOUNTS_TEAM_EMAIL;
         $form->setDefaults($defaults);
       }
     }
