@@ -13,6 +13,7 @@ use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
+use Civi\HelperService;
 
 /**
  *
@@ -350,8 +351,8 @@ class GoonjActivitiesService extends AutoSubscriber {
     $tabConfigs = [
       'activities' => [
         'title' => ts('Activities'),
-        'module' => 'afsearchCollectionCampActivity',
-        'directive' => 'afsearch-collection-camp-activity',
+        'module' => 'afsearchGoonjAllActivity',
+        'directive' => 'afsearch-goonj-all-activity',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
@@ -371,15 +372,22 @@ class GoonjActivitiesService extends AutoSubscriber {
       ],
       'campOutcome' => [
         'title' => ts('Outcome'),
-        'module' => 'afsearchCampOutcome',
-        'directive' => 'afsearch-camp-outcome',
+        'module' => 'afsearchGoonjActivitiesOutcomeView',
+        'directive' => 'afsearch-goonj-activities-outcome-view',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'campFeedback' => [
         'title' => ts('Volunteer Feedback'),
-        'module' => 'afsearchVolunteerFeedback',
-        'directive' => 'afsearch-volunteer-feedback',
+        'module' => 'afsearchGoonjActivityVolunteerFeedback',
+        'directive' => 'afsearch-goonj-activity-volunteer-feedback',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+      ],
+      'attendeeFeedback' => [
+        'title' => ts('Attendee Feedback'),
+        'module' => 'afsearchGoonjActivityAttendeeFeedbacks',
+        'directive' => 'afsearch-goonj-activity-attendee-feedbacks',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
@@ -579,5 +587,159 @@ class GoonjActivitiesService extends AutoSubscriber {
         ->execute();
     }
   }
+
+  /**
+   *
+   */
+  public static function sendActivityLogisticsEmail($collectionCamp) {
+    try {
+      $campId = $collectionCamp['id'];
+      $activityCode = $collectionCamp['title'];
+      $activityOffice = $collectionCamp['Goonj_Activities.Goonj_Office'];
+      $activityAddress = $collectionCamp['Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'];
+      $activityAttendedById = $collectionCamp['Logistics_Coordination.Camp_to_be_attended_by'];
+      $logisticEmailSent = $collectionCamp['Logistics_Coordination.Email_Sent'];
+      $outcomeFormLink = $collectionCamp['Goonj_Activities.Select_Goonj_POC_Attendee_Outcome_Form'];
+
+      $startDate = new \DateTime($collectionCamp['Goonj_Activities.Start_Date']);
+
+      $today = new \DateTimeImmutable();
+      $endOfToday = $today->setTime(23, 59, 59);
+
+      if (!$logisticEmailSent && $startDate <= $endOfToday) {
+        $campAttendedBy = Contact::get(FALSE)
+          ->addSelect('email.email', 'display_name')
+          ->addJoin('Email AS email', 'LEFT')
+          ->addWhere('id', '=', $activityAttendedById)
+          ->execute()->single();
+
+        $attendeeEmail = $campAttendedBy['email.email'];
+        $attendeeName = $campAttendedBy['display_name'];
+        $from = HelperService::getDefaultFromEmail();
+
+        if (!$attendeeEmail) {
+          throw new \Exception('Attendee email missing');
+        }
+
+        $mailParams = [
+          'subject' => 'Goonj Activity Notification: ' . $activityCode . ' at ' . $activityAddress,
+          'from' => $from,
+          'toEmail' => $attendeeEmail,
+          'replyTo' => $from,
+          'html' => self::getLogisticsEmailHtml($attendeeName, $campId, $activityAttendedById, $activityOffice, $activityCode, $activityAddress, $outcomeFormLink),
+        ];
+
+        $emailSendResult = \CRM_Utils_Mail::send($mailParams);
+
+        if ($emailSendResult) {
+          EckEntity::update('Collection_Camp', FALSE)
+            ->addValue('Logistics_Coordination.Email_Sent', 1)
+            ->addWhere('id', '=', $campId)
+            ->execute();
+        }
+      }
+    }
+    catch (\Exception $e) {
+      \Civi::log()->error("Error in sendLogisticsEmail for $campId " . $e->getMessage());
+    }
+
+  }
+
+
+    /**
+   *
+   */
+  public static function sendActivityVolunteerFeedbackEmail($collectionCamp) {
+
+    try {
+      $endDate = new \DateTime($collectionCamp['Goonj_Activities.End_Date']);
+      $collectionCampId = $collectionCamp['id'];
+      $endDateFormatted = $endDate->format('Y-m-d');
+      $feedbackEmailSent = $collectionCamp['Logistics_Coordination.Feedback_Email_Sent'];
+      $initiatorId = $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
+
+      $campAddress = $collectionCamp['Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'];
+      $volunteerFeedbackForm = $collectionCamp['Goonj_Activities.Select_Volunteer_Feedback_Form'] ?? NULL;
+
+      // Get recipient email and name.
+      $campAttendedBy = Contact::get(TRUE)
+        ->addSelect('email.email', 'display_name')
+        ->addJoin('Email AS email', 'LEFT')
+        ->addWhere('id', '=', $initiatorId)
+        ->execute()->single();
+
+      $contactEmailId = $campAttendedBy['email.email'];
+      $organizingContactName = $campAttendedBy['display_name'];
+      $from = HelperService::getDefaultFromEmail();
+
+      // Send email if the end date is today or earlier.
+      if (!$feedbackEmailSent && $endDateFormatted <= $todayFormatted) {
+        $mailParams = [
+          'subject' => 'Thank You for Organizing the Goonj Activity! Share Your Feedback.',
+          'from' => $from,
+          'toEmail' => $contactEmailId,
+          'replyTo' => $from,
+          'html' => self::goonjcustom_volunteer_feedback_collection_activity_email_html($organizingContactName, $collectionCampId, $campAddress, $volunteerFeedbackForm),
+        ];
+        $feedbackEmailSendResult = \CRM_Utils_Mail::send($mailParams);
+
+        if ($feedbackEmailSendResult) {
+          EckEntity::update('Collection_Camp', TRUE)
+            ->addValue('Logistics_Coordination.Feedback_Email_Sent', 1)
+            ->addWhere('id', '=', $collectionCampId)
+            ->execute();
+        }
+      }
+
+    }
+    catch (\Exception $e) {
+      \Civi::log()->error("Error in sendVolunteerEmail for $campId " . $e->getMessage());
+    }
+
+  }
+
+  /**
+   *
+   */
+  private static function getLogisticsEmailHtml($contactName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress, $outcomeFormLink) {
+    $homeUrl = \CRM_Utils_System::baseCMSURL();
+    // Construct the full URLs for the forms.
+    $campOutcomeFormUrl = $homeUrl . $outcomeFormLink . '#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $campAttendedById;
+
+    $html = "
+    <p>Dear $contactName,</p>
+    <p>Thank you for attending the goonj activity <strong>$campCode</strong> at <strong>$campAddress</strong>. Their is one forms that require your attention during and after the goonj activity:</p>
+    <ol>
+        Please complete this form from the goonj activity location once the goonj activity ends.</li>
+        <li><a href=\"$campOutcomeFormUrl\">Goonj Activity Outcome Form</a><br>
+        This feedback form should be filled out after the goonj activity/session ends, once you have an overview of the event's outcomes.</li>
+    </ol>
+    <p>We appreciate your cooperation.</p>
+    <p>Warm Regards,<br>Urban Relations Team</p>";
+
+    return $html;
+  }
+
+  /**
+ *
+ */
+private static function goonjcustom_volunteer_feedback_collection_activity_email_html($organizingContactName, $collectionCampId, $campAddress, $volunteerFeedbackForm) {
+  $homeUrl = \CRM_Utils_System::baseCMSURL();
+
+  // URL for the volunteer feedback form.
+  $campVolunteerFeedback = $homeUrl . $volunteerFeedbackForm . '#?Eck_Collection_Camp1=' . $collectionCampId;
+
+
+  $html = "
+      <p>Dear $organizingContactName,</p>
+      <p>Thank you for stepping up and organising the recent goonj activity  at <strong>$campAddress</strong>! Your time, effort, and enthusiasm made all the difference, and we hope that it was a meaningful effort for you as well.</p>
+      <p>To help us improve, we’d love to hear your thoughts and experiences. Kindly take a few minutes to fill out our feedback form. Your input will be valuable to us:</p>
+      <p><a href=\"$campVolunteerFeedback\">Feedback Form Link</a></p>
+      <p>Feel free to share any highlights, suggestions, or challenges you faced. We're eager to learn how we can make it better together!</p>
+      <p>We look forward to continuing this journey together!</p>
+      <p>Warm Regards,<br>Team Goonj</p>";
+
+  return $html;
+}
 
 }

@@ -18,7 +18,6 @@ $headings = [
   'collection-camp' => 'Collection Camp',
   'dropping-center' => 'Dropping Center',
   'institution-collection-camp' => 'Collection Camp',
-  'institution-dropping-center' => 'Institution Dropping Center',
   'processing-center' => 'Processing Center',
   'induction-schedule' => 'Induction Schedule',
   'goonj-activities' => 'Goonj Activities'
@@ -54,13 +53,6 @@ $institution_collection_camp_register_link = sprintf(
     $action_target['Institution_Collection_Camp_Intent.District_City'],
 );
 
-$institution_dropping_center_register_link = sprintf(
-    '/volunteer-registration/form/#?source=%s&state_province_id=%s&city=%s',
-    $action_target['title'],
-    $action_target['Institution_Dropping_Center_Intent.State'],
-    $action_target['Institution_Dropping_Center_Intent.District_City'],
-);
-
 $material_contribution_link = sprintf(
     '/collection-camp-contribution?source=%s&target_id=%s&state_province_id=%s&city=%s',
     $action_target['title'],
@@ -75,14 +67,6 @@ $institution_collection_camp_material_contribution_link = sprintf(
     $action_target['id'],
     $action_target['Institution_Collection_Camp_Intent.State'],
     $action_target['Institution_Collection_Camp_Intent.District_City'],
-);
-
-$institution_dropping_center_material_contribution_link = sprintf(
-    '/institution-dropping-center-contribution?source=%s&target_id=%s&state_province_id=%s&city=%s',
-    $action_target['title'],
-    $action_target['id'],
-    $action_target['Institution_Dropping_Center_Intent.State'],
-    $action_target['Institution_Dropping_Center_Intent.District_City'],
 );
 
 $sourceField = CustomField::get(FALSE)
@@ -122,9 +106,11 @@ $pu_material_contribution_check_link = sprintf(
 );
 
 $attendee_activity_feedback_link = sprintf(
-    '/attendee-activity-feedback/#?Eck_Collection_Camp1=%s',
-    $action_target['id'],
+    '%s#?Eck_Collection_Camp1=%s',
+    $action_target['Goonj_Activities.Select_Attendee_feedback_form'],
+    $action_target['id']
 );
+
 
 $puSourceField = CustomField::get(FALSE)
   ->addSelect('id')
@@ -181,17 +167,9 @@ $target_data = [
     'include_attendee_feedback_link' => $attendee_activity_feedback_link,
     'should_include_attendee_feedback'=> $action_target['Goonj_Activities.Include_Attendee_Feedback_Form']
   ],
-  'institution-dropping-center' => [
-    'volunteer_name' => 'Institution_Dropping_Center_Intent.Institution_POC',
-    'address' => 'Institution_Dropping_Center_Intent.Dropping_Center_Address',
-    'address_label' => 'Goonj volunteer run dropping center (Address)',
-    'contribution_link' => $institution_dropping_center_material_contribution_link,
-    'donation_link' => $donation_link,
-    'register_link' => $institution_dropping_center_register_link,
-  ],
 ];
 
-if (in_array($target, ['collection-camp','institution-collection-camp', 'dropping-center', 'goonj-activities', 'institution-dropping-center'])) :
+if (in_array($target, ['collection-camp','institution-collection-camp', 'dropping-center', 'goonj-activities'])) :
   $target_info = $target_data[$target];
 
   try {
@@ -219,7 +197,7 @@ if (in_array($target, ['collection-camp','institution-collection-camp', 'droppin
     </div>
     <table class="wp-block-gb-table">
         <tbody>
-            <?php if ($target === 'dropping-center' || $target === 'institution-dropping-center') : ?>
+            <?php if ($target === 'dropping-center') : ?>
             <tr class="wp-block-gb-table-row">
                 <td class="wp-block-gb-table-cell wp-block-gb-table-header">Volunteer name</td>
                 <td class="wp-block-gb-table-cell"><?php echo esc_html($volunteer_name); ?></td>
@@ -338,3 +316,4 @@ if (in_array($target, ['collection-camp','institution-collection-camp', 'droppin
         <?php endif; ?>
     </div>
   <?php endif;
+  
