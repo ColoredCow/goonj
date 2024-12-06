@@ -10,9 +10,9 @@ use Civi\Api4\Group;
 use Civi\Api4\GroupContact;
 use Civi\Api4\MessageTemplate;
 use Civi\Api4\OptionValue;
-use Civi\Api4\StateProvince;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
+use Civi\Api4\StateProvince;
 
 /**
  *
@@ -86,16 +86,10 @@ class CollectionBaseService extends AutoSubscriber {
     $collectionSourceId = self::$generatePosterRequest['collectionSourceId'];
     $messageTemplateId = self::$generatePosterRequest['messageTemplateId'];
 
-    \Civi::log()->info("Starting poster generation process.");
-    \Civi::log()->debug("Collection Source ID: $collectionSourceId, Message Template ID: $messageTemplateId");
-
     $messageTemplate = MessageTemplate::get(FALSE)
       ->addWhere('id', '=', $messageTemplateId)
       ->execute()->single();
-
-    \Civi::log()->info("Message template not found. Template ID: $messageTemplateId");
     $html = $messageTemplate['msg_html'];
-    \Civi::log()->debug("Rendered HTML:\n" . $rendered['html']);
     // Regular expression to find <style>...</style> and replace it with {literal}<style>...</style>{/literal}.
     $pattern = '/<style\b[^>]*>(.*?)<\/style>/is';
     $replacement = '{literal}<style>$1</style>{/literal}';
@@ -117,10 +111,7 @@ class CollectionBaseService extends AutoSubscriber {
     $baseFileName = self::generateBaseFileName($collectionSourceId);
 
     $fileName = \CRM_Utils_File::makeFileName($baseFileName);
-    Civi::log()->debug("file name: $fileName");
     $tempFilePath = \CRM_Utils_File::tempnam($baseFileName);
-
-    Civi::log()->debug("Temporary file path for poster: $tempFilePath");
 
     $posterGenerated = self::html2image($rendered['html'], $tempFilePath);
 
@@ -167,26 +158,15 @@ class CollectionBaseService extends AutoSubscriber {
     $puppeteerJsPath = escapeshellarg(\CRM_Goonjcustom_ExtensionUtil::path('js/puppeteer.js'));
     $htmlContent = escapeshellarg($htmlContent);
 
-    // Log initial message about starting the conversion process.
-    \Civi::log()->info("Starting HTML to image conversion.");
-    \Civi::log()->debug("Node path: $nodePath, Puppeteer script path: $puppeteerJsPath, Output path: $outputPath");
-
-    // Prepare the command for execution.
     $command = "$nodePath $puppeteerJsPath $htmlContent $outputPath";
-    \Civi::log()->debug("Executing command: $command");
-
-    // Execute the command.
     exec($command, $output, $returnCode);
-
-    // Log output and result of the command execution.
-    \Civi::log()->debug("Command output: " . implode("\n", $output));
 
     if ($returnCode === 0) {
       \Civi::log()->info("Poster image successfully created at: $outputPath");
       return TRUE;
     }
     else {
-      \Civi::log()->error("Failed to generate poster image. Return code: $returnCode, Output: " . implode("\n", $output));
+      \Civi::log()->debug("Failed to generate poster image, return code: $returnCode");
       return FALSE;
     }
   }
