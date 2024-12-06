@@ -257,11 +257,6 @@ class CollectionBaseService extends AutoSubscriber {
           ->execute()
           ->single();
 
-        \Civi::log()->info(__METHOD__, [
-          'groupName' => $groupName,
-          'customField' => $customField,
-        ]);
-
         if ($customField) {
           $stateFields[] = [
             'tableName' => $customField['custom_group_id.table_name'],
@@ -526,7 +521,7 @@ class CollectionBaseService extends AutoSubscriber {
       'Dropping_Center' => 'Dropping_Centre',
       'Institution_Collection_Camp' => 'Institution_Collection_Camp_Intent',
       'Goonj_Activities' => 'Goonj_Activities',
-      // 'Institution_Dropping_Center' => 'Institution_Dropping_Center_Intent',
+      'Institution_Dropping_Center' => 'Institution_Dropping_Center_Intent',
     ];
   }
 
