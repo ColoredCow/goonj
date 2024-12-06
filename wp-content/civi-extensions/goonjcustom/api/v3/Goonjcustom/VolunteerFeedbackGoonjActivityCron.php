@@ -9,7 +9,7 @@ use Civi\Api4\OptionValue;
 use Civi\GoonjActivitiesService;
 
 /**
- * Goonjcustom.VolunteerFeedbackCollectionCampCron API specification (optional)
+ * Goonjcustom.VolunteerFeedbackGoonjActivitiesCron API specification (optional)
  * This is used for documentation and validation.
  *
  * @param array $spec
@@ -22,7 +22,7 @@ function _civicrm_api3_goonjcustom_volunteer_feedback_goonj_activity_cron_spec(&
 }
 
 /**
- * Goonjcustom.CollectionCampCron API.
+ * Goonjcustom.GoonjActivitiesCron API.
  *
  * @param array $params
  *

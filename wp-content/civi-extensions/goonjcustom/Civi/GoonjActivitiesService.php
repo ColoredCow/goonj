@@ -677,7 +677,7 @@ class GoonjActivitiesService extends AutoSubscriber {
           'from' => $from,
           'toEmail' => $contactEmailId,
           'replyTo' => $from,
-          'html' => self::goonjcustom_volunteer_feedback_collection_activity_email_html($organizingContactName, $collectionCampId, $campAddress, $volunteerFeedbackForm),
+          'html' => self::getVolunteerFeedbackCollectionActivityEmailHtml($organizingContactName, $collectionCampId, $campAddress, $volunteerFeedbackForm),
         ];
         $feedbackEmailSendResult = \CRM_Utils_Mail::send($mailParams);
 
@@ -721,7 +721,7 @@ class GoonjActivitiesService extends AutoSubscriber {
   /**
    *
    */
-  private static function goonjcustom_volunteer_feedback_collection_activity_email_html($organizingContactName, $collectionCampId, $campAddress, $volunteerFeedbackForm) {
+  private static function getVolunteerFeedbackCollectionActivityEmailHtml($organizingContactName, $collectionCampId, $campAddress, $volunteerFeedbackForm) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
 
     // URL for the volunteer feedback form.
