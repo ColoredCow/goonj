@@ -71,6 +71,7 @@ class CollectionCampService extends AutoSubscriber {
       '&hook_civicrm_buildForm' => [
       ['autofillMonetaryFormSource'],
       ['autofillFinancialType'],
+      ['autofillReceiptFrom'],
       ],
       '&hook_civicrm_alterMailParams' => [
       ['alterReceiptMail'],
@@ -693,7 +694,7 @@ class CollectionCampService extends AutoSubscriber {
 
     foreach ($array as $item) {
       if ($item['entity_table'] === 'civicrm_eck_collection_camp' &&
-          $item['custom_field_id'] === $stateFieldId) {
+        $item['custom_field_id'] === $stateFieldId) {
         return $item;
       }
     }
@@ -725,9 +726,9 @@ class CollectionCampService extends AutoSubscriber {
     $contactFieldId = $collectionCampContactId['id'];
 
     $contactItemIndex = array_search(TRUE, array_map(fn($item) =>
-      $item['entity_table'] === 'civicrm_eck_collection_camp' &&
-      $item['custom_field_id'] == $contactFieldId,
-      $filteredItems
+    $item['entity_table'] === 'civicrm_eck_collection_camp' &&
+    $item['custom_field_id'] == $contactFieldId,
+    $filteredItems
     ));
 
     return $contactItemIndex !== FALSE ? $filteredItems[$contactItemIndex] : FALSE;
@@ -838,7 +839,7 @@ class CollectionCampService extends AutoSubscriber {
       'toEmail' => $mmtEmail,
       'replyTo' => $fromEmail['label'],
       'html' => self::goonjcustom_material_management_email_html($collectionCampId, $campCode, $campAddress, $vehicleDispatchId),
-      // 'messageTemplateID' => 76, // Uncomment if using a message template
+    // 'messageTemplateID' => 76, // Uncomment if using a message template
     ];
     \CRM_Utils_Mail::send($mailParams);
 
@@ -883,9 +884,9 @@ class CollectionCampService extends AutoSubscriber {
     $goonjOfficeFieldId = $goonjOfficeId['id'];
 
     $goonjOfficeIndex = array_search(TRUE, array_map(fn($item) =>
-      $item['entity_table'] === 'civicrm_eck_collection_source_vehicle_dispatch' &&
-      $item['custom_field_id'] == $goonjOfficeFieldId,
-      $filteredItems
+    $item['entity_table'] === 'civicrm_eck_collection_source_vehicle_dispatch' &&
+    $item['custom_field_id'] == $goonjOfficeFieldId,
+    $filteredItems
     ));
 
     return $goonjOfficeIndex !== FALSE ? $filteredItems[$goonjOfficeIndex] : FALSE;
@@ -1325,6 +1326,28 @@ class CollectionCampService extends AutoSubscriber {
         $defaults = [];
         // Example: 'Donation' (adjust ID as per your requirement)
         $defaults['financial_type_id'] = self::DEFAULT_FINANCIAL_TYPE_ID;
+        $form->setDefaults($defaults);
+      }
+    }
+  }
+
+  /**
+   * Implements hook_civicrm_buildForm().
+   *
+   * Auto-fills custom fields in the form based on the provided parameters.
+   *
+   * @param string $formName
+   *   The name of the form being built.
+   * @param object $form
+   *   The form object.
+   */
+  public function autofillReceiptFrom($formName, &$form) {
+    // Check if the form is the Contribution form.
+    if ($formName === 'CRM_Contribute_Form_Contribution') {
+      if ($form->getAction() == \CRM_Core_Action::ADD) {
+        // Set the default value for 'Receipt From'.
+        $defaults = [];
+        $defaults['from_email_address'] = '"Goonj Accounts Team" <accounts@goonj.org>';
         $form->setDefaults($defaults);
       }
     }
