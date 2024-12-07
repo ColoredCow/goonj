@@ -1,12 +1,8 @@
 const puppeteer = require('puppeteer');
 
-require('dotenv').config();
-
 (async () => {
-    const executablePath = process.env.NODE_ENV === 'production' ? process.env.EXECUTABLE_PATH : '';
-    console.log(executablePath,'executablePath')
     const browser = await puppeteer.launch({
-        executablePath: executablePath
+        executablePath: '/home/apache/.cache/puppeteer/chrome/linux-129.0.6668.89/chrome-linux64/chrome',
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
 
