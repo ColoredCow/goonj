@@ -797,20 +797,20 @@ class InstitutionCollectionCampService extends AutoSubscriber {
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
-      'monetaryContribution' => [
-        'title' => ts('Monetary Contribution'),
-        'module' => 'afsearchMonetaryContribution',
-        'directive' => 'afsearch-monetary-contribution',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['account_team'],
-      ],
-      'monetaryContributionForUrbanOps' => [
-        'title' => ts('Monetary Contribution'),
-        'module' => 'afsearchMonetaryContributionForUrbanOps',
-        'directive' => 'afsearch-monetary-contribution-for-urban-ops',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops'],
-      ],
+      // 'monetaryContribution' => [
+      //   'title' => ts('Monetary Contribution'),
+      //   'module' => 'afsearchMonetaryContribution',
+      //   'directive' => 'afsearch-monetary-contribution',
+      //   'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      //   'permissions' => ['account_team'],
+      // ],
+      // 'monetaryContributionForUrbanOps' => [
+      //   'title' => ts('Monetary Contribution'),
+      //   'module' => 'afsearchMonetaryContributionForUrbanOps',
+      //   'directive' => 'afsearch-monetary-contribution-for-urban-ops',
+      //   'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      //   'permissions' => ['goonj_chapter_admin', 'urbanops'],
+      // ],
     ];
 
     foreach ($tabConfigs as $key => $config) {
