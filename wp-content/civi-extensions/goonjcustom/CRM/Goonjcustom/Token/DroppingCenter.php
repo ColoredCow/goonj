@@ -84,7 +84,14 @@ class CRM_Goonjcustom_Token_DroppingCenter extends AbstractTokenSubscriber {
         break;
 
       case 'landmark':
-        $value = $collectionSource['Dropping_Centre.Landmark_or_Near_by_area'];
+        $landmarkOrNearbyArea = $collectionSource['Dropping_Centre.Landmark_or_Near_by_area'];
+
+        if (!empty($landmarkOrNearbyArea)) {
+          $value = "(" . $landmarkOrNearbyArea . ")";
+        }
+        else {
+          $value = '';
+        }
         break;
 
       default:
