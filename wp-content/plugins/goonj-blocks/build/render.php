@@ -183,7 +183,7 @@ $target_data = [
     'should_include_attendee_feedback'=> $action_target['Goonj_Activities.Include_Attendee_Feedback_Form']
   ],
   'institution-dropping-center' => [
-    'volunteer_name' => 'Institution_Dropping_Center_Intent.Institution_POC',
+    'volunteer_name' => 'Institution_Dropping_Center_Intent.Institution_POC.display_name',
     'address' => 'Institution_Dropping_Center_Intent.Dropping_Center_Address',
     'address_label' => 'Goonj volunteer run dropping center (Address)',
     'contribution_link' => $institution_dropping_center_material_contribution_link,

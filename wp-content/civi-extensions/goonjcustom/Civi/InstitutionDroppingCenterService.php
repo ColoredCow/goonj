@@ -390,6 +390,13 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
+      'materialContribution' => [
+        'title' => ts('Material Contribution'),
+        'module' => 'afsearchInstitutionDroppingCenterMaterialContribution',
+        'directive' => 'afsearch-institution-dropping-center-material-contribution',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+      ],
       'status' => [
         'title' => ts('Status'),
         'module' => 'afsearchInstitutionDroppingCenterStatus',
@@ -404,8 +411,8 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
-      'donation' => [
-        'title' => ts('Donation'),
+      'donationBox' => [
+        'title' => ts('Donation Box'),
         'module' => 'afsearchInstitutionDroppingCenterDonation',
         'directive' => 'afsearch-institution-dropping-center-donation',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
@@ -416,6 +423,13 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
         'module' => 'afformInstitutionDroppingCenterOutcome',
         'directive' => 'afform-institution-dropping-center-outcome',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCampService.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+      ],
+      'feedback' => [
+        'title' => ts('Feedback'),
+        'module' => 'afsearchInstitutionDroppingCenterFeedback',
+        'directive' => 'afsearch-institution-dropping-center-feedback',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'monetaryContribution' => [
