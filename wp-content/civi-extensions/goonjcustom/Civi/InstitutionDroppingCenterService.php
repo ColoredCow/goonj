@@ -197,7 +197,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
 
     $pocId = $droppingCenterData['Institution_Dropping_Center_Intent.Institution_POC'];
     $goonjOffice = $droppingCenterData['Institution_Dropping_Center_Review.Goonj_Office'];
-    $goonjOfficeNam = $droppingCenterData['Institution_Dropping_Center_Review.Goonj_Office.display_name'];
+    $goonjOfficeName = $droppingCenterData['Institution_Dropping_Center_Review.Goonj_Office.display_name'];
 
     $recipientId = $isSelfManaged ? $pocId : $campAttendedBy;
     if (!$recipientId) {
