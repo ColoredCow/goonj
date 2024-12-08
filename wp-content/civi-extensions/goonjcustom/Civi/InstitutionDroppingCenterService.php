@@ -190,12 +190,13 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     }
 
     $droppingCenterData = EckEntity::get('Collection_Camp', TRUE)
-      ->addSelect('Institution_Dropping_Center_Intent.Institution_POC')
+      ->addSelect('Institution_Dropping_Center_Intent.Institution_POC', 'Institution_Dropping_Center_Review.Goonj_Office')
       ->addWhere('id', '=', $institutionDroppingCenterId)
       ->execute()
       ->single();
 
     $pocId = $droppingCenterData['Institution_Dropping_Center_Intent.Institution_POC'];
+    $goonjOffice = $droppingCenterData['Institution_Dropping_Center_Review.Goonj_Office'];
 
     $recipientId = $isSelfManaged ? $pocId : $campAttendedBy;
     if (!$recipientId) {
@@ -212,7 +213,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     $initiatorName = $recipientContactInfo['display_name'];
 
     // Send the dispatch email.
-    self::sendDispatchEmail($email, $initiatorName, $institutionDroppingCenterId, $recipientId, NULL);
+    self::sendDispatchEmail($email, $initiatorName, $institutionDroppingCenterId, $recipientId, $goonjOffice);
   }
 
   /**
