@@ -220,7 +220,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
    */
   public static function sendDispatchEmail($email, $initiatorName, $institutionDroppingCenterId, $contactId, $goonjOffice) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
-    $vehicleDispatchFormUrl = $homeUrl . '/institution-dropping-center-vehicle-dispatch/#?Camp_Vehicle_Dispatch.Collection_Camp=' . $institutionDroppingCenterId . '&Camp_Vehicle_Dispatch.Filled_by=' . $contactId . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $goonjOffice . '&Eck_Collection_Camp1=' . $institutionDroppingCenterId;
+    $vehicleDispatchFormUrl = $homeUrl . '/institution-dropping-center-vehicle-dispatch/#?Camp_Vehicle_Dispatch.Institution_Dropping_Center=' . $institutionDroppingCenterId . '&Camp_Vehicle_Dispatch.Filled_by=' . $contactId . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $goonjOffice . '&Eck_Collection_Camp1=' . $institutionDroppingCenterId;
 
     $emailHtml = "
     <html>
@@ -347,7 +347,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
   public static function getMmtEmailHtml($institutionDroppingCenterId, $institutionDroppingCenter, $institutionDroppingCenterAddress, $vehicleDispatchId, $mmtId) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
     $materialdispatchUrl = $homeUrl . '/dropping-center-acknowledgement-for-dispatch/#?Eck_Collection_Source_Vehicle_Dispatch1=' . $vehicleDispatchId
-        . '&Camp_Vehicle_Dispatch.Collection_Camp=' . $institutionDroppingCenterId
+        . '&Camp_Vehicle_Dispatch.Institution_Dropping_Center=' . $institutionDroppingCenterId
         . '&id=' . $vehicleDispatchId
         . '&Eck_Collection_Camp1=' . $institutionDroppingCenterId
         . '&Acknowledgement_For_Logistics.Verified_By=' . $mmtId;
