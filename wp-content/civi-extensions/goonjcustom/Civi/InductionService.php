@@ -509,6 +509,7 @@ class InductionService extends AutoSubscriber {
         ->addSelect('id', 'source_contact_id', 'created_date')
         ->addWhere('activity_type_id:name', '=', 'Induction')
         ->addWhere('status_id:name', '=', 'To be scheduled')
+        ->addWhere('Induction_Fields.Follow_Up_Email_Sent', '=', 0)
         ->addWhere('created_date', '<', date('Y-m-d H:i:s', $followUpTimestamp))
         ->setLimit($batchSize)
         ->setOffset($offset)
@@ -541,17 +542,26 @@ class InductionService extends AutoSubscriber {
             'template_id' => $template['id'],
           ];
 
-          civicrm_api3('Email', 'send', $emailParams);
+          $emailSent= civicrm_api3('Email', 'send', $emailParams);
 
           $contact = Contact::update(FALSE)
             ->addValue('Individual_fields.Induction_slot_booking_follow_up_email_sent', 1)
             ->addWhere('id', '=', $activity['source_contact_id'])
             ->execute();
+          $emailSentDate = new \DateTime();
+
+          $timeIn12Hours = (clone $emailSentDate)->modify('+12 hours');
+
+          $formattedEmailSentDate = $emailSentDate->format('Y-m-d H:i:s');
+          $results = Activity::update(FALSE)
+            ->addValue('Induction_Fields.Follow_Up_Email_Sent', 1)
+            ->addValue('Induction_Fields.Follow_Up_Email_Sent_Date',$formattedEmailSentDate )
+            ->addWhere('id', '=', $activity['id'])
+            ->execute();
 
         }
       }
 
-      // Move to the next batch by increasing the offset.
       $offset += $batchSize;
 
     } while (count($unscheduledInductionActivities) === $batchSize);
@@ -581,6 +591,8 @@ class InductionService extends AutoSubscriber {
         ->addSelect('source_contact_id')
         ->addWhere('activity_type_id:name', '=', 'Induction')
         ->addWhere('status_id:name', '=', 'To be scheduled')
+        ->addWhere('Induction_Fields.Follow_Up_Email_Sent', '=', 1)
+        ->addWhere('Induction_Fields.Follow_Up_Email_Sent_Date', '<', date('Y-m-d H:i:s', $followUpTimestamp))
         ->execute()->column('source_contact_id');
 
       do {
@@ -588,7 +600,6 @@ class InductionService extends AutoSubscriber {
         $contacts = Contact::get(FALSE)
           ->addWhere('Individual_fields.Induction_slot_booking_follow_up_email_sent', '=', 1)
           ->addWhere('id', 'IN', $unscheduledInductionContactIds)
-          ->addWhere('modified_date', '<', date('Y-m-d H:i:s', $followUpTimestamp))
           ->setLimit($batchSize)
           ->setOffset($offset)->execute();
 
