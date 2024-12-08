@@ -121,10 +121,12 @@ class MaterialContributionService extends AutoSubscriber {
 
     ? 'Material_Contribution.Collection_Camp'
     : (($subtype == 'Dropping_Center')
-        ? 'Material_Contribution.Dropping_Center'
-        : (($subtype == 'Institution_Collection_Camp')
-            ? 'Material_Contribution.Institution_Collection_Camp'
-            : NULL));
+    ? 'Material_Contribution.Dropping_Center'
+    : (($subtype == 'Institution_Collection_Camp')
+        ? 'Material_Contribution.Institution_Collection_Camp'
+        : (($subtype == 'Institution_Dropping_Center')
+            ? 'Material_Contribution.Institution_Dropping_Center'
+            : NULL)));
 
     $activity = Activity::get(FALSE)
       ->addSelect($campField)
@@ -142,7 +144,9 @@ class MaterialContributionService extends AutoSubscriber {
         ? 'Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_'
         : (($subtype == 'Institution_Collection_Camp')
             ? 'Institution_Collection_Camp_Intent.Collection_Camp_Address'
-            : NULL));
+            : (($subtype == 'Institution_Dropping_Center')
+                ? 'Institution_Dropping_Center_Intent.Dropping_Center_Address'
+                : NULL)));
 
     $collectionCamp = EckEntity::get('Collection_Camp', TRUE)
       ->addSelect($addressField)
