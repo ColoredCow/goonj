@@ -190,13 +190,14 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     }
 
     $droppingCenterData = EckEntity::get('Collection_Camp', TRUE)
-      ->addSelect('Institution_Dropping_Center_Intent.Institution_POC', 'Institution_Dropping_Center_Review.Goonj_Office')
+      ->addSelect('Institution_Dropping_Center_Intent.Institution_POC', 'Institution_Dropping_Center_Review.Goonj_Office', 'Institution_Dropping_Center_Review.Goonj_Office.display_name')
       ->addWhere('id', '=', $institutionDroppingCenterId)
       ->execute()
       ->single();
 
     $pocId = $droppingCenterData['Institution_Dropping_Center_Intent.Institution_POC'];
     $goonjOffice = $droppingCenterData['Institution_Dropping_Center_Review.Goonj_Office'];
+    $goonjOfficeNam = $droppingCenterData['Institution_Dropping_Center_Review.Goonj_Office.display_name'];
 
     $recipientId = $isSelfManaged ? $pocId : $campAttendedBy;
     if (!$recipientId) {
@@ -213,7 +214,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     $initiatorName = $recipientContactInfo['display_name'];
 
     // Send the dispatch email.
-    self::sendDispatchEmail($email, $initiatorName, $institutionDroppingCenterId, $recipientId, $goonjOffice);
+    self::sendDispatchEmail($email, $initiatorName, $institutionDroppingCenterId, $recipientId, $goonjOffice, $goonjOfficeName);
   }
 
   /**
@@ -221,7 +222,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
    */
   public static function sendDispatchEmail($email, $initiatorName, $institutionDroppingCenterId, $contactId, $goonjOffice) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
-    $vehicleDispatchFormUrl = $homeUrl . '/institution-dropping-center-vehicle-dispatch/#?Camp_Vehicle_Dispatch.Collection_Camp=' . $institutionDroppingCenterId . '&Camp_Vehicle_Dispatch.Filled_by=' . $contactId . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $goonjOffice . '&Eck_Collection_Camp1=' . $institutionDroppingCenterId;
+    $vehicleDispatchFormUrl = $homeUrl . '/institution-dropping-center-vehicle-dispatch/#?Camp_Vehicle_Dispatch.Collection_Camp=' . $institutionDroppingCenterId . '&Camp_Vehicle_Dispatch.Filled_by=' . $contactId . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $goonjOffice . '&Camp_Vehicle_Dispatch.Goonj_Office_Name=' . $goonjOfficeName . '&Eck_Collection_Camp1=' . $institutionDroppingCenterId;
 
     $emailHtml = "
     <html>
