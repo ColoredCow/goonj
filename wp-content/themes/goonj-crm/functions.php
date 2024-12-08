@@ -364,7 +364,7 @@ function goonj_handle_user_identification_form() {
 
 		if ($purpose === 'institution-dropping-center') {
 			$institution_dropping_center_form_path = sprintf(
-				'/institution-dropping-center/dropping-center-material-contribution/#?email=%s&phone=%s&Material_Contribution.Institution_Collection_Camp=%s&source_contact_id=%s',
+				'/institution-dropping-center/dropping-center-material-contribution/#?email=%s&phone=%s&Material_Contribution.Institution_Dropping_Center=%s&source_contact_id=%s',
 				$email,
 				$phone,
 				$target_id,
