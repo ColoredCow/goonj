@@ -138,7 +138,7 @@ function goonj_handle_user_identification_form() {
 	$state_id = $_POST['state_id'] ?? '';
 	$city = $_POST['city'] ?? '';
 
-	$is_purpose_requiring_email = ! in_array( $purpose, array( 'material-contribution', 'processing-center-office-visit', 'processing-center-material-contribution', 'dropping-center-contribution', 'institution-collection-camp') );
+	$is_purpose_requiring_email = ! in_array( $purpose, array( 'material-contribution', 'processing-center-office-visit', 'processing-center-material-contribution', 'dropping-center-contribution', 'institution-collection-camp', 'institution-dropping-center') );
 
 	if ( empty( $phone ) || ( $is_purpose_requiring_email && empty( $email ) ) ) {
 		return;
@@ -237,6 +237,19 @@ function goonj_handle_user_identification_form() {
 						$phone,
 						$source,
 						'institution-collection-camp',
+						sanitize_text_field($state_id),
+						sanitize_text_field($city)
+						);
+					$redirect_url = $individual_registration_form_path;
+					break;
+
+				case 'institution-dropping-center':
+					$individual_registration_form_path = sprintf(
+						'/individual-signup-with-volunteering/#?email=%s&phone=%s&source=%s&Individual_fields.Creation_Flow=%s&state_province_id=%s&city=%s',
+						$email,
+						$phone,
+						$source,
+						'institution-dropping-center',
 						sanitize_text_field($state_id),
 						sanitize_text_field($city)
 						);
@@ -346,6 +359,18 @@ function goonj_handle_user_identification_form() {
 				$found_contacts['id']
 			);
 			wp_redirect( $institution_collection_camp_form_path );
+			exit;
+		}
+
+		if ($purpose === 'institution-dropping-center') {
+			$institution_dropping_center_form_path = sprintf(
+				'/institution-dropping-center/dropping-center-material-contribution/#?email=%s&phone=%s&Material_Contribution.Institution_Collection_Camp=%s&source_contact_id=%s',
+				$email,
+				$phone,
+				$target_id,
+				$found_contacts['id']
+			);
+			wp_redirect( $institution_dropping_center_form_path );
 			exit;
 		}
 
@@ -571,28 +596,51 @@ function goonj_redirect_after_individual_creation() {
 					);
 					break;
 				}
-				case 'institution-collection-camp':
-					if ( ! $source ) {
-						\Civi::log()->info('Source is missing for material contribution flow', ['individualId' => $_GET['individualId']]);
-						return;
-					}
-					// If the individual was created during a material contribution process,
-					// We need to determine from where they were attempting to contribute.
+			case 'institution-dropping-center':
+				if ( ! $source ) {
+					\Civi::log()->info('Source is missing for material contribution flow', ['individualId' => $_GET['individualId']]);
+					return;
+				}
+				// If the individual was created during a material contribution process,
+				// We need to determine from where they were attempting to contribute.
 		
-					// First, we check if the source of Individual is Institution Collection Camp.
-					$institutionCollectionCamp = \Civi\Api4\EckEntity::get( 'Collection_Camp', false )
-						->addWhere( 'title', '=', $source )
-						->addWhere('subtype:name', '=', 'Institution_Collection_Camp')
-						->execute()->first();
+				// First, we check if the source of Individual is Institution Dropping Center.
+				$institutionDroppingCenter = \Civi\Api4\EckEntity::get( 'Collection_Camp', false )
+					->addWhere( 'title', '=', $source )
+					->addWhere('subtype:name', '=', 'Institution_Collection_Camp')
+					->execute()->first();
 		
-					if ( ! empty( $institutionCollectionCamp['id'] ) ) {
-						$redirectPath = sprintf(
-							'/institution-collection-camp/material-contribution/#?Material_Contribution.Institution_Collection_Camp=%s&source_contact_id=%s',
-							$institutionCollectionCamp['id'],
-							$individual['id']
-						);
-						break;
-					}
+				if ( ! empty( $institutionDroppingCenter['id'] ) ) {
+					$redirectPath = sprintf(
+						'/institution-dropping-center/material-contribution/#?Material_Contribution.Institution_Dropping_Center=%s&source_contact_id=%s',
+						$institutionDroppingCenter['id'],
+						$individual['id']
+					);
+					break;
+				}
+			case 'institution-collection-camp':
+				if ( ! $source ) {
+					\Civi::log()->info('Source is missing for material contribution flow', ['individualId' => $_GET['individualId']]);
+					return;
+				}
+				// If the individual was created during a material contribution process,
+				// We need to determine from where they were attempting to contribute.
+		
+				// First, we check if the source of Individual is Institution Collection Camp.
+				$institutionCollectionCamp = \Civi\Api4\EckEntity::get( 'Collection_Camp', false )
+					->addWhere( 'title', '=', $source )
+					->addWhere('subtype:name', '=', 'Institution_Collection_Camp')
+					->execute()->first();
+		
+				if ( ! empty( $institutionCollectionCamp['id'] ) ) {
+					$redirectPath = sprintf(
+						'/institution-collection-camp/material-contribution/#?Material_Contribution.Institution_Collection_Camp=%s&source_contact_id=%s',
+						$institutionCollectionCamp['id'],
+						$individual['id']
+					);
+					break;
+				}
+
 		case 'office-visit':
 			$sourceProcessingCenter = $individual['Individual_fields.Source_Processing_Center'];
 			$redirectPath = sprintf(
