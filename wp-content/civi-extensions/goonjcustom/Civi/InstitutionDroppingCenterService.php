@@ -390,6 +390,13 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
+      'materialContribution' => [
+        'title' => ts('Material Contribution'),
+        'module' => 'afsearchInstitutionDroppingCenterMaterialContribution',
+        'directive' => 'afsearch-institution-dropping-center-material-contribution',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+      ],
       'status' => [
         'title' => ts('Status'),
         'module' => 'afsearchInstitutionDroppingCenterStatus',
