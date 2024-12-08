@@ -58,7 +58,7 @@ class MaterialContributionService extends AutoSubscriber {
 
     // Hack: Retrieve the most recent "Material Contribution" activity for this contact.
     $activities = Activity::get(FALSE)
-      ->addSelect('*', 'contact.display_name', 'Material_Contribution.Delivered_By', 'Material_Contribution.Delivered_By_Contact', 'Material_Contribution.Goonj_Office', 'Material_Contribution.Collection_Camp.subtype:name', 'Material_Contribution.Institution_Collection_Camp.subtype:name', 'Material_Contribution.Dropping_Center.subtype:name')
+      ->addSelect('*', 'contact.display_name', 'Material_Contribution.Delivered_By', 'Material_Contribution.Delivered_By_Contact', 'Material_Contribution.Goonj_Office', 'Material_Contribution.Collection_Camp.subtype:name', 'Material_Contribution.Institution_Collection_Camp.subtype:name', 'Material_Contribution.Dropping_Center.subtype:name', 'Material_Contribution.Institution_Dropping_Center.subtype:name')
       ->addJoin('ActivityContact AS activity_contact', 'LEFT')
       ->addJoin('Contact AS contact', 'LEFT')
       ->addWhere('source_contact_id', '=', $params['contactId'])
@@ -81,6 +81,9 @@ class MaterialContributionService extends AutoSubscriber {
     }
     elseif (!empty($contribution['Material_Contribution.Dropping_Center.subtype:name'])) {
       $subtype = $contribution['Material_Contribution.Dropping_Center.subtype:name'];
+    }
+    elseif (!empty($contribution['Material_Contribution.Institution_Dropping_Center.subtype:name'])) {
+      $subtype = $contribution['Material_Contribution.Institution_Dropping_Center.subtype:name'];
     }
 
     $contactData = Contact::get(FALSE)
