@@ -520,9 +520,10 @@ class CollectionBaseService extends AutoSubscriber {
     return [
       'Collection_Camp' => 'Collection_Camp_Intent_Details',
       'Dropping_Center' => 'Dropping_Centre',
-      // 'Institution_Collection_Camp' => 'Institution_Collection_Camp_Intent',
-      // 'Goonj_Activities' => 'Goonj_Activities',
-      // 'Institution_Dropping_Center' => 'Institution_Dropping_Center_Intent',
+      'Institution_Collection_Camp' => 'Institution_Collection_Camp_Intent',
+      'Goonj_Activities' => 'Goonj_Activities',
+      'Institution_Dropping_Center' => 'Institution_Dropping_Center_Intent',
+      'Institute_Goonj_Activities'=> 'Institute_Goonj_Activities',
     ];
   }
 
