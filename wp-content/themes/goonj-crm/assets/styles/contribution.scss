@@ -84,6 +84,14 @@
           display: grid !important;
           border-top: none !important;
 
+          .label {
+            text-align: justify !important;
+            width: 50% !important;
+            font-family: "Open Sans", sans-serif !important;
+            line-height: 16px !important;
+            padding-left: 0 !important;
+          }
+
           .content {
             input {
               border: 1px solid rgba(0, 0, 0, 0.3) !important;
@@ -114,6 +122,50 @@
           i {
             display: none !important;
           }
+        }
+      }
+    }
+
+    .crm-contribution-main-form-block {
+      #priceset-div {
+        .crm-section .crm-section .label {
+          text-align: justify !important;
+          width: 50% !important;
+          font-family: "Open Sans", sans-serif !important;
+          line-height: 16px !important;
+          padding-left: 0 !important;
+        }
+
+        .content {
+          margin-left: 0 !important;
+          gap: 30px;
+          align-items: center;
+        }
+      }
+
+      .crm-public-form-item {
+        .label {
+          text-align: justify !important;
+          width: 50% !important;
+          font-family: "Open Sans", sans-serif !important;
+          line-height: 16px !important;
+          padding-left: 0 !important;
+        }
+
+        .content {
+          margin-left: 0 !important;
+          gap: 30px;
+          align-items: center;
+        }
+      }
+
+      .crm-block {
+        fieldset legend {
+          text-align: justify !important;
+          width: 50% !important;
+          font-family: "Open Sans", sans-serif !important;
+          line-height: 16px !important;
+          padding-left: 0 !important;
         }
       }
     }
