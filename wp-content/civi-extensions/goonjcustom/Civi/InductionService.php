@@ -514,7 +514,6 @@ class InductionService extends AutoSubscriber {
         ->setLimit($batchSize)
         ->setOffset($offset)
         ->execute();
-
       // Process each activity in the batch.
       foreach ($unscheduledInductionActivities as $activity) {
         // Check if a reschedule email has already been sent and handled.
@@ -530,10 +529,11 @@ class InductionService extends AutoSubscriber {
         $contacts = $contactsDetails->first();
 
         if (empty($contacts)) {
-          return FALSE;
+          continue;
         }
 
         $isMailSent = $contacts['Individual_fields.Induction_slot_booking_follow_up_email_sent'] ?? NULL;
+
 
         if (in_array($isMailSent, [NULL, FALSE], TRUE)) {
 
@@ -675,7 +675,7 @@ class InductionService extends AutoSubscriber {
         $contacts = $contactsDetails->first();
 
         if (empty($contacts)) {
-          return FALSE;
+          continue;
         }
 
         $isMailSent = $contacts['Individual_fields.Induction_Reschedule_Email_Sent'] ?? NULL;
@@ -791,7 +791,7 @@ class InductionService extends AutoSubscriber {
         $contacts = $contactsDetails->first();
 
         if (empty($contacts)) {
-          return FALSE;
+          continue;
         }
 
         $isMailSent = $contacts['Individual_fields.Induction_Remainder_Email_Sent_on_Induction_Day'] ?? NULL;
