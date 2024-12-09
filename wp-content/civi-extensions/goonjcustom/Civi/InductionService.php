@@ -537,34 +537,37 @@ class InductionService extends AutoSubscriber {
         $isMailSent = $contacts['Individual_fields.Induction_slot_booking_follow_up_email_sent'] ?? NULL;
         \Civi::log()->info('isMailSent', ['isMailSent'=>$isMailSent]);
 
+        // if (in_array($isMailSent, [NULL, FALSE], TRUE)) {
+
+        $emailParams = [
+          'contact_id' => $activity['source_contact_id'],
+          'template_id' => $template['id'],
+        ];
         if (in_array($isMailSent, [NULL, FALSE], TRUE)) {
-
-          $emailParams = [
-            'contact_id' => $activity['source_contact_id'],
-            'template_id' => $template['id'],
-          ];
-
           $emailSent= civicrm_api3('Email', 'send', $emailParams);
           \Civi::log()->info('emailSent', ['emailSent'=>$emailSent]);
 
-          $contact = Contact::update(FALSE)
-            ->addValue('Individual_fields.Induction_slot_booking_follow_up_email_sent', 1)
-            ->addWhere('id', '=', $activity['source_contact_id'])
-            ->execute();
-          $emailSentDate = new \DateTime();
-
-          $timeIn12Hours = (clone $emailSentDate)->modify('+12 hours');
-
-          $formattedEmailSentDate = $emailSentDate->format('Y-m-d H:i:s');
-          $results = Activity::update(FALSE)
-            ->addValue('Induction_Fields.Follow_Up_Email_Sent', 1)
-            ->addValue('Induction_Fields.Follow_Up_Email_Sent_Date',$formattedEmailSentDate )
-            ->addWhere('id', '=', $activity['id'])
-            ->execute();
-          \Civi::log()->info('results', ['results'=>$results]);
-
         }
+
+
+        $contact = Contact::update(FALSE)
+          ->addValue('Individual_fields.Induction_slot_booking_follow_up_email_sent', 1)
+          ->addWhere('id', '=', $activity['source_contact_id'])
+          ->execute();
+        $emailSentDate = new \DateTime();
+
+        $timeIn12Hours = (clone $emailSentDate)->modify('+12 hours');
+
+        $formattedEmailSentDate = $emailSentDate->format('Y-m-d H:i:s');
+        $results = Activity::update(FALSE)
+          ->addValue('Induction_Fields.Follow_Up_Email_Sent', 1)
+          ->addValue('Induction_Fields.Follow_Up_Email_Sent_Date',$formattedEmailSentDate )
+          ->addWhere('id', '=', $activity['id'])
+          ->execute();
+        \Civi::log()->info('results', ['results'=>$results]);
+
       }
+      // }
 
       $offset += $batchSize;
 
