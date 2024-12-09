@@ -531,7 +531,7 @@ class InductionService extends AutoSubscriber {
         $contacts = $contactsDetails->first();
 
         if (empty($contacts)) {
-          return FALSE;
+          continue;
         }
 
         $isMailSent = $contacts['Individual_fields.Induction_slot_booking_follow_up_email_sent'] ?? NULL;
