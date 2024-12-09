@@ -60,7 +60,7 @@ function civicrm_api3_goonjcustom_institution_dropping_center_outcome_cron($para
   /**
    *
    */
-  function updateDroppingCenterMetric($metricName, $data) {
+  function updateInstitutionDroppingCenterMetric($metricName, $data) {
     foreach ($data as $id => $value) {
       EckEntity::update('Collection_Camp', TRUE)
         ->addValue("Dropping_Center_Outcome.$metricName", max($value, 0))
@@ -70,11 +70,11 @@ function civicrm_api3_goonjcustom_institution_dropping_center_outcome_cron($para
     }
   }
 
-  updateDroppingCenterMetric('Cash_Contribution', $cashContributionById);
-  updateDroppingCenterMetric('Product_Sale_Amount_GBG_', $productSaleAmountById);
-  updateDroppingCenterMetric('Total_no_of_vehicle_material_collected', $vehicleDispatchCount);
-  updateDroppingCenterMetric('Footfall_at_the_center', $totalFootfall);
-  updateDroppingCenterMetric('Total_no_of_bags_received_from_center', $bagsReceivedCount);
+  updateInstitutionDroppingCenterMetric('Cash_Contribution', $cashContributionById);
+  updateInstitutionDroppingCenterMetric('Product_Sale_Amount_GBG_', $productSaleAmountById);
+  updateInstitutionDroppingCenterMetric('Total_no_of_vehicle_material_collected', $vehicleDispatchCount);
+  updateInstitutionDroppingCenterMetric('Footfall_at_the_center', $totalFootfall);
+  updateInstitutionDroppingCenterMetric('Total_no_of_bags_received_from_center', $bagsReceivedCount);
 
   return civicrm_api3_create_success($returnValues, $params, 'Goonjcustom', 'institution_dropping_center_outcome_cron');
 }
