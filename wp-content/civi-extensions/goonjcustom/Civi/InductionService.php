@@ -514,6 +514,7 @@ class InductionService extends AutoSubscriber {
         ->setLimit($batchSize)
         ->setOffset($offset)
         ->execute();
+      \Civi::log()->info('unscheduledInductionActivities', ['unscheduledInductionActivities' => count($unscheduledInductionActivities)]);
 
       // Process each activity in the batch.
       foreach ($unscheduledInductionActivities as $activity) {
@@ -534,6 +535,7 @@ class InductionService extends AutoSubscriber {
         }
 
         $isMailSent = $contacts['Individual_fields.Induction_slot_booking_follow_up_email_sent'] ?? NULL;
+        \Civi::log()->info('isMailSent', ['isMailSent'=>$isMailSent]);
 
         if (in_array($isMailSent, [NULL, FALSE], TRUE)) {
 
@@ -543,6 +545,7 @@ class InductionService extends AutoSubscriber {
           ];
 
           $emailSent= civicrm_api3('Email', 'send', $emailParams);
+          \Civi::log()->info('emailSent', ['emailSent'=>$emailSent]);
 
           $contact = Contact::update(FALSE)
             ->addValue('Individual_fields.Induction_slot_booking_follow_up_email_sent', 1)
@@ -558,6 +561,7 @@ class InductionService extends AutoSubscriber {
             ->addValue('Induction_Fields.Follow_Up_Email_Sent_Date',$formattedEmailSentDate )
             ->addWhere('id', '=', $activity['id'])
             ->execute();
+          \Civi::log()->info('results', ['results'=>$results]);
 
         }
       }
