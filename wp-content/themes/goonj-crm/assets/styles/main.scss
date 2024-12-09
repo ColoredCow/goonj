@@ -1,5 +1,5 @@
 @use "variables";
-@use "contribution";
+@use "goonj-main";
 @each $size, $length in variables.$sizes {
   .w-#{$size} {
     width: $length !important;

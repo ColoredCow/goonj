@@ -196,11 +196,15 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     $vehicleDispatchId = $goonjField['entity_id'];
 
     $collectionSourceVehicleDispatch = EckEntity::get('Collection_Source_Vehicle_Dispatch', FALSE)
-      ->addSelect('Camp_Vehicle_Dispatch.Collection_Camp')
+      ->addSelect('Camp_Vehicle_Dispatch.Collection_Camp', 'Camp_Institution_Data.Name_of_the_institution', 'Camp_Institution_Data.Address', 'Camp_Institution_Data.Email', 'Camp_Institution_Data.Contact_Number')
       ->addWhere('id', '=', $vehicleDispatchId)
       ->execute()->first();
 
     $collectionCampId = $collectionSourceVehicleDispatch['Camp_Vehicle_Dispatch.Collection_Camp'];
+    $nameOfInstitution = $collectionSourceVehicleDispatch['Camp_Institution_Data.Name_of_the_institution'];
+    $addressOfInstitution = $collectionSourceVehicleDispatch['Camp_Institution_Data.Address'];
+    $pocEmail = $collectionSourceVehicleDispatch['Camp_Institution_Data.Email'];
+    $pocContactNumber = $collectionSourceVehicleDispatch['Camp_Institution_Data.Contact_Number'];
 
     if (self::getEntitySubtypeName($collectionCampId) !== self::ENTITY_SUBTYPE_NAME) {
       return;
@@ -249,7 +253,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       'from' => $fromEmail['label'],
       'toEmail' => $mmtEmail,
       'replyTo' => $fromEmail['label'],
-      'html' => self::sendEmailToMmt($collectionCampId, $campCode, $campAddress, $vehicleDispatchId),
+      'html' => self::sendEmailToMmt($collectionCampId, $campCode, $campAddress, $vehicleDispatchId, $nameOfInstitution, $addressOfInstitution, $pocEmail, $pocContactNumber),
     ];
     \CRM_Utils_Mail::send($mailParams);
 
@@ -260,7 +264,15 @@ class InstitutionCollectionCampService extends AutoSubscriber {
    */
   public static function sendEmailToMmt($collectionCampId, $campCode, $campAddress, $vehicleDispatchId) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
-    $materialdispatchUrl = $homeUrl . 'institution-camp-acknowledgement-dispatch/#?Eck_Collection_Source_Vehicle_Dispatch1=' . $vehicleDispatchId . '&Camp_Vehicle_Dispatch.Collection_Camp=' . $collectionCampId . '&id=' . $vehicleDispatchId . '&Eck_Collection_Source_Vehicle_Dispatch_Eck_Collection_Camp_Collection_Camp_01.id=' . $collectionCampId;
+    $materialdispatchUrl = $homeUrl . 'institution-camp-acknowledgement-dispatch/#?Eck_Collection_Source_Vehicle_Dispatch1=' . $vehicleDispatchId
+    . '&Camp_Vehicle_Dispatch.Collection_Camp=' . $collectionCampId
+    . '&id=' . $vehicleDispatchId
+    . '&Eck_Collection_Source_Vehicle_Dispatch_Eck_Collection_Camp_Collection_Camp_01.id=' . $collectionCampId
+    . '&Camp_Institution_Data.Name_of_the_institution=' . $nameOfInstitution
+    . '&Camp_Institution_Data.Address=' . $addressOfInstitution
+    . '&Camp_Institution_Data.Email=' . $pocEmail
+    . '&Camp_Institution_Data.Contact_Number=' . $pocContactNumber;
+
     $html = "
     <p>Dear MMT team,</p>
     <p>This is to inform you that a vehicle has been sent from camp <strong>$campCode</strong> at <strong>$campAddress</strong>.</p>
@@ -820,7 +832,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       }
 
       if (!\CRM_Core_Permission::checkAnyPerm($config['permissions'])) {
-        // does not permission; just continue
+        // Does not permission; just continue.
         continue;
       }
 

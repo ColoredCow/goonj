@@ -5,6 +5,7 @@ namespace Civi\Traits;
 use Civi\Api4\EckEntity;
 use Civi\Api4\OptionValue;
 use Civi\Api4\Organization;
+use Civi\Api4\Relationship;
 use Civi\Api4\StateProvince;
 
 /**
@@ -235,6 +236,42 @@ trait CollectionSource {
 
     return $objectRef[$stateFieldName];
 
+  }
+
+  /**
+   *
+   */
+  private static function getInitiatorId(array $collectionCamp) {
+    $subtypeName = $collectionCamp['subtype:name'];
+
+    if ($subtypeName === 'Institution_Collection_Camp') {
+      $organizationId = $collectionCamp['Institution_Collection_Camp_Intent.Organization_Name.id'];
+      $relationshipType = 'Institution POC of';
+      $alternateType = 'Primary Institution POC of';
+    }
+    elseif ($subtypeName === 'Institution_Dropping_Center') {
+      $organizationId = $collectionCamp['Institution_Dropping_Center_Intent.Organization_Name.id'];
+      $relationshipType = 'Institution POC of';
+      $alternateType = 'Secondary Institution POC of';
+    }
+    else {
+      return $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
+    }
+
+    $relationships = Relationship::get(FALSE)
+      ->addWhere('contact_id_a', '=', $organizationId)
+      ->addWhere('relationship_type_id:name', '=', $relationshipType)
+      ->execute();
+    if (empty($relationships)) {
+      $relationships = Relationship::get(FALSE)
+        ->addWhere('contact_id_a', '=', $organizationId)
+        ->addWhere('relationship_type_id:name', '=', $alternateType)
+        ->execute();
+    }
+
+    return !empty($relationships) && isset($relationships[0]['contact_id_b'])
+        ? $relationships[0]['contact_id_b']
+        : $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
   }
 
   /**

@@ -21,7 +21,6 @@ use Civi\Traits\CollectionSource;
 class CollectionBaseService extends AutoSubscriber {
   use CollectionSource;
 
-
   private static $stateCustomFieldDbDetails = [];
   private static $collectionAuthorized = NULL;
   private static $collectionAuthorizedStatus = NULL;
@@ -259,11 +258,6 @@ class CollectionBaseService extends AutoSubscriber {
           ->execute()
           ->single();
 
-        \Civi::log()->info(__METHOD__, [
-          'groupName' => $groupName,
-          'customField' => $customField,
-        ]);
-
         if ($customField) {
           $stateFields[] = [
             'tableName' => $customField['custom_group_id.table_name'],
@@ -303,7 +297,7 @@ class CollectionBaseService extends AutoSubscriber {
     }
 
     $currentCollectionCamp = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id', 'Institution_Collection_Camp_Intent.Organization_Name.id', 'subtype:name')
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id', 'Institution_Collection_Camp_Intent.Organization_Name.id', 'Institution_Dropping_Center_Intent.Organization_Name.id', 'subtype:name')
       ->addWhere('id', '=', $objectId)
       ->execute()->single();
 
@@ -331,7 +325,7 @@ class CollectionBaseService extends AutoSubscriber {
     }
 
     $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id', 'Institution_Collection_Camp_Intent.Organization_Name.id', 'subtype', 'subtype:name')
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id', 'Institution_Collection_Camp_Intent.Organization_Name.id', 'Institution_Dropping_Center_Intent.Organization_Name.id', 'subtype', 'subtype:name')
       ->addWhere('id', '=', $objectRef->id)
       ->execute()->single();
 
@@ -343,37 +337,6 @@ class CollectionBaseService extends AutoSubscriber {
     if (!self::$authorizationEmailQueued) {
       self::queueAuthorizationEmail($initiatorId, $subtype, self::$collectionAuthorizedStatus, $collectionSourceId);
     }
-  }
-
-  /**
-   *
-   */
-  private static function getInitiatorId(array $collectionCamp) {
-    $subtypeName = $collectionCamp['subtype:name'];
-
-    $organizationId = $collectionCamp['Institution_Collection_Camp_Intent.Organization_Name.id'];
-
-    if ($subtypeName === 'Institution_Collection_Camp') {
-      $relationships = Relationship::get(FALSE)
-        ->addWhere('contact_id_a', '=', $organizationId)
-        ->addWhere('relationship_type_id:name', '=', 'Primary Institution POC of')
-        ->execute();
-      // If no relationships found for 'Primary Institution POC of', check for 'Secondary Institution POC of'.
-      if (empty($relationships)) {
-        $relationships = Relationship::get(FALSE)
-          ->addWhere('contact_id_a', '=', $organizationId)
-          ->addWhere('relationship_type_id:name', '=', 'Secondary Institution POC of')
-          ->execute();
-      }
-
-      // Return contact_id_b as initiator if found.
-      if (!empty($relationships) && isset($relationships[0]['contact_id_b'])) {
-        return $relationships[0]['contact_id_b'];
-      }
-    }
-
-    // If the subtype is not 'Institution_Collection_Camp', or no relationship was found, use the default contact_id.
-    return $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
   }
 
   /**

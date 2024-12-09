@@ -18,7 +18,6 @@ use Civi\Api4\OptionValue;
 use Civi\Api4\Relationship;
 use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
-use CRM_Core_Action;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
 
@@ -36,6 +35,7 @@ class CollectionCampService extends AutoSubscriber {
   const ENTITY_SUBTYPE_NAME = 'Collection_Camp';
   const MATERIAL_RELATIONSHIP_TYPE_NAME = 'Material Management Team of';
   const DEFAULT_FINANCIAL_TYPE_ID = 1;
+  const ACCOUNTS_TEAM_EMAIL = '"Goonj Accounts Team" <accounts@goonj.org>';
 
   private static $individualId = NULL;
   private static $collectionCampAddress = NULL;
@@ -72,6 +72,7 @@ class CollectionCampService extends AutoSubscriber {
       '&hook_civicrm_buildForm' => [
       ['autofillMonetaryFormSource'],
       ['autofillFinancialType'],
+      ['autofillReceiptFrom'],
       ],
       '&hook_civicrm_alterMailParams' => [
       ['alterReceiptMail'],
@@ -167,7 +168,7 @@ class CollectionCampService extends AutoSubscriber {
       }
 
       if (!\CRM_Core_Permission::checkAnyPerm($config['permissions'])) {
-        // does not permission; just continue
+        // Does not permission; just continue.
         continue;
       }
 
@@ -694,7 +695,7 @@ class CollectionCampService extends AutoSubscriber {
 
     foreach ($array as $item) {
       if ($item['entity_table'] === 'civicrm_eck_collection_camp' &&
-          $item['custom_field_id'] === $stateFieldId) {
+        $item['custom_field_id'] === $stateFieldId) {
         return $item;
       }
     }
@@ -726,9 +727,9 @@ class CollectionCampService extends AutoSubscriber {
     $contactFieldId = $collectionCampContactId['id'];
 
     $contactItemIndex = array_search(TRUE, array_map(fn($item) =>
-      $item['entity_table'] === 'civicrm_eck_collection_camp' &&
-      $item['custom_field_id'] == $contactFieldId,
-      $filteredItems
+    $item['entity_table'] === 'civicrm_eck_collection_camp' &&
+    $item['custom_field_id'] == $contactFieldId,
+    $filteredItems
     ));
 
     return $contactItemIndex !== FALSE ? $filteredItems[$contactItemIndex] : FALSE;
@@ -839,7 +840,7 @@ class CollectionCampService extends AutoSubscriber {
       'toEmail' => $mmtEmail,
       'replyTo' => $fromEmail['label'],
       'html' => self::goonjcustom_material_management_email_html($collectionCampId, $campCode, $campAddress, $vehicleDispatchId),
-      // 'messageTemplateID' => 76, // Uncomment if using a message template
+    // 'messageTemplateID' => 76, // Uncomment if using a message template
     ];
     \CRM_Utils_Mail::send($mailParams);
 
@@ -884,9 +885,9 @@ class CollectionCampService extends AutoSubscriber {
     $goonjOfficeFieldId = $goonjOfficeId['id'];
 
     $goonjOfficeIndex = array_search(TRUE, array_map(fn($item) =>
-      $item['entity_table'] === 'civicrm_eck_collection_source_vehicle_dispatch' &&
-      $item['custom_field_id'] == $goonjOfficeFieldId,
-      $filteredItems
+    $item['entity_table'] === 'civicrm_eck_collection_source_vehicle_dispatch' &&
+    $item['custom_field_id'] == $goonjOfficeFieldId,
+    $filteredItems
     ));
 
     return $goonjOfficeIndex !== FALSE ? $filteredItems[$goonjOfficeIndex] : FALSE;
@@ -1274,12 +1275,30 @@ class CollectionCampService extends AutoSubscriber {
    *
    */
   public static function alterReceiptMail(&$params, $context) {
+    // Handle contribution_online_receipt workflow.
     if (!empty($params['workflow']) && $params['workflow'] === 'contribution_online_receipt') {
       // Extract donor name or use a default value.
       $donorName = !empty($params['tplParams']['displayName']) ? $params['tplParams']['displayName'] : 'Valued Supporter';
 
       // Set the email content.
       $params['text'] = "Dear $donorName,\n\nThank you for your contribution. Your support means a lot to us.\n\nWe have attached your contribution receipt to this email for your reference.\n\nWarm regards,\nThe Goonj Team";
+
+      $params['html'] = "
+            <p>Dear <strong>$donorName</strong>,</p>
+            <p>Thank you for your contribution. Your support means a lot to us.</p>
+            <p>We have attached your contribution receipt to this email for your reference.</p>
+            <p>Warm regards,</p>
+            <p><strong>The Goonj Team</strong></p>
+        ";
+    }
+
+    // Handle contribution_offline_receipt workflow.
+    if (!empty($params['workflow']) && $params['workflow'] === 'contribution_offline_receipt') {
+      // Extract donor name or use a default value.
+      $donorName = !empty($params['toName']) ? $params['toName'] : 'Valued Supporter';
+
+      // Set the email content.
+      $params['text'] = "Dear $donorName,\n\nThank you for your offline contribution. Your support means a lot to us.\n\nWe have attached your contribution receipt to this email for your reference.\n\nWarm regards,\nThe Goonj Team";
 
       $params['html'] = "
             <p>Dear <strong>$donorName</strong>,</p>
@@ -1308,6 +1327,28 @@ class CollectionCampService extends AutoSubscriber {
         $defaults = [];
         // Example: 'Donation' (adjust ID as per your requirement)
         $defaults['financial_type_id'] = self::DEFAULT_FINANCIAL_TYPE_ID;
+        $form->setDefaults($defaults);
+      }
+    }
+  }
+
+  /**
+   * Implements hook_civicrm_buildForm().
+   *
+   * Auto-fills custom fields in the form based on the provided parameters.
+   *
+   * @param string $formName
+   *   The name of the form being built.
+   * @param object $form
+   *   The form object.
+   */
+  public function autofillReceiptFrom($formName, &$form) {
+    // Check if the form is the Contribution form.
+    if ($formName === 'CRM_Contribute_Form_Contribution') {
+      if ($form->getAction() == \CRM_Core_Action::ADD) {
+        // Set the default value for 'Receipt From'.
+        $defaults = [];
+        $defaults['from_email_address'] = self::ACCOUNTS_TEAM_EMAIL;
         $form->setDefaults($defaults);
       }
     }
