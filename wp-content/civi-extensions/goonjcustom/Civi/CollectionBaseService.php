@@ -10,9 +10,10 @@ use Civi\Api4\Group;
 use Civi\Api4\GroupContact;
 use Civi\Api4\MessageTemplate;
 use Civi\Api4\OptionValue;
+use Civi\Api4\Relationship;
+use Civi\Api4\StateProvince;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
-use Civi\Api4\StateProvince;
 
 /**
  *
@@ -519,9 +520,9 @@ class CollectionBaseService extends AutoSubscriber {
     return [
       'Collection_Camp' => 'Collection_Camp_Intent_Details',
       'Dropping_Center' => 'Dropping_Centre',
-      'Institution_Collection_Camp' => 'Institution_Collection_Camp_Intent',
-      'Goonj_Activities' => 'Goonj_Activities',
-      'Institution_Dropping_Center' => 'Institution_Dropping_Center_Intent',
+      // 'Institution_Collection_Camp' => 'Institution_Collection_Camp_Intent',
+      // 'Goonj_Activities' => 'Goonj_Activities',
+      // 'Institution_Dropping_Center' => 'Institution_Dropping_Center_Intent',
     ];
   }
 
