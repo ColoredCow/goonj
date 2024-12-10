@@ -228,6 +228,7 @@ trait CollectionSource {
       'Institution_Collection_Camp' => 'Institution_Collection_Camp_Intent.State',
       'Goonj_Activities' => 'Goonj_Activities.State',
       'Institution_Dropping_Center' => 'Institution_Dropping_Center_Intent.State',
+      'Institution_Goonj_Activities' => 'Institution_Goonj_Activities.State',
     ];
 
     $sourceTypeName = self::getSourceTypeName($subtypeId);
