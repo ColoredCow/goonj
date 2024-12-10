@@ -75,7 +75,7 @@ document.addEventListener("DOMContentLoaded", function () {
 			errorMessage: "Please enter a valid 10-digit mobile number.",
 		},
 		{
-			labelText: "Enter PAN Card Number",
+			labelText: "PAN Card Number",
 			regex: /^[A-Z]{5}[0-9]{4}[A-Z]$/,
 			errorMessage: "Please enter a valid PAN card number in the format ABCDE1234F.",
 		}
