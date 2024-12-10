@@ -1356,16 +1356,7 @@ class CollectionCampService extends AutoSubscriber {
   }
 
   /**
-   * This hook is called after a db write on entities.
    *
-   * @param string $op
-   *   The type of operation being performed.
-   * @param string $objectName
-   *   The name of the object.
-   * @param int $objectId
-   *   The unique identifier for the object.
-   * @param object $objectRef
-   *   The reference to the object.
    */
   public static function updateCampaignForCollectionSourceContribution(string $op, string $objectName, $objectId, &$objectRef) {
     if ($objectName != 'Contribution' || $objectId === NULL) {
