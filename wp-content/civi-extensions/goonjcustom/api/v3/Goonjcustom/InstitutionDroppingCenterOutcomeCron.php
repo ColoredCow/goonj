@@ -28,13 +28,13 @@ function civicrm_api3_goonjcustom_institution_dropping_center_outcome_cron($para
   }
 
   $vehicleDispatches = EckEntity::get('Collection_Source_Vehicle_Dispatch', TRUE)
-    ->addSelect('Camp_Vehicle_Dispatch.Institution_Collection_Camp')
-    ->addWhere('Camp_Vehicle_Dispatch.Institution_Collection_Camp', 'IS NOT NULL')
+    ->addSelect('Camp_Vehicle_Dispatch.Institution_Dropping_Center')
+    ->addWhere('Camp_Vehicle_Dispatch.Institution_Dropping_Center', 'IS NOT NULL')
     ->execute();
 
   $vehicleDispatchArray = $vehicleDispatches->getIterator()->getArrayCopy();
 
-  $vehicleDispatchCount = array_count_values(array_column($vehicleDispatchArray, 'Camp_Vehicle_Dispatch.Institution_Collection_Camp'));
+  $vehicleDispatchCount = array_count_values(array_column($vehicleDispatchArray, 'Camp_Vehicle_Dispatch.Institution_Dropping_Center'));
 
   $activities = Activity::get(TRUE)
     ->addSelect('Material_Contribution.Institution_Dropping_Center')
@@ -47,13 +47,13 @@ function civicrm_api3_goonjcustom_institution_dropping_center_outcome_cron($para
   $totalFootfall = array_count_values(array_column($activitiesArray, 'Material_Contribution.Dropping_Center'));
 
   $bagData = EckEntity::get('Collection_Source_Vehicle_Dispatch', TRUE)
-    ->addSelect('Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office', 'Camp_Vehicle_Dispatch.Institution_Collection_Camp')
-    ->addWhere('Camp_Vehicle_Dispatch.Institution_Collection_Camp', 'IS NOT NULL')
+    ->addSelect('Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office', 'Camp_Vehicle_Dispatch.Institution_Dropping_Center')
+    ->addWhere('Camp_Vehicle_Dispatch.Institution_Dropping_Center', 'IS NOT NULL')
     ->execute();
 
   $bagsReceivedCount = [];
   foreach ($bagData as $record) {
-    $dispatchId = $record['Camp_Vehicle_Dispatch.Institution_Collection_Camp'];
+    $dispatchId = $record['Camp_Vehicle_Dispatch.Institution_Dropping_Center'];
     $bagsReceivedCount[$dispatchId] = ($bagsReceivedCount[$dispatchId] ?? 0) + (int) ($record['Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office'] ?? 0);
   }
 
