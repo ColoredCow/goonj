@@ -653,6 +653,7 @@ class GoonjActivitiesService extends AutoSubscriber {
       $endDate = new \DateTime($collectionCamp['Goonj_Activities.End_Date']);
       $collectionCampId = $collectionCamp['id'];
       $endDateFormatted = $endDate->format('Y-m-d');
+      $todayFormatted = $today->format('Y-m-d');
       $feedbackEmailSent = $collectionCamp['Logistics_Coordination.Feedback_Email_Sent'];
       $initiatorId = $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
 
