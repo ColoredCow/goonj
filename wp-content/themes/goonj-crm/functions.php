@@ -24,6 +24,15 @@ function goonj_enqueue_scripts() {
 		wp_get_theme()->get( 'Version' ),
 		true
 	);
+	if (is_page('team-5000')) {
+		wp_enqueue_script(
+			'team-5000',
+			get_template_directory_uri() . '/goonj-team-5000.js',
+			array( 'jquery' ),
+			wp_get_theme()->get( 'Version' ),
+			true
+		);
+	}
 }
 
 add_action( 'admin_enqueue_scripts', 'goonj_enqueue_admin_scripts' );
