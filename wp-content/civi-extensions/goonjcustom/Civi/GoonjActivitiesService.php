@@ -658,7 +658,7 @@ class GoonjActivitiesService extends AutoSubscriber {
       $todayFormatted = $today->format('Y-m-d');
       $feedbackEmailSent = $collectionCamp['Logistics_Coordination.Feedback_Email_Sent'];
       $initiatorId = $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
-      \Civi::log()->info('collectionCamp', ['collectionCamp'=>$collectionCamp]);
+
 
       $campAddress = $collectionCamp['Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'];
       $volunteerFeedbackForm = $collectionCamp['Goonj_Activities.Select_Volunteer_Feedback_Form'] ?? NULL;
