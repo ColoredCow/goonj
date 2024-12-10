@@ -48,11 +48,11 @@ class IntitutionGoonjActivitiesService extends AutoSubscriber {
     //   ],
       '&hook_civicrm_custom' => [
         ['setOfficeDetails'],
-      ]
-    //   '&hook_civicrm_pre' => [
-    //     ['createActivityForGoonjActivityCollectionCamp'],
-    //   ],
-      // '&hook_civicrm_tabset' => 'institutionCollectionCampTabset',
+      ],
+      '&hook_civicrm_pre' => [
+        ['createActivityForInstitutionGoonjActivityCollectionCamp'],
+      ],
+      '&hook_civicrm_tabset' => 'institutionGoonjActivitiesTabset',
     ];
   }
 
@@ -352,4 +352,204 @@ class IntitutionGoonjActivitiesService extends AutoSubscriber {
 
     self::generateQrCode($data, $id, $saveOptions);
   }
+
+    /**
+   *
+   */
+  private static function isViewingIntitutionGoonjActivities($tabsetName, $context) {
+    if ($tabsetName !== 'civicrm/eck/entity' || empty($context) || $context['entity_type']['name'] !== self::ENTITY_NAME) {
+      return FALSE;
+    }
+
+    $entityId = $context['entity_id'];
+
+    $entity = EckEntity::get(self::ENTITY_NAME, TRUE)
+      ->addWhere('id', '=', $entityId)
+      ->execute()->single();
+
+    $entitySubtypeValue = $entity['subtype'];
+
+    $subtypeId = self::getSubtypeId();
+
+    return (int) $entitySubtypeValue === $subtypeId;
+  }
+
+  /**
+   *
+   */
+  public static function institutionGoonjActivitiesTabset($tabsetName, &$tabs, $context) {
+    if (!self::isViewingIntitutionGoonjActivities($tabsetName, $context)) {
+      return;
+    }
+
+    $tabConfigs = [
+      'activities' => [
+        'title' => ts('Activities'),
+        'module' => 'afsearchGoonjAllActivity',
+        'directive' => 'afsearch-goonj-all-activity',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+      ],
+      'logistics' => [
+        'title' => ts('Logistics'),
+        'module' => 'afsearchGoonjActivitiesLogistics',
+        'directive' => 'afsearch-goonj-activities-logistics',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+      ],
+      'eventVolunteers' => [
+        'title' => ts('Event Volunteers'),
+        'module' => 'afsearchEventVolunteer',
+        'directive' => 'afsearch-event-volunteer',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+      ],
+      'campOutcome' => [
+        'title' => ts('Outcome'),
+        'module' => 'afsearchGoonjActivitiesOutcomeView',
+        'directive' => 'afsearch-goonj-activities-outcome-view',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+      ],
+      'campFeedback' => [
+        'title' => ts('Volunteer Feedback'),
+        'module' => 'afsearchGoonjActivityVolunteerFeedback',
+        'directive' => 'afsearch-goonj-activity-volunteer-feedback',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+      ],
+      'attendeeFeedback' => [
+        'title' => ts('Attendee Feedback'),
+        'module' => 'afsearchGoonjActivityAttendeeFeedbacks',
+        'directive' => 'afsearch-goonj-activity-attendee-feedbacks',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+      ],
+      'monetaryContribution' => [
+        'title' => ts('Monetary Contribution'),
+        'module' => 'afsearchMonetaryContribution',
+        'directive' => 'afsearch-monetary-contribution',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['account_team'],
+      ],
+      'monetaryContributionForUrbanOps' => [
+        'title' => ts('Monetary Contribution'),
+        'module' => 'afsearchMonetaryContributionForUrbanOps',
+        'directive' => 'afsearch-monetary-contribution-for-urban-ops',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+      ],
+    ];
+
+    foreach ($tabConfigs as $key => $config) {
+      $isAdmin = \CRM_Core_Permission::check('admin');
+      if ($key == 'monetaryContributionForUrbanOps' && $isAdmin) {
+        continue;
+      }
+
+      if (!\CRM_Core_Permission::checkAnyPerm($config['permissions'])) {
+        // Does not permission; just continue.
+        continue;
+      }
+
+      $tabs[$key] = [
+        'id' => $key,
+        'title' => $config['title'],
+        'is_active' => 1,
+        'template' => $config['template'],
+        'module' => $config['module'],
+        'directive' => $config['directive'],
+      ];
+
+      \Civi::service('angularjs.loader')->addModules($config['module']);
+    }
+}
+
+  /**
+   * This hook is called after a db write on entities.
+   *
+   * @param string $op
+   *   The type of operation being performed.
+   * @param string $objectName
+   *   The name of the object.
+   * @param int $objectId
+   *   The unique identifier for the object.
+   * @param object $objectRef
+   *   The reference to the object.
+   */
+  public static function createActivityForInstitutionGoonjActivityCollectionCamp(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($objectName != 'Eck_Collection_Camp' || self::getEntitySubtypeName($objectId) !== self::ENTITY_SUBTYPE_NAME) {
+      return;
+    }
+
+    $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
+    \Civi::log()->info('newStatus', ['newStatus'=>$newStatus, 'objectId'=>$objectId]);
+
+    if (!$newStatus || !$objectId) {
+      return;
+    }
+
+    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Institution_Goonj_Activities.Institution_POC', 'title')
+      ->addWhere('id', '=', $objectId)
+      ->execute()->single();
+
+
+    $currentStatus = $collectionCamp['Collection_Camp_Core_Details.Status'];
+    \Civi::log()->info('collectionCamp', ['collectionCamp'=>$collectionCamp, 'objectId'=>$objectId, 'currentStatus'=>$currentStatus]);
+
+    if ($currentStatus === $newStatus || $newStatus !== 'authorized') {
+      return;
+    }
+
+    // // Check for status change.
+    // // Access the id within the decoded data.
+    $campId = $objectRef['id'];
+    
+    \Civi::log()->info('campId', ['campId'=>$campId]);
+    if ($campId === NULL) {
+      return;
+    }
+    \Civi::log()->info('campIdobjectRef', ['campIdobjectRef'=>$objectRef]);
+
+    $activities = $objectRef['Institution_Goonj_Activities.How_do_you_want_to_engage_with_Goonj_'];
+    $activityDate = $objectRef['Institution_Goonj_Activities.Date_for_conducting_the_activity_'];
+    // $startDate = $objectRef['Goonj_Activities.Start_Date'];
+    // $endDate = $objectRef['Goonj_Activities.End_Date'];
+    $initiator = $objectRef['Institution_Goonj_Activities.Institution_POC'];
+
+    foreach ($activities as $activityName) {
+      // Check if the activity is 'Others'.
+      \Civi::log()->info('optionValue', ['optionValue'=>$optionValue, 'activityName'=>$activityName]);
+      if ($activityName == 'Other') {
+        $otherActivity = $objectRef['Institution_Goonj_Activities.Other_Activity_Details'] ?? '';
+
+        if ($otherActivity) {
+          // Use the 'Other_activity' field as the title.
+          $activityName = $otherActivity;
+        }
+        else {
+          continue;
+        }
+      }
+      \Civi::log()->info('optionValue', ['optionValue'=>$optionValue, 'activityName'=>$activityName]);
+      $optionValue = OptionValue::get(TRUE)
+        ->addSelect('value')
+        ->addWhere('option_group_id:name', '=', 'eck_sub_types')
+        ->addWhere('grouping', '=', 'Collection_Camp_Activity')
+        ->addWhere('name', '=', 'Institution_Goonj_Activities')
+        ->execute()->single();
+        \Civi::log()->info('optionValue', ['optionValue'=>$optionValue, 'activityName'=>$activityName]);
+
+      $results = EckEntity::create('Collection_Camp_Activity', TRUE)
+        ->addValue('title', $activityName)
+        ->addValue('subtype', $optionValue['value'])
+        ->addValue('Collection_Camp_Activity.Collection_Camp_Id', $campId)
+        ->addValue('Collection_Camp_Activity.Activity_Date', $activityDate)
+        ->addValue('Collection_Camp_Activity.Organizing_Person', $initiator)
+        ->execute();
+      \Civi::log()->info('results', ['results'=>$results]);
+    }
+  }
+
 }
