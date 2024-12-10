@@ -32,3 +32,26 @@ function civirazorpay_civicrm_install(): void {
 function civirazorpay_civicrm_enable(): void {
   _civirazorpay_civix_civicrm_enable();
 }
+
+/**
+ * Implements hook_civicrm_buildForm().
+ *
+ * Set a default value for the installments field in the contribution form.
+ *
+ * @param string $formName
+ * @param CRM_Core_Form $form
+ */
+function civirazorpay_civicrm_buildForm($formName, &$form) {
+  if ($formName === 'CRM_Contribute_Form_Contribution_Main') {
+    if ($form->elementExists('installments')) {
+      $form->setDefaults(['installments' => 36]);
+
+      $form->addFormRule(function($fields) {
+        if (!empty($fields['is_recur']) && empty($fields['installments'])) {
+          return ['installments' => ts('The number of installments is required when recurring contribution is selected.')];
+        }
+        return TRUE;
+      });
+    }
+  }
+}

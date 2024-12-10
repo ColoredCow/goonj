@@ -32,14 +32,17 @@ function generate_induction_slots($contactId = null, $days = 30) {
 
     try {
         // Fetch necessary contact details for slot generation
-        $contactData = \Civi\Api4\Contact::get(FALSE)
+        $contactDetails = \Civi\Api4\Contact::get(FALSE)
             ->addSelect('address_primary.state_province_id', 'address_primary.city', 'Individual_fields.Created_Date')
             ->addWhere('id', '=', $contactId)
-            ->execute()->single();
+            ->addWhere('contact_sub_type', '=', 'Volunteer')
+            ->execute();
+        
+        $contactData = $contactDetails->first();
 
         if (empty($contactData)) {
             \Civi::log()->info('Contact not found', ['contactId' => $contactId]);
-            return [];
+            return;
         }
 
         // Retrieve induction activity for the contact
@@ -94,20 +97,22 @@ function generate_induction_slots($contactId = null, $days = 30) {
             return generate_slots($assignedOfficeId, $defaultMaxSlot, $onlineInductionType, $inductionSlotStartDate);
         }
 
-        // Determine if a Goonj office exists in the contact's state and schedule accordingly
         $officeContact = \Civi\Api4\Contact::get(FALSE)
-            ->addSelect('id', 'display_name')
             ->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_Office')
-            ->addWhere('address_primary.state_province_id', '=', $contactStateId)
-            ->addWhere('address_primary.city', 'LIKE', $contactCityFormatted . '%')
+            ->addClause('OR', ['Goonj_Office_Details.Other_Induction_Cities', 'CONTAINS', $contactCityFormatted], ['address_primary.city', 'CONTAINS', $contactCityFormatted])
             ->execute();
-
+        
         if ($officeContact->count() === 0) {
-            // generate online induction slots for state having no office
+            // Generate online induction slots for state having no office
             return generate_slots($assignedOfficeId, $defaultMaxSlot, $onlineInductionType, $inductionSlotStartDate);
         }
-        // generate physical induction slots having office in their states
-        return generate_slots($assignedOfficeId, $defaultMaxSlot, $physicalInductionType, $inductionSlotStartDate);
+        $officeDetails = $officeContact->first();
+
+        if (!empty($officeDetails)) {
+            return generate_slots($assignedOfficeId, $defaultMaxSlot, $physicalInductionType, $inductionSlotStartDate);
+        } else {
+            return generate_slots($assignedOfficeId, $defaultMaxSlot, $onlineInductionType, $inductionSlotStartDate);
+        }        
     } catch (\Exception $e) {
         \Civi::log()->error('Error generating induction slots', [
             'contactId' => $contactId,
@@ -194,6 +199,12 @@ function generate_slots($assignedOfficeId, $maxSlots, $inductionType, $startDate
 function generateActivitySlots(&$slots, $maxSlots, $validInductionDays, $hour, $minute, $startDate, $scheduledActivityDates, &$slotCount, &$highActivityCountDays, $inductionType, $holidayDates) {
     $maxDays = 365;
     $holidayDatesArray = [];
+
+    $currentDate = new DateTime();
+
+    if ($startDate < $currentDate) {
+        $startDate = clone $currentDate;
+    }
 
     if(!empty($holidayDates)){
         $holidayDatesArray = array_map('trim', explode(',', $holidayDates));

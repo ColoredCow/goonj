@@ -24,6 +24,8 @@ function goonjcustom_civicrm_config(&$config): void {
 
   \Civi::dispatcher()->addSubscriber(new CRM_Goonjcustom_Token_CollectionCamp());
   \Civi::dispatcher()->addSubscriber(new CRM_Goonjcustom_Token_DroppingCenter());
+  \Civi::dispatcher()->addSubscriber(new CRM_Goonjcustom_Token_InstitutionCollectionCamp());
+  \Civi::dispatcher()->addSubscriber(new CRM_Goonjcustom_Token_InstitutionDroppingCenter());
 }
 
 /**
@@ -67,7 +69,8 @@ function goonjcustom_civicrm_container(ContainerBuilder $container) {
 function goonjcustom_register_tokens(TokenRegisterEvent $e) {
   $e->entity('contact')
     ->register('inductionDetails', ts('Induction details'))
-    ->register('inductionDateTime', ts('Induction Scheduled Date & Time'))
+    ->register('inductionDate', ts('Induction Scheduled Date'))
+    ->register('inductionTime', ts('Induction Scheduled Time'))
     ->register('inductionOnlineMeetlink', ts('Induction Online Meet link'))
     ->register('inductionOfficeAddress', ts('Induction Office Address'))
     ->register('inductionOfficeCity', ts('Induction Office City'))
@@ -142,13 +145,24 @@ function goonjcustom_evaluate_tokens(TokenValueEvent $e) {
 				->execute();
 
 			if ($inductionActivities->count() === 0) {
-				$row->tokens('contact', 'inductionDateTime', 'Not Scheduled');
+				$row->tokens('contact', 'inductionDate', 'Not Scheduled');
+        $row->tokens('contact', 'inductionTime', 'Not Scheduled');
 				$row->tokens('contact', 'inductionOnlineMeetlink', '');
 				return;
 			}
 
 			$inductionActivity = $inductionActivities->first();
-			$inductionDateTime = $inductionActivity['activity_date_time'] ?? 'Not Scheduled';
+			$inductionDateTimeString = $inductionActivity['activity_date_time'] ?? 'Not Scheduled';
+
+      if ($inductionDateTimeString !== 'Not Scheduled') {
+        $dateTime = new DateTime($inductionDateTimeString);
+        $inductionDate = $dateTime->format('Y-m-d');
+        $inductionTime = $dateTime->format('g:i A');
+      } else {
+          $inductionDate = 'Not Scheduled';
+          $inductionTime = 'Not Scheduled';
+      }
+
 			$inductionGoonjOffice = $inductionActivity['Induction_Fields.Goonj_Office'] ?? '';
 
 			// Fetch office online meet link details if induction office is specified
@@ -196,7 +210,8 @@ function goonjcustom_evaluate_tokens(TokenValueEvent $e) {
       $urbanOpsPhone = $coordinatorDetail['phone.phone'] ?? '';
 
 			// Assign tokens
-			$row->tokens('contact', 'inductionDateTime', $inductionDateTime);
+			$row->tokens('contact', 'inductionDate', $inductionDate);
+      $row->tokens('contact', 'inductionTime', $inductionTime);
 			$row->tokens('contact', 'inductionOnlineMeetlink', $inductionOnlineMeetlink);
       $row->tokens('contact', 'inductionOfficeAddress', $completeAddress);
       $row->tokens('contact', 'inductionOfficeCity', $inductionOfficeCity);

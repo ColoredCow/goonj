@@ -12,15 +12,13 @@ use Civi\Api4\MessageTemplate;
 use Civi\Api4\OptionValue;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
+use Civi\Api4\StateProvince;
 
 /**
  *
  */
 class CollectionBaseService extends AutoSubscriber {
   use CollectionSource;
-
-  const ENTITY_NAME = 'Collection_Camp';
-  const INTENT_CUSTOM_GROUP_NAME = 'Collection_Camp_Intent_Details';
 
   private static $stateCustomFieldDbDetails = [];
   private static $collectionAuthorized = NULL;
@@ -37,11 +35,13 @@ class CollectionBaseService extends AutoSubscriber {
       '&hook_civicrm_pre' => [
         ['handleAuthorizationEmails'],
         ['checkIfPosterNeedsToBeGenerated'],
+        ['generateCollectionSourceCode'],
       ],
       '&hook_civicrm_post' => [
         ['maybeGeneratePoster', 20],
         ['handleAuthorizationEmailsPost', 10],
       ],
+      '&hook_civicrm_fieldOptions' => 'setIndianStateOptions',
     ];
   }
 
@@ -67,12 +67,10 @@ class CollectionBaseService extends AutoSubscriber {
    *
    */
   private static function generateBaseFileName($collectionSourceId) {
-    if (self::getEntitySubtypeName($collectionSourceId) == self::ENTITY_NAME) {
-      $baseFileName = "collection_camp_{$collectionSourceId}.png";
-    }
-    else {
-      $baseFileName = "dropping_center_{$collectionSourceId}.png";
-    }
+    // Get the entity subtype name for the collection source.
+    $entitySubtype = self::getEntitySubtypeName($collectionSourceId);
+
+    $baseFileName = strtolower($entitySubtype) . "_{$collectionSourceId}.png";
 
     return $baseFileName;
   }
@@ -92,7 +90,6 @@ class CollectionBaseService extends AutoSubscriber {
       ->addWhere('id', '=', $messageTemplateId)
       ->execute()->single();
     $html = $messageTemplate['msg_html'];
-
     // Regular expression to find <style>...</style> and replace it with {literal}<style>...</style>{/literal}.
     $pattern = '/<style\b[^>]*>(.*?)<\/style>/is';
     $replacement = '{literal}<style>$1</style>{/literal}';
@@ -104,7 +101,6 @@ class CollectionBaseService extends AutoSubscriber {
     $replacement = '{literal}<script>$1</script>{/literal}';
 
     $modifiedHtml = preg_replace($pattern, $replacement, $modifiedHtml);
-
     $rendered = \CRM_Core_TokenSmarty::render(
     ['html' => $modifiedHtml],
     [
@@ -137,7 +133,6 @@ class CollectionBaseService extends AutoSubscriber {
     }
 
     $posterFieldId = 'custom_' . $posterField['id'];
-
     // Save the poster image as an attachment linked to the collection camp.
     $params = [
       'entity_id' => $collectionSourceId,
@@ -148,7 +143,6 @@ class CollectionBaseService extends AutoSubscriber {
         'move-file' => $tempFilePath,
       ],
     ];
-
     $result = civicrm_api3('Attachment', 'create', $params);
     if (empty($result['id'])) {
       \CRM_Core_Error::debug_log_message('Failed to upload poster image for collection camp ID ' . $collectionSourceId);
@@ -165,7 +159,6 @@ class CollectionBaseService extends AutoSubscriber {
     $htmlContent = escapeshellarg($htmlContent);
 
     $command = "$nodePath $puppeteerJsPath $htmlContent $outputPath";
-
     exec($command, $output, $returnCode);
 
     if ($returnCode === 0) {
@@ -223,14 +216,21 @@ class CollectionBaseService extends AutoSubscriber {
       $statesControlled = array_unique($statesControlled);
       $statesList = implode(',', array_map('intval', $statesControlled));
 
-      $stateField = self::getStateFieldDbDetails();
+      $stateFields = self::getStateFieldDbDetails();
 
-      $clauseString = sprintf(
-      'IN (SELECT entity_id FROM `%1$s` WHERE `%2$s` IN (%3$s))',
-      $stateField['tableName'],
-      $stateField['columnName'],
-      $statesList,
-      );
+      $clausesArray = [];
+      foreach ($stateFields as $stateField) {
+        $selectQueries[] = sprintf(
+            'SELECT entity_id FROM `%1$s` WHERE `%2$s` IN (%3$s)',
+            $stateField['tableName'],
+            $stateField['columnName'],
+            $statesList,
+        );
+      }
+
+      $concatenatedQuery = implode(' UNION ', $selectQueries);
+
+      $clauseString = "IN ($concatenatedQuery)";
 
       $clauses['id'][] = $clauseString;
     }
@@ -246,21 +246,29 @@ class CollectionBaseService extends AutoSubscriber {
    */
   private static function getStateFieldDbDetails() {
     if (empty(self::$stateCustomFieldDbDetails)) {
-      $customField = CustomField::get(FALSE)
-        ->addSelect('column_name', 'custom_group_id.table_name')
-        ->addWhere('custom_group_id.name', '=', self::INTENT_CUSTOM_GROUP_NAME)
-        ->addWhere('name', '=', 'state')
-        ->execute()->single();
+      $stateGroupNameMapper = self::getStateGroupNameMapper();
 
-      self::$stateCustomFieldDbDetails = [
-        'tableName' => $customField['custom_group_id.table_name'],
-        'columnName' => $customField['column_name'],
-      ];
+      $stateFields = [];
+      foreach ($stateGroupNameMapper as $subtype => $groupName) {
+        $customField = CustomField::get(FALSE)
+          ->addSelect('column_name', 'custom_group_id.table_name')
+          ->addWhere('custom_group_id.name', '=', $groupName)
+          ->addWhere('name', '=', 'state')
+          ->execute()
+          ->single();
 
+        if ($customField) {
+          $stateFields[] = [
+            'tableName' => $customField['custom_group_id.table_name'],
+            'columnName' => $customField['column_name'],
+          ];
+        }
+      }
+
+      self::$stateCustomFieldDbDetails = $stateFields;
     }
 
     return self::$stateCustomFieldDbDetails;
-
   }
 
   /**
@@ -288,12 +296,13 @@ class CollectionBaseService extends AutoSubscriber {
     }
 
     $currentCollectionCamp = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id')
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id', 'Institution_Collection_Camp_Intent.Organization_Name.id', 'Institution_Dropping_Center_Intent.Organization_Name.id', 'subtype:name')
       ->addWhere('id', '=', $objectId)
       ->execute()->single();
 
+    $initiatorId = self::getInitiatorId($currentCollectionCamp);
+
     $currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
-    $initiatorId = $currentCollectionCamp['Collection_Camp_Core_Details.Contact_Id'];
 
     if (!in_array($newStatus, ['authorized', 'unauthorized'])) {
       return;
@@ -315,17 +324,17 @@ class CollectionBaseService extends AutoSubscriber {
     }
 
     $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id', 'subtype')
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id', 'Institution_Collection_Camp_Intent.Organization_Name.id', 'Institution_Dropping_Center_Intent.Organization_Name.id', 'subtype', 'subtype:name')
       ->addWhere('id', '=', $objectRef->id)
       ->execute()->single();
 
-    $initiator = $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
-    $subtype = $collectionCamp['subtype'];
+    $initiatorId = self::getInitiatorId($collectionCamp);
 
     $collectionSourceId = $collectionCamp['id'];
+    $subtype = $collectionCamp['subtype'];
 
     if (!self::$authorizationEmailQueued) {
-      self::queueAuthorizationEmail($initiator, $subtype, self::$collectionAuthorizedStatus, $collectionSourceId);
+      self::queueAuthorizationEmail($initiatorId, $subtype, self::$collectionAuthorizedStatus, $collectionSourceId);
     }
   }
 
@@ -333,6 +342,7 @@ class CollectionBaseService extends AutoSubscriber {
    * Send Authorization Email to contact.
    */
   private static function queueAuthorizationEmail($initiatorId, $subtype, $status, $collectionSourceId) {
+
     try {
       $params = [
         'initiatorId' => $initiatorId,
@@ -373,7 +383,6 @@ class CollectionBaseService extends AutoSubscriber {
   public static function processQueuedEmail($queue, $params) {
     try {
       $emailParams = self::getAuthorizationEmailParams($params);
-
       civicrm_api3('MessageTemplate', 'send', $emailParams);
     }
     catch (\Exception $ex) {
@@ -388,13 +397,13 @@ class CollectionBaseService extends AutoSubscriber {
     $collectionSourceId = $params['collectionSourceId'];
     $collectionSourceType = $params['subtype'];
     $status = $params['status'];
+
     $initiatorId = $params['initiatorId'];
 
     $collectionCampSubtypes = OptionValue::get(FALSE)
       ->addWhere('option_group_id:name', '=', 'eck_sub_types')
       ->addWhere('grouping', '=', 'Collection_Camp')
       ->execute();
-
     foreach ($collectionCampSubtypes as $subtype) {
       $subtypeValue = $subtype['value'];
       $subtypeName = $subtype['name'];
@@ -404,7 +413,6 @@ class CollectionBaseService extends AutoSubscriber {
     }
 
     $msgTitleStartsWith = $mapper[$collectionSourceType][$status] . '%';
-
     $messageTemplates = MessageTemplate::get(FALSE)
       ->addSelect('id')
       ->addWhere('msg_title', 'LIKE', $msgTitleStartsWith)
@@ -418,7 +426,6 @@ class CollectionBaseService extends AutoSubscriber {
       ->addWhere('contact_id', '=', $initiatorId)
       ->addWhere('is_primary', '=', TRUE)
       ->execute()->single();
-
     $fromEmail = OptionValue::get(FALSE)
       ->addSelect('label')
       ->addWhere('option_group_id:name', '=', 'from_email_address')
@@ -457,6 +464,65 @@ class CollectionBaseService extends AutoSubscriber {
     }
 
     return $emailParams;
+  }
+
+  /**
+   *
+   */
+  public static function setIndianStateOptions(string $entity, string $field, ?array &$options, array $params) {
+    if ($entity !== 'Eck_Collection_Camp') {
+      return;
+    }
+
+    $stateFieldNames = self::getStateFieldNames();
+
+    if (!in_array($field, $stateFieldNames)) {
+      return;
+    }
+
+    $indianStates = StateProvince::get(FALSE)
+      ->addWhere('country_id.iso_code', '=', 'IN')
+      ->addOrderBy('name', 'ASC')
+      ->execute();
+
+    $stateOptions = [];
+    foreach ($indianStates as $state) {
+      if ($state['is_active']) {
+        $stateOptions[$state['id']] = $state['name'];
+      }
+    }
+
+    $options = $stateOptions;
+
+  }
+
+  /**
+   *
+   */
+  public static function getStateFieldNames() {
+    $stateGroupNameMapper = self::getStateGroupNameMapper();
+
+    $intentStateFields = CustomField::get(FALSE)
+      ->addWhere('custom_group_id:name', 'IN', array_values($stateGroupNameMapper))
+      ->addWhere('name', '=', 'State')
+      ->execute();
+
+    $statefieldNames = array_map(fn ($field) => 'custom_' . $field['id'], $intentStateFields->jsonSerialize());
+
+    return $statefieldNames;
+  }
+
+  /**
+   *
+   */
+  private static function getStateGroupNameMapper() {
+    return [
+      'Collection_Camp' => 'Collection_Camp_Intent_Details',
+      'Dropping_Center' => 'Dropping_Centre',
+      'Institution_Collection_Camp' => 'Institution_Collection_Camp_Intent',
+      'Goonj_Activities' => 'Goonj_Activities',
+      'Institution_Dropping_Center' => 'Institution_Dropping_Center_Intent',
+    ];
   }
 
 }
