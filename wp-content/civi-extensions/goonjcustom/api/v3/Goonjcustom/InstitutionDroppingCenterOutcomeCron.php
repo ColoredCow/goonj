@@ -44,7 +44,7 @@ function civicrm_api3_goonjcustom_institution_dropping_center_outcome_cron($para
 
   $activitiesArray = $activities->getIterator()->getArrayCopy();
 
-  $totalFootfall = array_count_values(array_column($activitiesArray, 'Material_Contribution.Dropping_Center'));
+  $totalFootfall = array_count_values(array_column($activitiesArray, 'Material_Contribution.Institution_Dropping_Center'));
 
   $bagData = EckEntity::get('Collection_Source_Vehicle_Dispatch', TRUE)
     ->addSelect('Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office', 'Camp_Vehicle_Dispatch.Institution_Dropping_Center')
