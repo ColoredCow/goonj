@@ -1399,7 +1399,7 @@ class CollectionCampService extends AutoSubscriber {
       }
 
       $campaignId = $collectionCamp['Collection_Camp_Intent_Details.Campaign'];
-      
+
       if (!$campaignId) {
         return;
       }
@@ -1415,10 +1415,13 @@ class CollectionCampService extends AutoSubscriber {
 
     }
 
-  catch (\Exception $e) {
-    // @ignoreException
-  }
+    catch (\Exception $e) {
+      Civi::log()->error("Exception occurred in updateCampaignForCollectionSourceContribution.", [
+        'Message' => $e->getMessage(),
+        'Stack Trace' => $e->getTraceAsString(),
+      ]);
+    }
 
-}
+  }
 
 }
