@@ -385,43 +385,36 @@ class IntitutionGoonjActivitiesService extends AutoSubscriber {
     $tabConfigs = [
       'activities' => [
         'title' => ts('Activities'),
-        'module' => 'afsearchGoonjAllActivity',
-        'directive' => 'afsearch-goonj-all-activity',
+        'module' => 'afsearchGoonjAllInstitutionActivity',
+        'directive' => 'afsearch-goonj-all-institution-activity',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'logistics' => [
         'title' => ts('Logistics'),
-        'module' => 'afsearchGoonjActivitiesLogistics',
-        'directive' => 'afsearch-goonj-activities-logistics',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops'],
-      ],
-      'eventVolunteers' => [
-        'title' => ts('Event Volunteers'),
-        'module' => 'afsearchEventVolunteer',
-        'directive' => 'afsearch-event-volunteer',
+        'module' => 'afsearchInstitutionGoonjActivitiesLogistics',
+        'directive' => 'afsearch-institution-goonj-activities-logistics',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'campOutcome' => [
         'title' => ts('Outcome'),
-        'module' => 'afsearchGoonjActivitiesOutcomeView',
-        'directive' => 'afsearch-goonj-activities-outcome-view',
+        'module' => 'afsearchInstitutionGoonjActivitiesOutcomeView',
+        'directive' => 'afsearch-institution-goonj-activities-outcome-view',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'campFeedback' => [
         'title' => ts('Volunteer Feedback'),
-        'module' => 'afsearchGoonjActivityVolunteerFeedback',
-        'directive' => 'afsearch-goonj-activity-volunteer-feedback',
+        'module' => 'afsearchInstitutionGoonjActivityVolunteerFeedback',
+        'directive' => 'afsearch-institution-goonj-activity-volunteer-feedback',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'attendeeFeedback' => [
         'title' => ts('Attendee Feedback'),
-        'module' => 'afsearchGoonjActivityAttendeeFeedbacks',
-        'directive' => 'afsearch-goonj-activity-attendee-feedbacks',
+        'module' => 'afsearchInstitutionGoonjActivityAttendeeFeedbacks',
+        'directive' => 'afsearch-institution-goonj-activity-attendee-feedbacks',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
@@ -483,7 +476,6 @@ class IntitutionGoonjActivitiesService extends AutoSubscriber {
     }
 
     $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
-    \Civi::log()->info('newStatus', ['newStatus'=>$newStatus, 'objectId'=>$objectId]);
 
     if (!$newStatus || !$objectId) {
       return;
@@ -496,7 +488,6 @@ class IntitutionGoonjActivitiesService extends AutoSubscriber {
 
 
     $currentStatus = $collectionCamp['Collection_Camp_Core_Details.Status'];
-    \Civi::log()->info('collectionCamp', ['collectionCamp'=>$collectionCamp, 'objectId'=>$objectId, 'currentStatus'=>$currentStatus]);
 
     if ($currentStatus === $newStatus || $newStatus !== 'authorized') {
       return;
@@ -506,11 +497,9 @@ class IntitutionGoonjActivitiesService extends AutoSubscriber {
     // // Access the id within the decoded data.
     $campId = $objectRef['id'];
     
-    \Civi::log()->info('campId', ['campId'=>$campId]);
     if ($campId === NULL) {
       return;
     }
-    \Civi::log()->info('campIdobjectRef', ['campIdobjectRef'=>$objectRef]);
 
     $activities = $objectRef['Institution_Goonj_Activities.How_do_you_want_to_engage_with_Goonj_'];
     $activityDate = $objectRef['Institution_Goonj_Activities.Date_for_conducting_the_activity_'];
@@ -520,7 +509,6 @@ class IntitutionGoonjActivitiesService extends AutoSubscriber {
 
     foreach ($activities as $activityName) {
       // Check if the activity is 'Others'.
-      \Civi::log()->info('optionValue', ['optionValue'=>$optionValue, 'activityName'=>$activityName]);
       if ($activityName == 'Other') {
         $otherActivity = $objectRef['Institution_Goonj_Activities.Other_Activity_Details'] ?? '';
 
@@ -532,7 +520,7 @@ class IntitutionGoonjActivitiesService extends AutoSubscriber {
           continue;
         }
       }
-      \Civi::log()->info('optionValue', ['optionValue'=>$optionValue, 'activityName'=>$activityName]);
+
       $optionValue = OptionValue::get(TRUE)
         ->addSelect('value')
         ->addWhere('option_group_id:name', '=', 'eck_sub_types')
