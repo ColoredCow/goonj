@@ -1387,11 +1387,11 @@ class CollectionCampService extends AutoSubscriber {
         return;
       }
 
-      $collectionSourceId = $contribution['Contribution_Details.Source'];
+      $sourceID = $contribution['Contribution_Details.Source'];
 
       $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
         ->addSelect('Collection_Camp_Intent_Details.Campaign')
-        ->addWhere('id', '=', $collectionSourceId)
+        ->addWhere('id', '=', $sourceID)
         ->execute()->single();
 
       if (!$collectionCamp) {
