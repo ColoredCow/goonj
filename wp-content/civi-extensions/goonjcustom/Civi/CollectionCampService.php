@@ -1359,7 +1359,7 @@ class CollectionCampService extends AutoSubscriber {
    *
    */
   public static function updateCampaignForCollectionSourceContribution(string $op, string $objectName, $objectId, &$objectRef) {
-    if ($objectName != 'Contribution' || $objectId === NULL) {
+    if ($objectName != 'Contribution' || !$objectId) {
       return;
     }
 
