@@ -52,6 +52,7 @@ class CollectionCampService extends AutoSubscriber {
       ['reGenerateCollectionCampQr'],
       ['updateCampStatusOnOutcomeFilled'],
       ['assignChapterGroupToIndividualForContribution'],
+      ['updateCampaignForCollectionSourceContribution'],
       ],
       '&hook_civicrm_pre' => [
         ['generateCollectionCampQr'],
@@ -1353,5 +1354,71 @@ class CollectionCampService extends AutoSubscriber {
       }
     }
   }
+
+  /**
+   * This hook is called after a db write on entities.
+   *
+   * @param string $op
+   *   The type of operation being performed.
+   * @param string $objectName
+   *   The name of the object.
+   * @param int $objectId
+   *   The unique identifier for the object.
+   * @param object $objectRef
+   *   The reference to the object.
+   */
+  public static function updateCampaignForCollectionSourceContribution(string $op, string $objectName, int $objectId, &$objectRef) {
+    if ($objectName !== 'Contribution' || !$objectRef->id || $op !== 'edit') {
+      return;
+    }
+
+    try {
+      $contributionId = $objectRef->id;
+      if (!$contributionId) {
+        return;
+      }
+
+      $contribution = Contribution::get(FALSE)
+        ->addSelect('Contribution_Details.Source')
+        ->addWhere('id', '=', $contributionId)
+        ->execute()->first();
+
+      if (!$contribution) {
+        return;
+      }
+
+      $collectionSourceId = $contribution['Contribution_Details.Source'];
+
+      $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+        ->addSelect('Collection_Camp_Intent_Details.Campaign')
+        ->addWhere('id', '=', $collectionSourceId)
+        ->execute()->single();
+
+      if (!$collectionCamp) {
+        return;
+      }
+
+      $campaignId = $collectionCamp['Collection_Camp_Intent_Details.Campaign'];
+      
+      if (!$campaignId) {
+        return;
+      }
+
+      if (isset($objectRef->campaign_id) && $objectRef->campaign_id == $campaignId) {
+        return;
+      }
+
+      Contribution::update(FALSE)
+        ->addValue('campaign_id', $campaignId)
+        ->addWhere('id', '=', $contributionId)
+        ->execute();
+
+    }
+
+  catch (\Exception $e) {
+    // @ignoreException
+  }
+
+}
 
 }
