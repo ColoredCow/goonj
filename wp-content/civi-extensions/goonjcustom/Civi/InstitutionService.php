@@ -295,11 +295,9 @@ class InstitutionService extends AutoSubscriber {
 
     $typeToRelationshipMap = [
       'Corporate'    => 'Corporate Coordinator of',
-      'Family'       => 'Family Foundation Coordinator of',
-      'Education'    => 'Education Coordinator of',
-      'Government'   => 'Government Coordinator of',
-      'Hospital'     => 'Hospital Coordinator of',
-      'NGO'          => 'NGO Coordinator of',
+      'Foundation'   => 'Foundation Coordinator of',
+      'Education'    => 'Education Institute Coordinator of',
+      'Associations' => 'Associations Coordinator of',
       'Others'       => 'Default Coordinator of',
     ];
 

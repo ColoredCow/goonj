@@ -51,7 +51,7 @@ function civicrm_api3_goonjcustom_volunteer_feedback_goonj_activity_cron($params
     ->addSelect('Goonj_Activities.End_Date', 'Logistics_Coordination.Feedback_Email_Sent', 'Collection_Camp_Core_Details.Contact_Id', 'Goonj_Activities.Where_do_you_wish_to_organise_the_activity_', 'Goonj_Activities.Select_Volunteer_Feedback_Form')
     ->addWhere('Collection_Camp_Core_Details.Status', '=', 'authorized')
     ->addWhere('subtype', '=', $collectionCampSubtype)
-    ->addWhere('Collection_Camp_Intent_Details.End_Date', '<=', $endOfDay)
+    ->addWhere('Goonj_Activities.End_Date', '<=', $endOfDay)
     ->execute();
 
   foreach ($collectionCamps as $camp) {

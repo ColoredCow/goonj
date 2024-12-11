@@ -310,7 +310,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       ->addWhere('id', '=', $institutionDroppingCenterId)
       ->execute()->single();
 
-    $institutionDroppingCenterCode = $institutionDroppingCenter['title'];
+    $InstitutionDroppingCenterCode = $institutionDroppingCenter['title'];
     $institutionDroppingCenterAddress = $institutionDroppingCenter['Institution_Dropping_Center_Intent.Dropping_Center_Address'];
 
     $coordinators = Relationship::get(FALSE)
@@ -318,7 +318,6 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       ->addWhere('relationship_type_id:name', '=', self::MATERIAL_RELATIONSHIP_TYPE_NAME)
       ->addWhere('is_current', '=', TRUE)
       ->execute()->first();
-
     $mmtId = $coordinators['contact_id_a'];
 
     if (empty($mmtId)) {
@@ -331,13 +330,14 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       ->execute()->single();
 
     $mmtEmail = $email['email'];
+
     $from = HelperService::getDefaultFromEmail();
     $mailParams = [
       'subject' => 'Dropping Center Material Acknowledgement - ' . $institutionDroppingCenterAddress,
       'from' => $from,
       'toEmail' => $mmtEmail,
       'replyTo' => $fromEmail['label'],
-      'html' => self::getMmtEmailHtml($institutionDroppingCenterId, $institutionDroppingCenterCode, $institutionDroppingCenterAddress, $vehicleDispatchId, $mmtId),
+      'html' => self::getMmtEmailHtml($institutionDroppingCenterId, $InstitutionDroppingCenterCode, $institutionDroppingCenterAddress, $vehicleDispatchId, $mmtId),
     ];
     \CRM_Utils_Mail::send($mailParams);
 
