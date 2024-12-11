@@ -310,7 +310,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       ->addWhere('id', '=', $institutionDroppingCenterId)
       ->execute()->single();
 
-    $institutionDroppingCenter = $institutionDroppingCenter['title'];
+    $institutionDroppingCenterCode = $institutionDroppingCenter['title'];
     $institutionDroppingCenterAddress = $institutionDroppingCenter['Institution_Dropping_Center_Intent.Dropping_Center_Address'];
 
     $coordinators = Relationship::get(FALSE)
@@ -337,7 +337,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       'from' => $from,
       'toEmail' => $mmtEmail,
       'replyTo' => $fromEmail['label'],
-      'html' => self::getMmtEmailHtml($institutionDroppingCenterId, $institutionDroppingCenter, $institutionDroppingCenterAddress, $vehicleDispatchId, $mmtId),
+      'html' => self::getMmtEmailHtml($institutionDroppingCenterId, $institutionDroppingCenterCode, $institutionDroppingCenterAddress, $vehicleDispatchId, $mmtId),
     ];
     \CRM_Utils_Mail::send($mailParams);
 
@@ -346,7 +346,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
   /**
    *
    */
-  public static function getMmtEmailHtml($institutionDroppingCenterId, $institutionDroppingCenter, $institutionDroppingCenterAddress, $vehicleDispatchId, $mmtId) {
+  public static function getMmtEmailHtml($institutionDroppingCenterId, $institutionDroppingCenterCode, $institutionDroppingCenterAddress, $vehicleDispatchId, $mmtId) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
     $materialdispatchUrl = $homeUrl . '/dropping-center-acknowledgement-for-dispatch/#?Eck_Collection_Source_Vehicle_Dispatch1=' . $vehicleDispatchId
         . '&Camp_Vehicle_Dispatch.Institution_Dropping_Center=' . $institutionDroppingCenterId
@@ -355,7 +355,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
         . '&Acknowledgement_For_Logistics.Verified_By=' . $mmtId;
     $html = "
     <p>Dear MMT team,</p>
-    <p>This is to inform you that a vehicle has been sent from the dropping center <strong>$institutionDroppingCenter</strong> at <strong>$institutionDroppingCenterAddress</strong>.</p>
+    <p>This is to inform you that a vehicle has been sent from the dropping center <strong>$institutionDroppingCenterCode</strong> at <strong>$institutionDroppingCenterAddress</strong>.</p>
     <p>Kindly acknowledge the details by clicking on this form <a href=\"$materialdispatchUrl\"> Link </a> when it is received at the center.</p>
     <p>Warm regards,<br>Urban Relations Team</p>";
 

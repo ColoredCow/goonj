@@ -774,13 +774,6 @@ class InstitutionCollectionCampService extends AutoSubscriber {
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
-      'materialContribution' => [
-        'title' => ts('Material Contribution'),
-        'module' => 'afsearchInstitutionCollectionCampMaterialContribution',
-        'directive' => 'afsearch-institution-collection-camp-material-contribution',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops'],
-      ],
       'vehicleDispatch' => [
         'title' => ts('Dispatch'),
         'module' => 'afsearchInstitutionCampVehicleDispatchData',
@@ -792,6 +785,13 @@ class InstitutionCollectionCampService extends AutoSubscriber {
         'title' => ts('Material Authorization'),
         'module' => 'afsearchInstitutionCampAcknowledgementDispatch',
         'directive' => 'afsearch-institution-camp-acknowledgement-dispatch',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+      ],
+      'materialContribution' => [
+        'title' => ts('Material Contribution'),
+        'module' => 'afsearchInstitutionCollectionCampMaterialContribution',
+        'directive' => 'afsearch-institution-collection-camp-material-contribution',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
