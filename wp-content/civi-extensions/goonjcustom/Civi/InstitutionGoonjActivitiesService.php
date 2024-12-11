@@ -21,7 +21,7 @@ use Civi\Api4\Utils\CoreUtil;
 /**
  *
  */
-class IntitutionGoonjActivitiesService extends AutoSubscriber {
+class InstitutionGoonjActivitiesService extends AutoSubscriber {
   use QrCodeable;
   use CollectionSource;
   const ENTITY_SUBTYPE_NAME = 'Institution_Goonj_Activities';
@@ -172,7 +172,6 @@ class IntitutionGoonjActivitiesService extends AutoSubscriber {
     $registrationCategorySelection = $registrationType['Institution_Goonj_Activities.You_wish_to_register_as:name'];
 
     $registrationCategorySelection = trim($registrationCategorySelection);
-    \Civi::log()->info('registrationCategorySelection', ['registrationCategorySelection' => $registrationCategorySelection, 'relationshipTypeMap' => $relationshipTypeMap]);
 
     if (array_key_exists($registrationCategorySelection, $relationshipTypeMap)) {
       $relationshipTypeName = $relationshipTypeMap[$registrationCategorySelection];
@@ -180,7 +179,6 @@ class IntitutionGoonjActivitiesService extends AutoSubscriber {
     else {
       $relationshipTypeName = 'Other Entities Coordinator of';
     }
-    \Civi::log()->info('relationshipTypeName', ['relationshipTypeName' => $relationshipTypeName, '------', 'stateOfficeId' => $stateOfficeId]);
 
     // Retrieve the coordinators for the selected relationship type.
     $coordinators = Relationship::get(FALSE)
@@ -200,7 +198,6 @@ class IntitutionGoonjActivitiesService extends AutoSubscriber {
       ->addValue('Institution_Goonj_Activities.Coordinating_Urban_Poc', $coordinator['contact_id_a'])
       ->addWhere('id', '=', $collectionCampId)
       ->execute();
-    \Civi::log()->info('$coordinator', ['id' => $coordinator['contact_id_a'], 'res' => $res]);
 
     return TRUE;
   }
@@ -259,7 +256,6 @@ class IntitutionGoonjActivitiesService extends AutoSubscriber {
    *
    */
   public static function setOfficeDetails($op, $groupID, $entityID, &$params) {
-    // \Civi::log()->info('getEntitySubtypeName', ['getEntitySubtypeName' => self::getEntitySubtypeName($entityID)]);
     if ($op !== 'create' || self::getEntitySubtypeName($entityID) !== self::ENTITY_SUBTYPE_NAME) {
       return;
     }
@@ -268,14 +264,9 @@ class IntitutionGoonjActivitiesService extends AutoSubscriber {
     }
 
     $stateId = $stateField['value'];
-    \Civi::log()->info('stateId', ['stateId' => $stateId]);
+
     $institutionCollectionCampId = $stateField['entity_id'];
 
-    // $institutionCollectionCampData = EckEntity::get('Collection_Camp', FALSE)
-    //   ->addSelect('Institution_Goonj_Activities.Will_your_collection_drive_be_open_for_general_public_as_well')
-    //   ->addWhere('id', '=', $institutionCollectionCampId)
-    //   ->execute()->single();
-    // $isPublicDriveOpen = $institutionCollectionCampData['Institution_Goonj_Activities.Will_your_collection_drive_be_open_for_general_public_as_well'];
     if (!$stateId) {
       \CRM_Core_Error::debug_log_message('Cannot assign Goonj Office to institution collection camp: ' . $institutionCollectionCampId);
       return FALSE;
@@ -329,7 +320,7 @@ class IntitutionGoonjActivitiesService extends AutoSubscriber {
 
     $currentStatus = $collectionCamp['Collection_Camp_Core_Details.Status'];
     $collectionCampId = $collectionCamp['id'];
-    \Civi::log()->info('currentStatus', ['currentStatus'=>$currentStatus, 'newStatus'=>$newStatus]);
+
 
     // Check for status change.
     if ($currentStatus !== $newStatus && $newStatus === 'authorized') {
@@ -348,7 +339,6 @@ class IntitutionGoonjActivitiesService extends AutoSubscriber {
       'customGroupName' => 'Collection_Camp_QR_Code',
       'customFieldName' => 'QR_Code',
     ];
-    \Civi::log()->info('baseUrl', ['baseUrl'=>$baseUrl, 'saveOptions'=>$saveOptions]);
 
     self::generateQrCode($data, $id, $saveOptions);
   }
@@ -527,7 +517,7 @@ class IntitutionGoonjActivitiesService extends AutoSubscriber {
         ->addWhere('grouping', '=', 'Collection_Camp_Activity')
         ->addWhere('name', '=', 'Institution_Goonj_Activities')
         ->execute()->single();
-        \Civi::log()->info('optionValue', ['optionValue'=>$optionValue, 'activityName'=>$activityName]);
+
 
       $results = EckEntity::create('Collection_Camp_Activity', TRUE)
         ->addValue('title', $activityName)
@@ -536,8 +526,163 @@ class IntitutionGoonjActivitiesService extends AutoSubscriber {
         ->addValue('Collection_Camp_Activity.Activity_Date', $activityDate)
         ->addValue('Collection_Camp_Activity.Organizing_Person', $initiator)
         ->execute();
-      \Civi::log()->info('results', ['results'=>$results]);
+
     }
   }
 
+    /**
+   *
+   */
+  public static function sendInsitutionActivityLogisticsEmail($collectionCamp) {
+    try {
+      $campId = $collectionCamp['id'];
+      $activityCode = $collectionCamp['title'];
+      $activityOffice = $collectionCamp['Institution_Goonj_Activities.Goonj_Office'];
+      $activityAddress = $collectionCamp['Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'];
+      $activityAttendedById = $collectionCamp['Logistics_Coordination.Camp_to_be_attended_by'];
+      $logisticEmailSent = $collectionCamp['Logistics_Coordination.Email_Sent'];
+      $outcomeFormLink = $collectionCamp['Institution_Goonj_Activities.Select_Goonj_POC_Attendee_Outcome_Form'];
+
+      $startDate = new \DateTime($collectionCamp['Institution_Goonj_Activities.Date_for_conducting_the_activity_']);
+
+      $today = new \DateTimeImmutable();
+      $endOfToday = $today->setTime(23, 59, 59);
+
+      if (true) {
+        $campAttendedBy = Contact::get(FALSE)
+          ->addSelect('email.email', 'display_name')
+          ->addJoin('Email AS email', 'LEFT')
+          ->addWhere('id', '=', $activityAttendedById)
+          ->execute()->single();
+
+        $attendeeEmail = $campAttendedBy['email.email'];
+        $attendeeName = $campAttendedBy['display_name'];
+        $from = HelperService::getDefaultFromEmail();
+
+        if (!$attendeeEmail) {
+          throw new \Exception('Attendee email missing');
+        }
+
+        $mailParams = [
+          'subject' => 'Goonj Activity Notification: ' . $activityCode . ' at ' . $activityAddress,
+          'from' => $from,
+          'toEmail' => $attendeeEmail,
+          'replyTo' => $from,
+          'html' => self::getLogisticsEmailHtml($attendeeName, $campId, $activityAttendedById, $activityOffice, $activityCode, $activityAddress, $outcomeFormLink),
+        ];
+
+        $emailSendResult = \CRM_Utils_Mail::send($mailParams);
+
+        if ($emailSendResult) {
+          EckEntity::update('Collection_Camp', FALSE)
+            ->addValue('Logistics_Coordination.Email_Sent', 1)
+            ->addWhere('id', '=', $campId)
+            ->execute();
+        }
+      }
+    }
+    catch (\Exception $e) {
+      \Civi::log()->error("Error in sendLogisticsEmail for $campId " . $e->getMessage());
+    }
+
+  }
+
+    /**
+   *
+   */
+  private static function getLogisticsEmailHtml($contactName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress, $outcomeFormLink) {
+    $homeUrl = \CRM_Utils_System::baseCMSURL();
+    // Construct the full URLs for the forms.
+    $campOutcomeFormUrl = $homeUrl . $outcomeFormLink . '#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $campAttendedById;
+
+    $html = "
+    <p>Dear $contactName,</p>
+    <p>Thank you for attending the goonj activity <strong>$campCode</strong> at <strong>$campAddress</strong>. Their is one forms that require your attention during and after the goonj activity:</p>
+    <ol>
+        Please complete this form from the goonj activity location once the goonj activity ends.</li>
+        <li><a href=\"$campOutcomeFormUrl\">Goonj Activity Outcome Form</a><br>
+        This feedback form should be filled out after the goonj activity/session ends, once you have an overview of the event's outcomes.</li>
+    </ol>
+    <p>We appreciate your cooperation.</p>
+    <p>Warm Regards,<br>Urban Relations Team</p>";
+
+    return $html;
+  }
+
+    /**
+   *
+   */
+  public static function getInstitutionPocActivitiesFeedbackEmailHtml($collectionCamp) {
+
+    try {
+      $endDate = new \DateTime($collectionCamp['Institution_Goonj_Activities.Date_for_conducting_the_activity_']);
+      $collectionCampId = $collectionCamp['id'];
+      $endDateFormatted = $endDate->format('Y-m-d');
+      $today = new \DateTime();
+      $today->setTime(23, 59, 59);
+      $todayFormatted = $today->format('Y-m-d');
+      $feedbackEmailSent = $collectionCamp['Logistics_Coordination.Feedback_Email_Sent'];
+      $initiatorId = $collectionCamp['Institution_Goonj_Activities.Institution_POC'];
+
+
+      $campAddress = $collectionCamp['Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'];
+      $volunteerFeedbackForm = $collectionCamp['Institution_Goonj_Activities.Select_Volunteer_Feedback_Form'] ?? NULL;
+
+      // Get recipient email and name.
+      $campAttendedBy = Contact::get(TRUE)
+        ->addSelect('email.email', 'display_name')
+        ->addJoin('Email AS email', 'LEFT')
+        ->addWhere('id', '=', $initiatorId)
+        ->execute()->single();
+
+      $contactEmailId = $campAttendedBy['email.email'];
+      $organizingContactName = $campAttendedBy['display_name'];
+      $from = HelperService::getDefaultFromEmail();
+
+      // Send email if the end date is today or earlier.
+      if (!$feedbackEmailSent && $endDateFormatted <= $todayFormatted) {
+        $mailParams = [
+          'subject' => 'Thank You for Organizing the Goonj Activity! Share Your Feedback.',
+          'from' => $from,
+          'toEmail' => $contactEmailId,
+          'replyTo' => $from,
+          'html' => self::getInstitutionPocFeedbackEmailHtml($organizingContactName, $collectionCampId, $campAddress, $volunteerFeedbackForm),
+        ];
+        $feedbackEmailSendResult = \CRM_Utils_Mail::send($mailParams);
+
+        if ($feedbackEmailSendResult) {
+          EckEntity::update('Collection_Camp', TRUE)
+            ->addValue('Logistics_Coordination.Feedback_Email_Sent', 1)
+            ->addWhere('id', '=', $collectionCampId)
+            ->execute();
+        }
+      }
+
+    }
+    catch (\Exception $e) {
+      \Civi::log()->error("Error in sendVolunteerEmail for $campId " . $e->getMessage());
+    }
+
+  }
+
+    /**
+   *
+   */
+  private static function getInstitutionPocFeedbackEmailHtml($organizingContactName, $collectionCampId, $campAddress, $volunteerFeedbackForm) {
+    $homeUrl = \CRM_Utils_System::baseCMSURL();
+
+    // URL for the volunteer feedback form.
+    $campVolunteerFeedback = $homeUrl . $volunteerFeedbackForm . '#?Eck_Collection_Camp1=' . $collectionCampId;
+
+    $html = "
+      <p>Dear $organizingContactName,</p>
+      <p>Thank you for stepping up and organising the recent goonj activity  at <strong>$campAddress</strong>! Your time, effort, and enthusiasm made all the difference, and we hope that it was a meaningful effort for you as well.</p>
+      <p>To help us improve, we’d love to hear your thoughts and experiences. Kindly take a few minutes to fill out our feedback form. Your input will be valuable to us:</p>
+      <p><a href=\"$campVolunteerFeedback\">Feedback Form Link</a></p>
+      <p>Feel free to share any highlights, suggestions, or challenges you faced. We're eager to learn how we can make it better together!</p>
+      <p>We look forward to continuing this journey together!</p>
+      <p>Warm Regards,<br>Team Goonj</p>";
+
+    return $html;
+  }
 }
