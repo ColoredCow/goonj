@@ -1416,7 +1416,7 @@ class CollectionCampService extends AutoSubscriber {
     }
 
     catch (\Exception $e) {
-      Civi::log()->error("Exception occurred in updateCampaignForCollectionSourceContribution.", [
+      \Civi::log()->error("Exception occurred in updateCampaignForCollectionSourceContribution.", [
         'Message' => $e->getMessage(),
         'Stack Trace' => $e->getTraceAsString(),
       ]);
