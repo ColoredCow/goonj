@@ -1,73 +1,84 @@
-document.addEventListener('DOMContentLoaded', function () {
-  var hash = window.location.hash.substring(1); // Remove the '#'
-  var params = new URLSearchParams(hash);
-  var message = params.get('message');
+// Consolidated DOMContentLoaded listener
+document.addEventListener("DOMContentLoaded", function () {
+	// Message handling
+	handleUrlMessages();
 
-  if (message) {
-	var messageDiv = document.getElementById('custom-message');
-	if (messageDiv) {
-	  if (message === 'not-inducted-volunteer' || message === 'individual-user') {
-		messageDiv.innerHTML = `
-					<p class="fw-600 font-sans fz-20 mb-6">You are not registered as a volunteer with us.</p>
-					<p class="fw-400 font-sans fz-16 mt-0 mb-24">To set up a collection camp, please take a moment to fill out the volunteer registration form below. We can't wait to have you on board!</p>
-				`;
-	} 
-	else if (message === 'dropping-center' || message === 'dropping-center-individual-user') {
-		messageDiv.innerHTML = `
-		<p class="fw-600 font-sans fz-20 mb-6">You are not registered as a volunteer with us.</p>
-		<p class="fw-400 font-sans fz-16 mt-0 mb-24">To set up a dropping center, please take a moment to fill out the volunteer registration form below. We can't wait to have you on board!</p>
-		`;
-	  } else if (message === 'past-collection-data') {
-		messageDiv.innerHTML = `
-					<div class="w-520 mt-30 m-auto">
-						<p class="fw-400 fz-20 mb-11 font-sans">Goonj Collection Camp</p>
-						<p class="fw-400 fz-16 mt-0 mb-24 font-sans">It seems like you have created collection camps in the past. Would you like to duplicate the location details from your last collection camp?</p>
-					</div>
-				`;
-	  } else if (message === 'collection-camp-page') {
-		messageDiv.innerHTML = `
-					<div class="w-520 mt-30">
-						<p class="fw-400 fz-20 mb-11 font-sans">Goonj Collection Camp</p>
-						<p class="fw-400 fz-16 mt-0 mb-24 font-sans">Please provide the details related to the collection camp you want to organize. These details will be sent to Goonj for authorization.</p>
-					</div>
-				`;
-			}
-			else if (message === 'not-inducted-for-dropping-center') {
+	// Form reset handling
+	handleFormReset();
+
+	// Form validation
+	setupFormValidation();
+});
+
+// Message handling logic
+function handleUrlMessages() {
+	var hash = window.location.hash.substring(1); // Remove the '#'
+	var params = new URLSearchParams(hash);
+	var message = params.get("message");
+
+	if (message) {
+		var messageDiv = document.getElementById("custom-message");
+		if (messageDiv) {
+			if (
+				message === "not-inducted-volunteer" ||
+				message === "individual-user"
+			) {
 				messageDiv.innerHTML = `
-					<div class="w-520 mt-30">
-						<p class="fw-400 fz-20 mb-11 font-sans">You are not registered as a volunteer with us.</p>
-						<p class="fw-400 fz-16 mt-0 mb-24 font-sans">To set up a dropping centre, please take a moment to fill out the volunteer registration form below. We can't wait to have you on board!</p>
-					</div>
-				`;
+					  <p class="fw-600 font-sans fz-20 mb-6">You are not registered as a volunteer with us.</p>
+					  <p class="fw-400 font-sans fz-16 mt-0 mb-24">To set up a collection camp, please take a moment to fill out the volunteer registration form below. We can't wait to have you on board!</p>
+				  `;
+			} else if (
+				message === "dropping-center" ||
+				message === "dropping-center-individual-user"
+			) {
+				messageDiv.innerHTML = `
+		  <p class="fw-600 font-sans fz-20 mb-6">You are not registered as a volunteer with us.</p>
+		  <p class="fw-400 font-sans fz-16 mt-0 mb-24">To set up a dropping center, please take a moment to fill out the volunteer registration form below. We can't wait to have you on board!</p>
+		  `;
+			} else if (message === "past-collection-data") {
+				messageDiv.innerHTML = `
+					  <div class="w-520 mt-30 m-auto">
+						  <p class="fw-400 fz-20 mb-11 font-sans">Goonj Collection Camp</p>
+						  <p class="fw-400 fz-16 mt-0 mb-24 font-sans">It seems like you have created collection camps in the past. Would you like to duplicate the location details from your last collection camp?</p>
+					  </div>
+				  `;
+			} else if (message === "collection-camp-page") {
+				messageDiv.innerHTML = `
+					  <div class="w-520 mt-30">
+						  <p class="fw-400 fz-20 mb-11 font-sans">Goonj Collection Camp</p>
+						  <p class="fw-400 fz-16 mt-0 mb-24 font-sans">Please provide the details related to the collection camp you want to organize. These details will be sent to Goonj for authorization.</p>
+					  </div>
+				  `;
+			} else if (message === "not-inducted-for-dropping-center") {
+				messageDiv.innerHTML = `
+					  <div class="w-520 mt-30">
+						  <p class="fw-400 fz-20 mb-11 font-sans">You are not registered as a volunteer with us.</p>
+						  <p class="fw-400 fz-16 mt-0 mb-24 font-sans">To set up a dropping centre, please take a moment to fill out the volunteer registration form below. We can't wait to have you on board!</p>
+					  </div>
+				  `;
 			}
 		}
 	}
-});
+}
 
-/* 
-Note: This page refresh mechanism is implemented as a temporary solution 
-to reset all fields when the reset button is clicked. It will be replaced 
-with a more effective solution once identified.
-*/
-document.addEventListener("DOMContentLoaded", function () {
-  setTimeout(function () {
-    var resetButton = document.querySelector('button[type="reset"]');
+// Temporary form reset handling
+function handleFormReset() {
+	setTimeout(function () {
+		var resetButton = document.querySelector('button[type="reset"]');
 
-    if (resetButton) {
-      resetButton.addEventListener("click", function (event) {
-        event.preventDefault();
+		if (resetButton) {
+			resetButton.addEventListener("click", function (event) {
+				event.preventDefault();
 
-        // Refresh the page to reset all fields
-        location.reload(true);
-      });
-    }
-  }, 1000);
-});
+				// Refresh the page to reset all fields
+				location.reload(true);
+			});
+		}
+	}, 1000);
+}
 
-// Add validation for the phone number and PAN card on contribution form.
-
-document.addEventListener("DOMContentLoaded", function () {
-	// Define validation configurations for each field
+// Form validation setup
+function setupFormValidation() {
 	const fields = [
 		{
 			labelText: "Mobile Number",
@@ -77,20 +88,23 @@ document.addEventListener("DOMContentLoaded", function () {
 		{
 			labelText: "PAN Card Number",
 			regex: /^[A-Z]{5}[0-9]{4}[A-Z]$/,
-			errorMessage: "Please enter a valid PAN card number in the format ABCDE1234F.",
-		}
+			errorMessage:
+				"Please enter a valid PAN card number in the format ABCDE1234F.",
+		},
 	];
 
-	fields.forEach(field => {
-		// Select the label by labelText and find the associated input
-		const label = Array.from(document.querySelectorAll("label")).find(el => el.textContent.includes(field.labelText));
+	fields.forEach((field) => {
+		const label = Array.from(document.querySelectorAll("label")).find((el) =>
+			el.textContent.includes(field.labelText)
+		);
 		if (label) {
-			const input = document.querySelector(`input[name="${label.getAttribute("for")}"]`);
+			const input = document.querySelector(
+				`input[name="${label.getAttribute("for")}"]`
+			);
 
 			if (input) {
 				const form = input.closest("form");
 
-				// Attach validation on form submission
 				if (form) {
 					form.addEventListener("submit", function (event) {
 						const value = input.value;
@@ -104,4 +118,4 @@ document.addEventListener("DOMContentLoaded", function () {
 			}
 		}
 	});
-});
+}
