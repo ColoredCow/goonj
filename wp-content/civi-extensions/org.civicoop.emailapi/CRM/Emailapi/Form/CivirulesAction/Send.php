@@ -92,7 +92,7 @@ class CRM_Emailapi_Form_CivirulesAction_Send extends CRM_Core_Form {
         $return[(int) $optionValue['value']] = htmlspecialchars($optionValue['label']);
       }
     }
-    catch (CiviCRM_API3_Exception $ex) {
+    catch (CRM_Core_Exception $ex) {
     }
     ksort($return);
     return $return;
@@ -105,7 +105,7 @@ class CRM_Emailapi_Form_CivirulesAction_Send extends CRM_Core_Form {
     $this->add('text', 'from_name', E::ts('From Name'));
     $this->add('text', 'from_email', E::ts('From Email'));
     $this->addRule("from_email", E::ts('Email is not valid.'), 'email');
-    $this->add('checkbox','alternative_receiver', E::ts('Send to Alternative Email Address'));
+    $this->add('advcheckbox','alternative_receiver', E::ts('Send to Alternative Email Address'));
     $this->add('text', 'alternative_receiver_address', E::ts('Alternative Email Address'));
     $this->addRule("alternative_receiver_address", E::ts('Email is not valid.'), 'email');
     $this->add('text', 'cc', E::ts('Cc to'));
@@ -196,31 +196,31 @@ class CRM_Emailapi_Form_CivirulesAction_Send extends CRM_Core_Form {
    * @access public
    */
   public function postProcess($data = []) {
-    $data['from_name'] = $this->_submitValues['from_name'];
-    $data['from_email'] = $this->_submitValues['from_email'];
-    $data['template_id'] = $this->_submitValues['template_id'];
-    $data['disable_smarty'] = $this->_submitValues['disable_smarty'] ?? FALSE;
-    $data['location_type_id'] = $this->_submitValues['location_type_id'];
-    $data['from_email_option'] = $this->_submitValues['from_email_option'];
-    if (!empty($this->_submitValues['location_type_id'])) {
+    $data['from_name'] = $this->getSubmittedValue('from_name');
+    $data['from_email'] = $this->getSubmittedValue('from_email');
+    $data['template_id'] = $this->getSubmittedValue('template_id');
+    $data['disable_smarty'] = $this->getSubmittedValue('disable_smarty') ?? FALSE;
+    $data['location_type_id'] = $this->getSubmittedValue('location_type_id');
+    $data['from_email_option'] = $this->getSubmittedValue('from_email_option');
+    if (!empty($this->getSubmittedValue('location_type_id'))) {
       $data['alternative_receiver_address'] = '';
     }
     else {
       $data['alternative_receiver_address'] = '';
-      if (!empty($this->_submitValues['alternative_receiver_address'])) {
-        $data['alternative_receiver_address'] = $this->_submitValues['alternative_receiver_address'];
+      if (!empty($this->getSubmittedValue('alternative_receiver') && !empty($this->getSubmittedValue('alternative_receiver_address')))) {
+        $data['alternative_receiver_address'] = $this->getSubmittedValue('alternative_receiver_address');
       }
     }
     $data['cc'] = '';
-    if (!empty($this->_submitValues['cc'])) {
-      $data['cc'] = $this->_submitValues['cc'];
+    if (!empty($this->getSubmittedValue('cc'))) {
+      $data['cc'] = $this->getSubmittedValue('cc');
     }
     $data['bcc'] = '';
-    if (!empty($this->_submitValues['bcc'])) {
-      $data['bcc'] = $this->_submitValues['bcc'];
+    if (!empty($this->getSubmittedValue('bcc'))) {
+      $data['bcc'] = $this->getSubmittedValue('bcc');
     }
     $data['file_on_case'] = FALSE;
-    if (!empty($this->_submitValues['file_on_case'])) {
+    if (!empty($this->getSubmittedValue('file_on_case'))) {
       $data['file_on_case'] = TRUE;
     }
 

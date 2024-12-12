@@ -79,7 +79,7 @@ class CRM_Emailapi_Utils_Tokens {
    */
   protected static function getTokenCategories() {
     if (!isset(\Civi::$statics[__CLASS__]['token_categories'])) {
-      $tokens = array();
+      $tokens = [];
       \CRM_Utils_Hook::tokens($tokens);
       \Civi::$statics[__CLASS__]['token_categories'] = array_keys($tokens);
     }

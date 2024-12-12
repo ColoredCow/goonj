@@ -946,6 +946,11 @@ WHERE contact_id NOT IN (select id from civicrm_contact c where c.id=rl.contact_
 
     return TRUE;
   }
+  public function upgrade_2083() {
+    $this->ctx->log->info('Applying update 2083 - Add action to cancel latest membership');
+    CRM_Civirules_Utils_Upgrader::insertActionsFromJson($this->extensionDir . DIRECTORY_SEPARATOR . 'sql/actions.json');
+    return TRUE;
+  }
 
   /**
    * For developers:

@@ -24,7 +24,7 @@ class CRM_Emailapi_CivirulesAction_SendToContactReference extends CRM_Civirules_
     $contactReferenceIds = (array) $entityData[$contactReferenceField];
     // Not all $triggerData contains custom field data, so look it up if necessary.
     if (!$contactReferenceIds) {
-      $contactReferenceIds = civicrm_api3($triggerData->getOriginalEntity(), 'getvalue', [
+      $contactReferenceIds = (array) civicrm_api3(CRM_Core_BAO_CustomGroup::getEntityFromExtends($actionParams['entity']), 'getvalue', [
         'return' => $contactReferenceField,
         'id' => $entityData['id'],
       ]);
@@ -39,9 +39,34 @@ class CRM_Emailapi_CivirulesAction_SendToContactReference extends CRM_Civirules_
       }
       $extra_data = (array) $triggerData;
       $params['extra_data'] = $extra_data["\0CRM_Civirules_TriggerData_TriggerData\0entity_data"];
+      $params = $this->formatExtraData($params);
       //execute the action
       civicrm_api3('Email', 'send', $params);
     }
+  }
+
+  /**
+   * Copied and slightly modified from CRM_Emailapi_CivirulesAction_Send::alterApiParameters().
+   * Without this, the non-contact data doesn't get picked up because the ID is missing and the array key
+   * is capitalized.
+   */
+  private function formatExtraData($parameters) {
+    foreach ($parameters['extra_data'] as $entityCamelCase => $entityData) {
+      // Convert Foo to foo and FooBar to foo_bar
+      $entity_snake_case = mb_strtolower(preg_replace(
+        '/(?<=\d)(?=[A-Za-z])|(?<=[A-Za-z])(?=\d)|(?<=[a-z])(?=[A-Z])/',
+        '_', $entityCamelCase));
+      // Copy the data to extra_data under the lowercase snake case name key.
+      $parameters['extra_data'][$entity_snake_case] = $entityData;
+      // For non-contact entities, create a top level ..._id key
+      if (isset($entityData['id']) && $entity_snake_case !== 'contact') {
+        $parameters[$entity_snake_case . '_id'] = $entityData['id'];
+        // Note: CRM_Emailapi_Utils_Tokens will again change this key from
+        // foo_bar_id to foo_barId. Despite looking wrong, this is correct
+        // in terms of the token processor's needs.
+      }
+    }
+    return $parameters;
   }
 
   /**
@@ -52,12 +77,11 @@ class CRM_Emailapi_CivirulesAction_SendToContactReference extends CRM_Civirules_
    */
   public static function getContactReferenceEntities() {
     $return[] = '-- please select --';
-    $result = civicrm_api3('CustomField', 'get', [
-      'sequential' => 1,
-      'data_type' => "ContactReference",
-      'return' => ["custom_group_id.extends"],
-      'options' => ['limit' => 0],
-    ])['values'];
+    $result = \Civi\Api4\CustomField::get(TRUE)
+      ->addSelect('custom_group_id.extends')
+      ->addClause('OR', ['data_type', '=', 'ContactReference'], ['AND', [['data_type', '=', 'EntityReference'], ['fk_entity', '=', 'Contact']]])
+      ->execute()
+      ->indexBy('custom_group_id.extends');
     foreach ($result as $field) {
       $return[$field['custom_group_id.extends']] = $field['custom_group_id.extends'];
     }
@@ -103,7 +127,7 @@ class CRM_Emailapi_CivirulesAction_SendToContactReference extends CRM_Civirules_
           'id' => $params['location_type_id'],
         ]) . ' with primary e-mailaddress as fall back';
       }
-      catch (CiviCRM_API3_Exception $ex) {
+      catch (CRM_Core_Exception $ex) {
         $locationText = 'location type ' . $params['location_type_id'];
       }
     }

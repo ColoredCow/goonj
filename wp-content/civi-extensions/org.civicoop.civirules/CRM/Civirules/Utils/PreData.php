@@ -26,7 +26,7 @@ class CRM_Civirules_Utils_PreData {
     if (empty($objectName)) {
       return;
     }
-    $nonPreEntities = array('GroupContact', 'EntityTag', 'ActionLog');
+    $nonPreEntities = array('GroupContact', 'ActionLog');
     if (($op != 'edit' && $op != 'delete') || in_array($objectName, $nonPreEntities)) {
       return;
     }
@@ -46,6 +46,17 @@ class CRM_Civirules_Utils_PreData {
     $id = $objectId;
     if (empty($id) && isset($params['id']) && !empty($params['id'])) {
       $id = $params['id'];
+    } elseif ($objectName == 'EntityTag') {
+      try {
+        $id = civicrm_api3('EntityTag', 'getvalue', [
+          'return' => 'id',
+          'entity_id' => $params['entity_id'],
+          'entity_table' => $params['entity_table'],
+        ]);
+      }
+      catch (CRM_Core_Exception $e) {
+        return;
+      }
     }
 
     if (empty($id)) {
@@ -172,6 +183,27 @@ class CRM_Civirules_Utils_PreData {
       }
     }
     return $return;
+  }
+
+  /**
+   * Little Hack function to find the ID of the entity tag record later on.
+   *
+   * @param string $entity_table
+   * @param int $entity_id
+   *
+   * @return int|null
+   */
+  public static function getEntityTagId(string $entity_table, int $entity_id):? int {
+    if (isset(self::$preData['EntityTag'])) {
+      foreach(self::$preData['EntityTag'] as $id => $entityTags) {
+        foreach($entityTags as $entityTag) {
+          if (isset($entityTag['entity_table']) && $entityTag['entity_table'] == $entity_table && isset($entityTag['entity_id']) && $entityTag['entity_id'] == $entity_id) {
+            return $id;
+          }
+        }
+      }
+    }
+    return null;
   }
 
 }

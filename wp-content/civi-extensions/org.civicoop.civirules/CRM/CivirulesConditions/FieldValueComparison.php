@@ -34,7 +34,7 @@ class CRM_CivirulesConditions_FieldValueComparison extends CRM_CivirulesConditio
         $values = CRM_Core_BAO_CustomValueTable::getValues($params);
 
         $value = null;
-        if (!is_null($values[$field])) {
+        if (isset($values[$field])) {
           $value = $this->normalizeValue($values[$field]);
         } elseif (!empty($values['error_message'])) {
           $value = $triggerData->getCustomFieldValue($custom_field_id);

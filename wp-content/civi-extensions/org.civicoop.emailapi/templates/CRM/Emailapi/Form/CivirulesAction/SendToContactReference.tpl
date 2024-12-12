@@ -27,6 +27,7 @@
   <div class="crm-section">
     <div class="label">{$form.contact_reference.label}</div>
     <div class="content">{$form.contact_reference.html}</div>
+    <div class="content" id="contact_reference_note">{ts}You can also use an Entity Reference field if the referenced entity is a contact.{/ts}</div>
     <div class="clear"></div>
   </div>
   <div class="crm-section">

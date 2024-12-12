@@ -691,4 +691,17 @@
     <title>Update Recurring Contribution status</title>
     <access_arguments>administer CiviCRM; administer CiviRules</access_arguments>
   </item>
+  <item>
+    <path>civicrm/civirule/form/action/contribution_update_status</path>
+    <page_callback>CRM_CivirulesActions_Contribution_Form_UpdateStatus</page_callback>
+    <title>Update Contribution Status</title>
+    <access_arguments>administer CiviCRM; administer CiviRules</access_arguments>
+  </item>
+  <item>
+    <path>civicrm/civirule/form/action/cancellatestmembership</path>
+    <page_callback>CRM_CivirulesActions_Membership_Form_CancelLatestMembership</page_callback>
+    <title>Cancel Latest Membership</title>
+    <access_arguments>access CiviCRM</access_arguments>
+    <access_arguments>administer CiviCRM</access_arguments>
+  </item>
 </menu>

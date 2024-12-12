@@ -14,11 +14,11 @@
     <author>CiviCooP</author>
     <email>helpdesk@civicoop.org</email>
   </maintainer>
-  <releaseDate>2024-05-27</releaseDate>
-  <version>3.8</version>
+  <releaseDate>2024-11-07</releaseDate>
+  <version>3.14.0</version>
   <develStage>stable</develStage>
   <compatibility>
-    <ver>5.49</ver>
+    <ver>5.68</ver>
   </compatibility>
   <civix>
     <namespace>CRM/Civirules</namespace>

@@ -19,7 +19,11 @@ class CRM_Emailapi_Form_CivirulesAction_SendToContactReference extends CRM_Email
       'placeholder' => ts('-- select --'),
       'select' => ['minimumInputLength' => 0],
       'api' => [
-        'params' => ['data_type' => "ContactReference"],
+        'params' => [
+          'data_type' => "Contact Reference",
+          'fk_entity' => "Contact",
+          'options' => ['or' => [["data_type", "fk_entity"]]],
+        ],
       ],
     ], TRUE);
   }

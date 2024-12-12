@@ -1,6 +1,9 @@
 /* CSS added by TheIsland */
-#civicrm-menu.sm li a:focus,
-#civicrm-menu.sm li a:hover,
-#civicrm-menu.sm li a.highlighted {
-  background: #f3f6f7 !important;
+/* The mobile menu is always black, only applies to desktop version (same media query) */
+@media (min-width: 768px) {
+  #civicrm-menu.sm li a:focus,
+  #civicrm-menu.sm li a:hover,
+  #civicrm-menu.sm li a.highlighted {
+    background: #f3f6f7 !important;
+  }
 }

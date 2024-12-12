@@ -75,7 +75,7 @@ class CRM_Emailapi_Upgrader extends CRM_Extension_Upgrader_Base {
 
   public function upgrade_1005() {
     if (civicrm_api3('Extension', 'get', ['full_name' => 'org.civicoop.civirules', 'status' => 'installed'])['count']){
-      CRM_Core_DAO::executeQuery("INSERT INTO civirule_action (name, label, class_name, is_active) VALUES('emailapi_send_rolesoncase', 'Send Email to contacts on a case', 'CRM_Emailapi_CivirulesAction_SendToRolesOnCase', 1);");
+      CRM_Core_DAO::executeQuery("INSERT INTO civirule_action (name, label, class_name, is_active) VALUES('emailapi_send_rolesoncase', 'Send Email to related contacts on a case', 'CRM_Emailapi_CivirulesAction_SendToRolesOnCase', 1);");
     }
     return true;
   }
@@ -90,6 +90,14 @@ class CRM_Emailapi_Upgrader extends CRM_Extension_Upgrader_Base {
   public function upgrade_1007() {
     if (civicrm_api3('Extension', 'get', ['full_name' => 'org.civicoop.civirules', 'status' => 'installed'])['count']){
       CRM_Core_DAO::executeQuery("INSERT INTO civirule_action (name, label, class_name, is_active) VALUES('emailapi_send_customfieldvalue', 'Send Email to a custom field value', 'CRM_Emailapi_CivirulesAction_SendToCustomFieldValue', 1);");
+    }
+    return true;
+  }
+
+  public function upgrade_1008() {
+    if (civicrm_api3('Extension', 'get', ['full_name' => 'org.civicoop.civirules', 'status' => 'installed'])['count']){
+      CRM_Core_DAO::executeQuery("UPDATE civirule_action SET label = 'Send Email to related contacts on a case' WHERE `name` = 'emailapi_send_rolesoncase'");
+      CRM_Core_DAO::executeQuery("INSERT INTO civirule_action (name, label, class_name, is_active) VALUES('emailapi_send_casecontactsoncase', 'Send Email to case contacts on a case', 'CRM_Emailapi_CivirulesAction_SendToCaseContactsOnCase', 1);");
     }
     return true;
   }

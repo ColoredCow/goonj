@@ -143,7 +143,7 @@ class CRM_Emailapi_CivirulesAction_Send extends CRM_CivirulesActions_Generic_Api
             'id' => $params['location_type_id'],
           ]) . ' with primary email address as fall back';
       }
-      catch (CiviCRM_API3_Exception $ex) {
+      catch (CRM_Core_Exception $ex) {
         $locationText = 'location type ' . $params['location_type_id'];
       }
     }

@@ -29,6 +29,8 @@ Parameters for the api are specified below:
 - `from_email`: **optional** email of the sender (if you provide this value you have also to provide from_name)
 - `alternative_receiver_address`: **optional** alternative receiver address of the email.
 - `case_id`: **optional** adds the email to the case identified by this ID.
+- `contribution_id`: **optional** allows access to contribution tokens
+- `event_id`: **optional** allows access to event tokens
 - `create_activity`: **optional** (default: 1) Record a copy of the email sent in an activity
 - `activity_details`: **optional** (default: html,text) what to include in
   the details field of the created activity: HTML/Text/both versions, or

@@ -41,16 +41,6 @@
     }
   }
 
-  @media (max-width: $screen-sm-min) {
-    ul {
-      background: darken($gray-light, 5%);
-
-      ul {
-        background: darken($gray-light, 15%);
-      }
-    }
-  }
-
   @media (min-width: $screen-sm-min) {
     li {
       a {

@@ -840,5 +840,24 @@ class CRM_Civirules_Utils {
       ->column('label');
   }
 
+  /**
+   * @return int|null
+   */
+  public static function getCancelledMembershipStatusId(): ?int {
+    $statusId = NULL;
+    try {
+      $membershipStatus = \Civi\Api4\MembershipStatus::get(FALSE)
+        ->addSelect('id')
+        ->addWhere('name', '=', 'Cancelled')
+        ->execute()->first();
+      if ($membershipStatus['id']) {
+        $statusId = $membershipStatus['id'];
+      }
+    }
+    catch (\API_Exception $ex) {
+    }
+    return $statusId;
+  }
+
 }
 

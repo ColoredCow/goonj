@@ -265,10 +265,7 @@ class CRM_Civirules_Engine {
     $isValid = TRUE;
     $firstCondition = TRUE;
 
-    $conditionParams = [
-      'rule_id' => $triggerData->getTrigger()->getRuleId(),
-    ];
-    $ruleConditions = CRM_Civirules_BAO_RuleCondition::getValues($conditionParams);
+    $ruleConditions = $triggerData->getTrigger()->getRuleConditions();
     foreach ($ruleConditions as $ruleConditionId => $ruleCondition) {
       if ($firstCondition) {
         $isValid = self::checkCondition($ruleCondition, $triggerData);
@@ -369,4 +366,3 @@ class CRM_Civirules_Engine {
   }
 
 }
-

@@ -8,10 +8,6 @@ use CRM_Civirules_ExtensionUtil as E;
 
 class CRM_CivirulesPostTrigger_Form_Activity extends CRM_CivirulesTrigger_Form_Form {
 
-  protected function getEventType() {
-    return CRM_Civirules_Utils::getEventTypeList();
-  }
-
   /**
    * Overridden parent method to build form
    *
@@ -20,18 +16,19 @@ class CRM_CivirulesPostTrigger_Form_Activity extends CRM_CivirulesTrigger_Form_F
   public function buildQuickForm() {
     $this->add('hidden', 'rule_id');
     $result = civicrm_api3('ActivityContact', 'getoptions', [
-      'field' => "record_type_id",
+      'field' => 'record_type_id',
     ]);
-    $options[0] = E::ts('For all contacts');
+    $options[0] = E::ts('All contacts');
     foreach($result['values'] as $val => $opt) {
       $options[$val] = $opt;
     }
 
     $this->add('select', 'record_type', E::ts('Trigger for'),$options, true, ['class' => 'crm-select2 huge']);
 
-    $this->addButtons(array(
-      array('type' => 'next', 'name' => ts('Save'), 'isDefault' => TRUE,),
-      array('type' => 'cancel', 'name' => ts('Cancel'))));
+    $this->addButtons([
+      ['type' => 'next', 'name' => ts('Save'), 'isDefault' => TRUE,],
+      ['type' => 'cancel', 'name' => ts('Cancel')]
+    ]);
   }
 
   /**
@@ -42,8 +39,11 @@ class CRM_CivirulesPostTrigger_Form_Activity extends CRM_CivirulesTrigger_Form_F
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->rule->trigger_params);
-    $defaultValues['record_type'] = $data['record_type'] ?? 0; // Default to all record types. This creates backwards compatibility.
+    if (isset($this->rule->trigger_params)) {
+      $data = unserialize($this->rule->trigger_params);
+      // Default to all record types. This creates backwards compatibility.
+      $defaultValues['record_type'] = $data['record_type'] ?? 0;
+    }
 
     return $defaultValues;
   }
