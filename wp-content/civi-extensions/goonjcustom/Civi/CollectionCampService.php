@@ -1459,7 +1459,7 @@ class CollectionCampService extends AutoSubscriber {
       $uniqueId = uniqid();
       $invoiceId = base64_encode($timestamp . '-' . $uniqueId);
 
-      $results = Contribution::update(TRUE)
+      Contribution::update(TRUE)
         ->addValue('invoice_id', $invoiceId)
         ->addWhere('id', '=', $contributionId)
         ->execute();
