@@ -479,10 +479,7 @@ class CollectionBaseService extends AutoSubscriber {
     }
 
     $stateGroupNameMapper = self::getStateGroupNameMapper();
-    $stateFieldNames = array_map(function ($i) {
-      return $i . '.State';
-    }, $stateGroupNameMapper
-    );
+    $stateFieldNames = array_map(fn ($i) => "{$i}.State", $stateGroupNameMapper);
 
     if (!in_array($field, $stateFieldNames)) {
       return;
