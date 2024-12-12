@@ -1438,7 +1438,7 @@ class CollectionCampService extends AutoSubscriber {
    *   The reference to the object.
    */
   public static function generateInvoiceIdForContribution(string $op, string $objectName, int $objectId, &$objectRef) {
-    if ($objectName !== 'Contribution' || !$objectRef->id || $op !== 'edit') {
+    if ($objectName !== 'Contribution' || !$objectRef->id) {
       return;
     }
 
@@ -1449,6 +1449,15 @@ class CollectionCampService extends AutoSubscriber {
       }
 
       error_log("contributionId: " . print_r($contributionId, TRUE));
+
+      if (!empty($objectRef->invoice_id)) {
+        return;
+      }
+
+      $results = Contribution::update(TRUE)
+        ->addValue('invoice_id', 'tarun')
+        ->addWhere('id', '=', $contributionId)
+        ->execute();
 
     }
 
