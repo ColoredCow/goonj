@@ -1448,26 +1448,29 @@ class CollectionCampService extends AutoSubscriber {
         return;
       }
 
-      error_log("contributionId: " . print_r($contributionId, TRUE));
-
       if (!empty($objectRef->invoice_id)) {
         return;
       }
 
+      // Generate a unique invoice ID.
+      // Current timestamp.
+      $timestamp = time();
+      // Generate a unique ID based on the current time in microseconds.
+      $uniqueId = uniqid();
+      $invoiceId = base64_encode($timestamp . '-' . $uniqueId);
+
       $results = Contribution::update(TRUE)
-        ->addValue('invoice_id', 'tarun')
+        ->addValue('invoice_id', $invoiceId)
         ->addWhere('id', '=', $contributionId)
         ->execute();
 
     }
-
     catch (\Exception $e) {
       \Civi::log()->error("Exception occurred in updateCampaignForCollectionSourceContribution.", [
         'Message' => $e->getMessage(),
         'Stack Trace' => $e->getTraceAsString(),
       ]);
     }
-
   }
 
 }
