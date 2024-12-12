@@ -284,8 +284,145 @@
           .find('button[ng-click="afform.submit()"]').prop('disabled', true);
         CRM.alert(errorMsg, ts('Sorry'), 'error');
       }
+      // NOTE: This function currently provides basic validation for email, phone number, and postal code fields.
+      // For now, we have implemented these simple checks to meet current project requirements.
+      // In the future, we need to change this.
+      function customValidateFields() {
+        var isValid = true;
+        var errorMessage = "";
 
-      this.submit = function() {
+        // Email validation
+        var emailField = $element.find("input[type='email']");
+        if (emailField.length) {
+          var emailValue = emailField.val().trim();
+          if (emailValue !== "") {
+            var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailPattern.test(emailValue)) {
+              errorMessage += "Please enter a valid email.\n";
+              isValid = false;
+            }
+          }
+        }
+          
+        // Phone number validation
+        var phoneNumberField = $element.find("af-field[name='phone'] input[type='text'], af-field[name='Material_Contribution.Delivered_By_Contact'] input[type='text']");
+        if (phoneNumberField.length) {
+          var phoneNumberValue = phoneNumberField.val().trim();
+          if (phoneNumberValue !== "") {
+            var phonePattern = /^\d{10}$/;
+            if (!phonePattern.test(phoneNumberValue)) {
+              errorMessage += "Please enter a valid 10-digit mobile number.\n";
+              isValid = false;
+            }
+          }
+        }
+        
+        // Date validation for the Open Dropping Center form to ensure the selected date is not in the past.
+        if (ctrl.getFormMeta().name === 'afformDroppingCenterDetailForm') {
+          var dateField = $element.find("input.crm-form-date").val().trim(); 
+          if (dateField !== "") {
+            var today = new Date();
+            today.setHours(0, 0, 0, 0);
+            var dateParts = dateField.split('/');
+            var selectedDate = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
+            
+            // Check if the selected date is in the past
+            if (selectedDate <= today) {
+              isValid = false;
+              errorMessage+=`The selected dropping center date (${dateField}) cannot be today or in the past.`;
+            }
+          }
+        }
+        
+        // Collection camp start date and end date validation
+        if (ctrl.getFormMeta().name === 'afformCollectionCampIntentDetails') {
+          var startDateValue = $element.find("af-field[name='Collection_Camp_Intent_Details.Start_Date'] .crm-form-date-wrapper input.crm-form-date").val();
+          var endDateValue = $element.find("af-field[name='Collection_Camp_Intent_Details.End_Date'] .crm-form-date-wrapper input.crm-form-date").val();
+          
+          if (startDateValue && endDateValue) {
+            var today = new Date();
+            today.setHours(0, 0, 0, 0); 
+            var startDateParts = startDateValue.split('/');
+            var endDateParts = endDateValue.split('/');
+            var startDate = new Date(startDateParts[2], startDateParts[1] - 1, startDateParts[0]);
+            var endDate = new Date(endDateParts[2], endDateParts[1] - 1, endDateParts[0]);
+            
+            var errorMessage = '';
+            var isValid = true;
+            
+            // Check if the start date is in the past or today
+            if (startDate <= today) {
+              errorMessage += `Collections cannot start (${startDateValue}) today or in the past.\n`;
+              isValid = false;
+            }
+            
+            // Check if the end date is in the past, today
+            if (endDate <= today) {
+              errorMessage += `Collections cannot end ( ${endDateValue}) today or in the past.\n`;
+              isValid = false;
+            
+            }
+            // Check if End Date is before Start Date
+            if (endDate < startDate) {
+              errorMessage += `Collections cannot end (${endDateValue}) before start (${startDateValue}).\n`;
+              isValid = false;
+            }
+          }
+        }
+        
+        // Birth date validation
+        var birthDateField = $element.find("af-field[name='birth_date'] input[type='text']");
+        if (birthDateField.length) {
+          var birthDateValue = birthDateField.val().trim();
+          if (birthDateValue !== "") {
+            var birthDateParts = birthDateValue.split('/');
+            if (birthDateParts.length === 3) {
+              var birthDate = new Date(birthDateParts[2], birthDateParts[1] - 1, birthDateParts[0]);
+              var today = new Date();
+              today.setHours(0, 0, 0, 0);
+              
+              if (birthDate.toDateString() === today.toDateString()) {
+                errorMessage += `Date of Birth cannot be today.\n`;
+                isValid = false;
+              }
+              
+              if (birthDate > today) {
+                errorMessage += `Date of Birth cannot be in the future.\n`;
+                isValid = false;
+              }
+            } else {
+              errorMessage += "Invalid Date of Birth format.\n";
+              isValid = false;
+            
+            }
+          }
+        }
+        
+        // Postal code validation
+        var postalCodeLabel = $element.find("label:contains('Postal Code')");
+        var postalCodeField = postalCodeLabel.closest('af-field').find("input[type='text']");
+        if (postalCodeField.length) {
+          var postalCodeValue = postalCodeField.val().trim();
+          if (postalCodeValue !== "") {
+            var postalCodePattern = /^\d{6}$/;
+            if (!postalCodePattern.test(postalCodeValue)) {
+              errorMessage += "Please enter a valid 6-digit postal code.\n";
+              isValid = false;
+            }
+          }
+        }
+        
+        if (!isValid) {
+          CRM.alert(errorMessage, ts("Form Error"));
+        }
+        
+        return isValid;
+      }
+      
+      this.submit = function () {
+        if (!customValidateFields()) {
+          return;
+        }
         // validate required fields on the form
         if (!ctrl.ngForm.$valid || !validateFileFields()) {
           CRM.alert(ts('Please fill all required fields.'), ts('Form Error'));
