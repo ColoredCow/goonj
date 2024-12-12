@@ -255,6 +255,11 @@ trait CollectionSource {
       $relationshipType = 'Institution POC of';
       $alternateType = 'Secondary Institution POC of';
     }
+    elseif ($subtypeName === 'Institution_Goonj_Activities') {
+      $organizationId = $collectionCamp['Institution_Goonj_Activities.Organization_Name.id'];
+      $relationshipType = 'Institution POC of';
+      $alternateType = 'Primary Institution POC of';
+    }
     else {
       return $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
     }
