@@ -53,6 +53,7 @@ class CollectionCampService extends AutoSubscriber {
       ['updateCampStatusOnOutcomeFilled'],
       ['assignChapterGroupToIndividualForContribution'],
       ['updateCampaignForCollectionSourceContribution'],
+      ['generateInvoiceIdForContribution'],
       ],
       '&hook_civicrm_pre' => [
         ['generateCollectionCampQr'],
@@ -1412,6 +1413,42 @@ class CollectionCampService extends AutoSubscriber {
         ->addValue('campaign_id', $campaignId)
         ->addWhere('id', '=', $contributionId)
         ->execute();
+
+    }
+
+    catch (\Exception $e) {
+      \Civi::log()->error("Exception occurred in updateCampaignForCollectionSourceContribution.", [
+        'Message' => $e->getMessage(),
+        'Stack Trace' => $e->getTraceAsString(),
+      ]);
+    }
+
+  }
+
+  /**
+   * This hook is called after a db write on entities.
+   *
+   * @param string $op
+   *   The type of operation being performed.
+   * @param string $objectName
+   *   The name of the object.
+   * @param int $objectId
+   *   The unique identifier for the object.
+   * @param object $objectRef
+   *   The reference to the object.
+   */
+  public static function generateInvoiceIdForContribution(string $op, string $objectName, int $objectId, &$objectRef) {
+    if ($objectName !== 'Contribution' || !$objectRef->id || $op !== 'edit') {
+      return;
+    }
+
+    try {
+      $contributionId = $objectRef->id;
+      if (!$contributionId) {
+        return;
+      }
+
+      error_log("contributionId: " . print_r($contributionId, TRUE));
 
     }
 
