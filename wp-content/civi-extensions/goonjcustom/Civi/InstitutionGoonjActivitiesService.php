@@ -41,16 +41,10 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
       '&hook_civicrm_pre' => [
         ['assignChapterGroupToIndividual'],
         ['generateInstitutionGoonjActivitiesQr'],
+        ['createActivityForInstitutionGoonjActivityCollectionCamp'],
       ],
-    //   'civi.afform.submit' => [
-    //     ['setGoonjActivitiesAddress', 10],
-    //     ['setActivitiesVolunteersAddress', 20],
-    //   ],
       '&hook_civicrm_custom' => [
         ['setOfficeDetails'],
-      ],
-      '&hook_civicrm_pre' => [
-        ['createActivityForInstitutionGoonjActivityCollectionCamp'],
       ],
       '&hook_civicrm_tabset' => 'institutionGoonjActivitiesTabset',
     ];
