@@ -35,6 +35,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       '&hook_civicrm_pre' => [
         ['assignChapterGroupToIndividual'],
         ['generateInstitutionCollectionCampQr'],
+        ['linkInstitutionCollectionCampToContact'],
       ],
       '&hook_civicrm_custom' => [
         ['setOfficeDetails'],
@@ -42,6 +43,78 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       ],
       '&hook_civicrm_tabset' => 'institutionCollectionCampTabset',
     ];
+  }
+
+  /**
+   *
+   */
+  public static function linkInstitutionCollectionCampToContact(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($objectName !== 'Eck_Collection_Camp' || !$objectId) {
+      return;
+    }
+
+    $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
+    if (!$newStatus) {
+      return;
+    }
+
+    $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Institution_Collection_Camp_Intent.Organization_Name', 'title', 'Institution_Collection_Camp_Intent.Institution_POC')
+      ->addWhere('id', '=', $objectId)
+      ->execute();
+
+    $currentCollectionCamp = $collectionCamps->first();
+    $currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
+    $PocId = $currentCollectionCamp['Institution_Collection_Camp_Intent.Institution_POC'];
+    $organizationId = $currentCollectionCamp['Institution_Collection_Camp_Intent.Organization_Name'];
+
+    if (!$PocId && !$organizationId) {
+      return;
+    }
+
+    $collectionCampTitle = $currentCollectionCamp['title'];
+    $collectionCampId = $currentCollectionCamp['id'];
+
+    if ($currentStatus !== $newStatus && $newStatus === 'authorized') {
+      self::createCollectionCampOrganizeActivity($PocId, $organizationId, $collectionCampTitle, $collectionCampId);
+    }
+  }
+
+  /**
+   *
+   */
+  private static function createCollectionCampOrganizeActivity($PocId, $organizationId, $collectionCampTitle, $collectionCampId) {
+    try {
+
+      // Create activity for PocId.
+      self::createActivity($PocId, $collectionCampTitle, $collectionCampId);
+
+      // Create activity for organizationId, only if it's different from PocId.
+      if ($organizationId !== $PocId) {
+        self::createActivity($organizationId, $collectionCampTitle, $collectionCampId);
+      }
+
+    }
+    catch (\CiviCRM_API4_Exception $ex) {
+      \Civi::log()->debug("Exception while creating Organize Collection Camp activity: " . $ex->getMessage());
+    }
+  }
+
+  /**
+   *
+   */
+  private static function createActivity($contactId, $collectionCampTitle, $collectionCampId) {
+    Activity::create(FALSE)
+      ->addValue('subject', $collectionCampTitle)
+      ->addValue('activity_type_id:name', 'Organize Collection Camp')
+      ->addValue('status_id:name', 'Authorized')
+      ->addValue('activity_date_time', date('Y-m-d H:i:s'))
+      ->addValue('source_contact_id', $contactId)
+      ->addValue('target_contact_id', $contactId)
+      ->addValue('Collection_Camp_Data.Collection_Camp_ID', $collectionCampId)
+      ->execute();
+
+    \Civi::log()->info("Activity created for contact {$contactId} for Institution Collection Camp {$collectionCampTitle}");
   }
 
   /**
