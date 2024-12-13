@@ -36,28 +36,25 @@ function _civicrm_api3_goonjcustom_institution_poc_feedback_goonj_activity_cron_
  */
 function civicrm_api3_goonjcustom_institution_poc_feedback_goonj_activity_cron($params) {
   $returnValues = [];
-\Civi::log()->info('checkasdas');
-    $optionValues = OptionValue::get(FALSE)
-        ->addWhere('option_group_id:name', '=', 'eck_sub_types')
-        ->addWhere('name', '=', 'Institution_Goonj_Activities')
-        ->addWhere('grouping', '=', 'Collection_Camp')
-        ->execute()->single();
-\Civi::log()->info('optionValues', ['optionValues'=>$optionValues, '--']);
+  $optionValues = OptionValue::get(FALSE)
+      ->addWhere('option_group_id:name', '=', 'eck_sub_types')
+      ->addWhere('name', '=', 'Institution_Goonj_Activities')
+      ->addWhere('grouping', '=', 'Collection_Camp')
+      ->execute()->single();
 
   $collectionCampSubtype = $optionValues['value'];
   $today = new DateTime();
   $today->setTime(23, 59, 59);
   $endOfDay = $today->format('Y-m-d H:i:s');
   $todayFormatted = $today->format('Y-m-d');
-  \Civi::log()->info('checkasdas', ['collectionCampSubtype'=>$collectionCampSubtype, '--']);
+
 
   $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
-    ->addSelect('Institution_Goonj_Activities.Date_for_conducting_the_activity_', 'Logistics_Coordination.Feedback_Email_Sent', 'Institution_Goonj_Activities.Institution_POC', 'Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_', 'Date_for_conducting_the_activity_.Select_Volunteer_Feedback_Form')
+    ->addSelect('Institution_Goonj_Activities.End_Date', 'Logistics_Coordination.Feedback_Email_Sent', 'Institution_Goonj_Activities.Institution_POC', 'Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_', 'Date_for_conducting_the_activity_.Select_Volunteer_Feedback_Form')
     ->addWhere('Collection_Camp_Core_Details.Status', '=', 'authorized')
     ->addWhere('subtype', '=', $collectionCampSubtype)
-    // ->addWhere('Institution_Goonj_Activities.Date_for_conducting_the_activity_', '<=', $endOfDay)
+    ->addWhere('Institution_Goonj_Activities.End_Date', '<=', $endOfDay)
     ->execute();
-    \Civi::log()->info('collectionCamps', ['collectionCamps'=>$collectionCamps]);
 
   foreach ($collectionCamps as $camp) {
     try {
