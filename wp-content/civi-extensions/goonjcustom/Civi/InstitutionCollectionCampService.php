@@ -816,7 +816,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
         'module' => 'afsearchMonetaryContribution',
         'directive' => 'afsearch-monetary-contribution',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['account_team'],
+        'permissions' => ['account_team', 'ho_account'],
       ],
       'monetaryContributionForUrbanOps' => [
         'title' => ts('Monetary Contribution'),
