@@ -60,7 +60,7 @@ function civicrm_api3_goonjcustom_institution_goonj_activities_outcome_cron($par
     )
     ->addWhere('Collection_Camp_Core_Details.Status', '=', 'authorized')
     ->addWhere('subtype', '=', $collectionCampSubtype)
-    ->addWhere('Institution_Goonj_Activities.Date_for_conducting_the_activity_', '<=', $endOfDay)
+    ->addWhere('Institution_Goonj_Activities.Start_Date', '<=', $endOfDay)
     ->addWhere('Logistics_Coordination.Camp_to_be_attended_by', 'IS NOT EMPTY')
     ->addClause('OR',
       ['Logistics_Coordination.Email_Sent', 'IS NULL'],

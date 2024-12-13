@@ -486,9 +486,8 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
     }
 
     $activities = $objectRef['Institution_Goonj_Activities.How_do_you_want_to_engage_with_Goonj_'];
-    $activityDate = $objectRef['Institution_Goonj_Activities.Date_for_conducting_the_activity_'];
-    // $startDate = $objectRef['Goonj_Activities.Start_Date'];
-    // $endDate = $objectRef['Goonj_Activities.End_Date'];
+    $startDate = $objectRef['Institution_Goonj_Activities.Start_Date'];
+    $endDate = $objectRef['Institution_Goonj_Activities.End_Date'];
     $initiator = $objectRef['Institution_Goonj_Activities.Institution_POC'];
 
     foreach ($activities as $activityName) {
@@ -517,7 +516,8 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
         ->addValue('title', $activityName)
         ->addValue('subtype', $optionValue['value'])
         ->addValue('Collection_Camp_Activity.Collection_Camp_Id', $campId)
-        ->addValue('Collection_Camp_Activity.Activity_Date', $activityDate)
+        ->addValue('Collection_Camp_Activity.Start_Date', $startDate)
+        ->addValue('Collection_Camp_Activity.End_Date', $endDate)
         ->addValue('Collection_Camp_Activity.Organizing_Person', $initiator)
         ->execute();
 
@@ -537,7 +537,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
       $logisticEmailSent = $collectionCamp['Logistics_Coordination.Email_Sent'];
       $outcomeFormLink = $collectionCamp['Institution_Goonj_Activities.Select_Goonj_POC_Attendee_Outcome_Form'];
 
-      $startDate = new \DateTime($collectionCamp['Institution_Goonj_Activities.Date_for_conducting_the_activity_']);
+      $startDate = new \DateTime($collectionCamp['Institution_Goonj_Activities.Start_Date']);
 
       $today = new \DateTimeImmutable();
       $endOfToday = $today->setTime(23, 59, 59);
@@ -609,7 +609,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
   public static function getInstitutionPocActivitiesFeedbackEmailHtml($collectionCamp) {
 
     try {
-      $endDate = new \DateTime($collectionCamp['Institution_Goonj_Activities.Date_for_conducting_the_activity_']);
+      $endDate = new \DateTime($collectionCamp['Institution_Goonj_Activities.End_Date']);
       $collectionCampId = $collectionCamp['id'];
       $endDateFormatted = $endDate->format('Y-m-d');
       $today = new \DateTime();

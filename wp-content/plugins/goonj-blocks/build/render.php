@@ -24,7 +24,8 @@ $headings = [
   'institution-dropping-center' => 'Institution Dropping Center',
   'processing-center' => 'Processing Center',
   'induction-schedule' => 'Induction Schedule',
-  'goonj-activities' => 'Goonj Activities'
+  'goonj-activities' => 'Goonj Activities',
+  'institution-goonj-activities' => 'Institution Goonj Activities'
 ];
 
 $heading_text = $headings[$target];
@@ -207,7 +208,8 @@ $target_data = [
     'register_link' => $institution_dropping_center_register_link,
   ],
   'institution-goonj-activities' => [
-    'activity_date' => $action_target['Institution_Goonj_Activities.Date_for_conducting_the_activity_'],
+    'start_time' => 'Institution_Goonj_Activities.Start_Date',
+    'end_time' => 'Institution_Goonj_Activities.End_Date',
     'address' => 'Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_',
     'address_label' => 'Address of the camp',
     'donation_link' => $donation_link,
@@ -252,14 +254,8 @@ if (in_array($target, ['collection-camp','institution-collection-camp', 'droppin
                 <td class="wp-block-gb-table-cell"><?php echo esc_html($volunteer_name); ?></td>
             </tr>
             <?php endif; ?>
-            <?php if ($target === 'institution-goonj-activities') : ?>
-            <tr class="wp-block-gb-table-row">
-                <td class="wp-block-gb-table-cell wp-block-gb-table-header">Activity Date</td>
-                <td class="wp-block-gb-table-cell"><?php echo gb_format_date($activity_date); ?></td>
-            </tr>
-            <?php endif; ?>
 
-            <?php if ($target === 'collection-camp' || $target === 'institution-collection-camp' || $target === 'goonj-activities') : ?>
+            <?php if ($target === 'collection-camp' || $target === 'institution-collection-camp' || $target === 'goonj-activities' || $target === 'institution-goonj-activities') : ?>
             <tr class="wp-block-gb-table-row">
                 <td class="wp-block-gb-table-cell wp-block-gb-table-header">From</td>
                 <td class="wp-block-gb-table-cell"><?php echo gb_format_date($start_date); ?></td>
