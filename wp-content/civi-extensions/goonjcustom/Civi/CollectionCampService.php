@@ -1457,7 +1457,7 @@ class CollectionCampService extends AutoSubscriber {
       $timestamp = time();
       // Generate a unique ID based on the current time in microseconds.
       $uniqueId = uniqid();
-      $invoiceId = base64_encode($timestamp . '-' . $uniqueId);
+      $invoiceId = hash('sha256', $timestamp . $uniqueId);
 
       Contribution::update(TRUE)
         ->addValue('invoice_id', $invoiceId)
