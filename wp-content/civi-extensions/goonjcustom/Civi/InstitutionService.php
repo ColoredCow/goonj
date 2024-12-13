@@ -28,7 +28,7 @@ class InstitutionService extends AutoSubscriber {
       '&hook_civicrm_post' => [
         ['organizationCreated'],
         ['setOfficeDetails'],
-        ['assignChapterGroupToIndividual'],
+        // ['assignChapterGroupToIndividual'],
       ],
     ];
   }
@@ -89,52 +89,52 @@ class InstitutionService extends AutoSubscriber {
   /**
    *
    */
-  public static function assignChapterGroupToIndividual(string $op, string $objectName, $objectId, &$objectRef) {
-    // Define the assignments array
-    $assignments = [
-        'Institution Collection Camp' => [
-            'stateField' => 'Institution_Collection_Camp_Intent.State',
-            'contactField' => 'Institution_Collection_Camp_Intent.Institution_POC',
-            'organizationField' => 'Institution_Collection_Camp_Intent.Organization_Name'
-        ],
-        'Institution Dropping Center' => [
-            'stateField' => 'Institution_Dropping_Center_Intent.State',
-            'contactField' => 'Institution_Dropping_Center_Intent.Institution_POC',
-            'organizationField' => 'Institution_Dropping_Center_Intent.Organization_Name'
-        ]
-    ];
+//   public static function assignChapterGroupToIndividual(string $op, string $objectName, $objectId, &$objectRef) {
+//     // Define the assignments array
+//     $assignments = [
+//         'Institution Collection Camp' => [
+//             'stateField' => 'Institution_Collection_Camp_Intent.State',
+//             'contactField' => 'Institution_Collection_Camp_Intent.Institution_POC',
+//             'organizationField' => 'Institution_Collection_Camp_Intent.Organization_Name'
+//         ],
+//         'Institution Dropping Center' => [
+//             'stateField' => 'Institution_Dropping_Center_Intent.State',
+//             'contactField' => 'Institution_Dropping_Center_Intent.Institution_POC',
+//             'organizationField' => 'Institution_Dropping_Center_Intent.Organization_Name'
+//         ]
+//     ];
 
 
 
-    // Validate objectName and objectRef
-    if ($objectName !== 'Eck_Collection_Camp' || empty($objectRef['title']) || !isset($assignments[$objectRef['title']])) {
-        return FALSE;
-    }
+//     // Validate objectName and objectRef
+//     if ($objectName !== 'Eck_Collection_Camp' || empty($objectRef['title']) || !isset($assignments[$objectRef['title']])) {
+//         return FALSE;
+//     }
 
-    $assignment = $assignments[$objectRef['title']];
+//     $assignment = $assignments[$objectRef['title']];
 
-    // Access fields using array syntax
-    $stateId = $objectRef[$assignment['stateField']] ?? NULL;
-    $contactId = $objectRef[$assignment['contactField']] ?? NULL;
-    $organizationId = $objectRef[$assignment['organizationField']] ?? NULL;
+//     // Access fields using array syntax
+//     $stateId = $objectRef[$assignment['stateField']] ?? NULL;
+//     $contactId = $objectRef[$assignment['contactField']] ?? NULL;
+//     $organizationId = $objectRef[$assignment['organizationField']] ?? NULL;
 
-    if (!$stateId || !$contactId) {
-        \Civi::log()->info("Missing Contact ID or State ID for " . $objectRef['title']);
-        return FALSE;
-    }
+//     if (!$stateId || !$contactId) {
+//         \Civi::log()->info("Missing Contact ID or State ID for " . $objectRef['title']);
+//         return FALSE;
+//     }
 
-    // Get the group and add contacts
-    $groupId = self::getChapterGroupForState($stateId);
+//     // Get the group and add contacts
+//     $groupId = self::getChapterGroupForState($stateId);
 
-    if ($groupId) {
-        self::addContactToGroup($contactId, $groupId);
-        if ($organizationId) {
-            self::addContactToGroup($organizationId, $groupId);
-        }
-    }
+//     if ($groupId) {
+//         self::addContactToGroup($contactId, $groupId);
+//         if ($organizationId) {
+//             self::addContactToGroup($organizationId, $groupId);
+//         }
+//     }
 
-    return TRUE;
-}
+//     return TRUE;
+// }
 
 
   /**
