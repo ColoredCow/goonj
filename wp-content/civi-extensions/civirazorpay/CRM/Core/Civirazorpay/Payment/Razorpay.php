@@ -313,6 +313,9 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
    *
    */
   private function processOneTimePayment($params) {
+    \Civi::log()->info(__METHOD__, [
+      'params' => $params,
+    ]);
     $razorpayOrderId = $params['payload']['payment']['entity']['order_id'] ?? NULL;
     $razorpayPaymentId = $params['payload']['payment']['entity']['id'] ?? NULL;
     $amount = $params['payload']['payment']['entity']['amount'] / 100;
