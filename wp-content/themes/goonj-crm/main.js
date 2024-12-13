@@ -8,6 +8,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
 	// Form validation
 	setupFormValidation();
+
+	// Limit installments input length
+	limitInstallmentsInput();
 });
 
 // Message handling logic
@@ -118,4 +121,16 @@ function setupFormValidation() {
 			}
 		}
 	});
+}
+
+// Limit the length of installments input
+function limitInstallmentsInput() {
+	const installmentsInput = document.getElementById("installments");
+	if (installmentsInput) {
+		installmentsInput.addEventListener("input", function () {
+			if (this.value.length > 3) {
+				this.value = this.value.slice(0, 3); // Limit to 3 characters
+			}
+		});
+	}
 }
