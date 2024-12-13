@@ -194,19 +194,30 @@
 #crm-main-content-wrapper {
   form {
     .crm-block {
+      .crm-group {
+        &.amount_display-group {
+          .display-block {
+            margin-left: 0 !important;
+          }
+        }
+      }
       fieldset {
         fieldset {
+          > div:nth-last-child(-n+2) {
+            display: none !important;
+          }
           legend {
             display: none !important;
           }
 
           .header-dark {
             width: 100% !important;
+            padding: 11px 3px 9px 8px !important;
           }
 
           div {
-            margin: 12px !important;
-            padding: 11px 3px 10px 0px !important;
+            margin: 12px 7px 0px 1px !important;
+            padding: 11px 3px 10px 1px !important;
             width: 100% !important;
             margin-bottom: -18px !important;
 
