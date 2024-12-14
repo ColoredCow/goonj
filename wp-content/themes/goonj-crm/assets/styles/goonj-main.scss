@@ -226,6 +226,9 @@
           > div:nth-last-child(-n+2) {
             display: none !important;
           }
+          > div:nth-last-child(-n+3) {
+            display: none !important;
+          }
           legend {
             display: none !important;
           }
