@@ -96,7 +96,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
 
     }
     catch (\CiviCRM_API4_Exception $ex) {
-      \Civi::log()->debug("Exception while creating Organize Collection Camp activity: " . $ex->getMessage());
+      \Civi::log()->debug("Exception while creating Organize Institution Collection Camp activity: " . $ex->getMessage());
     }
   }
 
@@ -106,7 +106,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
   private static function createActivity($contactId, $collectionCampTitle, $collectionCampId) {
     Activity::create(FALSE)
       ->addValue('subject', $collectionCampTitle)
-      ->addValue('activity_type_id:name', 'Organize Collection Camp')
+      ->addValue('activity_type_id:name', 'Organize Institution Collection Camp')
       ->addValue('status_id:name', 'Authorized')
       ->addValue('activity_date_time', date('Y-m-d H:i:s'))
       ->addValue('source_contact_id', $contactId)
