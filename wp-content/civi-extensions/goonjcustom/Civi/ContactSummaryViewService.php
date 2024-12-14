@@ -22,12 +22,20 @@ class ContactSummaryViewService extends AutoSubscriber {
    *
    */
   public function hideTabsForAccountsTeam($tabsetName, &$tabs, $context) {
-    if ($tabsetName !== 'civicrm/contact/view') {
+    $isAdmin = \CRM_Core_Permission::check('admin');
+
+    if ($tabsetName !== 'civicrm/contact/view' || $isAdmin) {
       return;
     }
 
-    // Add check for accounts team.
-    $newTabs = $this->removeTabsById($tabs, ['participant', 'activity', 'group', 'log', 'rel']);
+    $isAccount = \CRM_Core_Permission::check('account_team');
+
+    if ($isAccount) {
+      $newTabs = $this->removeTabsById($tabs, ['participant', 'activity', 'group', 'log', 'rel']);
+    }
+    else {
+      $newTabs = $tabs;
+    }
 
     $tabs = $newTabs;
   }
