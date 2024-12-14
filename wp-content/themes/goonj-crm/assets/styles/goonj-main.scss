@@ -68,6 +68,17 @@
           display: none !important;
         }
 
+        fieldset > div:nth-last-child(3) .content .crm-multiple-checkbox-radio-options .crm-option-label-pair label {
+          position: relative;
+          top: -10px;
+          left: 13px;
+        }
+
+        fieldset > div:nth-last-child(3) .content .crm-multiple-checkbox-radio-options .crm-option-label-pair input {
+          position: relative;
+          top: 8px;
+        }
+
         #on-behalf-block fieldset > div:nth-last-child(-n+2) {
           display: flex !important;
         }
