@@ -37,83 +37,8 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
         ['mailNotificationToMmt'],
       ],
       '&hook_civicrm_post' => 'processDispatchEmail',
-      '&hook_civicrm_pre' => [
-        ['generateInstitutionDroppingCenterQr'],
-        ['linkInstitutionDroppingCenterToContact'],
-      ],
+      '&hook_civicrm_pre' => 'generateInstitutionDroppingCenterQr',
     ];
-  }
-
-  /**
-   *
-   */
-  public static function linkInstitutionDroppingCenterToContact(string $op, string $objectName, $objectId, &$objectRef) {
-    if ($objectName !== 'Eck_Collection_Camp' || !$objectId) {
-      return;
-    }
-
-    $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
-    if (!$newStatus) {
-      return;
-    }
-
-    $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Collection_Camp_Core_Details.Status', 'Institution_Dropping_Center_Intent.Organization_Name', 'title', 'Institution_Dropping_Center_Intent.Institution_POC')
-      ->addWhere('id', '=', $objectId)
-      ->execute();
-
-    $currentDroppingCenter = $collectionCamps->first();
-    $currentStatus = $currentDroppingCenter['Collection_Camp_Core_Details.Status'];
-    $PocId = $currentDroppingCenter['Institution_Dropping_Center_Intent.Institution_POC'];
-    $organizationId = $currentDroppingCenter['Institution_Dropping_Center_Intent.Organization_Name'];
-
-    if (!$PocId && !$organizationId) {
-      return;
-    }
-
-    $droppingCenterCode = $currentDroppingCenter['title'];
-    $droppingCenterId = $currentDroppingCenter['id'];
-
-    if ($currentStatus !== $newStatus && $newStatus === 'authorized') {
-      self::createDroppingCenterOrganizeActivity($PocId, $organizationId, $droppingCenterCode, $droppingCenterId);
-    }
-  }
-
-  /**
-   *
-   */
-  private static function createDroppingCenterOrganizeActivity($PocId, $organizationId, $droppingCenterCode, $droppingCenterId) {
-    try {
-
-      // Create activity for PocId.
-      self::createActivity($PocId, $droppingCenterCode, $droppingCenterId);
-
-      // Create activity for organizationId, only if it's different from PocId.
-      if ($organizationId !== $PocId) {
-        self::createActivity($organizationId, $droppingCenterCode, $droppingCenterId);
-      }
-
-    }
-    catch (\CiviCRM_API4_Exception $ex) {
-      \Civi::log()->debug("Exception while creating Organize Dropping Center activity: " . $ex->getMessage());
-    }
-  }
-
-  /**
-   *
-   */
-  private static function createActivity($contactId, $droppingCenterCode, $droppingCenterId) {
-    Activity::create(FALSE)
-      ->addValue('subject', $droppingCenterCode)
-      ->addValue('activity_type_id:name', 'Organize Institution Dropping Center')
-      ->addValue('status_id:name', 'Authorized')
-      ->addValue('activity_date_time', date('Y-m-d H:i:s'))
-      ->addValue('source_contact_id', $contactId)
-      ->addValue('target_contact_id', $contactId)
-      ->addValue('Collection_Camp_Data.Collection_Camp_ID', $droppingCenterId)
-      ->execute();
-
-    \Civi::log()->info("Activity created for contact {$contactId} for Institution Dropping Center {$droppingCenterCode}");
   }
 
   /**
@@ -313,13 +238,13 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       ->addWhere('id', '=', $objectId)
       ->execute();
 
-    $currentDroppingCenter = $collectionCamps->first();
-    $currentStatus = $currentDroppingCenter['Collection_Camp_Core_Details.Status'];
-    $droppingCenterId = $currentDroppingCenter['id'];
+    $currentCollectionCamp = $collectionCamps->first();
+    $currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
+    $collectionCampId = $currentCollectionCamp['id'];
 
     // Check for status change.
     if ($currentStatus !== $newStatus && $newStatus === 'authorized') {
-      self::generateInstitutionDroppingCenterQrCode($droppingCenterId);
+      self::generateInstitutionDroppingCenterQrCode($collectionCampId);
     }
   }
 
