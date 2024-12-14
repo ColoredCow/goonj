@@ -105,7 +105,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
   private static function createActivity($contactId, $droppingCenterCode, $droppingCenterId) {
     Activity::create(FALSE)
       ->addValue('subject', $droppingCenterCode)
-      ->addValue('activity_type_id:name', 'Organize Dropping Center')
+      ->addValue('activity_type_id:name', 'Organize Institution Dropping Center')
       ->addValue('status_id:name', 'Authorized')
       ->addValue('activity_date_time', date('Y-m-d H:i:s'))
       ->addValue('source_contact_id', $contactId)
