@@ -44,8 +44,9 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     ];
   }
 
-
-
+  /**
+   *
+   */
   public static function linkInstitutionDroppingCenterToContact(string $op, string $objectName, $objectId, &$objectRef) {
     if ($objectName !== 'Eck_Collection_Camp' || !$objectId) {
       return;
@@ -98,6 +99,9 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     }
   }
 
+  /**
+   *
+   */
   private static function createActivity($contactId, $droppingCenterCode, $droppingCenterId) {
     Activity::create(FALSE)
       ->addValue('subject', $droppingCenterCode)
@@ -111,7 +115,6 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
 
     \Civi::log()->info("Activity created for contact {$contactId} for Institution Dropping Center {$droppingCenterCode}");
   }
-
 
   /**
    *
