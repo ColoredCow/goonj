@@ -2,12 +2,9 @@
 
 namespace Civi;
 
-use Civi\Api4\Activity;
 use Civi\Api4\Contact;
-use Civi\Api4\Contribution;
 use Civi\Api4\CustomField;
 use Civi\Api4\EckEntity;
-use Civi\Api4\Email;
 use Civi\Api4\Group;
 use Civi\Api4\GroupContact;
 use Civi\Api4\OptionValue;
@@ -15,8 +12,6 @@ use Civi\Api4\Relationship;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
-use Civi\Afform\Event\AfformSubmitEvent;
-use Civi\Api4\Utils\CoreUtil;
 
 /**
  *
@@ -294,7 +289,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
 
   }
 
-    /**
+  /**
    *
    */
   public static function generateInstitutionGoonjActivitiesQr(string $op, string $objectName, $objectId, &$objectRef) {
@@ -315,14 +310,13 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
     $currentStatus = $collectionCamp['Collection_Camp_Core_Details.Status'];
     $collectionCampId = $collectionCamp['id'];
 
-
     // Check for status change.
     if ($currentStatus !== $newStatus && $newStatus === 'authorized') {
       self::generateInstitutionGoonjActivitiesQrCode($collectionCampId);
     }
   }
 
-    /**
+  /**
    *
    */
   private static function generateInstitutionGoonjActivitiesQrCode($id) {
@@ -337,7 +331,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
     self::generateQrCode($data, $id, $saveOptions);
   }
 
-    /**
+  /**
    *
    */
   private static function isViewingIntitutionGoonjActivities($tabsetName, $context) {
@@ -440,7 +434,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
 
       \Civi::service('angularjs.loader')->addModules($config['module']);
     }
-}
+  }
 
   /**
    * This hook is called after a db write on entities.
@@ -470,7 +464,6 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
       ->addWhere('id', '=', $objectId)
       ->execute()->single();
 
-
     $currentStatus = $collectionCamp['Collection_Camp_Core_Details.Status'];
 
     if ($currentStatus === $newStatus || $newStatus !== 'authorized') {
@@ -480,7 +473,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
     // // Check for status change.
     // // Access the id within the decoded data.
     $campId = $objectRef['id'];
-    
+
     if ($campId === NULL) {
       return;
     }
@@ -511,7 +504,6 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
         ->addWhere('name', '=', 'Institution_Goonj_Activities')
         ->execute()->single();
 
-
       $results = EckEntity::create('Collection_Camp_Activity', TRUE)
         ->addValue('title', $activityName)
         ->addValue('subtype', $optionValue['value'])
@@ -524,7 +516,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
     }
   }
 
-    /**
+  /**
    *
    */
   public static function sendInsitutionActivityLogisticsEmail($collectionCamp) {
@@ -542,7 +534,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
       $today = new \DateTimeImmutable();
       $endOfToday = $today->setTime(23, 59, 59);
 
-      if (true) {
+      if (TRUE) {
         $campAttendedBy = Contact::get(FALSE)
           ->addSelect('email.email', 'display_name')
           ->addJoin('Email AS email', 'LEFT')
@@ -581,7 +573,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
 
   }
 
-    /**
+  /**
    *
    */
   private static function getLogisticsEmailHtml($contactName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress, $outcomeFormLink) {
@@ -603,7 +595,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
     return $html;
   }
 
-    /**
+  /**
    *
    */
   public static function getInstitutionPocActivitiesFeedbackEmailHtml($collectionCamp) {
@@ -617,7 +609,6 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
       $todayFormatted = $today->format('Y-m-d');
       $feedbackEmailSent = $collectionCamp['Logistics_Coordination.Feedback_Email_Sent'];
       $initiatorId = $collectionCamp['Institution_Goonj_Activities.Institution_POC'];
-
 
       $campAddress = $collectionCamp['Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'];
       $volunteerFeedbackForm = $collectionCamp['Institution_Goonj_Activities.Select_Volunteer_Feedback_Form'] ?? NULL;
@@ -659,7 +650,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
 
   }
 
-    /**
+  /**
    *
    */
   private static function getInstitutionPocFeedbackEmailHtml($organizingContactName, $collectionCampId, $campAddress, $volunteerFeedbackForm) {
@@ -679,4 +670,5 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
 
     return $html;
   }
+
 }

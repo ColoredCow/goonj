@@ -659,7 +659,6 @@ class GoonjActivitiesService extends AutoSubscriber {
       $feedbackEmailSent = $collectionCamp['Logistics_Coordination.Feedback_Email_Sent'];
       $initiatorId = $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
 
-
       $campAddress = $collectionCamp['Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'];
       $volunteerFeedbackForm = $collectionCamp['Goonj_Activities.Select_Volunteer_Feedback_Form'] ?? NULL;
 
