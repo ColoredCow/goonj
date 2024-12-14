@@ -104,15 +104,8 @@ $sourceField = CustomField::get(FALSE)
 
 $sourceFieldId = 'custom_' . $sourceField['id'];
 
-$donation_link = add_query_arg(
-    [
-      'reset' => 1,
-      'action' => 'preview',
-      'id' => 1,
-      $sourceFieldId => $source_contact_id,
-    ],
-    home_url('/civicrm/contribute/transact/')
-);
+$base_donation_link = home_url('/contribute/donate');
+$donation_link = $base_donation_link . '?' . $sourceFieldId . '=' . $source_contact_id;
 
 $dropping_center_material_contribution_link = sprintf(
     '/dropping-center-contribution?source=%s&target_id=%s&state_province_id=%s&city=%s',
@@ -152,15 +145,9 @@ $puSourceField = CustomField::get(FALSE)
 
 $puSourceFieldId = 'custom_' . $puSourceField['id'];
 
-$pu_donation_link = add_query_arg(
-    [
-      'reset' => 1,
-      'action' => 'preview',
-      'id' => 1,
-      $puSourceFieldId => $source_contact_id,
-    ],
-    home_url('/civicrm/contribute/transact/')
-);
+$base_pu_donation_link = home_url('/contribute/donate');
+$pu_donation_link = $base_pu_donation_link . '?' . $puSourceFieldId . '=' . $source_contact_id;
+
 
 $target_data = [
   'dropping-center' => [
