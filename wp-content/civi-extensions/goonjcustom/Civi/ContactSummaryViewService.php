@@ -28,13 +28,16 @@ class ContactSummaryViewService extends AutoSubscriber {
       return;
     }
 
-    $isAccount = \CRM_Core_Permission::check('account_team');
+    $permissionsToHideTabs = [
+      'account_team' => ['participant', 'activity', 'group', 'log', 'rel'],
+    ];
 
-    if ($isAccount) {
-      $newTabs = $this->removeTabsById($tabs, ['participant', 'activity', 'group', 'log', 'rel']);
-    }
-    else {
-      $newTabs = $tabs;
+    $newTabs = $tabs;
+    foreach ($permissionsToHideTabs as $permission => $tabsToHide) {
+      // If the user has the specified permission, remove the corresponding tabs.
+      if (\CRM_Core_Permission::check($permission)) {
+        $newTabs = $this->removeTabsById($newTabs, $tabsToHide);
+      }
     }
 
     $tabs = $newTabs;
