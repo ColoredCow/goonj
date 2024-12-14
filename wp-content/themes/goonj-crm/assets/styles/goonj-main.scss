@@ -64,6 +64,10 @@
           display: none;
         }
 
+        fieldset > div:nth-last-child(3) .label {
+          display: none !important;
+        }
+
         #on-behalf-block fieldset > div:nth-last-child(-n+2) {
           display: flex !important;
         }
