@@ -534,7 +534,6 @@ class InductionService extends AutoSubscriber {
 
         $isMailSent = $contacts['Individual_fields.Induction_slot_booking_follow_up_email_sent'] ?? NULL;
 
-
         if (in_array($isMailSent, [NULL, FALSE], TRUE)) {
 
           $emailParams = [
@@ -542,7 +541,7 @@ class InductionService extends AutoSubscriber {
             'template_id' => $template['id'],
           ];
 
-          $emailSent= civicrm_api3('Email', 'send', $emailParams);
+          $emailSent = civicrm_api3('Email', 'send', $emailParams);
 
           $contact = Contact::update(FALSE)
             ->addValue('Individual_fields.Induction_slot_booking_follow_up_email_sent', 1)
@@ -555,7 +554,7 @@ class InductionService extends AutoSubscriber {
           $formattedEmailSentDate = $emailSentDate->format('Y-m-d H:i:s');
           $results = Activity::update(FALSE)
             ->addValue('Induction_Fields.Follow_Up_Email_Sent', 1)
-            ->addValue('Induction_Fields.Follow_Up_Email_Sent_Date',$formattedEmailSentDate )
+            ->addValue('Induction_Fields.Follow_Up_Email_Sent_Date', $formattedEmailSentDate)
             ->addWhere('id', '=', $activity['id'])
             ->execute();
 
