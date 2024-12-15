@@ -77,7 +77,6 @@ class DroppingCenterService extends AutoSubscriber {
       self::$droppingCentreAddress = [
         'location_type_id' => 3,
         'state_province_id' => $fields['Dropping_Centre.State'],
-      // India.
         'country_id' => 1101,
         'street_address' => $fields['Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_'],
         'city' => $fields['Dropping_Centre.District_City'],
