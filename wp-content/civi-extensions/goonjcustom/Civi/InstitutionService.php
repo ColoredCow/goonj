@@ -4,6 +4,8 @@ namespace Civi;
 
 use Civi\Api4\Contact;
 use Civi\Api4\CustomField;
+use Civi\Api4\Group;
+use Civi\Api4\GroupContact;
 use Civi\Api4\Organization;
 use Civi\Api4\Relationship;
 use Civi\Core\Service\AutoSubscriber;
@@ -26,8 +28,8 @@ class InstitutionService extends AutoSubscriber {
       '&hook_civicrm_post' => [
         ['organizationCreated'],
         ['setOfficeDetails'],
-        ['assignChapterGroupToIndividual'],
       ],
+      '&hook_civicrm_pre' => 'assignChapterGroupToIndividual',
     ];
   }
 
@@ -87,19 +89,36 @@ class InstitutionService extends AutoSubscriber {
   /**
    *
    */
-  public static function assignChapterGroupToIndividual(string $op, string $objectName, int $objectId, &$objectRef) {
-    return;
-    if ($objectName !== 'Eck_Collection_Camp' || empty($objectRef['title']) || $objectRef['title'] !== 'Institution Collection Camp') {
+  public static function assignChapterGroupToIndividual(string $op, string $objectName, $objectId, &$objectRef) {
+    $assignments = [
+      'Institution Collection Camp' => [
+        'stateField' => 'Institution_Collection_Camp_Intent.State',
+        'contactField' => 'Institution_Collection_Camp_Intent.Institution_POC',
+        'organizationField' => 'Institution_Collection_Camp_Intent.Organization_Name',
+      ],
+      'Institution Dropping Center' => [
+        'stateField' => 'Institution_Dropping_Center_Intent.State',
+        'contactField' => 'Institution_Dropping_Center_Intent.Institution_POC',
+        'organizationField' => 'Institution_Dropping_Center_Intent.Organization_Name',
+      ],
+    ];
+
+    if ($objectName !== 'Eck_Collection_Camp' || empty($objectRef['title']) || !isset($assignments[$objectRef['title']])) {
       return FALSE;
     }
-    $stateId = $objectRef['Institution_Collection_Camp_Intent.State'];
-    $contactId = $objectRef['Institution_Collection_Camp_Intent.Institution_POC'];
-    $organizationId = $objectRef['Institution_Collection_Camp_Intent.Organization_Name'];
+
+    $assignment = $assignments[$objectRef['title']];
+
+    $stateId = $objectRef[$assignment['stateField']] ?? NULL;
+    $contactId = $objectRef[$assignment['contactField']] ?? NULL;
+    $organizationId = $objectRef[$assignment['organizationField']] ?? NULL;
 
     if (!$stateId || !$contactId) {
-      \Civi::log()->info("Missing Contact ID and State ID");
+      \Civi::log()->info("Missing Contact ID or State ID for " . $objectRef['title']);
       return FALSE;
     }
+
+    // Get the group and add contacts.
     $groupId = self::getChapterGroupForState($stateId);
 
     if ($groupId) {
@@ -108,6 +127,8 @@ class InstitutionService extends AutoSubscriber {
         self::addContactToGroup($organizationId, $groupId);
       }
     }
+
+    return TRUE;
   }
 
   /**
