@@ -380,7 +380,7 @@ class CollectionCampService extends AutoSubscriber {
    *   The reference to the object.
    */
   public static function linkCollectionCampToContact(string $op, string $objectName, $objectId, &$objectRef) {
-    if ($objectName != 'Eck_Collection_Camp' || !$objectId) {
+    if ($objectName != 'Eck_Collection_Camp' || !$objectId || !self::isCurrentSubtype($objectRef)) {
       return;
     }
 

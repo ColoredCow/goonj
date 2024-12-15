@@ -2,6 +2,7 @@
 
 namespace Civi;
 
+use Civi\Api4\Activity;
 use Civi\Api4\Contact;
 use Civi\Api4\CustomField;
 use Civi\Api4\EckEntity;
@@ -30,13 +31,73 @@ class DroppingCenterService extends AutoSubscriber {
   public static function getSubscribedEvents() {
     return [
       '&hook_civicrm_tabset' => 'droppingCenterTabset',
-      '&hook_civicrm_pre' => 'generateDroppingCenterQr',
+      '&hook_civicrm_pre' => [
+        ['generateDroppingCenterQr'],
+        ['linkDroppingCenterToContact'],
+      ],
       '&hook_civicrm_custom' => [
         ['setOfficeDetails'],
         ['mailNotificationToMmt'],
       ],
       '&hook_civicrm_post' => 'processDispatchEmail',
     ];
+  }
+
+  /**
+   *
+   */
+  public static function linkDroppingCenterToContact(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($objectName != 'Eck_Collection_Camp' || !$objectId || !self::isCurrentSubtype($objectRef)) {
+      return;
+    }
+
+    $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
+
+    if (!$newStatus) {
+      return;
+    }
+
+    $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id', 'title')
+      ->addWhere('id', '=', $objectId)
+      ->execute();
+
+    $currentCollectionCamp = $collectionCamps->first();
+    $currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
+    $contactId = $currentCollectionCamp['Collection_Camp_Core_Details.Contact_Id'];
+    if (!$contactId) {
+      return;
+    }
+    $droppingCenterCode = $currentCollectionCamp['title'];
+    $droppingCenterId = $currentCollectionCamp['id'];
+
+    // Check for status change.
+    if ($currentStatus !== $newStatus) {
+      if ($newStatus === 'authorized') {
+        self::createDroppingCenterOrganizeActivity($contactId, $droppingCenterCode, $droppingCenterId);
+      }
+    }
+  }
+
+  /**
+   * Log an activity in CiviCRM.
+   */
+  private static function createDroppingCenterOrganizeActivity($contactId, $droppingCenterCode, $droppingCenterId) {
+    try {
+      $results = Activity::create(FALSE)
+        ->addValue('subject', $droppingCenterCode)
+        ->addValue('activity_type_id:name', 'Organize Dropping Center')
+        ->addValue('status_id:name', 'Authorized')
+        ->addValue('activity_date_time', date('Y-m-d H:i:s'))
+        ->addValue('source_contact_id', $contactId)
+        ->addValue('target_contact_id', $contactId)
+        ->addValue('Collection_Camp_Data.Collection_Camp_ID', $droppingCenterId)
+        ->execute();
+
+    }
+    catch (\CiviCRM_API4_Exception $ex) {
+      \Civi::log()->debug("Exception while creating Organize Dropping Center activity: " . $ex->getMessage());
+    }
   }
 
   /**
@@ -59,11 +120,11 @@ class DroppingCenterService extends AutoSubscriber {
 
     $currentCollectionCamp = $collectionCamps->first();
     $currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
-    $collectionCampId = $currentCollectionCamp['id'];
+    $droppingCenterId = $currentCollectionCamp['id'];
 
     // Check for status change.
     if ($currentStatus !== $newStatus && $newStatus === 'authorized') {
-      self::generateDroppingCenterQrCode($collectionCampId);
+      self::generateDroppingCenterQrCode($droppingCenterId);
     }
   }
 
