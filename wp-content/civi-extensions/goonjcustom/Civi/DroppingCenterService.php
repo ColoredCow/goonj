@@ -2,12 +2,14 @@
 
 namespace Civi;
 
+use Civi\Afform\Event\AfformSubmitEvent;
 use Civi\Api4\Activity;
 use Civi\Api4\Contact;
 use Civi\Api4\CustomField;
 use Civi\Api4\EckEntity;
 use Civi\Api4\Email;
 use Civi\Api4\Relationship;
+use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
@@ -25,12 +27,19 @@ class DroppingCenterService extends AutoSubscriber {
   const MATERIAL_RELATIONSHIP_TYPE_NAME = 'Material Management Team of';
   const FALLBACK_OFFICE_NAME = 'Delhi';
 
+  const DROPPING_CENTER_INTENT_FB_NAME = 'afformDroppingCenterDetailForm';
+private static $droppingCentreAddress = NULL;
+  
   /**
    *
    */
   public static function getSubscribedEvents() {
     return [
       '&hook_civicrm_tabset' => 'droppingCenterTabset',
+      'civi.afform.submit' => [
+        ['setDroppingCenterAddress', 9],
+        ['setEventVolunteersAddress', 8],
+        ],
       '&hook_civicrm_pre' => [
         ['generateDroppingCenterQr'],
         ['linkDroppingCenterToContact'],
@@ -42,6 +51,63 @@ class DroppingCenterService extends AutoSubscriber {
       '&hook_civicrm_post' => 'processDispatchEmail',
     ];
   }
+
+  public static function setDroppingCenterAddress(AfformSubmitEvent $event) {
+    $afform = $event->getAfform();
+    $formName = $afform['name'];
+
+    if ($formName !== self::DROPPING_CENTER_INTENT_FB_NAME) {
+      return;
+    }
+
+    $entityType = $event->getEntityType();
+
+    if ($entityType !== 'Eck_Collection_Camp') {
+      return;
+    }
+
+    $records = $event->records;
+
+    foreach ($records as $record) {
+      $fields = $record['fields'];
+
+      self::$droppingCentreAddress = [
+        'location_type_id' => 3,
+        'state_province_id' => $fields['Dropping_Centre.State'],
+      // India.
+        'country_id' => 1101,
+        'street_address' => $fields['Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_'],
+        'city' => $fields['Dropping_Centre.District_City'],
+        'postal_code' => $fields['Dropping_Centre.Postal_Code'],
+        'is_primary' => 1,
+      ];
+    }
+  }
+
+  public static function setEventVolunteersAddress(AfformSubmitEvent $event) {
+    $afform = $event->getAfform();
+    $formName = $afform['name'];
+
+    if ($formName !== self::DROPPING_CENTER_INTENT_FB_NAME) {
+      return;
+    }
+
+    $entityType = $event->getEntityType();
+
+    if (!CoreUtil::isContact($entityType)) {
+      return;
+    }
+
+    foreach ($event->records as $index => $contact) {
+      if (empty($contact['fields'])) {
+        continue;
+      }
+
+      $event->records[$index]['joins']['Address'][] = self::$droppingCentreAddress;
+    }
+
+  }
+
 
   /**
    *
