@@ -96,7 +96,7 @@ class DroppingCenterService extends AutoSubscriber {
 
     }
     catch (\CiviCRM_API4_Exception $ex) {
-      \Civi::log()->debug("Exception while creating Organize Collection Camp activity: " . $ex->getMessage());
+      \Civi::log()->debug("Exception while creating Organize Dropping Center activity: " . $ex->getMessage());
     }
   }
 
