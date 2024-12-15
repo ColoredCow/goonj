@@ -28,8 +28,8 @@ class DroppingCenterService extends AutoSubscriber {
   const FALLBACK_OFFICE_NAME = 'Delhi';
 
   const DROPPING_CENTER_INTENT_FB_NAME = 'afformDroppingCenterDetailForm';
-private static $droppingCentreAddress = NULL;
-  
+  private static $droppingCentreAddress = NULL;
+
   /**
    *
    */
@@ -39,7 +39,7 @@ private static $droppingCentreAddress = NULL;
       'civi.afform.submit' => [
         ['setDroppingCenterAddress', 9],
         ['setEventVolunteersAddress', 8],
-        ],
+      ],
       '&hook_civicrm_pre' => [
         ['generateDroppingCenterQr'],
         ['linkDroppingCenterToContact'],
@@ -52,6 +52,9 @@ private static $droppingCentreAddress = NULL;
     ];
   }
 
+  /**
+   *
+   */
   public static function setDroppingCenterAddress(AfformSubmitEvent $event) {
     $afform = $event->getAfform();
     $formName = $afform['name'];
@@ -84,6 +87,9 @@ private static $droppingCentreAddress = NULL;
     }
   }
 
+  /**
+   *
+   */
   public static function setEventVolunteersAddress(AfformSubmitEvent $event) {
     $afform = $event->getAfform();
     $formName = $afform['name'];
@@ -107,7 +113,6 @@ private static $droppingCentreAddress = NULL;
     }
 
   }
-
 
   /**
    *
