@@ -46,6 +46,7 @@ class GoonjActivitiesService extends AutoSubscriber {
       '&hook_civicrm_pre' => [
         ['generateGoonjActivitiesQr'],
         ['createActivityForGoonjActivityCollectionCamp'],
+        ['linkGoonjActivitiesToContact'],
       ],
     ];
   }
@@ -430,6 +431,78 @@ class GoonjActivitiesService extends AutoSubscriber {
     }
   }
 
+    /**
+   *
+   */
+  public static function linkGoonjActivitiesToContact(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($objectName !== 'Eck_Collection_Camp' || !$objectId || !self::isCurrentSubtype($objectRef)) {
+      return;
+    }
+
+    $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
+    if (!$newStatus) {
+      return;
+    }
+
+    $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id', 'title')
+      ->addWhere('id', '=', $objectId)
+      ->execute();
+
+    $currentCollectionCamp = $collectionCamps->first();
+    $currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
+    $inititorId = $currentCollectionCamp['Collection_Camp_Core_Details.Contact_Id'];
+
+    if (!$inititorId) {
+      return;
+    }
+
+    $collectionCampTitle = $currentCollectionCamp['title'];
+    $collectionCampId = $currentCollectionCamp['id'];
+
+    if ($currentStatus !== $newStatus && $newStatus === 'authorized') {
+      self::createGoonjActivitiesOrganizeActivity($inititorId, $collectionCampTitle, $collectionCampId);
+    }
+  }
+
+  /**
+   * Log an activity in CiviCRM.
+   */
+  private static function createGoonjActivitiesOrganizeActivity($contactId, $collectionCampTitle, $collectionCampId) {
+
+    try {
+      $results = Activity::create(FALSE)
+        ->addValue('subject', $collectionCampTitle)
+        ->addValue('activity_type_id:name', 'Organize Goonj Activities')
+        ->addValue('status_id:name', 'Authorized')
+        ->addValue('activity_date_time', date('Y-m-d H:i:s'))
+        ->addValue('source_contact_id', $contactId)
+        ->addValue('target_contact_id', $contactId)
+        ->addValue('Collection_Camp_Data.Collection_Camp_ID', $collectionCampId)
+        ->execute();
+
+    }
+    catch (\CiviCRM_API4_Exception $ex) {
+      \Civi::log()->debug("Exception while creating Organize Collection Camp activity: " . $ex->getMessage());
+    }
+  }
+
+    /**
+   *
+   */
+  private static function createActivity($contactId, $collectionCampTitle, $collectionCampId) {
+    Activity::create(FALSE)
+      ->addValue('subject', $collectionCampTitle)
+      ->addValue('activity_type_id:name', 'Organize Institution Collection Camp')
+      ->addValue('status_id:name', 'Authorized')
+      ->addValue('activity_date_time', date('Y-m-d H:i:s'))
+      ->addValue('source_contact_id', $contactId)
+      ->addValue('target_contact_id', $contactId)
+      ->addValue('Collection_Camp_Data.Collection_Camp_ID', $collectionCampId)
+      ->execute();
+
+    \Civi::log()->info("Activity created for contact {$contactId} for Institution Collection Camp {$collectionCampTitle}");
+  }
   /**
    *
    */
