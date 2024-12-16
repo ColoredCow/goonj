@@ -1,0 +1,35 @@
+services:
+  wordpress:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: ${WORDPRESS_DB_USER}
+      WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD}
+      WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME}
+    volumes:
+      - ./wp-content:/var/www/html/wp-content
+    depends_on:
+      - ssh-tunnel
+    networks:
+      - default
+
+  ssh-tunnel:
+    image: alpine:latest
+    command: >
+      sh -c "
+        apk add --no-cache openssh-client &&
+        echo '${SSH_PRIVATE_KEY}' > /root/.ssh/cc-uat-nginx.pem &&
+        chmod 600 /root/.ssh/cc-uat-nginx.pem &&
+        ssh -o StrictHostKeyChecking=no -N -L 3306:civicrm.coloredcow.com:3306 nginx@civicrm.coloredcow.com -i /root/.ssh/cc-uat-nginx.pem"
+    volumes:
+      - /root/.ssh:/root/.ssh
+    networks:
+      - default
+
+networks:
+  default:
+    driver: bridge
