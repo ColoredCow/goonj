@@ -90,9 +90,8 @@ function setupFormValidation() {
 		},
 		{
 			labelText: "PAN Card Number",
-			regex: /^\d{10}$/,
-			errorMessage:
-				"Please enter a valid 10-digit PAN card number.",
+			regex: /^[a-zA-Z0-9]{10}$/,
+			errorMessage: "Please enter a valid 10-digit PAN card number.",
 		},
 	];
 
