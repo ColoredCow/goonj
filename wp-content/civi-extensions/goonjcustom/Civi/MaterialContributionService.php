@@ -68,8 +68,6 @@ class MaterialContributionService extends AutoSubscriber {
       ->setLimit(1)
       ->execute();
 
-    error_log("activitiesmaterial: " . print_r($activities, TRUE));
-
     $contribution = $activities->first();
 
     $goonjOfficeId = $contribution['Material_Contribution.Goonj_Office'];
