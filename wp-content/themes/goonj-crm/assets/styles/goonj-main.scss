@@ -1,6 +1,10 @@
 #crm-main-content-wrapper {
   form {
     .crm-block {
+        #onBehalfOfOrg .crm-public-form-item fieldset .crm-section .label {
+          display: block !important;
+        }
+
       .crm-public-form-item {
         fieldset legend {
           display: none !important;
