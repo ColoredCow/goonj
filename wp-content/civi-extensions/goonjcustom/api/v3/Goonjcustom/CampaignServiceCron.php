@@ -36,7 +36,6 @@ function civicrm_api3_goonjcustom_campaign_service_cron($params) {
   $returnValues = [];
   $today = date('Y-m-d');
 
-  // Fetch campaigns starting today with relevant details.
   $campaigns = Campaign::get(TRUE)
     ->addSelect(
       'id',
@@ -45,7 +44,7 @@ function civicrm_api3_goonjcustom_campaign_service_cron($params) {
       'end_date',
       'Additional_Details.Campaign_Goonj_PoC',
       'Additional_Details.Campaign_Institution_PoC',
-      'Additional_Details.Branch_POC'
+      'Additional_Details.Branch_Wise_POCs'
     )
     ->addWhere('start_date', '>=', $today . ' 00:00:00')
     ->addWhere('start_date', '<=', $today . ' 23:59:59')
@@ -73,8 +72,8 @@ function processPoC($campaignId, $campaign) {
   // }
 
   // Send email to each Branch PoC if available.
-  if (!empty($campaign['Additional_Details.Branch_POC'])) {
-    foreach ($campaign['Additional_Details.Branch_POC'] as $branchPoCId) {
+  if (!empty($campaign['Additional_Details.Branch_Wise_POCs'])) {
+    foreach ($campaign['Additional_Details.Branch_Wise_POCs'] as $branchPoCId) {
       sendEmailToPoC($campaignId, $branchPoCId);
     }
   }
