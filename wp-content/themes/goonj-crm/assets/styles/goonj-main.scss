@@ -107,7 +107,7 @@
           margin-top: 0 !important;
 
           div {
-            width: 85vw !important;
+            width: 100% !important;
           }
           .select2-container {
             font-size: 14px !important;
@@ -301,7 +301,7 @@
 }
 
 // Media Queries
-@media (min-width: 375px) and (max-width: 768px) {
+@media (min-width: 340px) and (max-width: 768px) {
   #crm-main-content-wrapper {
     form {
       .crm-block {
@@ -315,7 +315,7 @@
               margin-left: 0 !important;
             }
 
-            width: 85vw !important;
+            width: 82vw !important;
           }
         }
 
