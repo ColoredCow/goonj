@@ -17,7 +17,7 @@ class InstitutionCampaignService extends AutoSubscriber {
   public static function getSubscribedEvents() {
     return [
       '&hook_civicrm_post' => [
-        ['linkInstitutionCampaignToOrganization'],
+        ['linkCampaignToOrganization'],
       ],
     ];
   }
@@ -25,7 +25,7 @@ class InstitutionCampaignService extends AutoSubscriber {
   /**
    *
    */
-  public static function linkInstitutionCampaignToOrganization(string $op, string $objectName, int $objectId, &$objectRef) {
+  public static function linkCampaignToOrganization(string $op, string $objectName, int $objectId, &$objectRef) {
 
     if ($objectName != 'Campaign' || !$objectId) {
       return;
@@ -66,8 +66,6 @@ class InstitutionCampaignService extends AutoSubscriber {
         ->addValue('activity_date_time', date('Y-m-d H:i:s'))
         ->addValue('source_contact_id', $currentInstitutionId)
         ->addValue('target_contact_id', $currentInstitutionId)
-        ->addValue('source_record_id', $currentInstitutionId)
-        ->addValue('target_record_id', $currentInstitutionId)
         ->execute();
 
     }
