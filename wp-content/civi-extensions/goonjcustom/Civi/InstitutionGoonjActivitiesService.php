@@ -82,6 +82,25 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
       \Civi::log()->info("Missing Contact ID and State ID");
       return FALSE;
     }
+
+    $contactQuery = Contact::get(FALSE)
+      ->addWhere('id', '=', $contactId)
+      ->execute();
+    $contact = $contactQuery->first();
+
+    if (!empty($contact)) {
+      return FALSE;
+    }
+
+    $organizationQuery = Contact::get(TRUE)
+      ->addWhere('id', '=', $organizationId)
+      ->execute();
+    $organization = $organizationQuery->first();
+
+    if (!empty($organization)) {
+      return FALSE;
+    }
+
     $groupId = self::getChapterGroupForState($stateId);
 
     if ($groupId) {
@@ -102,6 +121,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
         ->addValue('group_id', $groupId)
         ->addValue('status', 'Added')
         ->execute();
+      \Civi::log()->info('check1');
     }
     catch (Exception $e) {
       \Civi::log()->error("Error adding contact_id: $contactId to group_id: $groupId. Exception: " . $e->getMessage());
@@ -245,6 +265,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
    *
    */
   public static function setOfficeDetails($op, $groupID, $entityID, &$params) {
+    \Civi::log()->info('check4');
     if ($op !== 'create' || self::getEntitySubtypeName($entityID) !== self::ENTITY_SUBTYPE_NAME) {
       return;
     }
@@ -296,6 +317,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
     if ($objectName !== 'Eck_Collection_Camp' || !$objectId || !self::isCurrentSubtype($objectRef)) {
       return;
     }
+    \Civi::log()->info('check2');
 
     $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
     if (!$newStatus) {
@@ -309,6 +331,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
 
     $currentStatus = $collectionCamp['Collection_Camp_Core_Details.Status'];
     $collectionCampId = $collectionCamp['id'];
+    \Civi::log()->info('collectionCampId', ['collectionCampId' => $collectionCampId]);
 
     // Check for status change.
     if ($currentStatus !== $newStatus && $newStatus === 'authorized') {
@@ -356,6 +379,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
    *
    */
   public static function institutionGoonjActivitiesTabset($tabsetName, &$tabs, $context) {
+
     if (!self::isViewingIntitutionGoonjActivities($tabsetName, $context)) {
       return;
     }
@@ -411,6 +435,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
     ];
+    \Civi::log()->info('check5');
 
     foreach ($tabConfigs as $key => $config) {
       $isAdmin = \CRM_Core_Permission::check('admin');
@@ -452,6 +477,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
     if ($objectName != 'Eck_Collection_Camp' || self::getEntitySubtypeName($objectId) !== self::ENTITY_SUBTYPE_NAME) {
       return;
     }
+    \Civi::log()->info('checasdas');
 
     $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
 
@@ -465,6 +491,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
       ->execute()->single();
 
     $currentStatus = $collectionCamp['Collection_Camp_Core_Details.Status'];
+    \Civi::log()->info('currentStatus', ['currentStatus' => $currentStatus]);
 
     if ($currentStatus === $newStatus || $newStatus !== 'authorized') {
       return;
@@ -503,7 +530,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
         ->addWhere('grouping', '=', 'Collection_Camp_Activity')
         ->addWhere('name', '=', 'Institution_Goonj_Activities')
         ->execute()->single();
-
+      \Civi::log()->info('check3');
       $results = EckEntity::create('Collection_Camp_Activity', TRUE)
         ->addValue('title', $activityName)
         ->addValue('subtype', $optionValue['value'])
