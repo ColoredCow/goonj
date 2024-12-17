@@ -121,7 +121,6 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
         ->addValue('group_id', $groupId)
         ->addValue('status', 'Added')
         ->execute();
-      \Civi::log()->info('check1');
     }
     catch (Exception $e) {
       \Civi::log()->error("Error adding contact_id: $contactId to group_id: $groupId. Exception: " . $e->getMessage());
