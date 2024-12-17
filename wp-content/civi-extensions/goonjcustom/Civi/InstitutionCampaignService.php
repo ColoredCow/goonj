@@ -50,14 +50,14 @@ class InstitutionCampaignService extends AutoSubscriber {
 
     // Check for status change.
     if ($currentInstitutionId) {
-      self::createCollectionCampOrganizeActivity($currentInstitutionId, $campaignTitle, $campaignId);
+      self::createInstitutionCampaignActivity($currentInstitutionId, $campaignTitle, $campaignId);
     }
   }
 
   /**
    * Log an activity in CiviCRM.
    */
-  private static function createCollectionCampOrganizeActivity($currentInstitutionId, $campaignTitle, $campaignId) {
+  private static function createInstitutionCampaignActivity($currentInstitutionId, $campaignTitle, $campaignId) {
     try {
       $results = Activity::create(FALSE)
         ->addValue('subject', $campaignTitle)
@@ -70,7 +70,7 @@ class InstitutionCampaignService extends AutoSubscriber {
 
     }
     catch (\CiviCRM_API4_Exception $ex) {
-      \Civi::log()->debug("Exception while creating Organize Collection Camp activity: " . $ex->getMessage());
+      \Civi::log()->debug("Exception while creating Institution Campaign activity: " . $ex->getMessage());
     }
   }
 
