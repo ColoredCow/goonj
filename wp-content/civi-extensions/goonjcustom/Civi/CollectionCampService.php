@@ -1057,7 +1057,7 @@ class CollectionCampService extends AutoSubscriber {
   /**
    *
    */
-  private static function getFromAddress() {
+  public static function getFromAddress() {
     if (!self::$fromAddress) {
       [$defaultFromName, $defaultFromEmail] = \CRM_Core_BAO_Domain::getNameAndEmail();
       self::$fromAddress = "\"$defaultFromName\" <$defaultFromEmail>";
