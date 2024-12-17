@@ -17,7 +17,7 @@ class InstitutionCampaignService extends AutoSubscriber {
   public static function getSubscribedEvents() {
     return [
       '&hook_civicrm_post' => [
-        ['linkCollectionCampToContact'],
+        ['linkCampaignToOrganization'],
       ],
     ];
   }
@@ -25,7 +25,7 @@ class InstitutionCampaignService extends AutoSubscriber {
   /**
    *
    */
-  public static function linkCollectionCampToContact(string $op, string $objectName, int $objectId, &$objectRef) {
+  public static function linkCampaignToOrganization(string $op, string $objectName, int $objectId, &$objectRef) {
 
     if ($objectName != 'Campaign' || !$objectId) {
       return;
