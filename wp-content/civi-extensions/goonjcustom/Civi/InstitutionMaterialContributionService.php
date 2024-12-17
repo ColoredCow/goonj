@@ -35,12 +35,11 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
       return;
     }
 
-    // Decode the data field from the AfformSubmission object.
     $data = json_decode($objectRef->data, TRUE);
     if (!$data) {
       return;
     }
-    // Extract required fields from the decoded data.
+
     $activityData = $data['Activity1'][0]['fields'];
     $brandingCampaignId = $activityData['Institution_Material_Contribution.Co_branding_Campaign'];
     $campaignId = $activityData['Institution_Material_Contribution.Campaign'];
@@ -69,7 +68,6 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
         ->addWhere('id', '=', $brandingCampaignId)
         ->execute();
 
-      // error_log("campaigns " . print_r($campaigns, TRUE));.
     }
     elseif ($campaignId) {
       $campaigns = Campaign::get(TRUE)
@@ -138,22 +136,22 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
       }
     }
 
-    // Remove duplicates from the email list.
     $emails = array_unique($emails);
+
     // Send the email with the contribution receipt attached.
-    self::sendMaterialContributionEmails($emails, $contactNames, $phone, $description, $deliveredBy, $deliveredByContact);
+    self::sendInstitutionMaterialContributionEmails($emails, $contactNames, $phone, $description, $deliveredBy, $deliveredByContact);
   }
 
   /**
    * Send emails with the contribution receipt attached.
    */
-  public static function sendMaterialContributionEmails(array $recipientEmails, array $contactNames, array $phone, $description, $deliveredBy, $deliveredByContact) {
+  public static function sendInstitutionMaterialContributionEmails(array $recipientEmails, array $contactNames, array $phone, $description, $deliveredBy, $deliveredByContact) {
     // Loop through each recipient to send personalized emails.
     foreach ($recipientEmails as $email) {
       $contactName = $contactNames[$email] ?? 'Contributor';
       $contactPhone = $phone[$email] ?? 'Contributor';
-      // Set up the email subject and body.
-      $emailSubject = 'Material Contribution Receipt';
+
+      $emailSubject = 'Acknowledgement for your material contribution to Goonj..';
       $emailBody = self::generateEmailBody($contactName);
 
       $html = self::generateContributionReceiptHtml($email, $contactPhone, $description, $contactName, $deliveredBy, $deliveredByContact);
