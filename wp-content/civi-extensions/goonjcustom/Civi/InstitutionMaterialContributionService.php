@@ -25,13 +25,7 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
    *
    */
   public static function processInstitutionMaterialContributions(string $op, string $objectName, int $objectId, &$objectRef) {
-    if ($objectName !== 'AfformSubmission') {
-      return;
-    }
-
-    $afformName = $objectRef->afform_name;
-
-    if ($afformName !== 'afformAddInstitutionMaterialContribution') {
+    if ($objectName !== 'AfformSubmission' || $objectRef->afform_name !== 'afformAddInstitutionMaterialContribution') {
       return;
     }
 
@@ -40,131 +34,138 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
       return;
     }
 
-    $activityData = $data['Activity1'][0]['fields'];
-    $brandingCampaignId = $activityData['Institution_Material_Contribution.Co_branding_Campaign'];
-    $campaignId = $activityData['Institution_Material_Contribution.Campaign'];
-    $goonjOffice = $activityData['Institution_Material_Contribution.Goonj_Office'];
-    $description = $activityData['Institution_Material_Contribution.Description_of_Material_No_of_Bags_Material_'];
-    $deliveredBy = $activityData['Institution_Material_Contribution.Delivered_By_Name'];
-    $deliveredByContact = $activityData['Institution_Material_Contribution.Delivered_By_Contact'];
-    $institutionId = $activityData['Additional_Details.Institution'];
-
+    $activityData = $data['Activity1'][0]['fields'] ?? [];
+    $activityDate = $activityData['activity_date_time'];
+    $brandingCampaignId = $activityData['Institution_Material_Contribution.Co_branding_Campaign'] ?? NULL;
+    $campaignId = $activityData['Institution_Material_Contribution.Campaign'] ?? NULL;
+    $description = $activityData['Institution_Material_Contribution.Description_of_Material_No_of_Bags_Material_'] ?? '';
+    $deliveredBy = $activityData['Institution_Material_Contribution.Delivered_By_Name'] ?? '';
+    $deliveredByContact = $activityData['Institution_Material_Contribution.Delivered_By_Contact'] ?? '';
     $organizationId = $data['Organization1'][0]['fields']['id'] ?? NULL;
 
-    // Fetch campaigns based on the brandingCampaignId or campaignId.
-    $coBrandingCampaigns = [];
-    $campaigns = [];
-    if ($brandingCampaignId) {
-      $coBrandingCampaigns = Campaign::get(TRUE)
-        ->addSelect(
-                'id',
-                'Additional_Details.Type_of_Campaign',
-                'start_date',
-                'end_date',
-                'Additional_Details.Campaign_Goonj_PoC',
-                'Additional_Details.Campaign_Institution_PoC',
-                'Additional_Details.Branch_Wise_POCs'
-            )
-        ->addWhere('id', '=', $brandingCampaignId)
-        ->execute();
+    $contacts = self::fetchContributionContacts($brandingCampaignId, $campaignId, $organizationId);
 
+    if (!empty($contacts)) {
+      self::sendInstitutionMaterialContributionEmails($contacts, $description, $deliveredBy, $deliveredByContact, $activityDate);
     }
-    elseif ($campaignId) {
-      $campaigns = Campaign::get(TRUE)
-        ->addSelect('id', 'Additional_Details.Campaign_Institution_PoC')
-        ->addWhere('id', '=', $campaignId)
-        ->execute();
-    }
-    elseif ($organizationId) {
-      $relationships = Relationship::get(FALSE)
-        ->addWhere('contact_id_a', '=', $organizationId)
-        ->addWhere('relationship_type_id:name', '=', 'Institution POC of')
-        ->execute();
-
-    }
-
-    // Extract Branch_Wise_POCs emails from campaigns.
-    $emails = [];
-    $phone = [];
-    $contactNames = [];
-    if (!empty($coBrandingCampaigns)) {
-      if (isset($coBrandingCampaigns[0]['Additional_Details.Branch_Wise_POCs'])) {
-        $branchWisePOCs = $coBrandingCampaigns[0]['Additional_Details.Branch_Wise_POCs'] ?? [];
-        foreach ($branchWisePOCs as $contactId) {
-          $contact = Contact::get(TRUE)
-            ->addSelect('email_primary.email', 'phone_primary.phone', 'display_name')
-            ->addWhere('id', '=', $contactId)
-            ->execute()
-            ->first();
-
-          if (!empty($contact['email_primary.email'])) {
-            $emails[] = $contact['email_primary.email'];
-            $Phone[$contact['email_primary.email']] = $contact['phone_primary.phone'];
-            $contactNames[$contact['email_primary.email']] = $contact['display_name'];
-          }
-        }
-      }
-    }
-    // If Branch_Wise_POCs are empty, use Campaign_Institution_PoC as fallback.
-    if (empty($coBrandingCampaigns) && !empty($campaigns[0]['Additional_Details.Campaign_Institution_PoC'])) {
-      $campaignInstitutionPocId = $campaigns[0]['Additional_Details.Campaign_Institution_PoC'];
-      $contact = Contact::get(TRUE)
-        ->addSelect('email_primary.email', 'phone_primary.phone', 'display_name')
-        ->addWhere('id', '=', $campaignInstitutionPocId)
-        ->execute()
-        ->first();
-
-      if (!empty($contact['email_primary.email'])) {
-        $emails[] = $contact['email_primary.email'];
-        $Phone[$contact['email_primary.email']] = $contact['phone_primary.phone'];
-        $contactNames[$contact['email_primary.email']] = $contact['display_name'];
-      }
-    }
-
-    if (empty($coBrandingCampaigns) && empty($campaigns)) {
-      $institutionPocId = $relationships[0]['contact_id_b'];
-      $contact = Contact::get(TRUE)
-        ->addSelect('email_primary.email', 'phone_primary.phone', 'display_name')
-        ->addWhere('id', '=', $institutionPocId)
-        ->execute()
-        ->first();
-
-      if (!empty($contact['email_primary.email'])) {
-        $emails[] = $contact['email_primary.email'];
-        $Phone[$contact['email_primary.email']] = $contact['phone_primary.phone'];
-        $contactNames[$contact['email_primary.email']] = $contact['display_name'];
-      }
-    }
-
-    $emails = array_unique($emails);
-
-    // Send the email with the contribution receipt attached.
-    self::sendInstitutionMaterialContributionEmails($emails, $contactNames, $phone, $description, $deliveredBy, $deliveredByContact);
   }
 
   /**
-   * Send emails with the contribution receipt attached.
+   *
    */
-  public static function sendInstitutionMaterialContributionEmails(array $recipientEmails, array $contactNames, array $phone, $description, $deliveredBy, $deliveredByContact) {
-    // Loop through each recipient to send personalized emails.
-    foreach ($recipientEmails as $email) {
-      $contactName = $contactNames[$email] ?? 'Contributor';
-      $contactPhone = $phone[$email] ?? 'Contributor';
+  private static function fetchContributionContacts($brandingCampaignId, $campaignId, $organizationId) {
+    $contacts = [];
 
-      $emailSubject = 'Acknowledgement for your material contribution to Goonj..';
-      $emailBody = self::generateEmailBody($contactName);
+    // Case 1: Co-Branding Campaign Contacts.
+    if ($brandingCampaignId) {
+      $contacts = self::getBranchWisePOCs($brandingCampaignId);
+    }
+    // Case 2: Campaign Institution POC.
+    elseif ($campaignId) {
+      $contacts = self::getCampaignInstitutionPOC($campaignId);
+    }
+    // Case 3: Institution POC.
+    elseif ($organizationId) {
+      $contacts = self::getInstitutionRelationships($organizationId);
+    }
 
-      $html = self::generateContributionReceiptHtml($email, $contactPhone, $description, $contactName, $deliveredBy, $deliveredByContact);
+    return $contacts;
+  }
 
-      $fileName = 'institution_material_contribution.pdf';
+  /**
+   *
+   */
+  private static function getBranchWisePOCs($campaignId) {
+    $contacts = [];
+    $campaign = Campaign::get(TRUE)
+      ->addSelect('Additional_Details.Branch_Wise_POCs')
+      ->addWhere('id', '=', $campaignId)
+      ->execute()
+      ->first();
 
-      $attachments = [\CRM_Utils_Mail::appendPDF($fileName, $html)];
+    $branchWisePOCs = $campaign['Additional_Details.Branch_Wise_POCs'] ?? [];
+    foreach ($branchWisePOCs as $contactId) {
+      $contact = self::getContactDetails($contactId);
+      if ($contact) {
+        $contacts[$contact['email']] = $contact;
+      }
+    }
+    return $contacts;
+  }
 
-      $params = self::prepareEmailParams($emailSubject, $emailBody, $attachments, $email);
+  /**
+   *
+   */
+  private static function getCampaignInstitutionPOC($campaignId) {
+    $contacts = [];
+    $campaign = Campaign::get(TRUE)
+      ->addSelect('Additional_Details.Campaign_Institution_PoC')
+      ->addWhere('id', '=', $campaignId)
+      ->execute()
+      ->first();
 
-      // Send the email.
-      $sendStatus = \CRM_Utils_Mail::send($params);
+    if (!empty($campaign['Additional_Details.Campaign_Institution_PoC'])) {
+      $contact = self::getContactDetails($campaign['Additional_Details.Campaign_Institution_PoC']);
+      if ($contact) {
+        $contacts[$contact['email']] = $contact;
+      }
+    }
+    return $contacts;
+  }
 
+  /**
+   *
+   */
+  private static function getInstitutionRelationships($organizationId) {
+    $contacts = [];
+    $relationship = Relationship::get(FALSE)
+      ->addWhere('contact_id_a', '=', $organizationId)
+      ->addWhere('relationship_type_id:name', '=', 'Institution POC of')
+      ->execute()
+      ->first();
+
+    if (!empty($relationship['contact_id_b'])) {
+      $contact = self::getContactDetails($relationship['contact_id_b']);
+      if ($contact) {
+        $contacts[$contact['email']] = $contact;
+      }
+    }
+    return $contacts;
+  }
+
+  /**
+   *
+   */
+  private static function getContactDetails($contactId) {
+    $contact = Contact::get(TRUE)
+      ->addSelect('email_primary.email', 'phone_primary.phone', 'display_name')
+      ->addWhere('id', '=', $contactId)
+      ->execute()
+      ->first();
+
+    return (!empty($contact['email_primary.email'])) ? [
+      'email' => $contact['email_primary.email'],
+      'phone' => $contact['phone_primary.phone'] ?? '',
+      'name' => $contact['display_name'] ?? '',
+    ] : NULL;
+  }
+
+  /**
+   *
+   */
+  private static function sendInstitutionMaterialContributionEmails(array $contacts, string $description, string $deliveredBy, string $deliveredByContact, string $activityDate) {
+    foreach ($contacts as $contact) {
+      $email = $contact['email'];
+      $name = $contact['name'];
+      $phone = $contact['phone'];
+
+      $subject = 'Acknowledgement for your material contribution to Goonj';
+      $body = self::generateEmailBody($name);
+      $html = self::generateContributionReceiptHtml($email, $phone, $description, $name, $deliveredBy, $deliveredByContact, $activityDate);
+      $attachments = [\CRM_Utils_Mail::appendPDF('institution_material_contribution.pdf', $html)];
+      $params = self::prepareEmailParams($subject, $body, $attachments, $email);
+
+      \CRM_Utils_Mail::send($params);
     }
   }
 
@@ -216,7 +217,7 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
    * @return string
    *   The generated HTML.
    */
-  private static function generateContributionReceiptHtml($emails, $contactPhone, $description, $contactName, $deliveredBy, $deliveredByContact) {
+  private static function generateContributionReceiptHtml($email, $contactPhone, $description, $contactName, $deliveredBy, $deliveredByContact, $activityDate) {
 
     $baseDir = plugin_dir_path(__FILE__) . '../../../themes/goonj-crm/';
 
@@ -267,7 +268,7 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
           </tr>
           <tr>
             <td class="table-header">Received On</td>
-            <!-- <td style="text-align: center;">{$activityDate}</td> -->
+            <td style="text-align: center;">{$activityDate}</td>
           </tr>
           <tr>
             <td class="table-header">From</td>
