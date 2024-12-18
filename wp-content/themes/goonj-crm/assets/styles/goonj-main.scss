@@ -1,8 +1,31 @@
 #crm-main-content-wrapper {
   form {
     .crm-block {
-        #onBehalfOfOrg .crm-public-form-item fieldset .crm-section .label {
-          display: block !important;
+      #onBehalfOfOrg {
+        .crm-public-form-item {
+          fieldset {
+            .crm-section {
+              .label {
+                display: block !important;
+              }
+            }
+          }
+        }
+      }
+
+      .is_for_organization-section {
+          .content {
+            label {
+              position: relative;
+              right: 66px;
+            }
+
+            input {
+              height: 15px !important;
+            }
+
+            width: 424px;
+          }
         }
 
       .crm-public-form-item {
@@ -91,7 +114,7 @@
         }
 
         &.is_for_organization-section {
-          width: 56% !important;
+          width: 59% !important;
         }
 
         .label {
@@ -305,6 +328,15 @@
   #crm-main-content-wrapper {
     form {
       .crm-block {
+        #onBehalfOfOrg .is_for_organization-section .content {
+          width: 100% !important;
+          gap: 33px !important;
+        }
+
+        .crm-public-form-item.is_for_organization-section {
+          width: 100% !important;
+        }
+
         .crm-public-form-item {
           .crm-profile div {
             .label {
