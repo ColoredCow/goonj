@@ -1215,7 +1215,7 @@ class CollectionCampService extends AutoSubscriber {
 
     $sourceFieldId = 'custom_' . $sourceField['id'];
 
-    // Fetching custom field for goonj offfice.
+    // Fetching custom field for goonj office.
     $puSourceField = CustomField::get(FALSE)
       ->addSelect('id')
       ->addWhere('custom_group_id:name', '=', 'Contribution_Details')
@@ -1226,6 +1226,7 @@ class CollectionCampService extends AutoSubscriber {
 
     // Determine the parameter to use based on the form and query parameters.
     if ($formName === 'CRM_Contribute_Form_Contribution') {
+      // If the query parameter is present, update session and clear the other session value.
       if (isset($_GET[$sourceFieldId])) {
         $campSource = $_GET[$sourceFieldId];
         $_SESSION['camp_source'] = $campSource;
@@ -1238,9 +1239,13 @@ class CollectionCampService extends AutoSubscriber {
         // Ensure only one session value is active.
         unset($_SESSION['camp_source']);
       }
+      else {
+        // Clear session if neither parameter is present.
+        unset($_SESSION['camp_source'], $_SESSION['pu_source']);
+      }
     }
     else {
-      // Retrieve from session if not provided in query parameters.
+      // For other forms, retrieve from session if it exists.
       $campSource = $_SESSION['camp_source'] ?? NULL;
       $puSource = $_SESSION['pu_source'] ?? NULL;
     }
@@ -1254,6 +1259,11 @@ class CollectionCampService extends AutoSubscriber {
       elseif (!empty($puSource)) {
         $autoFillData[$puSourceFieldId] = $puSource;
       }
+      else {
+        // Clear values explicitly if neither source is found.
+        $autoFillData[$sourceFieldId] = NULL;
+        $autoFillData[$puSourceFieldId] = NULL;
+      }
 
       // Set default values for the specified fields.
       foreach ($autoFillData as $fieldName => $value) {
@@ -1265,7 +1275,7 @@ class CollectionCampService extends AutoSubscriber {
             $apiParams = json_decode($element->_attributes['data-api-params'], TRUE);
             if ($apiParams['fieldName'] === 'Contribution.Contribution_Details.Source') {
               $formFieldName = $fieldName . '_-1';
-              $form->setDefaults([$formFieldName => $value]);
+              $form->setDefaults([$formFieldName => $value ?? '']);
             }
           }
         }
