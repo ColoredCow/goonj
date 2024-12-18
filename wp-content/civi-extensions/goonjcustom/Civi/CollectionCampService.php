@@ -52,6 +52,8 @@ class CollectionCampService extends AutoSubscriber {
       ['reGenerateCollectionCampQr'],
       ['updateCampStatusOnOutcomeFilled'],
       ['assignChapterGroupToIndividualForContribution'],
+      ['updateCampaignForCollectionSourceContribution'],
+      ['generateInvoiceIdForContribution'],
       ],
       '&hook_civicrm_pre' => [
         ['generateCollectionCampQr'],
@@ -145,20 +147,20 @@ class CollectionCampService extends AutoSubscriber {
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
-      // 'monetaryContribution' => [
-      //   'title' => ts('Monetary Contribution'),
-      //   'module' => 'afsearchMonetaryContribution',
-      //   'directive' => 'afsearch-monetary-contribution',
-      //   'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-      //   'permissions' => ['account_team'],
-      // ],
-      // 'monetaryContributionForUrbanOps' => [
-      //   'title' => ts('Monetary Contribution'),
-      //   'module' => 'afsearchMonetaryContributionForUrbanOps',
-      //   'directive' => 'afsearch-monetary-contribution-for-urban-ops',
-      //   'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-      //   'permissions' => ['goonj_chapter_admin', 'urbanops'],
-      // ],
+      'monetaryContribution' => [
+        'title' => ts('Monetary Contribution'),
+        'module' => 'afsearchMonetaryContribution',
+        'directive' => 'afsearch-monetary-contribution',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['account_team', 'ho_account'],
+      ],
+      'monetaryContributionForUrbanOps' => [
+        'title' => ts('Monetary Contribution'),
+        'module' => 'afsearchMonetaryContributionForUrbanOps',
+        'directive' => 'afsearch-monetary-contribution-for-urban-ops',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+      ],
     ];
 
     foreach ($tabConfigs as $key => $config) {
@@ -378,7 +380,7 @@ class CollectionCampService extends AutoSubscriber {
    *   The reference to the object.
    */
   public static function linkCollectionCampToContact(string $op, string $objectName, $objectId, &$objectRef) {
-    if ($objectName != 'Eck_Collection_Camp' || !$objectId) {
+    if ($objectName != 'Eck_Collection_Camp' || !$objectId || !self::isCurrentSubtype($objectRef)) {
       return;
     }
 
@@ -1056,7 +1058,7 @@ class CollectionCampService extends AutoSubscriber {
   /**
    *
    */
-  private static function getFromAddress() {
+  public static function getFromAddress() {
     if (!self::$fromAddress) {
       [$defaultFromName, $defaultFromEmail] = \CRM_Core_BAO_Domain::getNameAndEmail();
       self::$fromAddress = "\"$defaultFromName\" <$defaultFromEmail>";
@@ -1213,7 +1215,7 @@ class CollectionCampService extends AutoSubscriber {
 
     $sourceFieldId = 'custom_' . $sourceField['id'];
 
-    // Fetching custom field for goonj offfice.
+    // Fetching custom field for goonj office.
     $puSourceField = CustomField::get(FALSE)
       ->addSelect('id')
       ->addWhere('custom_group_id:name', '=', 'Contribution_Details')
@@ -1224,6 +1226,7 @@ class CollectionCampService extends AutoSubscriber {
 
     // Determine the parameter to use based on the form and query parameters.
     if ($formName === 'CRM_Contribute_Form_Contribution') {
+      // If the query parameter is present, update session and clear the other session value.
       if (isset($_GET[$sourceFieldId])) {
         $campSource = $_GET[$sourceFieldId];
         $_SESSION['camp_source'] = $campSource;
@@ -1236,9 +1239,13 @@ class CollectionCampService extends AutoSubscriber {
         // Ensure only one session value is active.
         unset($_SESSION['camp_source']);
       }
+      else {
+        // Clear session if neither parameter is present.
+        unset($_SESSION['camp_source'], $_SESSION['pu_source']);
+      }
     }
     else {
-      // Retrieve from session if not provided in query parameters.
+      // For other forms, retrieve from session if it exists.
       $campSource = $_SESSION['camp_source'] ?? NULL;
       $puSource = $_SESSION['pu_source'] ?? NULL;
     }
@@ -1252,6 +1259,11 @@ class CollectionCampService extends AutoSubscriber {
       elseif (!empty($puSource)) {
         $autoFillData[$puSourceFieldId] = $puSource;
       }
+      else {
+        // Clear values explicitly if neither source is found.
+        $autoFillData[$sourceFieldId] = NULL;
+        $autoFillData[$puSourceFieldId] = NULL;
+      }
 
       // Set default values for the specified fields.
       foreach ($autoFillData as $fieldName => $value) {
@@ -1263,7 +1275,7 @@ class CollectionCampService extends AutoSubscriber {
             $apiParams = json_decode($element->_attributes['data-api-params'], TRUE);
             if ($apiParams['fieldName'] === 'Contribution.Contribution_Details.Source') {
               $formFieldName = $fieldName . '_-1';
-              $form->setDefaults([$formFieldName => $value]);
+              $form->setDefaults([$formFieldName => $value ?? '']);
             }
           }
         }
@@ -1351,6 +1363,123 @@ class CollectionCampService extends AutoSubscriber {
         $defaults['from_email_address'] = self::ACCOUNTS_TEAM_EMAIL;
         $form->setDefaults($defaults);
       }
+    }
+  }
+
+  /**
+   * This hook is called after a db write on entities.
+   *
+   * @param string $op
+   *   The type of operation being performed.
+   * @param string $objectName
+   *   The name of the object.
+   * @param int $objectId
+   *   The unique identifier for the object.
+   * @param object $objectRef
+   *   The reference to the object.
+   */
+  public static function updateCampaignForCollectionSourceContribution(string $op, string $objectName, int $objectId, &$objectRef) {
+    if ($objectName !== 'Contribution' || !$objectRef->id || $op !== 'edit') {
+      return;
+    }
+
+    try {
+      $contributionId = $objectRef->id;
+      if (!$contributionId) {
+        return;
+      }
+
+      $contribution = Contribution::get(FALSE)
+        ->addSelect('Contribution_Details.Source')
+        ->addWhere('id', '=', $contributionId)
+        ->execute()->first();
+
+      if (!$contribution) {
+        return;
+      }
+
+      $sourceID = $contribution['Contribution_Details.Source'];
+
+      $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+        ->addSelect('Collection_Camp_Intent_Details.Campaign')
+        ->addWhere('id', '=', $sourceID)
+        ->execute()->single();
+
+      if (!$collectionCamp) {
+        return;
+      }
+
+      $campaignId = $collectionCamp['Collection_Camp_Intent_Details.Campaign'];
+
+      if (!$campaignId) {
+        return;
+      }
+
+      if (isset($objectRef->campaign_id) && $objectRef->campaign_id == $campaignId) {
+        return;
+      }
+
+      Contribution::update(FALSE)
+        ->addValue('campaign_id', $campaignId)
+        ->addWhere('id', '=', $contributionId)
+        ->execute();
+
+    }
+
+    catch (\Exception $e) {
+      \Civi::log()->error("Exception occurred in updateCampaignForCollectionSourceContribution.", [
+        'Message' => $e->getMessage(),
+        'Stack Trace' => $e->getTraceAsString(),
+      ]);
+    }
+
+  }
+
+  /**
+   * This hook is called after a db write on entities.
+   *
+   * @param string $op
+   *   The type of operation being performed.
+   * @param string $objectName
+   *   The name of the object.
+   * @param int $objectId
+   *   The unique identifier for the object.
+   * @param object $objectRef
+   *   The reference to the object.
+   */
+  public static function generateInvoiceIdForContribution(string $op, string $objectName, int $objectId, &$objectRef) {
+    if ($objectName !== 'Contribution' || !$objectRef->id) {
+      return;
+    }
+
+    try {
+      $contributionId = $objectRef->id;
+      if (!$contributionId) {
+        return;
+      }
+
+      if (!empty($objectRef->invoice_id)) {
+        return;
+      }
+
+      // Generate a unique invoice ID.
+      // Current timestamp.
+      $timestamp = time();
+      // Generate a unique ID based on the current time in microseconds.
+      $uniqueId = uniqid();
+      $invoiceId = hash('sha256', $timestamp . $uniqueId);
+
+      Contribution::update(TRUE)
+        ->addValue('invoice_id', $invoiceId)
+        ->addWhere('id', '=', $contributionId)
+        ->execute();
+
+    }
+    catch (\Exception $e) {
+      \Civi::log()->error("Exception occurred in generateInvoiceIdForContribution.", [
+        'message' => $e->getMessage(),
+        'trace' => $e->getTraceAsString(),
+      ]);
     }
   }
 

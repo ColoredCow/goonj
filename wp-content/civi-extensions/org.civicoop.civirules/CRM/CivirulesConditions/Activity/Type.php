@@ -1,4 +1,7 @@
 <?php
+
+use Civi\Api4\Activity;
+
 /**
  * Class for CiviRule Condition FirstContribution
  *
@@ -83,18 +86,26 @@ class CRM_CivirulesConditions_Activity_Type extends CRM_Civirules_Condition {
   public function isConditionValid(CRM_Civirules_TriggerData_TriggerData $triggerData) {
     $isConditionValid = FALSE;
     $activityData = $triggerData->getEntityData('Activity');
-    $activity = civicrm_api3('Activity', 'getsingle', array(
-      'return' => array("activity_type_id"),
-      'id' => $activityData['id'],
-    ));
+
+    if (empty($activityData['activity_type_id'] ?? '')) {
+      $activity = Activity::get(FALSE)
+        ->addSelect('activity_type_id')
+        ->addWhere('id', '=', $activityData['id'])
+        ->setLimit(1)
+        ->execute()
+        ->first();
+      $activityData['activity_type_id'] = $activity['activity_type_id'];
+      $triggerData->setEntityData('Activity', $activityData);
+    }
+
     switch ($this->conditionParams['operator']) {
       case 0:
-        if (in_array($activity['activity_type_id'], $this->conditionParams['activity_type_id'])) {
+        if (in_array($activityData['activity_type_id'], $this->conditionParams['activity_type_id'])) {
           $isConditionValid = TRUE;
         }
         break;
       case 1:
-        if (!in_array($activity['activity_type_id'], $this->conditionParams['activity_type_id'])) {
+        if (!in_array($activityData['activity_type_id'], $this->conditionParams['activity_type_id'])) {
           $isConditionValid = TRUE;
         }
         break;

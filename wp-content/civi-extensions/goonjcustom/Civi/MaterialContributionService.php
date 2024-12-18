@@ -33,7 +33,7 @@ class MaterialContributionService extends AutoSubscriber {
   }
 
   /**
-   *
+   * Er.
    */
   public static function getSubscribedEvents() {
     return [
@@ -120,16 +120,17 @@ class MaterialContributionService extends AutoSubscriber {
       return $organization['address_primary.street_address'] ?? '';
     }
 
-    $campField = ($subtype == 'Collection_Camp')
+    $campFieldMapping = [
+      'Collection_Camp' => 'Material_Contribution.Collection_Camp',
+      'Dropping_Center' => 'Material_Contribution.Dropping_Center',
+      'Institution_Collection_Camp' => 'Material_Contribution.Institution_Collection_Camp',
+      'Institution_Dropping_Center' => 'Material_Contribution.Institution_Dropping_Center',
+    ];
 
-    ? 'Material_Contribution.Collection_Camp'
-    : (($subtype == 'Dropping_Center')
-    ? 'Material_Contribution.Dropping_Center'
-    : (($subtype == 'Institution_Collection_Camp')
-        ? 'Material_Contribution.Institution_Collection_Camp'
-        : (($subtype == 'Institution_Dropping_Center')
-            ? 'Material_Contribution.Institution_Dropping_Center'
-            : NULL)));
+    $campField = $campFieldMapping[$subtype] ?? NULL;
+    if (empty($campField)) {
+      return;
+    }
 
     $activity = Activity::get(FALSE)
       ->addSelect($campField)

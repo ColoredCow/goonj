@@ -2,6 +2,7 @@
 
 namespace Civi;
 
+use Civi\Api4\Activity;
 use Civi\Api4\Contact;
 use Civi\Api4\CustomField;
 use Civi\Api4\EckEntity;
@@ -37,8 +38,83 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
         ['mailNotificationToMmt'],
       ],
       '&hook_civicrm_post' => 'processDispatchEmail',
-      '&hook_civicrm_pre' => 'generateInstitutionDroppingCenterQr',
+      '&hook_civicrm_pre' => [
+        ['generateInstitutionDroppingCenterQr'],
+        ['linkInstitutionDroppingCenterToContact'],
+      ],
     ];
+  }
+
+  /**
+   *
+   */
+  public static function linkInstitutionDroppingCenterToContact(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($objectName !== 'Eck_Collection_Camp' || !$objectId || !self::isCurrentSubtype($objectRef)) {
+      return;
+    }
+
+    $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
+    if (!$newStatus) {
+      return;
+    }
+
+    $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Institution_Dropping_Center_Intent.Organization_Name', 'title', 'Institution_Dropping_Center_Intent.Institution_POC')
+      ->addWhere('id', '=', $objectId)
+      ->execute();
+
+    $currentDroppingCenter = $collectionCamps->first();
+    $currentStatus = $currentDroppingCenter['Collection_Camp_Core_Details.Status'];
+    $PocId = $currentDroppingCenter['Institution_Dropping_Center_Intent.Institution_POC'];
+    $organizationId = $currentDroppingCenter['Institution_Dropping_Center_Intent.Organization_Name'];
+
+    if (!$PocId && !$organizationId) {
+      return;
+    }
+
+    $droppingCenterCode = $currentDroppingCenter['title'];
+    $droppingCenterId = $currentDroppingCenter['id'];
+
+    if ($currentStatus !== $newStatus && $newStatus === 'authorized') {
+      self::createDroppingCenterOrganizeActivity($PocId, $organizationId, $droppingCenterCode, $droppingCenterId);
+    }
+  }
+
+  /**
+   *
+   */
+  private static function createDroppingCenterOrganizeActivity($PocId, $organizationId, $droppingCenterCode, $droppingCenterId) {
+    try {
+
+      // Create activity for PocId.
+      self::createActivity($PocId, $droppingCenterCode, $droppingCenterId);
+
+      // Create activity for organizationId, only if it's different from PocId.
+      if ($organizationId !== $PocId) {
+        self::createActivity($organizationId, $droppingCenterCode, $droppingCenterId);
+      }
+
+    }
+    catch (\CiviCRM_API4_Exception $ex) {
+      \Civi::log()->debug("Exception while creating Organize Institution Dropping Center activity: " . $ex->getMessage());
+    }
+  }
+
+  /**
+   *
+   */
+  private static function createActivity($contactId, $droppingCenterCode, $droppingCenterId) {
+    Activity::create(FALSE)
+      ->addValue('subject', $droppingCenterCode)
+      ->addValue('activity_type_id:name', 'Organize Institution Dropping Center')
+      ->addValue('status_id:name', 'Authorized')
+      ->addValue('activity_date_time', date('Y-m-d H:i:s'))
+      ->addValue('source_contact_id', $contactId)
+      ->addValue('target_contact_id', $contactId)
+      ->addValue('Collection_Camp_Data.Collection_Camp_ID', $droppingCenterId)
+      ->execute();
+
+    \Civi::log()->info("Activity created for contact {$contactId} for Institution Dropping Center {$droppingCenterCode}");
   }
 
   /**
@@ -81,6 +157,99 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
   /**
    *
    */
+  public static function assignCoordinatorByRelationshipType($stateOfficeId, $registrationType, $institutionDroppingCenterId) {
+    // Define the mapping of registration categories to relationship type names.
+    $relationshipTypeMap = [
+      'Corporate' => 'Corporate Coordinator of',
+      'School' => 'School Coordinator of',
+      'College' => 'College Coordinator of',
+      'Associations' => 'Associations Coordinator of',
+      'Others' => 'Others Coordinator of',
+    ];
+
+    $registrationCategorySelection = $registrationType['Institution_Dropping_Center_Intent.You_wish_to_register_as:name'];
+    $registrationCategorySelection = trim($registrationCategorySelection);
+
+    if (array_key_exists($registrationCategorySelection, $relationshipTypeMap)) {
+      $relationshipTypeName = $relationshipTypeMap[$registrationCategorySelection];
+    }
+    else {
+      $relationshipTypeName = 'Other Coordinator of';
+    }
+
+    $coordinators = Relationship::get(FALSE)
+      ->addWhere('contact_id_b', '=', $stateOfficeId)
+      ->addWhere('relationship_type_id:name', '=', $relationshipTypeName)
+      ->addWhere('is_current', '=', TRUE)
+      ->execute();
+
+    $coordinator = self::getCoordinator($stateOfficeId, $relationshipTypeName, $coordinators);
+    if (!$coordinator) {
+      \CRM_Core_Error::debug_log_message('No coordinator available to assign.');
+      return FALSE;
+    }
+
+    EckEntity::update('Collection_Camp', FALSE)
+      ->addValue('Institution_Dropping_Center_Review.Coordinating_POC', $coordinator['contact_id_a'])
+      ->addWhere('id', '=', $institutionDroppingCenterId)
+      ->execute();
+
+    return TRUE;
+  }
+
+  /**
+   *
+   */
+  public static function getCoordinator($stateOfficeId, $relationshipTypeName, $existingCoordinators = NULL) {
+    if (!$existingCoordinators) {
+      $existingCoordinators = Relationship::get(FALSE)
+        ->addWhere('contact_id_b', '=', $stateOfficeId)
+        ->addWhere('relationship_type_id:name', '=', $relationshipTypeName)
+        ->addWhere('is_current', '=', TRUE)
+        ->execute();
+    }
+
+    if ($existingCoordinators->count() === 0) {
+      return self::getFallbackCoordinator($relationshipTypeName);
+    }
+
+    $coordinatorCount = $existingCoordinators->count();
+    return $existingCoordinators->count() > 1
+        ? $existingCoordinators->itemAt(rand(0, $coordinatorCount - 1))
+        : $existingCoordinators->first();
+  }
+
+  /**
+   *
+   */
+  public static function getFallbackCoordinator($relationshipTypeName) {
+    $fallbackOffice = self::getFallbackOffice();
+    if (!$fallbackOffice) {
+      \CRM_Core_Error::debug_log_message('No fallback office found.');
+      return FALSE;
+    }
+
+    // Retrieve fallback coordinators associated with the fallback office and relationship type.
+    $fallbackCoordinators = Relationship::get(FALSE)
+      ->addWhere('contact_id_b', '=', $fallbackOffice['id'])
+      ->addWhere('relationship_type_id:name', '=', $relationshipTypeName)
+      ->addWhere('is_current', '=', TRUE)
+      ->execute();
+
+    // If no coordinators found, return false.
+    if ($fallbackCoordinators->count() === 0) {
+      \CRM_Core_Error::debug_log_message('No fallback coordinators found.');
+      return FALSE;
+    }
+
+    // Randomly select a fallback coordinator if more than one is found.
+    $randomIndex = rand(0, $fallbackCoordinators->count() - 1);
+    return $fallbackCoordinators->itemAt($randomIndex);
+  }
+
+  /**
+   *
+   */
   public static function setOfficeDetails($op, $groupID, $entityID, &$params) {
     if ($op !== 'create' || self::getEntitySubtypeName($entityID) !== self::ENTITY_SUBTYPE_NAME) {
       return;
@@ -118,6 +287,13 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       ->addValue('Institution_Dropping_Center_Review.Goonj_Office', $stateOfficeId)
       ->addWhere('id', '=', $institutionDroppingCenterId)
       ->execute();
+
+    $registrationType = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect('Institution_Dropping_Center_Intent.You_wish_to_register_as:name')
+      ->addWhere('id', '=', $entityID)
+      ->execute()->single();
+
+    return self::assignCoordinatorByRelationshipType($stateOfficeId, $registrationType, $institutionDroppingCenterId);
   }
 
   /**
@@ -138,13 +314,13 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       ->addWhere('id', '=', $objectId)
       ->execute();
 
-    $currentCollectionCamp = $collectionCamps->first();
-    $currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
-    $collectionCampId = $currentCollectionCamp['id'];
+    $currentDroppingCenter = $collectionCamps->first();
+    $currentStatus = $currentDroppingCenter['Collection_Camp_Core_Details.Status'];
+    $droppingCenterId = $currentDroppingCenter['id'];
 
     // Check for status change.
     if ($currentStatus !== $newStatus && $newStatus === 'authorized') {
-      self::generateInstitutionDroppingCenterQrCode($collectionCampId);
+      self::generateInstitutionDroppingCenterQrCode($droppingCenterId);
     }
   }
 
@@ -220,7 +396,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
   /**
    *
    */
-  public static function sendDispatchEmail($email, $initiatorName, $institutionDroppingCenterId, $contactId, $goonjOffice) {
+  public static function sendDispatchEmail($email, $initiatorName, $institutionDroppingCenterId, $contactId, $goonjOffice, $goonjOfficeName) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
     $vehicleDispatchFormUrl = $homeUrl . '/institution-dropping-center-vehicle-dispatch/#?Camp_Vehicle_Dispatch.Institution_Dropping_Center=' . $institutionDroppingCenterId . '&Camp_Vehicle_Dispatch.Filled_by=' . $contactId . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $goonjOffice . '&Camp_Vehicle_Dispatch.Goonj_Office_Name=' . $goonjOfficeName . '&Eck_Collection_Camp1=' . $institutionDroppingCenterId;
 
@@ -295,11 +471,11 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     $vehicleDispatchId = $goonjField['entity_id'];
 
     $collectionSourceVehicleDispatch = EckEntity::get('Collection_Source_Vehicle_Dispatch', FALSE)
-      ->addSelect('Camp_Vehicle_Dispatch.Collection_Camp')
+      ->addSelect('Camp_Vehicle_Dispatch.Institution_Dropping_Center')
       ->addWhere('id', '=', $vehicleDispatchId)
       ->execute()->first();
 
-    $institutionDroppingCenterId = $collectionSourceVehicleDispatch['Camp_Vehicle_Dispatch.Collection_Camp'];
+    $institutionDroppingCenterId = $collectionSourceVehicleDispatch['Camp_Vehicle_Dispatch.Institution_Dropping_Center'];
 
     if (self::getEntitySubtypeName($institutionDroppingCenterId) !== self::ENTITY_SUBTYPE_NAME) {
       return;
@@ -310,7 +486,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       ->addWhere('id', '=', $institutionDroppingCenterId)
       ->execute()->single();
 
-    $institutionDroppingCenter = $institutionDroppingCenter['title'];
+    $InstitutionDroppingCenterCode = $institutionDroppingCenter['title'];
     $institutionDroppingCenterAddress = $institutionDroppingCenter['Institution_Dropping_Center_Intent.Dropping_Center_Address'];
 
     $coordinators = Relationship::get(FALSE)
@@ -318,7 +494,6 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       ->addWhere('relationship_type_id:name', '=', self::MATERIAL_RELATIONSHIP_TYPE_NAME)
       ->addWhere('is_current', '=', TRUE)
       ->execute()->first();
-
     $mmtId = $coordinators['contact_id_a'];
 
     if (empty($mmtId)) {
@@ -331,13 +506,14 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       ->execute()->single();
 
     $mmtEmail = $email['email'];
+
     $from = HelperService::getDefaultFromEmail();
     $mailParams = [
       'subject' => 'Dropping Center Material Acknowledgement - ' . $institutionDroppingCenterAddress,
       'from' => $from,
       'toEmail' => $mmtEmail,
       'replyTo' => $fromEmail['label'],
-      'html' => self::getMmtEmailHtml($institutionDroppingCenterId, $institutionDroppingCenter, $institutionDroppingCenterAddress, $vehicleDispatchId, $mmtId),
+      'html' => self::getMmtEmailHtml($institutionDroppingCenterId, $InstitutionDroppingCenterCode, $institutionDroppingCenterAddress, $vehicleDispatchId, $mmtId),
     ];
     \CRM_Utils_Mail::send($mailParams);
 
@@ -346,7 +522,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
   /**
    *
    */
-  public static function getMmtEmailHtml($institutionDroppingCenterId, $institutionDroppingCenter, $institutionDroppingCenterAddress, $vehicleDispatchId, $mmtId) {
+  public static function getMmtEmailHtml($institutionDroppingCenterId, $institutionDroppingCenterCode, $institutionDroppingCenterAddress, $vehicleDispatchId, $mmtId) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
     $materialdispatchUrl = $homeUrl . '/dropping-center-acknowledgement-for-dispatch/#?Eck_Collection_Source_Vehicle_Dispatch1=' . $vehicleDispatchId
         . '&Camp_Vehicle_Dispatch.Institution_Dropping_Center=' . $institutionDroppingCenterId
@@ -355,7 +531,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
         . '&Acknowledgement_For_Logistics.Verified_By=' . $mmtId;
     $html = "
     <p>Dear MMT team,</p>
-    <p>This is to inform you that a vehicle has been sent from the dropping center <strong>$institutionDroppingCenter</strong> at <strong>$institutionDroppingCenterAddress</strong>.</p>
+    <p>This is to inform you that a vehicle has been sent from the dropping center <strong>$institutionDroppingCenterCode</strong> at <strong>$institutionDroppingCenterAddress</strong>.</p>
     <p>Kindly acknowledge the details by clicking on this form <a href=\"$materialdispatchUrl\"> Link </a> when it is received at the center.</p>
     <p>Warm regards,<br>Urban Relations Team</p>";
 
@@ -439,7 +615,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
         'module' => 'afsearchMonetaryContribution',
         'directive' => 'afsearch-monetary-contribution',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['account_team'],
+        'permissions' => ['account_team', 'ho_account'],
       ],
       'monetaryContributionForUrbanOps' => [
         'title' => ts('Monetary Contribution'),

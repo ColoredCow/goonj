@@ -1,5 +1,38 @@
 # CHANGELOG
 
+## Version 3.14.0 (2024-11-07)
+
+* Fixed issue with delayed actions. See !269
+* Fixed bug for delayed actions in the Check Participant Status condition
+* Fixed a bug for delayed actions in Check Participant Role condition
+* Increase minimum CiviCRM version to 5.68. See #240
+
+## Version 3.13.0 (2024-10-08)
+
+*  Add Update Contribution Status action. See !267
+
+## Version 3.12 (2024-08-27)
+
+* add action to cancel latest membership of a type and status, also allow for group entity
+* make sure we get the latest contribution by date for membership triggers
+
+## Version 3.11 (2024-07-30)
+
+* #228 Fix issue with trigger Untag contact not working anymore.
+
+## Version 3.10 (2024-07-28)
+
+* Fix 'Recur next scheduled date' trigger was not working (it was comparing a datetime field with a date so it would never match).
+* [!265](https://lab.civicrm.org/extensions/civirules/-/merge_requests/265) Avoid php errors because count()'ing a boolean.
+* [!263](https://lab.civicrm.org/extensions/civirules/-/merge_requests/263) Activity Type condition: cache triggering activity type.
+* [!264](https://lab.civicrm.org/extensions/civirules/-/merge_requests/264) Improve performance when firing trigger for multiple contacts.
+
+## Version 3.9 (2024-06-25)
+
+* Add Action: Set Contact as Deceased.
+* !261 Allow to use Contribution conditions for Membership End Date (Cron) trigger.
+* #230 (!262) - Fix participant status comparison to use canonical field name
+
 ## Version 3.8 (2024-05-27)
 
 * Fix "Membership is Renewed" trigger that was not working because of an invalid field name.

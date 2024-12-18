@@ -55,7 +55,7 @@ abstract class CRM_Civirules_TriggerData_TriggerData {
    * Is this Trigger being executed with a delay (set at runtime when executing actions)
    * @var bool
    */
-  public bool $isDelayedExecution;
+  public bool $isDelayedExecution = FALSE;
 
   /**
    * The datetime (YmdHis) when the rule was triggered. Only set if we are delaying execution.
@@ -63,7 +63,7 @@ abstract class CRM_Civirules_TriggerData_TriggerData {
    *
    * @var string
    */
-  public string $delayedSubmitDateTime;
+  public string $delayedSubmitDateTime = '';
 
   /**
    * @var CRM_Civirules_Trigger

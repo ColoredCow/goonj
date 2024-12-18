@@ -34,6 +34,10 @@ function _civicrm_api3_email_send_spec(&$spec) {
     'title' => 'Activity ID',
     'type' => CRM_Utils_Type::T_INT,
   ];
+  $spec['event_id'] = [
+    'title' => 'Event ID',
+    'type' => CRM_Utils_Type::T_INT,
+  ];  
   $spec['location_type_id'] = [
     'title' => 'Location type id',
     'type' => CRM_Utils_Type::T_INT,
@@ -99,9 +103,7 @@ function _civicrm_api3_email_send_spec(&$spec) {
  * @param array $params
  *
  * @return array API result descriptor
- * @throws \API_Exception
  * @throws \CRM_Core_Exception
- * @throws \CiviCRM_API3_Exception
  */
 function civicrm_api3_email_send($params) {
   // @todo contact_id accepts multiple but other params do not. So eg. each contact gets the same activity.
@@ -110,7 +112,7 @@ function civicrm_api3_email_send($params) {
   //   [['contact_id' => 1, 'activity_id' => 123, ..], ['contact_id' => 2, 'activity_id' => 456]]
   // @todo Perhaps we could use TokenProcessor if passed the context param and the "old" method otherwise?
   if (!CRM_Utils_Type::validate($params['contact_id'], 'CommaSeparatedIntegers')) {
-    throw new API_Exception('Parameter contact_id must be a unique id or a list of ids separated by comma');
+    throw new CRM_Core_Exception('Parameter contact_id must be a unique id or a list of ids separated by comma');
   }
   $params['contact_id'] = explode(',', $params['contact_id']);
   $locationTypeId = !empty($params['location_type_id']) ? $params['location_type_id'] : FALSE;
@@ -136,16 +138,16 @@ function civicrm_api3_email_send($params) {
       $from = $result['values'][0]['label'];
     }
     else {
-      throw new API_Exception('Cannot find from_email_option');
+      throw new CRM_Core_Exception('Cannot find from_email_option');
     }
   }
 
   if (empty($from)) {
-    throw new API_Exception('Did not find valid from e-mail address. You have to provide both from_name and from_email or from_email_option');
+    throw new CRM_Core_Exception('Did not find valid from e-mail address. You have to provide both from_name and from_email or from_email_option');
   }
 
   if (!$messageTemplates->find(TRUE)) {
-    throw new API_Exception('Could not find template with ID: ' . $params['template_id']);
+    throw new CRM_Core_Exception('Could not find template with ID: ' . $params['template_id']);
   }
 
   $returnValues = [];
@@ -161,7 +163,7 @@ function civicrm_api3_email_send($params) {
       $toName = '';
       $toEmail = $alternativeEmailAddress;
     }
-    elseif ($contact['do_not_email'] || empty($contact['email']) || CRM_Utils_Array::value('is_deceased', $contact) || $contact['on_hold'] || $contact['is_deleted']) {
+    elseif ($contact['do_not_email'] || empty($contact['email']) || ($contact['is_deceased'] ?? NULL) || $contact['on_hold'] || ($contact['is_deleted'] ?? NULL)) {
       /*
        * Contact is deceased or has opted out from mailings so do not send the email
        */
@@ -181,7 +183,7 @@ function civicrm_api3_email_send($params) {
         ]);
         $toEmail = $locationAddress;
       }
-      catch (CiviCRM_API3_Exception $ex) {
+      catch (CRM_Core_Exception $ex) {
       }
     }
 
@@ -285,7 +287,7 @@ function civicrm_api3_email_send($params) {
     // Try to send the email.
     $result = CRM_Utils_Mail::send($mailParams);
     if (!$result) {
-      throw new API_Exception('Error sending email to ' . $contact['display_name'] . ' <' . $toEmail . '> ');
+      throw new CRM_Core_Exception('Error sending email to ' . $contact['display_name'] . ' <' . $toEmail . '> ');
     }
 
     if ($params['create_activity']) {

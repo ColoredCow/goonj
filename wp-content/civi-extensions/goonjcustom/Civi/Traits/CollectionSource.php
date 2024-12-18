@@ -228,6 +228,7 @@ trait CollectionSource {
       'Institution_Collection_Camp' => 'Institution_Collection_Camp_Intent.State',
       'Goonj_Activities' => 'Goonj_Activities.State',
       'Institution_Dropping_Center' => 'Institution_Dropping_Center_Intent.State',
+      'Institution_Goonj_Activities' => 'Institution_Goonj_Activities.State',
     ];
 
     $sourceTypeName = self::getSourceTypeName($subtypeId);
@@ -253,6 +254,11 @@ trait CollectionSource {
       $organizationId = $collectionCamp['Institution_Dropping_Center_Intent.Organization_Name.id'];
       $relationshipType = 'Institution POC of';
       $alternateType = 'Secondary Institution POC of';
+    }
+    elseif ($subtypeName === 'Institution_Goonj_Activities') {
+      $organizationId = $collectionCamp['Institution_Goonj_Activities.Organization_Name.id'];
+      $relationshipType = 'Institution POC of';
+      $alternateType = 'Primary Institution POC of';
     }
     else {
       return $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];

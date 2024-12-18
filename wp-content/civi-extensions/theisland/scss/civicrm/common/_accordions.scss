@@ -49,10 +49,6 @@ details details {
   border-radius: $border-radius-base $border-radius-base 0 0 !important;
   font-weight: $crm-font-weight-h3 !important;
 
-  &::before {
-    padding-right: 10px;
-  }
-
   .helpicon {
     color: white;
     font-size: $font-size-base;

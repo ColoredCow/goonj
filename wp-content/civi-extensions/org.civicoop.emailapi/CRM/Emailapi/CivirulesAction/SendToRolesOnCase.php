@@ -118,7 +118,7 @@ class CRM_Emailapi_CivirulesAction_SendToRolesOnCase extends CRM_Civirules_Actio
             'id' => $params['location_type_id'],
           ]) . ' with primary email address as fall back';
       }
-      catch (CiviCRM_API3_Exception $ex) {
+      catch (CRM_Core_Exception $ex) {
         $locationText = 'location type ' . $params['location_type_id'];
       }
     }

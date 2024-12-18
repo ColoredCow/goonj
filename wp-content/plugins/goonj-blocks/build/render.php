@@ -12,7 +12,10 @@ $target            = get_query_var('target');
 $action_target     = get_query_var('action_target');
 $source_contact_id = $action_target['id'] ?? NULL;
 
-$slots = generate_induction_slots($source_contact_id);
+if ($target === 'induction-schedule'){
+    $slots = generate_induction_slots($source_contact_id);
+}
+
 
 $headings = [
   'collection-camp' => 'Collection Camp',
@@ -21,7 +24,8 @@ $headings = [
   'institution-dropping-center' => 'Institution Dropping Center',
   'processing-center' => 'Processing Center',
   'induction-schedule' => 'Induction Schedule',
-  'goonj-activities' => 'Goonj Activities'
+  'goonj-activities' => 'Goonj Activities',
+  'institution-goonj-activities' => 'Institution Goonj Activities'
 ];
 
 $heading_text = $headings[$target];
@@ -44,7 +48,14 @@ $goonj_activities_register_link = sprintf(
     '/volunteer-registration/form/#?source=%s&state_province_id=%s&city=%s',
     $action_target['title'],
     $action_target['Goonj_Activities.State'],
-    $action_target['Goonj_Activities.District_City'],
+    $action_target['Goonj_Activities.City'],
+);
+
+$institution_goonj_activities_register_link = sprintf(
+    '/volunteer-registration/form/#?source=%s&state_province_id=%s&city=%s',
+    $action_target['title'],
+    $action_target['Institution_Goonj_Activities.State'],
+    $action_target['Institution_Goonj_Activities.City'],
 );
 
 $institution_collection_camp_register_link = sprintf(
@@ -93,15 +104,8 @@ $sourceField = CustomField::get(FALSE)
 
 $sourceFieldId = 'custom_' . $sourceField['id'];
 
-$donation_link = add_query_arg(
-    [
-      'reset' => 1,
-      'action' => 'preview',
-      'id' => 1,
-      $sourceFieldId => $source_contact_id,
-    ],
-    home_url('/civicrm/contribute/transact/')
-);
+$base_donation_link = home_url('/contribute/donate');
+$donation_link = $base_donation_link . '?' . $sourceFieldId . '=' . $source_contact_id;
 
 $dropping_center_material_contribution_link = sprintf(
     '/dropping-center-contribution?source=%s&target_id=%s&state_province_id=%s&city=%s',
@@ -127,6 +131,12 @@ $attendee_activity_feedback_link = sprintf(
     $action_target['id']
 );
 
+$institution_attendee_activity_feedback_link = sprintf(
+    '%s#?Eck_Collection_Camp1=%s',
+    $action_target['Institution_Goonj_Activities.Select_Attendee_feedback_form'],
+    $action_target['id']
+);
+
 $puSourceField = CustomField::get(FALSE)
   ->addSelect('id')
   ->addWhere('custom_group_id:name', '=', 'Contribution_Details')
@@ -135,15 +145,9 @@ $puSourceField = CustomField::get(FALSE)
 
 $puSourceFieldId = 'custom_' . $puSourceField['id'];
 
-$pu_donation_link = add_query_arg(
-    [
-      'reset' => 1,
-      'action' => 'preview',
-      'id' => 1,
-      $puSourceFieldId => $source_contact_id,
-    ],
-    home_url('/civicrm/contribute/transact/')
-);
+$base_pu_donation_link = home_url('/contribute/donate');
+$pu_donation_link = $base_pu_donation_link . '?' . $puSourceFieldId . '=' . $source_contact_id;
+
 
 $target_data = [
   'dropping-center' => [
@@ -190,14 +194,25 @@ $target_data = [
     'donation_link' => $donation_link,
     'register_link' => $institution_dropping_center_register_link,
   ],
+  'institution-goonj-activities' => [
+    'start_time' => 'Institution_Goonj_Activities.Start_Date',
+    'end_time' => 'Institution_Goonj_Activities.End_Date',
+    'address' => 'Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_',
+    'address_label' => 'Address of the camp',
+    'donation_link' => $donation_link,
+    'register_link' => $institution_goonj_activities_register_link,
+    'include_attendee_feedback_link' => $institution_attendee_activity_feedback_link,
+    'should_include_attendee_feedback'=> $action_target['Institution_Goonj_Activities.Include_Attendee_Feedback_Form']
+  ],
 ];
 
-if (in_array($target, ['collection-camp','institution-collection-camp', 'dropping-center', 'goonj-activities', 'institution-dropping-center'])) :
+if (in_array($target, ['collection-camp','institution-collection-camp', 'dropping-center', 'goonj-activities', 'institution-dropping-center', 'institution-goonj-activities'])) :
   $target_info = $target_data[$target];
 
   try {
     $start_date = new DateTime($action_target[$target_info['start_time']]);
     $end_date = new DateTime($action_target[$target_info['end_time']]);
+    $activity_date = new DateTime($action_target[$target_info['activity_date']]);
   }
   catch (Exception $e) {
     Civi::log()->error("Error creating DateTime object: " . $e->getMessage());
@@ -227,7 +242,7 @@ if (in_array($target, ['collection-camp','institution-collection-camp', 'droppin
             </tr>
             <?php endif; ?>
 
-            <?php if ($target === 'collection-camp' || $target === 'institution-collection-camp' || $target === 'goonj-activities') : ?>
+            <?php if ($target === 'collection-camp' || $target === 'institution-collection-camp' || $target === 'goonj-activities' || $target === 'institution-goonj-activities') : ?>
             <tr class="wp-block-gb-table-row">
                 <td class="wp-block-gb-table-cell wp-block-gb-table-header">From</td>
                 <td class="wp-block-gb-table-cell"><?php echo gb_format_date($start_date); ?></td>
@@ -251,14 +266,14 @@ if (in_array($target, ['collection-camp','institution-collection-camp', 'droppin
         <a href="<?php echo esc_url($register_link); ?>" class="wp-block-gb-action-button">
             <?php esc_html_e('Volunteer with Goonj', 'goonj-blocks'); ?>
         </a>
-        <?php if ($target !== 'goonj-activities'): ?>
+        <?php if (!in_array($target, ['goonj-activities', 'institution-goonj-activities'])): ?>
             <a href="<?php echo esc_url($contribution_link ?? '#'); ?>" class="wp-block-gb-action-button">
                 <?php esc_html_e('Record your Material Contribution', 'goonj-blocks'); ?>
             </a>
         <?php endif; ?>
-        <!-- <a href="<?php echo esc_url($donation_link); ?>" class="wp-block-gb-action-button">
+        <a href="<?php echo esc_url($donation_link); ?>" class="wp-block-gb-action-button">
             <?php esc_html_e('Monetary Contribution', 'goonj-blocks'); ?>
-        </a> -->
+        </a>
         <?php if ($should_include_attendee_feedback): ?>
             <a href="<?php echo esc_url($include_attendee_feedback_link ?? '#'); ?>" class="wp-block-gb-action-button">
                 <?php esc_html_e('Record Attendee Feedback', 'goonj-blocks'); ?>

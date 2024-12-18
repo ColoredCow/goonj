@@ -14,9 +14,25 @@ require_once 'CRM/Core/Form.php';
 
 class CRM_Civirules_Form_RuleCondition extends CRM_Core_Form {
 
-  protected $ruleId = NULL;
-  private $_domainVersion = NULL;
+  /**
+   * @var \CRM_Civirules_BAO_CiviRulesRule
+   */
+  protected \CRM_Civirules_BAO_CiviRulesRule $rule;
 
+  /**
+   * @var \CRM_Civirules_BAO_CiviRulesTrigger
+   */
+  protected \CRM_Civirules_BAO_CiviRulesTrigger $trigger;
+
+  /**
+   * @var \CRM_Civirules_Trigger
+   */
+  protected \CRM_Civirules_Trigger $triggerObject;
+
+  /**
+   * @var ?int
+   */
+  protected ?int $ruleId = NULL;
 
   /**
    * Function to buildQuickForm (extends parent function)
@@ -35,9 +51,6 @@ class CRM_Civirules_Form_RuleCondition extends CRM_Core_Form {
    * @access public
    */
   function preProcess() {
-    $domainVersion = civicrm_api3('Domain', 'getvalue', array('current_domain' => "TRUE", 'return' => 'version'));
-    $this->_domainVersion = round((float) $domainVersion, 2);
-
     $this->ruleId = CRM_Utils_Request::retrieve('rid', 'Integer');
     $redirectUrl = CRM_Utils_System::url('civicrm/civirule/form/rule', 'action=update&id='.$this->ruleId, TRUE);
     $session = CRM_Core_Session::singleton();
@@ -67,10 +80,10 @@ class CRM_Civirules_Form_RuleCondition extends CRM_Core_Form {
    */
   function postProcess() {
     $session = CRM_Core_Session::singleton();
-    $saveParams = array(
+    $saveParams = [
       'rule_id' => $this->_submitValues['rule_id'],
       'condition_id' => $this->_submitValues['rule_condition_select']
-    );
+    ];
     if (isset($this->_submitValues['rule_condition_link_select'])) {
       $saveParams['condition_link'] = $this->_submitValues['rule_condition_link_select'];
     }
@@ -137,7 +150,7 @@ class CRM_Civirules_Form_RuleCondition extends CRM_Core_Form {
     /*
      * add select list only if it is not the first condition
      */
-    $linkList = array('AND' => 'AND', 'OR' =>'OR');
+    $linkList = ['AND' => 'AND', 'OR' =>'OR'];
     $this->add('select', 'rule_condition_link_select', ts('Select Link Operator'), $linkList);
     $foundConditions = $this->buildConditionList();
     if (!empty($foundConditions)) {
@@ -145,13 +158,14 @@ class CRM_Civirules_Form_RuleCondition extends CRM_Core_Form {
       asort($conditionList);
     }
     else {
-      $conditionList = array(' - select - ');
+      $conditionList = [' - select - '];
     }
-    $this->add('select', 'rule_condition_select', ts('Select Condition'), $conditionList, true, array('class' => 'crm-select2 huge'));
+    $this->add('select', 'rule_condition_select', ts('Select Condition'), $conditionList, true, ['class' => 'crm-select2 huge']);
 
-    $this->addButtons(array(
-      array('type' => 'next', 'name' => ts('Save'), 'isDefault' => TRUE,),
-      array('type' => 'cancel', 'name' => ts('Cancel'))));
+    $this->addButtons([
+      ['type' => 'next', 'name' => ts('Save'), 'isDefault' => TRUE,],
+      ['type' => 'cancel', 'name' => ts('Cancel')]
+    ]);
   }
 
   public function setDefaultValues() {
@@ -178,8 +192,8 @@ class CRM_Civirules_Form_RuleCondition extends CRM_Core_Form {
    * @access public
    */
   public function addRules() {
-    $this->addFormRule(array('CRM_Civirules_Form_RuleCondition', 'validateRuleCondition'));
-    $this->addFormRule(array('CRM_Civirules_Form_RuleCondition', 'validateConditionEntities'));
+    $this->addFormRule(['CRM_Civirules_Form_RuleCondition', 'validateRuleCondition']);
+    $this->addFormRule(['CRM_Civirules_Form_RuleCondition', 'validateConditionEntities']);
   }
 
   /**
@@ -220,7 +234,7 @@ class CRM_Civirules_Form_RuleCondition extends CRM_Core_Form {
     }
 
     if (!$conditionClass->doesWorkWithTrigger($triggerObject, $rule)) {
-      $errors['rule_condition_select'] = ts('This condition is not available with trigger %1', array(1 => $trigger->label));
+      $errors['rule_condition_select'] = ts('This condition is not available with trigger %1', [1 => $trigger->label]);
       return $errors;
     }
 

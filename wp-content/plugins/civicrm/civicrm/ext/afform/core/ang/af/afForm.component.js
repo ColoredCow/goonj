@@ -45,18 +45,28 @@
       // With no arguments this will prefill the entire form based on url args
       // and also check if the form is open for submissions.
       // With selectedEntity, selectedIndex & selectedId provided this will prefill a single entity
-      this.loadData = function(selectedEntity, selectedIndex, selectedId, selectedField) {
+      this.loadData = function(selectedEntity, selectedIndex, selectedId, selectedField, joinEntity, joinIndex) {
         let toLoad = true;
         const params = {name: ctrl.getFormMeta().name, args: {}};
         // Load single entity
         if (selectedEntity) {
           toLoad = !!selectedId;
-          params.matchField = selectedField;
           params.args[selectedEntity] = {};
-          params.args[selectedEntity][selectedIndex] = selectedId;
+          params.args[selectedEntity][selectedIndex] = {};
+          if (joinEntity) {
+            params.fillMode = 'join';
+            params.args[selectedEntity][selectedIndex].joins = {};
+            params.args[selectedEntity][selectedIndex].joins[joinEntity] = {};
+            params.args[selectedEntity][selectedIndex].joins[joinEntity][joinIndex] = {};
+            params.args[selectedEntity][selectedIndex].joins[joinEntity][joinIndex][selectedField] = selectedId;
+          } else {
+            params.fillMode = 'entity';
+            params.args[selectedEntity][selectedIndex][selectedField] = selectedId;
+          }
         }
         // Prefill entire form
         else {
+          params.fillMode = 'form';
           args = _.assign({}, $scope.$parent.routeParams || {}, $scope.$parent.options || {});
           _.each(schema, function (entity, entityName) {
             if (args[entityName] && typeof args[entityName] === 'string') {
@@ -85,7 +95,11 @@
               disableForm(error.error_message);
             });
         }
-        // Clear existing contact selection
+        // Clear existing join selection
+        else if (joinEntity) {
+          data[selectedEntity][selectedIndex].joins[joinEntity][joinIndex] = {};
+        }
+        // Clear existing entity selection
         else if (selectedEntity) {
           // Delete object keys without breaking object references
           Object.keys(data[selectedEntity][selectedIndex].fields).forEach(key => delete data[selectedEntity][selectedIndex].fields[key]);
@@ -266,10 +280,9 @@
 
       function disableForm(errorMsg) {
         $('af-form[ng-form="' + ctrl.getFormMeta().name + '"]')
-          .addClass("disabled")
-          .find('button[ng-click="afform.submit()"]')
-          .prop("disabled", true);
-        CRM.alert(errorMsg, ts("Sorry"), "error");
+          .addClass('disabled')
+          .find('button[ng-click="afform.submit()"]').prop('disabled', true);
+        CRM.alert(errorMsg, ts('Sorry'), 'error');
       }
       // NOTE: This function currently provides basic validation for email, phone number, and postal code fields.
       // For now, we have implemented these simple checks to meet current project requirements.
@@ -281,33 +294,32 @@
         // Email validation
         var emailField = $element.find("input[type='email']");
         if (emailField.length) {
-            var emailValue = emailField.val().trim();
-            if (emailValue !== "") {
-                var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (!emailPattern.test(emailValue)) {
-                    errorMessage += "Please enter a valid email.\n";
-                    isValid = false;
-                }
+          var emailValue = emailField.val().trim();
+          if (emailValue !== "") {
+            var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailPattern.test(emailValue)) {
+              errorMessage += "Please enter a valid email.\n";
+              isValid = false;
             }
           }
+        }
           
         // Phone number validation
         var phoneNumberField = $element.find("af-field[name='phone'] input[type='text'], af-field[name='Material_Contribution.Delivered_By_Contact'] input[type='text']");
         if (phoneNumberField.length) {
-            var phoneNumberValue = phoneNumberField.val().trim();
-            if (phoneNumberValue !== "") {
-                var phonePattern = /^\d{10}$/;
-                if (!phonePattern.test(phoneNumberValue)) {
-                    errorMessage += "Please enter a valid 10-digit mobile number.\n";
-                    isValid = false;
-                }
+          var phoneNumberValue = phoneNumberField.val().trim();
+          if (phoneNumberValue !== "") {
+            var phonePattern = /^\d{10}$/;
+            if (!phonePattern.test(phoneNumberValue)) {
+              errorMessage += "Please enter a valid 10-digit mobile number.\n";
+              isValid = false;
             }
+          }
         }
         
         // Date validation for the Open Dropping Center form to ensure the selected date is not in the past.
         if (ctrl.getFormMeta().name === 'afformDroppingCenterDetailForm') {
           var dateField = $element.find("input.crm-form-date").val().trim(); 
-          
           if (dateField !== "") {
             var today = new Date();
             today.setHours(0, 0, 0, 0);
@@ -317,48 +329,51 @@
             // Check if the selected date is in the past
             if (selectedDate <= today) {
               isValid = false;
-              
               errorMessage+=`The selected dropping center date (${dateField}) cannot be today or in the past.`;
             }
           }
         }
 
     // Collection camp start date and end date validation
-    if (ctrl.getFormMeta().name === 'afformCollectionCampIntentDetails') {
+    if (ctrl.getFormMeta().name === 'afformCollectionCampIntentDetails'|| 'afformInstitutionCollectionCampIntent') {
       var startDateValue = $element.find("af-field[name='Collection_Camp_Intent_Details.Start_Date'] .crm-form-date-wrapper input.crm-form-date").val();
       var endDateValue = $element.find("af-field[name='Collection_Camp_Intent_Details.End_Date'] .crm-form-date-wrapper input.crm-form-date").val();
       
-      if (startDateValue && endDateValue) {
+      var institutionStartDateValue = $element.find("af-field[name='Institution_Collection_Camp_Intent.Collections_will_start_on_Date_'] .crm-form-date-wrapper input.crm-form-date").val();
+      var institutionEndDateValue = $element.find("af-field[name='Institution_Collection_Camp_Intent.Collections_will_end_on_Date_'] .crm-form-date-wrapper input.crm-form-date").val();
+      
+      if ((startDateValue && endDateValue) || (institutionStartDateValue && institutionEndDateValue)) {
         var today = new Date();
         today.setHours(0, 0, 0, 0); 
         
-        var startDateParts = startDateValue.split('/');
-        var endDateParts = endDateValue.split('/');
+        var startDateParts = startDateValue ? startDateValue.split('/') : institutionStartDateValue.split('/');
+        var endDateParts = endDateValue ? endDateValue.split('/') : institutionEndDateValue.split('/');
         
         var startDate = new Date(startDateParts[2], startDateParts[1] - 1, startDateParts[0]);
         var endDate = new Date(endDateParts[2], endDateParts[1] - 1, endDateParts[0]);
         
         var errorMessage = '';
         var isValid = true;
-
+    
         // Check if the start date is in the past or today
         if (startDate <= today) {
-          errorMessage += `Collections cannot start (${startDateValue}) today or in the past.\n`;
+          errorMessage += `Collections cannot start (${startDateValue || institutionStartDateValue}) today or in the past.\n`;
           isValid = false;
         }
         // Check if the end date is in the past, today
         if (endDate <= today) {
-          errorMessage += `Collections cannot end ( ${endDateValue}) today or in the past.\n`;
-          isValid = false;
-          }
-          
-        // Check if End Date is before Start Date
-        if (endDate < startDate) {
-          errorMessage += `Collections cannot end (${endDateValue}) before start (${startDateValue}).\n`;
+          errorMessage += `Collections cannot end (${endDateValue || institutionEndDateValue}) today or in the past.\n`;
           isValid = false;
         }
+        
+        // Check if End Date is before Start Date
+        if (endDate < startDate) {
+          errorMessage += `Collections cannot end (${endDateValue || institutionEndDateValue}) before start (${startDateValue || institutionStartDateValue}).\n`;
+          isValid = false;
+        }
+      }
     }
-  }
+    
 
     // Birth date validation
     var birthDateField = $element.find("af-field[name='birth_date'] input[type='text']");
@@ -367,26 +382,27 @@
         if (birthDateValue !== "") {
             var birthDateParts = birthDateValue.split('/');
             if (birthDateParts.length === 3) {
-                var birthDate = new Date(birthDateParts[2], birthDateParts[1] - 1, birthDateParts[0]);
-                var today = new Date();
-                today.setHours(0, 0, 0, 0);
-                
-                if (birthDate.toDateString() === today.toDateString()) {
-                  errorMessage += `Date of Birth cannot be today.\n`;
-                    isValid = false;
-                }
-                
-                if (birthDate > today) {
-                  errorMessage += `Date of Birth cannot be in the future.\n`;
-                    isValid = false;
-                }
-            } else {
-                errorMessage += "Invalid Date of Birth format.\n";
+              var birthDate = new Date(birthDateParts[2], birthDateParts[1] - 1, birthDateParts[0]);
+              var today = new Date();
+              today.setHours(0, 0, 0, 0);
+              
+              if (birthDate.toDateString() === today.toDateString()) {
+                errorMessage += `Date of Birth cannot be today.\n`;
                 isValid = false;
+              }
+              
+              if (birthDate > today) {
+                errorMessage += `Date of Birth cannot be in the future.\n`;
+                isValid = false;
+              }
+            } else {
+              errorMessage += "Invalid Date of Birth format.\n";
+              isValid = false;
+            
             }
+          }
         }
-    }
-    
+        
         // Postal code validation
         var postalCodeLabel = $element.find("label:contains('Postal Code')");
         var postalCodeField = postalCodeLabel.closest('af-field').find("input[type='text']");
@@ -400,15 +416,14 @@
             }
           }
         }
-
-    
+        
         if (!isValid) {
-            CRM.alert(errorMessage, ts("Form Error"));
+          CRM.alert(errorMessage, ts("Form Error"));
         }
-    
+        
         return isValid;
-    }
-    
+      }
+      
       this.submit = function () {
         if (!customValidateFields()) {
           return;

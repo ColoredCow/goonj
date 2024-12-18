@@ -35,6 +35,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       '&hook_civicrm_pre' => [
         ['assignChapterGroupToIndividual'],
         ['generateInstitutionCollectionCampQr'],
+        ['linkInstitutionCollectionCampToContact'],
       ],
       '&hook_civicrm_custom' => [
         ['setOfficeDetails'],
@@ -42,6 +43,78 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       ],
       '&hook_civicrm_tabset' => 'institutionCollectionCampTabset',
     ];
+  }
+
+  /**
+   *
+   */
+  public static function linkInstitutionCollectionCampToContact(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($objectName !== 'Eck_Collection_Camp' || !$objectId || !self::isCurrentSubtype($objectRef)) {
+      return;
+    }
+    $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
+    $organizationId = $objectRef['Institution_Collection_Camp_Intent.Organization_Name'];
+
+    if (!$newStatus) {
+      return;
+    }
+
+    $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Institution_Collection_Camp_Intent.Organization_Name', 'title', 'Institution_Collection_Camp_Intent.Institution_POC')
+      ->addWhere('id', '=', $objectId)
+      ->execute();
+
+    $currentCollectionCamp = $collectionCamps->first();
+    $currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
+    $PocId = $currentCollectionCamp['Institution_Collection_Camp_Intent.Institution_POC'];
+
+    if (!$PocId && !$organizationId) {
+      return;
+    }
+
+    $collectionCampTitle = $currentCollectionCamp['title'];
+    $collectionCampId = $currentCollectionCamp['id'];
+
+    if ($currentStatus !== $newStatus && $newStatus === 'authorized') {
+      self::createCollectionCampOrganizeActivity($PocId, $organizationId, $collectionCampTitle, $collectionCampId);
+    }
+  }
+
+  /**
+   *
+   */
+  private static function createCollectionCampOrganizeActivity($PocId, $organizationId, $collectionCampTitle, $collectionCampId) {
+    try {
+
+      // Create activity for PocId.
+      self::createActivity($PocId, $collectionCampTitle, $collectionCampId);
+
+      // Create activity for organizationId, only if it's different from PocId.
+      if ($organizationId !== $PocId) {
+        self::createActivity($organizationId, $collectionCampTitle, $collectionCampId);
+      }
+
+    }
+    catch (\CiviCRM_API4_Exception $ex) {
+      \Civi::log()->debug("Exception while creating Organize Institution Collection Camp activity: " . $ex->getMessage());
+    }
+  }
+
+  /**
+   *
+   */
+  private static function createActivity($contactId, $collectionCampTitle, $collectionCampId) {
+    Activity::create(FALSE)
+      ->addValue('subject', $collectionCampTitle)
+      ->addValue('activity_type_id:name', 'Organize Institution Collection Camp')
+      ->addValue('status_id:name', 'Authorized')
+      ->addValue('activity_date_time', date('Y-m-d H:i:s'))
+      ->addValue('source_contact_id', $contactId)
+      ->addValue('target_contact_id', $contactId)
+      ->addValue('Collection_Camp_Data.Collection_Camp_ID', $collectionCampId)
+      ->execute();
+
+    \Civi::log()->info("Activity created for contact {$contactId} for Institution Collection Camp {$collectionCampTitle}");
   }
 
   /**
@@ -69,14 +142,18 @@ class InstitutionCollectionCampService extends AutoSubscriber {
    *
    */
   public static function assignChapterGroupToIndividual(string $op, string $objectName, $objectId, &$objectRef) {
-    if ($objectName !== 'Eck_Collection_Camp' || empty($objectRef['title']) || $objectRef['title'] !== 'Institution Collection Camp') {
-      return FALSE;
+
+    if ($objectName !== 'Eck_Collection_Camp' || !$objectId || !self::isCurrentSubtype($objectRef)) {
+      return;
     }
     $stateId = $objectRef['Institution_Collection_Camp_Intent.State'];
     $contactId = $objectRef['Institution_Collection_Camp_Intent.Institution_POC'];
-    $organizationId = $objectRef['Institution_Collection_Camp_Intent.Organization_Name'];
+    $status = $objectRef['Collection_Camp_Core_Details.Status'];
 
-    if (!$stateId || !$contactId) {
+    if ($status == 'authorized') {
+      return;
+    }
+    if (!$stateId) {
       \Civi::log()->info("Missing Contact ID and State ID");
       return FALSE;
     }
@@ -84,9 +161,6 @@ class InstitutionCollectionCampService extends AutoSubscriber {
 
     if ($groupId) {
       self::addContactToGroup($contactId, $groupId);
-      if ($organizationId) {
-        self::addContactToGroup($organizationId, $groupId);
-      }
     }
   }
 
@@ -553,9 +627,11 @@ class InstitutionCollectionCampService extends AutoSubscriber {
   public static function assignCoordinatorByRelationshipType($stateOfficeId, $registrationType, $collectionCampId) {
     // Define the mapping of registration categories to relationship type names.
     $relationshipTypeMap = [
-      'A_Corporate_organisation' => 'Corporate Organisation Coordinator of',
-      'A_School' => 'School Coordinator of',
-      'A_College_University' => 'University/College Coordinator of',
+      'Corporate' => 'Corporate Coordinator of',
+      'School' => 'School Coordinator of',
+      'College' => 'College Coordinator of',
+      'Associations' => 'Associations Coordinator of',
+      'Others' => 'Others Coordinator of',
     ];
 
     $registrationCategorySelection = $registrationType['Institution_Collection_Camp_Intent.You_wish_to_register_as:name'];
@@ -774,13 +850,6 @@ class InstitutionCollectionCampService extends AutoSubscriber {
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
-      'materialContribution' => [
-        'title' => ts('Material Contribution'),
-        'module' => 'afsearchInstitutionCollectionCampMaterialContribution',
-        'directive' => 'afsearch-institution-collection-camp-material-contribution',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops'],
-      ],
       'vehicleDispatch' => [
         'title' => ts('Dispatch'),
         'module' => 'afsearchInstitutionCampVehicleDispatchData',
@@ -792,6 +861,13 @@ class InstitutionCollectionCampService extends AutoSubscriber {
         'title' => ts('Material Authorization'),
         'module' => 'afsearchInstitutionCampAcknowledgementDispatch',
         'directive' => 'afsearch-institution-camp-acknowledgement-dispatch',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+      ],
+      'materialContribution' => [
+        'title' => ts('Material Contribution'),
+        'module' => 'afsearchInstitutionCollectionCampMaterialContribution',
+        'directive' => 'afsearch-institution-collection-camp-material-contribution',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
@@ -809,20 +885,20 @@ class InstitutionCollectionCampService extends AutoSubscriber {
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
-      // 'monetaryContribution' => [
-      //   'title' => ts('Monetary Contribution'),
-      //   'module' => 'afsearchMonetaryContribution',
-      //   'directive' => 'afsearch-monetary-contribution',
-      //   'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-      //   'permissions' => ['account_team'],
-      // ],
-      // 'monetaryContributionForUrbanOps' => [
-      //   'title' => ts('Monetary Contribution'),
-      //   'module' => 'afsearchMonetaryContributionForUrbanOps',
-      //   'directive' => 'afsearch-monetary-contribution-for-urban-ops',
-      //   'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-      //   'permissions' => ['goonj_chapter_admin', 'urbanops'],
-      // ],
+      'monetaryContribution' => [
+        'title' => ts('Monetary Contribution'),
+        'module' => 'afsearchMonetaryContribution',
+        'directive' => 'afsearch-monetary-contribution',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['account_team', 'ho_account'],
+      ],
+      'monetaryContributionForUrbanOps' => [
+        'title' => ts('Monetary Contribution'),
+        'module' => 'afsearchMonetaryContributionForUrbanOps',
+        'directive' => 'afsearch-monetary-contribution-for-urban-ops',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+      ],
     ];
 
     foreach ($tabConfigs as $key => $config) {

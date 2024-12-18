@@ -8,6 +8,8 @@ use CRM_Civirules_ExtensionUtil as E;
 
 class CRM_CivirulesCronTrigger_MembershipEndDate extends CRM_Civirules_Trigger_Cron {
 
+  use CRM_CivirulesTrigger_MembershipTrait;
+
   /**
    * @var \CRM_Member_DAO_Membership $dao
    */
@@ -111,7 +113,12 @@ class CRM_CivirulesCronTrigger_MembershipEndDate extends CRM_Civirules_Trigger_C
 
     $sql = "SELECT m.*
             FROM `civicrm_membership` `m`
-            LEFT JOIN `civirule_rule_log` `rule_log` ON `rule_log`.entity_table = 'civicrm_membership' AND `rule_log`.entity_id = m.id AND `rule_log`.`contact_id` = `m`.`contact_id` AND DATE(`rule_log`.`log_date`) = DATE(NOW()) AND `rule_log`.`rule_id` = %3
+            LEFT JOIN `civirule_rule_log` `rule_log`
+              ON `rule_log`.entity_table = 'civicrm_membership'
+              AND `rule_log`.entity_id = m.id
+              AND `rule_log`.`contact_id` = `m`.`contact_id`
+              AND DATE(`rule_log`.`log_date`) = DATE(NOW())
+              AND `rule_log`.`rule_id` = %3
             WHERE `m`.`membership_type_id` IN (%1)
             AND `rule_log`.`id` IS NULL
             {$end_date_statement}
@@ -164,17 +171,6 @@ class CRM_CivirulesCronTrigger_MembershipEndDate extends CRM_Civirules_Trigger_C
       2 => $this->triggerParams['interval'],
       3 => $intervalUnitLabel,
     ]);
-  }
-
-  /**
-   * Returns additional entities provided in this trigger.
-   *
-   * @return array of CRM_Civirules_TriggerData_EntityDefinition
-   */
-  protected function getAdditionalEntities() {
-    $entities = parent::getAdditionalEntities();
-    $entities[] = new CRM_Civirules_TriggerData_EntityDefinition('ContributionRecur', 'ContributionRecur', 'CRM_Contribute_DAO_ContributionRecur' , 'ContributionRecur');
-    return $entities;
   }
 
 }

@@ -10,10 +10,9 @@ use Civi\Api4\Group;
 use Civi\Api4\GroupContact;
 use Civi\Api4\MessageTemplate;
 use Civi\Api4\OptionValue;
-use Civi\Api4\Relationship;
-use Civi\Api4\StateProvince;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
+use Civi\Api4\StateProvince;
 
 /**
  *
@@ -297,11 +296,13 @@ class CollectionBaseService extends AutoSubscriber {
     }
 
     $currentCollectionCamp = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id', 'Institution_Collection_Camp_Intent.Organization_Name.id', 'Institution_Dropping_Center_Intent.Organization_Name.id', 'subtype:name')
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id', 'Institution_Collection_Camp_Intent.Organization_Name.id', 'Institution_Goonj_Activities.Organization_Name.id', 'Institution_Dropping_Center_Intent.Organization_Name.id', 'subtype:name')
       ->addWhere('id', '=', $objectId)
       ->execute()->single();
+    \Civi::log()->info('currentCollectionCamp', ['currentCollectionCamp' => $currentCollectionCamp]);
 
     $initiatorId = self::getInitiatorId($currentCollectionCamp);
+    \Civi::log()->info('initiatorId', ['initiatorId' => $initiatorId]);
 
     $currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
 
@@ -313,6 +314,7 @@ class CollectionBaseService extends AutoSubscriber {
     if ($currentStatus !== $newStatus) {
       self::$collectionAuthorized = $objectId;
       self::$collectionAuthorizedStatus = $newStatus;
+      \Civi::log()->info('currentStatus', ['currentStatus' => $currentStatus, 'newStatus' => $newStatus]);
     }
   }
 
@@ -325,11 +327,12 @@ class CollectionBaseService extends AutoSubscriber {
     }
 
     $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id', 'Institution_Collection_Camp_Intent.Organization_Name.id', 'Institution_Dropping_Center_Intent.Organization_Name.id', 'subtype', 'subtype:name')
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id', 'Institution_Collection_Camp_Intent.Organization_Name.id', 'Institution_Goonj_Activities.Organization_Name.id', 'Institution_Dropping_Center_Intent.Organization_Name.id', 'subtype', 'subtype:name')
       ->addWhere('id', '=', $objectRef->id)
       ->execute()->single();
 
     $initiatorId = self::getInitiatorId($collectionCamp);
+    \Civi::log()->info('initiatorId2', ['initiatorId2' => $initiatorId, self::$authorizationEmailQueued]);
 
     $collectionSourceId = $collectionCamp['id'];
     $subtype = $collectionCamp['subtype'];
@@ -475,7 +478,8 @@ class CollectionBaseService extends AutoSubscriber {
       return;
     }
 
-    $stateFieldNames = self::getStateFieldNames();
+    $stateGroupNameMapper = self::getStateGroupNameMapper();
+    $stateFieldNames = array_map(fn ($i) => "{$i}.State", $stateGroupNameMapper);
 
     if (!in_array($field, $stateFieldNames)) {
       return;
@@ -520,9 +524,10 @@ class CollectionBaseService extends AutoSubscriber {
     return [
       'Collection_Camp' => 'Collection_Camp_Intent_Details',
       'Dropping_Center' => 'Dropping_Centre',
-      // 'Institution_Collection_Camp' => 'Institution_Collection_Camp_Intent',
-      // 'Goonj_Activities' => 'Goonj_Activities',
-      // 'Institution_Dropping_Center' => 'Institution_Dropping_Center_Intent',
+      'Institution_Collection_Camp' => 'Institution_Collection_Camp_Intent',
+      'Goonj_Activities' => 'Goonj_Activities',
+      'Institution_Dropping_Center' => 'Institution_Dropping_Center_Intent',
+      'Institution_Goonj_Activities' => 'Institution_Goonj_Activities',
     ];
   }
 

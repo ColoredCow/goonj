@@ -21,7 +21,7 @@ class CRM_CivirulesCronTrigger_Form_MembershipEndDate extends CRM_CivirulesTrigg
       ]
     );
     $this->add('select', 'interval_unit', ts('Interval'), CRM_CivirulesCronTrigger_MembershipEndDate::intervals(), TRUE);
-    $this->add('text', 'interval', ts('Interval'), TRUE);
+    $this->add('text', 'interval', ts('Interval'), [], TRUE);
     $this->addRule('interval', ts('Interval should be a numeric value'), 'numeric');
 
     $this->addButtons([

@@ -2,11 +2,14 @@
 
 namespace Civi;
 
+use Civi\Afform\Event\AfformSubmitEvent;
+use Civi\Api4\Activity;
 use Civi\Api4\Contact;
 use Civi\Api4\CustomField;
 use Civi\Api4\EckEntity;
 use Civi\Api4\Email;
 use Civi\Api4\Relationship;
+use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
@@ -24,19 +27,147 @@ class DroppingCenterService extends AutoSubscriber {
   const MATERIAL_RELATIONSHIP_TYPE_NAME = 'Material Management Team of';
   const FALLBACK_OFFICE_NAME = 'Delhi';
 
+  const DROPPING_CENTER_INTENT_FB_NAME = 'afformDroppingCenterDetailForm';
+  private static $droppingCentreAddress = NULL;
+
   /**
    *
    */
   public static function getSubscribedEvents() {
     return [
       '&hook_civicrm_tabset' => 'droppingCenterTabset',
-      '&hook_civicrm_pre' => 'generateDroppingCenterQr',
+      'civi.afform.submit' => [
+        ['setDroppingCenterAddress', 9],
+        ['setEventVolunteersAddress', 8],
+      ],
+      '&hook_civicrm_pre' => [
+        ['generateDroppingCenterQr'],
+        ['linkDroppingCenterToContact'],
+      ],
       '&hook_civicrm_custom' => [
         ['setOfficeDetails'],
         ['mailNotificationToMmt'],
       ],
       '&hook_civicrm_post' => 'processDispatchEmail',
     ];
+  }
+
+  /**
+   *
+   */
+  public static function setDroppingCenterAddress(AfformSubmitEvent $event) {
+    $afform = $event->getAfform();
+    $formName = $afform['name'];
+
+    if ($formName !== self::DROPPING_CENTER_INTENT_FB_NAME) {
+      return;
+    }
+
+    $entityType = $event->getEntityType();
+
+    if ($entityType !== 'Eck_Collection_Camp') {
+      return;
+    }
+
+    $records = $event->records;
+
+    foreach ($records as $record) {
+      $fields = $record['fields'];
+
+      self::$droppingCentreAddress = [
+        'location_type_id' => 3,
+        'state_province_id' => $fields['Dropping_Centre.State'],
+        'country_id' => 1101,
+        'street_address' => $fields['Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_'],
+        'city' => $fields['Dropping_Centre.District_City'],
+        'postal_code' => $fields['Dropping_Centre.Postal_Code'],
+        'is_primary' => 1,
+      ];
+    }
+  }
+
+  /**
+   *
+   */
+  public static function setEventVolunteersAddress(AfformSubmitEvent $event) {
+    $afform = $event->getAfform();
+    $formName = $afform['name'];
+
+    if ($formName !== self::DROPPING_CENTER_INTENT_FB_NAME) {
+      return;
+    }
+
+    $entityType = $event->getEntityType();
+
+    if (!CoreUtil::isContact($entityType)) {
+      return;
+    }
+
+    foreach ($event->records as $index => $contact) {
+      if (empty($contact['fields'])) {
+        continue;
+      }
+
+      $event->records[$index]['joins']['Address'][] = self::$droppingCentreAddress;
+    }
+
+  }
+
+  /**
+   *
+   */
+  public static function linkDroppingCenterToContact(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($objectName != 'Eck_Collection_Camp' || !$objectId || !self::isCurrentSubtype($objectRef)) {
+      return;
+    }
+
+    $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
+
+    if (!$newStatus) {
+      return;
+    }
+
+    $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id', 'title')
+      ->addWhere('id', '=', $objectId)
+      ->execute();
+
+    $currentCollectionCamp = $collectionCamps->first();
+    $currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
+    $contactId = $currentCollectionCamp['Collection_Camp_Core_Details.Contact_Id'];
+    if (!$contactId) {
+      return;
+    }
+    $droppingCenterCode = $currentCollectionCamp['title'];
+    $droppingCenterId = $currentCollectionCamp['id'];
+
+    // Check for status change.
+    if ($currentStatus !== $newStatus) {
+      if ($newStatus === 'authorized') {
+        self::createDroppingCenterOrganizeActivity($contactId, $droppingCenterCode, $droppingCenterId);
+      }
+    }
+  }
+
+  /**
+   * Log an activity in CiviCRM.
+   */
+  private static function createDroppingCenterOrganizeActivity($contactId, $droppingCenterCode, $droppingCenterId) {
+    try {
+      $results = Activity::create(FALSE)
+        ->addValue('subject', $droppingCenterCode)
+        ->addValue('activity_type_id:name', 'Organize Dropping Center')
+        ->addValue('status_id:name', 'Authorized')
+        ->addValue('activity_date_time', date('Y-m-d H:i:s'))
+        ->addValue('source_contact_id', $contactId)
+        ->addValue('target_contact_id', $contactId)
+        ->addValue('Collection_Camp_Data.Collection_Camp_ID', $droppingCenterId)
+        ->execute();
+
+    }
+    catch (\CiviCRM_API4_Exception $ex) {
+      \Civi::log()->debug("Exception while creating Organize Dropping Center activity: " . $ex->getMessage());
+    }
   }
 
   /**
@@ -59,11 +190,11 @@ class DroppingCenterService extends AutoSubscriber {
 
     $currentCollectionCamp = $collectionCamps->first();
     $currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
-    $collectionCampId = $currentCollectionCamp['id'];
+    $droppingCenterId = $currentCollectionCamp['id'];
 
     // Check for status change.
     if ($currentStatus !== $newStatus && $newStatus === 'authorized') {
-      self::generateDroppingCenterQrCode($collectionCampId);
+      self::generateDroppingCenterQrCode($droppingCenterId);
     }
   }
 
@@ -497,20 +628,20 @@ class DroppingCenterService extends AutoSubscriber {
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
-      // 'monetaryContribution' => [
-      //   'title' => ts('Monetary Contribution'),
-      //   'module' => 'afsearchMonetaryContribution',
-      //   'directive' => 'afsearch-monetary-contribution',
-      //   'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-      //   'permissions' => ['account_team'],
-      // ],
-      // 'monetaryContributionForUrbanOps' => [
-      //   'title' => ts('Monetary Contribution'),
-      //   'module' => 'afsearchMonetaryContributionForUrbanOps',
-      //   'directive' => 'afsearch-monetary-contribution-for-urban-ops',
-      //   'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-      //   'permissions' => ['goonj_chapter_admin', 'urbanops'],
-      // ],
+      'monetaryContribution' => [
+        'title' => ts('Monetary Contribution'),
+        'module' => 'afsearchMonetaryContribution',
+        'directive' => 'afsearch-monetary-contribution',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['account_team', 'ho_account'],
+      ],
+      'monetaryContributionForUrbanOps' => [
+        'title' => ts('Monetary Contribution'),
+        'module' => 'afsearchMonetaryContributionForUrbanOps',
+        'directive' => 'afsearch-monetary-contribution-for-urban-ops',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+      ],
     ];
 
     foreach ($tabConfigs as $key => $config) {

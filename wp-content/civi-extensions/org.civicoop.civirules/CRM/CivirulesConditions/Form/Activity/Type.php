@@ -38,12 +38,14 @@ class CRM_CivirulesConditions_Form_Activity_Type extends CRM_CivirulesConditions
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleCondition->condition_params);
-    if (!empty($data['activity_type_id'])) {
-      $defaultValues['activity_type_id'] = $data['activity_type_id'];
-    }
-    if (!empty($data['operator'])) {
-      $defaultValues['operator'] = $data['operator'];
+    if (isset($this->ruleCondition->condition_params)) {
+      $data = unserialize($this->ruleCondition->condition_params);
+      if (!empty($data['activity_type_id'])) {
+        $defaultValues['activity_type_id'] = $data['activity_type_id'];
+      }
+      if (!empty($data['operator'])) {
+        $defaultValues['operator'] = $data['operator'];
+      }
     }
     return $defaultValues;
   }

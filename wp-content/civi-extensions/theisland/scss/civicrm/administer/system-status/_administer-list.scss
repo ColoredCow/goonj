@@ -14,11 +14,6 @@
   &_show {
     padding: 0;
 
-    .font-size11pt {
-      font-size: $font-size-base;
-      font-weight: $crm-font-weight-h3;
-    }
-
     .form-layout {
       border: 0;
 
@@ -26,10 +21,6 @@
         border: 0;
       }
     }
-  }
-
-  .font-size11pt {
-    font-size: $font-size-base;
   }
 
   legend {

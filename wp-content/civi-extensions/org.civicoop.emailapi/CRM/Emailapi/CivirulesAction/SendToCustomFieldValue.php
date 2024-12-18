@@ -25,7 +25,7 @@ class CRM_Emailapi_CivirulesAction_SendToCustomFieldValue extends CRM_Civirules_
           'return' => $customValueField,
           'id' => $entityData['id'],
         ]);
-      } catch (CiviCRM_API3_Exception $e) {
+      } catch (CRM_Core_Exception $e) {
         $customValues = [];
       }
     }
@@ -58,7 +58,7 @@ class CRM_Emailapi_CivirulesAction_SendToCustomFieldValue extends CRM_Civirules_
         'options' => ['limit' => 0],
       ])['values'];
     }
-    catch (CiviCRM_API3_Exception $e) {
+    catch (CRM_Core_Exception $e) {
       $result = [];
     }
     foreach ($result as $field) {
@@ -95,7 +95,7 @@ class CRM_Emailapi_CivirulesAction_SendToCustomFieldValue extends CRM_Civirules_
     try {
       $result = civicrm_api3('CustomField', 'get', $params)['values'];
     }
-    catch (CiviCRM_API3_Exception $e) {
+    catch (CRM_Core_Exception $e) {
       $result = [];
     }
     foreach ($result as $field) {
@@ -139,7 +139,7 @@ class CRM_Emailapi_CivirulesAction_SendToCustomFieldValue extends CRM_Civirules_
     try {
       $to = civicrm_api3('CustomField', 'getvalue', ['return' => "label", 'id' => $params['custom_value']]);
     }
-    catch (CiviCRM_API3_Exception $e) {
+    catch (CRM_Core_Exception $e) {
       $to = '';
     }
 

@@ -105,7 +105,7 @@ class CRM_Eck_Page_Entity_View extends CRM_Core_Page {
      * the field.
      * @todo: Migrate to SearchKit.
      */
-    // $this->convertOptionIdsToValues($custom_group_tree);
+    $this->convertOptionIdsToValues($custom_group_tree);
 
     CRM_Core_BAO_CustomGroup::buildCustomDataView(
       $this,

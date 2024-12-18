@@ -28,6 +28,7 @@ class SendEmailByEmailApi extends AbstractAction {
       new Specification("contact_id", "Integer", E::ts("Contact ID"), TRUE),
       new Specification("case_id", "Integer", E::ts("File Email Activity on Case ID"), FALSE),
       new Specification("contribution_id", "Integer", E::ts("Contribution ID for contribution tokens"), FALSE),
+      new Specification("event_id", "Integer", E::ts("Event ID for event tokens"), FALSE),      
     ]);
   }
 
@@ -72,7 +73,7 @@ class SendEmailByEmailApi extends AbstractAction {
           }
         }
       }
-      catch (\CiviCRM_API3_Exception $ex) {
+      catch (\CRM_Core_Exception $ex) {
         Civi::log()->error(E::ts('Could not send email in ') . __METHOD__
           . E::ts(', error from API Email Send: ') . $ex->getMessage());
       }
@@ -100,7 +101,7 @@ class SendEmailByEmailApi extends AbstractAction {
         $emailParams[$configParam] = $value;
       }
     }
-    $otherParams = ['case_id', 'contribution_id'];
+    $otherParams = ['case_id', 'contribution_id', 'event_id'];
     foreach ($otherParams as $otherParam) {
       $value = $parameters->getParameter($otherParam);
       if ($value && !empty($value)) {
@@ -126,7 +127,7 @@ class SendEmailByEmailApi extends AbstractAction {
         $templates[$msgTemplateId] = $msgTemplate['msg_title'];
       }
     }
-    catch (\CiviCRM_API3_Exception $ex) {
+    catch (\CRM_Core_Exception $ex) {
     }
     return $templates;
   }

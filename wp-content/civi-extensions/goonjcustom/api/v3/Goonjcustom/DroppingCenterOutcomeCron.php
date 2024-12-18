@@ -65,6 +65,7 @@ function civicrm_api3_goonjcustom_dropping_center_outcome_cron($params) {
       EckEntity::update('Collection_Camp', TRUE)
         ->addValue("Dropping_Center_Outcome.$metricName", max($value, 0))
         ->addWhere('id', '=', $id)
+        ->addWhere('subtype:name', '=', 'Dropping_Center')
         ->execute();
     }
   }

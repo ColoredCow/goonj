@@ -1,6 +1,33 @@
 #crm-main-content-wrapper {
   form {
     .crm-block {
+      #onBehalfOfOrg {
+        .crm-public-form-item {
+          fieldset {
+            .crm-section {
+              .label {
+                display: block !important;
+              }
+            }
+          }
+        }
+      }
+
+      .is_for_organization-section {
+          .content {
+            label {
+              position: relative;
+              right: 66px;
+            }
+
+            input {
+              height: 15px !important;
+            }
+
+            width: 424px;
+          }
+        }
+
       .crm-public-form-item {
         fieldset legend {
           display: none !important;
@@ -15,11 +42,19 @@
 
           &.is_recur-section .content {
             justify-self: flex-start;
+            display: block;
+            margin-top: -15px;
           }
-        }
-
-        fieldset > div:nth-last-child(-n + 2) {
-          display: none;
+          #is_recur {
+            position: relative;
+            top: 10px;
+          }
+          #recurHelp {
+            font-size: 14px;
+            font-weight: 400;
+            font-family: "Open Sans", sans-serif !important;
+            margin-bottom: 10px;
+          }
         }
 
         .content {
@@ -52,6 +87,36 @@
           }
         }
 
+        fieldset > div:nth-last-child(-n+2) {
+          display: none;
+        }
+
+        fieldset > div:nth-last-child(3) .label {
+          display: none !important;
+        }
+
+        fieldset > div:nth-last-child(3) .content .crm-multiple-checkbox-radio-options .crm-option-label-pair label {
+          position: relative;
+          top: -10px;
+          left: 13px;
+          font-size: 14px;
+          font-weight: 400;
+          font-family: "Open Sans", sans-serif !important;
+        }
+
+        fieldset > div:nth-last-child(3) .content .crm-multiple-checkbox-radio-options .crm-option-label-pair input {
+          position: relative;
+          top: 8px;
+        }
+
+        #on-behalf-block fieldset > div:nth-last-child(-n+2) {
+          display: flex !important;
+        }
+
+        &.is_for_organization-section {
+          width: 59% !important;
+        }
+
         .label {
           text-align: justify !important;
           width: 50% !important;
@@ -66,6 +131,10 @@
 
           div {
             width: 100% !important;
+          }
+          .select2-container {
+            font-size: 14px !important;
+            font-family: "Open Sans", sans-serif !important;
           }
         }
 
@@ -111,13 +180,13 @@
         button {
           font-weight: 400;
           font-family: "Open Sans", sans-serif !important;
-          font-size: 14px;
+          font-size: 1.2rem;
           line-height: 16px;
           height: 45px;
           width: 100%;
-          background-color: #d64631 !important;
+          background-color: #B8763F !important;
           border: none;
-          border-radius: 4px !important;
+          border-radius: 6px !important;
 
           i {
             display: none !important;
@@ -154,7 +223,7 @@
 
         .content {
           margin-left: 0 !important;
-          gap: 30px;
+          gap: 33px;
           align-items: center;
         }
       }
@@ -186,19 +255,33 @@
 #crm-main-content-wrapper {
   form {
     .crm-block {
+      .crm-group {
+        &.amount_display-group {
+          .display-block {
+            margin-left: 0 !important;
+          }
+        }
+      }
       fieldset {
         fieldset {
+          > div:nth-last-child(-n+2) {
+            display: none !important;
+          }
+          > div:nth-last-child(-n+3) {
+            display: none !important;
+          }
           legend {
             display: none !important;
           }
 
           .header-dark {
             width: 100% !important;
+            padding: 11px 3px 9px 8px !important;
           }
 
           div {
-            margin: 12px !important;
-            padding: 11px 3px 10px 0px !important;
+            margin: 12px 7px 0px 1px !important;
+            padding: 11px 3px 10px 1px !important;
             width: 100% !important;
             margin-bottom: -18px !important;
 
@@ -206,10 +289,6 @@
               font-weight: 600 !important;
             }
           }
-        }
-
-        > div:nth-last-child(-n + 2) {
-          display: none !important;
         }
 
         border-top: none !important;
@@ -245,10 +324,19 @@
 }
 
 // Media Queries
-@media (min-width: 375px) and (max-width: 768px) {
+@media (min-width: 340px) and (max-width: 768px) {
   #crm-main-content-wrapper {
     form {
       .crm-block {
+        #onBehalfOfOrg .is_for_organization-section .content {
+          width: 100% !important;
+          gap: 33px !important;
+        }
+
+        .crm-public-form-item.is_for_organization-section {
+          width: 100% !important;
+        }
+
         .crm-public-form-item {
           .crm-profile div {
             .label {
@@ -259,7 +347,7 @@
               margin-left: 0 !important;
             }
 
-            width: 85vw !important;
+            width: 82vw !important;
           }
         }
 

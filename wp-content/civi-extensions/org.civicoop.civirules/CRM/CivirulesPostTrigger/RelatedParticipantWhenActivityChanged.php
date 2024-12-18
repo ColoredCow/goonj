@@ -37,7 +37,7 @@ class CRM_CivirulesPostTrigger_RelatedParticipantWhenActivityChanged extends CRM
       $triggerData->setEntityId($objectId);
     }
 
-    if (isset($this->triggerParams['activity_type_id']) && is_array($this->triggerParams['activity_type_id']) && count(isset($this->triggerParams['activity_type_id']))) {
+    if (isset($this->triggerParams['activity_type_id']) && is_array($this->triggerParams['activity_type_id']) && count($this->triggerParams['activity_type_id'])) {
       $activity = civicrm_api3('Activity', 'getsingle', ['id' => $triggerData->getEntityId()]);
       if (!in_array($activity['activity_type_id'], $this->triggerParams['activity_type_id'])) {
         return;

@@ -78,8 +78,12 @@ class CRM_Civirules_Trigger_Post extends CRM_Civirules_Trigger {
    * @return string
    */
   protected function getDaoClassName() {
-    $daoClassName = CRM_Core_DAO_AllCoreTables::getFullName($this->objectName);
-    return $daoClassName;
+    // @todo remove old method when CiviCRM min version > 5.72
+    if (method_exists('CRM_Core_DAO_AllCoreTables', 'getDAONameForEntity')) {
+      // getDAONameForEntity added in 5.72
+      return CRM_Core_DAO_AllCoreTables::getDAONameForEntity($this->objectName);
+    }
+    return CRM_Core_DAO_AllCoreTables::getFullName($this->objectName);
   }
 
   /**

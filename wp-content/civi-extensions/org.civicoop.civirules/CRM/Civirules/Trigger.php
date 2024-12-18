@@ -39,6 +39,14 @@ abstract class CRM_Civirules_Trigger {
   protected $ruleDebugEnabled;
 
   /**
+   * The Rule Conditions
+   * Conditions are cached in this variable
+   *
+   * @var array
+   */
+  protected $ruleConditions;
+
+  /**
    * @param int $ruleId
    *
    * @return void
@@ -117,7 +125,7 @@ abstract class CRM_Civirules_Trigger {
    * @return string
    */
   public function getRuleTitle(): string {
-    if (empty($this->ruleTitle) && !empty($this->ruleId)) {
+    if (!isset($this->ruleTitle) && !empty($this->ruleId)) {
       $rule = new CRM_Civirules_BAO_Rule();
       $rule->id = $this->ruleId;
       if ($rule->find(true)) {
@@ -131,7 +139,7 @@ abstract class CRM_Civirules_Trigger {
    * @return bool
    */
   public function getRuleDebugEnabled(): bool {
-    if (empty($this->ruleDebugEnabled) && !empty($this->ruleId)) {
+    if (!isset($this->ruleDebugEnabled) && !empty($this->ruleId)) {
       $rule = new CRM_Civirules_BAO_Rule();
       $rule->id = $this->ruleId;
       if ($rule->find(true)) {
@@ -139,6 +147,19 @@ abstract class CRM_Civirules_Trigger {
       }
     }
     return $this->ruleDebugEnabled ?? FALSE;
+  }
+
+  /**
+   * Retrieve rule conditions for the current rule.
+   * Results are cached.
+   *
+   * @return array
+   */
+  public function getRuleConditions(): array {
+    if (!isset($this->ruleConditions) && !empty($this->ruleId)) {
+      $this->ruleConditions = CRM_Civirules_BAO_RuleCondition::getValues(['rule_id' => $this->ruleId]);
+    }
+    return $this->ruleConditions ?? [];
   }
 
   /**

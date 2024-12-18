@@ -36,10 +36,10 @@
                 </span>
               </td>
             </tr>
-            {if $row_class eq "odd_row"}
+            {if $rowClass eq "odd_row"}
               {assign var="rowClass" value="even-row"}
             {else}
-              {assign var="row_class" value="odd-row"}
+              {assign var="rowClass" value="odd-row"}
             {/if}
             {assign var="rowNumber" value=$rowNumber+1}
           {/foreach}
