@@ -52,8 +52,9 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     if ($objectName !== 'Eck_Collection_Camp' || !$objectId || !self::isCurrentSubtype($objectRef)) {
       return;
     }
-
     $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
+    $organizationId = $objectRef['Institution_Collection_Camp_Intent.Organization_Name'];
+
     if (!$newStatus) {
       return;
     }
@@ -66,7 +67,6 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     $currentCollectionCamp = $collectionCamps->first();
     $currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
     $PocId = $currentCollectionCamp['Institution_Collection_Camp_Intent.Institution_POC'];
-    $organizationId = $currentCollectionCamp['Institution_Collection_Camp_Intent.Organization_Name'];
 
     if (!$PocId && !$organizationId) {
       return;
@@ -142,14 +142,18 @@ class InstitutionCollectionCampService extends AutoSubscriber {
    *
    */
   public static function assignChapterGroupToIndividual(string $op, string $objectName, $objectId, &$objectRef) {
-    if ($objectName !== 'Eck_Collection_Camp' || empty($objectRef['title']) || $objectRef['title'] !== 'Institution Collection Camp') {
-      return FALSE;
+
+    if ($objectName !== 'Eck_Collection_Camp' || !$objectId || !self::isCurrentSubtype($objectRef)) {
+      return;
     }
     $stateId = $objectRef['Institution_Collection_Camp_Intent.State'];
     $contactId = $objectRef['Institution_Collection_Camp_Intent.Institution_POC'];
-    $organizationId = $objectRef['Institution_Collection_Camp_Intent.Organization_Name'];
+    $status = $objectRef['Collection_Camp_Core_Details.Status'];
 
-    if (!$stateId || !$contactId) {
+    if ($status == 'authorized') {
+      return;
+    }
+    if (!$stateId) {
       \Civi::log()->info("Missing Contact ID and State ID");
       return FALSE;
     }
@@ -157,9 +161,6 @@ class InstitutionCollectionCampService extends AutoSubscriber {
 
     if ($groupId) {
       self::addContactToGroup($contactId, $groupId);
-      if ($organizationId) {
-        self::addContactToGroup($organizationId, $groupId);
-      }
     }
   }
 
