@@ -7,6 +7,8 @@ use Civi\Api4\Contact;
 use Civi\Api4\CustomField;
 use Civi\Api4\EckEntity;
 use Civi\Api4\Email;
+use Civi\Api4\Group;
+use Civi\Api4\GroupContact;
 use Civi\Api4\Relationship;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
@@ -39,10 +41,75 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       ],
       '&hook_civicrm_post' => 'processDispatchEmail',
       '&hook_civicrm_pre' => [
+        ['assignChapterGroupToIndividual'],
         ['generateInstitutionDroppingCenterQr'],
         ['linkInstitutionDroppingCenterToContact'],
       ],
     ];
+  }
+
+  /**
+   *
+   */
+  private static function getChapterGroupForState($stateId) {
+    $stateContactGroup = Group::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('Chapter_Contact_Group.Use_Case', '=', 'chapter-contacts')
+      ->addWhere('Chapter_Contact_Group.Contact_Catchment', 'CONTAINS', $stateId)
+      ->execute()->first();
+
+    if (!$stateContactGroup) {
+      $stateContactGroup = Group::get(FALSE)
+        ->addWhere('Chapter_Contact_Group.Use_Case', '=', 'chapter-contacts')
+        ->addWhere('Chapter_Contact_Group.Fallback_Chapter', '=', 1)
+        ->execute()->first();
+
+    }
+
+    return $stateContactGroup ? $stateContactGroup['id'] : NULL;
+  }
+
+  /**
+   *
+   */
+  public static function assignChapterGroupToIndividual(string $op, string $objectName, $objectId, &$objectRef) {
+
+    if ($objectName !== 'Eck_Collection_Camp' || !$objectId || !self::isCurrentSubtype($objectRef)) {
+      return;
+    }
+    $stateId = $objectRef['Institution_Dropping_Center_Intent.State'];
+    $contactId = $objectRef['Institution_Dropping_Center_Intent.Institution_POC'];
+    $status = $objectRef['Collection_Camp_Core_Details.Status'];
+
+    if ($status == 'authorized') {
+      return;
+    }
+    if (!$stateId) {
+      \Civi::log()->info("Missing Contact ID and State ID");
+      return FALSE;
+    }
+    $groupId = self::getChapterGroupForState($stateId);
+
+    if ($groupId) {
+      self::addContactToGroup($contactId, $groupId);
+    }
+  }
+
+  /**
+   *
+   */
+  private static function addContactToGroup($contactId, $groupId) {
+    try {
+      GroupContact::create(FALSE)
+        ->addValue('contact_id', $contactId)
+        ->addValue('group_id', $groupId)
+        ->addValue('status', 'Added')
+        ->execute();
+      \Civi::log()->info("Successfully added contact_id: $contactId to group_id: $groupId.");
+    }
+    catch (Exception $e) {
+      \Civi::log()->error("Error adding contact_id: $contactId to group_id: $groupId. Exception: " . $e->getMessage());
+    }
   }
 
   /**
@@ -54,6 +121,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     }
 
     $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
+    $organizationId = $objectRef['Institution_Dropping_Center_Intent.Organization_Name'];
     if (!$newStatus) {
       return;
     }
@@ -66,7 +134,6 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     $currentDroppingCenter = $collectionCamps->first();
     $currentStatus = $currentDroppingCenter['Collection_Camp_Core_Details.Status'];
     $PocId = $currentDroppingCenter['Institution_Dropping_Center_Intent.Institution_POC'];
-    $organizationId = $currentDroppingCenter['Institution_Dropping_Center_Intent.Organization_Name'];
 
     if (!$PocId && !$organizationId) {
       return;
