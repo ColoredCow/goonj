@@ -327,12 +327,12 @@ class CollectionBaseService extends AutoSubscriber {
     }
 
     $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id', 'Institution_Collection_Camp_Intent.Organization_Name.id', 'Institution_Goonj_Activities.Organization_Name.id', 'Institution_Dropping_Center_Intent.Organization_Name.id', 'subtype', 'subtype:name')
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id', 'Institution_Collection_Camp_Intent.Organization_Name.id', 'Institution_Goonj_Activities.Institution_POC', 'Institution_Dropping_Center_Intent.Organization_Name.id', 'subtype', 'subtype:name')
       ->addWhere('id', '=', $objectRef->id)
       ->execute()->single();
 
     $initiatorId = self::getInitiatorId($collectionCamp);
-    \Civi::log()->info('initiatorId2', ['initiatorId2' => $initiatorId, self::$authorizationEmailQueued]);
+    \Civi::log()->info('initiatorId2', ['initiatorId2' => $initiatorId, self::$authorizationEmailQueued, $collectionCamp]);
 
     $collectionSourceId = $collectionCamp['id'];
     $subtype = $collectionCamp['subtype'];

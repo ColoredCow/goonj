@@ -335,13 +335,41 @@
         }
 
     // Collection camp start date and end date validation
-    if (ctrl.getFormMeta().name === 'afformCollectionCampIntentDetails'|| 'afformInstitutionCollectionCampIntent') {
+    if (ctrl.getFormMeta().name === 'afformCollectionCampIntentDetails'|| 'afformInstitutionCollectionCampIntent' || 'afformGoonjActivitiesIndividualIntentForm') {
       var startDateValue = $element.find("af-field[name='Collection_Camp_Intent_Details.Start_Date'] .crm-form-date-wrapper input.crm-form-date").val();
       var endDateValue = $element.find("af-field[name='Collection_Camp_Intent_Details.End_Date'] .crm-form-date-wrapper input.crm-form-date").val();
       
       var institutionStartDateValue = $element.find("af-field[name='Institution_Collection_Camp_Intent.Collections_will_start_on_Date_'] .crm-form-date-wrapper input.crm-form-date").val();
       var institutionEndDateValue = $element.find("af-field[name='Institution_Collection_Camp_Intent.Collections_will_end_on_Date_'] .crm-form-date-wrapper input.crm-form-date").val();
+      var institutionStartDateValue = $element.find("af-field[name='GoonjActivities.Start_Date'] .crm-form-date-wrapper input.crm-form-date").val();
+      var institutionEndDateValue = $element.find("af-field[name='GoonjActivities.End_Date'] .crm-form-date-wrapper input.crm-form-date").val();
       
+
+      if ((startDateValue && endDateValue) || 
+          (institutionStartDateValue && institutionEndDateValue) || 
+          (IndividualActivitiesStartDateValue && IndividualActivitiesEndDateValue) || 
+          InstitutionActivitiesStartDateValue) {
+        
+        var today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        var startDateParts, endDateParts;
+
+        if (startDateValue && endDateValue) {
+          startDateParts = startDateValue.split('/');
+          endDateParts = endDateValue.split('/');
+        } else if (institutionStartDateValue && institutionEndDateValue) {
+          startDateParts = institutionStartDateValue.split('/');
+          endDateParts = institutionEndDateValue.split('/');
+        } else if (IndividualActivitiesStartDateValue && IndividualActivitiesEndDateValue) {
+          startDateParts = IndividualActivitiesStartDateValue.split('/');
+          endDateParts = IndividualActivitiesEndDateValue.split('/');
+        } else if (InstitutionActivitiesStartDateValue) {
+          startDateParts = InstitutionActivitiesStartDateValue.split('/');
+          endDateParts = null;
+        }
+      }
+
       if ((startDateValue && endDateValue) || (institutionStartDateValue && institutionEndDateValue)) {
         var today = new Date();
         today.setHours(0, 0, 0, 0); 
