@@ -332,7 +332,7 @@ class CollectionBaseService extends AutoSubscriber {
       ->execute()->single();
 
     $initiatorId = self::getInitiatorId($collectionCamp);
-    \Civi::log()->info('initiatorId2', ['initiatorId2' => $initiatorId, self::$authorizationEmailQueued, $collectionCamp]);
+    \Civi::log()->info('initiatorId2', ['initiatorId2' => $initiatorId, self::$authorizationEmailQueued]);
 
     $collectionSourceId = $collectionCamp['id'];
     $subtype = $collectionCamp['subtype'];
