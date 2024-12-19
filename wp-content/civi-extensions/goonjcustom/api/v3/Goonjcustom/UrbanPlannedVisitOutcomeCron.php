@@ -55,6 +55,7 @@ function civicrm_api3_goonjcustom_urban_planned_visit_outcome_cron($params) {
     catch (\Exception $e) {
       \Civi::log()->info('Error processing visit', [
         'error' => $e->getMessage(),
+        'visit_id' => $visit['id'],
       ]);
     }
   }
