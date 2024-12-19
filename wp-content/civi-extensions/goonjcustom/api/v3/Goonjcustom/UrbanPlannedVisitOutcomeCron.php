@@ -48,8 +48,6 @@ function civicrm_api3_goonjcustom_urban_planned_visit_outcome_cron($params) {
     )
     ->execute();
 
-  error_log("institutionVisit: " . print_r($institutionVisit, TRUE));
-
   foreach ($institutionVisit as $visit) {
     try {
       UrbanPlannedVisitService::sendOutcomeEmail($visit);

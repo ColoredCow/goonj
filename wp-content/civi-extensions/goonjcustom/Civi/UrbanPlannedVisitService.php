@@ -40,8 +40,6 @@ class UrbanPlannedVisitService extends AutoSubscriber {
 
     $coordinatingGoonjPOCEmail = $coordinatingGoonjPOC['email.email'];
     $coordinatingGoonjPOCName = $coordinatingGoonjPOC['display_name'];
-    error_log("coordinatingGoonjPOCEmail: " . print_r($coordinatingGoonjPOCEmail, TRUE));
-    error_log("coordinatingGoonjPOCName: " . print_r($coordinatingGoonjPOCName, TRUE));
 
     if (!$coordinatingGoonjPOCEmail) {
       throw new \Exception('POC email missing');
@@ -59,7 +57,6 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     $emailSendResult = \CRM_Utils_Mail::send($mailParams);
 
     if ($emailSendResult) {
-      error_log("emailSendResult is gone or not: " . print_r($emailSendResult, TRUE));
       EckEntity::update('Institution_Visit', FALSE)
         ->addValue('Visit_Outcome.Outcome_Email_Sent', 1)
         ->addWhere('id', '=', $visitId)
