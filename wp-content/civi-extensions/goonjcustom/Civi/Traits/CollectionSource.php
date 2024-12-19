@@ -242,43 +242,24 @@ trait CollectionSource {
   /**
    *
    */
-  private static function getInitiatorId(array $collectionCamp) {
+  private static function getInitiatorId(array $collectionCamp, $objectRef) {
     $subtypeName = $collectionCamp['subtype:name'];
 
     if ($subtypeName === 'Institution_Collection_Camp') {
-      $organizationId = $collectionCamp['Institution_Collection_Camp_Intent.Organization_Name.id'];
-      $relationshipType = 'Institution POC of';
-      $alternateType = 'Primary Institution POC of';
-    }
-    elseif ($subtypeName === 'Institution_Dropping_Center') {
-      $organizationId = $collectionCamp['Institution_Dropping_Center_Intent.Organization_Name.id'];
-      $relationshipType = 'Institution POC of';
-      $alternateType = 'Secondary Institution POC of';
-    }
-    elseif ($subtypeName === 'Institution_Goonj_Activities') {
-      $organizationId = $collectionCamp['Institution_Goonj_Activities.Organization_Name.id'];
-      $relationshipType = 'Institution POC of';
-      $alternateType = 'Primary Institution POC of';
-    }
-    else {
-      return $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
+      error_log("objectRef: " . print_r($objectRef, TRUE));
+      $institutionPocId = $objectRef->Institution_Collection_Camp_Intent_Institution_POC;
+      error_log("institutionPocId: " . print_r($institutionPocId, TRUE));
+    } elseif ($subtypeName === 'Institution_Dropping_Center') {
+        $institutionPocId = $objectRef['Institution_Collection_Camp_Intent.Institution_POC'];
+    } elseif ($subtypeName === 'Institution_Goonj_Activities') {
+        $institutionPocId = $objectRef['Institution_Goonj_Activities_Intent.Institution_POC'];
+    } else {
+        return $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
     }
 
-    $relationships = Relationship::get(FALSE)
-      ->addWhere('contact_id_a', '=', $organizationId)
-      ->addWhere('relationship_type_id:name', '=', $relationshipType)
-      ->execute();
-    if (empty($relationships)) {
-      $relationships = Relationship::get(FALSE)
-        ->addWhere('contact_id_a', '=', $organizationId)
-        ->addWhere('relationship_type_id:name', '=', $alternateType)
-        ->execute();
-    }
+    return $institutionPocId ?? $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
+}
 
-    return !empty($relationships) && isset($relationships[0]['contact_id_b'])
-        ? $relationships[0]['contact_id_b']
-        : $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
-  }
 
   /**
    * Helper function to fetch option value by name.

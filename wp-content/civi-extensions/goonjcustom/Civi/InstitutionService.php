@@ -36,7 +36,7 @@ class InstitutionService extends AutoSubscriber {
 
       ],
       '&hook_civicrm_pre' => 'assignChapterGroupToIndividual',
-      '&hook_civicrm_selectWhereClause' => 'aclOrganization',
+      // '&hook_civicrm_selectWhereClause' => 'aclOrganization',
     ];
   }
 
