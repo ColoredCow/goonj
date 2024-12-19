@@ -12,6 +12,7 @@ use Civi\Api4\Relationship;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
+use Civi\Api4\Activity;
 
 /**
  *
@@ -37,6 +38,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
         ['assignChapterGroupToIndividual'],
         ['generateInstitutionGoonjActivitiesQr'],
         ['createActivityForInstitutionGoonjActivityCollectionCamp'],
+        ['linkInstitutionGoonjActivitiesToContact'],
       ],
       '&hook_civicrm_custom' => [
         ['setOfficeDetails'],
@@ -691,4 +693,59 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
     return $html;
   }
 
+      /**
+   *
+   */
+  public static function linkInstitutionGoonjActivitiesToContact(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($objectName !== 'Eck_Collection_Camp' || !$objectId || !self::isCurrentSubtype($objectRef)) {
+      return;
+    }
+
+    $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
+    if (!$newStatus) {
+      return;
+    }
+
+    $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Institution_Goonj_Activities.Institution_POC', 'title')
+      ->addWhere('id', '=', $objectId)
+      ->execute();
+
+    $currentCollectionCamp = $collectionCamps->first();
+    $currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
+    $inititorId = $currentCollectionCamp['Institution_Goonj_Activities.Institution_POC'];
+
+    if (!$inititorId) {
+      return;
+    }
+
+    $collectionCampTitle = $currentCollectionCamp['title'];
+    $collectionCampId = $currentCollectionCamp['id'];
+
+    if ($currentStatus !== $newStatus && $newStatus === 'authorized') {
+      self::createInstitutionGoonjActivitiesOrganizeActivity($inititorId, $collectionCampTitle, $collectionCampId);
+    }
+  }
+
+  /**
+   * Log an activity in CiviCRM.
+   */
+  private static function createInstitutionGoonjActivitiesOrganizeActivity($contactId, $collectionCampTitle, $collectionCampId) {
+
+    try {
+      $results = Activity::create(FALSE)
+        ->addValue('subject', $collectionCampTitle)
+        ->addValue('activity_type_id:name', 'Organize Goonj Activities')
+        ->addValue('status_id:name', 'Authorized')
+        ->addValue('activity_date_time', date('Y-m-d H:i:s'))
+        ->addValue('source_contact_id', $contactId)
+        ->addValue('target_contact_id', $contactId)
+        ->addValue('Collection_Camp_Data.Collection_Camp_ID', $collectionCampId)
+        ->execute();
+
+    }
+    catch (\CiviCRM_API4_Exception $ex) {
+      \Civi::log()->debug("Exception while creating Organize Collection Camp activity: " . $ex->getMessage());
+    }
+  }
 }
