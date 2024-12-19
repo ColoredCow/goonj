@@ -18,11 +18,7 @@ class InstitutionService extends AutoSubscriber {
   use CollectionSource;
   const FALLBACK_OFFICE_NAME = 'Delhi';
   const ENTITY_SUBTYPE_NAME = 'Institute';
-
   private static $organizationId = NULL;
-  private static $stateCustomFieldDbDetails = [];
-
-  const INTENT_CUSTOM_GROUP_NAME = 'Institute_Registration';
 
   /**
    *
@@ -32,125 +28,10 @@ class InstitutionService extends AutoSubscriber {
       '&hook_civicrm_post' => [
         ['organizationCreated'],
         ['setOfficeDetails'],
-        ['assignChapterGroupToOrg'],
-
       ],
       '&hook_civicrm_pre' => 'assignChapterGroupToIndividual',
-      '&hook_civicrm_selectWhereClause' => 'aclOrganization',
     ];
   }
-
-  /**
-   *
-   */
-  public static function assignChapterGroupToOrg(string $op, string $objectName, int $objectId, &$objectRef) {
-    if ($op !== 'create' || $objectName !== 'Address') {
-      return FALSE;
-    }
-
-    if (self::$organizationId !== $objectRef->contact_id || !$objectRef->is_primary) {
-      return FALSE;
-    }
-    $groupId = self::getChapterGroupForState($objectRef->state_province_id);
-
-    Organization::update(FALSE)
-      ->addValue('Institute_Registration.State', $objectRef->state_province_id)
-      ->addWhere('id', '=', $objectRef->contact_id)
-      ->execute();
-
-    if ($groupId) {
-      GroupContact::create(FALSE)
-        ->addValue('contact_id', self::$organizationId)
-        ->addValue('group_id', $groupId)
-        ->addValue('status', 'Added')
-        ->execute();
-    }
-  }
-
-  /**
-   *
-   */
-  public static function aclOrganization($entity, &$clauses, $userId, $conditions) {
-    if ($entity !== 'Contact') {
-      return FALSE;
-    }
-    try {
-      $teamGroupContacts = GroupContact::get(FALSE)
-        ->addSelect('group_id')
-        ->addWhere('contact_id', '=', $userId)
-        ->addWhere('status', '=', 'Added')
-        ->addWhere('group_id.Chapter_Contact_Group.Use_Case', '=', 'chapter-team')
-        ->execute();
-      $teamGroupContact = $teamGroupContacts->first();
-
-      if (!$teamGroupContact) {
-        // @todo we should handle it in a better way.
-        // if there is no chapter assigned to the contact
-        // then ideally she should not see any organization which
-        // can be done but then it limits for the admin user as well.
-        return FALSE;
-      }
-
-      $groupId = $teamGroupContact['group_id'];
-      $chapterGroups = Group::get(FALSE)
-        ->addSelect('Chapter_Contact_Group.States_controlled')
-        ->addWhere('id', '=', $groupId)
-        ->execute();
-      $group = $chapterGroups->first();
-      $statesControlled = $group['Chapter_Contact_Group.States_controlled'];
-
-      if (empty($statesControlled)) {
-        // Handle the case when the group is not controlling any state.
-        $clauses['id'][] = 'IN (null)';
-        return TRUE;
-      }
-
-      $statesControlled = array_unique($statesControlled);
-      $statesList = implode(',', array_map('intval', $statesControlled));
-
-      $stateField = self::getStateFieldDbDetails();
-
-      $clauseString = sprintf(
-      'IN (SELECT entity_id FROM `%1$s` WHERE `%2$s` IN (%3$s))',
-      $stateField['tableName'],
-      $stateField['columnName'],
-      $statesList,
-      );
-
-      $clauses['id'][] = $clauseString;
-    }
-    catch (\Exception $e) {
-      \Civi::log()->warning("Unable to apply acl on organization for user $userId. " . $e->getMessage());
-    }
-
-    return TRUE;
-  }
-
-  /**
-   *
-   */
-  private static function getStateFieldDbDetails() {
-    if (empty(self::$stateCustomFieldDbDetails)) {
-      $customField = CustomField::get(FALSE)
-        ->addSelect('column_name', 'custom_group_id.table_name')
-        ->addWhere('custom_group_id.name', '=', self::INTENT_CUSTOM_GROUP_NAME)
-        ->addWhere('name', '=', 'state')
-        ->execute()->single();
-
-      self::$stateCustomFieldDbDetails = [
-        'tableName' => $customField['custom_group_id.table_name'],
-        'columnName' => $customField['column_name'],
-      ];
-
-    }
-
-    return self::$stateCustomFieldDbDetails;
-
-  }
-
-  /**
-   *
-   */
 
   /**
    *
