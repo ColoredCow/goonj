@@ -66,10 +66,9 @@ class UrbanPlannedVisitService extends AutoSubscriber {
 
     $html = "
     <p>Dear $coordinatingGoonjPOCName,</p>
-    <p>Thank you for attending the visit. Please fills out the below form:</p>
+    <p>. Please fills out the below form:</p>
     <ol>
         <li><a href=\"$visitOutcomeFormUrl\">Camp Outcome Form</a><br>
-        This feedback form should be filled out after the camp/drive ends, once you have an overview of the event's outcomes.</li>
     </ol>
     <p>We appreciate your cooperation.</p>
     <p>Warm Regards,<br>Urban Relations Team</p>";
