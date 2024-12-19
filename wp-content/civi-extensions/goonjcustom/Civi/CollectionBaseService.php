@@ -175,10 +175,9 @@ class CollectionBaseService extends AutoSubscriber {
    *
    */
   public static function aclCollectionCamp($entity, &$clauses, $userId, $conditions) {
-    if ($entity !== 'Eck_Collection_Camp') {
+    if (!in_array($entity, ['Eck_Collection_Camp', 'Eck_Institution_Visit'])) {
       return FALSE;
     }
-
     try {
       $teamGroupContacts = GroupContact::get(FALSE)
         ->addSelect('group_id')
@@ -528,6 +527,7 @@ class CollectionBaseService extends AutoSubscriber {
       'Goonj_Activities' => 'Goonj_Activities',
       'Institution_Dropping_Center' => 'Institution_Dropping_Center_Intent',
       'Institution_Goonj_Activities' => 'Institution_Goonj_Activities',
+      'Institution_Visit' => 'Urban_Planned_Visit',
     ];
   }
 
