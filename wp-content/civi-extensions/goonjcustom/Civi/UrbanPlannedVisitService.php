@@ -4,6 +4,7 @@ namespace Civi;
 
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Api4\Contact;
+use Civi\Api4\EckEntity;
 
 
 /**
@@ -55,7 +56,15 @@ class UrbanPlannedVisitService extends AutoSubscriber {
       'replyTo' => $from,
       'html' => self::getOutcomeEmailHtml($coordinatingGoonjPOCName, $visitId),
     ];
-    \CRM_Utils_Mail::send($mailParams);
+    $emailSendResult = \CRM_Utils_Mail::send($mailParams);
+
+    if ($emailSendResult) {
+      error_log("emailSendResult is gone or not: " . print_r($emailSendResult, TRUE));
+      EckEntity::update('Institution_Visit', FALSE)
+        ->addValue('Visit_Outcome.Outcome_Email_Sent', 1)
+        ->addWhere('id', '=', $visitId)
+        ->execute();
+    }
   }
 
   /**
