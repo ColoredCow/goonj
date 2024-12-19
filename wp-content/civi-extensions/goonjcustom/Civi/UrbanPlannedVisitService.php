@@ -28,6 +28,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
    *
    */
   public static function sendOutcomeEmail($visit) {
+    $visitId = $visit['id'];
     $coordinatingGoonjPOCId = $visit['Urban_Planned_Visit.Coordinating_Goonj_POC'];
 
     $coordinatingGoonjPOC = Contact::get(FALSE)
@@ -52,7 +53,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
       'from' => $from,
       'toEmail' => $coordinatingGoonjPOCEmail,
       'replyTo' => $from,
-      'html' => self::getOutcomeEmailHtml($coordinatingGoonjPOCName),
+      'html' => self::getOutcomeEmailHtml($coordinatingGoonjPOCName, $visitId),
     ];
     \CRM_Utils_Mail::send($mailParams);
   }
@@ -60,9 +61,9 @@ class UrbanPlannedVisitService extends AutoSubscriber {
   /**
    *
    */
-  private static function getOutcomeEmailHtml($coordinatingGoonjPOCName) {
+  private static function getOutcomeEmailHtml($coordinatingGoonjPOCName, $visitId) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
-    $visitOutcomeFormUrl = $homeUrl . '/visit-outcome-form/';
+    $visitOutcomeFormUrl = $homeUrl . '/visit-outcome/#?Eck_Institution_Visit1=' . $visitId;
 
     $html = "
     <p>Dear $coordinatingGoonjPOCName,</p>
