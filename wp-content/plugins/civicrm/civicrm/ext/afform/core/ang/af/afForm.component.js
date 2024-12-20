@@ -315,8 +315,8 @@
           }
         });
         
-        // Date validation for the Open Dropping Center form to ensure the selected date is not in the past.
-        if (ctrl.getFormMeta().name === 'afformDroppingCenterDetailForm') {
+        // Date validation for the Open Dropping Center and institute dropping center form to ensure the selected date is not in the past.
+        if (['afformDroppingCenterDetailForm', 'afformInstitutionDroppingCenterIntent1'].includes(ctrl.getFormMeta().name)) {
           var dateField = $element.find("input.crm-form-date").val().trim(); 
           if (dateField !== "") {
             var today = new Date();
@@ -324,13 +324,13 @@
             var dateParts = dateField.split('/');
             var selectedDate = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
             
-            // Check if the selected date is in the past
+            // Check if the selected date is in the past or today
             if (selectedDate <= today) {
               isValid = false;
-              errorMessage+=`The selected dropping center date (${dateField}) cannot be today or in the past.`;
+              errorMessage += `The selected dropping center date (${dateField}) cannot be today or in the past.\n`;
             }
           }
-        }
+        }        
 
         if (ctrl.getFormMeta().name === 'afformInstitutionGoonjActivitiesIntent') {
           var dateField = $element.find("af-field[name='Institution_Goonj_Activities.Start_Date'] .crm-form-date-wrapper input.crm-form-date").val();
@@ -349,48 +349,58 @@
         }
         
         // Collection camp start date and end date validation
-        if (['afformCollectionCampIntentDetails', 'afformGoonjActivitiesIndividualIntentForm'].includes(ctrl.getFormMeta().name)) {
-          var startDateValue = $element.find("af-field[name='Collection_Camp_Intent_Details.Start_Date'] .crm-form-date-wrapper input.crm-form-date").val();
-          var endDateValue = $element.find("af-field[name='Collection_Camp_Intent_Details.End_Date'] .crm-form-date-wrapper input.crm-form-date").val();
-          var activitiesStartDateValue = $element.find("af-field[name='Goonj_Activities.Start_Date'] .crm-form-date-wrapper input.crm-form-date").val();
-          var activitiesendDateValue = $element.find("af-field[name='Goonj_Activities.End_Date'] .crm-form-date-wrapper input.crm-form-date").val();
+        if (['afformCollectionCampIntentDetails', 'afformGoonjActivitiesIndividualIntentForm', 'afformInstitutionCollectionCampIntent'].includes(ctrl.getFormMeta().name)) {
+          var dateFields = [
+            {
+              startDateField: "af-field[name='Collection_Camp_Intent_Details.Start_Date'] .crm-form-date-wrapper input.crm-form-date",
+              endDateField: "af-field[name='Collection_Camp_Intent_Details.End_Date'] .crm-form-date-wrapper input.crm-form-date"
+            },
+            {
+              startDateField: "af-field[name='Goonj_Activities.Start_Date'] .crm-form-date-wrapper input.crm-form-date",
+              endDateField: "af-field[name='Goonj_Activities.End_Date'] .crm-form-date-wrapper input.crm-form-date"
+            },
+            {
+              startDateField: "af-field[name='Institution_Collection_Camp_Intent.Collections_will_start_on_Date_'] .crm-form-date-wrapper input.crm-form-date",
+              endDateField: "af-field[name='Institution_Collection_Camp_Intent.Collections_will_end_on_Date_'] .crm-form-date-wrapper input.crm-form-date"
+            }
+          ];
+        
+          var today = new Date();
+          today.setHours(0, 0, 0, 0);
           
-          if (startDateValue && endDateValue || activitiesStartDateValue && activitiesendDateValue ) {
-            var today = new Date();
-            today.setHours(0, 0, 0, 0); 
-            var startDateParts, endDateParts;
-
+          var errorMessage = '';
+          var isValid = true;
+        
+          dateFields.forEach(function(fields) {
+            var startDateValue = $element.find(fields.startDateField).val();
+            var endDateValue = $element.find(fields.endDateField).val();
+            
             if (startDateValue && endDateValue) {
-              startDateParts = startDateValue.split('/');
-              endDateParts = endDateValue.split('/');
-            } else if (activitiesStartDateValue && activitiesendDateValue) {
-              startDateParts = activitiesStartDateValue.split('/');
-              endDateParts = activitiesendDateValue.split('/');
+              var startDateParts = startDateValue.split('/');
+              var endDateParts = endDateValue.split('/');
+              
+              var startDate = new Date(startDateParts[2], startDateParts[1] - 1, startDateParts[0]);
+              var endDate = new Date(endDateParts[2], endDateParts[1] - 1, endDateParts[0]);
+        
+              // Check if the start date is today or in the past
+              if (startDate <= today) {
+                errorMessage += `Collections cannot start (${startDateValue}) today or in the past.\n`;
+                isValid = false;
+              }
+        
+              // Check if the end date is today or in the past
+              if (endDate <= today) {
+                errorMessage += `Collections cannot end (${endDateValue}) today or in the past.\n`;
+                isValid = false;
+              }
+        
+              // Check if the end date is before the start date
+              if (endDate < startDate) {
+                errorMessage += `Collections cannot end (${endDateValue}) before start (${startDateValue}).\n`;
+                isValid = false;
+              }
             }
-            var startDate = new Date(startDateParts[2], startDateParts[1] - 1, startDateParts[0]);
-            var endDate = new Date(endDateParts[2], endDateParts[1] - 1, endDateParts[0]);
-            
-            var errorMessage = '';
-            var isValid = true;
-            
-            // Check if the start date is in the past or today
-            if (startDate <= today) {
-              errorMessage += `Collections cannot start (${startDateValue || activitiesStartDateValue}) today or in the past.\n`;
-              isValid = false;
-            }
-            
-            // Check if the end date is in the past, today
-            if (endDate <= today) {
-              errorMessage += `Collections cannot end ( ${endDateValue || activitiesendDateValue }) today or in the past.\n`;
-              isValid = false;
-            
-            }
-            // Check if End Date is before Start Date
-            if (endDate < startDate) {
-              errorMessage += `Collections cannot end (${endDateValue || activitiesendDateValue}) before start (${startDateValue || activitiesStartDateValue}).\n`;
-              isValid = false;
-            }
-          }
+          });
         }
         
         // Birth date validation
