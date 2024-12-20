@@ -292,30 +292,28 @@
         var errorMessage = "";
 
         // Email validation
-        var emailField = $element.find("input[type='email']");
-        if (emailField.length) {
-          var emailValue = emailField.val().trim();
+        $element.find("input#institute-registration-email-of-institute-11, input[type='email']").each(function () {
+          var emailValue = $(this).val().trim();
           if (emailValue !== "") {
             var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailPattern.test(emailValue)) {
-              errorMessage += "Please enter a valid email.\n";
+              errorMessage += "Please enter a valid email address.\n";
               isValid = false;
             }
           }
-        }
+        });
           
         // Phone number validation
-        var phoneNumberField = $element.find("af-field[name='phone'] input[type='text'], af-field[name='Material_Contribution.Delivered_By_Contact'] input[type='text'], af-field[name='Institute_Registration.Contact_number_of_Institution'] input[type='text']");
-        if (phoneNumberField.length) {
-          var phoneNumberValue = phoneNumberField.val().trim();
+        $element.find("af-field[name='phone'] input[type='text'], af-field[name='Material_Contribution.Delivered_By_Contact'] input[type='text'], af-field[name='Institute_Registration.Contact_number_of_Institution'] input[type='text']").each(function () {
+          var phoneNumberValue = $(this).val().trim();
           if (phoneNumberValue !== "") {
-            var phonePattern = /^\d{10}$/;
+            var phonePattern = /^\d{10}$/;  // 10-digit phone number pattern
             if (!phonePattern.test(phoneNumberValue)) {
               errorMessage += "Please enter a valid 10-digit mobile number.\n";
               isValid = false;
             }
           }
-        }
+        });
         
         // Date validation for the Open Dropping Center form to ensure the selected date is not in the past.
         if (ctrl.getFormMeta().name === 'afformDroppingCenterDetailForm') {
