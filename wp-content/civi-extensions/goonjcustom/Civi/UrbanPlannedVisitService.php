@@ -116,16 +116,9 @@ class UrbanPlannedVisitService extends AutoSubscriber {
           return;
         }
         error_log("visitId: " . print_r($visitId, TRUE));
-        $visitData = EckEntity::get('Institution_Visit', FALSE)
-          ->addSelect('Urban_Planned_Visit.External_Coordinating_PoC')
-          ->addWhere('id', '=', $objectId)
-          ->addClause('OR',
-          ['Visit_Feedback.Feedback_Email_Sent', 'IS NULL'],
-          ['Visit_Feedback.Feedback_Email_Sent', '=', 0]
-          )
-          ->execute()->single();
 
-        $externalCoordinatingPocId = $visitData['Urban_Planned_Visit.External_Coordinating_PoC'];
+        $externalCoordinatingPocId = $objectRef['Urban_Planned_Visit.External_Coordinating_PoC'] ?? '';
+        error_log("externalCoordinatingPocId: " . print_r($externalCoordinatingPocId, TRUE));
 
         $externalCoordinatingGoonjPOC = Contact::get(FALSE)
           ->addSelect('email.email', 'display_name')
@@ -135,6 +128,8 @@ class UrbanPlannedVisitService extends AutoSubscriber {
 
         $externalCoordinatingGoonjPOCEmail = $externalCoordinatingGoonjPOC['email.email'];
         $externalCoordinatingGoonjPOCName = $externalCoordinatingGoonjPOC['display_name'];
+        error_log("externalCoordinatingGoonjPOCEmail: " . print_r($externalCoordinatingGoonjPOCEmail, TRUE));
+        error_log("externalCoordinatingGoonjPOCName: " . print_r($externalCoordinatingGoonjPOCName, TRUE));
 
         if (!$externalCoordinatingGoonjPOCEmail) {
           throw new \Exception('External POC email missing');
@@ -150,6 +145,8 @@ class UrbanPlannedVisitService extends AutoSubscriber {
           'html' => self::getFeedbackEmailHtml($externalCoordinatingGoonjPOCName, $visitId),
         ];
         $emailSendResult = \CRM_Utils_Mail::send($mailParams);
+
+        error_log("emailSendResult: " . print_r($emailSendResult, TRUE));
 
         if ($emailSendResult) {
           EckEntity::update('Institution_Visit', FALSE)
