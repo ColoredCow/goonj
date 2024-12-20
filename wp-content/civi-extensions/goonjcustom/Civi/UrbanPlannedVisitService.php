@@ -22,7 +22,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     //     ['assignChapterGroupToIndividualForUrbanPlannedVisit'],
     //   ],.
       '&hook_civicrm_pre' => [
-        ['updateVisitStatusAfterAuth'],
+        ['sendVistFeedbackForm'],
       ],
     ];
   }
@@ -97,7 +97,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
    * @param object $objectRef
    *   The reference to the object.
    */
-  public static function updateVisitStatusAfterAuth(string $op, string $objectName, $objectId, &$objectRef) {
+  public static function sendVistFeedbackForm(string $op, string $objectName, $objectId, &$objectRef) {
     $visitStatusDetails = self::checkVisitStatusAndIds($objectName, $objectId, $objectRef);
 
     if (!$visitStatusDetails) {
