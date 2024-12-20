@@ -29,6 +29,103 @@ class UrbanPlannedVisitService extends AutoSubscriber {
   }
 
   /**
+   * This hook is called after a db write on entities.
+   *
+   * @param string $op
+   *   The type of operation being performed.
+   * @param string $objectName
+   *   The name of the object.
+   * @param int $objectId
+   *   The unique identifier for the object.
+   * @param object $objectRef
+   *   The reference to the object.
+   */
+  public static function sendVisitDetails(string $op, string $objectName, $objectId, &$objectRef) {
+    $visitStatusDetails = self::checkAuthVisitStatusAndIds($objectName, $objectId, $objectRef);
+
+    if (!$visitStatusDetails) {
+      return;
+    }
+
+    $newAuthVisitStatus = $visitStatusDetails['newAuthVisitStatus'];
+    $currentAuthVisitStatus = $visitStatusDetails['currentAuthVisitStatus'];
+
+    if ($currentAuthVisitStatus !== $newAuthVisitStatus && $newAuthVisitStatus === 'authorized') {
+      $visitId = $objectRef['id'] ?? NULL;
+      if ($visitId === NULL) {
+        return;
+      }
+
+      $visitFeedbackSent = EckEntity::get('Institution_Visit', TRUE)
+        ->addSelect('Visit_Feedback.Visit_Email_Sent')
+        ->addWhere('id', '=', $visitId)
+        ->execute()->single();
+
+      $isVisitEmailSent = $visitFeedbackSent['Visit_Feedback.Visit_Email_Sent'];
+
+      if ($isVisitEmailSent !== NULL) {
+        return;
+      }
+
+      $externalCoordinatingPocId = $objectRef['Urban_Planned_Visit.External_Coordinating_PoC'] ?? '';
+      $visitGuide = $objectRef['Urban_Planned_Visit.Visit_Guide'];
+
+      $externalCoordinatingGoonjPoc = Contact::get(FALSE)
+        ->addSelect('email.email', 'display_name')
+        ->addJoin('Email AS email', 'LEFT')
+        ->addWhere('id', '=', $externalCoordinatingPocId)
+        ->execute()->single();
+
+      $externalCoordinatingGoonjPocEmail = $externalCoordinatingGoonjPoc['email.email'];
+      $externalCoordinatingGoonjPocName = $externalCoordinatingGoonjPoc['display_name'];
+
+      $visitGuide = Contact::get(FALSE)
+        ->addSelect('email.email', 'display_name')
+        ->addJoin('Email AS email', 'LEFT')
+        ->addWhere('id', '=', $visitGuide)
+        ->execute()->single();
+
+      $visitGuideEmail = $visitGuide['email.email'];
+      $visitGuideName = $visitGuide['display_name'];
+
+      if (!$externalCoordinatingGoonjPocEmail) {
+        throw new \Exception('External POC email missing');
+      }
+
+      $from = HelperService::getDefaultFromEmail();
+
+      $mailParamsExternalPoc = [
+        'subject' => 'Visit Details',
+        'from' => $from,
+        'toEmail' => $externalCoordinatingGoonjPocEmail,
+        'replyTo' => $from,
+        'html' => self::getFeedbackEmailHtml($externalCoordinatingGoonjPocName, $visitId),
+      ];
+
+      $mailParamsVisitGuide = [
+        'subject' => 'Visit Details',
+        'from' => $from,
+        'toEmail' => $visitGuideEmail,
+        'replyTo' => $from,
+        'html' => self::getFeedbackEmailHtml($externalCoordinatingGoonjPocName, $visitId),
+      ];
+
+      // Send the first email.
+      $emailSendResultToExternalPoc = \CRM_Utils_Mail::send($mailParamsExternalPoc);
+
+      // Send the second email.
+      $emailSendResultToVisitGuide = \CRM_Utils_Mail::send($mailParamsVisitGuide);
+
+      If ($emailSendResultToExternalPoc) {
+        EckEntity::update('Institution_Visit', FALSE)
+          ->addValue('Visit_Feedback.Visit_Email_Sent', 1)
+          ->addWhere('id', '=', $visitId)
+          ->execute();
+      }
+    }
+  }
+
+  /**
    *
    */
   public static function sendOutcomeEmail($visit) {
@@ -198,21 +295,66 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     }
 
     $newVisitStatus = $objectRef['Urban_Planned_Visit.Visit_Status'] ?? '';
+    $newAuthVisitStatus = $objectRef['Urban_Planned_Visit.Status'] ?? '';
+    error_log("newAuthVisitStatus: " . print_r($newAuthVisitStatus, TRUE));
 
-    if (!$newVisitStatus || !$objectId) {
+    if (!$newVisitStatus || !$objectId  || !$newAuthVisitStatus) {
       return NULL;
     }
 
     $visitSource = EckEntity::get('Institution_Visit', FALSE)
-      ->addSelect('Urban_Planned_Visit.Visit_Status')
+      ->addSelect('Urban_Planned_Visit.Visit_Status', 'Urban_Planned_Visit.Status')
       ->addWhere('id', '=', $objectId)
       ->execute()->single();
 
     $currentVisitStatus = $visitSource['Urban_Planned_Visit.Visit_Status'] ?? '';
+    $currentAuthVisitStatus = $visitSource['Urban_Planned_Visit.Status'] ?? '';
+
+    error_log("newAuthVisitStatus: " . print_r($newAuthVisitStatus, TRUE));
+    error_log("currentAuthVisitStatus: " . print_r($currentAuthVisitStatus, TRUE));
 
     return [
       'newVisitStatus' => $newVisitStatus,
       'currentVisitStatus' => $currentVisitStatus,
+      'newAuthVisitStatus' => $newAuthVisitStatus,
+      'currentAuthVisitStatus' => $currentAuthVisitStatus,
+    ];
+  }
+
+  /**
+   * Check the status and return status details.
+   *
+   * @param string $objectName
+   *   The name of the object being processed.
+   * @param int $objectId
+   *   The ID of the object being processed.
+   * @param array &$objectRef
+   *   A reference to the object data.
+   *
+   * @return array|null
+   *   An array containing the new and current visit status if valid, or NULL if invalid.
+   */
+  public static function checkAuthVisitStatusAndIds(string $objectName, $objectId, &$objectRef) {
+    if ($objectName != 'Eck_Institution_Visit') {
+      return NULL;
+    }
+
+    $newAuthVisitStatus = $objectRef['Urban_Planned_Visit.Status'] ?? '';
+
+    if (!$newAuthVisitStatus || !$objectId) {
+      return NULL;
+    }
+
+    $visitSource = EckEntity::get('Institution_Visit', FALSE)
+      ->addSelect('Urban_Planned_Visit.Visit_Status', 'Urban_Planned_Visit.Status')
+      ->addWhere('id', '=', $objectId)
+      ->execute()->single();
+
+    $currentAuthVisitStatus = $visitSource['Urban_Planned_Visit.Status'] ?? '';
+
+    return [
+      'newAuthVisitStatus' => $newAuthVisitStatus,
+      'currentAuthVisitStatus' => $currentAuthVisitStatus,
     ];
   }
 
