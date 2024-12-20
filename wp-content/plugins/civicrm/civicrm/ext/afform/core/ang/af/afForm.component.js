@@ -317,14 +317,14 @@
           }
         }
         
-        // Date validation for the Open Dropping Center form to ensure the selected date is not in the past.
+        // Date validation for the Open Dropping Center and institute dropping center form to ensure the selected date is not in the past.
         if (['afformDroppingCenterDetailForm', 'afformInstitutionDroppingCenterIntent1'].includes(ctrl.getFormMeta().name)) {
           var dateField = $element.find("input.crm-form-date").val().trim(); 
           if (dateField !== "") {
             var today = new Date();
-            today.setHours(0, 0, 0, 0); // Reset time to compare only dates
-            var dateParts = dateField.split('/'); // Assuming the date is in DD/MM/YYYY format
-            var selectedDate = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]); // Convert to Date object
+            today.setHours(0, 0, 0, 0);
+            var dateParts = dateField.split('/');
+            var selectedDate = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
             
             // Check if the selected date is in the past or today
             if (selectedDate <= today) {
@@ -352,7 +352,6 @@
         
         // Collection camp start date and end date validation
         if (['afformCollectionCampIntentDetails', 'afformGoonjActivitiesIndividualIntentForm', 'afformInstitutionCollectionCampIntent'].includes(ctrl.getFormMeta().name)) {
-          // Select the date fields for each form
           var dateFields = [
             {
               startDateField: "af-field[name='Collection_Camp_Intent_Details.Start_Date'] .crm-form-date-wrapper input.crm-form-date",
@@ -369,22 +368,19 @@
           ];
         
           var today = new Date();
-          today.setHours(0, 0, 0, 0); // Reset to midnight to compare only dates
+          today.setHours(0, 0, 0, 0);
           
           var errorMessage = '';
           var isValid = true;
         
-          // Iterate over the date fields
           dateFields.forEach(function(fields) {
             var startDateValue = $element.find(fields.startDateField).val();
             var endDateValue = $element.find(fields.endDateField).val();
             
             if (startDateValue && endDateValue) {
-              // Split the date strings into parts (DD/MM/YYYY)
               var startDateParts = startDateValue.split('/');
               var endDateParts = endDateValue.split('/');
               
-              // Convert to Date objects
               var startDate = new Date(startDateParts[2], startDateParts[1] - 1, startDateParts[0]);
               var endDate = new Date(endDateParts[2], endDateParts[1] - 1, endDateParts[0]);
         
