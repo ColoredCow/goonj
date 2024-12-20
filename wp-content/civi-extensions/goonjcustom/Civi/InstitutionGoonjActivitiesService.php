@@ -723,14 +723,15 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
     $collectionCampId = $currentCollectionCamp['id'];
 
     if ($currentStatus !== $newStatus && $newStatus === 'authorized') {
-      self::createInstitutionGoonjActivitiesOrganizeActivity($inititorId, $collectionCampTitle, $collectionCampId);
+      $organizationId = $objectRef['Institution_Goonj_Activities.Organization_Name'];
+      self::createInstitutionGoonjActivitiesOrganizeActivity($inititorId, $organizationId, $collectionCampTitle, $collectionCampId);
     }
   }
 
   /**
    * Log an activity in CiviCRM.
    */
-  private static function createInstitutionGoonjActivitiesOrganizeActivity($contactId, $collectionCampTitle, $collectionCampId) {
+  private static function createInstitutionGoonjActivitiesOrganizeActivity($contactId, $organizationId, $collectionCampTitle, $collectionCampId) {
 
     try {
       $results = Activity::create(FALSE)
@@ -740,6 +741,15 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
         ->addValue('activity_date_time', date('Y-m-d H:i:s'))
         ->addValue('source_contact_id', $contactId)
         ->addValue('target_contact_id', $contactId)
+        ->addValue('Collection_Camp_Data.Collection_Camp_ID', $collectionCampId)
+        ->execute();
+      $createActivityForOrganization = Activity::create(FALSE)
+        ->addValue('subject', $collectionCampTitle)
+        ->addValue('activity_type_id:name', 'Organize Goonj Activities')
+        ->addValue('status_id:name', 'Authorized')
+        ->addValue('activity_date_time', date('Y-m-d H:i:s'))
+        ->addValue('source_contact_id', $organizationId)
+        ->addValue('target_contact_id', $organizationId)
         ->addValue('Collection_Camp_Data.Collection_Camp_ID', $collectionCampId)
         ->execute();
 
