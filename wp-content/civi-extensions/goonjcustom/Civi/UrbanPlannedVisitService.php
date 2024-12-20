@@ -143,7 +143,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         $from = HelperService::getDefaultFromEmail();
 
         $mailParams = [
-          'subject' => 'Urban Planned Visit',
+          'subject' => 'Visit Feedback',
           'from' => $from,
           'toEmail' => $externalCoordinatingGoonjPOCEmail,
           'replyTo' => $from,
