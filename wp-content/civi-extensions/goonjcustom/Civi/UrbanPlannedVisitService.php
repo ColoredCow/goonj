@@ -119,6 +119,10 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         $visitData = EckEntity::get('Institution_Visit', FALSE)
           ->addSelect('Urban_Planned_Visit.External_Coordinating_PoC')
           ->addWhere('id', '=', $objectId)
+          ->addClause('OR',
+          ['Visit_Feedback.Feedback_Email_Sent', 'IS NULL'],
+          ['Visit_Feedback.Feedback_Email_Sent', '=', 0]
+          )
           ->execute()->single();
 
         $externalCoordinatingPocId = $visitData['Urban_Planned_Visit.External_Coordinating_PoC'];
@@ -147,12 +151,12 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         ];
         $emailSendResult = \CRM_Utils_Mail::send($mailParams);
 
-        // if ($emailSendResult) {
-        //   EckEntity::update('Institution_Visit', FALSE)
-        //     ->addValue('Visit_Outcome.Feedback_Email_Sent', 1)
-        //     ->addWhere('id', '=', $visitId)
-        //     ->execute();
-        // }
+        if ($emailSendResult) {
+          EckEntity::update('Institution_Visit', FALSE)
+            ->addValue('Visit_Feedback.Feedback_Email_Sent', 1)
+            ->addWhere('id', '=', $visitId)
+            ->execute();
+        }
       }
     }
   }
