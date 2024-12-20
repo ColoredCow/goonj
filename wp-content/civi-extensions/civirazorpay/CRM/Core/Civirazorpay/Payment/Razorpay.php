@@ -296,6 +296,10 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
           $this->processSubscriptionCompleted($event);
           break;
 
+        case 'subscription.cancelled':
+          $this->processSubscriptionCancelled($event);
+          break;
+
         default:
           \Civi::log()->warning('Unhandled webhook event: ' . $event['event']);
           break;
@@ -440,6 +444,43 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
       ->execute();
 
     \Civi::log()->info("Subscription completed: $subscriptionId");
+  }
+
+  /**
+   * Handle subscription cancellation from Razorpay webhook.
+   *
+   * @param array $event
+   */
+  private function processSubscriptionCancelled(array $event): void {
+    $subscriptionData = $event['payload']['subscription']['entity'] ?? [];
+
+    if (empty($subscriptionData['id']) || empty($subscriptionData['status']) || $subscriptionData['status'] !== 'cancelled') {
+      \Civi::log()->error('Invalid or incomplete Razorpay subscription cancellation event', [
+        'event' => $event,
+      ]);
+      return;
+    }
+
+    $subscriptionId = $subscriptionData['id'];
+
+    try {
+      ContributionRecur::update(FALSE)
+        ->addWhere('processor_id', '=', $subscriptionId)
+        ->addValue('contribution_status_id', self::CONTRIB_STATUS_CANCELLED)
+        ->addValue('cancel_date', date('Y-m-d H:i:s'))
+        ->addValue('cancel_reason', ts('Cancelled from Razorpay Dashboard'))
+        ->execute();
+
+      \Civi::log()->info("Subscription cancelled in CiviCRM for ContributionRecur ID: $contributionRecurId, Razorpay Subscription ID: $subscriptionId");
+
+    }
+    catch (\CiviCRM_API3_Exception $e) {
+      \Civi::log()->error('Error updating CiviCRM ContributionRecur record on Razorpay subscription cancellation', [
+        'error' => $e->getMessage(),
+        'subscription_id' => $subscriptionId,
+        'contribution_recur_id' => $contributionRecurId,
+      ]);
+    }
   }
 
   /**
