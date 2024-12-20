@@ -23,7 +23,7 @@ class CRM_Goonjcustom_Token_InstitutionCollectionCamp extends AbstractTokenSubsc
       'venue' => \CRM_Goonjcustom_ExtensionUtil::ts('Venue'),
       'date' => \CRM_Goonjcustom_ExtensionUtil::ts('Date'),
       'time' => \CRM_Goonjcustom_ExtensionUtil::ts('Time'),
-      'volunteers' => \CRM_Goonjcustom_ExtensionUtil::ts('Volunteers'),
+      'contact' => \CRM_Goonjcustom_ExtensionUtil::ts('Contact'),
       'coordinator' => \CRM_Goonjcustom_ExtensionUtil::ts('Coordinator (Goonj)'),
       'remarks' => \CRM_Goonjcustom_ExtensionUtil::ts('Remarks'),
       'type' => \CRM_Goonjcustom_ExtensionUtil::ts('Type (Camp/Drive)'),
@@ -64,8 +64,8 @@ class CRM_Goonjcustom_Token_InstitutionCollectionCamp extends AbstractTokenSubsc
       case 'date':
       case 'time':
       case 'type':
-        $start = new DateTime($collectionSource['Collections_will_start_on_Date_']);
-        $end = new DateTime($collectionSource['Collections_will_end_on_Date_']);
+        $start = new DateTime($collectionSource['Institution_Collection_Camp_Intent.Collections_will_start_on_Date_]']);
+        $end = new DateTime($collectionSource['Institution_Collection_Camp_Intent.Collections_will_end_on_Date__']);
 
         if ($field === 'type') {
           $value = $start->format('Y-m-d') === $end->format('Y-m-d') ? 'Camp' : 'Drive';
@@ -78,7 +78,7 @@ class CRM_Goonjcustom_Token_InstitutionCollectionCamp extends AbstractTokenSubsc
         }
         break;
 
-      case 'volunteers':
+      case 'contact':
         $value = $this->formatVolunteers($collectionSource);
         break;
 
@@ -136,14 +136,14 @@ class CRM_Goonjcustom_Token_InstitutionCollectionCamp extends AbstractTokenSubsc
 
     $relationships = Relationship::get(FALSE)
       ->addWhere('contact_id_a', '=', $organizationId)
-      ->addWhere('relationship_type_id:name', '=', 'Primary Institution POC of')
+      ->addWhere('relationship_type_id:name', '=', 'Institution POC of')
       ->execute();
 
     // If no relationships found for 'Primary Institution POC of', check for 'Secondary Institution POC of'.
     if (empty($relationships)) {
       $relationships = Relationship::get(FALSE)
         ->addWhere('contact_id_a', '=', $organizationId)
-        ->addWhere('relationship_type_id:name', '=', 'Secondary Institution POC of')
+        ->addWhere('relationship_type_id:name', '=', 'Primary Institution POC of')
         ->execute();
     }
 
