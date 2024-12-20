@@ -126,16 +126,16 @@ class UrbanPlannedVisitService extends AutoSubscriber {
 
       $externalCoordinatingPocId = $objectRef['Urban_Planned_Visit.External_Coordinating_PoC'] ?? '';
 
-      $externalCoordinatingGoonjPOC = Contact::get(FALSE)
+      $externalCoordinatingGoonjPoc = Contact::get(FALSE)
         ->addSelect('email.email', 'display_name')
         ->addJoin('Email AS email', 'LEFT')
         ->addWhere('id', '=', $externalCoordinatingPocId)
         ->execute()->single();
 
-      $externalCoordinatingGoonjPOCEmail = $externalCoordinatingGoonjPOC['email.email'];
-      $externalCoordinatingGoonjPOCName = $externalCoordinatingGoonjPOC['display_name'];
+      $externalCoordinatingGoonjPocEmail = $externalCoordinatingGoonjPoc['email.email'];
+      $externalCoordinatingGoonjPocName = $externalCoordinatingGoonjPoc['display_name'];
 
-      if (!$externalCoordinatingGoonjPOCEmail) {
+      if (!$externalCoordinatingGoonjPocEmail) {
         throw new \Exception('External POC email missing');
       }
 
@@ -144,9 +144,9 @@ class UrbanPlannedVisitService extends AutoSubscriber {
       $mailParams = [
         'subject' => 'Visit Feedback',
         'from' => $from,
-        'toEmail' => $externalCoordinatingGoonjPOCEmail,
+        'toEmail' => $externalCoordinatingGoonjPocEmail,
         'replyTo' => $from,
-        'html' => self::getFeedbackEmailHtml($externalCoordinatingGoonjPOCName, $visitId),
+        'html' => self::getFeedbackEmailHtml($externalCoordinatingGoonjPocName, $visitId),
       ];
       $emailSendResult = \CRM_Utils_Mail::send($mailParams);
 
@@ -162,12 +162,12 @@ class UrbanPlannedVisitService extends AutoSubscriber {
   /**
    *
    */
-  private static function getFeedbackEmailHtml($externalCoordinatingGoonjPOCName, $visitId) {
+  private static function getFeedbackEmailHtml($externalCoordinatingGoonjPocName, $visitId) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
     $visitFeedbackFormUrl = $homeUrl . '/visit-feedback/#?Eck_Institution_Visit1=' . $visitId;
 
     $html = "
-    <p>Dear $externalCoordinatingGoonjPOCName,</p>
+    <p>Dear $externalCoordinatingGoonjPocName,</p>
     <p>. Please fills out the below form:</p>
     <ol>
         <li><a href=\"$visitFeedbackFormUrl\">Feedback Form</a><br>
