@@ -168,16 +168,18 @@ class InstitutionCollectionCampService extends AutoSubscriber {
    *
    */
   private static function addContactToGroup($contactId, $groupId) {
-    try {
-      GroupContact::create(FALSE)
-        ->addValue('contact_id', $contactId)
-        ->addValue('group_id', $groupId)
-        ->addValue('status', 'Added')
-        ->execute();
-      \Civi::log()->info("Successfully added contact_id: $contactId to group_id: $groupId.");
-    }
-    catch (Exception $e) {
-      \Civi::log()->error("Error adding contact_id: $contactId to group_id: $groupId. Exception: " . $e->getMessage());
+    if($contactId & $groupID){
+      try {
+        GroupContact::create(FALSE)
+          ->addValue('contact_id', $contactId)
+          ->addValue('group_id', $groupId)
+          ->addValue('status', 'Added')
+          ->execute();
+        \Civi::log()->info("Successfully added contact_id: $contactId to group_id: $groupId.");
+      }
+      catch (Exception $e) {
+        \Civi::log()->error("Error adding contact_id: $contactId to group_id: $groupId. Exception: " . $e->getMessage());
+      }
     }
   }
 
@@ -654,7 +656,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
 
     $coordinator = self::getCoordinator($stateOfficeId, $relationshipTypeName, $coordinators);
     if (!$coordinator) {
-      \CRM_Core_Error::debug_log_message('No coordinator available to assign.');
+      \CRM_Core_Error::debug_log_message('No coordinator available to assign.232132');
       return FALSE;
     }
 
