@@ -26,8 +26,6 @@ function goonjcustom_civicrm_config(&$config): void {
   \Civi::dispatcher()->addSubscriber(new CRM_Goonjcustom_Token_DroppingCenter());
   \Civi::dispatcher()->addSubscriber(new CRM_Goonjcustom_Token_InstitutionCollectionCamp());
   \Civi::dispatcher()->addSubscriber(new CRM_Goonjcustom_Token_InstitutionDroppingCenter());
-  \Civi::dispatcher()->addSubscriber(new CRM_Goonjcustom_Token_InstitutionGoonjActivities());
-  \Civi::dispatcher()->addSubscriber(new CRM_Goonjcustom_Token_GoonjActivities());
 }
 
 /**
