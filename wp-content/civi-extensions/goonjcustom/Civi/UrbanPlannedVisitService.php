@@ -52,7 +52,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
       'visitFeedback' => [
         'title' => ts('Visit Feedback'),
         'module' => 'afsearchVisitFeedbackDetails',
-        'directive' => 'afsearch-visit-feedback-',
+        'directive' => 'afsearch-visit-feedback-details',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
