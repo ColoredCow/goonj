@@ -79,6 +79,8 @@ class CollectionCampService extends AutoSubscriber {
       '&hook_civicrm_alterMailParams' => [
       ['alterReceiptMail'],
       ],
+      '&hook_civicrm_validateForm' => 'validateCheckNumber',
+
     ];
   }
 
@@ -1492,6 +1494,25 @@ class CollectionCampService extends AutoSubscriber {
         'trace' => $e->getTraceAsString(),
       ]);
     }
+  }
+
+  /**
+   * Implements hook_civicrm_validateForm().
+   *
+   * @param string $formName
+   * @param array $fields
+   * @param array $files
+   * @param CRM_Core_Form $form
+   * @param array $errors
+   */
+  public function validateCheckNumber($formName, &$fields, &$files, &$form, &$errors) {
+    if ($formName == 'CRM_Contribute_Form_Contribution') {
+      if (empty($fields['check_number'])) {
+        $errors['check_number'] = ts('Please provide a cheque number.');
+        $form->setElementError('check_number', ts('Please provide a cheque number.'));
+      }
+    }
+    return;
   }
 
 }
