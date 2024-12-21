@@ -117,15 +117,17 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
    *
    */
   private static function addContactToGroup($contactId, $groupId) {
-    try {
-      GroupContact::create(FALSE)
-        ->addValue('contact_id', $contactId)
-        ->addValue('group_id', $groupId)
-        ->addValue('status', 'Added')
-        ->execute();
-    }
-    catch (Exception $e) {
-      \Civi::log()->error("Error adding contact_id: $contactId to group_id: $groupId. Exception: " . $e->getMessage());
+    if($contactId & $groupID){
+      try {
+        GroupContact::create(FALSE)
+          ->addValue('contact_id', $contactId)
+          ->addValue('group_id', $groupId)
+          ->addValue('status', 'Added')
+          ->execute();
+      }
+      catch (Exception $e) {
+        \Civi::log()->error("Error adding contact_id: $contactId to group_id: $groupId. Exception: " . $e->getMessage());
+      }
     }
   }
 

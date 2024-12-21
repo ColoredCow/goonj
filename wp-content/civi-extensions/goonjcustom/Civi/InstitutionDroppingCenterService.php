@@ -99,16 +99,18 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
    *
    */
   private static function addContactToGroup($contactId, $groupId) {
-    try {
-      GroupContact::create(FALSE)
-        ->addValue('contact_id', $contactId)
-        ->addValue('group_id', $groupId)
-        ->addValue('status', 'Added')
-        ->execute();
-      \Civi::log()->info("Successfully added contact_id: $contactId to group_id: $groupId.");
-    }
-    catch (Exception $e) {
-      \Civi::log()->error("Error adding contact_id: $contactId to group_id: $groupId. Exception: " . $e->getMessage());
+    if($contactId & $groupId){
+      try {
+        GroupContact::create(FALSE)
+          ->addValue('contact_id', $contactId)
+          ->addValue('group_id', $groupId)
+          ->addValue('status', 'Added')
+          ->execute();
+        \Civi::log()->info("Successfully added contact_id: $contactId to group_id: $groupId.");
+      }
+      catch (Exception $e) {
+        \Civi::log()->error("Error adding contact_id: $contactId to group_id: $groupId. Exception: " . $e->getMessage());
+      }
     }
   }
 

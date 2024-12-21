@@ -295,7 +295,7 @@ class CollectionCampService extends AutoSubscriber {
 
     $groupId = self::getChapterGroupForState($objectRef->state_province_id);
 
-    if ($groupId) {
+    if ($groupId & self::$individualId) {
       GroupContact::create(FALSE)
         ->addValue('contact_id', self::$individualId)
         ->addValue('group_id', $groupId)
@@ -329,7 +329,7 @@ class CollectionCampService extends AutoSubscriber {
     if ($stateId) {
       $groupId = self::getChapterGroupForState($stateId);
 
-      if ($groupId) {
+      if ($groupId & self::$individualId) {
         GroupContact::create(FALSE)
           ->addValue('contact_id', self::$individualId)
           ->addValue('group_id', $groupId)
