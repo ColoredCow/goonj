@@ -656,7 +656,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
 
     $coordinator = self::getCoordinator($stateOfficeId, $relationshipTypeName, $coordinators);
     if (!$coordinator) {
-      \CRM_Core_Error::debug_log_message('No coordinator available to assign.232132');
+      \CRM_Core_Error::debug_log_message('No coordinator available to assign.');
       return FALSE;
     }
 

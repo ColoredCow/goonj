@@ -237,7 +237,7 @@ class GoonjActivitiesService extends AutoSubscriber {
     }
 
     if (!$coordinator) {
-      \CRM_Core_Error::debug_log_message('No coordinator available to assign.2332412');
+      \CRM_Core_Error::debug_log_message('No coordinator available to assign.');
       return FALSE;
     }
 

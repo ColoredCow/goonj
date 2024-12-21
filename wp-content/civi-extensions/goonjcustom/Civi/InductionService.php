@@ -460,12 +460,11 @@ class InductionService extends AutoSubscriber {
       // Exit the function if "Volunteer" is not present.
       return;
     }
-    \Civi::log()->info('check1');
+
     $contacts = Contact::get(FALSE)
       ->addSelect('contact_sub_type')
       ->addWhere('id', '=', $id)
       ->execute()->single();
-    \Civi::log()->info('check12');
 
     if ($contacts['contact_sub_type' === 'Volunteer']) {
       return;
@@ -481,13 +480,12 @@ class InductionService extends AutoSubscriber {
     if ($op !== 'edit' || $objectName !== 'Individual' || (int) self::$transitionedVolunteerId !== (int) $objectRef->id) {
       return FALSE;
     }
-    \Civi::log()->info('check2');
+
     $contact = Contact::get(FALSE)
       ->addSelect('address.state_province_id')
       ->addJoin('Address AS address', 'LEFT')
       ->addWhere('id', '=', $objectId)
       ->execute()->single();
-    \Civi::log()->info('check3');
 
     $stateId = $contact['address.state_province_id'];
     if (!$stateId) {
