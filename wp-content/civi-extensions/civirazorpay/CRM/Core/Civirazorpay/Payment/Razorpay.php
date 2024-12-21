@@ -454,6 +454,10 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
   private function processSubscriptionCancelled(array $event): void {
     $subscriptionData = $event['payload']['subscription']['entity'] ?? [];
 
+    \Civi::log()->debug(__METHOD__, [
+      'subscriptionData' => $subscriptionData
+    ]);
+
     if (empty($subscriptionData['id']) || empty($subscriptionData['status']) || $subscriptionData['status'] !== 'cancelled') {
       \Civi::log()->error('Invalid or incomplete Razorpay subscription cancellation event', [
         'event' => $event,
