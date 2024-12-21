@@ -615,6 +615,17 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       return;
     }
 
+    $restrictedRoles = ['account_team', 'ho_account'];
+
+    $isAdmin = \CRM_Core_Permission::check('admin');
+
+    $hasRestrictedRole = !$isAdmin && \CRM_Core_Permission::checkAnyPerm($restrictedRoles);
+
+    if ($hasRestrictedRole) {
+      unset($tabs['view']);
+      unset($tabs['edit']);
+    }
+
     $tabConfigs = [
       'logistics' => [
         'title' => ts('Logistics'),
