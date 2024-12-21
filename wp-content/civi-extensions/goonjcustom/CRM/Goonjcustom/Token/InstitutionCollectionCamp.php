@@ -139,7 +139,7 @@ class CRM_Goonjcustom_Token_InstitutionCollectionCamp extends AbstractTokenSubsc
       ->addWhere('relationship_type_id:name', '=', 'Institution POC of')
       ->execute();
 
-    // If no relationships found for 'Institution POC of', check for 'Primary Institution POC of'.
+    // If no relationships found for 'Primary Institution POC of', check for 'Secondary Institution POC of'.
     if (empty($relationships)) {
       $relationships = Relationship::get(FALSE)
         ->addWhere('contact_id_a', '=', $organizationId)
