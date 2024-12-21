@@ -5,11 +5,16 @@ namespace Civi;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Api4\Contact;
 use Civi\Api4\EckEntity;
+use Civi\Traits\CollectionSource;
 
 /**
  *
  */
 class UrbanPlannedVisitService extends AutoSubscriber {
+  use CollectionSource;
+  const ENTITY_NAME = 'Institution_Visit';
+  const ENTITY_SUBTYPE_NAME = 'Urban_Visit';
+
   private static $individualId = NULL;
 
   /**
@@ -24,7 +29,72 @@ class UrbanPlannedVisitService extends AutoSubscriber {
       '&hook_civicrm_pre' => [
         ['sendVistFeedbackForm'],
       ],
+      '&hook_civicrm_tabset' => 'urbanVisitTabset',
     ];
+  }
+
+  /**
+   *
+   */
+  public static function urbanVisitTabset($tabsetName, &$tabs, $context) {
+    if (!self::isViewingVisit($tabsetName, $context)) {
+      return;
+    }
+
+    $tabConfigs = [
+      'visitOutcome' => [
+        'title' => ts('Visit Outcome'),
+        'module' => 'afsearchVisitOutcomeDetails',
+        'directive' => 'afsearch-visit-outcome-details',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+      ],
+      'visitFeedback' => [
+        'title' => ts('Visit Feedback'),
+        'module' => 'afsearchVisitFeedbackDetails',
+        'directive' => 'afsearch-visit-feedback-',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+      ],
+    ];
+
+    foreach ($tabConfigs as $key => $config) {
+      if (!\CRM_Core_Permission::checkAnyPerm($config['permissions'])) {
+        // Does not permission; just continue.
+        continue;
+      }
+
+      $tabs[$key] = [
+        'id' => $key,
+        'title' => $config['title'],
+        'is_active' => 1,
+        'template' => $config['template'],
+        'module' => $config['module'],
+        'directive' => $config['directive'],
+      ];
+
+      \Civi::service('angularjs.loader')->addModules($config['module']);
+    }
+  }
+
+  /**
+   *
+   */
+  private static function isViewingVisit($tabsetName, $context) {
+    if ($tabsetName !== 'civicrm/eck/entity' || empty($context) || $context['entity_type']['name'] !== self::ENTITY_NAME) {
+      return FALSE;
+    }
+
+    $entityId = $context['entity_id'];
+
+    $entity = EckEntity::get(self::ENTITY_NAME, TRUE)
+      ->addWhere('id', '=', $entityId)
+      ->execute()->single();
+
+    $entitySubtypeValue = $entity['subtype'];
+    $subtypeId = self::getSubtypeId();
+
+    return (int) $entitySubtypeValue === $subtypeId;
   }
 
   /**
