@@ -143,7 +143,9 @@ class InductionService extends AutoSubscriber {
       return FALSE;
     }
 
-    self::createInduction(self::$volunteerId, $stateId);
+    if(self::$volunteerId & $stateId){
+      self::createInduction(self::$volunteerId, $stateId);
+    }
   }
 
   /**
@@ -190,6 +192,11 @@ class InductionService extends AutoSubscriber {
     if (self::isEmailAlreadySent($volunteerId)) {
       return FALSE;
     }
+
+    if(empty($volunteerId)){
+      return;
+    }
+
     $inductionType = self::fetchTypeOfInduction($volunteerId);
     // Set the template name based on induction type.
     $templateName = ($inductionType === 'Offline')
@@ -417,10 +424,12 @@ class InductionService extends AutoSubscriber {
    */
   private static function isEmailAlreadySent($contactId) {
 
-    $contactDetails = Contact::get(FALSE)
+    if($contactId){
+      $contactDetails = Contact::get(FALSE)
       ->addSelect('Individual_fields.Volunteer_Registration_Email_Sent')
       ->addWhere('id', '=', $contactId)
       ->execute()->single();
+    }
     $isEmailSent = $contactDetails['Individual_fields.Volunteer_Registration_Email_Sent'] ?? NULL;
 
     if (!empty($isEmailSent)) {
@@ -484,7 +493,9 @@ class InductionService extends AutoSubscriber {
       return FALSE;
     }
 
-    self::createInduction(self::$transitionedVolunteerId, $stateId);
+    if(self::$transitionedVolunteerId & $stateId){
+      self::createInduction(self::$transitionedVolunteerId, $stateId);
+    }
   }
 
   /**
@@ -832,6 +843,9 @@ class InductionService extends AutoSubscriber {
     $inductionType = 'Offline';
 
     // Fetch contact data.
+    if(empty($volunteerId)){
+      return;
+    }
     $contactData = Contact::get(FALSE)
       ->addSelect('address_primary.state_province_id', 'address_primary.city', 'Individual_fields.Created_Date')
       ->addWhere('id', '=', $volunteerId)

@@ -14,16 +14,16 @@ use Civi\Token\TokenRow;
 /**
  *
  */
-class CRM_Goonjcustom_Token_InstitutionCollectionCamp extends AbstractTokenSubscriber {
+class CRM_Goonjcustom_Token_InstitutionGoonjActivities extends AbstractTokenSubscriber {
 
   const ACTIVITY_TARGET_RECORD_TYPE_ID = 3;
 
   public function __construct() {
-    parent::__construct('institution_collection_camp', [
+    parent::__construct('institution_goonj_activitites', [
       'venue' => \CRM_Goonjcustom_ExtensionUtil::ts('Venue'),
       'date' => \CRM_Goonjcustom_ExtensionUtil::ts('Date'),
       'time' => \CRM_Goonjcustom_ExtensionUtil::ts('Time'),
-      'contact' => \CRM_Goonjcustom_ExtensionUtil::ts('Contact'),
+      'contact' => \CRM_Goonjcustom_ExtensionUtil::ts('Contacts'),
       'coordinator' => \CRM_Goonjcustom_ExtensionUtil::ts('Coordinator (Goonj)'),
       'remarks' => \CRM_Goonjcustom_ExtensionUtil::ts('Remarks'),
       'type' => \CRM_Goonjcustom_ExtensionUtil::ts('Type (Camp/Drive)'),
@@ -64,8 +64,8 @@ class CRM_Goonjcustom_Token_InstitutionCollectionCamp extends AbstractTokenSubsc
       case 'date':
       case 'time':
       case 'type':
-        $start = new DateTime($collectionSource['Institution_Collection_Camp_Intent.Collections_will_start_on_Date_]']);
-        $end = new DateTime($collectionSource['Institution_Collection_Camp_Intent.Collections_will_end_on_Date__']);
+        $start = new DateTime($collectionSource['Institution_Goonj_Activities.Start_Date']);
+        $end = new DateTime($collectionSource['Institution_Goonj_Activities.End_Date']);
 
         if ($field === 'type') {
           $value = $start->format('Y-m-d') === $end->format('Y-m-d') ? 'Camp' : 'Drive';
@@ -78,7 +78,7 @@ class CRM_Goonjcustom_Token_InstitutionCollectionCamp extends AbstractTokenSubsc
         }
         break;
 
-      case 'contact':
+      case 'volunteers':
         $value = $this->formatVolunteers($collectionSource);
         break;
 
@@ -87,7 +87,7 @@ class CRM_Goonjcustom_Token_InstitutionCollectionCamp extends AbstractTokenSubsc
         break;
 
       case 'address_city':
-        $value = $collectionSource['Institution_Collection_Camp_Intent.District_City'];
+        $value = $collectionSource['Institution_Goonj_Activities.City'];
         break;
 
       default:
@@ -132,14 +132,14 @@ class CRM_Goonjcustom_Token_InstitutionCollectionCamp extends AbstractTokenSubsc
    *
    */
   private function formatVolunteers($collectionSource) {
-    $organizationId = $collectionSource['Institution_Collection_Camp_Intent.Organization_Name'];
+    $organizationId = $collectionSource['Institution_Goonj_Activities.Organization_Name'];
 
     $relationships = Relationship::get(FALSE)
       ->addWhere('contact_id_a', '=', $organizationId)
       ->addWhere('relationship_type_id:name', '=', 'Institution POC of')
       ->execute();
 
-    // If no relationships found for 'Primary Institution POC of', check for 'Secondary Institution POC of'.
+    // If no relationships found for 'Institution POC of', check for 'Primary Institution POC of'.
     if (empty($relationships)) {
       $relationships = Relationship::get(FALSE)
         ->addWhere('contact_id_a', '=', $organizationId)
@@ -192,8 +192,8 @@ class CRM_Goonjcustom_Token_InstitutionCollectionCamp extends AbstractTokenSubsc
    */
   private function formatVenue($collectionSource) {
     $addressParts = [
-      $collectionSource['Institution_Collection_Camp_Intent.Collection_Camp_Address'],
-      $collectionSource['Institution_Collection_Camp_Intent.District_City'],
+      $collectionSource['Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'],
+      $collectionSource['Institution_Goonj_Activities.City'],
     ];
 
     return join(', ', array_filter($addressParts));
@@ -204,7 +204,7 @@ class CRM_Goonjcustom_Token_InstitutionCollectionCamp extends AbstractTokenSubsc
    *
    */
   private function formatCoordinator($collectionSource) {
-    $officeId = $collectionSource['Institution_collection_camp_Review.Goonj_Office'];
+    $officeId = $collectionSource['Institution_Goonj_Activities.Goonj_Office'];
 
     $officePhones = Phone::get(FALSE)
       ->addSelect('phone')

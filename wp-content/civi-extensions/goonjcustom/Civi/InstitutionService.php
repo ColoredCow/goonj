@@ -210,10 +210,13 @@ class InstitutionService extends AutoSubscriber {
 
     $stateOfficeId = $stateOffice['id'];
 
-    Organization::update(FALSE)
+    if($stateOfficeId & self::$organizationId){
+      Organization::update(FALSE)
       ->addValue('Review.Goonj_Office', $stateOfficeId)
       ->addWhere('id', '=', self::$organizationId)
       ->execute();
+    }
+
 
     if (!$stateId) {
       return FALSE;
@@ -247,10 +250,12 @@ class InstitutionService extends AutoSubscriber {
 
     $coordinatorId = $coordinator['contact_id_a'];
 
-    Organization::update('Organization', FALSE)
+    if($coordinatorCount & self::$organizationId){
+      Organization::update('Organization', FALSE)
       ->addValue('Review.Coordinating_POC', $coordinatorId)
       ->addWhere('id', '=', self::$organizationId)
       ->execute();
+    }
 
     return TRUE;
   }
@@ -303,10 +308,13 @@ class InstitutionService extends AutoSubscriber {
    *
    */
   private static function getRelationshipTypeName($contactId) {
-    $organization = Organization::get(FALSE)
+    if($contactId){
+      $organization = Organization::get(FALSE)
       ->addSelect('Institute_Registration.Type_of_Institution:label')
       ->addWhere('id', '=', $contactId)
       ->execute()->single();
+    }
+
 
     if (!$organization) {
       return;
