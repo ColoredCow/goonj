@@ -280,7 +280,7 @@ class InstitutionService extends AutoSubscriber {
 
     $coordinatorId = $coordinator['contact_id_a'];
 
-    if ($coordinatorCount & self::$organizationId) {
+    if ($coordinatorId && self::$organizationId) {
       Organization::update('Organization', FALSE)
         ->addValue('Review.Coordinating_POC', $coordinatorId)
         ->addWhere('id', '=', self::$organizationId)
