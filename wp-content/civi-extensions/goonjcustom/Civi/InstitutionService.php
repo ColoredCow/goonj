@@ -29,8 +29,40 @@ class InstitutionService extends AutoSubscriber {
         ['organizationCreated'],
         ['setOfficeDetails'],
       ],
-      '&hook_civicrm_pre' => 'assignChapterGroupToIndividual',
+      '&hook_civicrm_pre' => [
+        ['assignChapterGroupToContacts'],
+        ['assignChapterGroupToIndividual'],
+      ],
     ];
+  }
+
+  /**
+   *
+   */
+  public static function assignChapterGroupToContacts(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($op !== 'edit' || $objectName !== 'AfformSubmission') {
+      return FALSE;
+    }
+
+    if (($objectRef['data']['Organization1'][0]['fields']['Institute_Registration.Contact_Source'] ?? '') !== 'Institute Registation') {
+      return FALSE;
+    }
+
+    $stateProvinceId = $objectRef['data']['Organization1'][0]['joins']['Address'][0]['state_province_id'] ?? NULL;
+    if (!$stateProvinceId) {
+      return FALSE;
+    }
+
+    $groupId = self::getChapterGroupForState($stateProvinceId);
+
+    if (!$groupId) {
+      return FALSE;
+
+      self::addContactToGroup($objectRef['data']['Individual1'][0]['id'] ?? NULL, $groupId);
+      self::addContactToGroup($objectRef['data']['Organization1'][0]['id'] ?? NULL, $groupId);
+
+      return TRUE;
+    }
   }
 
   /**
@@ -210,13 +242,12 @@ class InstitutionService extends AutoSubscriber {
 
     $stateOfficeId = $stateOffice['id'];
 
-    if($stateOfficeId & self::$organizationId){
+    if ($stateOfficeId & self::$organizationId) {
       Organization::update(FALSE)
-      ->addValue('Review.Goonj_Office', $stateOfficeId)
-      ->addWhere('id', '=', self::$organizationId)
-      ->execute();
+        ->addValue('Review.Goonj_Office', $stateOfficeId)
+        ->addWhere('id', '=', self::$organizationId)
+        ->execute();
     }
-
 
     if (!$stateId) {
       return FALSE;
@@ -250,11 +281,11 @@ class InstitutionService extends AutoSubscriber {
 
     $coordinatorId = $coordinator['contact_id_a'];
 
-    if($coordinatorCount & self::$organizationId){
+    if ($coordinatorCount & self::$organizationId) {
       Organization::update('Organization', FALSE)
-      ->addValue('Review.Coordinating_POC', $coordinatorId)
-      ->addWhere('id', '=', self::$organizationId)
-      ->execute();
+        ->addValue('Review.Coordinating_POC', $coordinatorId)
+        ->addWhere('id', '=', self::$organizationId)
+        ->execute();
     }
 
     return TRUE;
@@ -308,13 +339,12 @@ class InstitutionService extends AutoSubscriber {
    *
    */
   private static function getRelationshipTypeName($contactId) {
-    if($contactId){
+    if ($contactId) {
       $organization = Organization::get(FALSE)
-      ->addSelect('Institute_Registration.Type_of_Institution:label')
-      ->addWhere('id', '=', $contactId)
-      ->execute()->single();
+        ->addSelect('Institute_Registration.Type_of_Institution:label')
+        ->addWhere('id', '=', $contactId)
+        ->execute()->single();
     }
-
 
     if (!$organization) {
       return;
