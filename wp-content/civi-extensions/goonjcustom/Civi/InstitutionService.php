@@ -27,6 +27,7 @@ class InstitutionService extends AutoSubscriber {
     return [
       '&hook_civicrm_post' => [
         ['organizationCreated'],
+        ['setOfficeDetails'],
       ],
       '&hook_civicrm_pre' => [
         ['assignChapterGroupToContacts'],
