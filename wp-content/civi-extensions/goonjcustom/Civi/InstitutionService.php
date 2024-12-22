@@ -57,12 +57,11 @@ class InstitutionService extends AutoSubscriber {
 
     if (!$groupId) {
       return FALSE;
-
-      self::addContactToGroup($objectRef['data']['Individual1'][0]['id'] ?? NULL, $groupId);
-      self::addContactToGroup($objectRef['data']['Organization1'][0]['id'] ?? NULL, $groupId);
-
-      return TRUE;
     }
+    self::addContactToGroup($objectRef['data']['Individual1'][0]['id'] ?? NULL, $groupId);
+    self::addContactToGroup($objectRef['data']['Organization1'][0]['id'] ?? NULL, $groupId);
+
+    return TRUE;
   }
 
   /**
