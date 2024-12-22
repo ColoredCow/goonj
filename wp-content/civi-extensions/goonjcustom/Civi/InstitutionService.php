@@ -44,7 +44,7 @@ class InstitutionService extends AutoSubscriber {
       return FALSE;
     }
 
-    if (($objectRef['data']['Organization1'][0]['fields']['Institute_Registration.Contact_Source'] ?? '') !== 'Institute Registation') {
+    if (($objectRef['data']['Organization1'][0]['fields']['Institute_Registration.Contact_Source'] ?? '') !== 'Institute Registration') {
       return FALSE;
     }
 
