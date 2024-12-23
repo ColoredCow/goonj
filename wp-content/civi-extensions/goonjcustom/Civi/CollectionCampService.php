@@ -79,6 +79,8 @@ class CollectionCampService extends AutoSubscriber {
       '&hook_civicrm_alterMailParams' => [
       ['alterReceiptMail'],
       ],
+      '&hook_civicrm_validateForm' => 'validateCheckNumber',
+
     ];
   }
 
@@ -1491,6 +1493,46 @@ class CollectionCampService extends AutoSubscriber {
         'message' => $e->getMessage(),
         'trace' => $e->getTraceAsString(),
       ]);
+    }
+  }
+
+  /**
+   * Implements hook_civicrm_validateForm().
+   *
+   * @param string $formName
+   * @param array $fields
+   * @param array $files
+   * @param CRM_Core_Form $form
+   * @param array $errors
+   */
+  public function validateCheckNumber($formName, &$fields, &$files, &$form, &$errors) {
+    if ($formName == 'CRM_Contribute_Form_Contribution') {
+      if (isset($fields['payment_instrument_id']) && $fields['payment_instrument_id'] == 4) {
+        if (empty($fields['check_number'])) {
+          $message = ts('Please provide a cheque number.');
+          $form->setElementError('check_number', NULL);
+          $errors['check_number'] = $message;
+          $form->setElementError('check_number', $message);
+
+          \CRM_Core_Resources::singleton()->addScript("
+                    (function($) {
+                        function ensureErrorVisible() {
+                            var errorField = $('#check_number-error');
+                            var inputField = $('#check_number');
+                            $('.crm-error').hide();
+                            if (!errorField.length) {
+                                inputField.after('<div id=\"check_number-error\" class=\"crm-error\">' + " . json_encode($message) . " + '</div>');
+                            } else {
+                                errorField.show();
+                            }
+                        }
+
+                        $(document).ajaxComplete(ensureErrorVisible);
+                        $(document).ready(ensureErrorVisible);
+                    })(CRM.$);
+                ");
+        }
+      }
     }
   }
 
