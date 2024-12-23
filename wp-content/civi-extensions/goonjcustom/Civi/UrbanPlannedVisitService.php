@@ -2,8 +2,10 @@
 
 namespace Civi;
 
-use Civi\Core\Service\AutoSubscriber;
 use Civi\Api4\Contact;
+use Civi\Api4\Group;
+use Civi\Api4\GroupContact;
+use Civi\Core\Service\AutoSubscriber;
 use Civi\Api4\EckEntity;
 use Civi\Traits\CollectionSource;
 
@@ -15,19 +17,14 @@ class UrbanPlannedVisitService extends AutoSubscriber {
   const ENTITY_NAME = 'Institution_Visit';
   const ENTITY_SUBTYPE_NAME = 'Urban_Visit';
 
-  private static $individualId = NULL;
-
   /**
    *
    */
   public static function getSubscribedEvents() {
     return [
-    // @todo
-    //   '&hook_civicrm_post' => [
-    //     ['assignChapterGroupToIndividualForUrbanPlannedVisit'],
-    //   ],.
       '&hook_civicrm_pre' => [
         ['sendVisitFeedbackForm'],
+        ['assignChapterGroupToIndividualForUrbanPlannedVisit'],
       ],
       '&hook_civicrm_tabset' => 'urbanVisitTabset',
     ];
@@ -290,6 +287,69 @@ class UrbanPlannedVisitService extends AutoSubscriber {
       'newVisitStatus' => $newVisitStatus,
       'currentVisitStatus' => $currentVisitStatus,
     ];
+  }
+
+  /**
+   *
+   */
+  public static function assignChapterGroupToIndividualForUrbanPlannedVisit(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($op !== 'edit' || $objectName !== 'AfformSubmission') {
+      return FALSE;
+    }
+
+    if (empty($objectRef['data']['Eck_Institution_Visit1'])) {
+      return FALSE;
+    }
+
+    $individualData = $objectRef['data']['Individual1'];
+    $visitData = $objectRef['data']['Eck_Institution_Visit1'];
+
+    foreach ($individualData as $individual) {
+      $contactId = $individual['id'] ?? NULL;
+    }
+
+    foreach ($visitData as $visit) {
+      $fields = $visit['fields'] ?? [];
+      $stateProvinceId = $fields['Urban_Planned_Visit.State'] ?? NULL;
+    }
+
+    $groupId = self::getChapterGroupForState($stateProvinceId);
+
+    if ($groupId & $contactId) {
+      GroupContact::create(FALSE)
+        ->addValue('contact_id', $contactId)
+        ->addValue('group_id', $groupId)
+        ->addValue('status', 'Added')
+        ->execute();
+    }
+  }
+
+  /**
+   *
+   */
+  private static function getChapterGroupForState($stateId) {
+    $stateContactGroups = Group::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('Chapter_Contact_Group.Use_Case', '=', 'chapter-contacts')
+      ->addWhere('Chapter_Contact_Group.Contact_Catchment', 'CONTAINS', $stateId)
+      ->execute();
+
+    $stateContactGroup = $stateContactGroups->first();
+
+    if (!$stateContactGroup) {
+      \CRM_Core_Error::debug_log_message('No chapter contact group found for state ID: ' . $stateId);
+
+      $fallbackGroups = Group::get(FALSE)
+        ->addWhere('Chapter_Contact_Group.Use_Case', '=', 'chapter-contacts')
+        ->addWhere('Chapter_Contact_Group.Fallback_Chapter', '=', 1)
+        ->execute();
+
+      $stateContactGroup = $fallbackGroups->first();
+
+      \Civi::log()->info('Assigning fallback chapter contact group: ' . $stateContactGroup['title']);
+    }
+
+    return $stateContactGroup ? $stateContactGroup['id'] : NULL;
   }
 
 }
