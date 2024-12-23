@@ -14,12 +14,15 @@ use Civi\Token\TokenRow;
 /**
  *
  */
-class CRM_Goonjcustom_Token_InstitutionGoonjActivities extends AbstractTokenSubscriber {
+abstract class CRM_Goonjcustom_Token_CollectionSource extends AbstractTokenSubscriber {
 
   const ACTIVITY_TARGET_RECORD_TYPE_ID = 3;
 
-  public function __construct() {
-    parent::__construct('institution_goonj_activitites', [
+  private $params = [];
+
+  public function __construct($entity, $params = []) {
+    $additionalTokens = $params['additionalTokens'] ?? [];
+    $defaultTokens = [
       'venue' => \CRM_Goonjcustom_ExtensionUtil::ts('Venue'),
       'date' => \CRM_Goonjcustom_ExtensionUtil::ts('Date'),
       'time' => \CRM_Goonjcustom_ExtensionUtil::ts('Time'),
@@ -28,7 +31,11 @@ class CRM_Goonjcustom_Token_InstitutionGoonjActivities extends AbstractTokenSubs
       'remarks' => \CRM_Goonjcustom_ExtensionUtil::ts('Remarks'),
       'type' => \CRM_Goonjcustom_ExtensionUtil::ts('Type (Camp/Drive)'),
       'address_city' => \CRM_Goonjcustom_ExtensionUtil::ts('City'),
-    ]);
+    ];
+
+    $tokenNames = array_merge($defaultTokens, $additionalTokens);
+
+    parent::__construct($entity, $tokenNames);
   }
 
   /**
@@ -64,8 +71,8 @@ class CRM_Goonjcustom_Token_InstitutionGoonjActivities extends AbstractTokenSubs
       case 'date':
       case 'time':
       case 'type':
-        $start = new DateTime($collectionSource['Institution_Goonj_Activities.Start_Date']);
-        $end = new DateTime($collectionSource['Institution_Goonj_Activities.End_Date']);
+        $start = new DateTime($collectionSource['Goonj_Activities.Start_Date']);
+        $end = new DateTime($collectionSource['Goonj_Activities.End_Date']);
 
         if ($field === 'type') {
           $value = $start->format('Y-m-d') === $end->format('Y-m-d') ? 'Camp' : 'Drive';
@@ -87,7 +94,7 @@ class CRM_Goonjcustom_Token_InstitutionGoonjActivities extends AbstractTokenSubs
         break;
 
       case 'address_city':
-        $value = $collectionSource['Institution_Goonj_Activities.City'];
+        $value = $collectionSource['Goonj_Activities.City'];
         break;
 
       default:
@@ -132,7 +139,7 @@ class CRM_Goonjcustom_Token_InstitutionGoonjActivities extends AbstractTokenSubs
    *
    */
   private function formatVolunteers($collectionSource) {
-    $organizationId = $collectionSource['Institution_Goonj_Activities.Organization_Name'];
+    $organizationId = $collectionSource['Goonj_Activities.Organization_Name'];
 
     $relationships = Relationship::get(FALSE)
       ->addWhere('contact_id_a', '=', $organizationId)
@@ -192,8 +199,8 @@ class CRM_Goonjcustom_Token_InstitutionGoonjActivities extends AbstractTokenSubs
    */
   private function formatVenue($collectionSource) {
     $addressParts = [
-      $collectionSource['Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'],
-      $collectionSource['Institution_Goonj_Activities.City'],
+      $collectionSource['Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'],
+      $collectionSource['Goonj_Activities.City'],
     ];
 
     return join(', ', array_filter($addressParts));
@@ -204,7 +211,7 @@ class CRM_Goonjcustom_Token_InstitutionGoonjActivities extends AbstractTokenSubs
    *
    */
   private function formatCoordinator($collectionSource) {
-    $officeId = $collectionSource['Institution_Goonj_Activities.Goonj_Office'];
+    $officeId = $collectionSource['Goonj_Activities.Goonj_Office'];
 
     $officePhones = Phone::get(FALSE)
       ->addSelect('phone')
