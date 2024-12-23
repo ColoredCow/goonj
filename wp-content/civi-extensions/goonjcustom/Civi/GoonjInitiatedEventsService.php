@@ -21,6 +21,7 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
   public static function getSubscribedEvents() {
     return [
       '&hook_civicrm_pre' => 'generateGoonjEventsQr',
+      '&hook_civicrm_tabset' => 'goonjActivitiesTabset',
     ];
   }
 
@@ -164,4 +165,67 @@ public static function generateGoonjEventsQr(string $op, string $objectName, $ob
   }
 }
 
+
+function goonjActivitiesTabset($tabsetName, &$tabs, $context) {
+  // Check if the tabset is for Event Management
+  if ($tabsetName == 'civicrm/event/manage') {
+    // Ensure the event ID is available in the context
+    if (!empty($context['event_id'])) {
+      $eventID = $context['event_id'];
+      \Civi::log()->info('eventID', ['eventID'=>$eventID]);
+      
+      // Construct the URL to the Search Kit view with the event ID filter in hash fragment
+      $url = \CRM_Utils_System::url(
+        'civicrm/events-material-contributions'
+      ) . "#?Material_Contribution.Event=$eventID";
+      
+      // Add the "Material Contributions" tab
+      $newTab = [
+        'id' => 'material_contributions', // Unique identifier for the tab
+        'title' => ts('Material Contributions'),
+        'link' => $url, // URL to the Search Kit view
+        'valid' => true, // Ensures the tab is valid
+        'active' => true, // Activates the tab
+        'current' => false, // Indicates this tab is not the currently active tab
+      ];
+
+      // Insert the new tab into the tabs array (e.g., at position 4)
+      $tabs = array_merge(
+        array_slice($tabs, 0, 4), // Tabs before the new tab
+        [$newTab], // The new tab
+        array_slice($tabs, 4) // Tabs after the new tab
+      );
+    }
+  }
+}
+
+
+  // /**
+  //  *
+  //  */
+  // public static function goonjActivitiesTabset($tabsetName, &$tabs, $context) {
+  //   \Civi::log()->info('tabsetName', ['tabsetName'=>$tabsetName, 'tabs'=>$tabs, 'context'=>$context ]);
+
+  //   $tabConfigs = [
+  //     'activities' => [
+  //       'title' => ts('Material Contributions'),
+  //       'module' => 'afsearchEventsMaterialContributions',
+  //       'directive' => 'afsearch-events-material-contributions',
+  //       // 'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+  //     ],
+  //   ];
+
+  //   foreach ($tabConfigs as $key => $config) {
+  //     $tabs[$key] = [
+  //       'id' => $key,
+  //       'title' => $config['title'],
+  //       'active' => 1,
+  //       // 'template' => $config['template'],
+  //       // 'module' => $config['module'],
+  //       // 'directive' => $config['directive'],
+  //     ];
+
+  //     \Civi::service('angularjs.loader')->addModules($config['module']);
+  //   }
+  // }
 }
