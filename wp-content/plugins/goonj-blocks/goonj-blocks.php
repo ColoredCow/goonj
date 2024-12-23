@@ -31,7 +31,7 @@ add_action( 'init', 'gb_goonj_blocks_block_init' );
 
 add_action( 'init', 'gb_goonj_blocks_custom_rewrite_rules' );
 function gb_goonj_blocks_custom_rewrite_rules() {
-	$actions = array('collection-camp', 'dropping-center', 'processing-center', 'induction-schedule', 'institution-collection-camp', 'goonj-activities', 'institution-dropping-center', 'institution-goonj-activities');
+	$actions = array('collection-camp', 'dropping-center', 'processing-center', 'induction-schedule', 'institution-collection-camp', 'goonj-activities', 'institution-dropping-center', 'institution-goonj-activities', 'events');
 	foreach ( $actions as $action ) {
 		add_rewrite_rule(
 			'^actions/' . $action . '/([0-9]+)/?',
@@ -156,8 +156,33 @@ function gb_goonj_blocks_check_action_target_exists() {
 				$processing_center = $result->first();
 
 				$processing_center['address'] = $addresses->count() > 0 ? $addresses->first() : null;
-
+				\Civi::log()->info('processing_center', ['processing_center'=>$processing_center]);
 				$wp_query->set( 'action_target', $processing_center );
+			}
+			break;
+		case 'events':
+			$result = \Civi\Api4\Event::get(TRUE)
+			->addSelect('*', 'loc_block_id.address_id')
+			->addWhere('id', '=', $id)
+			->setLimit(1)
+			->execute();
+			\Civi::log()->info('result', ['result'=>$result]);
+			if ( $result->count() === 0 ) {
+				$is_404 = true;
+			} else {
+				$event = $result->first();
+				$addresses = \Civi\Api4\Address::get( false )
+					->addWhere( 'id', '=', $event['loc_block_id.address_id'])
+					->addWhere( 'is_primary', '=', true )
+					->setLimit( 1 )
+					->execute();
+
+
+
+				$event['address'] = $addresses->count() > 0 ? $addresses->first() : null;
+				\Civi::log()->info('event', ['event'=>$event]);
+
+				$wp_query->set( 'action_target', $event );
 			}
 			break;
 		default:
