@@ -166,38 +166,38 @@ public static function generateGoonjEventsQr(string $op, string $objectName, $ob
 }
 
 
-function goonjActivitiesTabset($tabsetName, &$tabs, $context) {
-  // Check if the tabset is for Event Management
-  if ($tabsetName == 'civicrm/event/manage') {
-    // Ensure the event ID is available in the context
-    if (!empty($context['event_id'])) {
-      $eventID = $context['event_id'];
-      \Civi::log()->info('eventID', ['eventID'=>$eventID]);
+// function goonjActivitiesTabset($tabsetName, &$tabs, $context) {
+//   // Check if the tabset is for Event Management
+//   if ($tabsetName == 'civicrm/event/manage') {
+//     // Ensure the event ID is available in the context
+//     if (!empty($context['event_id'])) {
+//       $eventID = $context['event_id'];
+//       \Civi::log()->info('eventID', ['eventID'=>$eventID]);
       
-      // Construct the URL to the Search Kit view with the event ID filter in hash fragment
-      $url = \CRM_Utils_System::url(
-        'civicrm/events-material-contributions'
-      ) . "#?Material_Contribution.Event=$eventID";
+//       // Construct the URL to the Search Kit view with the event ID filter in hash fragment
+//       $url = \CRM_Utils_System::url(
+//         'civicrm/events-material-contributions'
+//       ) . "#?Material_Contribution.Event=$eventID";
       
-      // Add the "Material Contributions" tab
-      $newTab = [
-        'id' => 'material_contributions', // Unique identifier for the tab
-        'title' => ts('Material Contributions'),
-        'link' => $url, // URL to the Search Kit view
-        'valid' => true, // Ensures the tab is valid
-        'active' => true, // Activates the tab
-        'current' => false, // Indicates this tab is not the currently active tab
-      ];
+//       // Add the "Material Contributions" tab
+//       $newTab = [
+//         'id' => 'material_contributions', // Unique identifier for the tab
+//         'title' => ts('Material Contributions'),
+//         'link' => $url, // URL to the Search Kit view
+//         'valid' => true, // Ensures the tab is valid
+//         'active' => true, // Activates the tab
+//         'current' => false, // Indicates this tab is not the currently active tab
+//       ];
 
-      // Insert the new tab into the tabs array (e.g., at position 4)
-      $tabs = array_merge(
-        array_slice($tabs, 0, 4), // Tabs before the new tab
-        [$newTab], // The new tab
-        array_slice($tabs, 4) // Tabs after the new tab
-      );
-    }
-  }
-}
+//       // Insert the new tab into the tabs array (e.g., at position 4)
+//       $tabs = array_merge(
+//         array_slice($tabs, 0, 4), // Tabs before the new tab
+//         [$newTab], // The new tab
+//         array_slice($tabs, 4) // Tabs after the new tab
+//       );
+//     }
+//   }
+// }
 
 
   // /**
@@ -211,7 +211,7 @@ function goonjActivitiesTabset($tabsetName, &$tabs, $context) {
   //       'title' => ts('Material Contributions'),
   //       'module' => 'afsearchEventsMaterialContributions',
   //       'directive' => 'afsearch-events-material-contributions',
-  //       // 'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+  //       'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
   //     ],
   //   ];
 
@@ -228,4 +228,92 @@ function goonjActivitiesTabset($tabsetName, &$tabs, $context) {
   //     \Civi::service('angularjs.loader')->addModules($config['module']);
   //   }
   // }
+
+  // public static function goonjActivitiesTabset($tabsetName, &$tabs, $context) {
+  //   if ($tabsetName !== 'civicrm/event/manage') {
+  //     return;
+  //   }
+
+  //   // Ensure the context has an event ID
+  //   if (empty($context['event_id'])) {
+  //     return;
+  //   }
+
+  //   $eventID = $context['event_id'];
+
+  //   $tabs['materialContributions'] = [
+  //     'id' => 'material_contributions', // Unique identifier for the tab
+  //     'title' => ts('Material Contributions'),
+  //     'active' => 1,
+  //     'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl', // Template for rendering the tab
+  //     'module' => 'afsearchEventsMaterialContributions', // AngularJS module
+  //     'directive' => 'afsearch-events-material-contributions', // AngularJS directive
+  //   ];
+
+  //   \Civi::service('angularjs.loader')->addModules('afsearchEventsMaterialContributions');
+  // }
+
+  public static function goonjActivitiesTabset($tabsetName, &$tabs, $context) {
+      if ($tabsetName !== 'civicrm/event/manage') {
+        return;
+      }
+  
+      // Log the context for debugging
+      \Civi::log()->debug('Tabset Context', ['context' => $context]);
+  
+      if (empty($context['event_id'])) {
+        \Civi::log()->debug('No Event ID Found in Context');
+        return;
+      }
+  
+      $eventID = $context['event_id'];
+  
+      // $tabs['materialContributions'] = [
+      //   'id' => 'material_contributions',
+      //   'title' => ts('Material Contributions'),
+      //   'active' => 1,
+      //   'template' => 'CRM/Goonjcustom/Tabs/Events.tpl',
+      //   'module' => 'afsearchEventsMaterialContributions',
+      //   'directive' => 'afsearch-events-material-contributions',
+      //   'entity' => ['id' => $eventID],
+      // ];
+  
+      // \Civi::service('angularjs.loader')->addModules('afsearchEventsMaterialContributions');
+      $tabConfigs = [
+        'materialContributions' => [
+          'id' => 'material_contributions',
+          'title' => ts('Material Contributions'),
+          'active' => 1,
+          'template' => 'CRM/Goonjcustom/Tabs/Events.tpl',
+          'module' => 'afsearchEventsMaterialContributions',
+          'directive' => 'afsearch-events-material-contributions',
+          'entity' => ['id' => $eventID],
+          'permissions' => ['goonj_chapter_admin', 'urbanops'],
+        ]
+      ];
+  
+      foreach ($tabConfigs as $key => $config) {
+        $isAdmin = \CRM_Core_Permission::check('admin');
+        if ($key == 'monetaryContributionForUrbanOps' && $isAdmin) {
+          continue;
+        }
+  
+        if (!\CRM_Core_Permission::checkAnyPerm($config['permissions'])) {
+          // Does not permission; just continue.
+          continue;
+        }
+  
+        $tabs[$key] = [
+          'id' => $key,
+          'title' => $config['title'],
+          'active' => 1,
+          'template' => $config['template'],
+          'module' => $config['module'],
+          'directive' => $config['directive'],
+          'entity' => $config['entity']
+        ];
+  
+        \Civi::service('angularjs.loader')->addModules($config['module']);
+      }
+    }
 }

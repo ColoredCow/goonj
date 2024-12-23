@@ -95,6 +95,10 @@
           display: none !important;
         }
 
+        fieldset > div:nth-last-child(4) {
+          display: none !important;
+        }
+
         fieldset > div:nth-last-child(3) .content .crm-multiple-checkbox-radio-options .crm-option-label-pair label {
           position: relative;
           top: -10px;
@@ -268,6 +272,9 @@
             display: none !important;
           }
           > div:nth-last-child(-n+3) {
+            display: none !important;
+          }
+          > div:nth-last-child(-n+4) {
             display: none !important;
           }
           legend {
