@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<extension key="prettyworkflowmessages" type="module">
+  <file>prettyworkflowmessages</file>
+  <name>Pretty Workflow Messages</name>
+  <description>Create a single email template with organization branding and have it applied to all the system workflow templates.</description>
+  <license>AGPL-3.0</license>
+  <maintainer>
+    <author>Kurund Jalmi</author>
+    <email>kurundjalmi@thirdsectordesign.org</email>
+  </maintainer>
+  <urls>
+    <url desc="Main Extension Page">https://lab.civicrm.org/extensions/prettyworkflowmessages</url>
+    <url desc="Documentation">https://lab.civicrm.org/extensions/prettyworkflowmessages/README.md</url>
+    <url desc="Support">https://lab.civicrm.org/extensions/prettyworkflowmessages/-/issues</url>
+    <url desc="Licensing">http://www.gnu.org/licenses/agpl-3.0.html</url>
+  </urls>
+  <releaseDate>2024-08-29</releaseDate>
+  <version>1.10</version>
+  <develStage>stable</develStage>
+  <compatibility>
+    <ver>5.57</ver>
+  </compatibility>
+  <comments>This is a new extension ready for production.</comments>
+  <classloader>
+    <psr4 prefix="Civi\" path="Civi"/>
+    <psr0 prefix="CRM_" path="."/>
+  </classloader>
+  <civix>
+    <namespace>CRM/Prettyworkflowmessages</namespace>
+    <format>23.02.1</format>
+  </civix>
+  <mixins>
+    <mixin>menu-xml@1.0.0</mixin>
+    <mixin>smarty-v2@1.0.3</mixin>
+  </mixins>
+</extension>
