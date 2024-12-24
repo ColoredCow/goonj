@@ -99,7 +99,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
    *
    */
   private static function addContactToGroup($contactId, $groupId) {
-    if($contactId & $groupId){
+    if($contactId && $groupId){
       try {
         GroupContact::create(FALSE)
           ->addValue('contact_id', $contactId)
