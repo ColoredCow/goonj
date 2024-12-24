@@ -1225,6 +1225,7 @@ class CollectionCampService extends AutoSubscriber {
       ->execute()->single();
 
     $sourceFieldId = 'custom_' . $sourceField['id'];
+    \Civi::log()->info('sourceFieldId', ['sourceFieldId'=>$sourceFieldId]);
 
     // Fetching custom field for goonj office.
     $puSourceField = CustomField::get(FALSE)
@@ -1235,30 +1236,51 @@ class CollectionCampService extends AutoSubscriber {
 
     $puSourceFieldId = 'custom_' . $puSourceField['id'];
 
+    $eventSourceField = CustomField::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('custom_group_id:name', '=', 'Contribution_Details')
+      ->addWhere('name', '=', 'Events')
+      ->execute()->single();
+    $eventSourceFieldId = 'custom_' . $eventSourceField['id'];
+
     // Determine the parameter to use based on the form and query parameters.
     if ($formName === 'CRM_Contribute_Form_Contribution') {
       // If the query parameter is present, update session and clear the other session value.
+      \Civi::log()->info('isset($_GET[$sourceFieldId]',['isset($_GET[$sourceFieldId]'=>isset($_GET[$sourceFieldId])]);
       if (isset($_GET[$sourceFieldId])) {
         $campSource = $_GET[$sourceFieldId];
         $_SESSION['camp_source'] = $campSource;
+        \Civi::log()->info('camp_source',['source'=>$_SESSION['camp_source']]);
         // Ensure only one session value is active.
         unset($_SESSION['pu_source']);
+        unset($_SESSION['eventSource']);
       }
       elseif (isset($_GET[$puSourceFieldId])) {
         $puSource = $_GET[$puSourceFieldId];
         $_SESSION['pu_source'] = $puSource;
+        \Civi::log()->info('pu_source',['pu_source'=>$_SESSION['pu_source']]);
         // Ensure only one session value is active.
         unset($_SESSION['camp_source']);
+        unset($_SESSION['eventSource']);
+      }
+      elseif (isset($_GET[$eventSourceFieldId])){
+        $eventSource = $_GET[$eventSourceFieldId];
+        $_SESSION['eventSource'] = $eventSource;
+        \Civi::log()->info('eventSource',['eventSource'=>$_SESSION['eventSource']]);
+        // Ensure only one session value is active.
+        unset($_SESSION['camp_source']);
+        unset($_SESSION['pu_source']);
       }
       else {
         // Clear session if neither parameter is present.
-        unset($_SESSION['camp_source'], $_SESSION['pu_source']);
+        unset($_SESSION['camp_source'], $_SESSION['pu_source'], $_SESSION['eventSource']);
       }
     }
     else {
       // For other forms, retrieve from session if it exists.
       $campSource = $_SESSION['camp_source'] ?? NULL;
       $puSource = $_SESSION['pu_source'] ?? NULL;
+      $eventSource = $_SESSION['eventSource'] ?? NULL;
     }
 
     // Autofill logic for the custom fields.
@@ -1270,10 +1292,14 @@ class CollectionCampService extends AutoSubscriber {
       elseif (!empty($puSource)) {
         $autoFillData[$puSourceFieldId] = $puSource;
       }
+      elseif(!empty($eventSource)){
+        $autoFillData[$eventSourceFieldId] = $eventSource;
+      }
       else {
         // Clear values explicitly if neither source is found.
         $autoFillData[$sourceFieldId] = NULL;
         $autoFillData[$puSourceFieldId] = NULL;
+        $autoFillData[$eventSourceFieldId] = NULL;
       }
 
       // Set default values for the specified fields.

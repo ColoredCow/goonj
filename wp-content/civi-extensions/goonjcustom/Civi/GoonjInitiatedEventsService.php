@@ -300,6 +300,26 @@ public static function generateGoonjEventsQr(string $op, string $objectName, $ob
           'entity' => ['id' => $eventID],
           'permissions' => ['goonj_chapter_admin', 'urbanops'],
         ],
+        'outcome' => [
+          'id' => 'outcome',
+          'title' => ts('Outcome'),
+          'active' => 1,
+          'module' => 'afsearchEventsOutcomeDetails',
+          'directive' => 'afsearch-events-outcome-details',
+          'template' => 'CRM/Goonjcustom/Tabs/Events.tpl',
+          'entity' => ['id' => $eventID],
+          'permissions' => ['goonj_chapter_admin', 'urbanops'],
+        ],
+        'feedback' => [
+          'id' => 'feedback',
+          'title' => ts('Feedback'),
+          'active' => 1,
+          'module' => 'afsearchEventFeedback',
+          'directive' => 'afsearch-event-feedback',
+          'template' => 'CRM/Goonjcustom/Tabs/Events.tpl',
+          'entity' => ['id' => $eventID],
+          'permissions' => ['goonj_chapter_admin', 'urbanops'],
+        ],
       ];
   
       foreach ($tabConfigs as $key => $config) {
