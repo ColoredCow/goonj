@@ -98,22 +98,39 @@ class InstitutionService extends AutoSubscriber {
     }
 
     foreach ($event->records as $index => $contact) {
+
       if (empty($contact['fields'])) {
+        \Civi::log()->warning('Skipping contact due to empty fields', ['contact' => $contact]);
         continue;
       }
 
-      $contactId = $contact['fields']['id'];
+      $contactId = $contact['fields']['Institute_Registration.Institution_POC'] ?? NULL;
+      $stateProvinceId = self::$instituteAddress['state_province_id'] ?? NULL;
 
-      $stateProvinceId = self::$instituteAddress['state_province_id'];
+      if (!$stateProvinceId && !$contactId) {
+        return FALSE;
+      }
 
-      $updateResults = Address::update(FALSE)
-        ->addValue('state_province_id', $stateProvinceId)
-        ->addWhere('contact_id', '=', $test)
-        ->execute();
+      if ($contactId && $stateProvinceId) {
+        $updateResults = Address::update(FALSE)
+          ->addValue('state_province_id', $stateProvinceId)
+          ->addWhere('contact_id', '=', $contactId)
+          ->execute();
+
+        \Civi::log()->info('Institution POC address updated', [
+          'contact_id' => $contactId,
+          'state_province_id' => $stateProvinceId,
+          'update_results' => $updateResults,
+        ]);
+      }
+      else {
+        \Civi::log()->warning('Skipped Institution POC address update', [
+          'contact_id' => $contactId,
+          'state_province_id' => $stateProvinceId,
+          'reason' => 'Missing contact ID or state province ID',
+        ]);
+      }
     }
-
-    \Civi::log()->info('Address update results', $updateResults);
-
   }
 
   /**
