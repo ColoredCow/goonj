@@ -227,21 +227,23 @@ class CollectionCampService extends AutoSubscriber {
   public static function setCollectionCampAddress(AfformSubmitEvent $event) {
     $afform = $event->getAfform();
     $formName = $afform['name'];
-
+    error_log("formName" . print_r($formName, TRUE));
     if ($formName !== self::COLLECTION_CAMP_INTENT_FB_NAME) {
       return;
     }
 
     $entityType = $event->getEntityType();
-
+    error_log("entityType" . print_r($entityType, TRUE));
     if ($entityType !== 'Eck_Collection_Camp') {
       return;
     }
 
     $records = $event->records;
-
+    error_log("records" . print_r($records, TRUE));
     foreach ($records as $record) {
       $fields = $record['fields'];
+
+      error_log("fields" . print_r($fields, TRUE));
 
       self::$collectionCampAddress = [
         'location_type_id' => 3,
@@ -267,17 +269,21 @@ class CollectionCampService extends AutoSubscriber {
       return;
     }
 
+
     $entityType = $event->getEntityType();
+    error_log("entityType.." . print_r($entityType, TRUE));
+
 
     if (!CoreUtil::isContact($entityType)) {
       return;
     }
 
     foreach ($event->records as $index => $contact) {
+      error_log("contact.." . print_r($contact['fields'], TRUE));
       if (empty($contact['fields'])) {
         continue;
       }
-
+      error_log("nitu.." . print_r($event->records, TRUE));
       $event->records[$index]['joins']['Address'][] = self::$collectionCampAddress;
     }
 
