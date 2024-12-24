@@ -38,6 +38,95 @@ class InstitutionService extends AutoSubscriber {
   /**
    *
    */
+  public static function setInstituteAddress(AfformSubmitEvent $event) {
+    $afform = $event->getAfform();
+    $formName = $afform['name'];
+
+    if ($formName !== self::Institution_INTENT_FB_NAME) {
+      return;
+    }
+
+    $entityType = $event->getEntityType();
+
+    if ($entityType !== 'Organization') {
+      return;
+    }
+
+    $records = $event->records;
+    foreach ($records as $record) {
+      $fields = $record['fields'];
+
+      $addressJoins = $record['joins']['Address'] ?? [];
+
+      $stateProvinceId = !empty($addressJoins[0]['state_province_id'])
+          ? $addressJoins[0]['state_province_id']
+          : NULL;
+
+      self::$instituteAddress = [
+        'location_type_id' => 3,
+        'state_province_id' => $stateProvinceId,
+        'country_id' => 1101,
+      ];
+    }
+
+  }
+
+  /**
+   *
+   */
+  public static function setInstitutionPocAddress(AfformSubmitEvent $event) {
+    $afform = $event->getAfform();
+    $formName = $afform['name'];
+
+    if ($formName !== self::Institution_INTENT_FB_NAME) {
+      return;
+    }
+
+    $entityType = $event->getEntityType();
+
+    if (!CoreUtil::isContact($entityType)) {
+      return;
+    }
+
+    foreach ($event->records as $index => $contact) {
+
+      if (empty($contact['fields'])) {
+        \Civi::log()->warning('Skipping contact due to empty fields', ['contact' => $contact]);
+        continue;
+      }
+
+      $contactId = $contact['fields']['Institute_Registration.Institution_POC'] ?? NULL;
+      $stateProvinceId = self::$instituteAddress['state_province_id'] ?? NULL;
+
+      if (!$stateProvinceId && !$contactId) {
+        return FALSE;
+      }
+
+      if ($contactId && $stateProvinceId) {
+        $updateResults = Address::update(FALSE)
+          ->addValue('state_province_id', $stateProvinceId)
+          ->addWhere('contact_id', '=', $contactId)
+          ->execute();
+
+        \Civi::log()->info('Institution POC address updated', [
+          'contact_id' => $contactId,
+          'state_province_id' => $stateProvinceId,
+          'update_results' => $updateResults,
+        ]);
+      }
+      else {
+        \Civi::log()->warning('Skipped Institution POC address update', [
+          'contact_id' => $contactId,
+          'state_province_id' => $stateProvinceId,
+          'reason' => 'Missing contact ID or state province ID',
+        ]);
+      }
+    }
+  }
+
+  /**
+   *
+   */
   public static function assignChapterGroupToContacts(string $op, string $objectName, $objectId, &$objectRef) {
     if ($op !== 'edit' || $objectName !== 'AfformSubmission') {
       return FALSE;
