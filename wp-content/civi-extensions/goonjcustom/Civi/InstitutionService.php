@@ -2,12 +2,15 @@
 
 namespace Civi;
 
+use Civi\Afform\Event\AfformSubmitEvent;
+use Civi\Api4\Address;
 use Civi\Api4\Contact;
 use Civi\Api4\CustomField;
 use Civi\Api4\Group;
 use Civi\Api4\GroupContact;
 use Civi\Api4\Organization;
 use Civi\Api4\Relationship;
+use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 
@@ -18,13 +21,19 @@ class InstitutionService extends AutoSubscriber {
   use CollectionSource;
   const FALLBACK_OFFICE_NAME = 'Delhi';
   const ENTITY_SUBTYPE_NAME = 'Institute';
+  const Institution_INTENT_FB_NAME = 'afformInstitutionRegistration';
   private static $organizationId = NULL;
+  private static $instituteAddress = NULL;
 
   /**
    *
    */
   public static function getSubscribedEvents() {
     return [
+      'civi.afform.submit' => [
+        ['setInstituteAddress', 9],
+        ['setInstitutionPocAddress', 8],
+      ],
       '&hook_civicrm_post' => [
         ['organizationCreated'],
         ['setOfficeDetails'],
@@ -33,6 +42,78 @@ class InstitutionService extends AutoSubscriber {
         ['assignChapterGroupToContacts'],
       ],
     ];
+  }
+
+  /**
+   *
+   */
+  public static function setInstituteAddress(AfformSubmitEvent $event) {
+    $afform = $event->getAfform();
+    $formName = $afform['name'];
+
+    if ($formName !== self::Institution_INTENT_FB_NAME) {
+      return;
+    }
+
+    $entityType = $event->getEntityType();
+
+    if ($entityType !== 'Organization') {
+      return;
+    }
+
+    $records = $event->records;
+    foreach ($records as $record) {
+      $fields = $record['fields'];
+
+      $addressJoins = $record['joins']['Address'] ?? [];
+
+      $stateProvinceId = !empty($addressJoins[0]['state_province_id'])
+          ? $addressJoins[0]['state_province_id']
+          : NULL;
+
+      self::$instituteAddress = [
+        'location_type_id' => 3,
+        'state_province_id' => $stateProvinceId,
+        'country_id' => 1101,
+      ];
+    }
+
+  }
+
+  /**
+   *
+   */
+  public static function setInstitutionPocAddress(AfformSubmitEvent $event) {
+    $afform = $event->getAfform();
+    $formName = $afform['name'];
+
+    if ($formName !== self::Institution_INTENT_FB_NAME) {
+      return;
+    }
+
+    $entityType = $event->getEntityType();
+
+    if (!CoreUtil::isContact($entityType)) {
+      return;
+    }
+
+    foreach ($event->records as $index => $contact) {
+      if (empty($contact['fields'])) {
+        continue;
+      }
+
+      $contactId = $contact['fields']['id'];
+
+      $stateProvinceId = self::$instituteAddress['state_province_id'];
+
+      $updateResults = Address::update(FALSE)
+        ->addValue('state_province_id', $stateProvinceId)
+        ->addWhere('contact_id', '=', $test)
+        ->execute();
+    }
+
+    \Civi::log()->info('Address update results', $updateResults);
+
   }
 
   /**

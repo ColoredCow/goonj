@@ -277,7 +277,6 @@ class CollectionCampService extends AutoSubscriber {
       if (empty($contact['fields'])) {
         continue;
       }
-
       $event->records[$index]['joins']['Address'][] = self::$collectionCampAddress;
     }
 
