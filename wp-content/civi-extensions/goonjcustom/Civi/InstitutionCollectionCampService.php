@@ -143,7 +143,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
    */
   public static function assignChapterGroupToIndividual(string $op, string $objectName, $objectId, &$objectRef) {
 
-    if ($objectName !== 'Eck_Collection_Camp' || !$objectId || !self::isCurrentSubtype($objectRef)) {
+    if ($objectName !== 'Eck_Collection_Camp' || !self::isCurrentSubtype($objectRef)) {
       return;
     }
     $stateId = $objectRef['Institution_Collection_Camp_Intent.State'];
