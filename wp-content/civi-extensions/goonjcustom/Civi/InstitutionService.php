@@ -23,7 +23,7 @@ class InstitutionService extends AutoSubscriber {
   const ENTITY_SUBTYPE_NAME = 'Institute';
   const Institution_INTENT_FB_NAME = 'afformInstitutionRegistration';
   private static $organizationId = NULL;
-  private static $goonjActivitiesAddress = NULL;
+  private static $instituteAddress = NULL;
 
   /**
    *
@@ -71,7 +71,7 @@ class InstitutionService extends AutoSubscriber {
           ? $addressJoins[0]['state_province_id']
           : NULL;
 
-      self::$goonjActivitiesAddress = [
+      self::$instituteAddress = [
         'location_type_id' => 3,
         'state_province_id' => $stateProvinceId,
         'country_id' => 1101,
@@ -104,7 +104,7 @@ class InstitutionService extends AutoSubscriber {
 
       $contactId = $contact['fields']['id'];
 
-      $stateProvinceId = self::$goonjActivitiesAddress['state_province_id'];
+      $stateProvinceId = self::$instituteAddress['state_province_id'];
 
       $updateResults = Address::update(FALSE)
         ->addValue('state_province_id', $stateProvinceId)
