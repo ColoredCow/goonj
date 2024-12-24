@@ -2,12 +2,15 @@
 
 namespace Civi;
 
+use Civi\Afform\Event\AfformSubmitEvent;
+use Civi\Api4\Address;
 use Civi\Api4\Contact;
 use Civi\Api4\CustomField;
 use Civi\Api4\Group;
 use Civi\Api4\GroupContact;
 use Civi\Api4\Organization;
 use Civi\Api4\Relationship;
+use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 
@@ -18,13 +21,19 @@ class InstitutionService extends AutoSubscriber {
   use CollectionSource;
   const FALLBACK_OFFICE_NAME = 'Delhi';
   const ENTITY_SUBTYPE_NAME = 'Institute';
+  const Institution_INTENT_FB_NAME = 'afformInstitutionRegistration';
   private static $organizationId = NULL;
+  private static $goonjActivitiesAddress = NULL;
 
   /**
    *
    */
   public static function getSubscribedEvents() {
     return [
+      'civi.afform.submit' => [
+        ['setInstituteAddress', 9],
+        ['setInstitutionPocAddress', 8],
+      ],
       '&hook_civicrm_post' => [
         ['organizationCreated'],
         ['setOfficeDetails'],
@@ -89,39 +98,22 @@ class InstitutionService extends AutoSubscriber {
     }
 
     foreach ($event->records as $index => $contact) {
-
       if (empty($contact['fields'])) {
-        \Civi::log()->warning('Skipping contact due to empty fields', ['contact' => $contact]);
         continue;
       }
 
-      $contactId = $contact['fields']['Institute_Registration.Institution_POC'] ?? NULL;
-      $stateProvinceId = self::$instituteAddress['state_province_id'] ?? NULL;
+      $contactId = $contact['fields']['id'];
 
-      if (!$stateProvinceId && !$contactId) {
-        return FALSE;
-      }
+      $stateProvinceId = self::$goonjActivitiesAddress['state_province_id'];
 
-      if ($contactId && $stateProvinceId) {
-        $updateResults = Address::update(FALSE)
-          ->addValue('state_province_id', $stateProvinceId)
-          ->addWhere('contact_id', '=', $contactId)
-          ->execute();
-
-        \Civi::log()->info('Institution POC address updated', [
-          'contact_id' => $contactId,
-          'state_province_id' => $stateProvinceId,
-          'update_results' => $updateResults,
-        ]);
-      }
-      else {
-        \Civi::log()->warning('Skipped Institution POC address update', [
-          'contact_id' => $contactId,
-          'state_province_id' => $stateProvinceId,
-          'reason' => 'Missing contact ID or state province ID',
-        ]);
-      }
+      $updateResults = Address::update(FALSE)
+        ->addValue('state_province_id', $stateProvinceId)
+        ->addWhere('contact_id', '=', $test)
+        ->execute();
     }
+
+    \Civi::log()->info('Address update results', $updateResults);
+
   }
 
   /**
