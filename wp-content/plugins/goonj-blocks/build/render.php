@@ -156,6 +156,15 @@ $puSourceFieldId = 'custom_' . $puSourceField['id'];
 $base_pu_donation_link = home_url('/contribute/donate');
 $pu_donation_link = $base_pu_donation_link . '?' . $puSourceFieldId . '=' . $source_contact_id;
 
+$eventSourceField = CustomField::get(FALSE)
+  ->addSelect('id')
+  ->addWhere('custom_group_id:name', '=', 'Contribution_Details')
+  ->addWhere('name', '=', 'Events')
+  ->execute()->single();
+$eventSourceFieldId = 'custom_' . $eventSourceField['id'];
+$base_event_donation_link = home_url('/contribute/donate');
+$event_donation_link = $base_event_donation_link . '?' . $eventSourceFieldId . '=' . $source_contact_id;
+
 
 $target_data = [
   'dropping-center' => [
@@ -218,7 +227,7 @@ $target_data = [
     'address' => 'address',
     'address_label' => 'Address of the camp',
     'contribution_link' => $event_material_contribution_link,
-    'donation_link' => $donation_link,
+    'donation_link' => $event_donation_link,
     'register_link' => $institution_goonj_activities_register_link
   ]
 ];

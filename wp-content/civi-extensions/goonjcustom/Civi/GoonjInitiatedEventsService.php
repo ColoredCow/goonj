@@ -289,14 +289,24 @@ public static function generateGoonjEventsQr(string $op, string $objectName, $ob
           'directive' => 'afsearch-events-material-contributions',
           'entity' => ['id' => $eventID],
           'permissions' => ['goonj_chapter_admin', 'urbanops'],
-        ]
+        ],
+        'monetaryContributionForUrbanOps' => [
+          'id' => 'monetary_contributions',
+          'title' => ts('Monetary Contribution'),
+          'active' => 1,
+          'module' => 'afsearchEventsMonetaryContribution',
+          'directive' => 'afsearch-events-monetary-contribution',
+          'template' => 'CRM/Goonjcustom/Tabs/Events.tpl',
+          'entity' => ['id' => $eventID],
+          'permissions' => ['goonj_chapter_admin', 'urbanops'],
+        ],
       ];
   
       foreach ($tabConfigs as $key => $config) {
         $isAdmin = \CRM_Core_Permission::check('admin');
-        if ($key == 'monetaryContributionForUrbanOps' && $isAdmin) {
-          continue;
-        }
+        // if ($key == 'monetaryContributionForUrbanOps' && $isAdmin) {
+        //   continue;
+        // }
   
         if (!\CRM_Core_Permission::checkAnyPerm($config['permissions'])) {
           // Does not permission; just continue.
