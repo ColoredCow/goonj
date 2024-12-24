@@ -134,7 +134,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
 
     if ($emailSendResult) {
       EckEntity::update('Institution_Visit', FALSE)
-        ->addValue('Visit_Outcome.Outcome_Email_Sent', 1)
+        ->addValue('Urban_Planned_Visit.Outcome_Email_Sent', 1)
         ->addWhere('id', '=', $visitId)
         ->execute();
     }

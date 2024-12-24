@@ -43,8 +43,8 @@ function civicrm_api3_goonjcustom_urban_planned_visit_outcome_cron($params) {
     ->addWhere('Urban_Planned_Visit.Coordinating_Goonj_POC', 'IS NOT NULL')
     ->addWhere('Urban_Planned_Visit.When_do_you_wish_to_visit_Goonj', '<=', $endOfDay)
     ->addClause('OR',
-    ['Visit_Outcome.Outcome_Email_Sent', 'IS NULL'],
-    ['Visit_Outcome.Outcome_Email_Sent', '=', 0]
+    ['Urban_Planned_Visit.Outcome_Email_Sent', 'IS NULL'],
+    ['Urban_Planned_Visit.Outcome_Email_Sent', '=', 0]
     )
     ->execute();
 

@@ -2,12 +2,15 @@
 
 namespace Civi;
 
+use Civi\Afform\Event\AfformSubmitEvent;
+use Civi\Api4\Address;
 use Civi\Api4\Contact;
 use Civi\Api4\CustomField;
 use Civi\Api4\Group;
 use Civi\Api4\GroupContact;
 use Civi\Api4\Organization;
 use Civi\Api4\Relationship;
+use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 
@@ -18,13 +21,19 @@ class InstitutionService extends AutoSubscriber {
   use CollectionSource;
   const FALLBACK_OFFICE_NAME = 'Delhi';
   const ENTITY_SUBTYPE_NAME = 'Institute';
+  const Institution_INTENT_FB_NAME = 'afformInstitutionRegistration';
   private static $organizationId = NULL;
+  private static $instituteAddress = NULL;
 
   /**
    *
    */
   public static function getSubscribedEvents() {
     return [
+      'civi.afform.submit' => [
+        ['setInstituteAddress', 9],
+        ['setInstitutionPocAddress', 8],
+      ],
       '&hook_civicrm_post' => [
         ['organizationCreated'],
         ['setOfficeDetails'],
