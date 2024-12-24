@@ -168,7 +168,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
    *
    */
   private static function addContactToGroup($contactId, $groupId) {
-    if($contactId & $groupID){
+    if($contactId && $groupId){
       try {
         GroupContact::create(FALSE)
           ->addValue('contact_id', $contactId)
