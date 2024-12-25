@@ -38,12 +38,11 @@ function civicrm_api3_goonjcustom_goonj_initiated_events_outcome_cron($params) {
   $endOfDay = $today->setTime(23, 59, 59)->format('Y-m-d H:i:s');
   $events = Event::get(TRUE)
 	->addSelect('title', 'loc_block_id.address_id', 'Goonj_Events.Goonj_Coordinating_POC_Main_', 'Goonj_Events.Goonj_Coordinating_POC', 'start_date', 'end_date', 'Goonj_Events_Outcome.Outcome_Email_Sent')
-	// ->addWhere('start_date', '<=', $endOfDay)
-	// ->addClause('OR',
-	// 	['Goonj_Events_Outcome.Outcome_Email_Sent', 'IS NULL'],
-	// 	['Goonj_Events_Outcome.Outcome_Email_Sent', '=', 0]
-	// )
-	->addWhere('id','=', 102)
+	->addWhere('start_date', '<=', $endOfDay)
+	->addClause('OR',
+		['Goonj_Events_Outcome.Outcome_Email_Sent', 'IS NULL'],
+		['Goonj_Events_Outcome.Outcome_Email_Sent', '=', 0]
+	)
 	->execute();
 
   foreach ($events as $event) {

@@ -189,8 +189,6 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
 	  unset($tabs['view']);
 	  unset($tabs['edit']);
 	}
-	// Log the context for debugging.
-	\Civi::log()->debug('Tabset Context', ['context' => $context]);
 
 	if (empty($context['event_id'])) {
 	  \Civi::log()->debug('No Event ID Found in Context');
@@ -290,19 +288,19 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
 	  $eventAttendedById = $event['participant.created_id'];
 	  $feedbackEmailSent = $event['Goonj_Events_Feedback.Last_Reminder_Sent'];
 
-	  $startDate = new \DateTime($event['start_date']);
+	  $endDate = new \DateTime($event['end_date']);
 
 	  $today = new \DateTimeImmutable();
 	  $endOfToday = $today->setTime(23, 59, 59);
 
-	  if (TRUE) {
-		\Civi::log()->info('eventAttendedById', ['eventAttendedById' => $eventAttendedById]);
+      if (!$feedbackEmailSent && $endOfToday <= $endDate) {
+
 		$eventAttendedBy = Contact::get(FALSE)
 		  ->addSelect('email.email', 'display_name')
 		  ->addJoin('Email AS email', 'LEFT')
 		  ->addWhere('id', '=', $eventAttendedById)
 		  ->execute()->first();
-		\Civi::log()->info('eventAttendedBy', ['eventAttendedBy' => $eventAttendedBy]);
+
 		$attendeeEmail = $eventAttendedBy['email.email'];
 		$attendeeName = $eventAttendedBy['display_name'];
 		$from = HelperService::getDefaultFromEmail();
