@@ -8,7 +8,7 @@ use Civi\Api4\Event;
 use Civi\GoonjInitiatedEventsService;
 
 /**
- * Goonjcustom.GoonjActivitiesCampCron API specification (optional)
+ * Goonjcustom.GoonjInititatedEventsOutcomeCron API specification (optional)
  * This is used for documentation and validation.
  *
  * @param array $spec
@@ -21,7 +21,7 @@ function _civicrm_api3_goonjcustom_goonj_initiated_events_cron_spec(&$spec) {
 }
 
 /**
- * Goonjcustom.GoonjActivitiesCampCron API.
+ * Goonjcustom.GoonjInititatedEventsOutcomeCron API.
  *
  * @param array $params
  *
