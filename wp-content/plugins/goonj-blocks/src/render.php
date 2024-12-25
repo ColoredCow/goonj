@@ -25,7 +25,8 @@ $headings = [
   'processing-center' => 'Processing Center',
   'induction-schedule' => 'Induction Schedule',
   'goonj-activities' => 'Goonj Activities',
-  'institution-goonj-activities' => 'Institution Goonj Activities'
+  'institution-goonj-activities' => 'Institution Goonj Activities',
+  'events' => 'Goonj Events'
 ];
 
 $heading_text = $headings[$target];
@@ -79,6 +80,13 @@ $material_contribution_link = sprintf(
     $action_target['Collection_Camp_Intent_Details.State'],
     $action_target['Collection_Camp_Intent_Details.City'],
 );
+
+$event_material_contribution_link = sprintf(
+    '/events-contribution-verification/?source=%s&target_id=%s',
+    $action_target['title'],
+    $action_target['id'],
+);
+
 
 $institution_collection_camp_material_contribution_link = sprintf(
     '/institution-collection-camp-contribution?source=%s&target_id=%s&state_province_id=%s&city=%s',
@@ -148,6 +156,16 @@ $puSourceFieldId = 'custom_' . $puSourceField['id'];
 $base_pu_donation_link = home_url('/contribute/donate');
 $pu_donation_link = $base_pu_donation_link . '?' . $puSourceFieldId . '=' . $source_contact_id;
 
+$eventSourceField = CustomField::get(FALSE)
+  ->addSelect('id')
+  ->addWhere('custom_group_id:name', '=', 'Contribution_Details')
+  ->addWhere('name', '=', 'Events')
+  ->execute()->single();
+
+$eventSourceFieldId = 'custom_' . $eventSourceField['id'];
+$base_event_donation_link = home_url('/contribute/donate');
+$event_donation_link = $base_event_donation_link . '?' . $eventSourceFieldId . '=' . $source_contact_id;
+
 
 $target_data = [
   'dropping-center' => [
@@ -204,9 +222,18 @@ $target_data = [
     'include_attendee_feedback_link' => $institution_attendee_activity_feedback_link,
     'should_include_attendee_feedback'=> $action_target['Institution_Goonj_Activities.Include_Attendee_Feedback_Form']
   ],
+  'events' => [
+    'start_time' => 'start_date',
+    'end_time' => 'end_date',
+    'address' => 'address',
+    'address_label' => 'Address of the camp',
+    'contribution_link' => $event_material_contribution_link,
+    'donation_link' => $event_donation_link,
+    'register_link' => $institution_goonj_activities_register_link
+  ]
 ];
 
-if (in_array($target, ['collection-camp','institution-collection-camp', 'dropping-center', 'goonj-activities', 'institution-dropping-center', 'institution-goonj-activities'])) :
+if (in_array($target, ['collection-camp','institution-collection-camp', 'dropping-center', 'goonj-activities', 'institution-dropping-center', 'institution-goonj-activities', 'events'])) :
   $target_info = $target_data[$target];
 
   try {
@@ -242,7 +269,7 @@ if (in_array($target, ['collection-camp','institution-collection-camp', 'droppin
             </tr>
             <?php endif; ?>
 
-            <?php if ($target === 'collection-camp' || $target === 'institution-collection-camp' || $target === 'goonj-activities' || $target === 'institution-goonj-activities') : ?>
+            <?php if ($target === 'collection-camp' || $target === 'institution-collection-camp' || $target === 'goonj-activities' || $target === 'institution-goonj-activities' || $target ==='events') : ?>
             <tr class="wp-block-gb-table-row">
                 <td class="wp-block-gb-table-cell wp-block-gb-table-header">From</td>
                 <td class="wp-block-gb-table-cell"><?php echo gb_format_date($start_date); ?></td>
@@ -258,7 +285,15 @@ if (in_array($target, ['collection-camp','institution-collection-camp', 'droppin
             <?php endif; ?>
             <tr class="wp-block-gb-table-row">
                 <td class="wp-block-gb-table-cell wp-block-gb-table-header"><?php echo esc_html($address_label); ?></td>
-                <td class="wp-block-gb-table-cell"><?php echo esc_html($address); ?></td>
+                <td class="wp-block-gb-table-cell">
+                    <?php 
+                    if ($target === 'events') {
+                        echo CRM_Utils_Address::format($address);
+                    } else {
+                        echo esc_html($address);
+                    }
+                    ?>
+                </td>
             </tr>
         </tbody>
     </table>

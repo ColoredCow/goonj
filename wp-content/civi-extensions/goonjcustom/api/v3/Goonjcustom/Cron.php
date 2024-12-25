@@ -38,6 +38,12 @@ function _civicrm_api3_goonjcustom_cron_spec(&$spec) {
  */
 function civicrm_api3_goonjcustom_cron($params) {
   $returnValues = [];
+  $addresses = \Civi\Api4\Address::get(TRUE)
+  ->addWhere('id', '=', 15922)
+  ->setLimit(25)
+  ->execute()->first();
+  \Civi::log()->info('address',['address'=>CRM_Utils_Address::format($addresses)]);
+  return;
 
   try {
     // Activity Assignees.
