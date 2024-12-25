@@ -78,6 +78,7 @@ class CRM_Goonjcustom_Form_UrbanVisitLinks extends CRM_Core_Form {
         'url' => self::createUrl(
                 '/visit-outcome',
                 "Eck_Institution_Visit1={$this->_urbanVisitId}",
+                $contactId
         ),
       ],
       [
@@ -85,6 +86,7 @@ class CRM_Goonjcustom_Form_UrbanVisitLinks extends CRM_Core_Form {
         'url' => self::createUrl(
                 '/visit-feedback',
                 "Eck_Institution_Visit1={$this->_urbanVisitId}",
+                $contactId
         ),
       ],
     ];
