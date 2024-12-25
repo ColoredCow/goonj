@@ -266,6 +266,7 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
 		'module' => $config['module'],
 		'directive' => $config['directive'],
 		'entity' => $config['entity'],
+		'valid' => 1,
 	  ];
 
 	  \Civi::service('angularjs.loader')->addModules($config['module']);
