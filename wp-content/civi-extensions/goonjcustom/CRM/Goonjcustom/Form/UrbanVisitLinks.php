@@ -20,20 +20,6 @@ class CRM_Goonjcustom_Form_UrbanVisitLinks extends CRM_Core_Form {
   public $_urbanVisitId;
 
   /**
-   * Goonj coordinator Goonj POC contact Id.(Outcome)
-   *
-   * @var int
-   */
-  public $_contactId;
-
-  /**
-   * Goonj External Coordinator POC id.(Feedback)
-   *
-   * @var int
-   */
-  public $_processingCenterId;
-
-  /**
    * Preprocess .
    */
   public function preProcess() {
@@ -51,42 +37,29 @@ class CRM_Goonjcustom_Form_UrbanVisitLinks extends CRM_Core_Form {
    * @return array
    */
   public function setDefaultValues() {
-    $defaults = [];
-
-    if (!empty($this->_contactId)) {
-      $defaults['contact_id'] = $this->_contactId;
-      $this->generateLinks($this->_contactId);
-    }
-
-    return $defaults;
+    return [];
   }
 
   /**
    * Function to generate urban visit related links.
    *
-   * @param int $contactId
-   *   Contact Id.
-   *
    * @return void
    */
-  public function generateLinks($contactId): void {
-
-    // Generate urban visit links.
+  public function generateLinks(): void {
+    // Generate urban visit links without contact dependency.
     $links = [
       [
         'label' => 'Visit Outcome',
         'url' => self::createUrl(
-                '/visit-outcome',
-                "Eck_Institution_Visit1={$this->_urbanVisitId}",
-                $contactId
+          '/visit-outcome',
+          "Eck_Institution_Visit1={$this->_urbanVisitId}"
         ),
       ],
       [
         'label' => 'Visit Feedback',
         'url' => self::createUrl(
-                '/visit-feedback',
-                "Eck_Institution_Visit1={$this->_urbanVisitId}",
-                $contactId
+          '/visit-feedback',
+          "Eck_Institution_Visit1={$this->_urbanVisitId}"
         ),
       ],
     ];
@@ -99,27 +72,10 @@ class CRM_Goonjcustom_Form_UrbanVisitLinks extends CRM_Core_Form {
    *
    * @param string $path
    * @param string $params
-   * @param int $contactId
    *
    * @return string
-   *
-   * @throws \Civi\Crypto\Exception\CryptoException
    */
-  public static function createUrl($path, $params, $contactId): string {
-    $expires = \CRM_Utils_Time::time() +
-      (\Civi::settings()->get('checksum_timeout') * 24 * 60 * 60);
-
-    /** @var \Civi\Crypto\CryptoJwt $jwt */
-    $jwt = \Civi::service('crypto.jwt');
-
-    $bearerToken = "Bearer " . $jwt->encode([
-      'exp' => $expires,
-      'sub' => "cid:" . $contactId,
-      'scope' => 'authx',
-    ]);
-
-    $params = "{$params}&_authx={$bearerToken}&_authxSes=1";
-    // $url = \CRM_Utils_System::url($path, $params, TRUE, NULL, FALSE, TRUE);
+  public static function createUrl($path, $params): string {
     $config = CRM_Core_Config::singleton();
     $url = $config->userFrameworkBaseURL . $path . '#?' . $params;
 
@@ -130,16 +86,13 @@ class CRM_Goonjcustom_Form_UrbanVisitLinks extends CRM_Core_Form {
    * @throws \CRM_Core_Exception
    */
   public function buildQuickForm(): void {
-
     // Add form elements.
-    $this->addEntityRef('contact_id', ts('Contact to send'), [], TRUE);
-
     $this->addButtons([
-    [
-      'type' => 'submit',
-      'name' => \CRM_Goonjcustom_ExtensionUtil::ts('Generate Links'),
-      'isDefault' => TRUE,
-    ],
+      [
+        'type' => 'submit',
+        'name' => \CRM_Goonjcustom_ExtensionUtil::ts('Generate Links'),
+        'isDefault' => TRUE,
+      ],
     ]);
 
     // Export form elements.
@@ -148,14 +101,10 @@ class CRM_Goonjcustom_Form_UrbanVisitLinks extends CRM_Core_Form {
   }
 
   /**
-   *
+   * Post-process the form submission.
    */
   public function postProcess(): void {
-    $values = $this->exportValues();
-
-    if (!empty($values['contact_id'])) {
-      $this->generateLinks($values['contact_id']);
-    }
+    $this->generateLinks();
 
     parent::postProcess();
   }
