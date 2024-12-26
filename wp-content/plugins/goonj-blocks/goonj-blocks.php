@@ -160,7 +160,7 @@ function gb_goonj_blocks_check_action_target_exists() {
 			}
 			break;
 		case 'events':
-			$result = \Civi\Api4\Event::get(TRUE)
+			$result = \Civi\Api4\Event::get(FALSE)
 			->addSelect('*', 'loc_block_id.address_id')
 			->addWhere('id', '=', $id)
 			->setLimit(1)
