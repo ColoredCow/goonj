@@ -41,6 +41,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Institution Dropping Center',
           'Institution Goonj Activities',
           'Induction Tab',
+          'Volunteers',
         ],
       ],
       'mmt' => [
@@ -56,6 +57,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Institution Dropping Center',
           'Institution Goonj Activities',
           'Induction Tab',
+          'Volunteers',
         ],
       ],
     ];
