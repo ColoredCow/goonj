@@ -788,9 +788,10 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     }
 
     $stateOfficeId = $stateOffice['id'];
+
     EckEntity::update('Collection_Camp', FALSE)
       ->addValue('Institution_collection_camp_Review.Goonj_Office', $stateOfficeId)
-      ->addValue('Institution_Collection_Camp_Intent.Camp_Type', $isPublicDriveOpen)
+      ->addValue('Institution_collection_camp_Review.Is_the_camp_IHC_PCC_', $isPublicDriveOpen)
       ->addWhere('id', '=', $institutionCollectionCampId)
       ->execute();
 
