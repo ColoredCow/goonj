@@ -50,31 +50,30 @@ class RazorpaySubscriptionImporter {
   public function run($limit = NULL): void {
     echo "=== Importing Razorpay Subscriptions into CiviCRM ===\n";
 
-    while (TRUE) {
-      try {
-        echo "Fetching subscriptions (skip: $this->skip, count: " . $limit . ")\n";
+    // While (TRUE) {.
+    try {
+      echo "Fetching subscriptions (skip: $this->skip, count: " . $limit . ")\n";
 
-        $subscriptions = $this->fetchSubscriptions($limit);
+      $subscriptions = $this->fetchSubscriptions($limit);
 
-        if (empty($subscriptions)) {
-          echo "No more subscriptions to import. Total imported: $this->totalImported\n";
-          break;
-        }
-
-        foreach ($subscriptions as $subscription) {
-          $this->processSubscription($subscription);
-          $this->totalImported++;
-        }
-
-        $this->skip += $limit;
-        $this->retryCount = 0;
-
+      if (empty($subscriptions)) {
+        echo "No more subscriptions to import. Total imported: $this->totalImported\n";
+        // break;
       }
-      catch (Exception $e) {
-        $this->handleRetry($e);
+
+      foreach ($subscriptions as $subscription) {
+        $this->processSubscription($subscription);
+        $this->totalImported++;
       }
+
+      $this->skip += $limit;
+      $this->retryCount = 0;
+
     }
-
+    catch (Exception $e) {
+      $this->handleRetry($e);
+    }
+    // }
     echo "=== Import Completed. Total Subscriptions Imported: $this->totalImported ===\n";
   }
 
@@ -149,42 +148,59 @@ class RazorpaySubscriptionImporter {
    *
    */
   public function findContact($params) {
-    if (empty($params['email'])) {
-      if (empty($params['phone'])) {
-        echo "Neither we have email nor we have phone!\n";
-      }
-      else {
-        echo 'Find contact by phone: ' . $params['phone'] . "\n";
-        $phone = Phone::get(FALSE)
-          ->addWhere('phone', '=', $params['phone'])
-          ->execute();
-
-        var_dump($phone);
-      }
+    // Check if both email and phone are missing.
+    if (empty($params['email']) && empty($params['phone'])) {
+      echo "Neither email nor phone is provided to find the contact!\n";
+      return NULL;
     }
-    else {
-      echo "Find contact by email" . $params['email'] . "\n";
 
-      $email = Email::get(FALSE)
+    // 1. Search by Email (if available)
+    if (!empty($params['email'])) {
+      echo "Searching contact by email: " . $params['email'] . "\n";
+
+      $emailResults = Email::get(FALSE)
         ->addWhere('email', '=', $params['email'])
         ->execute();
 
-      var_dump($email);
+      if ($emailResults->count() === 1) {
+        $emailContact = $emailResults->first();
+        echo "Found contact by email. Contact ID: " . $emailContact['contact_id'] . "\n";
+        return $emailContact['contact_id'];
+      }
+      elseif ($emailResults->count() > 1) {
+        echo "Multiple contacts found with the same email. Manual resolution needed.\n";
+        return NULL;
+      }
+      else {
+        echo "No contact found with the given email. Proceeding to phone search...\n";
+      }
     }
 
-    // $emailCount = $email->count();
-    // If ($emailCount === 0) {
-    //   // No email found. Check for contact with phone.
-    // $phoneCount = $phone->count();
-    // if ($phoneCount) {
-    //       echo 'We neither have an email nor phone. What to do?';
-    //       echo $$params['name'];
-    //   }.
-    //   }
-    // Echo 'Email: ' . $params['email'] . PHP_EOL;
-    // echo 'Count: ' . $email->count();
-    // var_dump(get_class_methods($email));
-    // die;
+    // 2. Fallback: Search by Phone (if available)
+    if (!empty($params['phone'])) {
+      echo "Searching contact by phone: " . $params['phone'] . "\n";
+
+      $phoneResults = Phone::get(FALSE)
+        ->addWhere('phone', '=', $params['phone'])
+        ->execute();
+
+      if ($phoneResults->count() === 1) {
+        $phoneContact = $phoneResults->first();
+        echo "Found contact by phone. Contact ID: " . $phoneContact['contact_id'] . "\n";
+        return $phoneContact['contact_id'];
+      }
+      elseif ($phoneResults->count() > 1) {
+        echo "Multiple contacts found with the same phone number. Manual resolution needed.\n";
+        return NULL;
+      }
+      else {
+        echo "No contact found with the given phone number.\n";
+      }
+    }
+
+    // 3. No contact found after both email and phone search
+    echo "No contact found via email or phone. Consider creating a new contact.\n";
+    return NULL;
   }
 
   /**
