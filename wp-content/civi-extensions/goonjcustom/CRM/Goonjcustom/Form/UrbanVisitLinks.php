@@ -46,7 +46,6 @@ class CRM_Goonjcustom_Form_UrbanVisitLinks extends CRM_Core_Form {
    * @return void
    */
   public function generateLinks(): void {
-    // Generate urban visit links without contact dependency.
     $links = [
       [
         'label' => 'Visit Outcome',
@@ -86,7 +85,6 @@ class CRM_Goonjcustom_Form_UrbanVisitLinks extends CRM_Core_Form {
    * @throws \CRM_Core_Exception
    */
   public function buildQuickForm(): void {
-    // Add form elements.
     $this->addButtons([
       [
         'type' => 'submit',
