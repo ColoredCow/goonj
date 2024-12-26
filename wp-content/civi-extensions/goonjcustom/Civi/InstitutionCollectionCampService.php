@@ -67,7 +67,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
         }
 
         $results = EckEntity::update('Collection_Camp', TRUE)
-          ->addValue('Institution_collection_camp_Review.Camp_Status', 'planned')
+          ->addValue('Institution_collection_camp_Review.Camp_Status', 1)
           ->addWhere('id', '=', $institutionCampId)
           ->execute();
       }
