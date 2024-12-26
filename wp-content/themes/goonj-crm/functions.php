@@ -147,7 +147,7 @@ function goonj_handle_user_identification_form() {
 	$state_id = $_POST['state_id'] ?? '';
 	$city = $_POST['city'] ?? '';
 
-	$is_purpose_requiring_email = ! in_array( $purpose, array( 'material-contribution', 'processing-center-office-visit', 'processing-center-material-contribution', 'dropping-center-contribution', 'institution-collection-camp', 'institution-dropping-center') );
+	$is_purpose_requiring_email = ! in_array( $purpose, array( 'material-contribution', 'processing-center-office-visit', 'processing-center-material-contribution', 'dropping-center-contribution', 'institution-collection-camp', 'institution-dropping-center', 'event-material-contribution') );
 
 	if ( empty( $phone ) || ( $is_purpose_requiring_email && empty( $email ) ) ) {
 		return;
@@ -323,6 +323,16 @@ function goonj_handle_user_identification_form() {
 					);
 					$redirect_url = $volunteer_registration_url;
 					break;
+				case 'event-material-contribution':
+					$individual_volunteer_registration_form_path = sprintf(
+						'/individual-registration-with-volunteer-option/#?email=%s&phone=%s&source=%s&Individual_fields.Creation_Flow=%s',
+						$email,
+						$phone,
+						$source,
+						'event-material-contribution',
+					);
+					$redirect_url = $individual_volunteer_registration_form_path;
+					break;
 				// Contact does not exist and the purpose is not defined.
 				// Redirect to volunteer registration with collection camp activity selected.
 				default:
@@ -413,6 +423,17 @@ function goonj_handle_user_identification_form() {
 				$found_contacts['id']
 			);
 			wp_redirect( $office_visit_form_path );
+			exit;
+		}
+		if ( 'event-material-contribution' === $purpose){
+			$material_contribution_form_path = sprintf(
+				'/events-material-contribution/#?email=%s&phone=%s&Material_Contribution.Event=%s&source_contact_id=%s',
+				$email,
+				$phone,
+				$target_id,
+				$found_contacts['id']
+			);
+			wp_redirect( $material_contribution_form_path );
 			exit;
 		}
 
@@ -662,6 +683,17 @@ function goonj_redirect_after_individual_creation() {
 			$redirectPath = sprintf(
 				'/processing-center/material-contribution/details/#?Material_Contribution.Goonj_Office=%s&source_contact_id=%s',
 				$sourceProcessingCenter,
+				$individual['id']
+			);
+			break;
+		case 'event-material-contribution':
+			$sourceProcessingCenter = $individual['Individual_fields.Source_Processing_Center'];
+			$events = \Civi\Api4\Event::get(TRUE)
+				->addWhere('title', '=', $source)
+				->execute()->first();
+			$redirectPath = sprintf(
+				'/events-material-contribution/#?Material_Contribution.Event=%s&source_contact_id=%s',
+				$events['id'],
 				$individual['id']
 			);
 			break;
