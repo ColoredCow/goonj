@@ -46,7 +46,9 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     ];
   }
 
-
+  /**
+   *
+   */
   public static function updateInstitutionCampStatusAfterAuth(string $op, string $objectName, $objectId, &$objectRef) {
     $statusDetails = self::checkCampStatusAndIds($objectName, $objectId, $objectRef);
 
@@ -195,7 +197,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
    *
    */
   private static function addContactToGroup($contactId, $groupId) {
-    if($contactId && $groupId){
+    if ($contactId && $groupId) {
       try {
         GroupContact::create(FALSE)
           ->addValue('contact_id', $contactId)
