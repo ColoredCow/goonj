@@ -36,6 +36,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
         ['assignChapterGroupToIndividual'],
         ['generateInstitutionCollectionCampQr'],
         ['linkInstitutionCollectionCampToContact'],
+        ['updateInstitutionCampStatusAfterAuth'],
       ],
       '&hook_civicrm_custom' => [
         ['setOfficeDetails'],
@@ -43,6 +44,32 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       ],
       '&hook_civicrm_tabset' => 'institutionCollectionCampTabset',
     ];
+  }
+
+
+  public static function updateInstitutionCampStatusAfterAuth(string $op, string $objectName, $objectId, &$objectRef) {
+    $statusDetails = self::checkCampStatusAndIds($objectName, $objectId, $objectRef);
+
+    if (!$statusDetails) {
+      return;
+    }
+
+    $newStatus = $statusDetails['newStatus'];
+    $currentStatus = $statusDetails['currentStatus'];
+
+    if ($currentStatus !== $newStatus) {
+      if ($newStatus === 'authorized') {
+        $institutionCampId = $objectRef['id'] ?? NULL;
+        if ($campId === NULL) {
+          return;
+        }
+
+        $results = EckEntity::update('Collection_Camp', TRUE)
+          ->addValue('Institution_collection_camp_Review.Camp_Status', 'planned')
+          ->addWhere('id', '=', $institutionCampId)
+          ->execute();
+      }
+    }
   }
 
   /**
