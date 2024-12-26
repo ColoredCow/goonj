@@ -30,6 +30,7 @@ class ContactSummaryViewService extends AutoSubscriber {
 
     $permissionsToHideTabs = [
       'account_team' => ['participant', 'activity', 'group', 'log', 'rel'],
+      'mmt' => ['participant', 'activity', 'group', 'log', 'rel', 'contribute'],
     ];
 
     $newTabs = $tabs;
