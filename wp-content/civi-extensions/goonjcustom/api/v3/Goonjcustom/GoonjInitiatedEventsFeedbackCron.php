@@ -38,8 +38,8 @@ function civicrm_api3_goonjcustom_goonj_initiated_events_feedback_cron($params) 
   $endOfDay = $today->setTime(23, 59, 59)->format('Y-m-d H:i:s');
 
   $events = Event::get(TRUE)
-    ->addSelect('Goonj_Event_Feedback.Last_Reminder_Sent', 'end_date')
-    ->addClause('OR', ['Goonj_Event_Feedback.Last_Reminder_Sent', '=', FALSE], ['Goonj_Event_Feedback.Last_Reminder_Sent', 'IS NULL'])
+    ->addSelect('Goonj_Events_Feedback.Last_Reminder_Sent', 'end_date')
+    ->addClause('OR', ['Goonj_Events_Feedback.Last_Reminder_Sent', '=', FALSE], ['Goonj_Events_Feedback.Last_Reminder_Sent', 'IS NULL'])
     ->addWhere('end_date', '<=', $endOfDay)
     ->setLimit(25)
     ->execute();
