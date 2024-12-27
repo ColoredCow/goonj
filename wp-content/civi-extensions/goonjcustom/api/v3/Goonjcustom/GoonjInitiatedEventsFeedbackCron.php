@@ -38,7 +38,8 @@ function civicrm_api3_goonjcustom_goonj_initiated_events_feedback_cron($params) 
   $endOfDay = $today->setTime(23, 59, 59)->format('Y-m-d H:i:s');
 
   $events = Event::get(TRUE)
-    ->addClause('OR', ['Goonj_Events_Feedback.Last_Reminder_Sent', '=', FALSE], ['Goonj_Events_Feedback.Last_Reminder_Sent', 'IS NULL'])
+    ->addSelect('Goonj_Event_Feedback.Last_Reminder_Sent', 'end_date')
+    ->addClause('OR', ['Goonj_Event_Feedback.Last_Reminder_Sent', '=', FALSE], ['Goonj_Event_Feedback.Last_Reminder_Sent', 'IS NULL'])
     ->addWhere('end_date', '<=', $endOfDay)
     ->setLimit(25)
     ->execute();
@@ -48,8 +49,7 @@ function civicrm_api3_goonjcustom_goonj_initiated_events_feedback_cron($params) 
       ->addSelect('participant.status_id:name', 'participant.created_id', 'title', 'loc_block_id.address_id', 'Goonj_Events_Feedback.Last_Reminder_Sent', 'end_date')
       ->addJoin('Participant AS participant', 'LEFT')
       ->addWhere('participant.status_id', '=', 2)
-      ->addWhere('id', '=', 102)
-      ->setLimit(25)
+      ->addWhere('id', '=', $event['id'])
       ->execute();
 
     $eventsArray = $eventsDetails->getArrayCopy();
@@ -64,6 +64,7 @@ function civicrm_api3_goonjcustom_goonj_initiated_events_feedback_cron($params) 
       ]);
     }
 
-    return civicrm_api3_create_success($returnValues, $params, 'Goonjcustom', 'goonj_initiated_events_feedback_cron');
   }
+
+  return civicrm_api3_create_success($returnValues, $params, 'Goonjcustom', 'goonj_initiated_events_feedback_cron');
 }
