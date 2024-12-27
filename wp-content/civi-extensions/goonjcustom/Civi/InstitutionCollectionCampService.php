@@ -62,7 +62,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     if ($currentStatus !== $newStatus) {
       if ($newStatus === 'authorized') {
         $institutionCampId = $objectRef['id'] ?? NULL;
-        if ($campId === NULL) {
+        if ($institutionCampId === NULL) {
           return;
         }
 
