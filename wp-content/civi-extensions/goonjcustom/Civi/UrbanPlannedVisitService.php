@@ -112,15 +112,14 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         'html' => self::getExtCoordPocEmailHtml($externalCoordinatingGoonjPocName, $visitAtName, $visitAddress, $visitDate, $visitTime),
       ];
 
-      // Send the first email.
       $emailSendResultToExternalPoc = \CRM_Utils_Mail::send($mailParamsExternalPoc);
 
-      // If ($emailSendResultToExternalPoc) {
-      //   EckEntity::update('Institution_Visit', FALSE)
-      //     ->addValue('Urban_Planned_Visit.Email_To_Ext_Coord_Poc', 1)
-      //     ->addWhere('id', '=', $visitId)
-      //     ->execute();
-      // }
+      If ($emailSendResultToExternalPoc) {
+        EckEntity::update('Institution_Visit', FALSE)
+          ->addValue('Urban_Planned_Visit.Email_To_Ext_Coord_Poc', 1)
+          ->addWhere('id', '=', $visitId)
+          ->execute();
+      }
     }
   }
 
