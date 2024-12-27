@@ -41,7 +41,7 @@ class CRM_Goonjcustom_Form_InstitutionCollectionCampLinks extends CRM_Core_Form 
     $this->_contactId = CRM_Utils_Request::retrieve('gcid', 'Positive', $this);
     $this->_processingCenterId = CRM_Utils_Request::retrieve('puid', 'Positive', $this);
 
-    $this->setTitle('Collection Camp Links');
+    $this->setTitle('Institution Collection Camp Links');
     parent::preProcess();
   }
 
@@ -93,7 +93,7 @@ class CRM_Goonjcustom_Form_InstitutionCollectionCampLinks extends CRM_Core_Form 
       ],
     ];
 
-    $this->assign('collectionCampLinks', $links);
+    $this->assign('institutionCollectionCampLinks', $links);
   }
 
   /**
