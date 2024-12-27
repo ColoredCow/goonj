@@ -273,68 +273,155 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
 	}
   }
 
-  /**
-   *
-   */
-  public static function sendGoonjInitiatedFeedbackEmail($eventsArray) {
-	$event = $eventsArray[0];
-	\Civi::log()->info('event', ['event'=>$event]);
+//   /**
+//    *
+//    */
+//   public static function sendGoonjInitiatedFeedbackEmail($eventsArray) {
+// 	$event = $eventsArray[0];
+// 	\Civi::log()->info('event', ['event'=>$event]);
 
-	try {
-	  $eventId = $event['id'];
-	  $eventCode = $event['title'];
-	  $addresses = Address::get(FALSE)
-		->addWhere('id', '=', $event['loc_block_id.address_id'])
-		->setLimit(1)
-		->execute()->first();
-	  $eventAddress = \CRM_Utils_Address::format($addresses);
-	  $eventAttendedById = $event['participant.created_id'];
-	  $feedbackEmailSent = $event['Goonj_Events_Feedback.Last_Reminder_Sent'];
+// 	try {
+// 	  $eventId = $event['id'];
+// 	  $eventCode = $event['title'];
+// 	  $addresses = Address::get(FALSE)
+// 		->addWhere('id', '=', $event['loc_block_id.address_id'])
+// 		->setLimit(1)
+// 		->execute()->first();
+// 	  $eventAddress = \CRM_Utils_Address::format($addresses);
+// 	  $eventAttendedById = $event['participant.created_id'];
+// 	  $feedbackEmailSent = $event['Goonj_Events_Feedback.Last_Reminder_Sent'];
 
-	  $endDate = new \DateTime($event['end_date']);
+// 	  $endDate = new \DateTime($event['end_date']);
 
-	  $today = new \DateTimeImmutable();
-	  $endOfToday = $today->setTime(23, 59, 59);
+// 	  $today = new \DateTimeImmutable();
+// 	  $endOfToday = $today->setTime(23, 59, 59);
 
-      if (true) {
+//       if (true) {
 
-		$eventAttendedBy = Contact::get(FALSE)
-		  ->addSelect('email.email', 'display_name')
-		  ->addJoin('Email AS email', 'LEFT')
-		  ->addWhere('id', '=', $eventAttendedById)
-		  ->execute()->first();
+// 		$eventAttendedBy = Contact::get(FALSE)
+// 		  ->addSelect('email.email', 'display_name')
+// 		  ->addJoin('Email AS email', 'LEFT')
+// 		  ->addWhere('id', '=', $eventAttendedById)
+// 		  ->execute()->first();
 
-		$attendeeEmail = $eventAttendedBy['email.email'];
-		$attendeeName = $eventAttendedBy['display_name'];
-		$from = HelperService::getDefaultFromEmail();
+// 		$attendeeEmail = $eventAttendedBy['email.email'];
+// 		$attendeeName = $eventAttendedBy['display_name'];
+// 		$from = HelperService::getDefaultFromEmail();
 
-		if (!$attendeeEmail) {
-		  throw new \Exception('Attendee email missing');
-		}
+// 		if (!$attendeeEmail) {
+// 		  throw new \Exception('Attendee email missing');
+// 		}
 
-		$mailParams = [
-		  'subject' => 'Goonj Events Notification: ' . $eventCode . ' at ' . $eventAddress,
-		  'from' => $from,
-		  'toEmail' => $attendeeEmail,
-		  'replyTo' => $from,
-		  'html' => self::getParticipantsFeedbackEmailHtml($attendeeName, $eventId, $eventAttendedById, $eventCode, $eventAddress),
-		];
+// 		$mailParams = [
+// 		  'subject' => 'Goonj Events Notification: ' . $eventCode . ' at ' . $eventAddress,
+// 		  'from' => $from,
+// 		  'toEmail' => $attendeeEmail,
+// 		  'replyTo' => $from,
+// 		  'html' => self::getParticipantsFeedbackEmailHtml($attendeeName, $eventId, $eventAttendedById, $eventCode, $eventAddress),
+// 		];
 
-		$emailSendResult = \CRM_Utils_Mail::send($mailParams);
+// 		$emailSendResult = \CRM_Utils_Mail::send($mailParams);
 
-		if ($emailSendResult) {
-		  Event::update(FALSE)
-			->addValue('Goonj_Events_Feedback.Last_Reminder_Sent', TRUE)
-			->addWhere('id', '=', $eventId)
-			->execute();
-		}
-	  }
-	}
-	catch (\Exception $e) {
-	  \Civi::log()->error("Error in sendEventsFeedbackEmail for $eventId " . $e->getMessage());
-	}
+// 		if ($emailSendResult) {
+// 		  Event::update(FALSE)
+// 			->addValue('Goonj_Events_Feedback.Last_Reminder_Sent', TRUE)
+// 			->addWhere('id', '=', $eventId)
+// 			->execute();
+// 		}
+// 	  }
+// 	}
+// 	catch (\Exception $e) {
+// 	  \Civi::log()->error("Error in sendEventsFeedbackEmail for $eventId " . $e->getMessage());
+// 	}
 
-  }
+//   }
+
+//   /**
+//    *
+//    */
+//   private static function getParticipantsFeedbackEmailHtml($attendeeName, $eventId, $eventAttendedById, $eventCode, $eventAddress) {
+// 	$homeUrl = \CRM_Utils_System::baseCMSURL();
+// 	// Construct the full URLs for the forms.
+// 	$eventFeedBackFormUrl = $homeUrl . 'events-feedback/#?Event1=' . $eventId . '&Goonj_Events_Outcome.Filled_By=' . $eventAttendedById;
+
+// 	$html = "
+// 	<p>Dear $attendeeName,</p>
+// 	<p>Thank you for attending the goonj events <strong>$eventCode</strong> at <strong>$eventAddress</strong>. Their is one forms that require your attention during and after the goonj event:</p>
+// 	<ol>
+// 		Please complete this form from the goonj event location once the goonj event ends.</li>
+// 		<li><a href=\"$eventFeedBackFormUrl\">Goonj Events Feedback Form</a><br>
+// 		This feedback form should be filled out after the goonj event ends, once you have an overview of the event's event.</li>
+// 	</ol>
+// 	<p>We appreciate your cooperation.</p>
+// 	<p>Warm Regards,<br>Urban Relations Team</p>";
+
+// 	return $html;
+//   }
+public static function sendGoonjInitiatedFeedbackEmail($eventsArray) {
+    // Collect event IDs where emails are successfully sent
+    $updatedEventIds = [];
+
+    foreach ($eventsArray as $event) {
+        try {
+            $eventId = $event['id'];
+            $eventCode = $event['title'];
+            $addresses = Address::get(FALSE)
+                ->addWhere('id', '=', $event['loc_block_id.address_id'])
+                ->setLimit(1)
+                ->execute()->first();
+            $eventAddress = \CRM_Utils_Address::format($addresses);
+			\Civi::log()->info('eventAddress', ['eventAddress'=>$eventAddress]);
+            $eventAttendedById = $event['participant.created_id'];
+            $feedbackEmailSent = $event['Goonj_Events_Feedback.Last_Reminder_Sent'];
+          
+            $endDate = new \DateTime($event['end_date']);
+            $today = new \DateTimeImmutable();
+            $endOfToday = $today->setTime(23, 59, 59);
+          
+            if (true) {
+                $eventAttendedBy = Contact::get(FALSE)
+                    ->addSelect('email.email', 'display_name')
+                    ->addJoin('Email AS email', 'LEFT')
+                    ->addWhere('id', '=', $eventAttendedById)
+                    ->execute()->first();
+                
+                $attendeeEmail = $eventAttendedBy['email.email'];
+                $attendeeName = $eventAttendedBy['display_name'];
+                $from = HelperService::getDefaultFromEmail();
+              
+                if (!$attendeeEmail) {
+                    throw new \Exception('Attendee email missing');
+                }
+              
+                $mailParams = [
+                    'subject' => 'Goonj Events Notification: ' . $eventCode . ' at ' . $eventAddress,
+                    'from' => $from,
+                    'toEmail' => $attendeeEmail,
+                    'replyTo' => $from,
+                    'html' => self::getParticipantsFeedbackEmailHtml($attendeeName, $eventId, $eventAttendedById, $eventCode, $eventAddress),
+                ];
+              
+                $emailSendResult = \CRM_Utils_Mail::send($mailParams);
+              
+                if ($emailSendResult) {
+                    // If email is successfully sent, store the eventId for later update
+                    $updatedEventIds[] = $eventId;
+                }
+            }
+        } catch (\Exception $e) {
+            \Civi::log()->error("Error in sendEventsFeedbackEmail for $eventId " . $e->getMessage());
+        }
+    }
+
+    // After the loop, update all the events where emails were sent
+    if (!empty($updatedEventIds)) {
+        Event::update(FALSE)
+            ->addValue('Goonj_Events_Feedback.Last_Reminder_Sent', TRUE)
+            ->addWhere('id', 'IN', $updatedEventIds)
+            ->execute();
+    }
+}
+
 
   /**
    *
@@ -342,7 +429,7 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
   private static function getParticipantsFeedbackEmailHtml($attendeeName, $eventId, $eventAttendedById, $eventCode, $eventAddress) {
 	$homeUrl = \CRM_Utils_System::baseCMSURL();
 	// Construct the full URLs for the forms.
-	$eventFeedBackFormUrl = $homeUrl . 'events-feedback/#?Event1=' . $eventId . '&Goonj_Events_Outcome.Filled_By=' . $eventAttendedById;
+	$eventFeedBackFormUrl = $homeUrl . 'events-feedback/#?Event1=' . $eventId . '&Goonj_Events_Feedback.Filled_By=' . $eventAttendedById .'&title=' . $eventCode;
 
 	$html = "
 	<p>Dear $attendeeName,</p>
