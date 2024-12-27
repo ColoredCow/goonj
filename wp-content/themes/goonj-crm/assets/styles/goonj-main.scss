@@ -359,25 +359,10 @@
   display: none !important;
 }
 
-#wp--skip-link--target {
-  ul {
-    li {
-      .wp-block-group {
-        .wp-block-post-content {
-          #crm-container {
-            #crm-main-content-wrapper {
-              .crm-block {
-                .event-info {
-                  .no-border:nth-last-of-type(-n+3) {
-                    display: none !important;
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+/* Hide last custom data in event info section */
+.event-info {
+  .no-border:nth-last-of-type(-n+3) {
+    display: none;
   }
 }
 
