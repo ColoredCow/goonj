@@ -80,7 +80,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
       $visitDate = $visitData['Urban_Planned_Visit.When_do_you_wish_to_visit_Goonj'];
       $visitTime = $visitData['Urban_Planned_Visit.What_time_do_you_wish_to_visit_'];
 
-      $contact = Contact::get(TRUE)
+      $contact = Contact::get(FALSE)
         ->addSelect('address.street_address', 'address.city')
         ->addJoin('Address AS address', 'LEFT')
         ->addWhere('id', '=', $visitAtId)
