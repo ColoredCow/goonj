@@ -137,7 +137,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     <p>Thank you for coordinating the learning journey at Goonj. Below are the details:</p>
 
     <p>
-        Thank you for choosing to explore Goonj through a learning journey at the Goonj Center of Circularity (GCOC)! Your visit is scheduled as per the details below:
+        Thank you for choosing to explore Goonj through a learning journey at Goonj Center of Circularity (GCOC) ! Your visit is scheduled as per the below details :
     </p>
     <ul>
         <li><strong>At:</strong> $visitAtName </li>
@@ -148,20 +148,24 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         <li><strong>Contact Point:</strong> [Name, Goonj Coordinator]</li>
     </ul>
 
-    <p>We’re excited to give you a first-hand glimpse into our work and its impact. For assistance, feel free to write back or call [Goonj POC name] on [Phone Number]. We look forward to hosting you!</p>
+    
+    <p>We’re excited to give you a first-hand glimpse into our work and its impact.  For assistance, feel free to write back or call [Goonj POC name] on [Phone Number]</p>
+    <p>We look forward to hosting you!</p>
+    <p>Best wishes,</p>
+    <p>Team Goonj..</p>
 
     <p>Meanwhile, sharing a few reading materials and links. We encourage you to explore them before your visit to get a sneak peek into our work:</p>
     <ul>
-        <li><a href='https://goonj.org/'>Goonj Website</a></li>
-        <li><a href='https://goonj.org/dignitydiaries/'>Ground Reports</a></li>
-        <li><a href='https://www.youtube.com/watch?v=qOowwnlPcAE'>National Geographic Video on Goonj: Redefining Philanthropy</a></li>
-        <li>Articles by our founder, Mr. Anshu Gupta:
-            <ul>
-                <li><a href='https://yourstory.com/2018/01/money-currency'>Why Should Money Be the Only Currency?</a></li>
-                <li><a href='https://www.livemint.com/news/business-of-life/anshu-gupta-give-with-dignity-1540994585257.html'>Give with Dignity</a></li>
-            </ul>
-        </li>
-    </ul>";
+    <li>1. <a href='https://goonj.org/'>Goonj Website</a></li>
+    <li>2. <a href='https://goonj.org/dignitydiaries/'>Ground Reports</a></li>
+    <li>3. <a href='https://www.youtube.com/watch?v=qOowwnlPcAE'>Video: National Geographic on Goonj - Redefining Philanthropy</a></li>
+    <li>4. Articles by our founder, Mr. Anshu Gupta:
+        <ul>
+            <li>- <a href='https://yourstory.com/2018/01/money-currency'>Why Should Money Be the Only Currency?</a></li>
+            <li>- <a href='https://www.livemint.com/news/business-of-life/anshu-gupta-give-with-dignity-1540994585257.html'>Give with Dignity</a></li>
+        </ul>
+    </li>
+</ul>";
 
     return $html;
   }
