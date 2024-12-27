@@ -288,9 +288,8 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
           ->setLimit(1)
           ->execute()->first();
         $eventAddress = \CRM_Utils_Address::format($addresses);
-
-        $eventAttendedById = $event['participant.created_id'];
         $feedbackEmailSent = $event['Goonj_Events_Feedback.Last_Reminder_Sent'];
+        $eventAttendedById = $event['participant.created_id'];
 
         $endDate = new \DateTime($event['end_date']);
         $today = new \DateTimeImmutable();
