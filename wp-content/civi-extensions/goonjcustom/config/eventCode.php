@@ -11,6 +11,7 @@ return [
   'Collection Camp' => 'CC',
   'Institution Collection Camp' => 'CC',
   'Institution Dropping Center' => 'DC',
+  'Events' =>'EVT',
   'Corporate Meet' => 'CM',
   'Disaster Exhibition' => 'DE',
   'Dropping Center' => 'DC',

@@ -7,6 +7,8 @@ use Civi\Core\Service\AutoSubscriber;
 use Civi\Api4\Event;
 use Civi\Api4\Address;
 use Civi\Traits\QrCodeable;
+use Civi\Api4\StateProvince;
+use Civi\Api4\CustomField;
 
 /**
  *
@@ -19,7 +21,10 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
    */
   public static function getSubscribedEvents() {
     return [
-      '&hook_civicrm_pre' => 'generateGoonjEventsQr',
+      '&hook_civicrm_pre' => [
+        ['generateGoonjEventsQr'],
+        ['generateEventSourceCode'],
+      ],
       '&hook_civicrm_tabset' => 'goonjEventsTabset',
     ];
   }
@@ -363,4 +368,144 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
     return $html;
   }
 
+  /**
+   * This hook is called after a db write on entities.
+   *
+   * @param string $op
+   *   The type of operation being performed.
+   * @param string $objectName
+   *   The name of the object.
+   * @param int $objectId
+   *   The unique identifier for the object.
+   * @param object $objectRef
+   *   The reference to the object.
+   */
+  public static function generateEventSourceCode(string $op, string $objectName, $objectId, &$objectRef) {
+
+
+    if ($objectName !== 'Event') {
+      return;
+    }
+    $customFields = CustomField::get(FALSE)
+    ->addWhere('custom_group_id:name', '=', 'Goonj_Events')
+    ->addWhere('name', '=', 'Event_Code_Status')
+    ->setLimit(1)
+    ->execute()->first();
+
+    $eventCodeFieldId = 'custom_' . $customFields['id'];
+    $customCode = 
+    \Civi::log()->info('objectRef', ['objectRef'=>$objectRef]);
+    return;
+
+    // $statusDetails = self::checkCampStatusAndIds($objectName, $objectId, $objectRef);
+
+    // if (!$statusDetails) {
+    //   return;
+    // }
+
+    // $newStatus = $statusDetails['newStatus'];
+    // $currentStatus = $statusDetails['currentStatus'];
+
+    // if ($currentStatus !== $newStatus) {
+      // if ($newStatus === 'authorized') {
+        // $subtypeId = $objectRef['subtype'] ?? NULL;
+        // if (!$subtypeId) {
+        //   return;
+        // }
+
+    $eventId = $objectRef['id'] ?? NULL;
+    \Civi::log()->info('eventId',['eventId'=>$eventId]);
+    if (!$eventId) {
+      return;
+    }
+
+    $events = Event::get(FALSE)
+      ->addSelect('Goonj_Events.Event_Code', 'created_date', 'title', 'loc_block_id.address_id')
+      ->addWhere('id', '=', $eventId)
+      ->execute()->first();
+
+    if(!empty($event['Goonj_Events.Event_Code'])){
+      return;
+    }
+    \Civi::log()->info('events',['events'=>$events]);
+    
+
+        // $collectionSource = EckEntity::get('Collection_Camp', FALSE)
+        //   ->addWhere('id', '=', $sourceId)
+        //   ->execute()->single();
+
+    $eventSourceCreatedDate = $events['created_date'] ?? NULL;
+
+    $eventTitle = $events['title'] ?? NULL;
+
+    $year = date('Y', strtotime($eventSourceCreatedDate));
+
+    // $stateId = self::getStateIdForSourceType($objectRef, $subtypeId, $sourceTitle);
+    $stateDetails = Address::get(TRUE)
+      ->addSelect('state_province_id')
+      ->addWhere('id', '=', $events['loc_block_id.address_id'])
+      ->setLimit(1)
+      ->execute()->first();
+    \Civi::log()->info('stateDetails',['stateDetails'=>$stateDetails]);
+    
+    if(empty($stateDetails)){
+      return;
+    }
+    $stateId = $stateDetails['state_province_id']?? NULL;
+    \Civi::log()->info('stateId',['stateId'=>$stateId]);
+
+    if (!$stateId) {
+      return;
+    }
+
+    $stateProvince = StateProvince::get(FALSE)
+      ->addWhere('id', '=', $stateId)
+      ->execute()->first();
+    \Civi::log()->info('stateProvince',['stateProvince'=>$stateProvince]);
+
+    if (empty($stateProvince)) {
+      return;
+    }
+
+    $stateAbbreviation = $stateProvince['abbreviation'] ?? NULL;
+    if (!$stateAbbreviation) {
+      return;
+    }
+    \Civi::log()->info('stateAbbreviation',['stateAbbreviation'=>$stateAbbreviation]);
+
+        // Fetch the Goonj-specific state code.
+    $config = self::getConfig();
+    $stateCode = $config['state_codes'][$stateAbbreviation] ?? 'UNKNOWN';
+    \Civi::log()->info('stateCode',['stateCode'=>$stateCode]);
+
+        // Get the current event title.
+    $currentTitle = $objectRef['title'] ?? 'Events';
+
+
+        // Fetch the event code.
+    $eventCode = $config['event_codes'][$currentTitle] ?? 'UNKNOWN';
+    \Civi::log()->info('eventCode', ['eventCode'=>$eventCode]);
+
+        // Modify the title to include the year, state code, event code, and camp Id.
+    $newTitle = $year . '/' . $stateCode . '/' . $eventCode . '/' . $eventId;
+    \Civi::log()->info('newTitle', ['newTitle'=>$newTitle]) ;
+    $results = Event::update(TRUE)
+    ->addValue('Goonj_Events.Event_Code', $newTitle)
+    ->addWhere('id', '=', $eventId)
+    ->execute();     
+  }
+
+    /**
+   *
+   */
+  private static function getConfig() {
+    $extensionsDir = \CRM_Core_Config::singleton()->extensionsDir;
+
+    $extensionPath = $extensionsDir . 'goonjcustom/config/';
+
+    return [
+      'state_codes' => include $extensionPath . 'constants.php',
+      'event_codes' => include $extensionPath . 'eventCode.php',
+    ];
+  }
 }
