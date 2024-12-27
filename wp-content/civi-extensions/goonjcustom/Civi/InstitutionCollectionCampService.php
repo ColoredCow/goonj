@@ -36,6 +36,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
         ['assignChapterGroupToIndividual'],
         ['generateInstitutionCollectionCampQr'],
         ['linkInstitutionCollectionCampToContact'],
+        ['updateInstitutionCampStatusAfterAuth'],
       ],
       '&hook_civicrm_custom' => [
         ['setOfficeDetails'],
@@ -43,6 +44,34 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       ],
       '&hook_civicrm_tabset' => 'institutionCollectionCampTabset',
     ];
+  }
+
+  /**
+   *
+   */
+  public static function updateInstitutionCampStatusAfterAuth(string $op, string $objectName, $objectId, &$objectRef) {
+    $statusDetails = self::checkCampStatusAndIds($objectName, $objectId, $objectRef);
+
+    if (!$statusDetails) {
+      return;
+    }
+
+    $newStatus = $statusDetails['newStatus'];
+    $currentStatus = $statusDetails['currentStatus'];
+
+    if ($currentStatus !== $newStatus) {
+      if ($newStatus === 'authorized') {
+        $institutionCampId = $objectRef['id'] ?? NULL;
+        if ($campId === NULL) {
+          return;
+        }
+
+        $results = EckEntity::update('Collection_Camp', TRUE)
+          ->addValue('Institution_collection_camp_Review.Camp_Status', 1)
+          ->addWhere('id', '=', $institutionCampId)
+          ->execute();
+      }
+    }
   }
 
   /**
@@ -168,7 +197,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
    *
    */
   private static function addContactToGroup($contactId, $groupId) {
-    if($contactId && $groupId){
+    if ($contactId && $groupId) {
       try {
         GroupContact::create(FALSE)
           ->addValue('contact_id', $contactId)
@@ -759,9 +788,10 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     }
 
     $stateOfficeId = $stateOffice['id'];
+
     EckEntity::update('Collection_Camp', FALSE)
       ->addValue('Institution_collection_camp_Review.Goonj_Office', $stateOfficeId)
-      ->addValue('Institution_Collection_Camp_Intent.Camp_Type', $isPublicDriveOpen)
+      ->addValue('Institution_collection_camp_Review.Is_the_camp_IHC_PCC_', $isPublicDriveOpen)
       ->addWhere('id', '=', $institutionCollectionCampId)
       ->execute();
 
