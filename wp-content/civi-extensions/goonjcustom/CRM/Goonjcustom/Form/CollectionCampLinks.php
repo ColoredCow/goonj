@@ -41,7 +41,7 @@ class CRM_Goonjcustom_Form_CollectionCampLinks extends CRM_Core_Form {
     $this->_contactId = CRM_Utils_Request::retrieve('gcid', 'Positive', $this);
     $this->_processingCenterId = CRM_Utils_Request::retrieve('puid', 'Positive', $this);
 
-    $this->setTitle('Institution Collection Camp Links');
+    $this->setTitle('Collection Camp Links');
     parent::preProcess();
   }
 
@@ -78,7 +78,7 @@ class CRM_Goonjcustom_Form_CollectionCampLinks extends CRM_Core_Form {
       [
         'label' => 'Vehicle Dispatch',
         'url' => self::createUrl(
-                '/institution-camp-vehicle-dispatch-form',
+                '/camp-vehicle-dispatch-form',
                 "Camp_Vehicle_Dispatch.Collection_Camp={$this->_collectionCampId}&Eck_Collection_Camp1={$this->_collectionCampId}&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent={$this->_processingCenterId}&Camp_Vehicle_Dispatch.Filled_by={$contactId}",
                 $contactId
         ),
@@ -86,7 +86,7 @@ class CRM_Goonjcustom_Form_CollectionCampLinks extends CRM_Core_Form {
       [
         'label' => 'Camp Outcome',
         'url' => self::createUrl(
-                '/institution-camp-outcome-form',
+                '/camp-outcome-form',
                 "Eck_Collection_Camp1={$this->_collectionCampId}&Camp_Outcome.Filled_By={$contactId}",
                 $contactId
         ),
