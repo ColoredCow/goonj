@@ -18,4 +18,10 @@
     <title>UrbanVisitLinks</title>
     <access_arguments>access CiviCRM</access_arguments>
   </item>
+   <item>
+    <path>civicrm/collectioncamp/links</path>
+    <page_callback>CRM_Goonjcustom_Form_InstitutionCollectionCampLinks</page_callback>
+    <title>InstitutionCollectionCampLinks</title>
+    <access_arguments>access CiviCRM</access_arguments>
+  </item>
 </menu>
