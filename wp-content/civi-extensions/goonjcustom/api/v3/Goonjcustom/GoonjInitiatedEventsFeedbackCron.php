@@ -38,17 +38,33 @@ function civicrm_api3_goonjcustom_goonj_initiated_events_feedback_cron($params) 
   $endOfDay = $today->setTime(23, 59, 59)->format('Y-m-d H:i:s');
 
   $events = Event::get(TRUE)
-	->addSelect('participant.status_id:name', 'participant.created_id', 'title', 'loc_block_id.address_id', 'Goonj_Events_Feedback.Last_Reminder_Sent')
-	->addJoin('Participant AS participant', 'LEFT')
-	->addWhere('participant.status_id', '=', 2)
-	->addClause('OR', ['Goonj_Events_Feedback.Last_Reminder_Sent', 'IS NULL'], ['Goonj_Events_Feedback.Last_Reminder_Sent', '=', FALSE])
+	->addClause('OR', ['Goonj_Events_Feedback.Last_Reminder_Sent', '=', FALSE], ['Goonj_Events_Feedback.Last_Reminder_Sent', 'IS NULL'])
+	->addWhere('end_date', '<=', $endOfDay)
 	->setLimit(25)
 	->execute();
-
+//   $events = Event::get(TRUE)
+// 	->addSelect('participant.status_id:name', 'participant.created_id', 'title', 'loc_block_id.address_id', 'Goonj_Events_Feedback.Last_Reminder_Sent')
+// 	->addJoin('Participant AS participant', 'LEFT')
+// 	->addWhere('participant.status_id', '=', 2)
+// 	->addClause('OR', ['Goonj_Events_Feedback.Last_Reminder_Sent', 'IS NULL'], ['Goonj_Events_Feedback.Last_Reminder_Sent', '=', FALSE])
+// 	->setLimit(25)
+// 	->execute();
+	// \Civi::log()->info('events', ['events'=>$events]);
   foreach ($events as $event) {
+	$events = Event::get(TRUE)
+	->addSelect('participant.status_id:name', 'participant.created_id', 'title', 'loc_block_id.address_id', 'Goonj_Events_Feedback.Last_Reminder_Sent', 'end_date')
+	->addJoin('Participant AS participant', 'LEFT')
+	->addWhere('participant.status_id', '=', 2)
+	->addWhere('id', '=', 106)
+	->setLimit(25)
+	->execute();
+	// \Civi::log()->info('events2', ['events2'=>$events]);
+	$eventsArray = $events->getArrayCopy();  // Get the entities (results) as an array
 
+	// Log or use the extracted data
+	\Civi::log()->info('Extracted events', ['events' => $eventsArray]);
 	try {
-	  GoonjInitiatedEventsService::sendGoonjInitiatedFeedbackEmail($event);
+	  GoonjInitiatedEventsService::sendGoonjInitiatedFeedbackEmail($eventsArray);
 	}
 	catch (\Exception $e) {
 	  \Civi::log()->info('Error Goonj Events Feedback Cron', [

@@ -276,7 +276,9 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
   /**
    *
    */
-  public static function sendGoonjInitiatedFeedbackEmail($event) {
+  public static function sendGoonjInitiatedFeedbackEmail($eventsArray) {
+	$event = $eventsArray[0];
+	\Civi::log()->info('event', ['event'=>$event]);
 
 	try {
 	  $eventId = $event['id'];
@@ -294,7 +296,7 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
 	  $today = new \DateTimeImmutable();
 	  $endOfToday = $today->setTime(23, 59, 59);
 
-      if (!$feedbackEmailSent && $endOfToday <= $endDate) {
+      if (true) {
 
 		$eventAttendedBy = Contact::get(FALSE)
 		  ->addSelect('email.email', 'display_name')
