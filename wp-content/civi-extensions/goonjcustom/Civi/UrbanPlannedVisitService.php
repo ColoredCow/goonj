@@ -154,9 +154,11 @@ class UrbanPlannedVisitService extends AutoSubscriber {
 
   <p>Let’s work together to create a meaningful and enriching experience for our visitors!</p>
 
-  <p>Warm regards,</p>
-  <p>$coordinatingGoonjPocName</p>
-  <p>Team Goonj</p>
+  <p>
+    Warm regards,<br>
+    $coordinatingGoonjPocName<br>
+    Team Goonj
+  </p>
   ";
 
     return $html;
