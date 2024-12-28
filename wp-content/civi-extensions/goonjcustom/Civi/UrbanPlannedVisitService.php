@@ -286,12 +286,12 @@ class UrbanPlannedVisitService extends AutoSubscriber {
   /**
    *
    */
-  private static function getExtCoordPocEmailHtml($coordinatingGoonjPOCName, $visitAtName, $visitAddress, $visitDate, $visitTime, $coordinatingPersonName) {
+  private static function getExtCoordPocEmailHtml($externalCoordinatingGoonjPocName, $visitAtName, $visitAddress, $visitDate, $visitTime, $coordinatingPersonName) {
     $date = new \DateTime($visitDate);
     $dayOfWeek = $date->format('l');
 
     $html = "
-    <p>Dear $coordinatingGoonjPOCName,</p>
+    <p>Dear $externalCoordinatingGoonjPocName,</p>
 
     <p>Thank you for coordinating the learning journey at Goonj. Below are the details:</p>
 
