@@ -88,7 +88,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         ->addWhere('id', '=', $goonjCoordinatingPocId)
         ->execute()->single();
   
-      $goonjCoordinatingGoonjPocEmail = $goonjCoordinatingGoonjPoc['email.email'];
+      $coordinatingGoonjPocEmail = $goonjCoordinatingGoonjPoc['email.email'];
       $coordinatingGoonjPocName = $goonjCoordinatingGoonjPoc['display_name'];
   
       $from = HelperService::getDefaultFromEmail();
