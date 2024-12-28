@@ -70,7 +70,6 @@ class UrbanPlannedVisitService extends AutoSubscriber {
       $visitTime = $visitData['Urban_Planned_Visit.What_time_do_you_wish_to_visit_'];
       $visitParticipation = $visitData['Urban_Planned_Visit.Number_of_people_accompanying_you'];
       $institutionName = $visitData['Urban_Planned_Visit.Institution_Name'];
-      error_log("institutionName: " . print_r($institutionName, TRUE));
 
       $goonjVisitGuideId = $objectRef['Urban_Planned_Visit.Visit_Guide'] ?? '';
 
@@ -95,7 +94,6 @@ class UrbanPlannedVisitService extends AutoSubscriber {
       $coordinatingGoonjPocName = $coordinatingGoonjPoc['display_name'];
 
       $from = HelperService::getDefaultFromEmail();
-      error_log("from: " . print_r($from, TRUE));
 
       $activity = Activity::get(FALSE)
         ->addSelect('contact.display_name')
@@ -131,7 +129,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
       'from' => $from,
       'toEmail' => $goonjVisitGuideEmail,
       'replyTo' => $from,
-      'html' => self::getGoonjCoordPocEmailHtml($coordinatingGoonjPocName, $visitDate, $visitTime, $visitParticipation, $goonjVisitGuideName, $individualName, $institutionName),
+      'html' => self::getGoonjCoordPocAndVisitEmailHtml($coordinatingGoonjPocName, $visitDate, $visitTime, $visitParticipation, $goonjVisitGuideName, $individualName, $institutionName),
       'cc' => $coordinatingGoonjPocEmail,
     ];
 
@@ -148,7 +146,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
   /**
    * Generate the email HTML content for Goonj Coordinating POC.
    */
-  private static function getGoonjCoordPocEmailHtml($coordinatingGoonjPocName, $visitDate, $visitTime, $visitParticipation, $goonjVisitGuideName, $individualName, $institutionName) {
+  private static function getGoonjCoordPocAndVisitEmailHtml($coordinatingGoonjPocName, $visitDate, $visitTime, $visitParticipation, $goonjVisitGuideName, $individualName, $institutionName) {
     $date = new \DateTime($visitDate);
     $dayOfWeek = $date->format('l');
 
