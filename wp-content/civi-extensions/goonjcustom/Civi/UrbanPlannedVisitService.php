@@ -2,13 +2,13 @@
 
 namespace Civi;
 
+use Civi\Api4\Activity;
 use Civi\Api4\Contact;
 use Civi\Api4\Group;
 use Civi\Api4\GroupContact;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Api4\EckEntity;
 use Civi\Traits\CollectionSource;
-use DateTime;
 
 /**
  *
@@ -27,9 +27,161 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         ['sendVisitFeedbackForm'],
         ['assignChapterGroupToIndividualForUrbanPlannedVisit'],
         ['sendAuthorizationEmailToExtCoordPoc'],
+        ['sendAuthorizationEmailToExtCoordPocAndVisitGuide'],
       ],
       '&hook_civicrm_tabset' => 'urbanVisitTabset',
     ];
+  }
+
+  /**
+   * This hook is called after a db write on entities.
+   *
+   * @param string $op
+   *   The type of operation being performed.
+   * @param string $objectName
+   *   The name of the object.
+   * @param int $objectId
+   *   The unique identifier for the object.
+   * @param object $objectRef
+   *   The reference to the object.
+   */
+  public static function sendAuthorizationEmailToExtCoordPocAndVisitGuide(string $op, string $objectName, $objectId, &$objectRef) {
+    $visitStatusDetails = self::checkAuthVisitStatusAndIds($objectName, $objectId, $objectRef);
+
+    if (!$visitStatusDetails) {
+      return;
+    }
+
+    $newAuthVisitStatus = $visitStatusDetails['newAuthVisitStatus'];
+    $currentAuthVisitStatus = $visitStatusDetails['currentAuthVisitStatus'];
+
+    if ($currentAuthVisitStatus !== $newAuthVisitStatus && $newAuthVisitStatus === 'authorized') {
+      $visitId = $objectRef['id'] ?? NULL;
+      if ($visitId === NULL) {
+        return;
+      }
+
+      $visitData = EckEntity::get('Institution_Visit', FALSE)
+        ->addSelect('Urban_Planned_Visit.Number_of_people_accompanying_you', 'Urban_Planned_Visit.When_do_you_wish_to_visit_Goonj', 'Urban_Planned_Visit.What_time_do_you_wish_to_visit_', 'Urban_Planned_Visit.Institution_Name')
+        ->addWhere('id', '=', $visitId)
+        ->execute()->single();
+
+      $visitDate = $visitData['Urban_Planned_Visit.When_do_you_wish_to_visit_Goonj'];
+      $visitTime = $visitData['Urban_Planned_Visit.What_time_do_you_wish_to_visit_'];
+      $visitParticipation = $visitData['Urban_Planned_Visit.Number_of_people_accompanying_you'];
+      $institutionName = $visitData['Urban_Planned_Visit.Institution_Name'];
+
+      $goonjVisitGuideId = $objectRef['Urban_Planned_Visit.Visit_Guide'] ?? '';
+
+      $goonjVisitGuideData = Contact::get(FALSE)
+        ->addSelect('email.email', 'display_name', 'phone.phone_numeric')
+        ->addJoin('Email AS email', 'LEFT')
+        ->addWhere('id', '=', $goonjVisitGuideId)
+        ->execute()->single();
+
+      $goonjVisitGuideEmail = $goonjVisitGuideData['email.email'];
+      $goonjVisitGuideName = $goonjVisitGuideData['display_name'];
+
+      $goonjCoordinatingPocId = $objectRef['Urban_Planned_Visit.Coordinating_Goonj_POC'] ?? '';
+
+      $coordinatingGoonjPoc = Contact::get(FALSE)
+        ->addSelect('email.email', 'display_name', 'phone.phone_numeric')
+        ->addJoin('Email AS email', 'LEFT')
+        ->addWhere('id', '=', $goonjCoordinatingPocId)
+        ->execute()->single();
+
+      $coordinatingGoonjPocEmail = $coordinatingGoonjPoc['email.email'];
+      $coordinatingGoonjPocName = $coordinatingGoonjPoc['display_name'];
+
+      $from = HelperService::getDefaultFromEmail();
+
+      $activity = Activity::get(FALSE)
+        ->addSelect('contact.display_name')
+        ->addJoin('ActivityContact AS activity_contact', 'LEFT')
+        ->addJoin('Contact AS contact', 'LEFT')
+        ->addWhere('activity_type_id', '=', 74)
+        ->addWhere('Volunteering_Activity.Urban_Planned_Visit', '=', $visitId)
+        ->execute()->first();
+
+      $individualName = $activity['contact.display_name'];
+
+      self::sendEmailToVisitGuide($visitId, $visitDate, $visitTime, $visitParticipation, $goonjVisitGuideName, $coordinatingGoonjPocName, $from, $goonjVisitGuideEmail, $coordinatingGoonjPocEmail, $individualName, $institutionName);
+    }
+  }
+
+  /**
+   *
+   */
+  private static function sendEmailToVisitGuide($visitId, $visitDate, $visitTime, $visitParticipation, $goonjVisitGuideName, $coordinatingGoonjPocName, $from, $goonjVisitGuideEmail, $coordinatingGoonjPocEmail, $individualName, $institutionName) {
+    $emailToGoonjVisitGuide = EckEntity::get('Institution_Visit', FALSE)
+      ->addSelect('Urban_Planned_Visit.Email_To_Goonj_Visit_Guide',)
+      ->addWhere('id', '=', $visitId)
+      ->execute()->single();
+
+    $isEmailSendToGoonjVisitGuide = $emailToGoonjVisitGuide['Urban_Planned_Visit.Email_To_Goonj_Visit_Guide'];
+
+    if ($isEmailSendToGoonjVisitGuide !== NULL) {
+      return;
+    }
+
+    $mailParamsVisitGuide = [
+      'subject' => 'You have been assigned for a Learning Journey at GCoC',
+      'from' => $from,
+      'toEmail' => $goonjVisitGuideEmail,
+      'replyTo' => $from,
+      'html' => self::getGoonjCoordPocAndVisitEmailHtml($coordinatingGoonjPocName, $visitDate, $visitTime, $visitParticipation, $goonjVisitGuideName, $individualName, $institutionName),
+      'cc' => $coordinatingGoonjPocEmail,
+    ];
+
+    $emailSendResultToVisitGuide = \CRM_Utils_Mail::send($mailParamsVisitGuide);
+
+    If ($emailSendResultToVisitGuide) {
+      EckEntity::update('Institution_Visit', FALSE)
+        ->addValue('Urban_Planned_Visit.Email_To_Goonj_Visit_Guide', 1)
+        ->addWhere('id', '=', $visitId)
+        ->execute();
+    }
+  }
+
+  /**
+   * Generate the email HTML content for Goonj Coordinating POC.
+   */
+  private static function getGoonjCoordPocAndVisitEmailHtml($coordinatingGoonjPocName, $visitDate, $visitTime, $visitParticipation, $goonjVisitGuideName, $individualName, $institutionName) {
+    $date = new \DateTime($visitDate);
+    $dayOfWeek = $date->format('l');
+
+    // Conditionally construct the Individual/Institute Name string.
+    $individualOrInstitute = $individualName;
+    error_log("individualOrInstitute: " . print_r($individualOrInstitute, TRUE));
+
+    if (!empty($institutionName)) {
+      $individualOrInstitute .= " / $institutionName";
+    }
+
+    $html = "
+<p>Dear $goonjVisitGuideName,</p>
+
+<p>A Learning Journey at our Goonj Center of Circularity (GCoC) has been confirmed, and you have been assigned for this visit as per the roster/availability. Details below:</p>
+
+<ul>
+    <li><strong>Date:</strong> $visitDate, $dayOfWeek</li>
+    <li><strong>Time:</strong> $visitTime</li>
+    <li><strong>Individual/Institute Name:</strong> $individualOrInstitute</li>
+    <li><strong>Number of Participants:</strong> $visitParticipation</li>
+</ul>
+
+<p>Kindly ensure your presence during the above time slot. If you need to make any changes, please write back to me asap so we can adjust the schedule accordingly.</p>
+
+<p>Let’s work together to create a meaningful and enriching experience for our visitors!</p>
+
+<p>
+  Warm regards,<br>
+  $coordinatingGoonjPocName<br>
+  Team Goonj
+</p>
+";
+
+    return $html;
   }
 
   /**
@@ -114,7 +266,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
 
       $emailSendResultToExternalPoc = \CRM_Utils_Mail::send($mailParamsExternalPoc);
 
-      If ($emailSendResultToExternalPoc) {
+      if ($emailSendResultToExternalPoc) {
         EckEntity::update('Institution_Visit', FALSE)
           ->addValue('Urban_Planned_Visit.Email_To_Ext_Coord_Poc', 1)
           ->addWhere('id', '=', $visitId)
