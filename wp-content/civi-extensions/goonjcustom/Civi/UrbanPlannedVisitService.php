@@ -135,7 +135,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
    /**
    *
    */
-  private static function sendEmailToVisitGuide($objectRef, $visitId, $visitDate, $visitTime, $visitParticipation, $goonjVisitGuideName, $goonjVisitGuideId) {
+  private static function sendEmailToVisitGuide($objectRef, $visitId, $visitDate, $visitTime, $visitParticipation, $goonjVisitGuideName, $goonjVisitGuideId, $goonjCoordinatingGoonjPocEmail, $goonjCoordinatingGoonjPocNam, $from, $goonjVisitGuideEmail) {
     $emailToGoonjVisitGuide = EckEntity::get('Institution_Visit', FALSE)
       ->addSelect('Urban_Planned_Visit.Email_To_Goonj_Visit_Guide',)
       ->addWhere('id', '=', $visitId)
