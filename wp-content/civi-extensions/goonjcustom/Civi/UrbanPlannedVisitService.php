@@ -89,47 +89,12 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         ->execute()->single();
   
       $goonjCoordinatingGoonjPocEmail = $goonjCoordinatingGoonjPoc['email.email'];
-      $goonjCoordinatingGoonjPocName = $goonjCoordinatingGoonjPoc['display_name'];
+      $coordinatingGoonjPocName = $goonjCoordinatingGoonjPoc['display_name'];
   
       $from = HelperService::getDefaultFromEmail();
 
-      self::sendEmailToCoordinatingPoc($visitId, $visitDate, $visitTime, $visitParticipation, $goonjVisitGuideName, $goonjCoordinatingGoonjPocEmail, $coordinatingGoonjPocName, $from);
       self::sendEmailToVisitGuide($visitId, $visitDate, $visitTime, $visitParticipation, $goonjVisitGuideName, $coordinatingGoonjPocName, $from, $goonjVisitGuideEmail);
     }
-  }
-
-  /**
-   *
-   */
-  private static function sendEmailToCoordinatingPoc($visitId, $visitDate, $visitTime, $visitParticipation, $goonjVisitGuideName, $goonjCoordinatingGoonjPocEmail, $coordinatingGoonjPocName, $from) {
-    $emailToGoonjCoordPoc = EckEntity::get('Institution_Visit', FALSE)
-      ->addSelect('Urban_Planned_Visit.Email_To_Goonj_Coord_Poc')
-      ->addWhere('id', '=', $visitId)
-      ->execute()->single();
-
-    $isEmailSendToGoonjCoordPoc = $emailToGoonjCoordPoc['Urban_Planned_Visit.Email_To_Goonj_Coord_Poc'];
-
-    if ($isEmailSendToGoonjCoordPoc !== NULL) {
-      return;
-    }
-
-
-    $mailParamsExternalPoc = [
-      'subject' => 'You have been assigned for a Learning Journey at GCoC',
-      'from' => $from,
-      'toEmail' => $goonjCoordinatingGoonjPocEmail,
-      'replyTo' => $from,
-      'html' => self::getGoonjCoordPocEmailHtml($coordinatingGoonjPocName, $visitDate, $visitTime, $visitParticipation, $goonjVisitGuideName),
-    ];
-
-    $emailSendResultToCoordinatingGoonjPoc = \CRM_Utils_Mail::send($mailParamsExternalPoc);
-
-    // If ($emailSendResultToCoordinatingGoonjPoc) {
-    //   EckEntity::update('Institution_Visit', FALSE)
-    //     ->addValue('Urban_Planned_Visit.Email_To_Goonj_Coord_Poc', 1)
-    //     ->addWhere('id', '=', $visitId)
-    //     ->execute();
-    // }
   }
 
    /**
