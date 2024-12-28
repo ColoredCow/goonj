@@ -359,6 +359,12 @@
   display: none !important;
 }
 
+.event-info {
+  .no-border:nth-last-of-type(-n+1) {
+    display: none !important;
+  }
+}
+
 // Media Queries
 @media (min-width: 340px) and (max-width: 768px) {
   #crm-main-content-wrapper {
