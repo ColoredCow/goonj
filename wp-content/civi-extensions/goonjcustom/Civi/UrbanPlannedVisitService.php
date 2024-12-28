@@ -243,6 +243,17 @@ class UrbanPlannedVisitService extends AutoSubscriber {
 
       $externalCoordinatingPocId = $objectRef['Urban_Planned_Visit.External_Coordinating_PoC'] ?? '';
       $coordinatingPocId = $objectRef['Urban_Planned_Visit.Coordinating_Person'] ?? '';
+      $coordinatingGoonjPocId = $objectRef['Urban_Planned_Visit.Coordinating_Goonj_POC'] ?? '';
+
+      $coordinatingGoonjPocPerson = Contact::get(FALSE)
+      ->addSelect('display_name', 'phone.phone_numeric')
+      ->addJoin('Phone AS phone', 'LEFT')
+      ->addWhere('id', '=', $coordinatingGoonjPocId)
+      ->execute()->single();
+
+      $coordinatingGoonjPersonName = $coordinatingGoonjPocPerson['display_name'];
+      $coordinatingGoonjPersonPhone = $externalCoordinatingGoonjPoc['phone.phone_numeric'];
+
 
       $coordinatingPerson = Contact::get(FALSE)
       ->addSelect('display_name')
@@ -269,7 +280,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         'from' => $from,
         'toEmail' => $externalCoordinatingGoonjPocEmail,
         'replyTo' => $from,
-        'html' => self::getExtCoordPocEmailHtml($externalCoordinatingGoonjPocName, $visitAtName, $visitAddress, $visitDate, $visitTime, $coordinatingPersonName),
+        'html' => self::getExtCoordPocEmailHtml($externalCoordinatingGoonjPocName, $visitAtName, $visitAddress, $visitDate, $visitTime, $coordinatingPersonName, $coordinatingGoonjPersonName, $coordinatingGoonjPersonPhon),
       ];
 
       $emailSendResultToExternalPoc = \CRM_Utils_Mail::send($mailParamsExternalPoc);
@@ -286,7 +297,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
   /**
    *
    */
-  private static function getExtCoordPocEmailHtml($externalCoordinatingGoonjPocName, $visitAtName, $visitAddress, $visitDate, $visitTime, $coordinatingPersonName) {
+  private static function getExtCoordPocEmailHtml($externalCoordinatingGoonjPocName, $visitAtName, $visitAddress, $visitDate, $visitTime, $coordinatingPersonName, $coordinatingGoonjPersonName, $coordinatingGoonjPersonPhon) {
     $date = new \DateTime($visitDate);
     $dayOfWeek = $date->format('l');
 
@@ -308,7 +319,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     </ul>
 
     
-    <p>We’re excited to give you a first-hand glimpse into our work and its impact.  For assistance, feel free to write back or call [Goonj POC name] on [Phone Number]</p>
+    <p>We’re excited to give you a first-hand glimpse into our work and its impact.  For assistance, feel free to write back or call $coordinatingGoonjPersonName on $coordinatingGoonjPersonPhon</p>
     <p>We look forward to hosting you!</p>
     <p>Best wishes,</p>
     <p>Team Goonj..</p>
