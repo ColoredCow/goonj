@@ -62,7 +62,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
       }
 
       $visitData = EckEntity::get('Institution_Visit', FALSE)
-        ->addSelect('Urban_Planned_Visit.Number_of_people_accompanying_you', 'Urban_Planned_Visit.When_do_you_wish_to_visit_Goonj', 'Urban_Planned_Visit.What_time_do_you_wish_to_visit_', 'Institution_Name')
+        ->addSelect('Urban_Planned_Visit.Number_of_people_accompanying_you', 'Urban_Planned_Visit.When_do_you_wish_to_visit_Goonj', 'Urban_Planned_Visit.What_time_do_you_wish_to_visit_', 'Urban_Planned_Visit.Institution_Name')
         ->addWhere('id', '=', $visitId)
         ->execute()->single();
 
@@ -70,6 +70,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
       $visitTime = $visitData['Urban_Planned_Visit.What_time_do_you_wish_to_visit_'];
       $visitParticipation = $visitData['Urban_Planned_Visit.Number_of_people_accompanying_you'];
       $institutionName = $visitData['Urban_Planned_Visit.Institution_Name'];
+      error_log("institutionName: " . print_r($institutionName, TRUE));
 
       $goonjVisitGuideId = $objectRef['Urban_Planned_Visit.Visit_Guide'] ?? '';
 
@@ -151,28 +152,36 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     $date = new \DateTime($visitDate);
     $dayOfWeek = $date->format('l');
 
+    // Conditionally construct the Individual/Institute Name string.
+    $individualOrInstitute = $individualName;
+    error_log("individualOrInstitute: " . print_r($individualOrInstitute, TRUE));
+
+    if (!empty($institutionName)) {
+      $individualOrInstitute .= " / $institutionName";
+    }
+
     $html = "
-  <p>Dear $goonjVisitGuideName,</p>
+<p>Dear $goonjVisitGuideName,</p>
 
-  <p>A Learning Journey at our Goonj Center of Circularity (GCoC) has been confirmed, and you have been assigned for this visit as per the roster/availability. Details below:</p>
+<p>A Learning Journey at our Goonj Center of Circularity (GCoC) has been confirmed, and you have been assigned for this visit as per the roster/availability. Details below:</p>
 
-  <ul>
-      <li><strong>Date:</strong> $visitDate, $dayOfWeek</li>
-      <li><strong>Time:</strong> $visitTime</li>
-      <li><strong>Individual/Institute Name:</strong> [$individualName/$institutionName]</li>
-      <li><strong>Number of Participants:</strong> $visitParticipation</li>
-  </ul>
+<ul>
+    <li><strong>Date:</strong> $visitDate, $dayOfWeek</li>
+    <li><strong>Time:</strong> $visitTime</li>
+    <li><strong>Individual/Institute Name:</strong> $individualOrInstitute</li>
+    <li><strong>Number of Participants:</strong> $visitParticipation</li>
+</ul>
 
-  <p>Kindly ensure your presence during the above time slot. If you need to make any changes, please write back to me asap so we can adjust the schedule accordingly.</p>
+<p>Kindly ensure your presence during the above time slot. If you need to make any changes, please write back to me asap so we can adjust the schedule accordingly.</p>
 
-  <p>Let’s work together to create a meaningful and enriching experience for our visitors!</p>
+<p>Let’s work together to create a meaningful and enriching experience for our visitors!</p>
 
-  <p>
-    Warm regards,<br>
-    $coordinatingGoonjPocName<br>
-    Team Goonj
-  </p>
-  ";
+<p>
+  Warm regards,<br>
+  $coordinatingGoonjPocName<br>
+  Team Goonj
+</p>
+";
 
     return $html;
   }
