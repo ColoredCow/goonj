@@ -252,7 +252,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
       ->execute()->single();
 
       $coordinatingGoonjPersonName = $coordinatingGoonjPocPerson['display_name'];
-      $coordinatingGoonjPersonPhone = $externalCoordinatingGoonjPoc['phone.phone_numeric'];
+      $coordinatingGoonjPersonPhone = $coordinatingGoonjPocPerson['phone.phone_numeric'];
 
 
       $coordinatingPerson = Contact::get(FALSE)
@@ -280,7 +280,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         'from' => $from,
         'toEmail' => $externalCoordinatingGoonjPocEmail,
         'replyTo' => $from,
-        'html' => self::getExtCoordPocEmailHtml($externalCoordinatingGoonjPocName, $visitAtName, $visitAddress, $visitDate, $visitTime, $coordinatingPersonName, $coordinatingGoonjPersonName, $coordinatingGoonjPersonPhon),
+        'html' => self::getExtCoordPocEmailHtml($externalCoordinatingGoonjPocName, $visitAtName, $visitAddress, $visitDate, $visitTime, $coordinatingPersonName, $coordinatingGoonjPersonName, $coordinatingGoonjPersonPhone),
       ];
 
       $emailSendResultToExternalPoc = \CRM_Utils_Mail::send($mailParamsExternalPoc);
@@ -297,7 +297,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
   /**
    *
    */
-  private static function getExtCoordPocEmailHtml($externalCoordinatingGoonjPocName, $visitAtName, $visitAddress, $visitDate, $visitTime, $coordinatingPersonName, $coordinatingGoonjPersonName, $coordinatingGoonjPersonPhon) {
+  private static function getExtCoordPocEmailHtml($externalCoordinatingGoonjPocName, $visitAtName, $visitAddress, $visitDate, $visitTime, $coordinatingPersonName, $coordinatingGoonjPersonName, $coordinatingGoonjPersonPhone) {
     $date = new \DateTime($visitDate);
     $dayOfWeek = $date->format('l');
 
@@ -319,7 +319,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     </ul>
 
     
-    <p>We’re excited to give you a first-hand glimpse into our work and its impact.  For assistance, feel free to write back or call $coordinatingGoonjPersonName on $coordinatingGoonjPersonPhon</p>
+    <p>We’re excited to give you a first-hand glimpse into our work and its impact.  For assistance, feel free to write back or call $coordinatingGoonjPersonName on $coordinatingGoonjPersonPhone</p>
     <p>We look forward to hosting you!</p>
     <p>Best wishes,</p>
     <p>Team Goonj..</p>
