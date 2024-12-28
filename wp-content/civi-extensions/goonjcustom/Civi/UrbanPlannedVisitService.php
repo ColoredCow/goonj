@@ -62,13 +62,14 @@ class UrbanPlannedVisitService extends AutoSubscriber {
       }
 
       $visitData = EckEntity::get('Institution_Visit', FALSE)
-        ->addSelect('Urban_Planned_Visit.Number_of_people_accompanying_you', 'Urban_Planned_Visit.When_do_you_wish_to_visit_Goonj', 'Urban_Planned_Visit.What_time_do_you_wish_to_visit_')
+        ->addSelect('Urban_Planned_Visit.Number_of_people_accompanying_you', 'Urban_Planned_Visit.When_do_you_wish_to_visit_Goonj', 'Urban_Planned_Visit.What_time_do_you_wish_to_visit_', 'Institution_Name')
         ->addWhere('id', '=', $visitId)
         ->execute()->single();
 
       $visitDate = $visitData['Urban_Planned_Visit.When_do_you_wish_to_visit_Goonj'];
       $visitTime = $visitData['Urban_Planned_Visit.What_time_do_you_wish_to_visit_'];
       $visitParticipation = $visitData['Urban_Planned_Visit.Number_of_people_accompanying_you'];
+      $institutionName = $visitData['Urban_Planned_Visit.Institution_Name'];
 
       $goonjVisitGuideId = $objectRef['Urban_Planned_Visit.Visit_Guide'] ?? '';
 
@@ -105,14 +106,14 @@ class UrbanPlannedVisitService extends AutoSubscriber {
 
       $individualName = $activity['contact.display_name'];
 
-      self::sendEmailToVisitGuide($visitId, $visitDate, $visitTime, $visitParticipation, $goonjVisitGuideName, $coordinatingGoonjPocName, $from, $goonjVisitGuideEmail, $coordinatingGoonjPocEmail, $individualName);
+      self::sendEmailToVisitGuide($visitId, $visitDate, $visitTime, $visitParticipation, $goonjVisitGuideName, $coordinatingGoonjPocName, $from, $goonjVisitGuideEmail, $coordinatingGoonjPocEmail, $individualName, $institutionName);
     }
   }
 
   /**
    *
    */
-  private static function sendEmailToVisitGuide($visitId, $visitDate, $visitTime, $visitParticipation, $goonjVisitGuideName, $coordinatingGoonjPocName, $from, $goonjVisitGuideEmail, $coordinatingGoonjPocEmail, $individualName) {
+  private static function sendEmailToVisitGuide($visitId, $visitDate, $visitTime, $visitParticipation, $goonjVisitGuideName, $coordinatingGoonjPocName, $from, $goonjVisitGuideEmail, $coordinatingGoonjPocEmail, $individualName, $institutionName) {
     $emailToGoonjVisitGuide = EckEntity::get('Institution_Visit', FALSE)
       ->addSelect('Urban_Planned_Visit.Email_To_Goonj_Visit_Guide',)
       ->addWhere('id', '=', $visitId)
@@ -129,7 +130,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
       'from' => $from,
       'toEmail' => $goonjVisitGuideEmail,
       'replyTo' => $from,
-      'html' => self::getGoonjCoordPocEmailHtml($coordinatingGoonjPocName, $visitDate, $visitTime, $visitParticipation, $goonjVisitGuideName, $individualName),
+      'html' => self::getGoonjCoordPocEmailHtml($coordinatingGoonjPocName, $visitDate, $visitTime, $visitParticipation, $goonjVisitGuideName, $individualName, $institutionName),
       'cc' => $coordinatingGoonjPocEmail,
     ];
 
@@ -146,7 +147,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
   /**
    * Generate the email HTML content for Goonj Coordinating POC.
    */
-  private static function getGoonjCoordPocEmailHtml($coordinatingGoonjPocName, $visitDate, $visitTime, $visitParticipation, $goonjVisitGuideName, $individualName) {
+  private static function getGoonjCoordPocEmailHtml($coordinatingGoonjPocName, $visitDate, $visitTime, $visitParticipation, $goonjVisitGuideName, $individualName, $institutionName) {
     $date = new \DateTime($visitDate);
     $dayOfWeek = $date->format('l');
 
@@ -158,7 +159,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
   <ul>
       <li><strong>Date:</strong> $visitDate, $dayOfWeek</li>
       <li><strong>Time:</strong> $visitTime</li>
-      <li><strong>Individual/Institute Name:</strong> [$individualName/Institute]</li>
+      <li><strong>Individual/Institute Name:</strong> [$individualName/$institutionName]</li>
       <li><strong>Number of Participants:</strong> $visitParticipation</li>
   </ul>
 
