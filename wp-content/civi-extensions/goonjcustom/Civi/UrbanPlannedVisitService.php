@@ -93,14 +93,14 @@ class UrbanPlannedVisitService extends AutoSubscriber {
   
       $from = HelperService::getDefaultFromEmail();
 
-      self::sendEmailToVisitGuide($visitId, $visitDate, $visitTime, $visitParticipation, $goonjVisitGuideName, $coordinatingGoonjPocName, $from, $goonjVisitGuideEmail);
+      self::sendEmailToVisitGuide($visitId, $visitDate, $visitTime, $visitParticipation, $goonjVisitGuideName, $coordinatingGoonjPocName, $from, $goonjVisitGuideEmail, $coordinatingGoonjPocEmail);
     }
   }
 
    /**
    *
    */
-  private static function sendEmailToVisitGuide($visitId, $visitDate, $visitTime, $visitParticipation, $goonjVisitGuideName, $coordinatingGoonjPocName, $from, $goonjVisitGuideEmail) {
+  private static function sendEmailToVisitGuide($visitId, $visitDate, $visitTime, $visitParticipation, $goonjVisitGuideName, $coordinatingGoonjPocName, $from, $goonjVisitGuideEmail, $coordinatingGoonjPocEmail) {
     $emailToGoonjVisitGuide = EckEntity::get('Institution_Visit', FALSE)
       ->addSelect('Urban_Planned_Visit.Email_To_Goonj_Visit_Guide',)
       ->addWhere('id', '=', $visitId)
@@ -118,6 +118,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
       'toEmail' => $goonjVisitGuideEmail,
       'replyTo' => $from,
       'html' => self::getGoonjCoordPocEmailHtml($coordinatingGoonjPocName, $visitDate, $visitTime, $visitParticipation, $goonjVisitGuideName),
+      'cc' => $coordinatingGoonjPocEmail,
     ];
 
     $emailSendResultToVisitGuide = \CRM_Utils_Mail::send($mailParamsVisitGuide);
