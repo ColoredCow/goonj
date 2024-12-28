@@ -137,12 +137,12 @@ class UrbanPlannedVisitService extends AutoSubscriber {
 
     $emailSendResultToVisitGuide = \CRM_Utils_Mail::send($mailParamsVisitGuide);
 
-    // If ($emailSendResultToVisitGuide) {
-    //   EckEntity::update('Institution_Visit', FALSE)
-    //     ->addValue('Urban_Planned_Visit.Email_To_Goonj_Visit_Guide', 1)
-    //     ->addWhere('id', '=', $visitId)
-    //     ->execute();
-    // }
+    If ($emailSendResultToVisitGuide) {
+      EckEntity::update('Institution_Visit', FALSE)
+        ->addValue('Urban_Planned_Visit.Email_To_Goonj_Visit_Guide', 1)
+        ->addWhere('id', '=', $visitId)
+        ->execute();
+    }
   }
 
   /**
