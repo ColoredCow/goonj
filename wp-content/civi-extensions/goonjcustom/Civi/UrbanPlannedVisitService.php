@@ -242,6 +242,14 @@ class UrbanPlannedVisitService extends AutoSubscriber {
       $visitAtName = $contact['address.city'];
 
       $externalCoordinatingPocId = $objectRef['Urban_Planned_Visit.External_Coordinating_PoC'] ?? '';
+      $coordinatingPocId = $objectRef['Urban_Planned_Visit.Coordinating_Person'] ?? '';
+
+      $coordinatingPerson = Contact::get(FALSE)
+      ->addSelect('display_name')
+      ->addWhere('id', '=', $coordinatingPocId)
+      ->execute()->single();
+
+      $coordinatingPersonName = $coordinatingPerson['display_name'];
 
       $externalCoordinatingGoonjPoc = Contact::get(FALSE)
         ->addSelect('email.email', 'display_name', 'phone.phone_numeric')
@@ -261,7 +269,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         'from' => $from,
         'toEmail' => $externalCoordinatingGoonjPocEmail,
         'replyTo' => $from,
-        'html' => self::getExtCoordPocEmailHtml($externalCoordinatingGoonjPocName, $visitAtName, $visitAddress, $visitDate, $visitTime),
+        'html' => self::getExtCoordPocEmailHtml($externalCoordinatingGoonjPocName, $visitAtName, $visitAddress, $visitDate, $visitTime, $coordinatingPersonName),
       ];
 
       $emailSendResultToExternalPoc = \CRM_Utils_Mail::send($mailParamsExternalPoc);
@@ -278,7 +286,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
   /**
    *
    */
-  private static function getExtCoordPocEmailHtml($coordinatingGoonjPOCName, $visitAtName, $visitAddress, $visitDate, $visitTime) {
+  private static function getExtCoordPocEmailHtml($coordinatingGoonjPOCName, $visitAtName, $visitAddress, $visitDate, $visitTime, $coordinatingPersonName) {
     $date = new \DateTime($visitDate);
     $dayOfWeek = $date->format('l');
 
@@ -296,7 +304,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         <li><strong>Directions:</strong> <a href='https://www.google.com/maps?q=$visitAddress' target='_blank'>View Directions on Google Maps</a></li>
         <li><strong>On:</strong>  $visitDate , $dayOfWeek</li>
         <li><strong>From:</strong> $visitTime </li>
-        <li><strong>Contact Point:</strong> [Name, Goonj Coordinator]</li>
+        <li><strong>Contact Point:</strong> $coordinatingPersonName</li>
     </ul>
 
     
