@@ -8,6 +8,7 @@
  *   php import-from-razorpay.php.
  */
 
+use Civi\Api4\ContributionRecur;
 use Civi\Api4\Individual;
 use Civi\Payment\System;
 use Civi\Api4\Email;
@@ -108,8 +109,13 @@ class RazorpaySubscriptionImporter {
     echo "Customer ID: {$subscription['customer_id']}\n";
 
     try {
-      $this->handleCustomerData($subscription);
-      // $this->mapSubscriptionToCiviCRM($subscription);
+      $contactID = $this->handleCustomerData($subscription);
+
+      if (!$contactID) {
+        throw new Exception("No valid contact could be associated with subscription {$subscription['id']}");
+      }
+
+      $this->handleContributionRecur($subscription, $contactID);
     }
     catch (Exception $e) {
       echo "Error processing subscription {$subscription['id']}: " . $e->getMessage() . "\n";
@@ -317,23 +323,60 @@ class RazorpaySubscriptionImporter {
   }
 
   /**
-   * Map subscription data to CiviCRM ContributionRecur.
+   * Map and create ContributionRecur in CiviCRM from a Razorpay subscription.
    *
    * @param array $subscription
+   * @param int $contactID
    */
-  private function mapSubscriptionToCiviCRM(array $subscription): void {
-    echo "Mapping Subscription {$subscription['id']} to CiviCRM ContributionRecur...\n";
+  private function handleContributionRecur(array $subscription, int $contactID): void {
+    echo "Creating ContributionRecur for Subscription ID: {$subscription['id']}\n";
 
-    // Placeholder for actual mapping logic
-    // Example:
-    // ContributionRecur::create([
-    //     'contact_id' => $contactId,
-    //     'amount' => $subscription['quantity'] * 100,
-    //     'currency' => 'INR',
-    //     'start_date' => date('Y-m-d H:i:s', $subscription['start_at']),
-    //     'processor_id' => $subscription['id'],
-    //     'contribution_status_id:name' => 'In Progress',
-    // ])->execute();
+    // Mapping Razorpay data to CiviCRM fields.
+    $amount = $subscription['quantity'] ?? 0;
+    $currency = strtoupper($subscription['currency'] ?? 'INR');
+    $frequencyUnitMap = [
+      'day' => 'day',
+      'week' => 'week',
+      'month' => 'month',
+      'year' => 'year',
+    ];
+
+    $frequencyUnit = $frequencyUnitMap[$subscription['payment_method']] ?? 'month';
+    $frequencyInterval = 1;
+    $installments = $subscription['total_count'] ?? NULL;
+    $startDate = date('Y-m-d H:i:s', $subscription['start_at'] ?? time());
+    // Change accordingly.
+    $isTest = TRUE;
+
+    // Validate required fields.
+    if (!$amount || !$currency || !$frequencyUnit) {
+      throw new Exception("Invalid subscription data. Required fields are missing.");
+    }
+
+    try {
+      $contributionRecur = ContributionRecur::create(FALSE)
+        ->addValue('contact_id', $contactID)
+        ->addValue('amount', $amount)
+        ->addValue('currency', $currency)
+        ->addValue('frequency_unit', $frequencyUnit)
+        ->addValue('frequency_interval', $frequencyInterval)
+        ->addValue('installments', $installments)
+        ->addValue('start_date', $startDate)
+        ->addValue('create_date', date('Y-m-d H:i:s'))
+        ->addValue('modified_date', date('Y-m-d H:i:s'))
+        ->addValue('processor_id', $subscription['id'])
+        ->addValue('is_test', $isTest)
+        ->addValue('contribution_status_id:name', 'In Progress')
+        ->addValue('financial_type_id:name', 'Campaign Contribution')
+        ->execute();
+
+      echo "ContributionRecur successfully created with ID: " . $contributionRecur->first()['id'] . "\n";
+
+    }
+    catch (Exception $e) {
+      echo "Failed to create ContributionRecur: " . $e->getMessage() . "\n";
+      $this->logManualIntervention('Failed to create ContributionRecur', $subscription);
+    }
   }
 
   /**
