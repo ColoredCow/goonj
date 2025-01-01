@@ -752,13 +752,14 @@ class UrbanPlannedVisitService extends AutoSubscriber {
       'replyTo' => $from,
       'html' => self::getReminderExtCoordPocEmailHtml($externalCoordinatingGoonjPocName, $coordinatingGoonjPersonName, $coordinatingGoonjPersonPhone, $visitTime, $visitAddress, $visitAtName),
     ];
+    $emailSendResultToExternalPoc = \CRM_Utils_Mail::send($reminderMailParamsExternalPoc);
 
-    // If ($reminderMailParamsExternalPoc) {
-    //   EckEntity::update('Institution_Visit', FALSE)
-    //     ->addValue('Urban_Planned_Visit.Reminder_Email_To_Ext_Coord_Poc', 1)
-    //     ->addWhere('id', '=', $visitId)
-    //     ->execute();
-    // }
+    if ($emailSendResultToExternalPoc) {
+      EckEntity::update('Institution_Visit', FALSE)
+        ->addValue('Urban_Planned_Visit.Reminder_Email_To_Ext_Coord_Poc', 1)
+        ->addWhere('id', '=', $visitId)
+        ->execute();
+    }
   }
 
   /**
