@@ -9,6 +9,7 @@ use Civi\Api4\GroupContact;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Api4\EckEntity;
 use Civi\Traits\CollectionSource;
+use Civi\Api4\OptionValue;
 
 /**
  *
@@ -95,11 +96,18 @@ class UrbanPlannedVisitService extends AutoSubscriber {
 
       $from = HelperService::getDefaultFromEmail();
 
+      $optionValue = OptionValue::get(FALSE)
+        ->addWhere('option_group_id:name', '=', 'activity_type')
+        ->addWhere('label', '=', 'Planned Visit User')
+        ->execute()->single();
+
+      $activityTypeId = $optionValue['value'];
+
       $activity = Activity::get(FALSE)
         ->addSelect('contact.display_name')
         ->addJoin('ActivityContact AS activity_contact', 'LEFT')
         ->addJoin('Contact AS contact', 'LEFT')
-        ->addWhere('activity_type_id', '=', 74)
+        ->addWhere('activity_type_id', '=', $activityTypeId)
         ->addWhere('Volunteering_Activity.Urban_Planned_Visit', '=', $visitId)
         ->execute()->first();
 
@@ -135,7 +143,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
 
     $emailSendResultToVisitGuide = \CRM_Utils_Mail::send($mailParamsVisitGuide);
 
-    If ($emailSendResultToVisitGuide) {
+    if ($emailSendResultToVisitGuide) {
       EckEntity::update('Institution_Visit', FALSE)
         ->addValue('Urban_Planned_Visit.Email_To_Goonj_Visit_Guide', 1)
         ->addWhere('id', '=', $visitId)
@@ -246,19 +254,18 @@ class UrbanPlannedVisitService extends AutoSubscriber {
       $coordinatingGoonjPocId = $objectRef['Urban_Planned_Visit.Coordinating_Goonj_POC'] ?? '';
 
       $coordinatingGoonjPocPerson = Contact::get(FALSE)
-      ->addSelect('display_name', 'phone.phone_numeric')
-      ->addJoin('Phone AS phone', 'LEFT')
-      ->addWhere('id', '=', $coordinatingGoonjPocId)
-      ->execute()->single();
+        ->addSelect('display_name', 'phone.phone_numeric')
+        ->addJoin('Phone AS phone', 'LEFT')
+        ->addWhere('id', '=', $coordinatingGoonjPocId)
+        ->execute()->single();
 
       $coordinatingGoonjPersonName = $coordinatingGoonjPocPerson['display_name'];
       $coordinatingGoonjPersonPhone = $coordinatingGoonjPocPerson['phone.phone_numeric'];
 
-
       $coordinatingPerson = Contact::get(FALSE)
-      ->addSelect('display_name')
-      ->addWhere('id', '=', $coordinatingPocId)
-      ->execute()->single();
+        ->addSelect('display_name')
+        ->addWhere('id', '=', $coordinatingPocId)
+        ->execute()->single();
 
       $coordinatingPersonName = $coordinatingPerson['display_name'];
 
