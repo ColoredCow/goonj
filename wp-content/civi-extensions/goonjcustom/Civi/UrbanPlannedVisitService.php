@@ -706,4 +706,85 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     return $stateContactGroup ? $stateContactGroup['id'] : NULL;
   }
 
+  /**
+   *
+   */
+  public static function sendReminderEmailToExtCoordPoc($visit) {
+    $externalCoordinatingPocId = $visit['Urban_Planned_Visit.External_Coordinating_PoC'] ?? '';
+
+    $externalCoordinatingGoonjPoc = Contact::get(FALSE)
+      ->addSelect('email.email', 'display_name', 'phone.phone_numeric')
+      ->addJoin('Email AS email', 'LEFT')
+      ->addWhere('id', '=', $externalCoordinatingPocId)
+      ->execute()->single();
+
+    $externalCoordinatingGoonjPocEmail = $externalCoordinatingGoonjPoc['email.email'];
+    $externalCoordinatingGoonjPocName = $externalCoordinatingGoonjPoc['display_name'];
+
+    $coordinatingGoonjPocId = $visit['Urban_Planned_Visit.Coordinating_Goonj_POC'] ?? '';
+
+    $coordinatingGoonjPocPerson = Contact::get(FALSE)
+      ->addSelect('display_name', 'phone.phone_numeric')
+      ->addJoin('Phone AS phone', 'LEFT')
+      ->addWhere('id', '=', $coordinatingGoonjPocId)
+      ->execute()->single();
+
+    $coordinatingGoonjPersonName = $coordinatingGoonjPocPerson['display_name'];
+    $coordinatingGoonjPersonPhone = $coordinatingGoonjPocPerson['phone.phone_numeric'];
+
+    $visitTime = $visit['Urban_Planned_Visit.What_time_do_you_wish_to_visit_'];
+    $visitAtId = $visit['Urban_Planned_Visit.Which_Goonj_Processing_Center_do_you_wish_to_visit_'];
+
+    $contact = Contact::get(FALSE)
+      ->addSelect('address.street_address', 'address.city')
+      ->addJoin('Address AS address', 'LEFT')
+      ->addWhere('id', '=', $visitAtId)
+      ->execute()->single();
+
+    $visitAddress = $contact['address.street_address'];
+    $visitAtName = $contact['address.city'];
+    $from = HelperService::getDefaultFromEmail();
+
+    $reminderMailParamsExternalPoc = [
+      'subject' => $externalCoordinatingGoonjPocName . ', your Learning Journey is scheduled for today !',
+      'from' => $from,
+      'toEmail' => $externalCoordinatingGoonjPocEmail,
+      'replyTo' => $from,
+      'html' => self::getReminderExtCoordPocEmailHtml($externalCoordinatingGoonjPocName, $coordinatingGoonjPersonName, $coordinatingGoonjPersonPhone, $visitTime, $visitAddress, $visitAtName),
+    ];
+    $emailSendResultToExternalPoc = \CRM_Utils_Mail::send($reminderMailParamsExternalPoc);
+
+    if ($emailSendResultToExternalPoc) {
+      EckEntity::update('Institution_Visit', FALSE)
+        ->addValue('Urban_Planned_Visit.Reminder_Email_To_Ext_Coord_Poc', 1)
+        ->addWhere('id', '=', $visit['id'])
+        ->execute();
+    }
+  }
+
+  /**
+   *
+   */
+  private static function getReminderExtCoordPocEmailHtml($externalCoordinatingGoonjPocName, $coordinatingGoonjPersonName, $coordinatingGoonjPersonPhone, $visitTime, $visitAddress, $visitAtName) {
+    $html = "
+    <p>Dear $externalCoordinatingGoonjPocName,</p>
+
+    <p>We look forward to meeting you today at <strong>$visitTime</strong> and taking you through a <strong><u>learning journey at Goonj Center of Circularity (GCOC) !</u></strong> Below directions to reach our center:</p>
+
+    <ul>
+        <li><strong>At:</strong> $visitAtName</li>
+        <li><strong>Address:</strong> $visitAddress center</li>
+        <li><strong>Directions:</strong> <a href='https://www.google.com/maps?q=$visitAddress' target='_blank'>View Directions on Google Maps</a></li>
+    </ul>
+
+    <p>For assistance, feel free to write back or call <strong>$coordinatingGoonjPersonName</strong> on <strong>$coordinatingGoonjPersonPhone</strong>.</p>
+    
+    <p>We look forward to hosting you!</p>
+    <p>Best wishes,</p>
+    <p>Team Goonj..</p>
+    ";
+
+    return $html;
+  }
+
 }
