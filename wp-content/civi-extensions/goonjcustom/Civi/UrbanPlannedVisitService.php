@@ -757,7 +757,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     if ($emailSendResultToExternalPoc) {
       EckEntity::update('Institution_Visit', FALSE)
         ->addValue('Urban_Planned_Visit.Reminder_Email_To_Ext_Coord_Poc', 1)
-        ->addWhere('id', '=', $visitId)
+        ->addWhere('id', '=', $visit['id'])
         ->execute();
     }
   }
