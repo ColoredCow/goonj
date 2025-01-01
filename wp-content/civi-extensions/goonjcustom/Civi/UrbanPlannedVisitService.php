@@ -160,7 +160,6 @@ class UrbanPlannedVisitService extends AutoSubscriber {
 
     // Conditionally construct the Individual/Institute Name string.
     $individualOrInstitute = $individualName;
-    error_log("individualOrInstitute: " . print_r($individualOrInstitute, TRUE));
 
     if (!empty($institutionName)) {
       $individualOrInstitute .= " / $institutionName";
@@ -783,6 +782,108 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     <p>Best wishes,</p>
     <p>Team Goonj..</p>
     ";
+
+    return $html;
+  }
+
+  /**
+   *
+   */
+  public static function sendReminderEmailToCoordPerson($visit) {
+    $visitParticipation = $visit['Urban_Planned_Visit.Number_of_people_accompanying_you'];
+    $institutionName = $visit['Urban_Planned_Visit.Institution_Name'];
+    $visitId = $visit['id'];
+    $visitTime = $visit['Urban_Planned_Visit.What_time_do_you_wish_to_visit_'];
+
+    $goonjVisitGuideId = $visit['Urban_Planned_Visit.Visit_Guide'] ?? '';
+
+    $goonjVisitGuideData = Contact::get(FALSE)
+      ->addSelect('email.email', 'display_name', 'phone.phone_numeric')
+      ->addJoin('Email AS email', 'LEFT')
+      ->addWhere('id', '=', $goonjVisitGuideId)
+      ->execute()->single();
+
+    $goonjVisitGuideEmail = $goonjVisitGuideData['email.email'];
+    $goonjVisitGuideName = $goonjVisitGuideData['display_name'];
+
+    $goonjCoordinatingPocId = $visit['Urban_Planned_Visit.Coordinating_Goonj_POC'] ?? '';
+
+    $coordinatingGoonjPoc = Contact::get(FALSE)
+      ->addSelect('email.email', 'display_name', 'phone.phone_numeric')
+      ->addJoin('Email AS email', 'LEFT')
+      ->addWhere('id', '=', $goonjCoordinatingPocId)
+      ->execute()->single();
+
+    $coordinatingGoonjPocEmail = $coordinatingGoonjPoc['email.email'];
+    $coordinatingGoonjPocName = $coordinatingGoonjPoc['display_name'];
+
+    $from = HelperService::getDefaultFromEmail();
+
+    $optionValue = OptionValue::get(FALSE)
+      ->addWhere('option_group_id:name', '=', 'activity_type')
+      ->addWhere('label', '=', 'Planned Visit User')
+      ->execute()->single();
+
+    $activityTypeId = $optionValue['value'];
+
+    $activity = Activity::get(FALSE)
+      ->addSelect('contact.display_name')
+      ->addJoin('ActivityContact AS activity_contact', 'LEFT')
+      ->addJoin('Contact AS contact', 'LEFT')
+      ->addWhere('activity_type_id', '=', $activityTypeId)
+      ->addWhere('Volunteering_Activity.Urban_Planned_Visit', '=', $visitId)
+      ->execute()->first();
+
+    $individualName = $activity['contact.display_name'];
+
+    $reminderMailParamsVisitGuide = [
+      'subject' => 'Reminder to take the Learning Journey at GCoC today',
+      'from' => $from,
+      'toEmail' => $goonjVisitGuideEmail,
+      'replyTo' => $from,
+      'html' => self::getGoonjReminderCoordPocAndVisitEmailHtml($coordinatingGoonjPocName, $visitTime, $visitParticipation, $goonjVisitGuideName, $individualName, $institutionName),
+      'cc' => $coordinatingGoonjPocEmail,
+    ];
+
+    $emailSendResultToVisitGuide = \CRM_Utils_Mail::send($reminderMailParamsVisitGuide);
+
+    if ($emailSendResultToVisitGuide) {
+      EckEntity::update('Institution_Visit', FALSE)
+        ->addValue('Urban_Planned_Visit.Reminder_Email_To_Coord_Person', 1)
+        ->addWhere('id', '=', $visitId)
+        ->execute();
+    }
+  }
+
+  /**
+   *
+   */
+  private static function getGoonjReminderCoordPocAndVisitEmailHtml($coordinatingGoonjPocName, $visitTime, $visitParticipation, $goonjVisitGuideName, $individualName, $institutionName) {
+    // Conditionally construct the Individual/Institute Name string.
+    $individualOrInstitute = $individualName;
+
+    if (!empty($institutionName)) {
+      $individualOrInstitute .= " / $institutionName";
+    }
+
+    $html = "
+<p>Dear $goonjVisitGuideName,</p>
+
+<p>Just a little nudge to remind you about today’s Learning Journey at $visitTime!  Here are the details:</p>
+
+<ul
+<li><strong>Individual/Institute Name:</strong> $individualOrInstitute</li>
+    <li><strong>Number of Participants:</strong> $visitParticipation</li>
+</ul>
+
+<p>We are counting on you to bring your energy and enthusiasm to make this visit truly special and meaningful experience for our visitors!  All the best 😊 </p>
+
+<p>
+  Warm regards,<br>
+  $coordinatingGoonjPocName<br>
+  Team Goonj
+</p>
+";
 
     return $html;
   }
