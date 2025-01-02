@@ -975,12 +975,12 @@ class UrbanPlannedVisitService extends AutoSubscriber {
 
     $emailSendResultToExternalPoc = \CRM_Utils_Mail::send($mailParamsExternalPoc);
 
-    // if ($emailSendResultToExternalPoc) {
-    //   EckEntity::update('Institution_Visit', FALSE)
-    //     ->addValue('Visit_Feedback.Feedback_Email_Sent', 1)
-    //     ->addWhere('id', '=', $visit['id'])
-    //     ->execute();
-    // }
+    if ($emailSendResultToExternalPoc) {
+      EckEntity::update('Institution_Visit', FALSE)
+        ->addValue('Visit_Feedback.Feedback_Email_Sent', 1)
+        ->addWhere('id', '=', $visit['id'])
+        ->execute();
+    }
 
   }
 
