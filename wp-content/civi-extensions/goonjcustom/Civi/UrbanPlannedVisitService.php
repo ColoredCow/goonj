@@ -420,8 +420,8 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     $tabConfigs = [
       'visitOutcome' => [
         'title' => ts('Visit Outcome'),
-        'module' => 'afsearchVisitOutcomeDetails',
-        'directive' => 'afsearch-visit-outcome-details',
+        'module' => 'afsearchVisitUrbanOutcomeDetails',
+        'directive' => 'afsearch-visit-urban-outcome-details',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
