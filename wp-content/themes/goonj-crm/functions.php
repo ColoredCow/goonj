@@ -172,12 +172,14 @@ function goonj_handle_user_identification_form() {
 
 		// If the user does not exist in the Goonj database
 		// redirect to the volunteer registration form.
+		\Civi::log()->info('source', ['source'=>$source]);
 		$volunteer_registration_form_path = sprintf(
-			'/volunteer-registration/form/#?email=%s&phone=%s&message=%s&Volunteer_fields.Which_activities_are_you_interested_in_=%s',
+			'/volunteer-registration/form/#?email=%s&phone=%s&message=%s&Volunteer_fields.Which_activities_are_you_interested_in_=%s&source=%s',
 			$email,
 			$phone,
 			'not-inducted-volunteer',
 			'9', // Activity to create collection camp.
+			$source
 		);
 
 		$individual_volunteer_registration_form_path = sprintf(
@@ -336,6 +338,7 @@ function goonj_handle_user_identification_form() {
 				// Contact does not exist and the purpose is not defined.
 				// Redirect to volunteer registration with collection camp activity selected.
 				default:
+				    \Civi::log()->info('check');
 					$redirect_url = $volunteer_registration_form_path;
 					break;
 			}
