@@ -1127,7 +1127,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
   /**
    *
    */
-  private static function getOutcomeFormEmailHtml($coordinatingGoonjPocName, $visitDate, $visitTime, $goonjVisitGuideName, $visitId, $goonjVisitGuideId) {
+  private static function getOutcomeFormEmailHtml($coordinatingGoonjPocName, $visitDate, $visitTime, $goonjVisitGuideName, $goonjVisitGuideId, $visitId) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
     $visitOutcomeFormUrl = $homeUrl . '/visit-outcome/#?Eck_Urban_Source_Outcome_Details1=' . $visitId . '&Urban_Visit_Outcome.Visit_Id=' . $visitId . '&Urban_Visit_Outcome.Filled_By=' . $goonjVisitGuideId;
 
