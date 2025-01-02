@@ -112,6 +112,16 @@ class InstitutionService extends AutoSubscriber {
       }
 
       if ($contactId && $stateProvinceId) {
+
+        $addresses = Address::get(FALSE)
+          ->addSelect('state_province_id')
+          ->addWhere('contact_id', '=', $contactId)
+          ->execute()->single();
+
+        if ($addresses && $addresses['state_province_id']) {
+          return;
+        }
+
         $updateResults = Address::update(FALSE)
           ->addValue('state_province_id', $stateProvinceId)
           ->addWhere('contact_id', '=', $contactId)
