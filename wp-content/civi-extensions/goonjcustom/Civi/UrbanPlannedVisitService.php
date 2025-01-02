@@ -988,10 +988,13 @@ class UrbanPlannedVisitService extends AutoSubscriber {
    *
    */
   private static function getExtCoordPocFeedbackEmailHtml($externalCoordinatingGoonjPocName, $coordinatingGoonjPersonName, $coordinatingGoonjPersonPhone, $visitId) {
+    $homeUrl = \CRM_Utils_System::baseCMSURL();
+    $visitFeedbackFormUrl = $homeUrl . '/visit-feedback/#?Eck_Institution_Visit1=' . $visitId;
+
     $html = "
     <p>Dear $externalCoordinatingGoonjPocName,</p>
 
-    <p>Thank you for visiting the <strong>Goonj Center of Circularity!</strong> We hope you gained valuable insights into how Goonj’s work is building an ecosystem of circularity, with dignity at its core. To help us improve this experience for future visitors, we’d appreciate it if you could fill out this short <strong>feedback form:</strong> <a href='[hyperlink to feedback form]'>Feedback Form</a>.</p>
+    <p>Thank you for visiting the <strong>Goonj Center of Circularity!</strong> We hope you gained valuable insights into how Goonj’s work is building an ecosystem of circularity, with dignity at its core. To help us improve this experience for future visitors, we’d appreciate it if you could fill out this short <strong>feedback form:</strong> <a href=\"$visitFeedbackFormUrl\">Feedback Form</a>.</p>
 
     <p>Meanwhile, you too can make a difference by engaging with Goonj in the following ways:</p>
 
