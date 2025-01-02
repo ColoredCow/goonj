@@ -29,6 +29,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         ['assignChapterGroupToIndividualForUrbanPlannedVisit'],
         ['sendAuthorizationEmailToExtCoordPoc'],
         ['sendAuthorizationEmailToExtCoordPocAndVisitGuide'],
+        ['sendVisitOutcomeForm'],
       ],
       '&hook_civicrm_tabset' => 'urbanVisitTabset',
     ];
@@ -111,16 +112,16 @@ class UrbanPlannedVisitService extends AutoSubscriber {
       $goonjVisitGuideIds = is_array($goonjVisitGuideIds) ? $goonjVisitGuideIds : [$goonjVisitGuideIds];
 
       self::sendEmailToVisitGuide(
-          $visitId,
-          $visitDate,
-          $visitTime,
-          $visitParticipation,
-          $coordinatingGoonjPocName,
-          $from,
-          $coordinatingGoonjPocEmail,
-          $individualName,
-          $institutionName,
-          $goonjVisitGuideIds
+        $visitId,
+        $visitDate,
+        $visitTime,
+        $visitParticipation,
+        $coordinatingGoonjPocName,
+        $from,
+        $coordinatingGoonjPocEmail,
+        $individualName,
+        $institutionName,
+        $goonjVisitGuideIds
         );
     }
   }
@@ -1012,6 +1013,134 @@ class UrbanPlannedVisitService extends AutoSubscriber {
 
     <p>Warm regards,</p>
     <p>Team Goonj..</p>
+    ";
+
+    return $html;
+  }
+
+  /**
+   * This hook is called after a db write on entities.
+   *
+   * @param string $op
+   *   The type of operation being performed.
+   * @param string $objectName
+   *   The name of the object.
+   * @param int $objectId
+   *   The unique identifier for the object.
+   * @param object $objectRef
+   *   The reference to the object.
+   */
+  public static function sendVisitOutcomeForm(string $op, string $objectName, $objectId, &$objectRef) {
+    $visitStatusDetails = self::checkVisitStatusAndIds($objectName, $objectId, $objectRef);
+
+    if (!$visitStatusDetails) {
+      return;
+    }
+
+    $newVisitStatus = $visitStatusDetails['newVisitStatus'];
+    $currentVisitStatus = $visitStatusDetails['currentVisitStatus'];
+
+    if ($currentVisitStatus !== $newVisitStatus && $newVisitStatus === 'completed') {
+      $visitId = $objectRef['id'] ?? NULL;
+      if ($visitId === NULL) {
+        return;
+      }
+
+      $visitOutcomeSent = EckEntity::get('Institution_Visit', TRUE)
+        ->addSelect('Urban_Planned_Visit.Outcome_Email_Sent')
+        ->addWhere('id', '=', $visitId)
+        ->execute()->single();
+
+      $isVisitOutcomeSent = $visitOutcomeSent['Urban_Planned_Visit.Outcome_Email_Sent'];
+
+      if ($isVisitOutcomeSent !== NULL) {
+        return;
+      }
+
+      $visitData = EckEntity::get('Institution_Visit', FALSE)
+        ->addSelect('Urban_Planned_Visit.When_do_you_wish_to_visit_Goonj', 'Urban_Planned_Visit.What_time_do_you_wish_to_visit_')
+        ->addWhere('id', '=', $visitId)
+        ->execute()->single();
+
+      $visitDate = $visitData['Urban_Planned_Visit.When_do_you_wish_to_visit_Goonj'];
+      $visitTime = $visitData['Urban_Planned_Visit.What_time_do_you_wish_to_visit_'];
+
+      $goonjCoordinatingPocId = $objectRef['Urban_Planned_Visit.Coordinating_Goonj_POC'] ?? '';
+
+      $coordinatingGoonjPoc = Contact::get(FALSE)
+        ->addSelect('email.email', 'display_name', 'phone.phone_numeric')
+        ->addJoin('Email AS email', 'LEFT')
+        ->addWhere('id', '=', $goonjCoordinatingPocId)
+        ->execute()->single();
+
+      $coordinatingGoonjPocEmail = $coordinatingGoonjPoc['email.email'];
+      $coordinatingGoonjPocName = $coordinatingGoonjPoc['display_name'];
+
+      $from = HelperService::getDefaultFromEmail();
+
+      $goonjVisitGuideIds = $objectRef['Urban_Planned_Visit.Visit_Guide'] ?? '';
+
+      if (!$goonjVisitGuideIds) {
+        return;
+      }
+
+      $goonjVisitGuideIds = is_array($goonjVisitGuideIds) ? $goonjVisitGuideIds : [$goonjVisitGuideIds];
+
+      $allEmailsSent = TRUE;
+
+      foreach ($goonjVisitGuideIds as $goonjVisitGuideId) {
+        $goonjVisitGuideData = Contact::get(FALSE)
+          ->addSelect('email.email', 'display_name', 'phone.phone_numeric')
+          ->addJoin('Email AS email', 'LEFT')
+          ->addWhere('id', '=', $goonjVisitGuideId)
+          ->execute()
+          ->single();
+
+        $goonjVisitGuideEmail = $goonjVisitGuideData['email.email'];
+        $goonjVisitGuideName = $goonjVisitGuideData['display_name'];
+
+        $mailParamsVisitGuide = [
+          'subject' => 'Outcome Form for the Learning Journey on' . $visitDate,
+          'from' => $from,
+          'toEmail' => $goonjVisitGuideEmail,
+          'replyTo' => $from,
+          'html' => self::getOutcomeFormEmailHtml($coordinatingGoonjPocName, $visitDate, $visitTime, $goonjVisitGuideName, $goonjVisitGuideId, $visitId),
+          'cc' => $coordinatingGoonjPocEmail,
+        ];
+
+        $emailSendResultToVisitGuide = \CRM_Utils_Mail::send($mailParamsVisitGuide);
+
+        if (!$emailSendResultToVisitGuide) {
+          $allEmailsSent = FALSE;
+        }
+      }
+
+      if ($allEmailsSent) {
+        EckEntity::update('Institution_Visit', FALSE)
+          ->addValue('Urban_Planned_Visit.Outcome_Email_Sent', 1)
+          ->addWhere('id', '=', $visitId)
+          ->execute();
+      }
+    }
+
+  }
+
+  /**
+   *
+   */
+  private static function getOutcomeFormEmailHtml($coordinatingGoonjPocName, $visitDate, $visitTime, $goonjVisitGuideName, $goonjVisitGuideId, $visitId) {
+    $homeUrl = \CRM_Utils_System::baseCMSURL();
+    $visitOutcomeFormUrl = $homeUrl . '/visit-outcome/#?Eck_Urban_Source_Outcome_Details1=' . $visitId . '&Urban_Visit_Outcome.Visit_Id=' . $visitId . '&Urban_Visit_Outcome.Filled_By=' . $goonjVisitGuideId;
+
+    $html = "
+    <p>Dear $goonjVisitGuideName,</p>
+
+    <p>Thank you for guiding our visitors on the Learning Journey on <strong>$visitDate</strong> at <strong>$visitTime</strong>. We hope it was a rewarding experience!</p>
+
+    <p>To complete the process, kindly fill out this short <a href='$visitOutcomeFormUrl' target='_blank'>Outcome Form</a> for our records and documentation purposes.</p>
+
+    <p>Warm regards,</p>
+    <p>$coordinatingGoonjPocName<br>Team Goonj</p>
     ";
 
     return $html;
