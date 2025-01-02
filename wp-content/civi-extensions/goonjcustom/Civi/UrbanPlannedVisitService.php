@@ -1114,12 +1114,13 @@ class UrbanPlannedVisitService extends AutoSubscriber {
           $allEmailsSent = FALSE;
         }
       }
-      // If ($allEmailsSent) {
-      //   EckEntity::update('Institution_Visit', FALSE)
-      //     ->addValue('Urban_Planned_Visit.Outcome_Email_Sent', 1)
-      //     ->addWhere('id', '=', $visitId)
-      //     ->execute();
-      // }
+
+      if ($allEmailsSent) {
+        EckEntity::update('Institution_Visit', FALSE)
+          ->addValue('Urban_Planned_Visit.Outcome_Email_Sent', 1)
+          ->addWhere('id', '=', $visitId)
+          ->execute();
+      }
     }
 
   }
