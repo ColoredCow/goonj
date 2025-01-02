@@ -544,7 +544,8 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     . '&Camp_Institution_Data.Name_of_the_institution=' . $nameOfInstitution
     . '&Camp_Institution_Data.Address=' . $addressOfInstitution
     . '&Camp_Institution_Data.Email=' . $pocEmail
-    . '&Camp_Institution_Data.Contact_Number=' . $pocContactNumber;
+    . '&Camp_Institution_Data.Contact_Number=' . $pocContactNumber
+    . '&Institution_Collection_Camp_Intent.Collection_Camp_Address=' . $campAddress;
 
     $html = "
   <p>Dear $contactName,</p>
@@ -565,7 +566,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
   private static function sendOutcomeEmail($contactName, $collectionCampId, $coordinatingPOCId, $campCode, $campAddress) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
 
-    $campOutcomeFormUrl = $homeUrl . '/institution-camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $campAttendedById;
+    $campOutcomeFormUrl = $homeUrl . '/institution-camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $campAttendedById . '&Institution_Collection_Camp_Intent.Collection_Camp_Address=' . $campAddress;
 
     $html = "
   <p>Dear $contactName,</p>
@@ -587,14 +588,15 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
 
     $campVehicleDispatchFormUrl = $homeUrl
-    . 'institution-camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp=' . $collectionCampId
+    . 'institution-camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Institution_Collection_Camp=' . $collectionCampId
     . '&Camp_Vehicle_Dispatch.Filled_by=' . $campAttendedById
     . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice
     . '&Eck_Collection_Camp1=' . $collectionCampId
     . '&Camp_Institution_Data.Name_of_the_institution=' . $nameOfInstitution
     . '&Camp_Institution_Data.Address=' . $addressOfInstitution
     . '&Camp_Institution_Data.Email=' . $pocEmail
-    . '&Camp_Institution_Data.Contact_Number=' . $pocContactNumber;
+    . '&Camp_Institution_Data.Contact_Number=' . $pocContactNumber
+    . '&Institution_Collection_Camp_Intent.Collection_Camp_Address=' . $campAddress;
 
     $campOutcomeFormUrl = $homeUrl . '/institution-camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $campAttendedById;
 
