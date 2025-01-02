@@ -1100,7 +1100,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         $goonjVisitGuideName = $goonjVisitGuideData['display_name'];
 
         $mailParamsVisitGuide = [
-          'subject' => 'YOutcome Form for the Learning Journey on' . $visitDate,
+          'subject' => 'Outcome Form for the Learning Journey on' . $visitDate,
           'from' => $from,
           'toEmail' => $goonjVisitGuideEmail,
           'replyTo' => $from,
