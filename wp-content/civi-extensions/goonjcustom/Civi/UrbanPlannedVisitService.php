@@ -109,40 +109,26 @@ class UrbanPlannedVisitService extends AutoSubscriber {
       }
 
       $goonjVisitGuideIds = is_array($goonjVisitGuideIds) ? $goonjVisitGuideIds : [$goonjVisitGuideIds];
-      error_log("goonjVisitGuideIds: " . print_r($goonjVisitGuideIds, TRUE));
 
-      foreach ($goonjVisitGuideIds as $goonjVisitGuideId) {
-        $goonjVisitGuideData = Contact::get(FALSE)
-          ->addSelect('email.email', 'display_name', 'phone.phone_numeric')
-          ->addJoin('Email AS email', 'LEFT')
-          ->addWhere('id', '=', $goonjVisitGuideId)
-          ->execute()
-          ->single();
-
-        $goonjVisitGuideEmail = $goonjVisitGuideData['email.email'];
-        $goonjVisitGuideName = $goonjVisitGuideData['display_name'];
-
-        self::sendEmailToVisitGuide(
+      self::sendEmailToVisitGuide(
           $visitId,
           $visitDate,
           $visitTime,
           $visitParticipation,
-          $goonjVisitGuideName,
           $coordinatingGoonjPocName,
           $from,
-          $goonjVisitGuideEmail,
           $coordinatingGoonjPocEmail,
           $individualName,
-          $institutionName
+          $institutionName,
+          $goonjVisitGuideIds
         );
-      }
     }
   }
 
   /**
    *
    */
-  private static function sendEmailToVisitGuide($visitId, $visitDate, $visitTime, $visitParticipation, $goonjVisitGuideName, $coordinatingGoonjPocName, $from, $goonjVisitGuideEmail, $coordinatingGoonjPocEmail, $individualName, $institutionName) {
+  private static function sendEmailToVisitGuide($visitId, $visitDate, $visitTime, $visitParticipation, $coordinatingGoonjPocName, $from, $coordinatingGoonjPocEmail, $individualName, $institutionName, $goonjVisitGuideIds) {
     $emailToGoonjVisitGuide = EckEntity::get('Institution_Visit', FALSE)
       ->addSelect('Urban_Planned_Visit.Email_To_Goonj_Visit_Guide',)
       ->addWhere('id', '=', $visitId)
@@ -154,18 +140,36 @@ class UrbanPlannedVisitService extends AutoSubscriber {
       return;
     }
 
-    $mailParamsVisitGuide = [
-      'subject' => 'You have been assigned for a Learning Journey at GCoC',
-      'from' => $from,
-      'toEmail' => $goonjVisitGuideEmail,
-      'replyTo' => $from,
-      'html' => self::getGoonjCoordPocAndVisitEmailHtml($coordinatingGoonjPocName, $visitDate, $visitTime, $visitParticipation, $goonjVisitGuideName, $individualName, $institutionName),
-      'cc' => $coordinatingGoonjPocEmail,
-    ];
+    $allEmailsSent = TRUE;
 
-    $emailSendResultToVisitGuide = \CRM_Utils_Mail::send($mailParamsVisitGuide);
+    foreach ($goonjVisitGuideIds as $goonjVisitGuideId) {
+      $goonjVisitGuideData = Contact::get(FALSE)
+        ->addSelect('email.email', 'display_name', 'phone.phone_numeric')
+        ->addJoin('Email AS email', 'LEFT')
+        ->addWhere('id', '=', $goonjVisitGuideId)
+        ->execute()
+        ->single();
 
-    if ($emailSendResultToVisitGuide) {
+      $goonjVisitGuideEmail = $goonjVisitGuideData['email.email'];
+      $goonjVisitGuideName = $goonjVisitGuideData['display_name'];
+
+      $mailParamsVisitGuide = [
+        'subject' => 'You have been assigned for a Learning Journey at GCoC',
+        'from' => $from,
+        'toEmail' => $goonjVisitGuideEmail,
+        'replyTo' => $from,
+        'html' => self::getGoonjCoordPocAndVisitEmailHtml($coordinatingGoonjPocName, $visitDate, $visitTime, $visitParticipation, $goonjVisitGuideName, $individualName, $institutionName),
+        'cc' => $coordinatingGoonjPocEmail,
+      ];
+
+      $emailSendResultToVisitGuide = \CRM_Utils_Mail::send($mailParamsVisitGuide);
+
+      if (!$emailSendResultToVisitGuide) {
+        $allEmailsSent = FALSE;
+      }
+    }
+
+    if ($allEmailsSent) {
       EckEntity::update('Institution_Visit', FALSE)
         ->addValue('Urban_Planned_Visit.Email_To_Goonj_Visit_Guide', 1)
         ->addWhere('id', '=', $visitId)
