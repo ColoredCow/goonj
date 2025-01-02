@@ -25,7 +25,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
   public static function getSubscribedEvents() {
     return [
       '&hook_civicrm_pre' => [
-        // ['sendVisitFeedbackForm'],
+        ['sendVisitFeedbackForm'],
         ['assignChapterGroupToIndividualForUrbanPlannedVisit'],
         ['sendAuthorizationEmailToExtCoordPoc'],
         ['sendAuthorizationEmailToExtCoordPocAndVisitGuide'],
