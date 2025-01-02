@@ -58,6 +58,9 @@ function civicrm_api3_goonjcustom_update_scheduled_time_cron($params) {
     updateJobScheduledTime('urban_reminder_email_to_coord_person_cron', $todayDateTimeForVisit);
     updateJobScheduledTime('urban_reminder_email_to_external_coord_cron', $todayDateTimeForVisit);
 
+    // Update scheduled run time for urban feedback form.
+    updateJobScheduledTime('urban_feedback_cron', $todayDateTimeForLogistics);
+
   }
   catch (Exception $e) {
     \Civi::log()->error('Error in Goonjcustom.UpdateScheduledTimeCron job: {error}', [
