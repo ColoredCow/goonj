@@ -46,10 +46,10 @@ $dropping_center_register_link = sprintf(
 );
 
 $goonj_activities_register_link = sprintf(
-    '/volunteer-registration/form/#?source=%s&state_province_id=%s&city=%s',
+    '/goonj-activities-volunteer-check/#?source=%s',
     $action_target['title'],
-    $action_target['Goonj_Activities.State'],
-    $action_target['Goonj_Activities.City'],
+    // $action_target['Goonj_Activities.State'],
+    // $action_target['Goonj_Activities.City'],
 );
 
 $institution_goonj_activities_register_link = sprintf(
@@ -253,6 +253,7 @@ if (in_array($target, ['collection-camp','institution-collection-camp', 'droppin
   $volunteer_name = $action_target[$target_info['volunteer_name']];
   $donation_link = $target_info['donation_link'];
   $register_link = $target_info['register_link'];
+  \Civi::log()->info('register_link', ['register_link'=>$register_link]);
   $include_attendee_feedback_link = $target_info['include_attendee_feedback_link'];
   $should_include_attendee_feedback = $target_info['should_include_attendee_feedback'];
 
