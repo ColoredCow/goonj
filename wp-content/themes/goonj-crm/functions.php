@@ -663,7 +663,7 @@ function goonj_redirect_after_individual_creation() {
 		
 				if ( ! empty( $institutionCollectionCamp['id'] ) ) {
 					$redirectPath = sprintf(
-						'/institution-collection-camp/material-contribution/#?Material_Contribution.Institution_Collection_Camp=%s&source_contact_id=%s',
+						'/institution-collection-camp/collection-camp-material-contribution/#?Material_Contribution.Institution_Collection_Camp=%s&source_contact_id=%s',
 						$institutionCollectionCamp['id'],
 						$individual['id']
 					);
