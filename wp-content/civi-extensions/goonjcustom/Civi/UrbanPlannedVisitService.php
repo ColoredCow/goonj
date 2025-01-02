@@ -72,17 +72,6 @@ class UrbanPlannedVisitService extends AutoSubscriber {
       $visitParticipation = $visitData['Urban_Planned_Visit.Number_of_people_accompanying_you'];
       $institutionName = $visitData['Urban_Planned_Visit.Institution_Name'];
 
-      $goonjVisitGuideId = $objectRef['Urban_Planned_Visit.Visit_Guide'] ?? '';
-
-      $goonjVisitGuideData = Contact::get(FALSE)
-        ->addSelect('email.email', 'display_name', 'phone.phone_numeric')
-        ->addJoin('Email AS email', 'LEFT')
-        ->addWhere('id', '=', $goonjVisitGuideId)
-        ->execute()->single();
-
-      $goonjVisitGuideEmail = $goonjVisitGuideData['email.email'];
-      $goonjVisitGuideName = $goonjVisitGuideData['display_name'];
-
       $goonjCoordinatingPocId = $objectRef['Urban_Planned_Visit.Coordinating_Goonj_POC'] ?? '';
 
       $coordinatingGoonjPoc = Contact::get(FALSE)
@@ -113,7 +102,40 @@ class UrbanPlannedVisitService extends AutoSubscriber {
 
       $individualName = $activity['contact.display_name'];
 
-      self::sendEmailToVisitGuide($visitId, $visitDate, $visitTime, $visitParticipation, $goonjVisitGuideName, $coordinatingGoonjPocName, $from, $goonjVisitGuideEmail, $coordinatingGoonjPocEmail, $individualName, $institutionName);
+      $goonjVisitGuideIds = $objectRef['Urban_Planned_Visit.Visit_Guide'] ?? '';
+
+      if (!$goonjVisitGuideIds) {
+        return;
+      }
+
+      $goonjVisitGuideIds = is_array($goonjVisitGuideIds) ? $goonjVisitGuideIds : [$goonjVisitGuideIds];
+      error_log("goonjVisitGuideIds: " . print_r($goonjVisitGuideIds, TRUE));
+
+      foreach ($goonjVisitGuideIds as $goonjVisitGuideId) {
+        $goonjVisitGuideData = Contact::get(FALSE)
+          ->addSelect('email.email', 'display_name', 'phone.phone_numeric')
+          ->addJoin('Email AS email', 'LEFT')
+          ->addWhere('id', '=', $goonjVisitGuideId)
+          ->execute()
+          ->single();
+
+        $goonjVisitGuideEmail = $goonjVisitGuideData['email.email'];
+        $goonjVisitGuideName = $goonjVisitGuideData['display_name'];
+
+        self::sendEmailToVisitGuide(
+          $visitId,
+          $visitDate,
+          $visitTime,
+          $visitParticipation,
+          $goonjVisitGuideName,
+          $coordinatingGoonjPocName,
+          $from,
+          $goonjVisitGuideEmail,
+          $coordinatingGoonjPocEmail,
+          $individualName,
+          $institutionName
+        );
+      }
     }
   }
 
