@@ -673,3 +673,12 @@ function goonj_redirect_after_individual_creation() {
 
 	wp_safe_redirect( $redirectPath );
 }
+
+add_filter( 'get_custom_logo', 'goonj_remove_logo_href', 10, 2 );
+/**
+ * Remove the href attribute from the custom logo HTML.
+ */
+function goonj_remove_logo_href( $html, $blog_id ) {
+    $html = preg_replace( '/<a([^>]*?) href="[^"]*"/', '<a\1', $html );
+    return $html;
+}
