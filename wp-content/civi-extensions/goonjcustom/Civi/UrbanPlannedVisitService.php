@@ -822,15 +822,11 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     $visitTime = $visit['Urban_Planned_Visit.What_time_do_you_wish_to_visit_'];
 
     $goonjVisitGuideId = $visit['Urban_Planned_Visit.Visit_Guide'] ?? '';
+    $goonjVisitGuideIds = is_array($goonjVisitGuideId) ? $goonjVisitGuideId : [$goonjVisitGuideId];
 
-    $goonjVisitGuideData = Contact::get(FALSE)
-      ->addSelect('email.email', 'display_name', 'phone.phone_numeric')
-      ->addJoin('Email AS email', 'LEFT')
-      ->addWhere('id', '=', $goonjVisitGuideId)
-      ->execute()->single();
-
-    $goonjVisitGuideEmail = $goonjVisitGuideData['email.email'];
-    $goonjVisitGuideName = $goonjVisitGuideData['display_name'];
+    if (!$goonjVisitGuideIds) {
+      return;
+    }
 
     $goonjCoordinatingPocId = $visit['Urban_Planned_Visit.Coordinating_Goonj_POC'] ?? '';
 
@@ -862,16 +858,33 @@ class UrbanPlannedVisitService extends AutoSubscriber {
 
     $individualName = $activity['contact.display_name'];
 
-    $reminderMailParamsVisitGuide = [
-      'subject' => 'Reminder to take the Learning Journey at GCoC today',
-      'from' => $from,
-      'toEmail' => $goonjVisitGuideEmail,
-      'replyTo' => $from,
-      'html' => self::getGoonjReminderCoordPocAndVisitEmailHtml($coordinatingGoonjPocName, $visitTime, $visitParticipation, $goonjVisitGuideName, $individualName, $institutionName),
-      'cc' => $coordinatingGoonjPocEmail,
-    ];
+    $allEmailsSent = TRUE;
 
-    $emailSendResultToVisitGuide = \CRM_Utils_Mail::send($reminderMailParamsVisitGuide);
+    foreach ($goonjVisitGuideIds as $goonjVisitGuideId) {
+      $goonjVisitGuideData = Contact::get(FALSE)
+        ->addSelect('email.email', 'display_name', 'phone.phone_numeric')
+        ->addJoin('Email AS email', 'LEFT')
+        ->addWhere('id', '=', $goonjVisitGuideId)
+        ->execute()->single();
+
+      $goonjVisitGuideEmail = $goonjVisitGuideData['email.email'];
+      $goonjVisitGuideName = $goonjVisitGuideData['display_name'];
+
+      $reminderMailParamsVisitGuide = [
+        'subject' => 'Reminder to take the Learning Journey at GCoC today',
+        'from' => $from,
+        'toEmail' => $goonjVisitGuideEmail,
+        'replyTo' => $from,
+        'html' => self::getGoonjReminderCoordPocAndVisitEmailHtml($coordinatingGoonjPocName, $visitTime, $visitParticipation, $goonjVisitGuideName, $individualName, $institutionName),
+        'cc' => $coordinatingGoonjPocEmail,
+      ];
+
+      $emailSendResultToVisitGuide = \CRM_Utils_Mail::send($reminderMailParamsVisitGuide);
+
+      if (!$emailSendResultToVisitGuide) {
+        $allEmailsSent = FALSE;
+      }
+    }
 
     if ($emailSendResultToVisitGuide) {
       EckEntity::update('Institution_Visit', FALSE)
