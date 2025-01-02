@@ -598,7 +598,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     . '&Camp_Institution_Data.Contact_Number=' . $pocContactNumber
     . '&Institution_Collection_Camp_Intent.Collection_Camp_Address=' . $campAddress;
 
-    $campOutcomeFormUrl = $homeUrl . '/institution-camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $campAttendedById;
+    $campOutcomeFormUrl = $homeUrl . '/institution-camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $campAttendedById . '&Institution_Collection_Camp_Intent.Collection_Camp_Address=' . $campAddress;
 
     $html = "
     <p>Dear $contactName,</p>
