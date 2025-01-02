@@ -8,13 +8,16 @@ use Civi\Api4\Event;
 use Civi\Api4\Address;
 use Civi\Traits\QrCodeable;
 use Civi\Api4\StateProvince;
-use Civi\Api4\CustomField;
 
 /**
  *
  */
 class GoonjInitiatedEventsService extends AutoSubscriber {
   use QrCodeable;
+  static $processingIds = [];
+  static $updatedEventTitle = NULL;
+  static $setEventID = NULL;
+
 
   /**
    *
@@ -23,9 +26,10 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
     return [
       '&hook_civicrm_pre' => [
         ['generateGoonjEventsQr'],
-        ['generateEventSourceCode'],
+        // ['generateEventSourceCode'],
       ],
       '&hook_civicrm_tabset' => 'goonjEventsTabset',
+      '&hook_civicrm_post' => 'generateEventSourceCode'
     ];
   }
 
@@ -382,57 +386,29 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
    */
   public static function generateEventSourceCode(string $op, string $objectName, $objectId, &$objectRef) {
 
-
-    if ($objectName !== 'Event') {
+    if ($objectName !== 'Event' || $op !== 'edit') {
       return;
     }
-    $customFields = CustomField::get(FALSE)
-    ->addWhere('custom_group_id:name', '=', 'Goonj_Events')
-    ->addWhere('name', '=', 'Event_Code_Status')
-    ->setLimit(1)
-    ->execute()->first();
 
-    $eventCodeFieldId = 'custom_' . $customFields['id'];
-    $customCode = 
-    \Civi::log()->info('objectRef', ['objectRef'=>$objectRef]);
-    return;
-
-    // $statusDetails = self::checkCampStatusAndIds($objectName, $objectId, $objectRef);
-
-    // if (!$statusDetails) {
-    //   return;
-    // }
-
-    // $newStatus = $statusDetails['newStatus'];
-    // $currentStatus = $statusDetails['currentStatus'];
-
-    // if ($currentStatus !== $newStatus) {
-      // if ($newStatus === 'authorized') {
-        // $subtypeId = $objectRef['subtype'] ?? NULL;
-        // if (!$subtypeId) {
-        //   return;
-        // }
+    if (in_array($objectId, self::$processingIds)) {
+      return;
+    }
 
     $eventId = $objectRef['id'] ?? NULL;
-    \Civi::log()->info('eventId',['eventId'=>$eventId]);
+
     if (!$eventId) {
       return;
     }
+    self::$processingIds[] = $eventId;
 
     $events = Event::get(FALSE)
       ->addSelect('Goonj_Events.Event_Code', 'created_date', 'title', 'loc_block_id.address_id')
       ->addWhere('id', '=', $eventId)
       ->execute()->first();
 
-    if(!empty($event['Goonj_Events.Event_Code'])){
+    if (!empty($event['Goonj_Events.Event_Code'])) {
       return;
     }
-    \Civi::log()->info('events',['events'=>$events]);
-    
-
-        // $collectionSource = EckEntity::get('Collection_Camp', FALSE)
-        //   ->addWhere('id', '=', $sourceId)
-        //   ->execute()->single();
 
     $eventSourceCreatedDate = $events['created_date'] ?? NULL;
 
@@ -440,19 +416,16 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
 
     $year = date('Y', strtotime($eventSourceCreatedDate));
 
-    // $stateId = self::getStateIdForSourceType($objectRef, $subtypeId, $sourceTitle);
     $stateDetails = Address::get(TRUE)
       ->addSelect('state_province_id')
       ->addWhere('id', '=', $events['loc_block_id.address_id'])
       ->setLimit(1)
       ->execute()->first();
-    \Civi::log()->info('stateDetails',['stateDetails'=>$stateDetails]);
-    
-    if(empty($stateDetails)){
+
+    if (empty($stateDetails)) {
       return;
     }
-    $stateId = $stateDetails['state_province_id']?? NULL;
-    \Civi::log()->info('stateId',['stateId'=>$stateId]);
+    $stateId = $stateDetails['state_province_id'] ?? NULL;
 
     if (!$stateId) {
       return;
@@ -461,7 +434,6 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
     $stateProvince = StateProvince::get(FALSE)
       ->addWhere('id', '=', $stateId)
       ->execute()->first();
-    \Civi::log()->info('stateProvince',['stateProvince'=>$stateProvince]);
 
     if (empty($stateProvince)) {
       return;
@@ -471,31 +443,30 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
     if (!$stateAbbreviation) {
       return;
     }
-    \Civi::log()->info('stateAbbreviation',['stateAbbreviation'=>$stateAbbreviation]);
 
-        // Fetch the Goonj-specific state code.
     $config = self::getConfig();
     $stateCode = $config['state_codes'][$stateAbbreviation] ?? 'UNKNOWN';
-    \Civi::log()->info('stateCode',['stateCode'=>$stateCode]);
-
-        // Get the current event title.
     $currentTitle = $objectRef['title'] ?? 'Events';
 
-
-        // Fetch the event code.
+    // Fetch the event code.
     $eventCode = $config['event_codes'][$currentTitle] ?? 'UNKNOWN';
-    \Civi::log()->info('eventCode', ['eventCode'=>$eventCode]);
-
-        // Modify the title to include the year, state code, event code, and camp Id.
     $newTitle = $year . '/' . $stateCode . '/' . $eventCode . '/' . $eventId;
-    \Civi::log()->info('newTitle', ['newTitle'=>$newTitle]) ;
-    $results = Event::update(TRUE)
-    ->addValue('Goonj_Events.Event_Code', $newTitle)
-    ->addWhere('id', '=', $eventId)
-    ->execute();     
+    self::$updatedEventTitle = $newTitle;
+    self::$setEventID= $eventId;
+
+    try {
+      $results = Event::update(FALSE)
+        ->addValue('Goonj_Events.Event_Code', self::$updatedEventTitle)
+        ->addWhere('id', '=', $objectId)
+        ->execute();
+      \Civi::log()->info('results', ['results' => $results, self::$updatedEventTitle]);
+    } finally {
+      // Remove the object ID from the processing list.
+      self::$processingIds = array_diff(self::$processingIds, [$objectId]);
+    }
   }
 
-    /**
+  /**
    *
    */
   private static function getConfig() {
@@ -507,5 +478,36 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
       'state_codes' => include $extensionPath . 'constants.php',
       'event_codes' => include $extensionPath . 'eventCode.php',
     ];
+  }
+
+    /**
+   *
+   */
+  public static function createNewSourceCode(string $op, string $objectName, int $objectId, &$objectRef) {
+    \Civi::log()->info('self::$setEventID', ['self::$setEventID'=>self::$setEventID,self::$updatedEventTitle, $objectRef->id , $op, $objectName]);
+
+    if ($op !== 'edit' || $objectName !== 'Event' || (int) self::$setEventID !== (int) $objectRef->id) {
+      return FALSE;
+    }
+    // if (in_array($objectId, self::$processingIds)) {
+    //   return;
+    // }
+    \Civi::log()->info('self::$setEventID', ['self::$setEventID'=>self::$setEventID,self::$updatedEventTitle, $objectRef->id ]);
+
+    try {
+      // Your custom logic here.
+      // \Civi::log()->info('newTitle', ['newTitle' => $newTitle]);
+
+
+      // Perform the update.
+      $results = Event::update(FALSE)
+        ->addValue('Goonj_Events.Event_Code', self::$updatedEventTitle)
+        ->addWhere('id', '=', $objectId)
+        ->execute();
+      \Civi::log()->info('results', ['results' => $results, self::$updatedEventTitle]);
+    } finally {
+      // Remove the object ID from the processing list.
+      self::$processingIds = array_diff(self::$processingIds, [$objectId]);
+    }
   }
 }
