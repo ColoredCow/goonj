@@ -42,6 +42,8 @@ class NavigationPermissionService extends AutoSubscriber {
           'Institution Goonj Activities',
           'Induction Tab',
           'Volunteers',
+          'Urban Visit',
+          'Individuals'
         ],
       ],
       'mmt' => [
