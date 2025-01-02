@@ -927,4 +927,91 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     return $html;
   }
 
+  /**
+   *
+   */
+  public static function sendFeedbackEmailToExtCoordPoc($visit) {
+    $emailToExtCoordPoc = EckEntity::get('Institution_Visit', FALSE)
+      ->addSelect('Visit_Feedback.Feedback_Email_Sent')
+      ->addWhere('id', '=', $visit['id'])
+      ->execute()->single();
+
+    $isEmailSendToExtCoordPoc = $emailToExtCoordPoc['Visit_Feedback.Feedback_Email_Sent'];
+
+    if ($isEmailSendToExtCoordPoc !== NULL) {
+      return;
+    }
+
+    $externalCoordinatingPocId = $visit['Urban_Planned_Visit.External_Coordinating_PoC'] ?? '';
+    $externalCoordinatingGoonjPoc = Contact::get(FALSE)
+      ->addSelect('email.email', 'display_name', 'phone.phone_numeric')
+      ->addJoin('Email AS email', 'LEFT')
+      ->addJoin('Phone AS phone', 'LEFT')
+      ->addWhere('id', '=', $externalCoordinatingPocId)
+      ->execute()->single();
+
+    $externalCoordinatingGoonjPocEmail = $externalCoordinatingGoonjPoc['email.email'];
+    $externalCoordinatingGoonjPocName = $externalCoordinatingGoonjPoc['display_name'];
+
+    $coordinatingGoonjPocId = $visit['Urban_Planned_Visit.Coordinating_Goonj_POC'] ?? '';
+    $coordinatingGoonjPocPerson = Contact::get(FALSE)
+      ->addSelect('display_name', 'phone.phone_numeric')
+      ->addJoin('Phone AS phone', 'LEFT')
+      ->addWhere('id', '=', $coordinatingGoonjPocId)
+      ->execute()->single();
+
+    $coordinatingGoonjPersonName = $coordinatingGoonjPocPerson['display_name'];
+    $coordinatingGoonjPersonPhone = $coordinatingGoonjPocPerson['phone.phone_numeric'];
+
+    $from = HelperService::getDefaultFromEmail();
+
+    $mailParamsExternalPoc = [
+      'subject' => 'Thank You for Visiting Goonj Center of Circularity!',
+      'from' => $from,
+      'toEmail' => $externalCoordinatingGoonjPocEmail,
+      'replyTo' => $from,
+      'html' => self::getExtCoordPocFeedbackEmailHtml($externalCoordinatingGoonjPocName, $coordinatingGoonjPersonName, $coordinatingGoonjPersonPhone, $visit['id']),
+    ];
+
+    $emailSendResultToExternalPoc = \CRM_Utils_Mail::send($mailParamsExternalPoc);
+
+    // if ($emailSendResultToExternalPoc) {
+    //   EckEntity::update('Institution_Visit', FALSE)
+    //     ->addValue('Visit_Feedback.Feedback_Email_Sent', 1)
+    //     ->addWhere('id', '=', $visit['id'])
+    //     ->execute();
+    // }
+
+  }
+
+  /**
+   *
+   */
+  private static function getExtCoordPocFeedbackEmailHtml($externalCoordinatingGoonjPocName, $coordinatingGoonjPersonName, $coordinatingGoonjPersonPhone, $visitId) {
+    $html = "
+    <p>Dear $externalCoordinatingGoonjPocName,</p>
+
+    <p>Thank you for visiting the <strong>Goonj Center of Circularity!</strong> We hope you gained valuable insights into how Goonj’s work is building an ecosystem of circularity, with dignity at its core. To help us improve this experience for future visitors, we’d appreciate it if you could fill out this short <strong>feedback form:</strong> <a href='[hyperlink to feedback form]'>Feedback Form</a>.</p>
+
+    <p>Meanwhile, you too can make a difference by engaging with Goonj in the following ways:</p>
+
+    <ul>
+        <li>Bring more people for a <strong>Learning Journey at GCoC</strong></li>
+        <li>Volunteer for Goonj - <a href='https://goonj.org/volunteer/'>Goonj Volunteer Page</a></li>
+        <li>Goonj it your underutilized materials at the nearest dropping center</li>
+        <li>Organize a collection drive at your society/office/institute</li>
+        <li>Fundraise by engaging in Goonj ki <strong>Gullak or Team 5000</strong> - <a href='https://goonj.org/donate'>Donate to Goonj</a></li>
+    </ul>
+
+    <p>We are here to support you in finding the best way to engage with Goonj’s mission and create a meaningful change.</p>
+
+    <p>For any further assistance, feel free to reach out to $coordinatingGoonjPersonName on <strong>$coordinatingGoonjPersonPhone</strong>.</p>
+
+    <p>Warm regards,</p>
+    <p>Team Goonj..</p>
+    ";
+
+    return $html;
+  }
+
 }
