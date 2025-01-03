@@ -172,7 +172,6 @@ function goonj_handle_user_identification_form() {
 
 		// If the user does not exist in the Goonj database
 		// redirect to the volunteer registration form.
-		// \Civi::log()->info('source', ['source'=>$source]);
 		$volunteer_registration_form_path = sprintf(
 			'/volunteer-registration/form/#?email=%s&phone=%s&message=%s&Volunteer_fields.Which_activities_are_you_interested_in_=%s&source=%s',
 			$email,
@@ -337,7 +336,6 @@ function goonj_handle_user_identification_form() {
 					$redirect_url = $individual_volunteer_registration_form_path;
 					break;
 				case 'goonj-activity-attendee-feedback':
-					// \Civi::log()->info('goonj-activity-attendee-feedback');
 					$individual_volunteer_registration_form_path = sprintf(
 						'/individual-registration-with-volunteer-option/#?email=%s&phone=%s&source=%s&Individual_fields.Creation_Flow=%s',
 						$email,
@@ -348,7 +346,6 @@ function goonj_handle_user_identification_form() {
 					$redirect_url = $individual_volunteer_registration_form_path;
 					break;
 				case 'institute-goonj-activity-attendee-feedback':
-					// \Civi::log()->info('goonj-activity-attendee-feedback');
 					$individual_volunteer_registration_form_path = sprintf(
 						'/individual-registration-with-volunteer-option/#?email=%s&phone=%s&source=%s&Individual_fields.Creation_Flow=%s',
 						$email,
@@ -361,7 +358,6 @@ function goonj_handle_user_identification_form() {
 				// Contact does not exist and the purpose is not defined.
 				// Redirect to volunteer registration with collection camp activity selected.
 				default:
-				    // \Civi::log()->info('check');
 					$redirect_url = $volunteer_registration_form_path;
 					break;
 			}
@@ -635,7 +631,6 @@ function goonj_redirect_after_individual_creation() {
 		->addWhere( 'id', '=', absint( $_GET['individualId'] ) )
 		->setLimit( 1 )
 		->execute()->single();
-	\Civi::log()->info('individual', ['individual'=>$individual]);
 
 	$creationFlow = $individual['Individual_fields.Creation_Flow'];
 	$source = $individual['source'];
@@ -766,7 +761,6 @@ function goonj_redirect_after_individual_creation() {
 			->addWhere( 'title', '=', $source )
 			->addWhere('subtype:name', '=', 'Goonj_Activities')
 			->execute()->first();
-			// \Civi::log()->info('goonjActivites', ['goonjActivites'=>$goonjActivites]);
 			$redirectPath = sprintf(
 				'%s#?title=%s&Goonj_Activity_Attendee_Feedbacks.Goonj_Individual_Activity=%s&Goonj_Activity_Attendee_Feedbacks.Filled_By=%s',
 				$goonjActivites['Goonj_Activities.Select_Attendee_feedback_form'],
@@ -790,19 +784,7 @@ function goonj_redirect_after_individual_creation() {
 				$goonjActivites['id'],
 				$individual['id'],
 			);
-
-			\Civi::log()->info('goonjActivsssssites', ['goonjActivites'=>$goonjActivites]);
 			break;
-
-			// $redirectPath = sprintf(
-			// 	'%s#?title=%s&Goonj_Activity_Attendee_Feedbacks.Goonj_Institution_Activity=%s&Goonj_Activity_Attendee_Feedbacks.Filled_By=%s',
-			// 	$goonjActivites['Institution_Goonj_Activities.Select_Attendee_feedback_form'],
-			// 	$goonjActivites['title'],
-			// 	$goonjActivites['id'],
-			// 	$found_contacts['id'],
-			// );
-
-
 	}
 
 	if ( empty( $redirectPath ) ) {
