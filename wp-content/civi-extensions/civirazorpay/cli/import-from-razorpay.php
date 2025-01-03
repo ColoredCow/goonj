@@ -33,17 +33,23 @@ class RazorpaySubscriptionImporter {
   private $skip = 0;
   private $totalImported = 0;
   private $retryCount = 0;
+  private $isTest;
+  private $processor;
+  private $processorID;
 
   public function __construct() {
     civicrm_initialize();
 
+    $this->isTest = TRUE;
+
     $processorConfig = PaymentProcessor::get(FALSE)
       ->addWhere('payment_processor_type_id:name', '=', 'Razorpay')
-      ->addWhere('is_test', '=', TRUE)
+      ->addWhere('is_test', '=', $this->isTest)
       ->execute()->single();
 
-    $processor = System::singleton()->getByProcessor($processorConfig);
-    $this->api = $processor->initializeApi();
+    $this->processor = System::singleton()->getByProcessor($processorConfig);
+    $this->processorID = $this->processor->getID();
+    $this->api = $this->processor->initializeApi();
   }
 
   /**
@@ -127,7 +133,7 @@ class RazorpaySubscriptionImporter {
    *
    * @param array $subscription
    */
-  private function handleCustomerData(array $subscription): void {
+  private function handleCustomerData(array $subscription) {
     $customerId = $subscription['customer_id'] ?? NULL;
 
     if ($customerId) {
@@ -141,6 +147,7 @@ class RazorpaySubscriptionImporter {
 
       if ($contactID) {
         echo "Contact found/created successfully. Contact ID: $contactID\n";
+        return $contactID;
       }
       else {
         echo "Could not identify a unique contact. Logged for manual intervention.\n";
@@ -345,8 +352,9 @@ class RazorpaySubscriptionImporter {
     $frequencyInterval = 1;
     $installments = $subscription['total_count'] ?? NULL;
     $startDate = date('Y-m-d H:i:s', $subscription['start_at'] ?? time());
-    // Change accordingly.
-    $isTest = TRUE;
+
+    // Generate unique invoice ID and transaction ID.
+    $invoiceID = md5(uniqid(rand(), TRUE));
 
     // Validate required fields.
     if (!$amount || !$currency || !$frequencyUnit) {
@@ -365,9 +373,13 @@ class RazorpaySubscriptionImporter {
         ->addValue('create_date', date('Y-m-d H:i:s'))
         ->addValue('modified_date', date('Y-m-d H:i:s'))
         ->addValue('processor_id', $subscription['id'])
-        ->addValue('is_test', $isTest)
+        ->addValue('is_test', $this->isTest)
         ->addValue('contribution_status_id:name', 'In Progress')
-        ->addValue('financial_type_id:name', 'Campaign Contribution')
+        ->addValue('financial_type_id:name', 'Donation')
+        ->addValue('payment_instrument_id:name', 'Credit Card')
+        ->addValue('trxn_id', $invoiceID)
+        ->addValue('invoice_id', $invoiceID)
+        ->addValue('payment_processor_id', $this->processorID)
         ->execute();
 
       echo "ContributionRecur successfully created with ID: " . $contributionRecur->first()['id'] . "\n";
