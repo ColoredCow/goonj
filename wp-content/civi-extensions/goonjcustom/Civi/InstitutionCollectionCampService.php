@@ -176,7 +176,6 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     }
 
     if (empty($objectRef['data']['Eck_Collection_Camp1']) || empty($objectRef['data']['Individual1'])) {
-      \Civi::log()->info("Missing data for Eck_Collection_Camp1 or Individual1.");
       return FALSE;
     }
 
