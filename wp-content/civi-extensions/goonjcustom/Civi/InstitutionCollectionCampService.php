@@ -378,13 +378,9 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
     $materialdispatchUrl = $homeUrl . 'institution-camp-acknowledgement-dispatch/#?Eck_Collection_Source_Vehicle_Dispatch1=' . $vehicleDispatchId
     . '&Camp_Vehicle_Dispatch.Institution_Collection_Camp=' . $collectionCampId
-    . '&id=' . $vehicleDispatchId
-    . '&Eck_Collection_Source_Vehicle_Dispatch_Eck_Collection_Camp_Collection_Camp_01.id=' . $collectionCampId
-    . '&Camp_Institution_Data.Name_of_the_institution=' . $nameOfInstitution
-    . '&Camp_Institution_Data.Address=' . $addressOfInstitution
-    . '&Camp_Institution_Data.Email=' . $pocEmail
-    . '&Camp_Institution_Data.Contact_Number=' . $pocContactNumber;
-
+    . '&Eck_Collection_Camp1=' . $collectionCampId
+    . '&id=' . $collectionCampId;
+    
     $html = "
     <p>Dear MMT team,</p>
     <p>This is to inform you that a vehicle has been sent from camp <strong>$campCode</strong> at <strong>$campAddress</strong>.</p>
