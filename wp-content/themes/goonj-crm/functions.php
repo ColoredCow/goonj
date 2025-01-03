@@ -147,7 +147,7 @@ function goonj_handle_user_identification_form() {
 	$state_id = $_POST['state_id'] ?? '';
 	$city = $_POST['city'] ?? '';
 
-	$is_purpose_requiring_email = ! in_array( $purpose, array( 'material-contribution', 'processing-center-office-visit', 'processing-center-material-contribution', 'dropping-center-contribution', 'institution-collection-camp', 'institution-dropping-center', 'event-material-contribution', 'goonj-activity-attendee-feedback') );
+	$is_purpose_requiring_email = ! in_array( $purpose, array( 'material-contribution', 'processing-center-office-visit', 'processing-center-material-contribution', 'dropping-center-contribution', 'institution-collection-camp', 'institution-dropping-center', 'event-material-contribution', 'goonj-activity-attendee-feedback', 'institute-goonj-activity-attendee-feedback') );
 
 	if ( empty( $phone ) || ( $is_purpose_requiring_email && empty( $email ) ) ) {
 		return;
@@ -172,7 +172,7 @@ function goonj_handle_user_identification_form() {
 
 		// If the user does not exist in the Goonj database
 		// redirect to the volunteer registration form.
-		\Civi::log()->info('source', ['source'=>$source]);
+		// \Civi::log()->info('source', ['source'=>$source]);
 		$volunteer_registration_form_path = sprintf(
 			'/volunteer-registration/form/#?email=%s&phone=%s&message=%s&Volunteer_fields.Which_activities_are_you_interested_in_=%s&source=%s',
 			$email,
@@ -337,7 +337,7 @@ function goonj_handle_user_identification_form() {
 					$redirect_url = $individual_volunteer_registration_form_path;
 					break;
 				case 'goonj-activity-attendee-feedback':
-					\Civi::log()->info('goonj-activity-attendee-feedback');
+					// \Civi::log()->info('goonj-activity-attendee-feedback');
 					$individual_volunteer_registration_form_path = sprintf(
 						'/individual-registration-with-volunteer-option/#?email=%s&phone=%s&source=%s&Individual_fields.Creation_Flow=%s',
 						$email,
@@ -347,10 +347,21 @@ function goonj_handle_user_identification_form() {
 					);
 					$redirect_url = $individual_volunteer_registration_form_path;
 					break;
+				case 'institute-goonj-activity-attendee-feedback':
+					// \Civi::log()->info('goonj-activity-attendee-feedback');
+					$individual_volunteer_registration_form_path = sprintf(
+						'/individual-registration-with-volunteer-option/#?email=%s&phone=%s&source=%s&Individual_fields.Creation_Flow=%s',
+						$email,
+						$phone,
+						$source,
+						'institute-goonj-activity-attendee-feedback',
+					);
+					$redirect_url = $individual_volunteer_registration_form_path;
+					break;
 				// Contact does not exist and the purpose is not defined.
 				// Redirect to volunteer registration with collection camp activity selected.
 				default:
-				    \Civi::log()->info('check');
+				    // \Civi::log()->info('check');
 					$redirect_url = $volunteer_registration_form_path;
 					break;
 			}
@@ -462,6 +473,24 @@ function goonj_handle_user_identification_form() {
 			$redirectPath = sprintf(
 				'%s#?title=%s&Goonj_Activity_Attendee_Feedbacks.Goonj_Individual_Activity=%s&Goonj_Activity_Attendee_Feedbacks.Filled_By=%s',
 				$goonjActivites['Goonj_Activities.Select_Attendee_feedback_form'],
+				$goonjActivites['title'],
+				$goonjActivites['id'],
+				$found_contacts['id'],
+			);
+			wp_redirect( $redirectPath );
+			exit;
+		}
+
+		if ('institute-goonj-activity-attendee-feedback' === $purpose){
+			$goonjActivites = \Civi\Api4\EckEntity::get( 'Collection_Camp', FALSE )
+			->addSelect('Institution_Goonj_Activities.Select_Attendee_feedback_form', 'title')
+			->addWhere( 'title', '=', $source )
+			->addWhere('subtype:name', '=', 'Institution_Goonj_Activities')
+			->execute()->first();
+
+			$redirectPath = sprintf(
+				'%s#?title=%s&Goonj_Activity_Attendee_Feedbacks.Goonj_Institution_Activity=%s&Goonj_Activity_Attendee_Feedbacks.Filled_By=%s',
+				$goonjActivites['Institution_Goonj_Activities.Select_Attendee_feedback_form'],
 				$goonjActivites['title'],
 				$goonjActivites['id'],
 				$found_contacts['id'],
@@ -733,17 +762,45 @@ function goonj_redirect_after_individual_creation() {
 			break;
 		case 'goonj-activity-attendee-feedback':
 			$goonjActivites = \Civi\Api4\EckEntity::get( 'Collection_Camp', FALSE )
-			->addSelect('Goonj_Activities.Select_Attendee_feedback_form')
+			->addSelect('Goonj_Activities.Select_Attendee_feedback_form', 'title')
 			->addWhere( 'title', '=', $source )
 			->addWhere('subtype:name', '=', 'Goonj_Activities')
 			->execute()->first();
-			\Civi::log()->info('goonjActivites', ['goonjActivites'=>$goonjActivites]);
+			// \Civi::log()->info('goonjActivites', ['goonjActivites'=>$goonjActivites]);
 			$redirectPath = sprintf(
-				'%s#?Eck_Collection_Camp1=%s',
+				'%s#?title=%s&Goonj_Activity_Attendee_Feedbacks.Goonj_Individual_Activity=%s&Goonj_Activity_Attendee_Feedbacks.Filled_By=%s',
 				$goonjActivites['Goonj_Activities.Select_Attendee_feedback_form'],
-				$goonjActivites['id']
+				$goonjActivites['title'],
+				$goonjActivites['id'],
+				$individual['id'],
 			);
 			break;
+		
+		case 'institute-goonj-activity-attendee-feedback':
+			$goonjActivites = \Civi\Api4\EckEntity::get('Collection_Camp', TRUE)
+			->addSelect('Institution_Goonj_Activities.Select_Attendee_feedback_form', 'title')
+			->addWhere('title', '=', '2024/DEL/GA/628')
+			->addWhere('subtype:name', '=', 'Institution_Goonj_Activities')
+			->setLimit(25)
+			->execute()->first();
+			$redirectPath = sprintf(
+				'%s#?title=%s&Goonj_Activity_Attendee_Feedbacks.Goonj_Institution_Activity=%s&Goonj_Activity_Attendee_Feedbacks.Filled_By=%s',
+				$goonjActivites['Institution_Goonj_Activities.Select_Attendee_feedback_form'],
+				$goonjActivites['title'],
+				$goonjActivites['id'],
+				$individual['id'],
+			);
+
+			\Civi::log()->info('goonjActivsssssites', ['goonjActivites'=>$goonjActivites]);
+			break;
+
+			// $redirectPath = sprintf(
+			// 	'%s#?title=%s&Goonj_Activity_Attendee_Feedbacks.Goonj_Institution_Activity=%s&Goonj_Activity_Attendee_Feedbacks.Filled_By=%s',
+			// 	$goonjActivites['Institution_Goonj_Activities.Select_Attendee_feedback_form'],
+			// 	$goonjActivites['title'],
+			// 	$goonjActivites['id'],
+			// 	$found_contacts['id'],
+			// );
 
 
 	}

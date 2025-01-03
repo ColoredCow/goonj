@@ -56,11 +56,10 @@ $attendee_activity_feedback_link = sprintf(
 );
 
 $institution_goonj_activities_register_link = sprintf(
-    '/volunteer-registration/form/#?source=%s&state_province_id=%s&city=%s',
+    '/institution-goonj-activities-volunteer-check/?source=%s',
     $action_target['title'],
-    $action_target['Institution_Goonj_Activities.State'],
-    $action_target['Institution_Goonj_Activities.City'],
 );
+\Civi::log()->info('institution_goonj_activities_register_link', ['institution_goonj_activities_register_link'=>$institution_goonj_activities_register_link]);
 
 $institution_collection_camp_register_link = sprintf(
     '/volunteer-registration/form/#?source=%s&state_province_id=%s&city=%s',
@@ -142,10 +141,14 @@ $pu_material_contribution_check_link = sprintf(
 //     $action_target['id']
 // );
 
+// $institution_attendee_activity_feedback_link = sprintf(
+//     '%s#?Eck_Collection_Camp1=%s',
+//     $action_target['Institution_Goonj_Activities.Select_Attendee_feedback_form'],
+//     $action_target['id']
+// );
 $institution_attendee_activity_feedback_link = sprintf(
-    '%s#?Eck_Collection_Camp1=%s',
-    $action_target['Institution_Goonj_Activities.Select_Attendee_feedback_form'],
-    $action_target['id']
+    '/institution-goonj-activities-attendee-check-user/?source=%s',
+    $action_target['title']
 );
 
 $puSourceField = CustomField::get(FALSE)
