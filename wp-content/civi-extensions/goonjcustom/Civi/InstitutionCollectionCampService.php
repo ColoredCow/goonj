@@ -377,7 +377,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
   public static function sendEmailToMmt($collectionCampId, $campCode, $campAddress, $vehicleDispatchId) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
     $materialdispatchUrl = $homeUrl . 'institution-camp-acknowledgement-dispatch/#?Eck_Collection_Source_Vehicle_Dispatch1=' . $vehicleDispatchId
-    . '&Camp_Vehicle_Dispatch.Collection_Camp=' . $collectionCampId;
+    . '&Camp_Vehicle_Dispatch.Institution_Collection_Camp=' . $collectionCampId;
 
     $html = "
     <p>Dear MMT team,</p>
