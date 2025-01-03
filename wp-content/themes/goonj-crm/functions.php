@@ -780,6 +780,7 @@ function goonj_redirect_after_individual_creation() {
 			->addWhere('subtype:name', '=', 'Institution_Goonj_Activities')
 			->setLimit(25)
 			->execute()->first();
+			\Civi::log()->info('goonjActivites', ['goonjActivites'=>$goonjActivites]);
 			$redirectPath = sprintf(
 				'%s#?title=%s&Goonj_Activity_Attendee_Feedbacks.Goonj_Institution_Activity=%s&Goonj_Activity_Attendee_Feedbacks.Filled_By=%s&Eck_Collection_Camp1=',
 				$goonjActivites['Institution_Goonj_Activities.Select_Attendee_feedback_form'],
