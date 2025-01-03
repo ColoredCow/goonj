@@ -66,7 +66,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
           return;
         }
 
-        $results = EckEntity::update('Collection_Camp', TRUE)
+        $results = EckEntity::update('Collection_Camp', FALSE)
           ->addValue('Institution_collection_camp_Review.Camp_Status', 1)
           ->addWhere('id', '=', $institutionCampId)
           ->execute();
@@ -171,45 +171,52 @@ class InstitutionCollectionCampService extends AutoSubscriber {
    *
    */
   public static function assignChapterGroupToIndividual(string $op, string $objectName, $objectId, &$objectRef) {
-
-    if ($objectName !== 'Eck_Collection_Camp' || !self::isCurrentSubtype($objectRef)) {
-      return;
-    }
-    $stateId = $objectRef['Institution_Collection_Camp_Intent.State'];
-    $contactId = $objectRef['Institution_Collection_Camp_Intent.Institution_POC'];
-    $status = $objectRef['Collection_Camp_Core_Details.Status'];
-
-    if ($status == 'authorized') {
-      return;
-    }
-    if (!$stateId) {
-      \Civi::log()->info("Missing Contact ID and State ID");
+    if ($op !== 'edit' || $objectName !== 'AfformSubmission') {
       return FALSE;
     }
-    $groupId = self::getChapterGroupForState($stateId);
 
-    if ($groupId) {
-      self::addContactToGroup($contactId, $groupId);
+    if (empty($objectRef['data']['Eck_Collection_Camp1']) || empty($objectRef['data']['Individual1'])) {
+      return FALSE;
     }
-  }
 
-  /**
-   *
-   */
-  private static function addContactToGroup($contactId, $groupId) {
-    if ($contactId && $groupId) {
-      try {
-        GroupContact::create(FALSE)
-          ->addValue('contact_id', $contactId)
-          ->addValue('group_id', $groupId)
-          ->addValue('status', 'Added')
-          ->execute();
-        \Civi::log()->info("Successfully added contact_id: $contactId to group_id: $groupId.");
-      }
-      catch (Exception $e) {
-        \Civi::log()->error("Error adding contact_id: $contactId to group_id: $groupId. Exception: " . $e->getMessage());
+    $individualData = $objectRef['data']['Individual1'];
+    $collectionCampData = $objectRef['data']['Eck_Collection_Camp1'];
+
+    foreach ($individualData as $individual) {
+      $contactId = $individual['id'];
+      foreach ($collectionCampData as $visit) {
+        $fields = $visit['fields'] ?? [];
+        $stateProvinceId = $fields['Institution_Collection_Camp_Intent.State'] ?? NULL;
+
+        $groupId = self::getChapterGroupForState($stateProvinceId);
+
+        if ($groupId && $contactId) {
+
+          // Check if the contact is already in the group.
+          $groupContacts = GroupContact::get(FALSE)
+            ->addSelect('contact_id', 'group_id')
+            ->addWhere('group_id.id', '=', $groupId)
+            ->addWhere('contact_id', '=', $contactId)
+            ->execute();
+
+          // If the contact is already in the group.
+          if ($groupContacts->count() > 0) {
+            return;
+          }
+
+          $test = GroupContact::create(FALSE)
+            ->addValue('contact_id', $contactId)
+            ->addValue('group_id', $groupId)
+            ->addValue('status', 'Added')
+            ->execute();
+
+        }
+
+        \Civi::log()->info("Contact ID $contactId has been added to Group ID $groupId.");
       }
     }
+
+    return TRUE;
   }
 
   /**
@@ -225,7 +232,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       return;
     }
 
-    $collectionCamp = EckEntity::get('Collection_Camp', TRUE)
+    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
       ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id')
       ->addWhere('id', '=', $objectId)
       ->execute()->first();
@@ -301,11 +308,11 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     $vehicleDispatchId = $goonjField['entity_id'];
 
     $collectionSourceVehicleDispatch = EckEntity::get('Collection_Source_Vehicle_Dispatch', FALSE)
-      ->addSelect('Camp_Vehicle_Dispatch.Collection_Camp', 'Camp_Institution_Data.Name_of_the_institution', 'Camp_Institution_Data.Address', 'Camp_Institution_Data.Email', 'Camp_Institution_Data.Contact_Number')
+      ->addSelect('Camp_Vehicle_Dispatch.Institution_Collection_Camp', 'Camp_Institution_Data.Name_of_the_institution', 'Camp_Institution_Data.Address', 'Camp_Institution_Data.Email', 'Camp_Institution_Data.Contact_Number')
       ->addWhere('id', '=', $vehicleDispatchId)
       ->execute()->first();
 
-    $collectionCampId = $collectionSourceVehicleDispatch['Camp_Vehicle_Dispatch.Collection_Camp'];
+    $collectionCampId = $collectionSourceVehicleDispatch['Camp_Vehicle_Dispatch.Institution_Collection_Camp'];
     $nameOfInstitution = $collectionSourceVehicleDispatch['Camp_Institution_Data.Name_of_the_institution'];
     $addressOfInstitution = $collectionSourceVehicleDispatch['Camp_Institution_Data.Address'];
     $pocEmail = $collectionSourceVehicleDispatch['Camp_Institution_Data.Email'];
@@ -370,18 +377,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
   public static function sendEmailToMmt($collectionCampId, $campCode, $campAddress, $vehicleDispatchId) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
     $materialdispatchUrl = $homeUrl . 'institution-camp-acknowledgement-dispatch/#?Eck_Collection_Source_Vehicle_Dispatch1=' . $vehicleDispatchId
-<<<<<<< Updated upstream
-    . '&Camp_Vehicle_Dispatch.Collection_Camp=' . $collectionCampId
-    . '&id=' . $vehicleDispatchId
-    . '&Eck_Collection_Source_Vehicle_Dispatch_Eck_Collection_Camp_Collection_Camp_01.id=' . $collectionCampId
-    . '&Camp_Institution_Data.Name_of_the_institution=' . $nameOfInstitution
-    . '&Camp_Institution_Data.Address=' . $addressOfInstitution
-    . '&Camp_Institution_Data.Email=' . $pocEmail
-    . '&Camp_Institution_Data.Contact_Number=' . $pocContactNumber;
-=======
-    . '&Camp_Vehicle_Dispatch.Institution_Collection_Camp=' . $collectionCampId
-    . '&id=' . $vehicleDispatchId;
->>>>>>> Stashed changes
+    . '&Camp_Vehicle_Dispatch.Collection_Camp=' . $collectionCampId;
 
     $html = "
     <p>Dear MMT team,</p>

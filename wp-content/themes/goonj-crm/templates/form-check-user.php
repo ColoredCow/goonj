@@ -9,7 +9,7 @@ $source = get_query_var('source', '');
 $state_id = get_query_var('state_province_id', '');
 $city = get_query_var('city', '');
 
-$is_purpose_requiring_email = !in_array($purpose, ['material-contribution', 'processing-center-office-visit', 'processing-center-material-contribution', 'dropping-center-contribution', 'institution-collection-camp', 'institution-dropping-center', 'event-material-contribution']);
+$is_purpose_requiring_email = !in_array($purpose, ['material-contribution', 'processing-center-office-visit', 'processing-center-material-contribution', 'dropping-center-contribution', 'institution-collection-camp', 'institution-dropping-center', 'event-material-contribution', 'goonj-activity-attendee-feedback', 'institute-goonj-activity-attendee-feedback']);
 ?>
 
 <div class="text-center w-xl-520 m-auto">
