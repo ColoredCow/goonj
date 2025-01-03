@@ -396,13 +396,6 @@ class GoonjActivitiesService extends AutoSubscriber {
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'attendeeFeedback' => [
-        'title' => ts('Attendee Feedback'),
-        'module' => 'afsearchGoonjActivityAttendeeFeedbacks',
-        'directive' => 'afsearch-goonj-activity-attendee-feedbacks',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops'],
-      ],
-      'attendeesFeedback' => [
         'title' => ts('Attendees Feedback'),
         'module' => 'afsearchGoonjActivityAttendeeFeedbacksDetails',
         'directive' => 'afsearch-goonj-activity-attendee-feedbacks-details',
