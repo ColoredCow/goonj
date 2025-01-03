@@ -59,6 +59,10 @@ $institution_goonj_activities_register_link = sprintf(
     '/institution-goonj-activities-volunteer-check/?source=%s',
     $action_target['title'],
 );
+$events_registration_link = sprintf(
+    '/goonj-inititated-events-volunteer-check/?source=%s',
+    $action_target['title'],
+);
 \Civi::log()->info('institution_goonj_activities_register_link', ['institution_goonj_activities_register_link'=>$institution_goonj_activities_register_link]);
 
 $institution_collection_camp_register_link = sprintf(
@@ -235,7 +239,7 @@ $target_data = [
     'address_label' => 'Address of the camp',
     'contribution_link' => $event_material_contribution_link,
     'donation_link' => $event_donation_link,
-    'register_link' => $institution_goonj_activities_register_link
+    'register_link' => $events_registration_link
   ]
 ];
 
