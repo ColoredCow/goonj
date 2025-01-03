@@ -26,14 +26,6 @@ class CRM_Goonjcustom_Form_DroppingCenterLinks extends CRM_Core_Form {
    */
   public $_contactId;
 
-
-  /**
-   * Goonj office name.
-   *
-   * @var int
-   */
-  public $_goonjOfficeName;
-
   /**
    * Goonj processing unit center id.
    *
@@ -49,7 +41,6 @@ class CRM_Goonjcustom_Form_DroppingCenterLinks extends CRM_Core_Form {
   public function preProcess() {
     $this->_droppingCenterId = CRM_Utils_Request::retrieve('ccid', 'Positive', $this);
     $this->_contactId = CRM_Utils_Request::retrieve('gcid', 'Positive', $this);
-    $this->_goonjOfficeName = CRM_Utils_Request::retrieve('name', 'Positive', $this);
     $this->_processingCenterId = CRM_Utils_Request::retrieve('puid', 'Positive', $this);
 
     $this->setTitle('Dropping Center Dispatch Link');
@@ -90,7 +81,7 @@ class CRM_Goonjcustom_Form_DroppingCenterLinks extends CRM_Core_Form {
         'label' => 'Vehicle Dispatch',
         'url' => self::createUrl(
                 '/vehicle-dispatch',
-                "Camp_Vehicle_Dispatch.Dropping_Center={$this->_droppingCenterId}&Eck_Collection_Camp1={$this->_droppingCenterId}&Camp_Vehicle_Dispatch.Goonj_Office_Name={$this->_goonjOfficeName}&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent={$this->_processingCenterId}&Camp_Vehicle_Dispatch.Filled_by={$contactId}",
+                "Camp_Vehicle_Dispatch.Dropping_Center={$this->_droppingCenterId}&Eck_Collection_Camp1={$this->_droppingCenterId}&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent={$this->_processingCenterId}&Camp_Vehicle_Dispatch.Filled_by={$contactId}",
                 $contactId
         ),
       ],
