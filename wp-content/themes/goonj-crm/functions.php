@@ -774,21 +774,21 @@ function goonj_redirect_after_individual_creation() {
 			break;
 		
 		case 'institute-goonj-activity-attendee-feedback':
-			$goonjActivites = \Civi\Api4\EckEntity::get('Collection_Camp', FALSE)
+			$goonjActivites = \Civi\Api4\EckEntity::get( 'Collection_Camp', FALSE )
 			->addSelect('Institution_Goonj_Activities.Select_Attendee_feedback_form', 'title')
-			->addWhere('title', '=', '2024/DEL/GA/628')
+			->addWhere( 'title', '=', $source )
 			->addWhere('subtype:name', '=', 'Institution_Goonj_Activities')
-			->setLimit(25)
 			->execute()->first();
-			\Civi::log()->info('goonjActivites', ['goonjActivites'=>$goonjActivites]);
+
 			$redirectPath = sprintf(
-				'%s#?title=%s&Goonj_Activity_Attendee_Feedbacks.Goonj_Institution_Activity=%s&Goonj_Activity_Attendee_Feedbacks.Filled_By=%s&Eck_Collection_Camp1=',
+				'%s#?title=%s&Goonj_Activity_Attendee_Feedbacks.Goonj_Institution_Activity=%s&Goonj_Activity_Attendee_Feedbacks.Filled_By=%s&Eck_Collection_Camp1=%s',
 				$goonjActivites['Institution_Goonj_Activities.Select_Attendee_feedback_form'],
 				$goonjActivites['title'],
 				$goonjActivites['id'],
 				$individual['id'],
 				$goonjActivites['id'],
 			);
+			\Civi::log()->info('goonjActivites', ['goonjActivites'=>$goonjActivites, $source]);
 			break;
 	}
 
