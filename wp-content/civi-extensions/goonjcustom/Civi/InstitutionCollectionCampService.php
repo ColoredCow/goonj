@@ -370,6 +370,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
   public static function sendEmailToMmt($collectionCampId, $campCode, $campAddress, $vehicleDispatchId) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
     $materialdispatchUrl = $homeUrl . 'institution-camp-acknowledgement-dispatch/#?Eck_Collection_Source_Vehicle_Dispatch1=' . $vehicleDispatchId
+<<<<<<< Updated upstream
     . '&Camp_Vehicle_Dispatch.Collection_Camp=' . $collectionCampId
     . '&id=' . $vehicleDispatchId
     . '&Eck_Collection_Source_Vehicle_Dispatch_Eck_Collection_Camp_Collection_Camp_01.id=' . $collectionCampId
@@ -377,6 +378,10 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     . '&Camp_Institution_Data.Address=' . $addressOfInstitution
     . '&Camp_Institution_Data.Email=' . $pocEmail
     . '&Camp_Institution_Data.Contact_Number=' . $pocContactNumber;
+=======
+    . '&Camp_Vehicle_Dispatch.Institution_Collection_Camp=' . $collectionCampId
+    . '&id=' . $vehicleDispatchId;
+>>>>>>> Stashed changes
 
     $html = "
     <p>Dear MMT team,</p>
