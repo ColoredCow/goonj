@@ -13,7 +13,7 @@
 class CRM_Goonjcustom_Form_DroppingCenterLinks extends CRM_Core_Form {
 
   /**
-   * Collection Camp Id.
+   * Dropping center Id.
    *
    * @var int
    */
@@ -33,8 +33,6 @@ class CRM_Goonjcustom_Form_DroppingCenterLinks extends CRM_Core_Form {
    */
   public $_processingCenterId;
 
-
-
   /**
    * Preprocess .
    */
@@ -46,7 +44,7 @@ class CRM_Goonjcustom_Form_DroppingCenterLinks extends CRM_Core_Form {
     $this->setTitle('Dropping Center Dispatch Link');
     parent::preProcess();
   }
-  
+
   /**
    * Set default values for the form.
    *
@@ -66,7 +64,7 @@ class CRM_Goonjcustom_Form_DroppingCenterLinks extends CRM_Core_Form {
   }
 
   /**
-   * Function to generate collection camp related links.
+   * Function to generate dropping center related links.
    *
    * @param int $contactId
    *   Contact Id.
@@ -75,7 +73,7 @@ class CRM_Goonjcustom_Form_DroppingCenterLinks extends CRM_Core_Form {
    */
   public function generateLinks($contactId): void {
 
-    // Generate collection camp links.
+    // Generate dropping center links.
     $links = [
       [
         'label' => 'Vehicle Dispatch',
