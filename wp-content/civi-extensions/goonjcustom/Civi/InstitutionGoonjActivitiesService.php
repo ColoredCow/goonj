@@ -426,8 +426,8 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
       ],
       'attendeeFeedback' => [
         'title' => ts('Attendee Feedback'),
-        'module' => 'afsearchInstitutionGoonjActivityAttendeeFeedbacks',
-        'directive' => 'afsearch-institution-goonj-activity-attendee-feedbacks',
+        'module' => 'afsearchInstitutionGoonjActivitiesAttendeeFeedback',
+        'directive' => 'afsearch-institution-goonj-activities-attendee-feedback',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],

@@ -397,8 +397,8 @@ class GoonjActivitiesService extends AutoSubscriber {
       ],
       'attendeeFeedback' => [
         'title' => ts('Attendee Feedback'),
-        'module' => 'afsearchGoonjActivityAttendeeFeedbacks',
-        'directive' => 'afsearch-goonj-activity-attendee-feedbacks',
+        'module' => 'afsearchGoonjActivityAttendeeFeedbacksDetails',
+        'directive' => 'afsearch-goonj-activity-attendee-feedbacks-details',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
