@@ -20,10 +20,18 @@ class CRM_Goonjcustom_Form_UrbanVisitLinks extends CRM_Core_Form {
   public $_urbanVisitId;
 
   /**
+   * Goonj visit Id.
+   *
+   * @var int
+   */
+  public $_contactId;
+
+  /**
    * Preprocess .
    */
   public function preProcess() {
     $this->_urbanVisitId = CRM_Utils_Request::retrieve('ccid', 'Positive', $this);
+    $this->_contactId = CRM_Utils_Request::retrieve('gcid', 'Positive', $this);
 
     $this->setTitle('Urban Visit Links');
     parent::preProcess();
@@ -37,28 +45,38 @@ class CRM_Goonjcustom_Form_UrbanVisitLinks extends CRM_Core_Form {
    * @return array
    */
   public function setDefaultValues() {
-    return [];
+    $defaults = [];
+
+    if (!empty($this->_contactId)) {
+      $defaults['contact_id'] = $this->_contactId;
+      $this->generateLinks($this->_contactId);
+    }
+
+    return $defaults;
   }
 
   /**
    * Function to generate urban visit related links.
    *
-   * @return void
+   * @param int $contactId
+   *   Contact Id.
    */
-  public function generateLinks(): void {
+  public function generateLinks($contactId): void {
     $links = [
       [
         'label' => 'Visit Outcome',
         'url' => self::createUrl(
           '/visit-outcome',
-          "Eck_Institution_Visit1={$this->_urbanVisitId}"
+          "Eck_Institution_Visit1={$this->_urbanVisitId}&Urban_Visit_Outcome.Visit_Id={$this->_urbanVisitId}&Urban_Visit_Outcome.Filled_By={$contactId}",
+          $contactId
         ),
       ],
       [
         'label' => 'Visit Feedback',
         'url' => self::createUrl(
           '/visit-feedback',
-          "Eck_Institution_Visit1={$this->_urbanVisitId}"
+          "Eck_Institution_Visit1={$this->_urbanVisitId}",
+          $contactId
         ),
       ],
     ];
@@ -71,10 +89,11 @@ class CRM_Goonjcustom_Form_UrbanVisitLinks extends CRM_Core_Form {
    *
    * @param string $path
    * @param string $params
+   * @param int $contactId
    *
    * @return string
    */
-  public static function createUrl($path, $params): string {
+  public static function createUrl($path, $params, $contactId): string {
     $config = CRM_Core_Config::singleton();
     $url = $config->userFrameworkBaseURL . $path . '#?' . $params;
 
@@ -82,9 +101,12 @@ class CRM_Goonjcustom_Form_UrbanVisitLinks extends CRM_Core_Form {
   }
 
   /**
-   * @throws \CRM_Core_Exception
+   * Build the form.
    */
   public function buildQuickForm(): void {
+    // Add a contact selector (dropdown).
+    $this->addEntityRef('contact_id', ts('Contact'), ['entity' => 'contact'], TRUE);
+
     $this->addButtons([
       [
         'type' => 'submit',
@@ -102,7 +124,11 @@ class CRM_Goonjcustom_Form_UrbanVisitLinks extends CRM_Core_Form {
    * Post-process the form submission.
    */
   public function postProcess(): void {
-    $this->generateLinks();
+    $values = $this->exportValues();
+
+    if (!empty($values['contact_id'])) {
+      $this->generateLinks($values['contact_id']);
+    }
 
     parent::postProcess();
   }
