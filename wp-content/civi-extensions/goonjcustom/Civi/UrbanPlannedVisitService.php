@@ -906,9 +906,11 @@ class UrbanPlannedVisitService extends AutoSubscriber {
       }
 
       $visitData = EckEntity::get('Institution_Visit', FALSE)
-        ->addSelect('Urban_Planned_Visit.When_do_you_wish_to_visit_Goonj', 'Urban_Planned_Visit.What_time_do_you_wish_to_visit_')
+        ->addSelect('Urban_Planned_Visit.When_do_you_wish_to_visit_Goonj', 'Urban_Planned_Visit.What_time_do_you_wish_to_visit_', 'Urban_Planned_Visit.Number_of_people_accompanying_you')
         ->addWhere('id', '=', $visitId)
         ->execute()->single();
+
+      $numberOfAttendees = $visitData['Urban_Planned_Visit.Number_of_people_accompanying_you'];
 
       $visitDate = $visitData['Urban_Planned_Visit.When_do_you_wish_to_visit_Goonj'];
       $visitTime = $visitData['Urban_Planned_Visit.What_time_do_you_wish_to_visit_'];
@@ -952,7 +954,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
           'from' => $from,
           'toEmail' => $goonjVisitGuideEmail,
           'replyTo' => $from,
-          'html' => self::getOutcomeFormEmailHtml($coordinatingGoonjPocName, $visitDate, $visitTime, $goonjVisitGuideName, $goonjVisitGuideId, $visitId),
+          'html' => self::getOutcomeFormEmailHtml($coordinatingGoonjPocName, $visitDate, $visitTime, $goonjVisitGuideName, $goonjVisitGuideId, $visitId, $numberOfAttendees),
           'cc' => $coordinatingGoonjPocEmail,
         ];
 
@@ -976,9 +978,9 @@ class UrbanPlannedVisitService extends AutoSubscriber {
   /**
    *
    */
-  private static function getOutcomeFormEmailHtml($coordinatingGoonjPocName, $visitDate, $visitTime, $goonjVisitGuideName, $goonjVisitGuideId, $visitId) {
+  private static function getOutcomeFormEmailHtml($coordinatingGoonjPocName, $visitDate, $visitTime, $goonjVisitGuideName, $goonjVisitGuideId, $visitId, $numberOfAttendees) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
-    $visitOutcomeFormUrl = $homeUrl . '/visit-outcome/#?Eck_Urban_Source_Outcome_Details1=' . $visitId . '&Urban_Visit_Outcome.Visit_Id=' . $visitId . '&Urban_Visit_Outcome.Filled_By=' . $goonjVisitGuideId;
+    $visitOutcomeFormUrl = $homeUrl . '/visit-outcome/#?Eck_Urban_Source_Outcome_Details1=' . $visitId . '&Urban_Visit_Outcome.Visit_Id=' . $visitId . '&Urban_Visit_Outcome.Filled_By=' . $goonjVisitGuideId . '&Urban_Visit_Outcome.Number_of_Attendees=' . $numberOfAttendees;
 
     $html = "
     <p>Dear $goonjVisitGuideName,</p>
