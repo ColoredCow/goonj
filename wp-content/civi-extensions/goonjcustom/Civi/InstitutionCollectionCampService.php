@@ -171,45 +171,53 @@ class InstitutionCollectionCampService extends AutoSubscriber {
    *
    */
   public static function assignChapterGroupToIndividual(string $op, string $objectName, $objectId, &$objectRef) {
-
-    if ($objectName !== 'Eck_Collection_Camp' || !self::isCurrentSubtype($objectRef)) {
-      return;
-    }
-    $stateId = $objectRef['Institution_Collection_Camp_Intent.State'];
-    $contactId = $objectRef['Institution_Collection_Camp_Intent.Institution_POC'];
-    $status = $objectRef['Collection_Camp_Core_Details.Status'];
-
-    if ($status == 'authorized') {
-      return;
-    }
-    if (!$stateId) {
-      \Civi::log()->info("Missing Contact ID and State ID");
+    if ($op !== 'edit' || $objectName !== 'AfformSubmission') {
       return FALSE;
     }
-    $groupId = self::getChapterGroupForState($stateId);
 
-    if ($groupId) {
-      self::addContactToGroup($contactId, $groupId);
+    if (empty($objectRef['data']['Eck_Collection_Camp1']) || empty($objectRef['data']['Individual1'])) {
+      \Civi::log()->info("Missing data for Eck_Collection_Camp1 or Individual1.");
+      return FALSE;
     }
-  }
 
-  /**
-   *
-   */
-  private static function addContactToGroup($contactId, $groupId) {
-    if ($contactId && $groupId) {
-      try {
-        GroupContact::create(FALSE)
-          ->addValue('contact_id', $contactId)
-          ->addValue('group_id', $groupId)
-          ->addValue('status', 'Added')
-          ->execute();
-        \Civi::log()->info("Successfully added contact_id: $contactId to group_id: $groupId.");
-      }
-      catch (Exception $e) {
-        \Civi::log()->error("Error adding contact_id: $contactId to group_id: $groupId. Exception: " . $e->getMessage());
+    $individualData = $objectRef['data']['Individual1'];
+    $collectionCampData = $objectRef['data']['Eck_Collection_Camp1'];
+
+    foreach ($individualData as $individual) {
+      $contactId = $individual['id'];
+      foreach ($collectionCampData as $visit) {
+        $fields = $visit['fields'] ?? [];
+        $stateProvinceId = $fields['Institution_Collection_Camp_Intent.State'] ?? NULL;
+
+        $groupId = self::getChapterGroupForState($stateProvinceId);
+
+        if ($groupId && $contactId) {
+
+          // Check if the contact is already in the group.
+          $groupContacts = GroupContact::get(FALSE)
+            ->addSelect('contact_id', 'group_id')
+            ->addWhere('group_id.id', '=', $groupId)
+            ->addWhere('contact_id', '=', $contactId)
+            ->execute();
+
+          // If the contact is already in the group.
+          if ($groupContacts->count() > 0) {
+            return;
+          }
+
+          $test = GroupContact::create(FALSE)
+            ->addValue('contact_id', $contactId)
+            ->addValue('group_id', $groupId)
+            ->addValue('status', 'Added')
+            ->execute();
+
+        }
+
+        \Civi::log()->info("Contact ID $contactId has been added to Group ID $groupId.");
       }
     }
+
+    return TRUE;
   }
 
   /**
