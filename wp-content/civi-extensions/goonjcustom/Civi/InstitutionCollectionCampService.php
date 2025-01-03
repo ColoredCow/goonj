@@ -66,7 +66,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
           return;
         }
 
-        $results = EckEntity::update('Collection_Camp', TRUE)
+        $results = EckEntity::update('Collection_Camp', FALSE)
           ->addValue('Institution_collection_camp_Review.Camp_Status', 1)
           ->addWhere('id', '=', $institutionCampId)
           ->execute();
@@ -225,7 +225,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       return;
     }
 
-    $collectionCamp = EckEntity::get('Collection_Camp', TRUE)
+    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
       ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id')
       ->addWhere('id', '=', $objectId)
       ->execute()->first();
