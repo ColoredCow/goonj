@@ -774,7 +774,7 @@ function goonj_redirect_after_individual_creation() {
 			break;
 		
 		case 'institute-goonj-activity-attendee-feedback':
-			$goonjActivites = \Civi\Api4\EckEntity::get('Collection_Camp', TRUE)
+			$goonjActivites = \Civi\Api4\EckEntity::get('Collection_Camp', FALSE)
 			->addSelect('Institution_Goonj_Activities.Select_Attendee_feedback_form', 'title')
 			->addWhere('title', '=', '2024/DEL/GA/628')
 			->addWhere('subtype:name', '=', 'Institution_Goonj_Activities')
