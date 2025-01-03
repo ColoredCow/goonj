@@ -66,10 +66,8 @@ $events_registration_link = sprintf(
 
 
 $institution_collection_camp_register_link = sprintf(
-    '/volunteer-registration/form/#?source=%s&state_province_id=%s&city=%s',
+    '/institution-collection-camp-individual-volunteer-check/?source=%s',
     $action_target['title'],
-    $action_target['Institution_Collection_Camp_Intent.State'],
-    $action_target['Institution_Collection_Camp_Intent.District_City'],
 );
 
 $institution_dropping_center_register_link = sprintf(
