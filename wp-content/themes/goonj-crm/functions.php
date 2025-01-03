@@ -788,7 +788,6 @@ function goonj_redirect_after_individual_creation() {
 				$individual['id'],
 				$goonjActivites['id'],
 			);
-			\Civi::log()->info('goonjActivites', ['goonjActivites'=>$goonjActivites, $source]);
 			break;
 	}
 
