@@ -467,11 +467,12 @@ function goonj_handle_user_identification_form() {
 			->execute()->first();
 
 			$redirectPath = sprintf(
-				'%s#?title=%s&Goonj_Activity_Attendee_Feedbacks.Goonj_Individual_Activity=%s&Goonj_Activity_Attendee_Feedbacks.Filled_By=%s',
+				'%s#?title=%s&Goonj_Activity_Attendee_Feedbacks.Goonj_Individual_Activity=%s&Goonj_Activity_Attendee_Feedbacks.Filled_By=%s&Eck_Collection_Camp1=%s',
 				$goonjActivites['Goonj_Activities.Select_Attendee_feedback_form'],
 				$goonjActivites['title'],
 				$goonjActivites['id'],
 				$found_contacts['id'],
+				$goonjActivites['id'],
 			);
 			wp_redirect( $redirectPath );
 			exit;
@@ -485,11 +486,12 @@ function goonj_handle_user_identification_form() {
 			->execute()->first();
 
 			$redirectPath = sprintf(
-				'%s#?title=%s&Goonj_Activity_Attendee_Feedbacks.Goonj_Institution_Activity=%s&Goonj_Activity_Attendee_Feedbacks.Filled_By=%s',
+				'%s#?title=%s&Goonj_Activity_Attendee_Feedbacks.Goonj_Institution_Activity=%s&Goonj_Activity_Attendee_Feedbacks.Filled_By=%s&Eck_Collection_Camp1=%s',
 				$goonjActivites['Institution_Goonj_Activities.Select_Attendee_feedback_form'],
 				$goonjActivites['title'],
 				$goonjActivites['id'],
 				$found_contacts['id'],
+				$goonjActivites['id'],
 			);
 			wp_redirect( $redirectPath );
 			exit;
@@ -762,11 +764,12 @@ function goonj_redirect_after_individual_creation() {
 			->addWhere('subtype:name', '=', 'Goonj_Activities')
 			->execute()->first();
 			$redirectPath = sprintf(
-				'%s#?title=%s&Goonj_Activity_Attendee_Feedbacks.Goonj_Individual_Activity=%s&Goonj_Activity_Attendee_Feedbacks.Filled_By=%s',
+				'%s#?title=%s&Goonj_Activity_Attendee_Feedbacks.Goonj_Individual_Activity=%s&Goonj_Activity_Attendee_Feedbacks.Filled_By=%s&Eck_Collection_Camp1=%s',
 				$goonjActivites['Goonj_Activities.Select_Attendee_feedback_form'],
 				$goonjActivites['title'],
 				$goonjActivites['id'],
 				$individual['id'],
+				$goonjActivites['id'],
 			);
 			break;
 		
@@ -778,11 +781,12 @@ function goonj_redirect_after_individual_creation() {
 			->setLimit(25)
 			->execute()->first();
 			$redirectPath = sprintf(
-				'%s#?title=%s&Goonj_Activity_Attendee_Feedbacks.Goonj_Institution_Activity=%s&Goonj_Activity_Attendee_Feedbacks.Filled_By=%s',
+				'%s#?title=%s&Goonj_Activity_Attendee_Feedbacks.Goonj_Institution_Activity=%s&Goonj_Activity_Attendee_Feedbacks.Filled_By=%s&Eck_Collection_Camp1=',
 				$goonjActivites['Institution_Goonj_Activities.Select_Attendee_feedback_form'],
 				$goonjActivites['title'],
 				$goonjActivites['id'],
 				$individual['id'],
+				$goonjActivites['id'],
 			);
 			break;
 	}
