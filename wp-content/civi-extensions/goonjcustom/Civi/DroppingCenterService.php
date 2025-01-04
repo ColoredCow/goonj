@@ -26,8 +26,10 @@ class DroppingCenterService extends AutoSubscriber {
   const ENTITY_SUBTYPE_NAME = 'Dropping_Center';
   const MATERIAL_RELATIONSHIP_TYPE_NAME = 'Material Management Team of';
   const FALLBACK_OFFICE_NAME = 'Delhi';
-
-  const DROPPING_CENTER_INTENT_FB_NAME = 'afformDroppingCenterDetailForm';
+  const DROPPING_CENTER_INTENT_FB_NAMES = [
+    'afformDroppingCenterDetailForm',
+    'afformAdminDroppingCenterDetailForm',
+  ];
   private static $droppingCentreAddress = NULL;
 
   /**
@@ -58,11 +60,9 @@ class DroppingCenterService extends AutoSubscriber {
   public static function setDroppingCenterAddress(AfformSubmitEvent $event) {
     $afform = $event->getAfform();
     $formName = $afform['name'];
-
-    if ($formName !== self::DROPPING_CENTER_INTENT_FB_NAME) {
+    if (!in_array($formName, self::DROPPING_CENTER_INTENT_FB_NAMES, TRUE)) {
       return;
     }
-
     $entityType = $event->getEntityType();
 
     if ($entityType !== 'Eck_Collection_Camp') {
@@ -93,7 +93,7 @@ class DroppingCenterService extends AutoSubscriber {
     $afform = $event->getAfform();
     $formName = $afform['name'];
 
-    if ($formName !== self::DROPPING_CENTER_INTENT_FB_NAME) {
+    if (!in_array($formName, self::DROPPING_CENTER_INTENT_FB_NAMES, TRUE)) {
       return;
     }
 
