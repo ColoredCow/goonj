@@ -2,6 +2,7 @@
 
 namespace Civi;
 
+use Civi\Api4\ActivityContact;
 use Civi\Afform\Event\AfformSubmitEvent;
 use Civi\Api4\Address;
 use Civi\Api4\Contact;
@@ -428,6 +429,53 @@ class InstitutionService extends AutoSubscriber {
     $firstWord = strtok($typeOfInstitution, ' ');
     // Return the corresponding relationship type, or default if not found.
     return $typeToRelationshipMap[$firstWord] ?? 'Default Coordinator of';
+  }
+
+  /**
+   *
+   */
+  public static function updateOrganizationStatus($contact) {
+    $contactId = $contact['id'];
+
+    $activityContacts = ActivityContact::get(TRUE)
+      ->addSelect('activity_id', 'activity_id.created_date')
+      ->addWhere('contact_id', '=', $contactId)
+      ->addOrderBy('activity_id.created_date', 'DESC')
+      ->execute();
+
+    if ($activityContacts->count() === 0) {
+      return;
+    }
+
+    $latestActivity = $activityContacts->last();
+    $latestCreatedDate = $latestActivity['activity_id.created_date'] ?? NULL;
+
+    if (!$latestCreatedDate) {
+      return;
+    }
+
+    try {
+      $latestActivityDate = new \DateTime($latestCreatedDate);
+      $today = new \DateTime();
+
+      $interval = $today->diff($latestActivityDate);
+
+      if ($interval->y >= 1 || ($interval->y == 0 && $interval->m >= 12)) {
+        Contact::update(FALSE)
+          ->addValue('Review.Status:label', 'Inactive')
+          ->addWhere('id', '=', $contactId)
+          ->execute();
+      }
+      else {
+        Contact::update(FALSE)
+          ->addValue('Review.Status:label', 'Active')
+          ->addWhere('id', '=', $contactId)
+          ->execute();
+      }
+    }
+    catch (\Exception $e) {
+      error_log("Error processing activity date for contact ID: " . $contactId . ". Error: " . $e->getMessage());
+    }
   }
 
 }
