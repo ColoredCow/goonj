@@ -53,13 +53,13 @@ class NavigationPermissionService extends AutoSubscriber {
           'Dropping Center',
           'Induction Tab',
           'Institution Collection Camp',
-          'Institute',
           'Collection Camps',
           'Goonj Activities',
           'Institution Dropping Center',
           'Institution Goonj Activities',
           'Induction Tab',
           'Volunteers',
+          'Individuals'
         ],
       ],
     ];
