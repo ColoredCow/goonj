@@ -75,7 +75,7 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
   /**
    *
    */
-  private function initializeApi() {
+  public function initializeApi() {
     $apiKey = $this->_paymentProcessor['user_name'];
     $apiSecret = $this->_paymentProcessor['password'];
     $api = new Api($apiKey, $apiSecret);
