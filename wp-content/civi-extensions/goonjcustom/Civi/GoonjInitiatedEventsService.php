@@ -179,6 +179,29 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
       return;
     }
 
+    if (!isset($context['event_id'])) {
+      return;
+    }
+
+    $eventId = $context['event_id'];
+
+    $event = Event::get(FALSE)
+      ->addSelect('event_type_id:name')
+      ->addWhere('id', '=', $eventId)
+      ->setLimit(1)
+      ->execute()
+      ->first();
+
+    if (!$event) {
+      \Civi::log()->error('Event not found', ['EventId' => $eventId]);
+    }
+
+    $eventType = $event['event_type_id:name'];
+
+    if ($eventType === 'Rural Planned Visit') {
+      return;
+    }
+
     $restrictedRoles = ['account_team', 'ho_account'];
 
     $isAdmin = \CRM_Core_Permission::check('admin');
