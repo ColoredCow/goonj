@@ -8,6 +8,7 @@
  *   php import-from-razorpay.php.
  */
 
+use Civi\Api4\Contribution;
 use Civi\Api4\ContributionRecur;
 use Civi\Api4\Individual;
 use Civi\Payment\System;
@@ -382,12 +383,96 @@ class RazorpaySubscriptionImporter {
         ->addValue('payment_processor_id', $this->processorID)
         ->execute();
 
-      echo "ContributionRecur successfully created with ID: " . $contributionRecur->first()['id'] . "\n";
+      $contributionRecurID = $contributionRecur->first()['id'];
+
+      if ($contributionRecurID) {
+        $this->handleSubscriptionPayments($subscription['id'], $contributionRecurID, $contactID);
+      }
+
+      echo "ContributionRecur successfully created with ID: " . $contributionRecurID . "\n";
 
     }
     catch (Exception $e) {
       echo "Failed to create ContributionRecur: " . $e->getMessage() . "\n";
       $this->logManualIntervention('Failed to create ContributionRecur', $subscription);
+    }
+  }
+
+  /**
+   * Fetches and processes all payments (invoices) associated with a subscription.
+   *
+   * @param string $subscriptionId
+   * @param int $contributionRecurID
+   * @param int $contactID
+   */
+  private function handleSubscriptionPayments(string $subscriptionId, int $contributionRecurID, int $contactID): void {
+    echo "Fetching invoices for Subscription ID: $subscriptionId\n";
+
+    try {
+      // Fetch all invoices related to the subscription.
+      $response = $this->api->invoice->all(['subscription_id' => $subscriptionId]);
+      $invoices = $response->toArray()['items'] ?? [];
+
+      if (empty($invoices)) {
+        echo "No invoices found for subscription: $subscriptionId\n";
+        return;
+      }
+
+      foreach ($invoices as $invoice) {
+        // Check if the invoice has a payment ID.
+        if (!empty($invoice['payment_id'])) {
+          echo "Processing payment for Invoice ID: {$invoice['id']}\n";
+          $payment = $this->api->payment->fetch($invoice['payment_id']);
+          $this->createContributionFromPayment($payment, $contributionRecurID, $contactID);
+        }
+        else {
+          echo "Invoice ID: {$invoice['id']} has no associated payment.\n";
+        }
+      }
+    }
+    catch (Exception $e) {
+      echo "Error fetching invoices for subscription $subscriptionId: " . $e->getMessage() . "\n";
+      $this->logManualIntervention('Failed to fetch invoices for subscription', ['subscription_id' => $subscriptionId]);
+    }
+  }
+
+  /**
+   * Creates a Contribution record in CiviCRM from a Razorpay payment object.
+   *
+   * @param object $payment
+   * @param int $contributionRecurID
+   * @param int $contactID
+   */
+  private function createContributionFromPayment(object $payment, int $contributionRecurID, int $contactID): void {
+    echo "Creating Contribution for Payment ID: {$payment['id']}\n";
+
+    // Convert from smallest currency unit.
+    $amount = $payment['amount'] / 100;
+    $currency = strtoupper($payment['currency'] ?? 'INR');
+    $paymentDate = date('Y-m-d H:i:s', $payment['created_at'] ?? time());
+    $transactionId = $payment['id'];
+    $invoiceId = md5(uniqid(rand(), TRUE));
+
+    try {
+      $contribution = Contribution::create(FALSE)
+        ->addValue('contact_id', $contactID)
+        ->addValue('financial_type_id:name', 'Donation')
+        ->addValue('contribution_recur_id', $contributionRecurID)
+        ->addValue('payment_instrument_id:name', 'Credit Card')
+        ->addValue('receive_date', $paymentDate)
+        ->addValue('total_amount', $amount)
+        ->addValue('currency', $currency)
+        ->addValue('trxn_id', $transactionId)
+        ->addValue('invoice_id', $invoiceId)
+        ->addValue('contribution_status_id:name', 'Completed')
+        ->addValue('source', 'Imported from Razorpay')
+        ->execute();
+
+      echo "Contribution successfully created for Payment ID: $transactionId\n";
+    }
+    catch (Exception $e) {
+      echo "Failed to create Contribution for Payment ID: {$payment['id']}: " . $e->getMessage() . "\n";
+      $this->logManualIntervention('Failed to create contribution from payment', ['payment_id' => $payment['id']]);
     }
   }
 
