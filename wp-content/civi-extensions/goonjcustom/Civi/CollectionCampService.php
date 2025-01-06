@@ -1334,7 +1334,6 @@ class CollectionCampService extends AutoSubscriber {
         ->execute()->single();
 
       $receiptNumber = $contribution['invoice_number'];
-      error_log("receiptNumber: " . print_r($receiptNumber, TRUE));
 
       // Check if title is 'Team 5000'.
       if (!empty($params['tplParams']['title']) && $params['tplParams']['title'] === 'Team 5000') {
