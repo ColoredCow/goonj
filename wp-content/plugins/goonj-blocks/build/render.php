@@ -183,7 +183,7 @@ $target_data = [
     'register_link' => $collection_camp_register_link,
   ],
   'institution-collection-camp' => [
-    'start_time' => 'Institution_Collection_Camp_Intent.Collections_will_start_on_Date',
+    'start_time' => 'Institution_Collection_Camp_Intent.Collections_will_start_on_Date_',
     'end_time' => 'Institution_Collection_Camp_Intent.Collections_will_end_on_Date_',
     'address' => 'Institution_Collection_Camp_Intent.Collection_Camp_Address',
     'address_label' => 'Address of the camp',
