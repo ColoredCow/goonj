@@ -64,7 +64,7 @@ class CRM_Goonjcustom_Token_InstitutionCollectionCamp extends AbstractTokenSubsc
       case 'date':
       case 'time':
       case 'type':
-        $start = new DateTime($collectionSource['Institution_Collection_Camp_Intent.Collections_will_start_on_Date_]']);
+        $start = new DateTime($collectionSource['Institution_Collection_Camp_Intent.Collections_will_start_on_Date_']);
         $end = new DateTime($collectionSource['Institution_Collection_Camp_Intent.Collections_will_end_on_Date__']);
 
         if ($field === 'type') {
