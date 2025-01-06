@@ -1343,10 +1343,8 @@ class CollectionCampService extends AutoSubscriber {
           <p>These contributions go a long way in sustaining our operations and implementing a series of initiatives all across. The receipt (<strong>$receiptNumber</strong>) for the same is enclosed with the details of 80G exemptions and our PAN No.</p>
           <p>For updates on our activities and new campaigns, please visit our website <a href='https://www.goonj.org'>www.goonj.org</a> regularly.</p>
           <p>Thank you once again for joining the journey.</p>
-          <p>
-          With best regards,
+          With best regards,<br>
           Team Goonj
-          </p>
       ";
     }
 
@@ -1371,10 +1369,8 @@ class CollectionCampService extends AutoSubscriber {
           <p>These contributions go a long way in sustaining our operations and implementing a series of initiatives all across. The receipt (<strong>$receiptNumber</strong>) for the same is enclosed with the details of 80G exemptions and our PAN No.</p>
           <p>For updates on our activities and new campaigns, please visit our website <a href='https://www.goonj.org'>www.goonj.org</a> regularly.</p>
           <p>Thank you once again for joining the journey.</p>
-          <p>
-          With best regards,
+          With best regards,<br>
           Team Goonj
-          </p>
       ";
     }
   }
