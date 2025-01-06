@@ -136,27 +136,43 @@ class RazorpaySubscriptionImporter {
    */
   private function handleCustomerData(array $subscription) {
     $customerId = $subscription['customer_id'] ?? NULL;
+    $notes = $subscription['notes'] ?? NULL;
+    $mobile = $notes['mobile'] ?? NULL;
+    $email = $notes['email'] ?? NULL;
+    $name = $notes['name'] ?? NULL;
 
-    if ($customerId) {
+    $findContactArgs = [];
+
+    if ($name || $mobile) {
+      $findContactArgs = [
+        'name' => $name ?? 'Unknown Customer',
+        'email' => $email ?? NULL,
+        'phone' => $mobile ?? NULL,
+      ];
+    }
+    elseif ($customerId) {
       $customer = $this->api->customer->fetch($customerId);
-
-      $contactID = $this->findContact([
+      $findContactArgs = [
         'name' => $customer->name ?? 'Unknown Customer',
         'email' => $customer->email ?? NULL,
         'phone' => $customer->contact ?? NULL,
-      ]);
+      ];
+    }
 
-      if ($contactID) {
-        echo "Contact found/created successfully. Contact ID: $contactID\n";
-        return $contactID;
-      }
-      else {
-        echo "Could not identify a unique contact. Logged for manual intervention.\n";
-      }
-    }
-    else {
+    if (empty($findContactArgs)) {
       echo "No customer data available for subscription {$subscription['id']}\n";
+      return NULL;
     }
+
+    $contactID = $this->findContact($findContactArgs);
+
+    if ($contactID) {
+      echo "Contact found/created successfully. Contact ID: $contactID\n";
+      return $contactID;
+    }
+    echo "Could not identify a unique contact. Logged for manual intervention.\n";
+
+    return NULL;
   }
 
   /**
