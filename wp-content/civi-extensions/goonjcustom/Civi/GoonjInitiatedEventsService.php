@@ -179,6 +179,30 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
       return;
     }
 
+    if (!isset($context['event_id'])) {
+      return;
+    }
+
+    $eventId = $context['event_id'];
+
+    $event = Event::get(FALSE)
+      ->addSelect('event_type_id:name')
+      ->addWhere('id', '=', $eventId)
+      ->setLimit(1)
+      ->execute()
+      ->first();
+
+    if (!$event) {
+      \Civi::log()->error('Event not found', ['EventId' => $eventId]);
+      return;
+    }
+
+    $eventType = $event['event_type_id:name'];
+
+    if ($eventType === 'Rural Planned Visit') {
+      return;
+    }
+
     $restrictedRoles = ['account_team', 'ho_account'];
 
     $isAdmin = \CRM_Core_Permission::check('admin');
@@ -188,11 +212,6 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
     if ($hasRestrictedRole) {
       unset($tabs['view']);
       unset($tabs['edit']);
-    }
-
-    if (empty($context['event_id'])) {
-      \Civi::log()->debug('No Event ID Found in Context');
-      return;
     }
 
     $eventID = $context['event_id'];
