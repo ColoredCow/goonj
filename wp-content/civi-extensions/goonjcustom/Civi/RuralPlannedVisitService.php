@@ -18,7 +18,6 @@ class RuralPlannedVisitService extends AutoSubscriber {
   public static function getSubscribedEvents() {
     return [
       '&hook_civicrm_tabset' => 'ruralPlannedVisitTabset',
-      '&hook_civicrm_buildForm' => 'goonjParticipantRegistration'
     ];
   }
 
@@ -222,17 +221,94 @@ class RuralPlannedVisitService extends AutoSubscriber {
     return $html;
   }
 
-  public function goonjParticipantRegistration($formName, &$form) {
-    \Civi::log()->info('formName', ['formName'=>$formName, 'form'=>$form]);
-    if ($formName === 'CRM_Event_Form_Registration_Register') {
-      $eventId = \CRM_Utils_Request::retrieve('id', 'Integer');
-      if ($eventId === 113) { // Replace with your event ID
-          // Pre-fill the custom field value
-          $form->setDefaults([
-              'custom_859' => '200', // Replace with your desired value
-          ]);
+  /**
+   *
+   */
+  public static function sendRuralPlannedVisitFeedbackEmail($eventsArray) {
+    $updatedEventIds = [];
+
+    foreach ($eventsArray as $event) {
+      try {
+        $eventId = $event['id'];
+        $eventCode = $event['title'];
+        $addresses = Address::get(FALSE)
+          ->addWhere('id', '=', $event['loc_block_id.address_id'])
+          ->setLimit(1)
+          ->execute()->first();
+        $eventAddress = \CRM_Utils_Address::format($addresses);
+        $feedbackEmailSent = $event['Rural_Planned_Visit_Outcome.Feedback_Email_Sent'];
+        $eventAttendedById = $event['participant.created_id'];
+
+        $endDate = new \DateTime($event['end_date']);
+        $today = new \DateTimeImmutable();
+        $endOfToday = $today->setTime(23, 59, 59);
+        $endOfTodayFormatted = $today->format('Y-m-d');
+        $endDateFormatted = $endDate->format('Y-m-d');
+
+        if (!$feedbackEmailSent && $endDateFormatted <= $endOfTodayFormatted) {
+          $eventAttendedBy = Contact::get(FALSE)
+            ->addSelect('email.email', 'display_name')
+            ->addJoin('Email AS email', 'LEFT')
+            ->addWhere('id', '=', $eventAttendedById)
+            ->execute()->first();
+
+          $attendeeEmail = $eventAttendedBy['email.email'];
+          $attendeeName = $eventAttendedBy['display_name'];
+          $from = HelperService::getDefaultFromEmail();
+
+          if (!$attendeeEmail) {
+            throw new \Exception('Attendee email missing');
+          }
+
+          $mailParams = [
+            'subject' => 'Rural Planned Visit Events Notification: ' . $eventCode . ' at ' . $eventAddress,
+            'from' => $from,
+            'toEmail' => $attendeeEmail,
+            'replyTo' => $from,
+            'html' => self::getParticipantsFeedbackEmailHtml($attendeeName, $eventId, $eventAttendedById, $eventCode, $eventAddress),
+          ];
+
+          $emailSendResult = \CRM_Utils_Mail::send($mailParams);
+
+          if ($emailSendResult) {
+            // If email is successfully sent, store the eventId for later update.
+            $updatedEventIds[] = $eventId;
+          }
+        }
       }
+      catch (\Exception $e) {
+        \Civi::log()->error("Error in sendEventsFeedbackEmail for $eventId " . $e->getMessage());
+      }
+    }
+
+    if (!empty($updatedEventIds)) {
+      Event::update(FALSE)
+        ->addValue('Rural_Planned_Visit_Outcome.Feedback_Email_Sent', TRUE)
+        ->addWhere('id', 'IN', $updatedEventIds)
+        ->execute();
+    }
   }
-}
+
+  /**
+   *
+   */
+  private static function getParticipantsFeedbackEmailHtml($attendeeName, $eventId, $eventAttendedById, $eventCode, $eventAddress) {
+    $homeUrl = \CRM_Utils_System::baseCMSURL();
+
+    $eventFeedBackFormUrl = $homeUrl . 'rural-planned-visit-feedback/#?Rural_Planned_Visit_Feedback.Event=' . $eventId . '&source_contact_id=' . $eventAttendedById;
+
+    $html = "
+	<p>Dear $attendeeName,</p>
+	<p>Thank you for attending the goonj events <strong>$eventCode</strong> at <strong>$eventAddress</strong>. Their is one forms that require your attention during and after the goonj event:</p>
+	<ol>
+		Please complete this form from the goonj event location once the goonj event ends.</li>
+		<li><a href=\"$eventFeedBackFormUrl\">Goonj Events Feedback Form</a><br>
+		This feedback form should be filled out after the goonj event ends, once you have an overview of the event's event.</li>
+	</ol>
+	<p>We appreciate your cooperation.</p>
+	<p>Warm Regards,<br>Urban Relations Team</p>";
+
+    return $html;
+  }
 
 }
