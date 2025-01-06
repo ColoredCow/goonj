@@ -371,7 +371,7 @@ class RazorpaySubscriptionImporter {
     $startDate = date('Y-m-d H:i:s', $subscription['start_at'] ?? time());
 
     // Generate unique invoice ID and transaction ID.
-    $invoiceID = md5(uniqid(rand(), TRUE));
+    $invoiceID = md5($subscription['id']);
 
     // Validate required fields.
     if (!$amount || !$currency || !$frequencyUnit) {
