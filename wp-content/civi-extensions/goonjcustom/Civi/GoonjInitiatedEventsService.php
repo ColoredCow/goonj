@@ -194,6 +194,7 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
 
     if (!$event) {
       \Civi::log()->error('Event not found', ['EventId' => $eventId]);
+      return;
     }
 
     $eventType = $event['event_type_id:name'];
@@ -211,11 +212,6 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
     if ($hasRestrictedRole) {
       unset($tabs['view']);
       unset($tabs['edit']);
-    }
-
-    if (empty($context['event_id'])) {
-      \Civi::log()->debug('No Event ID Found in Context');
-      return;
     }
 
     $eventID = $context['event_id'];

@@ -60,7 +60,7 @@ function civicrm_api3_goonjcustom_rural_planned_visit_feedback_cron($params) {
       RuralPlannedVisitService::sendRuralPlannedVisitFeedbackEmail($eventsArray);
     }
     catch (\Exception $e) {
-      \Civi::log()->info('Error Goonj Events Feedback Cron', [
+      \Civi::log()->info('Error Rural Planned Visit Feedback Cron', [
         'id' => $event['id'],
         'error' => $e->getMessage(),
       ]);

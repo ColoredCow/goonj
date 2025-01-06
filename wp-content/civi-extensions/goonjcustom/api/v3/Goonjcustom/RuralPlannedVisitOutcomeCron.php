@@ -41,11 +41,10 @@ function civicrm_api3_goonjcustom_rural_planned_visit_outcome_cron($params) {
     ->addSelect('title', 'loc_block_id.address_id', 'Rural_Planned_Visit.Goonj_Coordinator', 'Rural_Planned_Visit.External_Coordinating_Poc', 'start_date', 'end_date', 'Rural_Planned_Visit_Outcome.Outcome_Email_Sent')
     ->addWhere('event_type_id:name', '=', 'Rural Planned Visit')
     ->addWhere('Rural_Planned_Visit.Status:name', '=', 'Authorized')
-    ->addWhere('start_date', '<=', $endOfDay)
+    ->addWhere('start_date', '=', $endOfDay)
     ->addClause('OR', ['Rural_Planned_Visit_Outcome.Outcome_Email_Sent', 'IS NULL'], ['Rural_Planned_Visit_Outcome.Outcome_Email_Sent', '=', FALSE])
     ->setLimit(25)
     ->execute();
-  \Civi::log()->info('events', ['events' => $events]);
 
   foreach ($events as $event) {
 
