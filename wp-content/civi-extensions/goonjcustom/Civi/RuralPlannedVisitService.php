@@ -18,6 +18,7 @@ class RuralPlannedVisitService extends AutoSubscriber {
   public static function getSubscribedEvents() {
     return [
       '&hook_civicrm_tabset' => 'ruralPlannedVisitTabset',
+      '&hook_civicrm_buildForm' => 'goonjParticipantRegistration'
     ];
   }
 
@@ -220,5 +221,18 @@ class RuralPlannedVisitService extends AutoSubscriber {
 
     return $html;
   }
+
+  public function goonjParticipantRegistration($formName, &$form) {
+    \Civi::log()->info('formName', ['formName'=>$formName, 'form'=>$form]);
+    if ($formName === 'CRM_Event_Form_Registration_Register') {
+      $eventId = \CRM_Utils_Request::retrieve('id', 'Integer');
+      if ($eventId === 113) { // Replace with your event ID
+          // Pre-fill the custom field value
+          $form->setDefaults([
+              'custom_859' => '200', // Replace with your desired value
+          ]);
+      }
+  }
+}
 
 }
