@@ -1325,17 +1325,29 @@ class CollectionCampService extends AutoSubscriber {
     if (!empty($params['workflow']) && $params['workflow'] === 'contribution_online_receipt') {
       // Extract donor name or use a default value.
       $donorName = !empty($params['tplParams']['displayName']) ? $params['tplParams']['displayName'] : 'Valued Supporter';
+      $contributionID = !empty($params['tplParams']['contributionID']) ? $params['tplParams']['contributionID'] : NULL;
 
-      // Set the email content.
-      $params['text'] = "Dear $donorName,\n\nThank you for your contribution. Your support means a lot to us.\n\nWe have attached your contribution receipt to this email for your reference.\n\nWarm regards,\nThe Goonj Team";
+      $contribution = Contribution::get(FALSE)
+        ->addSelect('invoice_number')
+        ->addWhere('id', '=', $contributionID)
+        ->execute()->single();
+
+      $receiptNumber = $contribution['invoice_number'];
+      error_log("receiptNumber: " . print_r($receiptNumber, TRUE));
+
+      $params['text'] = "Dear $donorName,\n\nThank you for your contribution.\n\nThese contributions go a long way in sustaining our operations and implementing a series of initiatives all across. The receipt ($receiptNumber) for the same is enclosed with the details of 80G exemptions and our PAN No.\n\nFor updates on our activities and new campaigns, please visit our website www.goonj.org regularly.\n\nThank you once again for joining the journey.\n\nWith best regards,\nTeam Goonj";
 
       $params['html'] = "
-            <p>Dear <strong>$donorName</strong>,</p>
-            <p>Thank you for your contribution. Your support means a lot to us.</p>
-            <p>We have attached your contribution receipt to this email for your reference.</p>
-            <p>Warm regards,</p>
-            <p><strong>The Goonj Team</strong></p>
-        ";
+          <p>Dear <strong>$donorName</strong>,</p>
+          <p>Thank you for your contribution.</p>
+          <p>These contributions go a long way in sustaining our operations and implementing a series of initiatives all across. The receipt (<strong>$receiptNumber</strong>) for the same is enclosed with the details of 80G exemptions and our PAN No.</p>
+          <p>For updates on our activities and new campaigns, please visit our website <a href='https://www.goonj.org'>www.goonj.org</a> regularly.</p>
+          <p>Thank you once again for joining the journey.</p>
+          <p>
+          With best regards,
+          Team Goonj
+          </p>
+      ";
     }
 
     // Handle contribution_offline_receipt workflow.
