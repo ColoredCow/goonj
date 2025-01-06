@@ -11,6 +11,7 @@ use Civi\Api4\Email;
 use Civi\Api4\Group;
 use Civi\Api4\GroupContact;
 use Civi\Api4\OptionValue;
+use Civi\Api4\Organization;
 use Civi\Api4\Relationship;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
@@ -36,14 +37,61 @@ class InstitutionCollectionCampService extends AutoSubscriber {
         ['assignChapterGroupToIndividual'],
         ['generateInstitutionCollectionCampQr'],
         ['linkInstitutionCollectionCampToContact'],
-        ['updateInstitutionCampStatusAfterAuth'],
+        ['updateNameOfTheInstitution'],
       ],
+      '&hook_civicrm_post' => 'testing',
       '&hook_civicrm_custom' => [
         ['setOfficeDetails'],
         ['mailNotificationToMmt'],
       ],
       '&hook_civicrm_tabset' => 'institutionCollectionCampTabset',
     ];
+  }
+
+  /**
+   *
+   */
+  public static function updateNameOfTheInstitution(string $op, string $objectName, int $objectId, &$objectRef) {
+    if ($objectRef->afform_name == "afformInstitutionCollectionCampIntentVerification") {
+
+      $data = json_decode($objectRef->data, TRUE);
+
+      if (!isset($data['Eck_Collection_Camp1'][0]['fields'])) {
+        return;
+      }
+
+      $fields = $data['Eck_Collection_Camp1'][0]['fields'];
+
+      if (isset($fields['Collection_Camp_Core_Details.Status']) && $fields['Collection_Camp_Core_Details.Status'] === 'authorized') {
+        $id = $fields['id'];
+      }
+      else {
+        return;
+      }
+
+      $organizationId = $data['Organization1'][0]['fields']['id'] ?? NULL;
+
+      if (!$organizationId) {
+        return;
+      }
+
+      $organizations = Organization::get(FALSE)
+        ->addSelect('display_name')
+        ->addWhere('id', '=', $organizationId)
+        ->execute()
+        ->single();
+
+      if (!$organizations || !isset($organizations['display_name'])) {
+        return;
+      }
+
+      $organizationName = $organizations['display_name'];
+
+      EckEntity::update('Collection_Camp', FALSE)
+        ->addValue('Institution_collection_camp_Review.Name_of_the_Institution', $organizationName)
+        ->addWhere('id', '=', $id)
+        ->execute();
+    }
   }
 
   /**
@@ -380,7 +428,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     . '&Camp_Vehicle_Dispatch.Institution_Collection_Camp=' . $collectionCampId
     . '&Eck_Collection_Camp1=' . $collectionCampId
     . '&id=' . $collectionCampId;
-    
+
     $html = "
     <p>Dear MMT team,</p>
     <p>This is to inform you that a vehicle has been sent from camp <strong>$campCode</strong> at <strong>$campAddress</strong>.</p>
