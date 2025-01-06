@@ -78,6 +78,7 @@ class CollectionCampService extends AutoSubscriber {
       ],
       '&hook_civicrm_alterMailParams' => [
       ['alterReceiptMail'],
+      ['handleOfflineReceipt'],
       ],
       '&hook_civicrm_validateForm' => 'validateCheckNumber',
 
@@ -1325,34 +1326,87 @@ class CollectionCampService extends AutoSubscriber {
     if (!empty($params['workflow']) && $params['workflow'] === 'contribution_online_receipt') {
       // Extract donor name or use a default value.
       $donorName = !empty($params['tplParams']['displayName']) ? $params['tplParams']['displayName'] : 'Valued Supporter';
+      $contributionID = !empty($params['tplParams']['contributionID']) ? $params['tplParams']['contributionID'] : NULL;
 
-      // Set the email content.
-      $params['text'] = "Dear $donorName,\n\nThank you for your contribution. Your support means a lot to us.\n\nWe have attached your contribution receipt to this email for your reference.\n\nWarm regards,\nThe Goonj Team";
+      $contribution = Contribution::get(FALSE)
+        ->addSelect('invoice_number')
+        ->addWhere('id', '=', $contributionID)
+        ->execute()->single();
 
-      $params['html'] = "
-            <p>Dear <strong>$donorName</strong>,</p>
-            <p>Thank you for your contribution. Your support means a lot to us.</p>
-            <p>We have attached your contribution receipt to this email for your reference.</p>
-            <p>Warm regards,</p>
-            <p><strong>The Goonj Team</strong></p>
-        ";
+      $receiptNumber = $contribution['invoice_number'];
+
+      // Check if title is 'Team 5000'.
+      if (!empty($params['tplParams']['title']) && $params['tplParams']['title'] === 'Team 5000') {
+        $params['text'] = "Dear $donorName,\n\nThank you for the contribution and coming on-board of Team 5000.\n\nBy joining https://goonj.org/donate/micro-team-5000 you step into this legacy of grassroots action and become an integral part of our extended family. This isn’t just about giving; it’s about becoming a vital contributor to a movement that empowers communities and amplifies the voices of the marginalised. Your committed cooperation and continued engagement fuel our sustained efforts.\n\nThe receipts ($receiptNumber) for the same is enclosed with the details of 80G exemptions and our PAN No.\n\nFor a regular update on our activities and new campaigns, please keep an eye on www.goonj.org\n\nThank you once again for joining the journey..\n\nRegards,\nPriyanka";
+
+        $params['html'] = "
+                <p>Dear <strong>$donorName</strong>,</p>
+                <p>Thank you for the contribution and coming on-board of Team 5000.</p>
+                <p>By joining <a href='https://goonj.org/donate/micro-team-5000'>https://goonj.org/donate/micro-team-5000</a>, you step into this legacy of grassroots action and become an integral part of our extended family. This isn’t just about giving; it’s about becoming a vital contributor to a movement that empowers communities and amplifies the voices of the marginalised. Your committed cooperation and continued engagement fuel our sustained efforts.</p>
+                <p>The receipts (<strong>$receiptNumber</strong>) for the same is enclosed with the details of 80G exemptions and our PAN No.</p>
+                <p>For a regular update on our activities and new campaigns, please keep an eye on <a href='https://www.goonj.org'>www.goonj.org</a>.</p>
+                <p>Thank you once again for joining the journey.</p>
+                <p>Regards,<br>Priyanka</p>
+            ";
+      }
+      else {
+        $params['text'] = "Dear $donorName,\n\nThank you for your contribution.\n\nThese contributions go a long way in sustaining our operations and implementing a series of initiatives all across. The receipt ($receiptNumber) for the same is enclosed with the details of 80G exemptions and our PAN No.\n\nFor updates on our activities and new campaigns, please visit our website www.goonj.org regularly.\n\nThank you once again for joining the journey.\n\nWith best regards,\nTeam Goonj";
+
+        $params['html'] = "
+                <p>Dear <strong>$donorName</strong>,</p>
+                <p>Thank you for your contribution.</p>
+                <p>These contributions go a long way in sustaining our operations and implementing a series of initiatives all across. The receipt (<strong>$receiptNumber</strong>) for the same is enclosed with the details of 80G exemptions and our PAN No.</p>
+                <p>For updates on our activities and new campaigns, please visit our website <a href='https://www.goonj.org'>www.goonj.org</a> regularly.</p>
+                <p>Thank you once again for joining the journey.</p>
+                <p>With best regards,<br>Team Goonj</p>
+            ";
+      }
     }
+  }
 
-    // Handle contribution_offline_receipt workflow.
+  /**
+   *
+   */
+  public static function handleOfflineReceipt(&$params, $context) {
     if (!empty($params['workflow']) && $params['workflow'] === 'contribution_offline_receipt') {
       // Extract donor name or use a default value.
       $donorName = !empty($params['toName']) ? $params['toName'] : 'Valued Supporter';
+      $contributionID = !empty($params['contributionId']) ? $params['contributionId'] : NULL;
 
-      // Set the email content.
-      $params['text'] = "Dear $donorName,\n\nThank you for your offline contribution. Your support means a lot to us.\n\nWe have attached your contribution receipt to this email for your reference.\n\nWarm regards,\nThe Goonj Team";
+      $contribution = Contribution::get(FALSE)
+        ->addSelect('invoice_number', 'contribution_page_id:label')
+        ->addWhere('id', '=', $contributionID)
+        ->execute()->single();
 
-      $params['html'] = "
-            <p>Dear <strong>$donorName</strong>,</p>
-            <p>Thank you for your contribution. Your support means a lot to us.</p>
-            <p>We have attached your contribution receipt to this email for your reference.</p>
-            <p>Warm regards,</p>
-            <p><strong>The Goonj Team</strong></p>
-        ";
+      $receiptNumber = $contribution['invoice_number'];
+      $contributionName = $contribution['contribution_page_id:label'];
+
+      // Check if title is 'Team 5000'.
+      if ($contributionName === 'Team 5000') {
+        $params['text'] = "Dear $donorName,\n\nThank you for the contribution and coming on-board of Team 5000.\n\nBy joining https://goonj.org/donate/micro-team-5000 you step into this legacy of grassroots action and become an integral part of our extended family. This isn’t just about giving; it’s about becoming a vital contributor to a movement that empowers communities and amplifies the voices of the marginalised. Your committed cooperation and continued engagement fuel our sustained efforts.\n\nThe receipts ($receiptNumber) for the same is enclosed with the details of 80G exemptions and our PAN No.\n\nFor a regular update on our activities and new campaigns, please keep an eye on www.goonj.org\n\nThank you once again for joining the journey..\n\nRegards,\nPriyanka";
+
+        $params['html'] = "
+          <p>Dear <strong>$donorName</strong>,</p>
+          <p>Thank you for the contribution and coming on-board of Team 5000.</p>
+          <p>By joining <a href='https://goonj.org/donate/micro-team-5000'>https://goonj.org/donate/micro-team-5000</a>, you step into this legacy of grassroots action and become an integral part of our extended family. This isn’t just about giving; it’s about becoming a vital contributor to a movement that empowers communities and amplifies the voices of the marginalised. Your committed cooperation and continued engagement fuel our sustained efforts.</p>
+          <p>The receipts (<strong>$receiptNumber</strong>) for the same is enclosed with the details of 80G exemptions and our PAN No.</p>
+          <p>For a regular update on our activities and new campaigns, please keep an eye on <a href='https://www.goonj.org'>www.goonj.org</a>.</p>
+          <p>Thank you once again for joining the journey.</p>
+          <p>Regards,<br>Priyanka</p>
+      ";
+      }
+      else {
+        $params['text'] = "Dear $donorName,\n\nThank you for your contribution.\n\nThese contributions go a long way in sustaining our operations and implementing a series of initiatives all across. The receipt ($receiptNumber) for the same is enclosed with the details of 80G exemptions and our PAN No.\n\nFor updates on our activities and new campaigns, please visit our website www.goonj.org regularly.\n\nThank you once again for joining the journey.\n\nWith best regards,\nTeam Goonj";
+
+        $params['html'] = "
+          <p>Dear <strong>$donorName</strong>,</p>
+          <p>Thank you for your contribution.</p>
+          <p>These contributions go a long way in sustaining our operations and implementing a series of initiatives all across. The receipt (<strong>$receiptNumber</strong>) for the same is enclosed with the details of 80G exemptions and our PAN No.</p>
+          <p>For updates on our activities and new campaigns, please visit our website <a href='https://www.goonj.org'>www.goonj.org</a> regularly.</p>
+          <p>Thank you once again for joining the journey.</p>
+          <p>With best regards,<br>Team Goonj</p>
+      ";
+      }
     }
   }
 
