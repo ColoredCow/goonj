@@ -715,7 +715,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       'School' => 'School Coordinator of',
       'College' => 'College Coordinator of',
       'Associations' => 'Associations Coordinator of',
-      'Others' => 'Others Coordinator of',
+      'Others' => 'Default Coordinator of',
     ];
 
     $registrationCategorySelection = $registrationType['Institution_Collection_Camp_Intent.You_wish_to_register_as:name'];
@@ -726,7 +726,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       $relationshipTypeName = $relationshipTypeMap[$registrationCategorySelection];
     }
     else {
-      $relationshipTypeName = 'Other Entities Coordinator of';
+      $relationshipTypeName = 'Default Coordinator of';
     }
 
     // Retrieve the coordinators for the selected relationship type.

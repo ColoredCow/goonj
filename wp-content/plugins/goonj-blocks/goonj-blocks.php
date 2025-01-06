@@ -97,8 +97,10 @@ function gb_goonj_blocks_check_action_target_exists() {
 		'Institution_Dropping_Center_Intent.District_City',
 		'Institution_Dropping_Center_Intent.Institution_POC.display_name',
 		'Institution_Dropping_Center_Intent.Dropping_Center_Address',
+		'Institution_Dropping_Center_Intent.Organization_Name.display_name',
 		'Institution_Collection_Camp_Intent.State',
 		'Institution_Collection_Camp_Intent.District_City',
+		'Institution_Collection_Camp_Intent.Organization_Name.display_name',
 		'Institution_Collection_Camp_Intent.Collections_will_start_on_Date_',
 		'Institution_Collection_Camp_Intent.Collections_will_end_on_Date_',
 		'Institution_Collection_Camp_Intent.Collection_Camp_Address',
@@ -109,6 +111,7 @@ function gb_goonj_blocks_check_action_target_exists() {
 		'Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_',
 		'Institution_Goonj_Activities.Include_Attendee_Feedback_Form',
 		'Institution_Goonj_Activities.Select_Attendee_feedback_form',
+		'Institution_Goonj_Activities.Organization_Name.display_name',
 	);
 
 	switch ( $target ) {

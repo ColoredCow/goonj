@@ -75,7 +75,7 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
   /**
    *
    */
-  private function initializeApi() {
+  public function initializeApi() {
     $apiKey = $this->_paymentProcessor['user_name'];
     $apiSecret = $this->_paymentProcessor['password'];
     $api = new Api($apiKey, $apiSecret);
@@ -153,7 +153,11 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
           'total_count' => $installmentCount,
           'quantity' => 1,
           'notes' => [
-            'contribution_id' => $params['contributionID'],
+            'contribution_recur_id' => $params['contributionRecurID'],
+            'contact_id' => $params['contactID'],
+            'source' => 'CiviCRM Recurring Contribution',
+            'email' => $params['email'] ?? NULL,
+            'phone' => $params['phone'] ?? NULL,
           ],
         ]);
 
@@ -191,6 +195,13 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
           'receipt' => 'RCPT-' . uniqid(),
         // Auto-capture payment.
           'payment_capture' => 1,
+          'notes' => [
+            'contribution_id' => $params['contributionID'],
+            'contact_id' => $params['contactID'],
+            'source' => 'CiviCRM One-Time Contribution',
+            'email' => $params['email'] ?? NULL,
+            'phone' => $params['phone'] ?? NULL,
+          ],
         ]);
 
         civicrm_api3('Contribution', 'create', [

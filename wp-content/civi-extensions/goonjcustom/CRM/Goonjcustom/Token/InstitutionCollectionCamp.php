@@ -64,8 +64,8 @@ class CRM_Goonjcustom_Token_InstitutionCollectionCamp extends AbstractTokenSubsc
       case 'date':
       case 'time':
       case 'type':
-        $start = new DateTime($collectionSource['Institution_Collection_Camp_Intent.Collections_will_start_on_Date_]']);
-        $end = new DateTime($collectionSource['Institution_Collection_Camp_Intent.Collections_will_end_on_Date__']);
+        $start = new DateTime($collectionSource['Institution_Collection_Camp_Intent.Collections_will_start_on_Date_']);
+        $end = new DateTime($collectionSource['Institution_Collection_Camp_Intent.Collections_will_end_on_Date_']);
 
         if ($field === 'type') {
           $value = $start->format('Y-m-d') === $end->format('Y-m-d') ? 'Camp' : 'Drive';
@@ -132,26 +132,7 @@ class CRM_Goonjcustom_Token_InstitutionCollectionCamp extends AbstractTokenSubsc
    *
    */
   private function formatVolunteers($collectionSource) {
-    $organizationId = $collectionSource['Institution_Collection_Camp_Intent.Organization_Name'];
-
-    $relationships = Relationship::get(FALSE)
-      ->addWhere('contact_id_a', '=', $organizationId)
-      ->addWhere('relationship_type_id:name', '=', 'Institution POC of')
-      ->execute();
-
-    // If no relationships found for 'Primary Institution POC of', check for 'Secondary Institution POC of'.
-    if (empty($relationships)) {
-      $relationships = Relationship::get(FALSE)
-        ->addWhere('contact_id_a', '=', $organizationId)
-        ->addWhere('relationship_type_id:name', '=', 'Primary Institution POC of')
-        ->execute();
-    }
-
-    // Return contact_id_b as initiator if found.
-    $initiatorId = NULL;
-    if (!empty($relationships) && isset($relationships[0]['contact_id_b'])) {
-      $initiatorId = $relationships[0]['contact_id_b'];
-    }
+    $initiatorId = $collectionSource['Institution_Collection_Camp_Intent.Institution_POC'];
 
     if (!$initiatorId) {
       return '';

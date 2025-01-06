@@ -12,8 +12,8 @@ $target            = get_query_var('target');
 $action_target     = get_query_var('action_target');
 $source_contact_id = $action_target['id'] ?? NULL;
 
-if ($target === 'induction-schedule'){
-    $slots = generate_induction_slots($source_contact_id);
+if ($target === 'induction-schedule') {
+  $slots = generate_induction_slots($source_contact_id);
 }
 
 
@@ -26,7 +26,7 @@ $headings = [
   'induction-schedule' => 'Induction Schedule',
   'goonj-activities' => 'Goonj Activities',
   'institution-goonj-activities' => 'Institution Goonj Activities',
-  'events' => 'Goonj Events'
+  'events' => 'Goonj Events',
 ];
 
 $heading_text = $headings[$target];
@@ -183,13 +183,14 @@ $target_data = [
     'register_link' => $collection_camp_register_link,
   ],
   'institution-collection-camp' => [
-    'start_time' => 'Institution_Collection_Camp_Intent.Collections_will_start_on_Date',
+    'start_time' => 'Institution_Collection_Camp_Intent.Collections_will_start_on_Date_',
     'end_time' => 'Institution_Collection_Camp_Intent.Collections_will_end_on_Date_',
     'address' => 'Institution_Collection_Camp_Intent.Collection_Camp_Address',
     'address_label' => 'Address of the camp',
     'contribution_link' => $institution_collection_camp_material_contribution_link,
     'donation_link' => $donation_link,
     'register_link' => $institution_collection_camp_register_link,
+    'name_of_institute' => 'Institution_Collection_Camp_Intent.Organization_Name.display_name',
   ],
   'goonj-activities' => [
     'start_time' => 'Goonj_Activities.Start_Date',
@@ -199,7 +200,7 @@ $target_data = [
     'donation_link' => $donation_link,
     'register_link' => $goonj_activities_register_link,
     'include_attendee_feedback_link' => $attendee_activity_feedback_link,
-    'should_include_attendee_feedback'=> $action_target['Goonj_Activities.Include_Attendee_Feedback_Form']
+    'should_include_attendee_feedback' => $action_target['Goonj_Activities.Include_Attendee_Feedback_Form'],
   ],
   'institution-dropping-center' => [
     'volunteer_name' => 'Institution_Dropping_Center_Intent.Institution_POC.display_name',
@@ -208,6 +209,7 @@ $target_data = [
     'contribution_link' => $institution_dropping_center_material_contribution_link,
     'donation_link' => $donation_link,
     'register_link' => $institution_dropping_center_register_link,
+    'name_of_institute' => 'Institution_Dropping_Center_Intent.Organization_Name.display_name',
   ],
   'institution-goonj-activities' => [
     'start_time' => 'Institution_Goonj_Activities.Start_Date',
@@ -217,7 +219,8 @@ $target_data = [
     'donation_link' => $donation_link,
     'register_link' => $institution_goonj_activities_register_link,
     'include_attendee_feedback_link' => $institution_attendee_activity_feedback_link,
-    'should_include_attendee_feedback'=> $action_target['Institution_Goonj_Activities.Include_Attendee_Feedback_Form']
+    'should_include_attendee_feedback' => $action_target['Institution_Goonj_Activities.Include_Attendee_Feedback_Form'],
+    'name_of_institute' => 'Institution_Goonj_Activities.Organization_Name.display_name',
   ],
   'events' => [
     'start_time' => 'start_date',
@@ -226,11 +229,11 @@ $target_data = [
     'address_label' => 'Address of the camp',
     'contribution_link' => $event_material_contribution_link,
     'donation_link' => $event_donation_link,
-    'register_link' => $events_registration_link
-  ]
+    'register_link' => $events_registration_link,
+  ],
 ];
 
-if (in_array($target, ['collection-camp','institution-collection-camp', 'dropping-center', 'goonj-activities', 'institution-dropping-center', 'institution-goonj-activities', 'events'])) :
+if (in_array($target, ['collection-camp', 'institution-collection-camp', 'dropping-center', 'goonj-activities', 'institution-dropping-center', 'institution-goonj-activities', 'events'])) :
   $target_info = $target_data[$target];
 
   try {
@@ -250,6 +253,8 @@ if (in_array($target, ['collection-camp','institution-collection-camp', 'droppin
   $volunteer_name = $action_target[$target_info['volunteer_name']];
   $donation_link = $target_info['donation_link'];
   $register_link = $target_info['register_link'];
+  $name_of_institute = $action_target[$target_info['name_of_institute']];
+  error_log("name_of_institute: " . print_r($name_of_institute, TRUE));
 
   $include_attendee_feedback_link = $target_info['include_attendee_feedback_link'];
   $should_include_attendee_feedback = $target_info['should_include_attendee_feedback'];
@@ -260,35 +265,48 @@ if (in_array($target, ['collection-camp','institution-collection-camp', 'droppin
     </div>
     <table class="wp-block-gb-table">
         <tbody>
-            <?php if ($target === 'dropping-center' || $target === 'institution-dropping-center') : ?>
-            <tr class="wp-block-gb-table-row">
-                <td class="wp-block-gb-table-cell wp-block-gb-table-header">Volunteer name</td>
-                <td class="wp-block-gb-table-cell"><?php echo esc_html($volunteer_name); ?></td>
-            </tr>
+        <?php if ($target === 'dropping-center' || $target === 'institution-dropping-center') : ?>
+            <?php if ($target === 'institution-dropping-center' && !empty($name_of_institute)) : ?>
+        <tr class="wp-block-gb-table-row">
+            <td class="wp-block-gb-table-cell wp-block-gb-table-header">Name of Institute</td>
+            <td class="wp-block-gb-table-cell"><?php echo esc_html($name_of_institute); ?></td>
+        </tr>
             <?php endif; ?>
-
-            <?php if ($target === 'collection-camp' || $target === 'institution-collection-camp' || $target === 'goonj-activities' || $target === 'institution-goonj-activities' || $target ==='events') : ?>
-            <tr class="wp-block-gb-table-row">
-                <td class="wp-block-gb-table-cell wp-block-gb-table-header">From</td>
-                <td class="wp-block-gb-table-cell"><?php echo gb_format_date($start_date); ?></td>
-            </tr>
-            <tr class="wp-block-gb-table-row">
-                <td class="wp-block-gb-table-cell wp-block-gb-table-header">To</td>
-                <td class="wp-block-gb-table-cell"><?php echo gb_format_date($end_date); ?></td>
-            </tr>
-            <tr class="wp-block-gb-table-row">
-                <td class="wp-block-gb-table-cell wp-block-gb-table-header">Time</td>
-                <td class="wp-block-gb-table-cell"><?php echo gb_format_time_range($start_date, $end_date); ?></td>
-            </tr>
-            <?php endif; ?>
+    <tr class="wp-block-gb-table-row">
+        <td class="wp-block-gb-table-cell wp-block-gb-table-header">Volunteer name</td>
+        <td class="wp-block-gb-table-cell"><?php echo esc_html($volunteer_name); ?></td>
+    </tr>
+   
+        <?php endif; ?>
+  <?php if ($target === 'collection-camp' || $target === 'institution-collection-camp' || $target === 'goonj-activities' || $target === 'institution-goonj-activities' || $target === 'events') : ?>
+    <tr class="wp-block-gb-table-row">
+        <td class="wp-block-gb-table-cell wp-block-gb-table-header">From</td>
+        <td class="wp-block-gb-table-cell"><?php echo gb_format_date($start_date); ?></td>
+    </tr>
+    <tr class="wp-block-gb-table-row">
+        <td class="wp-block-gb-table-cell wp-block-gb-table-header">To</td>
+        <td class="wp-block-gb-table-cell"><?php echo gb_format_date($end_date); ?></td>
+    </tr>
+    <tr class="wp-block-gb-table-row">
+        <td class="wp-block-gb-table-cell wp-block-gb-table-header">Time</td>
+        <td class="wp-block-gb-table-cell"><?php echo gb_format_time_range($start_date, $end_date); ?></td>
+    </tr>
+    <?php if (($target === 'institution-collection-camp' || $target === 'institution-goonj-activities') && !empty($name_of_institute)) : ?>
+        <tr class="wp-block-gb-table-row">
+            <td class="wp-block-gb-table-cell wp-block-gb-table-header">Name of Institute</td>
+            <td class="wp-block-gb-table-cell"><?php echo esc_html($name_of_institute); ?></td>
+        </tr>
+    <?php endif; ?>
+  <?php endif; ?>
             <tr class="wp-block-gb-table-row">
                 <td class="wp-block-gb-table-cell wp-block-gb-table-header"><?php echo esc_html($address_label); ?></td>
                 <td class="wp-block-gb-table-cell">
-                    <?php 
+                    <?php
                     if ($target === 'events') {
-                        echo CRM_Utils_Address::format($address);
-                    } else {
-                        echo esc_html($address);
+                      echo CRM_Utils_Address::format($address);
+                    }
+                    else {
+                      echo esc_html($address);
                     }
                     ?>
                 </td>
@@ -299,7 +317,7 @@ if (in_array($target, ['collection-camp','institution-collection-camp', 'droppin
         <a href="<?php echo esc_url($register_link); ?>" class="wp-block-gb-action-button">
             <?php esc_html_e('Volunteer with Goonj', 'goonj-blocks'); ?>
         </a>
-        <?php if (!in_array($target, ['goonj-activities', 'institution-goonj-activities'])): ?>
+        <?php if (!in_array($target, ['goonj-activities', 'institution-goonj-activities'])) : ?>
             <a href="<?php echo esc_url($contribution_link ?? '#'); ?>" class="wp-block-gb-action-button">
                 <?php esc_html_e('Record your Material Contribution', 'goonj-blocks'); ?>
             </a>
@@ -307,7 +325,7 @@ if (in_array($target, ['collection-camp','institution-collection-camp', 'droppin
         <a href="<?php echo esc_url($donation_link); ?>" class="wp-block-gb-action-button">
             <?php esc_html_e('Monetary Contribution', 'goonj-blocks'); ?>
         </a>
-        <?php if ($should_include_attendee_feedback): ?>
+        <?php if ($should_include_attendee_feedback) : ?>
             <a href="<?php echo esc_url($include_attendee_feedback_link ?? '#'); ?>" class="wp-block-gb-action-button">
                 <?php esc_html_e('Record Attendee Feedback', 'goonj-blocks'); ?>
             </a>
@@ -374,7 +392,8 @@ if (in_array($target, ['collection-camp','institution-collection-camp', 'droppin
                             urldecode($slot['induction_type']),
                         );
 
-                        $is_disabled = ($slot['activity_count'] > 20); // Mark slot as disabled if full
+                        // Mark slot as disabled if full.
+                        $is_disabled = ($slot['activity_count'] > 20);
                         ?>
 
                         <a href="<?php echo esc_url($is_disabled ? '#' : $book_slot_link); ?>"
