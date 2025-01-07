@@ -2,8 +2,8 @@
 
 namespace Civi;
 
-use Civi\Api4\ActivityContact;
 use Civi\Afform\Event\AfformSubmitEvent;
+use Civi\Api4\ActivityContact;
 use Civi\Api4\Address;
 use Civi\Api4\Contact;
 use Civi\Api4\CustomField;
@@ -233,6 +233,16 @@ class InstitutionService extends AutoSubscriber {
    *
    */
   private static function addContactToGroup($contactId, $groupId) {
+    $groupContacts = GroupContact::get(FALSE)
+      ->addSelect('contact_id', 'group_id')
+      ->addWhere('group_id.id', '=', $groupId)
+      ->addWhere('contact_id', '=', $contactId)
+      ->execute();
+
+    if ($groupContacts->count() > 0) {
+      return;
+    }
+
     if ($contactId && $groupId) {
       GroupContact::create(FALSE)
         ->addValue('contact_id', $contactId)
