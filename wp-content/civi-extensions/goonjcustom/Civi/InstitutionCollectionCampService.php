@@ -204,7 +204,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
             return;
           }
 
-          $test = GroupContact::create(FALSE)
+          GroupContact::create(FALSE)
             ->addValue('contact_id', $contactId)
             ->addValue('group_id', $groupId)
             ->addValue('status', 'Added')
