@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<menu>
+  <item>
+    <path>civicrm/aws-ses/listen</path>
+    <page_callback>\Civi\SES\Page\Listen</page_callback>
+    <title>AWS SES endpoint</title>
+    <access_callback>1</access_callback>
+  </item>
+  <item>
+    <path>civicrm/admin/settings/aws-ses</path>
+    <page_callback>CRM_Admin_Form_Generic</page_callback>
+    <title>AWS SES settings</title>
+    <access_arguments>administer CiviCRM</access_arguments>
+  </item>
+</menu>
+
