@@ -34,14 +34,16 @@ function _civicrm_api3_goonjcustom_rural_planned_visit_outcome_cron_spec(&$spec)
  */
 function civicrm_api3_goonjcustom_rural_planned_visit_outcome_cron($params) {
   $returnValues = [];
-
   $today = new DateTimeImmutable();
+  $startOfDay = $today->setTime(0, 0, 0)->format('Y-m-d H:i:s');
   $endOfDay = $today->setTime(23, 59, 59)->format('Y-m-d H:i:s');
+
   $events = Event::get(TRUE)
     ->addSelect('title', 'loc_block_id.address_id', 'Rural_Planned_Visit.Goonj_Coordinator', 'Rural_Planned_Visit.External_Coordinating_Poc', 'start_date', 'end_date', 'Rural_Planned_Visit_Outcome.Outcome_Email_Sent')
     ->addWhere('event_type_id:name', '=', 'Rural Planned Visit')
     ->addWhere('Rural_Planned_Visit.Status:name', '=', 'Authorized')
-    ->addWhere('start_date', '=', $endOfDay)
+    ->addWhere('start_date', '>=', $startOfDay)
+    ->addWhere('start_date', '<=', $endOfDay)
     ->addClause('OR', ['Rural_Planned_Visit_Outcome.Outcome_Email_Sent', 'IS NULL'], ['Rural_Planned_Visit_Outcome.Outcome_Email_Sent', '=', FALSE])
     ->setLimit(25)
     ->execute();
