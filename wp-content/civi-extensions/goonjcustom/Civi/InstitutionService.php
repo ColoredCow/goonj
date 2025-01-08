@@ -437,13 +437,13 @@ class InstitutionService extends AutoSubscriber {
     $typeToRelationshipMap = [
       'Corporate'    => 'Corporate Coordinator of',
       'Foundation'   => 'Foundation Coordinator of',
-      'Associations' => 'Associations Coordinator of',
-      'Others'       => 'Default Coordinator of',
+      'Association' => 'Associations Coordinator of',
+      'Other'       => 'Default Coordinator of',
     ];
 
-    // Special case for "Education".
-    if ($typeOfInstitution === 'Education') {
+    if ($typeOfInstitution === 'Educational Institute') {
       if ($categoryOfInstitution === 'School') {
+        error_log("categoryOfInstitution: " . print_r($categoryOfInstitution, TRUE));
         return 'School Coordinator of';
       }
       elseif ($categoryOfInstitution === 'College') {
