@@ -44,7 +44,8 @@ class NavigationPermissionService extends AutoSubscriber {
           'Volunteers',
           'Urban Visit',
           'Individuals',
-          'Contributions'
+          'Contributions',
+          'Campaigns'
         ],
       ],
       'mmt' => [
@@ -69,7 +70,8 @@ class NavigationPermissionService extends AutoSubscriber {
           'Account: Goonj Offices',
           'Volunteers',
           'Institute',
-          'Individuals'
+          'Individuals',
+          'Campaigns'
         ],
       ],
     ];
