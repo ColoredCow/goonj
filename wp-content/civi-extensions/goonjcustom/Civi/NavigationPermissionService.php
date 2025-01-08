@@ -69,6 +69,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Account: Goonj Offices',
           'Volunteers',
           'Institute',
+          'Individuals'
         ],
       ],
     ];
