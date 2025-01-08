@@ -2,8 +2,8 @@
 
 namespace Civi;
 
-use Civi\Api4\ActivityContact;
 use Civi\Afform\Event\AfformSubmitEvent;
+use Civi\Api4\ActivityContact;
 use Civi\Api4\Address;
 use Civi\Api4\Contact;
 use Civi\Api4\CustomField;
@@ -407,9 +407,13 @@ class InstitutionService extends AutoSubscriber {
   private static function getRelationshipTypeName($contactId) {
     if ($contactId) {
       $organization = Organization::get(FALSE)
-        ->addSelect('Institute_Registration.Type_of_Institution:label')
+        ->addSelect(
+                'Institute_Registration.Type_of_Institution:label',
+                'Category_of_Institution.Education_Institute:label'
+            )
         ->addWhere('id', '=', $contactId)
-        ->execute()->single();
+        ->execute()
+        ->single();
     }
 
     if (!$organization) {
@@ -417,17 +421,29 @@ class InstitutionService extends AutoSubscriber {
     }
 
     $typeOfInstitution = $organization['Institute_Registration.Type_of_Institution:label'];
+    $categoryOfInstitution = $organization['Category_of_Institution.Education_Institute:label'];
 
+    // Define the default type-to-relationship mapping.
     $typeToRelationshipMap = [
       'Corporate'    => 'Corporate Coordinator of',
       'Foundation'   => 'Foundation Coordinator of',
-      'Education'    => 'Education Institute Coordinator of',
       'Associations' => 'Associations Coordinator of',
       'Others'       => 'Default Coordinator of',
     ];
 
+    // Special case for "Education".
+    if ($typeOfInstitution === 'Education') {
+      if ($categoryOfInstitution === 'School') {
+        return 'School Coordinator of';
+      }
+      elseif ($categoryOfInstitution === 'College') {
+        return 'College Coordinator of';
+      }
+      return 'Default Coordinator of';
+    }
+
     $firstWord = strtok($typeOfInstitution, ' ');
-    // Return the corresponding relationship type, or default if not found.
+    // Return the mapped relationship type, or default if not found.
     return $typeToRelationshipMap[$firstWord] ?? 'Default Coordinator of';
   }
 
