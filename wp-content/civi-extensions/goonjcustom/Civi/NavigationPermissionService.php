@@ -43,7 +43,8 @@ class NavigationPermissionService extends AutoSubscriber {
           'Induction Tab',
           'Volunteers',
           'Urban Visit',
-          'Individuals'
+          'Individuals',
+          'Contributions'
         ],
       ],
       'mmt' => [
