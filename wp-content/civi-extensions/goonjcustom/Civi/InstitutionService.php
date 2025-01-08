@@ -443,7 +443,6 @@ class InstitutionService extends AutoSubscriber {
 
     if ($typeOfInstitution === 'Educational Institute') {
       if ($categoryOfInstitution === 'School') {
-        error_log("categoryOfInstitution: " . print_r($categoryOfInstitution, TRUE));
         return 'School Coordinator of';
       }
       elseif ($categoryOfInstitution === 'College') {
