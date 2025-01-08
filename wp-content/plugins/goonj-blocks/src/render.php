@@ -116,7 +116,7 @@ $sourceField = CustomField::get(FALSE)
 
 $sourceFieldId = 'custom_' . $sourceField['id'];
 
-$base_donation_link = home_url('/contribute/donate');
+$base_donation_link = home_url('/contribute');
 $donation_link = $base_donation_link . '?' . $sourceFieldId . '=' . $source_contact_id;
 
 $dropping_center_material_contribution_link = sprintf(
@@ -150,7 +150,7 @@ $puSourceField = CustomField::get(FALSE)
 
 $puSourceFieldId = 'custom_' . $puSourceField['id'];
 
-$base_pu_donation_link = home_url('/contribute/donate');
+$base_pu_donation_link = home_url('/contribute');
 $pu_donation_link = $base_pu_donation_link . '?' . $puSourceFieldId . '=' . $source_contact_id;
 
 $eventSourceField = CustomField::get(FALSE)
@@ -160,7 +160,7 @@ $eventSourceField = CustomField::get(FALSE)
   ->execute()->single();
 
 $eventSourceFieldId = 'custom_' . $eventSourceField['id'];
-$base_event_donation_link = home_url('/contribute/donate');
+$base_event_donation_link = home_url('/contribute');
 $event_donation_link = $base_event_donation_link . '?' . $eventSourceFieldId . '=' . $source_contact_id;
 
 
