@@ -713,9 +713,9 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     $relationshipTypeMap = [
       'Corporate' => 'Corporate Coordinator of',
       'School' => 'School Coordinator of',
-      'College' => 'College Coordinator of',
-      'Associations' => 'Associations Coordinator of',
-      'Others' => 'Default Coordinator of',
+      'College/University' => 'College Coordinator of',
+      'Association' => 'Associations Coordinator of',
+      'Other' => 'Default Coordinator of',
     ];
 
     $registrationCategorySelection = $registrationType['Institution_Collection_Camp_Intent.You_wish_to_register_as:name'];
