@@ -309,7 +309,7 @@ class CollectionBaseService extends AutoSubscriber {
       return;
     }
 
-    if (!self::shouldSendAuthorizedEmail($currentCollectionCamp['subtype:name'], $newStatus, $objectRef)) {
+    if (!self::shouldSendAuthorizationEmail($currentCollectionCamp['subtype:name'], $newStatus, $objectRef)) {
       return;
     }
 
