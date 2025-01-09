@@ -2,155 +2,144 @@
 
 namespace Civi;
 
-use Civi\Api4\Campaign;
 use Civi\Api4\Contact;
-use Civi\Api4\Relationship;
 use Civi\Core\Service\AutoSubscriber;
 
 /**
  *
  */
-class InstitutionSentReceipt extends AutoSubscriber {
+class InstitutionReceiptGenerationService extends AutoSubscriber {
 
   /**
    *
    */
   public static function getSubscribedEvents() {
     return [
-      '&hook_civicrm_post' => 'processInstitutionMaterialContributions',
+      '&hook_civicrm_post' => 'sendAcknowledgedDataToInstitutionPOC',
     ];
   }
 
   /**
    *
    */
-  public static function processInstitutionMaterialContributions(string $op, string $objectName, int $objectId, &$objectRef) {
+  public static function sendAcknowledgedDataToInstitutionPOC(string $op, string $objectName, int $objectId, &$objectRef) {
     if ($objectName !== 'AfformSubmission' || $objectRef->afform_name !== 'afformInstitutionAcknowledgementForm') {
-        return;
+      return;
     }
 
     $data = json_decode($objectRef->data, TRUE);
     if (!$data) {
-        return;
+      return;
     }
 
+    $result = self::extractAcknowledgedData($data);
+
+    self::notifyInstitutionPOC(
+        $result['No_of_bags_received_at_PU_Office'] ?? NULL,
+        $result['Verified_By'] ?? NULL,
+        $result['Filled_by'] ?? NULL,
+        $result['Remark'] ?? NULL,
+        $result['Name_of_the_institution'] ?? NULL,
+        $result['Institution_POC'] ?? NULL
+    );
+
+    return $result;
+  }
+
+  /**
+   *
+   */
+  private static function extractAcknowledgedData(array $data): array {
     $result = [];
 
     if (isset($data['Eck_Collection_Source_Vehicle_Dispatch1'][0]['fields'])) {
-        $fields = $data['Eck_Collection_Source_Vehicle_Dispatch1'][0]['fields'];
-        
-        // Store extracted details into the result array
-        $result['No_of_bags_received_at_PU_Office'] = $fields['Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office'] ?? null;
-        $result['Verified_By'] = $fields['Acknowledgement_For_Logistics.Verified_By'] ?? null;
-        $result['Remark'] = $fields['Acknowledgement_For_Logistics.Remark'] ?? null;
-        $result['Filled_by'] = $fields['Acknowledgement_For_Logistics.Filled_by'] ?? null;
+      $fields = $data['Eck_Collection_Source_Vehicle_Dispatch1'][0]['fields'];
+      $result = array_merge($result, [
+        'No_of_bags_received_at_PU_Office' => $fields['Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office'] ?? NULL,
+        'Verified_By' => $fields['Acknowledgement_For_Logistics.Verified_By'] ?? NULL,
+        'Remark' => $fields['Acknowledgement_For_Logistics.Remark'] ?? NULL,
+        'Filled_by' => $fields['Acknowledgement_For_Logistics.Filled_by'] ?? NULL,
+        'Name_of_the_institution' => $fields['Camp_Institution_Data.Name_of_the_institution'] ?? NULL,
+      ]);
     }
 
-    // Extract 'Institution_POC' from 'Eck_Collection_Camp1'
     if (isset($data['Eck_Collection_Camp1'][0]['fields'])) {
-        $campFields = $data['Eck_Collection_Camp1'][0]['fields'];
-        $result['Institution_POC'] = $campFields['Institution_Collection_Camp_Intent.Institution_POC'] ?? null;
+      $campFields = $data['Eck_Collection_Camp1'][0]['fields'];
+      $result['Institution_POC'] = $campFields['Institution_Collection_Camp_Intent.Institution_POC'] ?? NULL;
     }
 
-    // If there are any contacts, send acknowledgment emails
-    if (!empty($result['Verified_By']) && !empty($result['Institution_POC']) && !empty($result['Filled_by'])) {
-        self::sendInstitutionMaterialContributionEmails(
-            $result['No_of_bags_received_at_PU_Office'],
-            $result['Verified_By'],
-            $result['Filled_by'],
-            $result['Remark'],
-            $result['Institution_POC']
-        );
-    }
-
-    // Return the result array with extracted data
     return $result;
-}
+  }
 
-private static function sendInstitutionMaterialContributionEmails(
-    $noOfBagsReceived, 
-    $verifiedById, 
-    $filledById, 
-    $remark, 
-    $institutionPocId
-) {
-    // Fetch the Institution_POC details
-    $institutionDetails = Contact::get(FALSE)
-        ->addSelect('display_name', 'email.email', 'phone.phone')
-        ->addJoin('Email AS email', 'LEFT')
-        ->addJoin('Phone AS phone', 'LEFT')
-        ->addWhere('id', '=', $institutionPocId)
-        ->execute()->single();
-    
-    // Extract the Institution_POC email, phone, and name
-    $institutionEmail = $institutionDetails['email.email'];
-    $institutionPhone = $institutionDetails['phone.phone'];
-    $institutionName = $institutionDetails['display_name'];
+  /**
+   *
+   */
+  private static function fetchContactDetails($contactId): array {
+    if (!$contactId) {
+      return [];
+    }
 
-    // Fetch the 'Verified_By' details
-    $verifiedByDetails = Contact::get(FALSE)
-        ->addSelect('display_name', 'email.email', 'phone.phone')
-        ->addJoin('Email AS email', 'LEFT')
-        ->addJoin('Phone AS phone', 'LEFT')
-        ->addWhere('id', '=', $verifiedById)
-        ->execute()->single();
+    return Contact::get(FALSE)
+      ->addSelect('display_name', 'email.email', 'phone.phone')
+      ->addJoin('Email AS email', 'LEFT')
+      ->addJoin('Phone AS phone', 'LEFT')
+      ->addWhere('id', '=', $contactId)
+      ->execute()
+      ->single();
+  }
 
-    // Extract the 'Verified_By' details
-    $verifiedByEmail = $verifiedByDetails['email'];
-    $verifiedByPhone = $verifiedByDetails['phone'];
-    $verifiedByName = $verifiedByDetails['display_name'];
+  /**
+   *
+   */
+  private static function notifyInstitutionPOC(
+    $noOfBagsReceived,
+    $verifiedById,
+    $filledById,
+    $remark,
+    $institutionName,
+    $institutionPocId,
+  ) {
+    // Fetch details for Institution POC, Verified By, and Filled By.
+    $institutionDetails = self::fetchContactDetails($institutionPocId);
+    $verifiedByDetails = self::fetchContactDetails($verifiedById);
+    $filledByDetails = self::fetchContactDetails($filledById);
 
-    // Fetch the 'Filled_by' details
-    $filledByDetails = Contact::get(FALSE)
-        ->addSelect('display_name', 'email.email', 'phone.phone')
-        ->addJoin('Email AS email', 'LEFT')
-        ->addJoin('Phone AS phone', 'LEFT')
-        ->addWhere('id', '=', $filledById)
-        ->execute()->single();
-
-    // Extract the 'Filled_by' details
-    $filledByEmail = $filledByDetails['email'];
-    $filledByPhone = $filledByDetails['phone'];
-    $filledByName = $filledByDetails['display_name'];
-
-    // Prepare the email subject and body
-    $subject = 'Acknowledgement for your material contribution to Goonj';
-    error_log("institutionName: " . print_r($institutionName, TRUE));
-    error_log("institutionPhone: " . print_r($institutionPhone, TRUE));
-    error_log("institutionEmail: " . print_r($institutionEmail, TRUE));
-    // Generate the email body
+    // Generate the email body and receipt.
     $body = self::generateEmailBody(
-        $institutionName, 
-        $institutionPhone, 
-        $institutionEmail
+        $institutionDetails['display_name'] ?? '',
     );
 
-   // Generate the HTML for the contribution receipt
-    $html = self::generateContributionReceiptHtml(
+    $html = self::generateAcknowledgedReceiptHtml(
         $noOfBagsReceived,
-        $verifiedByName,
-        $filledByName,
+        $verifiedByDetails['display_name'] ?? '',
+        $filledByDetails['display_name'] ?? '',
+        $remark,
+        $institutionName
     );
 
-    $attachments = [\CRM_Utils_Mail::appendPDF('institution_material_contribution.pdf', $html)];
+    $attachments = [\CRM_Utils_Mail::appendPDF('receipt.pdf', $html)];
 
-    // Prepare the email parameters and send the email
-    $params = self::prepareEmailParams($subject, $body, $attachments, $institutionEmail);
+    // Prepare the email parameters and send the email.
+    $params = self::prepareEmailParams(
+        'Acknowledgement for your material contribution to Goonj',
+        $body,
+        $attachments,
+        $institutionDetails['email.email'] ?? ''
+    );
     \CRM_Utils_Mail::send($params);
-}
+  }
 
-
-/**
- * Generate the email body for the acknowledgment.
- */
-private static function generateEmailBody(string $institutionName, string $institutionPhone, string $institutionEmail) {
+  /**
+   * Generate the email body for the acknowledgment.
+   */
+  private static function generateEmailBody(string $institutionPOCName) {
     return "
       <html>
           <head>
               <title>Material Acknowledgment Receipt</title>
           </head>
           <body>
-              <p>Dear {$institutionName},</p>
+              <p>Dear {$institutionPOCName},</p>
               <p>Greetings from Goonj!</p>
               <p>
                   We are pleased to acknowledge the receipt of materials dispatched from your collection camp drive. 
@@ -163,7 +152,7 @@ private static function generateEmailBody(string $institutionName, string $insti
               <p>
                   Your support strengthens our ability to reach those in need and implement impactful initiatives. 
                   If you have any questions regarding the acknowledgment or need further assistance, please feel free 
-                  to reach out to us at <strong>{$institutionEmail}</strong> / <strong>{$institutionPhone}</strong>.
+                  to reach out to us at <strong>123456789</strong> / <strong>test@gmail.com</strong>.
               </p>
               <p>
                   Thank you once again for partnering with us and making a difference!
@@ -172,8 +161,7 @@ private static function generateEmailBody(string $institutionName, string $insti
           </body>
       </html>
     ";
-}
-
+  }
 
   /**
    *
@@ -192,15 +180,9 @@ private static function generateEmailBody(string $institutionName, string $insti
   }
 
   /**
-   * Generate the HTML for the PDF from the activity data.
    *
-   * @param array $activity
-   *   The activity data.
-   *
-   * @return string
-   *   The generated HTML.
    */
-  private static function generateContributionReceiptHtml($noOfBagsReceived, $verifiedByName, $filledByName) {
+  private static function generateAcknowledgedReceiptHtml($noOfBagsReceived, $verifiedByName, $filledByName, $remark, $institutionName) {
 
     $baseDir = plugin_dir_path(__FILE__) . '../../../themes/goonj-crm/';
 
@@ -257,17 +239,17 @@ private static function generateEmailBody(string $institutionName, string $insti
             <td class="table-header">Filled By</td>
             <td style="text-align: center;">{$filledByName}</td>
           </tr>
-          <!-- <tr>
-            <td class="table-header">Phone</td>
-            <td style="text-align: center;">{$contactPhone}</td>
-          </tr>
           <tr>
+            <td class="table-header">institutionName</td>
+            <td style="text-align: center;">{$institutionName}</td>
+          </tr>
+          <!-- <tr>
             <td class="table-header">Delivered by (Name & contact no.)</td>
             <td style="text-align: center;">
             {$deliveredBy}<br>
             {$deliveredByContact}
-          </td>
-        </tr> -->
+          </td> -->
+        </tr>
 
         </table>
         <div style="text-align: right; font-size: 14px;">
