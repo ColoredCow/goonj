@@ -38,7 +38,10 @@
       options.amount = razorpayOptions.getAttribute('data-amount');
       options.order_id = razorpayOptions.getAttribute('data-order-id');
       options.handler = function(response) {
-        window.location.href = "/civicrm/contribute/transact/?_qf_ThankYou_display=1&qfKey=" + razorpayOptions.getAttribute('data-qf-key') + "&payment_id=" + response.razorpay_payment_id + "&order_id=" + response.razorpay_order_id;
+        console.log('redirectURL === ');
+        console.log("/civicrm/contribute/transact/?_qf_ThankYou_display=1&qfKey=" + razorpayOptions.getAttribute('data-qf-key') + "&payment_id=" + response.razorpay_payment_id + "&order_id=" + response.razorpay_order_id);
+        // window.location.href = "/civicrm/contribute/transact/?_qf_ThankYou_display=1&qfKey=" + razorpayOptions.getAttribute('data-qf-key') + "&payment_id=" + response.razorpay_payment_id + "&order_id=" + response.razorpay_order_id;
+        window.location.href = '/civicrm/event/register/?_qf_ThankYou_display=1&qfKey=' + razorpayOptions.getAttribute('data-qf-key') + "&payment_id=" + response.razorpay_payment_id + "&order_id=" + response.razorpay_order_id;
       };
     }
     // Handle recurring payment
