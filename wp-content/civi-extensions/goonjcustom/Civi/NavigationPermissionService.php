@@ -74,7 +74,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Campaigns'
         ],
       ],
-      'communications-team' => [
+      'communications_team' => [
         'hide_menus' => [
           'Institute',
           'Volunteers',
