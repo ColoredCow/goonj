@@ -74,6 +74,13 @@ class NavigationPermissionService extends AutoSubscriber {
           'Campaigns'
         ],
       ],
+      'communications-team' => [
+        'hide_menus' => [
+          'Institute',
+          'Volunteers',
+          'Events',
+        ],
+      ],
     ];
 
     foreach ($roleMenuMapping as $role => $menuConfig) {
