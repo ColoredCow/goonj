@@ -226,7 +226,7 @@ trait CollectionSource {
       'Institution_Goonj_Activities' => 'Institution_Goonj_Activities.Send_Authorized_Email',
     ];
 
-    if (in_array($subtypeName, array_keys($validSubtypes)) && $newStatus === 'authorized') {
+    if (in_array($subtypeName, array_keys($validSubtypes)) && in_array($newStatus, ['authorized', 'unauthorized'])) {
       $sendAuthorizedEmail = $objectRef[$validSubtypes[$subtypeName]];
 
       if (!$sendAuthorizedEmail) {
