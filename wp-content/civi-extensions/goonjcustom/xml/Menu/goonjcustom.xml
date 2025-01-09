@@ -12,4 +12,10 @@
     <title>CollectionCampLinks</title>
     <access_arguments>access CiviCRM</access_arguments>
   </item>
+  <item>
+    <path>civicrm/droppingcenter/links</path>
+    <page_callback>CRM_Goonjcustom_Form_DroppingCenterLinks</page_callback>
+    <title>DroppingCenterlinks</title>
+    <access_arguments>access CiviCRM</access_arguments>
+  </item>
 </menu>

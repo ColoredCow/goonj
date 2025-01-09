@@ -141,8 +141,8 @@ class CRM_Goonjcustom_Token_DroppingCenter extends AbstractTokenSubscriber {
     $volunteeringActivities = Activity::get(FALSE)
       ->addSelect('activity_contact.contact_id')
       ->addJoin('ActivityContact AS activity_contact', 'LEFT')
-      ->addWhere('activity_type_id:name', '=', 'Volunteering')
-      ->addWhere('Volunteering_Activity.Collection_Camp', '=', $collectionSource['id'])
+      ->addWhere('activity_type_id:name', '=', 'Volunteer Coordinator')
+      ->addWhere('Coordinator.Dropping_Center', '=', $collectionSource['id'])
       ->addWhere('activity_contact.record_type_id', '=', self::ACTIVITY_TARGET_RECORD_TYPE_ID)
       ->execute();
 
