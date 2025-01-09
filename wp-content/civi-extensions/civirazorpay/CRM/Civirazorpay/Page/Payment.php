@@ -23,8 +23,9 @@ class CRM_Civirazorpay_Page_Payment extends CRM_Core_Page {
 
     $paymentProcessorId = CRM_Utils_Request::retrieve('processor', 'Integer', $this);
     $qfKey = CRM_Utils_Request::retrieve('qfKey', 'String', $this);
+    $component = CRM_Utils_Request::retrieve('component', 'String', $this);
 
-    $data = $this->getDataForTemplate($contributionId, $paymentProcessorId, $qfKey, (bool) $isRecur);
+    $data = $this->getDataForTemplate($contributionId, $paymentProcessorId, $qfKey, (bool) $isRecur, $component);
 
     $this->assign($data);
     parent::run();
@@ -39,7 +40,7 @@ class CRM_Civirazorpay_Page_Payment extends CRM_Core_Page {
    * @return array
    *   Array containing amount, currency, email, and order ID.
    */
-  public function getDataForTemplate($id, $paymentProcessorId, $qfKey, $isRecur) {
+  public function getDataForTemplate($id, $paymentProcessorId, $qfKey, $isRecur, $component) {
     $entityClass = $isRecur ? ContributionRecur::class : Contribution::class;
 
     $fields = $isRecur
@@ -56,6 +57,8 @@ class CRM_Civirazorpay_Page_Payment extends CRM_Core_Page {
     $organizationName = CRM_Core_BAO_Domain::getDomain()->name;
     $paymentProcessor = $this->getPaymentProcessor($paymentProcessorId);
 
+    $redirectURLBase = $this->getRedirectURLBase($component);
+
     return [
       'isRecur' => $isRecur,
       'amount' => ($isRecur ? $contribution['amount'] : $contribution['total_amount']) * 100,
@@ -65,7 +68,25 @@ class CRM_Civirazorpay_Page_Payment extends CRM_Core_Page {
       'organizationName' => $organizationName,
       'apiKey' => $paymentProcessor['user_name'],
       'qfKey' => $qfKey,
+      'redirectURLBase' => $redirectURLBase,
     ];
+  }
+
+  /**
+   *
+   */
+  private function getRedirectURLBase($component) {
+    switch ($component) {
+      case 'contribute':
+        $redirectURLBase = '/civicrm/contribute/transact';
+        break;
+
+      case 'event':
+        $redirectURLBase = '/civicrm/event/register';
+        break;
+    }
+
+    return $redirectURLBase;
   }
 
   /**
