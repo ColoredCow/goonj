@@ -43,7 +43,9 @@ class NavigationPermissionService extends AutoSubscriber {
           'Induction Tab',
           'Volunteers',
           'Urban Visit',
-          'Individuals'
+          'Individuals',
+          'Contributions',
+          'Campaigns'
         ],
       ],
       'mmt' => [
@@ -60,6 +62,16 @@ class NavigationPermissionService extends AutoSubscriber {
           'Induction Tab',
           'Volunteers',
           'Individuals'
+        ],
+      ],
+      'ho_account' => [
+        'hide_menus' => [
+          'Urban Visit',
+          'Account: Goonj Offices',
+          'Volunteers',
+          'Institute',
+          'Individuals',
+          'Campaigns'
         ],
       ],
     ];

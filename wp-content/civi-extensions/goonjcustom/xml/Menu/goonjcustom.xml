@@ -42,4 +42,10 @@
     <title>InstitutionDroppingCenterLinks</title>
     <access_arguments>access CiviCRM</access_arguments>
   </item>
+  <item>
+    <path>civicrm/institutionGoonjActivities/links</path>
+    <page_callback>CRM_Goonjcustom_Form_InstitutionGoonjActivitiesLinks</page_callback>
+    <title>InstitutionGoonjActivitiesLinks</title>
+    <access_arguments>access CiviCRM</access_arguments>
+  </item>
 </menu>
