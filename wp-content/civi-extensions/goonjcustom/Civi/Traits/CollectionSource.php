@@ -220,14 +220,14 @@ trait CollectionSource {
    *
    */
   public static function shouldSendAuthorizationEmail(string $subtypeName, string $newStatus, &$objectRef) {
-    $validSubtypes = [
+    $subtypes = [
       'Institution_Collection_Camp' => 'Institution_collection_camp_Review.Send_Authorization_Email',
       'Institution_Dropping_Center' => 'Institution_Dropping_Center_Review.Send_Authorization_Email',
       'Institution_Goonj_Activities' => 'Institution_Goonj_Activities.Send_Authorization_Email',
     ];
 
-    if (in_array($subtypeName, array_keys($validSubtypes)) && in_array($newStatus, ['authorized', 'unauthorized'])) {
-      $sendAuthorizedEmail = $objectRef[$validSubtypes[$subtypeName]];
+    if (in_array($subtypeName, array_keys($subtypes)) && in_array($newStatus, ['authorized', 'unauthorized'])) {
+      $sendAuthorizedEmail = $objectRef[$subtypes[$subtypeName]];
 
       if (!$sendAuthorizedEmail) {
         return FALSE;
