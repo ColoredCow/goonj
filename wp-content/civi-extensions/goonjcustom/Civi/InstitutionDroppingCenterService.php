@@ -615,7 +615,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       return;
     }
 
-    $restrictedRoles = ['account_team', 'ho_account'];
+    $restrictedRoles = ['account_team', 'ho_account', 'mmt'];
 
     $isAdmin = \CRM_Core_Permission::check('admin');
 
@@ -653,7 +653,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
         'module' => 'afsearchInstitutionDroppingCenterMaterialContribution',
         'directive' => 'afsearch-institution-dropping-center-material-contribution',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'mmt'],
       ],
       'status' => [
         'title' => ts('Status'),
