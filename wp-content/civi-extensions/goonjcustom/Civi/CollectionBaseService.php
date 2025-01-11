@@ -10,9 +10,9 @@ use Civi\Api4\Group;
 use Civi\Api4\GroupContact;
 use Civi\Api4\MessageTemplate;
 use Civi\Api4\OptionValue;
+use Civi\Api4\StateProvince;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
-use Civi\Api4\StateProvince;
 
 /**
  *
@@ -306,6 +306,10 @@ class CollectionBaseService extends AutoSubscriber {
     $currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
 
     if (!in_array($newStatus, ['authorized', 'unauthorized'])) {
+      return;
+    }
+
+    if (!self::shouldSendAuthorizationEmail($currentCollectionCamp['subtype:name'], $newStatus, $objectRef)) {
       return;
     }
 
