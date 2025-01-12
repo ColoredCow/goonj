@@ -5,7 +5,6 @@ namespace Civi\Traits;
 use Civi\Api4\EckEntity;
 use Civi\Api4\OptionValue;
 use Civi\Api4\Organization;
-use Civi\Api4\Relationship;
 use Civi\Api4\StateProvince;
 
 /**
@@ -215,6 +214,31 @@ trait CollectionSource {
       'state_codes' => include $extensionPath . 'constants.php',
       'event_codes' => include $extensionPath . 'eventCode.php',
     ];
+  }
+
+  /**
+   *
+   */
+  public static function shouldSendAuthorizationEmail(string $subtypeName, string $newStatus, &$objectRef) {
+    $subtypes = [
+      'Institution_Collection_Camp' => 'Institution_collection_camp_Review.Send_Authorization_Email',
+      'Institution_Dropping_Center' => 'Institution_Dropping_Center_Review.Send_Authorization_Email',
+      'Institution_Goonj_Activities' => 'Institution_Goonj_Activities.Send_Authorization_Email',
+    ];
+
+    if (in_array($subtypeName, array_keys($subtypes)) && in_array($newStatus, ['authorized', 'unauthorized'])) {
+      $sendAuthorizedEmail = $objectRef[$subtypes[$subtypeName]];
+
+      if (!$sendAuthorizedEmail) {
+        return FALSE;
+      }
+    }
+    else {
+      \Civi::log()->info("Other subtype detected: " . $subtypeName);
+
+    }
+
+    return TRUE;
   }
 
   /**

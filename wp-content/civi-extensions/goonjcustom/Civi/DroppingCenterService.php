@@ -557,7 +557,7 @@ class DroppingCenterService extends AutoSubscriber {
       return;
     }
 
-    $restrictedRoles = ['account_team', 'ho_account'];
+    $restrictedRoles = ['account_team', 'ho_account', 'mmt'];
 
     $isAdmin = \CRM_Core_Permission::check('admin');
 
@@ -585,15 +585,15 @@ class DroppingCenterService extends AutoSubscriber {
       ],
       'vehicleDispatch' => [
         'title' => ts('Dispatch'),
-        'module' => 'afsearchCampVehicleDispatchData',
-        'directive' => 'afsearch-camp-vehicle-dispatch-data',
+        'module' => 'afsearchDroppingCenterVehicleDispatchData',
+        'directive' => 'afsearch-dropping-center-vehicle-dispatch-data',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'materialAuthorization' => [
         'title' => ts('Material Authorization'),
-        'module' => 'afsearchAcknowledgementForLogisticsData',
-        'directive' => 'afsearch-acknowledgement-for-logistics-data',
+        'module' => 'afsearchDroppingCenterAcknowledgementForLogisticsData',
+        'directive' => 'afsearch-dropping-center-acknowledgement-for-logistics-data',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
@@ -602,7 +602,7 @@ class DroppingCenterService extends AutoSubscriber {
         'module' => 'afsearchDroppingCenterMaterialContributions',
         'directive' => 'afsearch-dropping-center-material-contributions',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'mmt'],
       ],
       'status' => [
         'title' => ts('Status'),
