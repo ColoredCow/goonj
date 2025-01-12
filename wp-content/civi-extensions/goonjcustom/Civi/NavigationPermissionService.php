@@ -57,6 +57,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Institution Collection Camp',
           'Collection Camps',
           'Goonj Activities',
+          'Institute',
           'Institution Dropping Center',
           'Institution Goonj Activities',
           'Induction Tab',
