@@ -58,7 +58,7 @@ class CRM_Goonjcustom_Token_InstitutionCollectionCamp extends AbstractTokenSubsc
 
     switch ($field) {
       case 'institution_name':
-        $value = $collectionSource['Institution_Collection_Camp_Intent.Organization_Name.display_name'];
+        $value = $this->formatInstitutionName($collectionSource);
         break;
 
       case 'venue':
@@ -183,6 +183,26 @@ class CRM_Goonjcustom_Token_InstitutionCollectionCamp extends AbstractTokenSubsc
 
     return join(', ', array_filter($addressParts));
 
+  }
+
+  /**
+   *
+   */
+  private function formatInstitutionName($collectionSource) {
+    $id = $collectionSource['Institution_Collection_Camp_Intent.Organization_Name'];
+
+    try {
+      $contact = Contact::get(TRUE)
+        ->addSelect('display_name')
+        ->addWhere('id', '=', $id)
+        ->execute()
+        ->first();
+
+      return $contact ? $contact['display_name'] : NULL;
+    }
+    catch (Exception $e) {
+      return NULL;
+    }
   }
 
   /**
