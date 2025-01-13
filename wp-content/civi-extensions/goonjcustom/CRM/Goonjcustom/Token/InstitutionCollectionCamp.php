@@ -7,7 +7,6 @@
 use Civi\Api4\Contact;
 use Civi\Api4\EckEntity;
 use Civi\Api4\Phone;
-use Civi\Api4\Relationship;
 use Civi\Token\AbstractTokenSubscriber;
 use Civi\Token\TokenRow;
 
@@ -20,6 +19,7 @@ class CRM_Goonjcustom_Token_InstitutionCollectionCamp extends AbstractTokenSubsc
 
   public function __construct() {
     parent::__construct('institution_collection_camp', [
+      'institution_name' => \CRM_Goonjcustom_ExtensionUtil::ts('Institution Name'),
       'venue' => \CRM_Goonjcustom_ExtensionUtil::ts('Venue'),
       'date' => \CRM_Goonjcustom_ExtensionUtil::ts('Date'),
       'time' => \CRM_Goonjcustom_ExtensionUtil::ts('Time'),
@@ -57,6 +57,10 @@ class CRM_Goonjcustom_Token_InstitutionCollectionCamp extends AbstractTokenSubsc
     $collectionSource = array_merge($currentCustomData, $newCustomData);
 
     switch ($field) {
+      case 'institution_name':
+        $value = $collectionSource['Institution_Collection_Camp_Intent.Organization_Name.display_name'];
+        break;
+
       case 'venue':
         $value = $this->formatVenue($collectionSource);
         break;
