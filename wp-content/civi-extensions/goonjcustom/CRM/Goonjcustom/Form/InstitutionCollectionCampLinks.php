@@ -7,6 +7,7 @@
  * @see https://docs.civicrm.org/dev/en/latest/framework/quickform/
  */
 
+use Civi\Api4\Contact;
 use Civi\Api4\EckEntity;
 use Civi\Api4\Organization;
 
@@ -45,15 +46,23 @@ class CRM_Goonjcustom_Form_InstitutionCollectionCampLinks extends CRM_Core_Form 
     $this->_processingCenterId = CRM_Utils_Request::retrieve('puid', 'Positive', $this);
 
     $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
-      ->addSelect('Institution_Collection_Camp_Intent.Organization_Name')
+      ->addSelect('Institution_Collection_Camp_Intent.Organization_Name', 'Institution_Collection_Camp_Intent.Institution_POC')
       ->addWhere('id', '=', $this->_collectionCampId)
       ->execute()->single();
-
+    
     $organizationId = $collectionCamps['Institution_Collection_Camp_Intent.Organization_Name'];
-
-    $this->_organization = Organization::get(TRUE)
+    $institutionPOCId = $collectionCamps['Institution_Collection_Camp_Intent.Institution_POC'];
+    
+    $this->_organization = Organization::get(FALSE)
       ->addSelect('display_name', 'Institute_Registration.Email_of_Institute', 'Institute_Registration.Contact_number_of_Institution', 'Institute_Registration.Address')
       ->addWhere('id', '=', $organizationId)
+      ->execute()->single();
+
+    $this->_contact = Contact::get(FALSE)
+      ->addSelect('email.email', 'phone.phone')
+      ->addJoin('Email AS email', 'LEFT')
+      ->addJoin('Phone AS phone', 'LEFT')
+      ->addWhere('id', '=', $institutionPOCId)
       ->execute()->single();
 
     $this->setTitle('Institution Collection Camp Links');
@@ -89,11 +98,12 @@ class CRM_Goonjcustom_Form_InstitutionCollectionCampLinks extends CRM_Core_Form 
   public function generateLinks($contactId): void {
 
     $organization = $this->_organization;
+    $contact = $this->_contact;
 
     $nameOfInstitution = $organization['display_name'];
     $address = $organization['Institute_Registration.Address'];
-    $email = $organization['Institute_Registration.Email_of_Institute'];
-    $contactNumber = $organization['Institute_Registration.Contact_number_of_Institution'];
+    $pocEmail = $contact['email.email'];
+    $pocContactNumber = $contact['phone.phone'];
 
     // Generate collection camp links.
     $links = [
@@ -107,8 +117,8 @@ class CRM_Goonjcustom_Form_InstitutionCollectionCampLinks extends CRM_Core_Form 
           "&Camp_Vehicle_Dispatch.Filled_by={$contactId}" .
           "&Camp_Institution_Data.Name_of_the_institution={$nameOfInstitution}" .
           "&Camp_Institution_Data.Address={$address}" .
-          "&Camp_Institution_Data.Email={$email}" .
-          "&Camp_Institution_Data.Contact_Number={$contactNumber}",
+          "&Camp_Institution_Data.Email={$pocEmail}" .
+          "&Camp_Institution_Data.Contact_Number={$pocContactNumber}",
           $contactId
         ),
       ],
