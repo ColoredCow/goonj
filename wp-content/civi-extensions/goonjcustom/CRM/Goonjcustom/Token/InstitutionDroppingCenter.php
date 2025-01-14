@@ -7,7 +7,6 @@
 use Civi\Api4\Contact;
 use Civi\Api4\EckEntity;
 use Civi\Api4\Phone;
-use Civi\Api4\Relationship;
 use Civi\Token\AbstractTokenSubscriber;
 use Civi\Token\TokenRow;
 
@@ -124,26 +123,7 @@ class CRM_Goonjcustom_Token_InstitutionDroppingCenter extends AbstractTokenSubsc
    *
    */
   private function formatVolunteers($collectionSource) {
-    $organizationId = $collectionSource['Institution_Dropping_Center_Intent.Organization_Name'];
-
-    $relationships = Relationship::get(FALSE)
-      ->addWhere('contact_id_a', '=', $organizationId)
-      ->addWhere('relationship_type_id:name', '=', 'Institution POC of')
-      ->execute();
-
-    // If no relationships found for 'Institution POC of', check for 'Primary Institution POC of'.
-    if (empty($relationships)) {
-      $relationships = Relationship::get(FALSE)
-        ->addWhere('contact_id_a', '=', $organizationId)
-        ->addWhere('relationship_type_id:name', '=', 'Primary Institution POC of')
-        ->execute();
-    }
-
-    // Return contact_id_b as initiator if found.
-    $initiatorId = NULL;
-    if (!empty($relationships) && isset($relationships[0]['contact_id_b'])) {
-      $initiatorId = $relationships[0]['contact_id_b'];
-    }
+    $initiatorId = $collectionSource['Institution_Dropping_Center_Intent.Institution_POC'];
 
     if (!$initiatorId) {
       return '';
@@ -170,10 +150,10 @@ class CRM_Goonjcustom_Token_InstitutionDroppingCenter extends AbstractTokenSubsc
     }
 
     $volunteersWithPhone = array_map(
-        fn($volunteer) => isset($volunteer['phone.phone']) && !empty($volunteer['phone.phone'])
-            ? sprintf('%1$s (%2$s)', $volunteer['display_name'], $volunteer['phone.phone'])
-            : $volunteer['display_name'],
-        $volunteersDetails
+       fn($volunteer) => isset($volunteer['phone.phone']) && !empty($volunteer['phone.phone'])
+           ? sprintf('%1$s (%2$s)', $volunteer['display_name'], $volunteer['phone.phone'])
+           : $volunteer['display_name'],
+       $volunteersDetails
     );
 
     return join(', ', $volunteersWithPhone);
