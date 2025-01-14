@@ -7,6 +7,9 @@
  * @see https://docs.civicrm.org/dev/en/latest/framework/quickform/
  */
 
+use Civi\Api4\EckEntity;
+use Civi\Api4\Organization;
+
 /**
  *
  */
@@ -41,6 +44,18 @@ class CRM_Goonjcustom_Form_InstitutionCollectionCampLinks extends CRM_Core_Form 
     $this->_contactId = CRM_Utils_Request::retrieve('gcid', 'Positive', $this);
     $this->_processingCenterId = CRM_Utils_Request::retrieve('puid', 'Positive', $this);
 
+    $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
+      ->addSelect('Institution_Collection_Camp_Intent.Organization_Name')
+      ->addWhere('id', '=', $this->_collectionCampId)
+      ->execute()->single();
+
+    $organizationId = $collectionCamps['Institution_Collection_Camp_Intent.Organization_Name'];
+
+    $this->_organization = Organization::get(TRUE)
+      ->addSelect('display_name', 'Institute_Registration.Email_of_Institute', 'Institute_Registration.Contact_number_of_Institution', 'Institute_Registration.Address')
+      ->addWhere('id', '=', $organizationId)
+      ->execute()->single();
+
     $this->setTitle('Institution Collection Camp Links');
     parent::preProcess();
   }
@@ -73,22 +88,37 @@ class CRM_Goonjcustom_Form_InstitutionCollectionCampLinks extends CRM_Core_Form 
    */
   public function generateLinks($contactId): void {
 
+    $organization = $this->_organization;
+
+    $nameOfInstitution = $organization['display_name'];
+    $address = $organization['Institute_Registration.Address'];
+    $email = $organization['Institute_Registration.Email_of_Institute'];
+    $contactNumber = $organization['Institute_Registration.Contact_number_of_Institution'];
+
     // Generate collection camp links.
     $links = [
       [
         'label' => 'Vehicle Dispatch',
         'url' => self::createUrl(
-                '/institution-camp-vehicle-dispatch-form',
-                "Camp_Vehicle_Dispatch.Institution_Collection_Camp={$this->_collectionCampId}&Eck_Collection_Camp1={$this->_collectionCampId}&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent={$this->_processingCenterId}&Camp_Vehicle_Dispatch.Filled_by={$contactId}",
-                $contactId
+          '/institution-camp-vehicle-dispatch-form',
+          "Camp_Vehicle_Dispatch.Institution_Collection_Camp={$this->_collectionCampId}" .
+          "&Eck_Collection_Camp1={$this->_collectionCampId}" .
+          "&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent={$this->_processingCenterId}" .
+          "&Camp_Vehicle_Dispatch.Filled_by={$contactId}" .
+          "&Camp_Institution_Data.Name_of_the_institution={$nameOfInstitution}" .
+          "&Camp_Institution_Data.Address={$address}" .
+          "&Camp_Institution_Data.Email={$email}" .
+          "&Camp_Institution_Data.Contact_Number={$contactNumber}",
+          $contactId
         ),
       ],
       [
         'label' => 'Camp Outcome',
         'url' => self::createUrl(
-                '/institution-camp-outcome-form',
-                "Eck_Collection_Camp1={$this->_collectionCampId}&Camp_Outcome.Filled_By={$contactId}",
-                $contactId
+          '/institution-camp-outcome-form',
+          "Eck_Collection_Camp1={$this->_collectionCampId}" .
+          "&Camp_Outcome.Filled_By={$contactId}",
+          $contactId
         ),
       ],
     ];
