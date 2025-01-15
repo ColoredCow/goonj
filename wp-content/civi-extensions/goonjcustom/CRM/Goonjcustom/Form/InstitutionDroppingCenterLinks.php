@@ -7,6 +7,10 @@
  * @see https://docs.civicrm.org/dev/en/latest/framework/quickform/
  */
 
+use Civi\Api4\Contact;
+use Civi\Api4\EckEntity;
+use Civi\Api4\Organization;
+
 /**
  *
  */
@@ -41,6 +45,26 @@ class CRM_Goonjcustom_Form_InstitutionDroppingCenterLinks extends CRM_Core_Form 
     $this->_contactId = CRM_Utils_Request::retrieve('gcid', 'Positive', $this);
     $this->_processingCenterId = CRM_Utils_Request::retrieve('puid', 'Positive', $this);
 
+    $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
+      ->addSelect('Institution_Dropping_Center_Intent.Organization_Name', 'Institution_Dropping_Center_Intent.Institution_POC')
+      ->addWhere('id', '=', $this->_institutionDroppingCenterId)
+      ->execute()->single();
+
+    $organizationId = $collectionCamps['Institution_Dropping_Center_Intent.Organization_Name'];
+    $institutionPOCId = $collectionCamps['Institution_Dropping_Center_Intent.Institution_POC'];
+
+    $this->_organization = Organization::get(FALSE)
+      ->addSelect('display_name', 'Institute_Registration.Email_of_Institute', 'Institute_Registration.Contact_number_of_Institution', 'Institute_Registration.Address')
+      ->addWhere('id', '=', $organizationId)
+      ->execute()->single();
+
+    $this->_contact = Contact::get(FALSE)
+      ->addSelect('email.email', 'phone.phone')
+      ->addJoin('Email AS email', 'LEFT')
+      ->addJoin('Phone AS phone', 'LEFT')
+      ->addWhere('id', '=', $institutionPOCId)
+      ->execute()->single();
+
     $this->setTitle('Institution Dropping Center Dispatch Link');
     parent::preProcess();
   }
@@ -73,14 +97,37 @@ class CRM_Goonjcustom_Form_InstitutionDroppingCenterLinks extends CRM_Core_Form 
    */
   public function generateLinks($contactId): void {
 
+    $organization = $this->_organization;
+    $contact = $this->_contact;
+
+    $nameOfInstitution = $organization['display_name'];
+    $address = $organization['Institute_Registration.Address'];
+    $pocEmail = $contact['email.email'];
+    $pocContactNumber = $contact['phone.phone'];
+
     // Generate dropping center links.
     $links = [
       [
-        'label' => 'Vehicle Dispatch',
+        'label' => 'Vehicle Dispatch (Self Managed)',
         'url' => self::createUrl(
                 '/institution-dropping-center-vehicle-dispatch',
-                "Camp_Vehicle_Dispatch.Institution_Dropping_Center={$this->_institutionDroppingCenterId}&Eck_Collection_Camp1={$this->_institutionDroppingCenterId}&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent={$this->_processingCenterId}&Camp_Vehicle_Dispatch.Filled_by={$contactId}",
+                "Camp_Vehicle_Dispatch.Institution_Dropping_Center={$this->_institutionDroppingCenterId}&Eck_Collection_Camp1={$this->_institutionDroppingCenterId}&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent={$this->_processingCenterId}&Camp_Vehicle_Dispatch.Filled_by={$contactId}" .
+                "&Camp_Institution_Data.Name_of_the_institution={$nameOfInstitution}" .
+                "&Camp_Institution_Data.Address={$address}" .
+                "&Camp_Institution_Data.Email={$pocEmail}" .
+                "&Camp_Institution_Data.Contact_Number={$pocContactNumber}",
                 $contactId
+        ),
+      ],
+      [
+        'label' => 'Vehicle Dispatch (Not Self Managed)',
+        'url' => self::createUrl(
+          '/institution-dropping-center-vehicle-dispatch-form-not-self-managed',
+          "Camp_Vehicle_Dispatch.Institution_Collection_Camp={$this->_collectionCampId}" .
+          "&Eck_Collection_Camp1={$this->_collectionCampId}" .
+          "&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent={$this->_processingCenterId}" .
+          "&Camp_Vehicle_Dispatch.Filled_by={$contactId}",
+          $contactId
         ),
       ],
     ];
