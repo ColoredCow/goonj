@@ -9,6 +9,7 @@ use Civi\Api4\EckEntity;
 use Civi\Api4\Email;
 use Civi\Api4\Group;
 use Civi\Api4\GroupContact;
+use Civi\Api4\Organization;
 use Civi\Api4\Relationship;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
@@ -442,11 +443,12 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     }
 
     $droppingCenterData = EckEntity::get('Collection_Camp', TRUE)
-      ->addSelect('Institution_Dropping_Center_Intent.Institution_POC', 'Institution_Dropping_Center_Review.Goonj_Office', 'Institution_Dropping_Center_Review.Goonj_Office.display_name')
+      ->addSelect('Institution_Dropping_Center_Intent.Organization_Name', 'Institution_Dropping_Center_Intent.Institution_POC', 'Institution_Dropping_Center_Review.Goonj_Office', 'Institution_Dropping_Center_Review.Goonj_Office.display_name')
       ->addWhere('id', '=', $institutionDroppingCenterId)
       ->execute()
       ->single();
 
+    $organizationId = $droppingCenterData['Institution_Dropping_Center_Intent.Organization_Name'];
     $pocId = $droppingCenterData['Institution_Dropping_Center_Intent.Institution_POC'];
     $goonjOffice = $droppingCenterData['Institution_Dropping_Center_Review.Goonj_Office'];
     $goonjOfficeName = $droppingCenterData['Institution_Dropping_Center_Review.Goonj_Office.display_name'];
@@ -465,14 +467,22 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     $phone = $recipientContactInfo['phone_primary.phone'];
     $initiatorName = $recipientContactInfo['display_name'];
 
+    $organization = Organization::get(FALSE)
+      ->addSelect('display_name', 'Institute_Registration.Address')
+      ->addWhere('id', '=', $organizationId)
+      ->execute()->single();
+
+    $nameOfInstitution = $organization['display_name'];
+    $address = $organization['Institute_Registration.Address'];
+
     // Send the dispatch email.
-    self::sendDispatchEmail($isSelfManaged, $email, $initiatorName, $institutionDroppingCenterId, $recipientId, $goonjOffice, $goonjOfficeName);
+    self::sendDispatchEmail($nameOfInstitution, $address, $isSelfManaged, $phone, $email, $initiatorName, $institutionDroppingCenterId, $recipientId, $goonjOffice, $goonjOfficeName);
   }
 
   /**
    *
    */
-  public static function sendDispatchEmail($isSelfManaged, $email, $initiatorName, $institutionDroppingCenterId, $contactId, $goonjOffice, $goonjOfficeName) {
+  public static function sendDispatchEmail($nameOfInstitution, $address, $isSelfManaged, $phone, $email, $initiatorName, $institutionDroppingCenterId, $contactId, $goonjOffice, $goonjOfficeName) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
 
     $baseUrl = $isSelfManaged ? '/institution-dropping-center-vehicle-dispatch/' : '/institution-dropping-center-vehicle-dispatch-form-not-self-managed/';
@@ -482,6 +492,13 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $goonjOffice
     . '&Camp_Vehicle_Dispatch.Goonj_Office_Name=' . $goonjOfficeName
     . '&Eck_Collection_Camp1=' . $institutionDroppingCenterId;
+
+    if ($isSelfManaged) {
+      $vehicleDispatchFormUrl .= "&Camp_Institution_Data.Name_of_the_institution=" . $nameOfInstitution
+          . "&Camp_Institution_Data.Address=" . $address
+          . "&Camp_Institution_Data.Email=" . $email
+          . "&Camp_Institution_Data.Contact_Number=" . $phone;
+    }
 
     $emailHtml = "
     <html>
