@@ -466,15 +466,22 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     $initiatorName = $recipientContactInfo['display_name'];
 
     // Send the dispatch email.
-    self::sendDispatchEmail($email, $initiatorName, $institutionDroppingCenterId, $recipientId, $goonjOffice, $goonjOfficeName);
+    self::sendDispatchEmail($isSelfManaged, $email, $initiatorName, $institutionDroppingCenterId, $recipientId, $goonjOffice, $goonjOfficeName);
   }
 
   /**
    *
    */
-  public static function sendDispatchEmail($email, $initiatorName, $institutionDroppingCenterId, $contactId, $goonjOffice, $goonjOfficeName) {
+  public static function sendDispatchEmail($isSelfManaged, $email, $initiatorName, $institutionDroppingCenterId, $contactId, $goonjOffice, $goonjOfficeName) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
-    $vehicleDispatchFormUrl = $homeUrl . '/institution-dropping-center-vehicle-dispatch/#?Camp_Vehicle_Dispatch.Institution_Dropping_Center=' . $institutionDroppingCenterId . '&Camp_Vehicle_Dispatch.Filled_by=' . $contactId . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $goonjOffice . '&Camp_Vehicle_Dispatch.Goonj_Office_Name=' . $goonjOfficeName . '&Eck_Collection_Camp1=' . $institutionDroppingCenterId;
+
+    $baseUrl = $isSelfManaged ? '/institution-dropping-center-vehicle-dispatch/' : '/institution-dropping-center-vehicle-dispatch-form-not-self-managed/';
+
+    $vehicleDispatchFormUrl = $homeUrl . $baseUrl . '#?Camp_Vehicle_Dispatch.Institution_Dropping_Center=' . $institutionDroppingCenterId
+    . '&Camp_Vehicle_Dispatch.Filled_by=' . $contactId
+    . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $goonjOffice
+    . '&Camp_Vehicle_Dispatch.Goonj_Office_Name=' . $goonjOfficeName
+    . '&Eck_Collection_Camp1=' . $institutionDroppingCenterId;
 
     $emailHtml = "
     <html>
