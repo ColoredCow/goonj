@@ -945,7 +945,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       'eventVolunteers' => [
         'title' => ts('Event Volunteers'),
         'module' => 'afsearchInstitutionCollectionCampEventVolunteers',
-        'directive' => 'afsearch-institution-collection-camp-event-volunteer',
+        'directive' => 'afsearch-institution-collection-camp-event-volunteers',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
