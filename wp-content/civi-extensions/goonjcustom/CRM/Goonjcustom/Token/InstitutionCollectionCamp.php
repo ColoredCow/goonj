@@ -138,9 +138,15 @@ class CRM_Goonjcustom_Token_InstitutionCollectionCamp extends AbstractTokenSubsc
   private function formatVolunteers($collectionSource) {
     $initiatorId = $collectionSource['Institution_Collection_Camp_Intent.Institution_POC'];
 
-    if (!$initiatorId) {
-      return '';
-    }
+    $volunteeringActivities = Activity::get(FALSE)
+      ->addSelect('activity_contact.contact_id')
+      ->addJoin('ActivityContact AS activity_contact', 'LEFT')
+      ->addWhere('activity_type_id:name', '=', 'Volunteering')
+      ->addWhere('Volunteering_Activity.Institution_Collection_Camp', '=', $collectionSource['id'])
+      ->addWhere('activity_contact.record_type_id', '=', self::ACTIVITY_TARGET_RECORD_TYPE_ID)
+      ->execute();
+
+    $volunteerIds = array_merge([$initiatorId], $volunteeringActivities->column('activity_contact.contact_id'));
 
     $volunteers = Contact::get(FALSE)
       ->addSelect('phone.phone', 'phone.is_primary', 'display_name', 'id')
@@ -151,22 +157,31 @@ class CRM_Goonjcustom_Token_InstitutionCollectionCamp extends AbstractTokenSubsc
     $volunteersArray = $volunteers->jsonSerialize();
     $volunteersDetails = [];
 
-    $primaryVolunteer = array_filter($volunteersArray, function ($volunteer) {
-        return $volunteer['phone.is_primary'];
-    });
+    foreach ($volunteerIds as $volunteerId) {
+      $primaryVolunteers = array_filter($volunteersArray, function ($volunteer) use ($volunteerId) {
+        return $volunteer['id'] == $volunteerId && $volunteer['phone.is_primary'];
+      });
 
-    if (!empty($primaryVolunteer)) {
-      $volunteersDetails[] = reset($primaryVolunteer);
-    }
-    else {
-      $volunteersDetails[] = reset($volunteersArray);
+      if (!empty($primaryVolunteer)) {
+        $volunteersDetails[] = reset($primaryVolunteers);
+      }
+      else {
+        $volunteer = array_filter($volunteersArray, function ($volunteer) use ($volunteerId) {
+          return $volunteer['id'] == $volunteerId;
+        });
+
+        if (!empty($volunteer)) {
+          $volunteersDetails[] = reset($volunteer);
+        }
+      }
+
     }
 
     $volunteersWithPhone = array_map(
-        fn($volunteer) => isset($volunteer['phone.phone']) && !empty($volunteer['phone.phone'])
-            ? sprintf('%1$s (%2$s)', $volunteer['display_name'], $volunteer['phone.phone'])
-            : $volunteer['display_name'],
-        $volunteersDetails
+      fn($volunteer) => isset($volunteer['phone.phone']) && !empty($volunteer['phone.phone'])
+          ? sprintf('%1$s (%2$s)', $volunteer['display_name'], $volunteer['phone.phone'])
+          : $volunteer['display_name'],
+      $volunteersDetails
     );
 
     return join(', ', $volunteersWithPhone);
