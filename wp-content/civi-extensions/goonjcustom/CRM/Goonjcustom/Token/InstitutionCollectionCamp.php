@@ -149,9 +149,10 @@ class CRM_Goonjcustom_Token_InstitutionCollectionCamp extends AbstractTokenSubsc
     $volunteerIds = array_merge([$initiatorId], $volunteeringActivities->column('activity_contact.contact_id'));
 
     $volunteers = Contact::get(FALSE)
-      ->addSelect('phone.phone', 'phone.is_primary', 'display_name', 'id')
+      ->addSelect('phone.phone', 'phone.is_primary', 'display_name')
       ->addJoin('Phone AS phone', 'LEFT')
-      ->addWhere('id', '=', $initiatorId)
+      ->addWhere('id', 'IN', $volunteerIds)
+      ->addOrderBy('created_date', 'ASC')
       ->execute();
 
     $volunteersArray = $volunteers->jsonSerialize();
