@@ -665,6 +665,13 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
+      'eventCoordinators' => [
+        'title' => ts('Event Coordinators'),
+        'module' => 'afsearchAddEventCoordinator',
+        'directive' => 'afsearch-add-event-coordinator',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+      ],
       'vehicleDispatch' => [
         'title' => ts('Dispatch'),
         'module' => 'afsearchInstitutionDroppingCenterVehicleDispatchData',

@@ -125,35 +125,51 @@ class CRM_Goonjcustom_Token_InstitutionDroppingCenter extends AbstractTokenSubsc
   private function formatVolunteers($collectionSource) {
     $initiatorId = $collectionSource['Institution_Dropping_Center_Intent.Institution_POC'];
 
-    if (!$initiatorId) {
-      return '';
-    }
+    $volunteeringActivities = Activity::get(FALSE)
+      ->addSelect('activity_contact.contact_id')
+      ->addJoin('ActivityContact AS activity_contact', 'LEFT')
+      ->addWhere('activity_type_id:name', '=', 'Volunteer Coordinator')
+      ->addWhere('Coordinator.Institution_Dropping_Center', '=', $collectionSource['id'])
+      ->addWhere('activity_contact.record_type_id', '=', self::ACTIVITY_TARGET_RECORD_TYPE_ID)
+      ->execute();
+
+    $volunteerIds = array_merge([$initiatorId], $volunteeringActivities->column('activity_contact.contact_id'));
 
     $volunteers = Contact::get(FALSE)
-      ->addSelect('phone.phone', 'phone.is_primary', 'display_name', 'id')
+      ->addSelect('phone.phone', 'phone.is_primary', 'display_name')
       ->addJoin('Phone AS phone', 'LEFT')
-      ->addWhere('id', '=', $initiatorId)
+      ->addWhere('id', 'IN', $volunteerIds)
+      ->addOrderBy('created_date', 'ASC')
       ->execute();
 
     $volunteersArray = $volunteers->jsonSerialize();
     $volunteersDetails = [];
 
-    $primaryVolunteer = array_filter($volunteersArray, function ($volunteer) {
-        return $volunteer['phone.is_primary'];
-    });
+    foreach ($volunteerIds as $volunteerId) {
+      $primaryVolunteers = array_filter($volunteersArray, function ($volunteer) use ($volunteerId) {
+        return $volunteer['id'] == $volunteerId && $volunteer['phone.is_primary'];
+      });
 
-    if (!empty($primaryVolunteer)) {
-      $volunteersDetails[] = reset($primaryVolunteer);
-    }
-    else {
-      $volunteersDetails[] = reset($volunteersArray);
+      if (!empty($primaryVolunteer)) {
+        $volunteersDetails[] = reset($primaryVolunteers);
+      }
+      else {
+        $volunteer = array_filter($volunteersArray, function ($volunteer) use ($volunteerId) {
+          return $volunteer['id'] == $volunteerId;
+        });
+
+        if (!empty($volunteer)) {
+          $volunteersDetails[] = reset($volunteer);
+        }
+      }
+
     }
 
     $volunteersWithPhone = array_map(
-       fn($volunteer) => isset($volunteer['phone.phone']) && !empty($volunteer['phone.phone'])
-           ? sprintf('%1$s (%2$s)', $volunteer['display_name'], $volunteer['phone.phone'])
-           : $volunteer['display_name'],
-       $volunteersDetails
+    fn($volunteer) => isset($volunteer['phone.phone']) && !empty($volunteer['phone.phone'])
+        ? sprintf('%1$s (%2$s)', $volunteer['display_name'], $volunteer['phone.phone'])
+        : $volunteer['display_name'],
+    $volunteersDetails
     );
 
     return join(', ', $volunteersWithPhone);
