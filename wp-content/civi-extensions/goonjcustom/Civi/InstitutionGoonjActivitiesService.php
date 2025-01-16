@@ -176,9 +176,11 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
   public static function assignCoordinatorByRelationshipType($stateOfficeId, $registrationType, $collectionCampId) {
     // Define the mapping of registration categories to relationship type names.
     $relationshipTypeMap = [
-      'A_Corporate_organisation' => 'Corporate Organisation Coordinator of',
-      'A_School' => 'School Coordinator of',
-      'A_College_University' => 'University/College Coordinator of',
+      'Corporate' => 'Corporate Coordinator of',
+      'School' => 'School Coordinator of',
+      'College/University' => 'College Coordinator of',
+      'Association' => 'Associations Coordinator of',
+      'Other' => 'Default Coordinator of',
     ];
 
     $registrationCategorySelection = $registrationType['Institution_Goonj_Activities.You_wish_to_register_as:name'];
