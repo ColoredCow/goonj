@@ -26,6 +26,7 @@ class NavigationPermissionService extends AutoSubscriber {
     if ($isAdmin) {
       return;
     }
+
     $roleMenuMapping = [
       'account_team' => [
         'hide_menus' => [
