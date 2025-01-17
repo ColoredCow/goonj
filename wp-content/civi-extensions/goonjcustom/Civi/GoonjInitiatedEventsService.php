@@ -7,6 +7,8 @@ use Civi\Core\Service\AutoSubscriber;
 use Civi\Api4\Event;
 use Civi\Api4\Address;
 use Civi\Traits\QrCodeable;
+use Civi\Api4\Group;
+use Civi\Api4\GroupContact;
 
 /**
  *
@@ -21,6 +23,7 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
     return [
       '&hook_civicrm_pre' => 'generateGoonjEventsQr',
       '&hook_civicrm_tabset' => 'goonjEventsTabset',
+      '&hook_civicrm_post' => 'assignChapterGroupToIndividual',
     ];
   }
 
@@ -380,6 +383,78 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
 	<p>Warm Regards,<br>Urban Relations Team</p>";
 
     return $html;
+  }
+
+  /**
+   *
+   */
+  public static function assignChapterGroupToIndividual(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($op !== 'create' || $objectName !== 'Individual') {
+      return FALSE;
+    }
+
+    $contactId = $objectId;
+
+    if (!$contactId) {
+      \Civi::log()->info("Missing Contact ID ");
+      return FALSE;
+    }
+
+    $contactQuery = Contact::get(FALSE)
+      ->addSelect('address_primary.state_province_id')
+      ->addWhere('id', '=', $contactId)
+      ->execute();
+    $contact = $contactQuery->first();
+    $stateProvinceId = $contact['address_primary.state_province_id'];
+
+    if (empty($contact)) {
+      return FALSE;
+    }
+
+    $groupId = self::getChapterGroupForState($stateProvinceId);
+
+    if ($groupId) {
+      self::addContactToGroup($contactId, $groupId);
+    }
+  }
+
+  /**
+   *
+   */
+  private static function getChapterGroupForState($stateId) {
+    $stateContactGroup = Group::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('Chapter_Contact_Group.Use_Case', '=', 'chapter-contacts')
+      ->addWhere('Chapter_Contact_Group.Contact_Catchment', 'CONTAINS', $stateId)
+      ->execute()->first();
+
+    if (!$stateContactGroup) {
+      $stateContactGroup = Group::get(FALSE)
+        ->addWhere('Chapter_Contact_Group.Use_Case', '=', 'chapter-contacts')
+        ->addWhere('Chapter_Contact_Group.Fallback_Chapter', '=', 1)
+        ->execute()->first();
+
+    }
+
+    return $stateContactGroup ? $stateContactGroup['id'] : NULL;
+  }
+
+  /**
+   *
+   */
+  private static function addContactToGroup($contactId, $groupId) {
+    if ($contactId & $groupId) {
+      try {
+        GroupContact::create(FALSE)
+          ->addValue('contact_id', $contactId)
+          ->addValue('group_id', $groupId)
+          ->addValue('status', 'Added')
+          ->execute();
+      }
+      catch (Exception $e) {
+        \Civi::log()->error("Error adding contact_id: $contactId to group_id: $groupId. Exception: " . $e->getMessage());
+      }
+    }
   }
 
 }
