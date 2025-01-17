@@ -63,6 +63,10 @@ $events_registration_link = sprintf(
     '/goonj-inititated-events-volunteer-check/?source=%s',
     $action_target['title'],
 );
+$participant_registration_link = sprintf(
+    '/civicrm/event/register/?reset=1&id=%s',
+    $action_target['id'],
+);
 
 
 $institution_collection_camp_register_link = sprintf(
@@ -230,6 +234,7 @@ $target_data = [
     'contribution_link' => $event_material_contribution_link,
     'donation_link' => $event_donation_link,
     'register_link' => $events_registration_link,
+    'event_registration' => $participant_registration_link,
   ],
 ];
 
@@ -253,6 +258,8 @@ if (in_array($target, ['collection-camp', 'institution-collection-camp', 'droppi
   $volunteer_name = $action_target[$target_info['volunteer_name']];
   $donation_link = $target_info['donation_link'];
   $register_link = $target_info['register_link'];
+  $participant_registration_link = $target_info['event_registration'];
+
   $name_of_institute = $action_target[$target_info['name_of_institute']];
   error_log("name_of_institute: " . print_r($name_of_institute, TRUE));
 
@@ -317,6 +324,11 @@ if (in_array($target, ['collection-camp', 'institution-collection-camp', 'droppi
         <a href="<?php echo esc_url($register_link); ?>" class="wp-block-gb-action-button">
             <?php esc_html_e('Volunteer with Goonj', 'goonj-blocks'); ?>
         </a>
+        <?php if ($target === 'events') : ?>
+            <a href="<?php echo esc_url($participant_registration_link); ?>" class="wp-block-gb-action-button">
+                <?php esc_html_e('Event Registration', 'goonj-blocks'); ?>
+            </a>
+        <?php endif; ?>
         <?php if (!in_array($target, ['goonj-activities', 'institution-goonj-activities'])) : ?>
             <a href="<?php echo esc_url($contribution_link ?? '#'); ?>" class="wp-block-gb-action-button">
                 <?php esc_html_e('Record your Material Contribution', 'goonj-blocks'); ?>
