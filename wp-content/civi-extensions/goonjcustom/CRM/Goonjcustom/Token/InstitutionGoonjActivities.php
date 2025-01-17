@@ -3,7 +3,7 @@
 /**
  *
  */
-
+use Civi\Api4\Activity;
 use Civi\Api4\Contact;
 use Civi\Api4\EckEntity;
 use Civi\Api4\Phone;
