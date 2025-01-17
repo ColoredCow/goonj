@@ -412,6 +412,13 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
+      'eventVolunteers' => [
+        'title' => ts('Event Volunteers'),
+        'module' => 'afsearchInstitutionGoonjActivitiesEventVolunteer',
+        'directive' => 'afsearch-institution-goonj-activities-event-volunteer',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+      ],
       'campOutcome' => [
         'title' => ts('Outcome'),
         'module' => 'afsearchInstitutionGoonjActivitiesOutcomeView',
