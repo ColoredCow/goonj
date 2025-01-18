@@ -2,6 +2,7 @@
 
 namespace Civi;
 
+use Civi\Afform\Event\AfformSubmitEvent;
 use Civi\Api4\Activity;
 use Civi\Api4\Contact;
 use Civi\Api4\CustomField;
@@ -11,6 +12,7 @@ use Civi\Api4\Group;
 use Civi\Api4\GroupContact;
 use Civi\Api4\Organization;
 use Civi\Api4\Relationship;
+use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
@@ -29,6 +31,12 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
   const ENTITY_NAME = 'Collection_Camp';
   const FALLBACK_OFFICE_NAME = 'Delhi';
   const MATERIAL_RELATIONSHIP_TYPE_NAME = 'Material Management Team of';
+  const INSTITUTION_DROPPING_CENTER_INTENT_FB_NAMES = [
+    'afformInstitutionDroppingCenterIntent1',
+    'afformAdminInstitutionDroppingCenterIntent',
+  ];
+
+  private static $droppingCenterAddress = NULL;
 
   /**
    *
@@ -40,6 +48,10 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
         ['setOfficeDetails'],
         ['mailNotificationToMmt'],
       ],
+      'civi.afform.submit' => [
+        ['setInstitutionDroppingCenterAddress', 9],
+        ['setInstitutionEventVolunteersAddress', 8],
+      ],
       '&hook_civicrm_post' => 'processDispatchEmail',
       '&hook_civicrm_pre' => [
         ['assignChapterGroupToIndividual'],
@@ -47,6 +59,70 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
         ['linkInstitutionDroppingCenterToContact'],
       ],
     ];
+  }
+
+  /**
+   *
+   */
+  public static function setInstitutionDroppingCenterAddress(AfformSubmitEvent $event) {
+    $afform = $event->getAfform();
+    $formName = $afform['name'];
+
+    if (!in_array($formName, self::INSTITUTION_DROPPING_CENTER_INTENT_FB_NAMES, TRUE)) {
+      return;
+    }
+
+    $entityType = $event->getEntityType();
+
+    if ($entityType !== 'Eck_Collection_Camp') {
+      return;
+    }
+
+    $records = $event->records;
+
+    foreach ($records as $record) {
+      $fields = $record['fields'];
+
+      self::$droppingCenterAddress = [
+        'location_type_id' => 3,
+        'state_province_id' => $fields['Institution_Dropping_Center_Intent.State'],
+      // India.
+        'country_id' => 1101,
+        'street_address' => $fields['Institution_Dropping_Center_Intent.Dropping_Center_Address'],
+        'city' => $fields['Institution_Dropping_Center_Intent.District_City'],
+        'postal_code' => $fields['Institution_Dropping_Center_Intent.Postal_Code'],
+        'is_primary' => 1,
+      ];
+    }
+  }
+
+  /**
+   *
+   */
+  public static function setInstitutionEventVolunteersAddress(AfformSubmitEvent $event) {
+    $afform = $event->getAfform();
+    $formName = $afform['name'];
+
+    if (!in_array($formName, self::INSTITUTION_DROPPING_CENTER_INTENT_FB_NAMES, TRUE)) {
+      return;
+    }
+
+    $entityType = $event->getEntityType();
+
+    if (!CoreUtil::isContact($entityType)) {
+      return;
+    }
+
+    foreach ($event->records as $index => $contact) {
+      if (empty($contact['fields'])) {
+        continue;
+      }
+      if (self::$droppingCenterAddress === NULL) {
+        continue;
+      }
+      $event->records[$index]['joins']['Address'][] = self::$droppingCenterAddress;
+    }
+
   }
 
   /**
