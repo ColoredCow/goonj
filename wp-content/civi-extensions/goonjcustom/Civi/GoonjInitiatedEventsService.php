@@ -389,11 +389,12 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
    *
    */
   public static function assignChapterGroupToIndividual(string $op, string $objectName, $objectId, &$objectRef) {
-    if ($op !== 'create' || $objectName !== 'Individual') {
+
+    if ($op !== 'create' || $objectName !== 'Participant') {
       return FALSE;
     }
 
-    $contactId = $objectId;
+    $contactId = $objectRef->contact_id;
 
     if (!$contactId) {
       \Civi::log()->info("Missing Contact ID ");
