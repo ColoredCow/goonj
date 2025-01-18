@@ -34,9 +34,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     'afformInstitutionCollectionCampIntentBackend',
   ];
 
-  private static $individualId = NULL;
   private static $collectionCampAddress = NULL;
-  private static $fromAddress = NULL;
 
   /**
    *
