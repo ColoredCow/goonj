@@ -102,7 +102,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
     $afform = $event->getAfform();
     $formName = $afform['name'];
 
-    if (!in_array($formName, self::INSTITUTION_DROPPING_CENTER_INTENT_FB_NAMES, TRUE)) {
+    if (!in_array($formName, self::INSTITUTION_GOONJ_ACTIVITIES_INTENT_FB_NAMES, TRUE)) {
       return;
     }
 
