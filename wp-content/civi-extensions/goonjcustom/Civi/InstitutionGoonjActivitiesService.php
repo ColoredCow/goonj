@@ -50,6 +50,73 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
   /**
    *
    */
+<<<<<<< Updated upstream
+=======
+  public static function setInstitutionGoonjActivitiesAddress(AfformSubmitEvent $event) {
+    $afform = $event->getAfform();
+    $formName = $afform['name'];
+
+    if (!in_array($formName, self::INSTITUTION_GOONJ_ACTIVITIES_INTENT_FB_NAMES, TRUE)) {
+      return;
+    }
+
+    $entityType = $event->getEntityType();
+
+    if ($entityType !== 'Eck_Collection_Camp') {
+      return;
+    }
+
+    $records = $event->records;
+
+    foreach ($records as $record) {
+      $fields = $record['fields'];
+
+      self::$goonjActivitiesAddress = [
+        'location_type_id' => 3,
+        'state_province_id' => $fields['Institution_Goonj_Activities.State'],
+      // India.
+        'country_id' => 1101,
+        'street_address' => $fields['Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'],
+        'city' => $fields['Institution_Goonj_Activities.City'],
+        'postal_code' => $fields['Institution_Goonj_Activities.Postal_Code'],
+        'is_primary' => 1,
+      ];
+    }
+  }
+
+  /**
+   *
+   */
+  public static function setInstitutionEventVolunteersAddress(AfformSubmitEvent $event) {
+    $afform = $event->getAfform();
+    $formName = $afform['name'];
+
+    if (!in_array($formName, self::INSTITUTION_GOONJ_ACTIVITIES_INTENT_FB_NAMES, TRUE)) {
+      return;
+    }
+
+    $entityType = $event->getEntityType();
+
+    if (!CoreUtil::isContact($entityType)) {
+      return;
+    }
+
+    foreach ($event->records as $index => $contact) {
+      if (empty($contact['fields'])) {
+        continue;
+      }
+      if (self::$goonjActivitiesAddress === NULL) {
+        continue;
+      }
+      $event->records[$index]['joins']['Address'][] = self::$goonjActivitiesAddress;
+    }
+
+  }
+
+  /**
+   *
+   */
+>>>>>>> Stashed changes
   private static function getChapterGroupForState($stateId) {
     $stateContactGroup = Group::get(FALSE)
       ->addSelect('id')
