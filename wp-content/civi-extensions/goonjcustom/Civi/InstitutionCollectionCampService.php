@@ -2,6 +2,7 @@
 
 namespace Civi;
 
+use Civi\Afform\Event\AfformSubmitEvent;
 use Civi\Api4\Activity;
 use Civi\Api4\Contact;
 use Civi\Api4\Contribution;
@@ -13,6 +14,7 @@ use Civi\Api4\GroupContact;
 use Civi\Api4\OptionValue;
 use Civi\Api4\Organization;
 use Civi\Api4\Relationship;
+use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
@@ -27,6 +29,12 @@ class InstitutionCollectionCampService extends AutoSubscriber {
   const ENTITY_NAME = 'Collection_Camp';
   const FALLBACK_OFFICE_NAME = 'Delhi';
   const MATERIAL_RELATIONSHIP_TYPE_NAME = 'Material Management Team of';
+  const INSTITUTION_COLLECTION_CAMP_INTENT_FB_NAMES = [
+    'afformInstitutionCollectionCampIntent',
+    'afformInstitutionCollectionCampIntentBackend',
+  ];
+
+  private static $collectionCampAddress = NULL;
 
   /**
    *
@@ -39,6 +47,10 @@ class InstitutionCollectionCampService extends AutoSubscriber {
         ['linkInstitutionCollectionCampToContact'],
         ['updateInstitutionCampStatusAfterAuth'],
       ],
+      'civi.afform.submit' => [
+        ['setInstitutionCollectionCampAddress', 9],
+        ['setInstitutionEventVolunteersAddress', 8],
+      ],
       '&hook_civicrm_post' => 'updateNameOfTheInstitution',
       '&hook_civicrm_custom' => [
         ['setOfficeDetails'],
@@ -46,6 +58,70 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       ],
       '&hook_civicrm_tabset' => 'institutionCollectionCampTabset',
     ];
+  }
+
+  /**
+   *
+   */
+  public static function setInstitutionCollectionCampAddress(AfformSubmitEvent $event) {
+    $afform = $event->getAfform();
+    $formName = $afform['name'];
+
+    if (!in_array($formName, self::INSTITUTION_COLLECTION_CAMP_INTENT_FB_NAMES, TRUE)) {
+      return;
+    }
+
+    $entityType = $event->getEntityType();
+
+    if ($entityType !== 'Eck_Collection_Camp') {
+      return;
+    }
+
+    $records = $event->records;
+
+    foreach ($records as $record) {
+      $fields = $record['fields'];
+
+      self::$collectionCampAddress = [
+        'location_type_id' => 3,
+        'state_province_id' => $fields['Institution_Collection_Camp_Intent.State'],
+      // India.
+        'country_id' => 1101,
+        'street_address' => $fields['Institution_Collection_Camp_Intent.Collection_Camp_Address'],
+        'city' => $fields['Institution_Collection_Camp_Intent.District_City'],
+        'postal_code' => $fields['Institution_Collection_Camp_Intent.Postal_Code'],
+        'is_primary' => 1,
+      ];
+    }
+  }
+
+  /**
+   *
+   */
+  public static function setInstitutionEventVolunteersAddress(AfformSubmitEvent $event) {
+    $afform = $event->getAfform();
+    $formName = $afform['name'];
+
+    if (!in_array($formName, self::INSTITUTION_COLLECTION_CAMP_INTENT_FB_NAMES, TRUE)) {
+      return;
+    }
+
+    $entityType = $event->getEntityType();
+
+    if (!CoreUtil::isContact($entityType)) {
+      return;
+    }
+
+    foreach ($event->records as $index => $contact) {
+      if (empty($contact['fields'])) {
+        continue;
+      }
+      if (self::$collectionCampAddress === NULL) {
+        continue;
+      }
+      $event->records[$index]['joins']['Address'][] = self::$collectionCampAddress;
+    }
+
   }
 
   /**
