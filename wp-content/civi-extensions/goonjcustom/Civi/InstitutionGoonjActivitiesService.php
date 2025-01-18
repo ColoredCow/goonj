@@ -2,6 +2,8 @@
 
 namespace Civi;
 
+use Civi\Afform\Event\AfformSubmitEvent;
+use Civi\Api4\Activity;
 use Civi\Api4\Contact;
 use Civi\Api4\CustomField;
 use Civi\Api4\EckEntity;
@@ -9,10 +11,10 @@ use Civi\Api4\Group;
 use Civi\Api4\GroupContact;
 use Civi\Api4\OptionValue;
 use Civi\Api4\Relationship;
+use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
-use Civi\Api4\Activity;
 
 /**
  *
@@ -29,6 +31,13 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
   const Institution_Goonj_Activities_INTENT_FB_NAME = 'afformInstitutionGoonjActivitiesIntent';
   private static $addressAdded = FALSE;
 
+  const INSTITUTION_GOONJ_ACTIVITIES_INTENT_FB_NAMES = [
+    'afformInstitutionGoonjActivitiesIntent',
+    'afformInstitutionGoonjActivitiesIntent1',
+  ];
+
+  private static $goonjActivitiesAddress = NULL;
+
   /**
    *
    */
@@ -40,11 +49,79 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
         ['createActivityForInstitutionGoonjActivityCollectionCamp'],
         ['linkInstitutionGoonjActivitiesToContact'],
       ],
+      'civi.afform.submit' => [
+        ['setInstitutionGoonjActivitiesAddress', 9],
+        ['setInstitutionEventVolunteersAddress', 8],
+      ],
       '&hook_civicrm_custom' => [
         ['setOfficeDetails'],
       ],
       '&hook_civicrm_tabset' => 'institutionGoonjActivitiesTabset',
     ];
+  }
+
+  /**
+   *
+   */
+  public static function setInstitutionGoonjActivitiesAddress(AfformSubmitEvent $event) {
+    $afform = $event->getAfform();
+    $formName = $afform['name'];
+
+    if (!in_array($formName, self::INSTITUTION_GOONJ_ACTIVITIES_INTENT_FB_NAMES, TRUE)) {
+      return;
+    }
+
+    $entityType = $event->getEntityType();
+
+    if ($entityType !== 'Eck_Collection_Camp') {
+      return;
+    }
+
+    $records = $event->records;
+
+    foreach ($records as $record) {
+      $fields = $record['fields'];
+
+      self::$goonjActivitiesAddress = [
+        'location_type_id' => 3,
+        'state_province_id' => $fields['Institution_Goonj_Activities.State'],
+      // India.
+        'country_id' => 1101,
+        'street_address' => $fields['Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'],
+        'city' => $fields['Institution_Goonj_Activities.City'],
+        'postal_code' => $fields['Institution_Goonj_Activities.Postal_Code'],
+        'is_primary' => 1,
+      ];
+    }
+  }
+
+  /**
+   *
+   */
+  public static function setInstitutionEventVolunteersAddress(AfformSubmitEvent $event) {
+    $afform = $event->getAfform();
+    $formName = $afform['name'];
+
+    if (!in_array($formName, self::INSTITUTION_DROPPING_CENTER_INTENT_FB_NAMES, TRUE)) {
+      return;
+    }
+
+    $entityType = $event->getEntityType();
+
+    if (!CoreUtil::isContact($entityType)) {
+      return;
+    }
+
+    foreach ($event->records as $index => $contact) {
+      if (empty($contact['fields'])) {
+        continue;
+      }
+      if (self::$goonjActivitiesAddress === NULL) {
+        continue;
+      }
+      $event->records[$index]['joins']['Address'][] = self::$goonjActivitiesAddress;
+    }
+
   }
 
   /**
@@ -117,7 +194,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
    *
    */
   private static function addContactToGroup($contactId, $groupId) {
-    if($contactId & $groupId){
+    if ($contactId & $groupId) {
       try {
         GroupContact::create(FALSE)
           ->addValue('contact_id', $contactId)
@@ -715,7 +792,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
     return $html;
   }
 
-      /**
+  /**
    *
    */
   public static function linkInstitutionGoonjActivitiesToContact(string $op, string $objectName, $objectId, &$objectRef) {
@@ -780,4 +857,5 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
       \Civi::log()->debug("Exception while creating Organize Collection Camp activity: " . $ex->getMessage());
     }
   }
+
 }
