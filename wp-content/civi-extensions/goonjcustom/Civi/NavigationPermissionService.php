@@ -22,6 +22,7 @@ class NavigationPermissionService extends AutoSubscriber {
    *
    */
   public function hideNavForRoles(&$params) {
+    error_log("params: " . print_r($params, TRUE));
     $isAdmin = \CRM_Core_Permission::check('admin');
     if ($isAdmin) {
       return;
@@ -45,7 +46,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Urban Visit',
           'Individuals',
           'Contributions',
-          'Campaigns'
+          'Campaigns',
         ],
       ],
       'mmt' => [
@@ -62,7 +63,19 @@ class NavigationPermissionService extends AutoSubscriber {
           'Institution Goonj Activities',
           'Induction Tab',
           'Volunteers',
-          'Individuals'
+          'Individuals',
+        ],
+      ],
+      'goonj_chapter_admin' => [
+        'hide_menus' => [
+          'MMT - Individuals',
+          'MMT - Institutes',
+        ],
+      ],
+      'urbanops' => [
+        'hide_menus' => [
+          'MMT - Individuals',
+          'MMT - Institutes',
         ],
       ],
       'ho_account' => [
@@ -72,7 +85,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Volunteers',
           'Institute',
           'Individuals',
-          'Campaigns'
+          'Campaigns',
         ],
       ],
       'communications_team' => [
@@ -85,6 +98,7 @@ class NavigationPermissionService extends AutoSubscriber {
     ];
 
     foreach ($roleMenuMapping as $role => $menuConfig) {
+      error_log("role: " . print_r($role, TRUE));
       if (\CRM_Core_Permission::check($role)) {
         $menusToHide = $menuConfig['hide_menus'];
 
