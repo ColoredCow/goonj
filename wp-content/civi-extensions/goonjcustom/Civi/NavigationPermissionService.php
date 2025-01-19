@@ -98,7 +98,6 @@ class NavigationPermissionService extends AutoSubscriber {
     ];
 
     foreach ($roleMenuMapping as $role => $menuConfig) {
-      error_log("role: " . print_r($role, TRUE));
       if (\CRM_Core_Permission::check($role)) {
         $menusToHide = $menuConfig['hide_menus'];
 
