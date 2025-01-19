@@ -46,6 +46,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
         ['generateInstitutionCollectionCampQr'],
         ['linkInstitutionCollectionCampToContact'],
         ['updateInstitutionCampStatusAfterAuth'],
+        ['updateCampaignType'],
       ],
       'civi.afform.submit' => [
         ['setInstitutionCollectionCampAddress', 9],
@@ -58,6 +59,29 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       ],
       '&hook_civicrm_tabset' => 'institutionCollectionCampTabset',
     ];
+  }
+
+  /**
+   *
+   */
+  public static function updateCampaignType(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($op !== 'edit' || $objectName !== 'AfformSubmission') {
+      return FALSE;
+    }
+
+    $fields = $objectRef['data']['Eck_Collection_Camp1'][0]['fields'] ?? NULL;
+    $fieldValue = $fields['Institution_Collection_Camp_Intent.Will_your_collection_drive_be_open_for_general_public_as_well'] ?? NULL;
+    $id = $fields['id'] ?? NULL;
+
+    if (!$fieldValue || !$id) {
+      return FALSE;
+    }
+
+    EckEntity::update('Collection_Camp', FALSE)
+      ->addValue('Institution_collection_camp_Review.Is_the_camp_IHC_PCC_', $fieldValue)
+      ->addWhere('id', '=', $id)
+      ->execute();
+
   }
 
   /**
