@@ -50,7 +50,7 @@ class DroppingCenterService extends AutoSubscriber {
         ['setOfficeDetails'],
         ['mailNotificationToMmt'],
       ],
-      '&hook_civicrm_post' => 'processDispatchEmail',
+      '&hook_civicrm_pre' => 'processDispatchEmail',
     ];
   }
 
@@ -471,20 +471,12 @@ class DroppingCenterService extends AutoSubscriber {
   /**
    *
    */
-  public static function processDispatchEmail(string $op, string $objectName, int $objectId, &$objectRef) {
-
-    if ($objectName !== 'AfformSubmission') {
+  public static function processDispatchEmail(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($objectRef['afform_name'] !== 'afformSendDispatchEmail') {
       return;
     }
 
-    $afformName = $objectRef->afform_name;
-
-    if ($afformName !== 'afformSendDispatchEmail') {
-      return;
-    }
-
-    $jsonData = $objectRef->data;
-    $dataArray = json_decode($jsonData, TRUE);
+    $dataArray = $objectRef['data'];
 
     $droppingCenterId = $dataArray['Eck_Collection_Camp1'][0]['fields']['id'] ?? NULL;
 
@@ -492,12 +484,12 @@ class DroppingCenterService extends AutoSubscriber {
       return;
     }
 
+    $contactId = $dataArray['Eck_Collection_Camp1'][0]['fields']['Dropping_Centre.Contact_Dispatch_Email'];
     $droppingCenterData = EckEntity::get('Collection_Camp', TRUE)
-      ->addSelect('Collection_Camp_Core_Details.Contact_Id', 'Dropping_Centre.Goonj_Office', 'Dropping_Centre.Goonj_Office.display_name')
+      ->addSelect('Dropping_Centre.Goonj_Office', 'Dropping_Centre.Goonj_Office.display_name')
       ->addWhere('id', '=', $droppingCenterId)
       ->execute()->single();
 
-    $contactId = $droppingCenterData['Collection_Camp_Core_Details.Contact_Id'] ?? NULL;
     $goonjOffice = $droppingCenterData['Dropping_Centre.Goonj_Office'] ?? 'N/A';
     $goonjOfficeName = $droppingCenterData['Dropping_Centre.Goonj_Office.display_name'];
 
