@@ -52,13 +52,51 @@ class InstitutionCollectionCampService extends AutoSubscriber {
         ['setInstitutionCollectionCampAddress', 9],
         ['setInstitutionEventVolunteersAddress', 8],
       ],
-      '&hook_civicrm_post' => 'updateNameOfTheInstitution',
+      '&hook_civicrm_post' => [
+        ['updateNameOfTheInstitution'],
+        ['updateCampStatusOnOutcomeFilled'],
+      ],
       '&hook_civicrm_custom' => [
         ['setOfficeDetails'],
         ['mailNotificationToMmt'],
       ],
       '&hook_civicrm_tabset' => 'institutionCollectionCampTabset',
     ];
+  }
+
+  /**
+   *
+   */
+  public static function updateCampStatusOnOutcomeFilled(string $op, string $objectName, int $objectId, &$objectRef) {
+    if ($objectName !== 'AfformSubmission') {
+      return;
+    }
+
+    $afformName = $objectRef->afform_name;
+
+    if ($afformName !== 'afformInstitutionCampOutcomeForm') {
+      return;
+    }
+
+    $jsonData = $objectRef->data;
+    $dataArray = json_decode($jsonData, TRUE);
+
+    $collectionCampId = $dataArray['Eck_Collection_Camp1'][0]['fields']['id'];
+
+    if (!$collectionCampId) {
+      return;
+    }
+
+    try {
+      EckEntity::update('Collection_Camp', FALSE)
+        ->addWhere('id', '=', $collectionCampId)
+        ->addValue('Institution_collection_camp_Review.Camp_Status', '3')
+        ->execute();
+
+    }
+    catch (\Exception $e) {
+      \Civi::log()->error("Exception occurred while updating camp status for campId: $collectionCampId. Error: " . $e->getMessage());
+    }
   }
 
   /**
