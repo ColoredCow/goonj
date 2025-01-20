@@ -60,12 +60,8 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
         'Remark' => $fields['Acknowledgement_For_Logistics.Remark'] ?? NULL,
         'Filled_by' => $fields['Acknowledgement_For_Logistics.Filled_by'] ?? NULL,
         'Name_of_the_institution' => $fields['Camp_Institution_Data.Name_of_the_institution'] ?? NULL,
+        'Institution_POC' => $fields['Camp_Institution_Data.Email'] ?? NULL,
       ]);
-    }
-
-    if (isset($data['Eck_Collection_Camp1'][0]['fields'])) {
-      $campFields = $data['Eck_Collection_Camp1'][0]['fields'];
-      $result['Institution_POC'] = $campFields['Institution_Collection_Camp_Intent.Institution_POC'] ?? NULL;
     }
 
     return $result;
@@ -97,10 +93,9 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
     $filledById,
     $remark,
     $institutionName,
-    $institutionPocId,
+    $institutionEmail,
   ) {
     // Fetch details for Institution POC, Verified By, and Filled By.
-    $institutionDetails = self::fetchContactDetails($institutionPocId);
     $verifiedByDetails = self::fetchContactDetails($verifiedById);
     $filledByDetails = self::fetchContactDetails($filledById);
 
@@ -118,13 +113,12 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
     );
 
     $attachments = [\CRM_Utils_Mail::appendPDF('receipt.pdf', $html)];
-
     // Prepare the email parameters and send the email.
     $params = self::prepareEmailParams(
         'Acknowledgement for your material contribution to Goonj',
         $body,
         $attachments,
-        $institutionDetails['email.email'] ?? ''
+        $institutionEmail ?? ''
     );
     \CRM_Utils_Mail::send($params);
   }
