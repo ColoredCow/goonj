@@ -288,6 +288,9 @@
 #crm-main-content-wrapper {
   form {
     .crm-block {
+      .action-link {
+        display: none !important;
+      }
       .crm-group {
         &.amount_display-group {
           .display-block {
