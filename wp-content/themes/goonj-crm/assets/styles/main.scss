@@ -415,14 +415,14 @@ form input {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 20px;
-  font-family: inherit;
+  font-family: Proxima Nova;
 }
 
 .wp-block-gb-slots-wrapper .wp-block-gb-slot-box {
   border: 1px solid #ccc;
   padding: 10px;
   text-align: center;
-  font-family: inherit;
+  font-family: Proxima Nova;
   font-size: inherit;
   line-height: inherit;
 }
@@ -430,13 +430,13 @@ form input {
 .wp-block-gb-slots-wrapper .wp-block-gb-slot-day {
   font-size: 1.2em;
   font-weight: bold;
-  font-family: inherit;
+  font-family: Proxima Nova;
 }
 
 .wp-block-gb-slots-wrapper .wp-block-gb-slot-date,
 .wp-block-gb-slots-wrapper .wp-block-gb-slot-time {
   margin: 5px 0;
-  font-family: inherit;
+  font-family: Proxima Nova;
   font-size: inherit;
   line-height: inherit;
 }
@@ -450,7 +450,7 @@ form input {
   border-radius: 5px;
   cursor: pointer;
   transition: background-color 0.3s ease;
-  font-family: inherit;
+  font-family: Proxima Nova;
   font-size: inherit;
   line-height: inherit;
 }
