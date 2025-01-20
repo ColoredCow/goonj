@@ -9,6 +9,7 @@
 	display: flex;
 	justify-content: space-evenly;
     flex-wrap: wrap;
+    font-family: Proxima Nova;
 }
 
 .wp-block-gb-action-button {
@@ -20,14 +21,14 @@
 	font-size: 16px;
 	line-height: 1;
 	border: 1px solid rgba(0,0,0,.3);
-	font-family: 'Open Sans';
+	font-family: Proxima Nova;
 }
 
 .wp-block-gb-table {
     width: 100%;
     border-collapse: collapse;
     margin-bottom: 20px;
-    font-family: Arial, sans-serif;
+    font-family: Proxima Nova;
 }
 
 .wp-block-gb-table-row:nth-child(even) {
