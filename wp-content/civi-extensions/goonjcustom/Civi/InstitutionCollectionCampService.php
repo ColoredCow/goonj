@@ -720,14 +720,15 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     $campOutcomeFormUrl = $homeUrl . '/institution-camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $campAttendedById . '&Institution_Collection_Camp_Intent.Collection_Camp_Address=' . $campAddress;
 
     $html = "
-  <p>Dear $contactName,</p>
-  <p>Thank you for attending the camp <strong>$campCode</strong> at <strong>$campAddress</strong>. There is one form that requires your attention after the camp:</p>
-  <ol>
-      <li><a href=\"$campOutcomeFormUrl\">Camp Outcome Form</a><br>
-      This feedback form should be filled out after the camp/drive ends, once you have an overview of the event's outcomes.</li>
-  </ol>
-  <p>We appreciate your cooperation.</p>
-  <p>Warm Regards,<br>Urban Relations Team</p>";
+    <p>Dear $contactName,</p>
+    <p>Thank you for coordinating the camp <strong>$campCode</strong> at <strong>$campAddress</strong>. 
+    Please fill out the following form after the camp/drive ends, once you have an overview of the event's outcomes:</p>
+    <ol>
+        <li><a href=\"$campOutcomeFormUrl\" target=\"_blank\">Camp Outcome Form</a><br>
+        This form is essential for providing feedback and recording the outcomes of the event.</li>
+    </ol>
+    <p>We appreciate your cooperation.</p>
+    <p>Warm Regards,<br>Urban Relations Team</p>";
 
     return $html;
   }
