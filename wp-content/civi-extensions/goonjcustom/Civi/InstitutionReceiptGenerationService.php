@@ -3,6 +3,7 @@
 namespace Civi;
 
 use Civi\Api4\Contact;
+use Civi\Api4\EckEntity;
 use Civi\Core\Service\AutoSubscriber;
 
 /**
@@ -50,7 +51,6 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
    */
   private static function extractAcknowledgedData(array $data): array {
     $result = [];
-
     if (isset($data['Eck_Collection_Source_Vehicle_Dispatch1'][0]['fields'])) {
       $fields = $data['Eck_Collection_Source_Vehicle_Dispatch1'][0]['fields'];
       $result = array_merge($result, [
@@ -90,12 +90,32 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
     $address,
     $contactNumber,
     $institutionEmail,
+    $collectionCampId,
   ) {
+
+    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect('Institution_collection_camp_Review.Coordinating_POC')
+      ->addWhere('id', '=', $collectionCampId)
+      ->execute()->single();
+
+    $coordinatingPOCId = $collectionCamp['Institution_collection_camp_Review.Coordinating_POC'];
+
+    $contact = Contact::get(FALSE)
+      ->addSelect('email.email', 'phone.phone')
+      ->addJoin('Email AS email', 'LEFT')
+      ->addJoin('Phone AS phone', 'LEFT')
+      ->addWhere('id', '=', $coordinatingPOCId)
+      ->execute()->single();
+
+    $goonjCoordinatorEmail = $contact['email.email'];
+    $goonjCoordinatorPhone = $contact['phone.phone'];
 
     // Generate the email body and receipt.
     $body = self::generateEmailBody(
-        $institutionDetails['display_name'] ?? '',
-    );
+          $institutionName,
+          $goonjCoordinatorEmail,
+          $goonjCoordinatorPhone,
+      );
 
     $html = self::generateAcknowledgedReceiptHtml(
         $institutionName,
@@ -110,7 +130,8 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
         'Acknowledgement for your material contribution to Goonj',
         $body,
         $attachments,
-        $institutionEmail ?? ''
+        $institutionEmail ?? '',
+        $goonjCoordinatorEmail
     );
     \CRM_Utils_Mail::send($params);
   }
@@ -118,7 +139,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
   /**
    * Generate the email body for the acknowledgment.
    */
-  private static function generateEmailBody(string $institutionPOCName) {
+  private static function generateEmailBody(string $institutionPOCName, string $goonjCoordinatorEmail, string $goonjCoordinatorPhone) {
     return "
       <html>
           <head>
@@ -138,7 +159,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
               <p>
                   Your support strengthens our ability to reach those in need and implement impactful initiatives. 
                   If you have any questions regarding the acknowledgment or need further assistance, please feel free 
-                  to reach out to us at <strong>123456789</strong> / <strong>test@gmail.com</strong>.
+                  to reach out to us at <strong>$goonjCoordinatorEmail</strong> / <strong>$goonjCoordinatorPhone</strong>.
               </p>
               <p>
                   Thank you once again for partnering with us and making a difference!
@@ -152,7 +173,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
   /**
    *
    */
-  private static function prepareEmailParams(string $emailSubject, string $emailBody, array $attachments, string $recipientEmail) {
+  private static function prepareEmailParams(string $emailSubject, string $emailBody, array $attachments, string $recipientEmail, string $goonjCoordinatorEmail) {
     $from = HelperService::getDefaultFromEmail();
 
     return [
@@ -160,6 +181,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
       'from' => $from,
       'toEmail' => $recipientEmail,
       'html' => $emailBody,
+      'cc' => $goonjCoordinatorEmail,
       'attachments' => $attachments,
     ];
   }
