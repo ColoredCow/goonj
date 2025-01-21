@@ -680,7 +680,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
             'toEmail' => $recipientEmail,
             'replyTo' => $from,
             'cc' => $coordinatingPOCEmail,
-            'html' => self::sendDispatchEmail($recipientName, $campId, $institutionPOCId, $campOffice, $campCode, $campAddress, $pocEmail, $pocContactNumber, $nameOfInstitution, $addressOfInstitution,),
+            'html' => self::sendDispatchEmail($recipientName, $campId, $institutionPOCId, $campOffice, $campCode, $campAddress, $pocEmail, $pocContactNumber, $nameOfInstitution, $addressOfInstitution,  $coordinatingPOCEmail, $coordinatingPOCPhone)
           ];
 
           $dispatchEmailSendResult = \CRM_Utils_Mail::send($mailParams);
@@ -712,7 +712,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
             'from' => $from,
             'toEmail' => $recipientEmail,
             'replyTo' => $from,
-            'html' => self::sendOutcomeEmail($recipientName, $campId, $coordinatingPOCId, $campCode, $campAddress,),
+            'html' => self::sendOutcomeEmail($recipientName, $campId, $coordinatingPOCId, $campCode, $campAddress),
           ];
 
           $outcomeEmailSendResult = \CRM_Utils_Mail::send($mailParams);
