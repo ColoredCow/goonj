@@ -471,7 +471,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     }
 
     $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Institution_Collection_Camp_Intent.Collection_Camp_Address', 'title')
+      ->addSelect('Institution_Collection_Camp_Intent.Collection_Camp_Address', 'title', 'Institution_collection_camp_Review.Coordinating_POC')
       ->addWhere('id', '=', $collectionCampId)
       ->execute()->single();
 
@@ -481,6 +481,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
 
     $campCode = $collectionCamp['title'];
     $campAddress = $collectionCamp['Institution_Collection_Camp_Intent.Collection_Camp_Address'];
+    $coordinatingPOCId = $collectionCamp['Institution_collection_camp_Review.Coordinating_POC'];
 
     $coordinators = Relationship::get(FALSE)
       ->addWhere('contact_id_b', '=', $goonjFieldId)
@@ -501,18 +502,25 @@ class InstitutionCollectionCampService extends AutoSubscriber {
 
     $mmtEmail = $email['email'];
 
+    $coordinatingPocEmail = Email::get(FALSE)
+      ->addSelect('email')
+      ->addWhere('contact_id', '=', $coordinatingPOCId)
+      ->execute()->single();
+
+    $pocEmail = $coordinatingPocEmail['email'];
+
     $fromEmail = OptionValue::get(FALSE)
       ->addSelect('label')
       ->addWhere('option_group_id:name', '=', 'from_email_address')
       ->addWhere('is_default', '=', TRUE)
       ->execute()->single();
-
     // Email to material management team member.
     $mailParams = [
       'subject' => 'Material Acknowledgement for Camp: ' . $campCode . ' at ' . $campAddress,
       'from' => $fromEmail['label'],
       'toEmail' => $mmtEmail,
       'replyTo' => $fromEmail['label'],
+      'cc' => $pocEmail,
       'html' => self::sendEmailToMmt($collectionCampId, $campCode, $campAddress, $vehicleDispatchId, $nameOfInstitution, $addressOfInstitution, $pocEmail, $pocContactNumber),
     ];
     \CRM_Utils_Mail::send($mailParams);
