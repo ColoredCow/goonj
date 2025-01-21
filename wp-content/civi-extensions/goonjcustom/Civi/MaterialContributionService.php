@@ -103,7 +103,6 @@ class MaterialContributionService extends AutoSubscriber {
     $html = self::generateContributionReceiptHtml($contribution, $email, $phone, $locationAreaOfCamp);
     $fileName = 'material_contribution_' . $contribution['id'] . '.pdf';
     $params['attachments'][] = \CRM_Utils_Mail::appendPDF($fileName, $html);
-    $params['cc'] = 'crm@goonj.org';
   }
 
   /**
