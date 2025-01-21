@@ -42,7 +42,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
         $result['Remark'] ?? NULL,
         $result['Name_of_the_institution'] ?? NULL,
         $result['Institution_POC'] ?? NULL,
-        $result['id'] ?? NULL
+        $result['collectionCampId'] ?? NULL
     );
 
     return $result;
@@ -62,7 +62,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
         'Filled_by' => $fields['Acknowledgement_For_Logistics.Filled_by'] ?? NULL,
         'Name_of_the_institution' => $fields['Camp_Institution_Data.Name_of_the_institution'] ?? NULL,
         'Institution_POC' => $fields['Camp_Institution_Data.Email'] ?? NULL,
-        'id' => $fields['Camp_Vehicle_Dispatch.Institution_Collection_Camp'] ?? NULL,
+        'collectionCampId' => $fields['Camp_Vehicle_Dispatch.Institution_Collection_Camp'] ?? NULL,
       ]);
     }
 
@@ -96,7 +96,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
     $remark,
     $institutionName,
     $institutionEmail,
-    $id,
+    $collectionCampId,
   ) {
     // Fetch details for Institution POC, Verified By, and Filled By.
     $verifiedByDetails = self::fetchContactDetails($verifiedById);
@@ -104,20 +104,20 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
 
     $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
       ->addSelect('Institution_collection_camp_Review.Coordinating_POC')
-      ->addWhere('id', '=', $id)
+      ->addWhere('id', '=', $collectionCampId)
       ->execute()->single();
 
     $coordinatingPOCId = $collectionCamp['Institution_collection_camp_Review.Coordinating_POC'];
 
-    $goonjCoordinatorEmail = Contact::get(FALSE)
+    $contact = Contact::get(FALSE)
       ->addSelect('email.email', 'phone.phone')
       ->addJoin('Email AS email', 'LEFT')
       ->addJoin('Phone AS phone', 'LEFT')
       ->addWhere('id', '=', $coordinatingPOCId)
       ->execute()->single();
 
-    $goonjCoordinatorEmail = $goonjCoordinatorEmail['email.email'];
-    $goonjCoordinatorPhone = $goonjCoordinatorEmail['phone.phone'];
+    $goonjCoordinatorEmail = $contact['email.email'];
+    $goonjCoordinatorPhone = $contact['phone.phone'];
 
     // Generate the email body and receipt.
     $body = self::generateEmailBody(
