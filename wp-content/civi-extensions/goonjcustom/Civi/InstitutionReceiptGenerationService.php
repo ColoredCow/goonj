@@ -109,21 +109,21 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
 
     $coordinatingPOCId = $collectionCamp['Institution_collection_camp_Review.Coordinating_POC'];
 
-    $coordinatingPocEmail = Contact::get(FALSE)
+    $goonjCoordinatorEmail = Contact::get(FALSE)
       ->addSelect('email.email', 'phone.phone')
       ->addJoin('Email AS email', 'LEFT')
       ->addJoin('Phone AS phone', 'LEFT')
       ->addWhere('id', '=', $coordinatingPOCId)
       ->execute()->single();
 
-    $coordinatingPOCEmail = $coordinatingPocEmail['email.email'];
-    $coordinatingPOCPhone = $coordinatingPocEmail['phone.phone'];
+    $goonjCoordinatorEmail = $goonjCoordinatorEmail['email.email'];
+    $goonjCoordinatorPhone = $goonjCoordinatorEmail['phone.phone'];
 
     // Generate the email body and receipt.
     $body = self::generateEmailBody(
           $institutionName,
-          $coordinatingPOCEmail,
-          $coordinatingPOCPhone,
+          $goonjCoordinatorEmail,
+          $goonjCoordinatorPhone,
       );
 
     $html = self::generateAcknowledgedReceiptHtml(
@@ -141,7 +141,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
         $body,
         $attachments,
         $institutionEmail ?? '',
-        $coordinatingPOCEmail
+        $goonjCoordinatorEmail
     );
     \CRM_Utils_Mail::send($params);
   }
@@ -149,7 +149,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
   /**
    * Generate the email body for the acknowledgment.
    */
-  private static function generateEmailBody(string $institutionPOCName, string $coordinatingPOCEmail, string $coordinatingPOCPhone) {
+  private static function generateEmailBody(string $institutionPOCName, string $goonjCoordinatorEmail, string $goonjCoordinatorPhone) {
     return "
       <html>
           <head>
@@ -169,7 +169,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
               <p>
                   Your support strengthens our ability to reach those in need and implement impactful initiatives. 
                   If you have any questions regarding the acknowledgment or need further assistance, please feel free 
-                  to reach out to us at <strong>$coordinatingPOCEmail</strong> / <strong>$coordinatingPOCPhone</strong>.
+                  to reach out to us at <strong>$goonjCoordinatorEmail</strong> / <strong>$goonjCoordinatorPhone</strong>.
               </p>
               <p>
                   Thank you once again for partnering with us and making a difference!
@@ -183,7 +183,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
   /**
    *
    */
-  private static function prepareEmailParams(string $emailSubject, string $emailBody, array $attachments, string $recipientEmail, string $coordinatingPOCEmail) {
+  private static function prepareEmailParams(string $emailSubject, string $emailBody, array $attachments, string $recipientEmail, string $goonjCoordinatorEmail) {
     $from = HelperService::getDefaultFromEmail();
 
     return [
@@ -191,7 +191,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
       'from' => $from,
       'toEmail' => $recipientEmail,
       'html' => $emailBody,
-      'cc' => $coordinatingPOCEmail,
+      'cc' => $goonjCoordinatorEmail,
       'attachments' => $attachments,
     ];
   }
