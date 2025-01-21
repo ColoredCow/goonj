@@ -35,12 +35,11 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
     $result = self::extractAcknowledgedData($data);
 
     self::notifyInstitutionPOC(
-        $result['No_of_bags_received_at_PU_Office'] ?? NULL,
-        $result['Verified_By'] ?? NULL,
-        $result['Filled_by'] ?? NULL,
-        $result['Remark'] ?? NULL,
         $result['Name_of_the_institution'] ?? NULL,
-        $result['Institution_POC'] ?? NULL
+        $result['address'] ?? NULL,
+        $result['Contact_Number'] ?? NULL,
+        $result['Institution_POC'] ?? NULL,
+        $result['collectionCampId'] ?? NULL
     );
 
     return $result;
@@ -55,12 +54,11 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
     if (isset($data['Eck_Collection_Source_Vehicle_Dispatch1'][0]['fields'])) {
       $fields = $data['Eck_Collection_Source_Vehicle_Dispatch1'][0]['fields'];
       $result = array_merge($result, [
-        'No_of_bags_received_at_PU_Office' => $fields['Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office'] ?? NULL,
-        'Verified_By' => $fields['Acknowledgement_For_Logistics.Verified_By'] ?? NULL,
-        'Remark' => $fields['Acknowledgement_For_Logistics.Remark'] ?? NULL,
-        'Filled_by' => $fields['Acknowledgement_For_Logistics.Filled_by'] ?? NULL,
-        'Name_of_the_institution' => $fields['Camp_Institution_Data.Name_of_the_institution'] ?? NULL,
-        'Institution_POC' => $fields['Camp_Institution_Data.Email'] ?? NULL,
+        'Name_of_the_institution' => $fields['Camp_Institution_Data.Name_of_the_institution'],
+        'address' => $fields['Camp_Institution_Data.Address'],
+        'Contact_Number' => $fields['Camp_Institution_Data.Contact_Number'],
+        'Institution_POC' => $fields['Camp_Institution_Data.Email'],
+        'collectionCampId' => $fields['Camp_Vehicle_Dispatch.Institution_Collection_Camp'],
       ]);
     }
 
@@ -88,16 +86,11 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
    *
    */
   private static function notifyInstitutionPOC(
-    $noOfBagsReceived,
-    $verifiedById,
-    $filledById,
-    $remark,
     $institutionName,
+    $address,
+    $contactNumber,
     $institutionEmail,
   ) {
-    // Fetch details for Institution POC, Verified By, and Filled By.
-    $verifiedByDetails = self::fetchContactDetails($verifiedById);
-    $filledByDetails = self::fetchContactDetails($filledById);
 
     // Generate the email body and receipt.
     $body = self::generateEmailBody(
@@ -105,11 +98,10 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
     );
 
     $html = self::generateAcknowledgedReceiptHtml(
-        $noOfBagsReceived,
-        $verifiedByDetails['display_name'] ?? '',
-        $filledByDetails['display_name'] ?? '',
-        $remark,
-        $institutionName
+        $institutionName,
+        $address,
+        $contactNumber,
+        $institutionEmail,
     );
 
     $attachments = [\CRM_Utils_Mail::appendPDF('receipt.pdf', $html)];
@@ -175,7 +167,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
   /**
    *
    */
-  private static function generateAcknowledgedReceiptHtml($noOfBagsReceived, $verifiedByName, $filledByName, $remark, $institutionName) {
+  private static function generateAcknowledgedReceiptHtml($institutionName, $address, $contactNumber, $institutionEmail) {
 
     $baseDir = plugin_dir_path(__FILE__) . '../../../themes/goonj-crm/';
 
@@ -192,7 +184,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
     ];
 
     $imageData = array_map(fn ($path) => base64_encode(file_get_contents($path)), $paths);
-
+    $currentDate = date('F j, Y');
     $html = <<<HTML
     <html>
       <body style="font-family: Arial, sans-serif;">
@@ -203,9 +195,6 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
         <div style="width: 100%; font-size: 14px;">
           <div style="float: left; text-align: left;">
             <!-- Material Acknowledgment# {$activity['id']} -->
-          </div>
-          <div style="float: right; text-align: right;">
-            Goonj, C-544, Pocket C, Sarita Vihar, Delhi, India
           </div>
         </div>
         <br><br>
@@ -221,20 +210,24 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
           </style>
           <!-- Table rows for each item -->
           <tr>
-            <td class="table-header">No of Bags Received *</td>
-            <td style="text-align: center;">{$noOfBagsReceived}</td>
+            <td class="table-header">Received On</td>
+            <td style="text-align: center;">{$currentDate}</td>
           </tr>
           <tr>
-            <td class="table-header">Verified By</td>
-            <td style="text-align: center;">{$verifiedByName}</td>
-          </tr>
-          <tr>
-            <td class="table-header">Filled By</td>
-            <td style="text-align: center;">{$filledByName}</td>
-          </tr>
-          <tr>
-            <td class="table-header">institutionName</td>
+            <td class="table-header">Institution Name</td>
             <td style="text-align: center;">{$institutionName}</td>
+          </tr>
+          <tr>
+            <td class="table-header">Address</td>
+            <td style="text-align: center;">{$address}</td>
+          </tr>
+          <tr>
+            <td class="table-header">Email</td>
+            <td style="text-align: center;">{$institutionEmail}</td>
+          </tr>
+          <tr>
+            <td class="table-header">Phone</td>
+            <td style="text-align: center;">{$contactNumber}</td>
           </tr>
           <!-- <tr>
             <td class="table-header">Delivered by (Name & contact no.)</td>
@@ -245,9 +238,6 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
         </tr>
 
         </table>
-        <div style="text-align: right; font-size: 14px;">
-          Team Goonj
-        </div>
         <div style="width: 100%; margin-top: 16px;">
         <div style="float: left; width: 60%; font-size: 14px;">
         <p>Join us, by encouraging your friends, relatives, colleagues, and neighbours to join the journey as all of us have a lot to give.</p>
