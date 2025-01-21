@@ -496,18 +496,22 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     }
 
     $email = Email::get(FALSE)
-      ->addSelect('email')
+      ->addSelect('email', 'contact_id.display_name')
       ->addWhere('contact_id', '=', $mmtId)
       ->execute()->single();
 
     $mmtEmail = $email['email'];
+    $mmtName = $email['contact_id.display_name'];
 
-    $coordinatingPocEmail = Email::get(FALSE)
-      ->addSelect('email')
-      ->addWhere('contact_id', '=', $coordinatingPOCId)
+    $coordinatingPocEmail = Contact::get(FALSE)
+      ->addSelect('email.email', 'phone.phone')
+      ->addJoin('Email AS email', 'LEFT')
+      ->addJoin('Phone AS phone', 'LEFT')
+      ->addWhere('id', '=', $coordinatingPOCId)
       ->execute()->single();
 
-    $pocEmail = $coordinatingPocEmail['email'];
+    $coordinatingPOCEmail = $coordinatingPocEmail['email.email'];
+    $coordinatingPOCPhone = $coordinatingPocEmail['phone.phone'];
 
     $fromEmail = OptionValue::get(FALSE)
       ->addSelect('label')
@@ -520,8 +524,8 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       'from' => $fromEmail['label'],
       'toEmail' => $mmtEmail,
       'replyTo' => $fromEmail['label'],
-      'cc' => $pocEmail,
-      'html' => self::sendEmailToMmt($collectionCampId, $campCode, $campAddress, $vehicleDispatchId, $nameOfInstitution, $addressOfInstitution, $pocEmail, $pocContactNumber),
+      'cc' => $coordinatingPOCEmail,
+      'html' => self::sendEmailToMmt($collectionCampId, $campCode, $campAddress, $vehicleDispatchId, $coordinatingPOCEmail, $coordinatingPOCPhone, $mmtName, $nameOfInstitution, $addressOfInstitution, $pocEmail, $pocContactNumber),
     ];
     \CRM_Utils_Mail::send($mailParams);
 
@@ -530,7 +534,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
   /**
    *
    */
-  public static function sendEmailToMmt($collectionCampId, $campCode, $campAddress, $vehicleDispatchId) {
+  public static function sendEmailToMmt($collectionCampId, $campCode, $campAddress, $vehicleDispatchId, $coordinatingPOCEmail, $coordinatingPOCPhone, $mmtName) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
     $materialdispatchUrl = $homeUrl . 'institution-camp-acknowledgement-dispatch/#?Eck_Collection_Source_Vehicle_Dispatch1=' . $vehicleDispatchId
     . '&Camp_Vehicle_Dispatch.Institution_Collection_Camp=' . $collectionCampId
@@ -538,10 +542,13 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     . '&id=' . $collectionCampId;
 
     $html = "
-    <p>Dear MMT team,</p>
-    <p>This is to inform you that a vehicle has been sent from camp <strong>$campCode</strong> at <strong>$campAddress</strong>.</p>
-    <p>Kindly acknowledge the details by clicking on this form <a href=\"$materialdispatchUrl\"> Link </a> when it is received at the center.</p>
-    <p>Warm regards,<br>Urban Relations Team</p>";
+    <p>Dear $mmtName,</p>
+    <p>Greetings from Goonj!</p>
+    <p>We are pleased to acknowledge the receipt of materials dispatched from your collection camp drive. Your efforts and contribution are invaluable in supporting our mission to create meaningful change in underserved communities.</p>
+    <p>Attached, please find the Material Acknowledgment Receipt for your reference and records.</p>
+    <p>Your support strengthens our ability to reach those in need and implement impactful initiatives. If you have any questions regarding the acknowledgment or need further assistance, please feel free to reach out to us at <strong>$coordinatingPOCEmail/$coordinatingPOCPhone</strong>.</p>
+    <p>Thank you once again for partnering with us and making a difference!</p>
+    <p>Warm Regards,<br>Team Goonj</p>";
 
     return $html;
   }
