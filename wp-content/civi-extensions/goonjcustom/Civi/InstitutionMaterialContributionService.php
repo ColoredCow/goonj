@@ -234,7 +234,7 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
           </style>
           <!-- Table rows for each item -->
           <tr>
-            <td class="table-header">Description of Material *</td>
+            <td class="table-header">Description of Material</td>
             <td style="text-align: center;">{$description}</td>
           </tr>
           <tr>
