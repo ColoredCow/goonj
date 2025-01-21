@@ -168,7 +168,6 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
       'from' => $from,
       'toEmail' => $recipientEmail,
       'html' => $emailBody,
-      'cc' => 'crm@goonj.org',
       'attachments' => $attachments,
     ];
   }
