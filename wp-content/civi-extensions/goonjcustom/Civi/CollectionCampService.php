@@ -306,6 +306,10 @@ class CollectionCampService extends AutoSubscriber {
       return FALSE;
     }
 
+    if(!$objectRef->state_province_id) {
+      return FALSE;
+    }
+
     $groupId = self::getChapterGroupForState($objectRef->state_province_id);
 
     if ($groupId & self::$individualId) {
