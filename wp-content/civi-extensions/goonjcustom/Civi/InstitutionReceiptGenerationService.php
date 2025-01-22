@@ -139,7 +139,11 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
   /**
    * Generate the email body for the acknowledgment.
    */
-  private static function generateEmailBody(string $institutionPOCName, string $goonjCoordinatorEmail, string $goonjCoordinatorPhone) {
+  private static function generateEmailBody(?string $institutionPOCName, ?string $goonjCoordinatorEmail, ?string $goonjCoordinatorPhone): string {
+    $institutionPOCName = $institutionPOCName ?? '';
+    $goonjCoordinatorEmail = $goonjCoordinatorEmail ?? '';
+    $goonjCoordinatorPhone = $goonjCoordinatorPhone ?? '';
+
     return "
       <html>
           <head>
