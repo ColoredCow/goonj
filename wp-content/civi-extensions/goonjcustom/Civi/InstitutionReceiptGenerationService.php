@@ -24,7 +24,9 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
    *
    */
   public static function sendAcknowledgedDataToInstitutionPOC(string $op, string $objectName, int $objectId, &$objectRef) {
-    if ($objectName !== 'AfformSubmission' || $objectRef->afform_name !== 'afformInstitutionAcknowledgementForm') {
+
+    if ($objectName !== 'AfformSubmission' ||
+    !in_array($objectRef->afform_name, ['afformInstitutionAcknowledgementForm', 'afformInstitutionCampAcknowledgementFormForLogistics'])) {
       return;
     }
 
@@ -93,7 +95,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
     $contactNumber,
     $institutionEmail,
     $collectionCampId,
-    $descriptionOfMaterial
+    $descriptionOfMaterial,
   ) {
 
     $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
