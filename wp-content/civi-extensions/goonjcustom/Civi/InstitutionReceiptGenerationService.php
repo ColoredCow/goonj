@@ -40,7 +40,8 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
         $result['address'] ?? NULL,
         $result['Contact_Number'] ?? NULL,
         $result['Institution_POC'] ?? NULL,
-        $result['collectionCampId'] ?? NULL
+        $result['collectionCampId'] ?? NULL,
+        $result['description_of_material'] ?? NULL
     );
 
     return $result;
@@ -59,6 +60,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
         'Contact_Number' => $fields['Camp_Institution_Data.Contact_Number'],
         'Institution_POC' => $fields['Camp_Institution_Data.Email'],
         'collectionCampId' => $fields['Camp_Vehicle_Dispatch.Institution_Collection_Camp'],
+        'description_of_material' => $fields['Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office'],
       ]);
     }
 
@@ -91,6 +93,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
     $contactNumber,
     $institutionEmail,
     $collectionCampId,
+    $descriptionOfMaterial
   ) {
 
     $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
@@ -122,6 +125,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
         $address,
         $contactNumber,
         $institutionEmail,
+        $descriptionOfMaterial
     );
 
     $attachments = [\CRM_Utils_Mail::appendPDF('receipt.pdf', $html)];
@@ -193,7 +197,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
   /**
    *
    */
-  private static function generateAcknowledgedReceiptHtml($institutionName, $address, $contactNumber, $institutionEmail) {
+  private static function generateAcknowledgedReceiptHtml($institutionName, $address, $contactNumber, $institutionEmail, $descriptionOfMaterial) {
 
     $baseDir = plugin_dir_path(__FILE__) . '../../../themes/goonj-crm/';
 
@@ -215,7 +219,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
     <html>
       <body style="font-family: Arial, sans-serif;">
         <div style="text-align: center; margin-bottom: 16px;">
-          <img src="data:image/png;base64,{$imageData['logo']}" alt="Goonj Logo" style="width: 95px; height: 80px;">
+        <img alt="Goonj Logo" src="https://goonj-crm.staging.coloredcow.com/wp-content/uploads/2024/07/Goonj-logo-10June20-300x193.png" style="width: 150px; height: auto;" />
         </div>
         
         <div style="width: 100%; font-size: 14px;">
@@ -235,6 +239,10 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
             }
           </style>
           <!-- Table rows for each item -->
+          <tr>
+            <td class="table-header">Discription of Material received at PU/Office</td>
+            <td style="text-align: center;">{$descriptionOfMaterial}</td>
+          </tr>
           <tr>
             <td class="table-header">Received On</td>
             <td style="text-align: center;">{$currentDate}</td>
