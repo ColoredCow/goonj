@@ -334,10 +334,10 @@ if (in_array($target, ['collection-camp', 'institution-collection-camp', 'droppi
                 <?php esc_html_e('Record your Material Contribution', 'goonj-blocks'); ?>
             </a>
         <?php endif; ?>
-        <a href="<?php echo esc_url($donation_link); ?>" class="wp-block-gb-action-button">
+        <!-- <a href="<?php echo esc_url($donation_link); ?>" class="wp-block-gb-action-button">
             <?php esc_html_e('Monetary Contribution', 'goonj-blocks'); ?>
-        </a>
-        <?php if ($should_include_attendee_feedback) : ?>
+        </a> -->
+        <?php if ($should_include_attendee_feedback): ?>
             <a href="<?php echo esc_url($include_attendee_feedback_link ?? '#'); ?>" class="wp-block-gb-action-button">
                 <?php esc_html_e('Record Attendee Feedback', 'goonj-blocks'); ?>
             </a>
@@ -359,9 +359,9 @@ if (in_array($target, ['collection-camp', 'institution-collection-camp', 'droppi
             <a href="<?php echo esc_url($pu_material_contribution_check_link); ?>" class="wp-block-gb-action-button">
                 <?php esc_html_e('Material Contribution', 'goonj-blocks'); ?>
             </a>
-            <a href="<?php echo esc_url($pu_donation_link); ?>" class="wp-block-gb-action-button">
+            <!-- <a href="<?php echo esc_url($pu_donation_link); ?>" class="wp-block-gb-action-button">
                 <?php esc_html_e('Monetary Contribution', 'goonj-blocks'); ?>
-            </a>
+            </a> -->
         </div>
   <?php elseif ('induction-schedule' === $target) : ?>
     <div class="wp-block-gb-slots-wrapper">
