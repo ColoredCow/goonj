@@ -1121,8 +1121,8 @@ class InstitutionCollectionCampService extends AutoSubscriber {
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
-      'materialAuthorization' => [
-        'title' => ts('Material Authorization'),
+      'materialAcknowledgement' => [
+        'title' => ts('Material Acknowledgement'),
         'module' => 'afsearchInstitutionCampAcknowledgementDispatch',
         'directive' => 'afsearch-institution-camp-acknowledgement-dispatch',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
