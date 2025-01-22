@@ -224,11 +224,11 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
         
         <div style="width: 100%; font-size: 14px;">
           <div style="float: left; text-align: left;">
-            Material Acknowledgment
+            Material Acknowledgment#
           </div>
         </div>
         <br><br>
-        <div style="font-weight: bold; font-style: italic; margin-top: 6px; margin-bottom: 6px;">
+        <div style="font-weight: bold; font-style: italic; margin-top: 6px; margin-bottom: 6px; font-size: 16px;">
           "We appreciate your contribution of pre-used/new material. Goonj makes sure that the material reaches people with dignity and care."
         </div>
         <table border="1" cellpadding="10" cellspacing="0" style="width: 100%; border-collapse: collapse;">
@@ -240,7 +240,11 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
           </style>
           <!-- Table rows for each item -->
           <tr>
+<<<<<<< Updated upstream
             <td class="table-header">Discription of Material received at PU/Office</td>
+=======
+            <td class="table-header">Description of Material</td>
+>>>>>>> Stashed changes
             <td style="text-align: center;">{$descriptionOfMaterial}</td>
           </tr>
           <tr>
