@@ -25,8 +25,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
    */
   public static function sendAcknowledgedDataToInstitutionPOC(string $op, string $objectName, int $objectId, &$objectRef) {
 
-    if ($objectName !== 'AfformSubmission' ||
-    !in_array($objectRef->afform_name, ['afformInstitutionAcknowledgementForm', 'afformInstitutionCampAcknowledgementFormForLogistics'])) {
+    if ($objectName !== 'AfformSubmission' || !in_array($objectRef->afform_name, ['afformInstitutionAcknowledgementForm', 'afformInstitutionCampAcknowledgementFormForLogistics'])) {
       return;
     }
 
