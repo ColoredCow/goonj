@@ -93,6 +93,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Institute',
           'Volunteers',
           'Events',
+          'Offices',
         ],
       ],
     ];
