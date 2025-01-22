@@ -9,7 +9,7 @@ use Civi\Core\Service\AutoSubscriber;
 /**
  *
  */
-class InstitutionReceiptGenerationService extends AutoSubscriber {
+class InstitutionDroppingCenterReceiptGenerationService extends AutoSubscriber {
 
   /**
    *
@@ -25,7 +25,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
    */
   public static function sendAcknowledgedDataToInstitutionPOC(string $op, string $objectName, int $objectId, &$objectRef) {
 
-    if ($objectName !== 'AfformSubmission' || !in_array($objectRef->afform_name, ['afformInstitutionAcknowledgementForm', 'afformInstitutionCampAcknowledgementFormForLogistics'])) {
+    if ($objectName !== 'AfformSubmission' || !in_array($objectRef->afform_name, ['afformInstitutionDroppingCenterAcknowledgementForm', 'afformInstitutionDroppingCenterAcknowledgementFormForLogistics'])) {
       return;
     }
 
@@ -60,7 +60,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
         'address' => $fields['Camp_Institution_Data.Address'],
         'Contact_Number' => $fields['Camp_Institution_Data.Contact_Number'],
         'Institution_POC' => $fields['Camp_Institution_Data.Email'],
-        'collectionCampId' => $fields['Camp_Vehicle_Dispatch.Institution_Collection_Camp'],
+        'collectionCampId' => $fields['Camp_Vehicle_Dispatch.Institution_Dropping_Center'],
         'description_of_material' => $fields['Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office'],
       ]);
     }
@@ -98,11 +98,11 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
   ) {
 
     $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Institution_collection_camp_Review.Coordinating_POC')
+      ->addSelect('Institution_Dropping_Center_Review.Coordinating_POC')
       ->addWhere('id', '=', $collectionCampId)
       ->execute()->single();
 
-    $coordinatingPOCId = $collectionCamp['Institution_collection_camp_Review.Coordinating_POC'];
+    $coordinatingPOCId = $collectionCamp['Institution_Dropping_Center_Review.Coordinating_POC'];
 
     $contact = Contact::get(FALSE)
       ->addSelect('email.email', 'phone.phone')
@@ -158,7 +158,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
               <p>Dear {$institutionPOCName},</p>
               <p>Greetings from Goonj!</p>
               <p>
-                  We are pleased to acknowledge the receipt of materials dispatched from your collection camp drive. 
+                  We are pleased to acknowledge the receipt of materials dispatched from your dropping center drive. 
                   Your efforts and contribution are invaluable in supporting our mission to create meaningful change 
                   in underserved communities.
               </p>
@@ -326,3 +326,4 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
   }
 
 }
+
