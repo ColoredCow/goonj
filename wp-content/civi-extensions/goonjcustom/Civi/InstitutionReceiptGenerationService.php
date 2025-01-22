@@ -240,11 +240,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
           </style>
           <!-- Table rows for each item -->
           <tr>
-<<<<<<< Updated upstream
-            <td class="table-header">Discription of Material received at PU/Office</td>
-=======
             <td class="table-header">Description of Material</td>
->>>>>>> Stashed changes
             <td style="text-align: center;">{$descriptionOfMaterial}</td>
           </tr>
           <tr>
