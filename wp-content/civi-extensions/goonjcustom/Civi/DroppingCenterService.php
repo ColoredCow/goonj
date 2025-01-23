@@ -317,11 +317,11 @@ class DroppingCenterService extends AutoSubscriber {
     $vehicleDispatchId = $goonjField['entity_id'];
 
     $collectionSourceVehicleDispatch = EckEntity::get('Collection_Source_Vehicle_Dispatch', FALSE)
-      ->addSelect('Camp_Vehicle_Dispatch.Collection_Camp')
+      ->addSelect('Camp_Vehicle_Dispatch.Dropping_Center')
       ->addWhere('id', '=', $vehicleDispatchId)
       ->execute()->first();
 
-    $droppingCenterId = $collectionSourceVehicleDispatch['Camp_Vehicle_Dispatch.Collection_Camp'];
+    $droppingCenterId = $collectionSourceVehicleDispatch['Camp_Vehicle_Dispatch.Dropping_Center'];
 
     if (self::getEntitySubtypeName($droppingCenterId) !== self::ENTITY_SUBTYPE_NAME) {
       return;
