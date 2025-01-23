@@ -8,14 +8,13 @@ use Civi\Api4\Group;
 use Civi\Api4\GroupContact;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Api4\EckEntity;
-use Civi\Traits\CollectionSource;
 use Civi\Api4\OptionValue;
+use Civi\Api4\StateProvince;
 
 /**
  *
  */
 class UrbanPlannedVisitService extends AutoSubscriber {
-  use CollectionSource;
   const ENTITY_NAME = 'Institution_Visit';
   const ENTITY_SUBTYPE_NAME = 'Urban_Visit';
 
@@ -29,6 +28,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         ['sendAuthorizationEmailToExtCoordPoc'],
         ['sendAuthorizationEmailToExtCoordPocAndVisitGuide'],
         ['sendVisitOutcomeForm'],
+        ['generateUrbanVisitSourceCode'],
       ],
       '&hook_civicrm_tabset' => 'urbanVisitTabset',
     ];
@@ -994,6 +994,104 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     ";
 
     return $html;
+  }
+
+  /**
+   * This hook is called after a db write on entities.
+   *
+   * @param string $op
+   *   The type of operation being performed.
+   * @param string $objectName
+   *   The name of the object.
+   * @param int $objectId
+   *   The unique identifier for the object.
+   * @param object $objectRef
+   *   The reference to the object.
+   */
+  public static function generateUrbanVisitSourceCode(string $op, string $objectName, $objectId, &$objectRef) {
+    $statusDetails = self::checkAuthVisitStatusAndIds($objectName, $objectId, $objectRef);
+
+    if (!$statusDetails) {
+      return;
+    }
+
+    $newStatus = $statusDetails['newAuthVisitStatus'];
+    $currentStatus = $statusDetails['currentAuthVisitStatus'];
+
+    if ($currentStatus !== $newStatus && $newStatus === 'authorized') {
+      $subtypeId = $objectRef['subtype'] ?? NULL;
+      if (!$subtypeId) {
+        return;
+      }
+
+      $sourceId = $objectRef['id'] ?? NULL;
+      if (!$sourceId) {
+        return;
+      }
+
+      $visitSource = EckEntity::get('Institution_Visit', FALSE)
+        ->addWhere('id', '=', $sourceId)
+        ->execute()->single();
+
+      $visitSourceCreatedDate = $visitSource['created_date'] ?? NULL;
+
+      $sourceTitle = $visitSource['title'] ?? NULL;
+
+      $year = date('Y', strtotime($visitSourceCreatedDate));
+
+      $stateId = $objectRef['Urban_Planned_Visit.State'];
+
+      if (!$stateId) {
+        return;
+      }
+
+      $stateProvince = StateProvince::get(FALSE)
+        ->addWhere('id', '=', $stateId)
+        ->execute()->single();
+
+      if (empty($stateProvince)) {
+        return;
+      }
+
+      $stateAbbreviation = $stateProvince['abbreviation'] ?? NULL;
+      if (!$stateAbbreviation) {
+        return;
+      }
+
+      // Fetch the Goonj-specific state code.
+      $config = self::getConfig();
+      $stateCode = $config['state_codes'][$stateAbbreviation] ?? 'UNKNOWN';
+
+      // Get the current event title.
+      $currentTitle = $objectRef['title'] ?? 'Urban Visit';
+
+      // Fetch the event code.
+      $eventCode = $config['event_codes'][$currentTitle] ?? 'UNKNOWN';
+
+      // Modify the title to include the year, state code, event code, and camp Id.
+      $newTitle = $year . '/' . $stateCode . '/' . $eventCode . '/' . $sourceId;
+      $objectRef['title'] = $newTitle;
+
+      // Save the updated title.
+      EckEntity::update('Institution_Visit')
+        ->addWhere('id', '=', $sourceId)
+        ->addValue('title', $newTitle)
+        ->execute();
+    }
+  }
+
+  /**
+   *
+   */
+  private static function getConfig() {
+    $extensionsDir = \CRM_Core_Config::singleton()->extensionsDir;
+
+    $extensionPath = $extensionsDir . 'goonjcustom/config/';
+
+    return [
+      'state_codes' => include $extensionPath . 'constants.php',
+      'event_codes' => include $extensionPath . 'eventCode.php',
+    ];
   }
 
 }
