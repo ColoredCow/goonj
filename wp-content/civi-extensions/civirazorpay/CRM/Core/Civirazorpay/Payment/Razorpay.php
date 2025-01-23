@@ -75,7 +75,7 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
   /**
    *
    */
-  private function initializeApi() {
+  public function initializeApi() {
     $apiKey = $this->_paymentProcessor['user_name'];
     $apiSecret = $this->_paymentProcessor['password'];
     $api = new Api($apiKey, $apiSecret);
@@ -153,7 +153,11 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
           'total_count' => $installmentCount,
           'quantity' => 1,
           'notes' => [
-            'contribution_id' => $params['contributionID'],
+            'contribution_recur_id' => $params['contributionRecurID'],
+            'contact_id' => $params['contactID'],
+            'source' => 'CiviCRM Recurring Contribution',
+            'email' => $params['email'] ?? NULL,
+            'phone' => $params['phone'] ?? NULL,
           ],
         ]);
 
@@ -169,6 +173,7 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
               'processor' => $this->_paymentProcessor['id'],
               'qfKey' => $params['qfKey'],
               'isRecur' => 1,
+              'component' => $component,
             ],
             TRUE,
             NULL,
@@ -191,6 +196,13 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
           'receipt' => 'RCPT-' . uniqid(),
         // Auto-capture payment.
           'payment_capture' => 1,
+          'notes' => [
+            'contribution_id' => $params['contributionID'],
+            'contact_id' => $params['contactID'],
+            'source' => 'CiviCRM One-Time Contribution',
+            'email' => $params['email'] ?? NULL,
+            'phone' => $params['phone'] ?? NULL,
+          ],
         ]);
 
         civicrm_api3('Contribution', 'create', [
@@ -206,6 +218,7 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
             'processor' => $this->_paymentProcessor['id'],
             'qfKey' => $params['qfKey'],
             'isRecur' => 0,
+            'component' => $component,
           ],
           TRUE,
           NULL,
@@ -294,6 +307,10 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
 
         case 'subscription.completed':
           $this->processSubscriptionCompleted($event);
+          break;
+
+        case 'subscription.cancelled':
+          $this->processSubscriptionCancelled($event);
           break;
 
         default:
@@ -440,6 +457,57 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
       ->execute();
 
     \Civi::log()->info("Subscription completed: $subscriptionId");
+  }
+
+  /**
+   * Handle subscription cancellation from Razorpay webhook.
+   *
+   * @param array $event
+   */
+  private function processSubscriptionCancelled(array $event): void {
+    $subscriptionData = $event['payload']['subscription']['entity'] ?? [];
+
+    if (empty($subscriptionData['id']) || empty($subscriptionData['status']) || $subscriptionData['status'] !== 'cancelled') {
+      \Civi::log()->error('Invalid or incomplete Razorpay subscription cancellation event', [
+        'event' => $event,
+      ]);
+      return;
+    }
+
+    $subscriptionId = $subscriptionData['id'];
+
+    $endedAtTimestamp = $subscriptionData['ended_at'] ?? NULL;
+    $cancelDate = date('Y-m-d H:i:s', $endedAtTimestamp);
+
+    try {
+      $updateResult = ContributionRecur::update(FALSE)
+        ->addWhere('processor_id', '=', $subscriptionId)
+        ->addWhere('is_test', 'IN', [TRUE, FALSE])
+        ->addValue('contribution_status_id:name', 'Cancelled')
+        ->addValue('cancel_date', $cancelDate)
+        ->addValue('cancel_reason', ts('Cancelled from Razorpay Dashboard'))
+        ->execute()->first();
+
+      if (!$updateResult) {
+        \Civi::log('razorpay')->info('Could not cancel recurring contribution', ['razorpaySubscriptionID' => $subscriptionId]);
+      }
+      else {
+        $contributionRecurId = $updateResult['id'];
+
+        \Civi::log('razorpay')->info('Recurring contribution cancelled', [
+          'contributionRecurID' => $contributionRecurId,
+          'razorpaySubscriptionID' => $subscriptionId,
+        ]);
+      }
+
+    }
+    catch (\CiviCRM_API3_Exception $e) {
+      \Civi::log()->error('Error updating CiviCRM ContributionRecur record on Razorpay subscription cancellation', [
+        'error' => $e->getMessage(),
+        'subscription_id' => $subscriptionId,
+        'contribution_recur_id' => $contributionRecurId,
+      ]);
+    }
   }
 
   /**

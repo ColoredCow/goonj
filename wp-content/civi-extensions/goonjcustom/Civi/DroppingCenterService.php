@@ -50,7 +50,7 @@ class DroppingCenterService extends AutoSubscriber {
         ['setOfficeDetails'],
         ['mailNotificationToMmt'],
       ],
-      '&hook_civicrm_post' => 'processDispatchEmail',
+      '&hook_civicrm_pre' => 'processDispatchEmail',
     ];
   }
 
@@ -64,7 +64,6 @@ class DroppingCenterService extends AutoSubscriber {
     if (!in_array($formName, self::DROPPING_CENTER_INTENT_FB_NAMES, TRUE)) {
       return;
     }
-
     $entityType = $event->getEntityType();
 
     if ($entityType !== 'Eck_Collection_Camp') {
@@ -372,7 +371,7 @@ class DroppingCenterService extends AutoSubscriber {
   public static function getMmtEmailHtml($droppingCenterId, $droppingCenterCode, $droppingCenterAddress, $vehicleDispatchId, $mmtId) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
     $materialdispatchUrl = $homeUrl . '/acknowledgement-for-dispatch/#?Eck_Collection_Source_Vehicle_Dispatch1=' . $vehicleDispatchId
-        . '&Camp_Vehicle_Dispatch.Collection_Camp=' . $droppingCenterId
+        . '&Camp_Vehicle_Dispatch.Dropping_Center=' . $droppingCenterId
         . '&id=' . $vehicleDispatchId
         . '&Eck_Collection_Camp1=' . $droppingCenterId
         . '&Acknowledgement_For_Logistics.Verified_By=' . $mmtId;
@@ -473,20 +472,12 @@ class DroppingCenterService extends AutoSubscriber {
   /**
    *
    */
-  public static function processDispatchEmail(string $op, string $objectName, int $objectId, &$objectRef) {
-
-    if ($objectName !== 'AfformSubmission') {
+  public static function processDispatchEmail(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($objectRef['afform_name'] !== 'afformSendDispatchEmail') {
       return;
     }
 
-    $afformName = $objectRef->afform_name;
-
-    if ($afformName !== 'afformSendDispatchEmail') {
-      return;
-    }
-
-    $jsonData = $objectRef->data;
-    $dataArray = json_decode($jsonData, TRUE);
+    $dataArray = $objectRef['data'];
 
     $droppingCenterId = $dataArray['Eck_Collection_Camp1'][0]['fields']['id'] ?? NULL;
 
@@ -494,12 +485,12 @@ class DroppingCenterService extends AutoSubscriber {
       return;
     }
 
+    $contactId = $dataArray['Eck_Collection_Camp1'][0]['fields']['Dropping_Centre.Contact_Dispatch_Email'];
     $droppingCenterData = EckEntity::get('Collection_Camp', TRUE)
-      ->addSelect('Collection_Camp_Core_Details.Contact_Id', 'Dropping_Centre.Goonj_Office', 'Dropping_Centre.Goonj_Office.display_name')
+      ->addSelect('Dropping_Centre.Goonj_Office', 'Dropping_Centre.Goonj_Office.display_name')
       ->addWhere('id', '=', $droppingCenterId)
       ->execute()->single();
 
-    $contactId = $droppingCenterData['Collection_Camp_Core_Details.Contact_Id'] ?? NULL;
     $goonjOffice = $droppingCenterData['Dropping_Centre.Goonj_Office'] ?? 'N/A';
     $goonjOfficeName = $droppingCenterData['Dropping_Centre.Goonj_Office.display_name'];
 
@@ -525,7 +516,7 @@ class DroppingCenterService extends AutoSubscriber {
    */
   public static function sendDispatchEmail($email, $initiatorName, $droppingCenterId, $contactId, $goonjOffice, $goonjOfficeName) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
-    $vehicleDispatchFormUrl = $homeUrl . '/vehicle-dispatch/#?Camp_Vehicle_Dispatch.Collection_Camp=' . $droppingCenterId . '&Camp_Vehicle_Dispatch.Filled_by=' . $contactId . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $goonjOffice . '&Camp_Vehicle_Dispatch.Goonj_Office_Name=' . $goonjOfficeName . '&Eck_Collection_Camp1=' . $droppingCenterId;
+    $vehicleDispatchFormUrl = $homeUrl . '/vehicle-dispatch/#?Camp_Vehicle_Dispatch.Dropping_Center=' . $droppingCenterId . '&Camp_Vehicle_Dispatch.Filled_by=' . $contactId . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $goonjOffice . '&Camp_Vehicle_Dispatch.Goonj_Office_Name=' . $goonjOfficeName . '&Eck_Collection_Camp1=' . $droppingCenterId;
 
     $emailHtml = "
     <html>
@@ -559,6 +550,17 @@ class DroppingCenterService extends AutoSubscriber {
       return;
     }
 
+    $restrictedRoles = ['account_team', 'ho_account', 'mmt'];
+
+    $isAdmin = \CRM_Core_Permission::check('admin');
+
+    $hasRestrictedRole = !$isAdmin && \CRM_Core_Permission::checkAnyPerm($restrictedRoles);
+
+    if ($hasRestrictedRole) {
+      unset($tabs['view']);
+      unset($tabs['edit']);
+    }
+
     $tabConfigs = [
       'logistics' => [
         'title' => ts('Logistics'),
@@ -576,15 +578,15 @@ class DroppingCenterService extends AutoSubscriber {
       ],
       'vehicleDispatch' => [
         'title' => ts('Dispatch'),
-        'module' => 'afsearchCampVehicleDispatchData',
-        'directive' => 'afsearch-camp-vehicle-dispatch-data',
+        'module' => 'afsearchDroppingCenterVehicleDispatchData',
+        'directive' => 'afsearch-dropping-center-vehicle-dispatch-data',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       'materialAuthorization' => [
         'title' => ts('Material Authorization'),
-        'module' => 'afsearchAcknowledgementForLogisticsData',
-        'directive' => 'afsearch-acknowledgement-for-logistics-data',
+        'module' => 'afsearchDroppingCenterAcknowledgementForLogisticsData',
+        'directive' => 'afsearch-dropping-center-acknowledgement-for-logistics-data',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
@@ -593,7 +595,7 @@ class DroppingCenterService extends AutoSubscriber {
         'module' => 'afsearchDroppingCenterMaterialContributions',
         'directive' => 'afsearch-dropping-center-material-contributions',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'mmt'],
       ],
       'status' => [
         'title' => ts('Status'),

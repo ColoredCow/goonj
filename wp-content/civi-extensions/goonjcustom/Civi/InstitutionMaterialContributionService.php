@@ -33,17 +33,14 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
     if (!$data) {
       return;
     }
-
     $activityData = $data['Activity1'][0]['fields'] ?? [];
-    $activityDate = $activityData['activity_date_time'];
-    $brandingCampaignId = $activityData['Institution_Material_Contribution.Co_branding_Campaign'] ?? NULL;
-    $campaignId = $activityData['Institution_Material_Contribution.Campaign'] ?? NULL;
+    $activityDate = $activityData['Institution_Material_Contribution.Contribution_Date'];
+    $campaignId = $activityData['campaign_id'] ?? NULL;
     $description = $activityData['Institution_Material_Contribution.Description_of_Material_No_of_Bags_Material_'] ?? '';
     $deliveredBy = $activityData['Institution_Material_Contribution.Delivered_By_Name'] ?? '';
     $deliveredByContact = $activityData['Institution_Material_Contribution.Delivered_By_Contact'] ?? '';
     $organizationId = $data['Organization1'][0]['fields']['id'] ?? NULL;
-
-    $contacts = self::fetchContributionContacts($brandingCampaignId, $campaignId, $organizationId);
+    $contacts = self::fetchContributionContacts($campaignId, $organizationId);
 
     if (!empty($contacts)) {
       self::sendInstitutionMaterialContributionEmails($contacts, $description, $deliveredBy, $deliveredByContact, $activityDate);
@@ -53,43 +50,18 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
   /**
    *
    */
-  private static function fetchContributionContacts($brandingCampaignId, $campaignId, $organizationId) {
+  private static function fetchContributionContacts($campaignId, $organizationId) {
     $contacts = [];
 
-    // Case 1: Co-Branding Campaign Contacts.
-    if ($brandingCampaignId) {
-      $contacts = self::getBranchWisePOCs($brandingCampaignId);
-    }
-    // Case 2: Campaign Institution POC.
-    elseif ($campaignId) {
+    // Case 1: Campaign Institution POC.
+    if ($campaignId) {
       $contacts = self::getCampaignInstitutionPOC($campaignId);
     }
-    // Case 3: Institution POC.
+    // Case 2: Institution POC.
     elseif ($organizationId) {
       $contacts = self::getInstitutionRelationships($organizationId);
     }
 
-    return $contacts;
-  }
-
-  /**
-   *
-   */
-  private static function getBranchWisePOCs($campaignId) {
-    $contacts = [];
-    $campaign = Campaign::get(TRUE)
-      ->addSelect('Additional_Details.Branch_Wise_POCs')
-      ->addWhere('id', '=', $campaignId)
-      ->execute()
-      ->first();
-
-    $branchWisePOCs = $campaign['Additional_Details.Branch_Wise_POCs'] ?? [];
-    foreach ($branchWisePOCs as $contactId) {
-      $contact = self::getContactDetails($contactId);
-      if ($contact) {
-        $contacts[$contact['email']] = $contact;
-      }
-    }
     return $contacts;
   }
 
@@ -203,7 +175,6 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
       'from' => $from,
       'toEmail' => $recipientEmail,
       'html' => $emailBody,
-      'cc' => 'crm@goonj.org',
       'attachments' => $attachments,
     ];
   }
@@ -263,7 +234,7 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
           </style>
           <!-- Table rows for each item -->
           <tr>
-            <td class="table-header">Description of Material *</td>
+            <td class="table-header">Description of Material</td>
             <td style="text-align: center;">{$description}</td>
           </tr>
           <tr>

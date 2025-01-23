@@ -348,6 +348,17 @@ class GoonjActivitiesService extends AutoSubscriber {
       return;
     }
 
+    $restrictedRoles = ['account_team', 'ho_account'];
+
+    $isAdmin = \CRM_Core_Permission::check('admin');
+
+    $hasRestrictedRole = !$isAdmin && \CRM_Core_Permission::checkAnyPerm($restrictedRoles);
+
+    if ($hasRestrictedRole) {
+      unset($tabs['view']);
+      unset($tabs['edit']);
+    }
+
     $tabConfigs = [
       'activities' => [
         'title' => ts('Activities'),
@@ -386,8 +397,8 @@ class GoonjActivitiesService extends AutoSubscriber {
       ],
       'attendeeFeedback' => [
         'title' => ts('Attendee Feedback'),
-        'module' => 'afsearchGoonjActivityAttendeeFeedbacks',
-        'directive' => 'afsearch-goonj-activity-attendee-feedbacks',
+        'module' => 'afsearchGoonjActivityAttendeeFeedbacksDetails',
+        'directive' => 'afsearch-goonj-activity-attendee-feedbacks-details',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],

@@ -10,9 +10,9 @@ use Civi\Api4\Group;
 use Civi\Api4\GroupContact;
 use Civi\Api4\MessageTemplate;
 use Civi\Api4\OptionValue;
+use Civi\Api4\StateProvince;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
-use Civi\Api4\StateProvince;
 
 /**
  *
@@ -175,10 +175,9 @@ class CollectionBaseService extends AutoSubscriber {
    *
    */
   public static function aclCollectionCamp($entity, &$clauses, $userId, $conditions) {
-    if ($entity !== 'Eck_Collection_Camp') {
+    if (!in_array($entity, ['Eck_Collection_Camp', 'Eck_Institution_Visit'])) {
       return FALSE;
     }
-
     try {
       $teamGroupContacts = GroupContact::get(FALSE)
         ->addSelect('group_id')
@@ -296,7 +295,7 @@ class CollectionBaseService extends AutoSubscriber {
     }
 
     $currentCollectionCamp = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id', 'Institution_Collection_Camp_Intent.Organization_Name.id', 'Institution_Goonj_Activities.Organization_Name.id', 'Institution_Dropping_Center_Intent.Organization_Name.id', 'subtype:name')
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id', 'Institution_Goonj_Activities.Institution_POC', 'Institution_Collection_Camp_Intent.Institution_POC', 'Institution_Dropping_Center_Intent.Institution_POC', 'subtype:name')
       ->addWhere('id', '=', $objectId)
       ->execute()->single();
     \Civi::log()->info('currentCollectionCamp', ['currentCollectionCamp' => $currentCollectionCamp]);
@@ -307,6 +306,10 @@ class CollectionBaseService extends AutoSubscriber {
     $currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
 
     if (!in_array($newStatus, ['authorized', 'unauthorized'])) {
+      return;
+    }
+
+    if (!self::shouldSendAuthorizationEmail($currentCollectionCamp['subtype:name'], $newStatus, $objectRef)) {
       return;
     }
 
@@ -327,7 +330,7 @@ class CollectionBaseService extends AutoSubscriber {
     }
 
     $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id', 'Institution_Collection_Camp_Intent.Organization_Name.id', 'Institution_Goonj_Activities.Organization_Name.id', 'Institution_Dropping_Center_Intent.Organization_Name.id', 'subtype', 'subtype:name')
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id', 'Institution_Goonj_Activities.Institution_POC', 'Institution_Collection_Camp_Intent.Institution_POC', 'Institution_Dropping_Center_Intent.Institution_POC', 'subtype', 'subtype:name')
       ->addWhere('id', '=', $objectRef->id)
       ->execute()->single();
 
@@ -524,10 +527,11 @@ class CollectionBaseService extends AutoSubscriber {
     return [
       'Collection_Camp' => 'Collection_Camp_Intent_Details',
       'Dropping_Center' => 'Dropping_Centre',
-      // 'Institution_Collection_Camp' => 'Institution_Collection_Camp_Intent',
-      // 'Goonj_Activities' => 'Goonj_Activities',
-      // 'Institution_Dropping_Center' => 'Institution_Dropping_Center_Intent',
-      // 'Institution_Goonj_Activities' => 'Institution_Goonj_Activities',
+      'Institution_Collection_Camp' => 'Institution_Collection_Camp_Intent',
+      'Goonj_Activities' => 'Goonj_Activities',
+      'Institution_Dropping_Center' => 'Institution_Dropping_Center_Intent',
+      'Institution_Goonj_Activities' => 'Institution_Goonj_Activities',
+      'Institution_Visit' => 'Urban_Planned_Visit',
     ];
   }
 

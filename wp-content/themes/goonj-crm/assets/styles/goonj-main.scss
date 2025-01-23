@@ -52,7 +52,7 @@
           #recurHelp {
             font-size: 14px;
             font-weight: 400;
-            font-family: "Open Sans", sans-serif !important;
+            font-family: "Proxima Nova", sans-serif !important;
             margin-bottom: 10px;
           }
         }
@@ -87,21 +87,13 @@
           }
         }
 
-        fieldset > div:nth-last-child(-n+2) {
-          display: none;
-        }
-
-        fieldset > div:nth-last-child(3) .label {
-          display: none !important;
-        }
-
         fieldset > div:nth-last-child(3) .content .crm-multiple-checkbox-radio-options .crm-option-label-pair label {
           position: relative;
           top: -10px;
           left: 13px;
           font-size: 14px;
           font-weight: 400;
-          font-family: "Open Sans", sans-serif !important;
+          font-family: "Proxima Nova", sans-serif !important;
         }
 
         fieldset > div:nth-last-child(3) .content .crm-multiple-checkbox-radio-options .crm-option-label-pair input {
@@ -120,7 +112,7 @@
         .label {
           text-align: justify !important;
           width: 50% !important;
-          font-family: "Open Sans", sans-serif !important;
+          font-family: "Proxima Nova", sans-serif !important;
           line-height: 16px !important;
           padding-left: 0 !important;
         }
@@ -134,12 +126,12 @@
           }
           .select2-container {
             font-size: 14px !important;
-            font-family: "Open Sans", sans-serif !important;
+            font-family: "Proxima Nova", sans-serif !important;
           }
         }
 
         .content label {
-          font-family: "Open Sans", sans-serif !important;
+          font-family: "Proxima Nova", sans-serif !important;
           line-height: 16px !important;
         }
 
@@ -156,7 +148,7 @@
           .label {
             text-align: justify !important;
             width: 50% !important;
-            font-family: "Open Sans", sans-serif !important;
+            font-family: "Proxima Nova", sans-serif !important;
             line-height: 16px !important;
             padding-left: 0 !important;
           }
@@ -179,7 +171,7 @@
       #crm-submit-buttons {
         button {
           font-weight: 400;
-          font-family: "Open Sans", sans-serif !important;
+          font-family: "Proxima Nova", sans-serif !important;
           font-size: 1.2rem;
           line-height: 16px;
           height: 45px;
@@ -200,7 +192,7 @@
         .crm-section .crm-section .label {
           text-align: justify !important;
           width: 50% !important;
-          font-family: "Open Sans", sans-serif !important;
+          font-family: "Proxima Nova", sans-serif !important;
           line-height: 16px !important;
           padding-left: 0 !important;
         }
@@ -216,7 +208,7 @@
         .label {
           text-align: justify !important;
           width: 50% !important;
-          font-family: "Open Sans", sans-serif !important;
+          font-family: "Proxima Nova", sans-serif !important;
           line-height: 16px !important;
           padding-left: 0 !important;
         }
@@ -232,7 +224,7 @@
         fieldset legend {
           text-align: justify !important;
           width: 50% !important;
-          font-family: "Open Sans", sans-serif !important;
+          font-family: "Proxima Nova", sans-serif !important;
           line-height: 16px !important;
           padding-left: 0 !important;
         }
@@ -241,9 +233,50 @@
   }
 }
 
+#crm-main-content-wrapper {
+  form {
+    &.CRM_Event_Form_Registration_Register {
+      .crm-block {
+        .crm-public-form-item {
+          fieldset > div:nth-last-child(-n+2) {
+            display: inline;
+          }
+
+          fieldset > div:nth-last-child(3) .label {
+            display: inline !important;
+          }
+
+          fieldset > div:nth-last-child(4) {
+            display: inline !important;
+          }
+        }
+      }
+    }
+
+    &:not(.CRM_Event_Form_Registration_Register) {
+      .crm-block {
+        .crm-public-form-item {
+          fieldset > div:nth-last-child(-n+2) {
+            display: none;
+          }
+
+          fieldset > div:nth-last-child(3) .label {
+            display: none !important;
+          }
+
+          fieldset > div:nth-last-child(4) {
+            display: none !important;
+          }
+        }
+      }
+    }
+  }
+}
+
+
 .select2-drop ul li div {
   font-weight: 400;
-  font-family: "Open Sans", sans-serif !important;
+  font-family: "Proxima Nova", sans-serif !important;
   font-size: 14px;
   line-height: 16px;
 }
@@ -255,6 +288,9 @@
 #crm-main-content-wrapper {
   form {
     .crm-block {
+      .action-link {
+        display: none !important;
+      }
       .crm-group {
         &.amount_display-group {
           .display-block {
@@ -268,6 +304,9 @@
             display: none !important;
           }
           > div:nth-last-child(-n+3) {
+            display: none !important;
+          }
+          > div:nth-last-child(-n+4) {
             display: none !important;
           }
           legend {
@@ -305,7 +344,7 @@
         .crm-group .display-block,
         .crm-group .crm-section div {
           font-weight: 400;
-          font-family: "Open Sans", sans-serif !important;
+          font-family: "Proxima Nova", sans-serif !important;
           font-size: 14px;
           line-height: 16px;
           margin-left: 0 !important;
@@ -321,6 +360,12 @@
 
 #crm-container .crm-public-footer {
   display: none !important;
+}
+
+.event-info {
+  .no-border:nth-last-of-type(-n+1) {
+    display: none !important;
+  }
 }
 
 // Media Queries

@@ -44,9 +44,22 @@ function civicrm_api3_goonjcustom_update_scheduled_time_cron($params) {
     $twoPmDateTime->setTime(14, 0, 0);
     $todayDateTimeForFeedback = $twoPmDateTime->format('Y-m-d H:i:s');
 
+
+    // Set time to 9:00 AM.
+    $nineAmDateTime = clone $currentDate;
+    $nineAmDateTime->setTime(9, 0, 0);
+    $todayDateTimeForVisit = $nineAmDateTime->format('Y-m-d H:i:s');
+
     // Update scheduled run time for logistics and volunteer feedback.
     updateJobScheduledTime('collection_camp_cron', $todayDateTimeForLogistics);
     updateJobScheduledTime('volunteer_feedback_collection_camp_cron', $todayDateTimeForFeedback);
+
+    // Update scheduled run time for urban reminder visit.
+    updateJobScheduledTime('urban_reminder_email_to_coord_person_cron', $todayDateTimeForVisit);
+    updateJobScheduledTime('urban_reminder_email_to_external_coord_cron', $todayDateTimeForVisit);
+
+    // Update scheduled run time for urban feedback form.
+    updateJobScheduledTime('urban_feedback_cron', $todayDateTimeForLogistics);
 
   }
   catch (Exception $e) {

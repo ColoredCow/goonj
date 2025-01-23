@@ -12,10 +12,40 @@
     <title>CollectionCampLinks</title>
     <access_arguments>access CiviCRM</access_arguments>
   </item>
-    <item>
+  <item>
+    <path>civicrm/UrbanVisit/links</path>
+    <page_callback>CRM_Goonjcustom_Form_UrbanVisitLinks</page_callback>
+    <title>UrbanVisitLinks</title>
+    <access_arguments>access CiviCRM</access_arguments>
+  </item>
+   <item>
+    <path>civicrm/InstitutionCollectionCamp/links</path>
+    <page_callback>CRM_Goonjcustom_Form_InstitutionCollectionCampLinks</page_callback>
+    <title>InstitutionCollectionCampLinks</title>
+    <access_arguments>access CiviCRM</access_arguments>
+  </item>
+  <item>
     <path>civicrm/droppingcenter/links</path>
     <page_callback>CRM_Goonjcustom_Form_DroppingCenterLinks</page_callback>
     <title>DroppingCenterlinks</title>
+    <access_arguments>access CiviCRM</access_arguments>
+  </item>
+   <item>
+    <path>civicrm/goonjactivities/links</path>
+    <page_callback>CRM_Goonjcustom_Form_GoonjActivitiesLinks</page_callback>
+    <title>GoonjActivitiesLinks</title>
+    <access_arguments>access CiviCRM</access_arguments>
+  </item>
+  <item>
+    <path>civicrm/institutionDroppingCenter/links</path>
+    <page_callback>CRM_Goonjcustom_Form_InstitutionDroppingCenterLinks</page_callback>
+    <title>InstitutionDroppingCenterLinks</title>
+    <access_arguments>access CiviCRM</access_arguments>
+  </item>
+  <item>
+    <path>civicrm/institutionGoonjActivities/links</path>
+    <page_callback>CRM_Goonjcustom_Form_InstitutionGoonjActivitiesLinks</page_callback>
+    <title>InstitutionGoonjActivitiesLinks</title>
     <access_arguments>access CiviCRM</access_arguments>
   </item>
 </menu>

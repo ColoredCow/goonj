@@ -2,6 +2,8 @@
 
 namespace Civi;
 
+use Civi\Afform\Event\AfformSubmitEvent;
+use Civi\Api4\Activity;
 use Civi\Api4\Contact;
 use Civi\Api4\CustomField;
 use Civi\Api4\EckEntity;
@@ -9,6 +11,7 @@ use Civi\Api4\Group;
 use Civi\Api4\GroupContact;
 use Civi\Api4\OptionValue;
 use Civi\Api4\Relationship;
+use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
@@ -28,6 +31,13 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
   const Institution_Goonj_Activities_INTENT_FB_NAME = 'afformInstitutionGoonjActivitiesIntent';
   private static $addressAdded = FALSE;
 
+  const INSTITUTION_GOONJ_ACTIVITIES_INTENT_FB_NAMES = [
+    'afformInstitutionGoonjActivitiesIntent',
+    'afformInstitutionGoonjActivitiesIntent1',
+  ];
+
+  private static $goonjActivitiesAddress = NULL;
+
   /**
    *
    */
@@ -37,12 +47,81 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
         ['assignChapterGroupToIndividual'],
         ['generateInstitutionGoonjActivitiesQr'],
         ['createActivityForInstitutionGoonjActivityCollectionCamp'],
+        ['linkInstitutionGoonjActivitiesToContact'],
+      ],
+      'civi.afform.submit' => [
+        ['setInstitutionGoonjActivitiesAddress', 9],
+        ['setInstitutionEventVolunteersAddress', 8],
       ],
       '&hook_civicrm_custom' => [
         ['setOfficeDetails'],
       ],
       '&hook_civicrm_tabset' => 'institutionGoonjActivitiesTabset',
     ];
+  }
+
+  /**
+   *
+   */
+  public static function setInstitutionGoonjActivitiesAddress(AfformSubmitEvent $event) {
+    $afform = $event->getAfform();
+    $formName = $afform['name'];
+
+    if (!in_array($formName, self::INSTITUTION_GOONJ_ACTIVITIES_INTENT_FB_NAMES, TRUE)) {
+      return;
+    }
+
+    $entityType = $event->getEntityType();
+
+    if ($entityType !== 'Eck_Collection_Camp') {
+      return;
+    }
+
+    $records = $event->records;
+
+    foreach ($records as $record) {
+      $fields = $record['fields'];
+
+      self::$goonjActivitiesAddress = [
+        'location_type_id' => 3,
+        'state_province_id' => $fields['Institution_Goonj_Activities.State'],
+      // India.
+        'country_id' => 1101,
+        'street_address' => $fields['Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'],
+        'city' => $fields['Institution_Goonj_Activities.City'],
+        'postal_code' => $fields['Institution_Goonj_Activities.Postal_Code'],
+        'is_primary' => 1,
+      ];
+    }
+  }
+
+  /**
+   *
+   */
+  public static function setInstitutionEventVolunteersAddress(AfformSubmitEvent $event) {
+    $afform = $event->getAfform();
+    $formName = $afform['name'];
+
+    if (!in_array($formName, self::INSTITUTION_GOONJ_ACTIVITIES_INTENT_FB_NAMES, TRUE)) {
+      return;
+    }
+
+    $entityType = $event->getEntityType();
+
+    if (!CoreUtil::isContact($entityType)) {
+      return;
+    }
+
+    foreach ($event->records as $index => $contact) {
+      if (empty($contact['fields'])) {
+        continue;
+      }
+      if (self::$goonjActivitiesAddress === NULL) {
+        continue;
+      }
+      $event->records[$index]['joins']['Address'][] = self::$goonjActivitiesAddress;
+    }
+
   }
 
   /**
@@ -115,15 +194,17 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
    *
    */
   private static function addContactToGroup($contactId, $groupId) {
-    try {
-      GroupContact::create(FALSE)
-        ->addValue('contact_id', $contactId)
-        ->addValue('group_id', $groupId)
-        ->addValue('status', 'Added')
-        ->execute();
-    }
-    catch (Exception $e) {
-      \Civi::log()->error("Error adding contact_id: $contactId to group_id: $groupId. Exception: " . $e->getMessage());
+    if ($contactId & $groupId) {
+      try {
+        GroupContact::create(FALSE)
+          ->addValue('contact_id', $contactId)
+          ->addValue('group_id', $groupId)
+          ->addValue('status', 'Added')
+          ->execute();
+      }
+      catch (Exception $e) {
+        \Civi::log()->error("Error adding contact_id: $contactId to group_id: $groupId. Exception: " . $e->getMessage());
+      }
     }
   }
 
@@ -172,9 +253,11 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
   public static function assignCoordinatorByRelationshipType($stateOfficeId, $registrationType, $collectionCampId) {
     // Define the mapping of registration categories to relationship type names.
     $relationshipTypeMap = [
-      'A_Corporate_organisation' => 'Corporate Organisation Coordinator of',
-      'A_School' => 'School Coordinator of',
-      'A_College_University' => 'University/College Coordinator of',
+      'Corporate' => 'Corporate Coordinator of',
+      'School' => 'School Coordinator of',
+      'College/University' => 'College Coordinator of',
+      'Association' => 'Associations Coordinator of',
+      'Other' => 'Default Coordinator of',
     ];
 
     $registrationCategorySelection = $registrationType['Institution_Goonj_Activities.You_wish_to_register_as:name'];
@@ -264,7 +347,6 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
    *
    */
   public static function setOfficeDetails($op, $groupID, $entityID, &$params) {
-    \Civi::log()->info('check4');
     if ($op !== 'create' || self::getEntitySubtypeName($entityID) !== self::ENTITY_SUBTYPE_NAME) {
       return;
     }
@@ -316,7 +398,6 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
     if ($objectName !== 'Eck_Collection_Camp' || !$objectId || !self::isCurrentSubtype($objectRef)) {
       return;
     }
-    \Civi::log()->info('check2');
 
     $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
     if (!$newStatus) {
@@ -330,7 +411,6 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
 
     $currentStatus = $collectionCamp['Collection_Camp_Core_Details.Status'];
     $collectionCampId = $collectionCamp['id'];
-    \Civi::log()->info('collectionCampId', ['collectionCampId' => $collectionCampId]);
 
     // Check for status change.
     if ($currentStatus !== $newStatus && $newStatus === 'authorized') {
@@ -383,6 +463,17 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
       return;
     }
 
+    $restrictedRoles = ['account_team', 'ho_account'];
+
+    $isAdmin = \CRM_Core_Permission::check('admin');
+
+    $hasRestrictedRole = !$isAdmin && \CRM_Core_Permission::checkAnyPerm($restrictedRoles);
+
+    if ($hasRestrictedRole) {
+      unset($tabs['view']);
+      unset($tabs['edit']);
+    }
+
     $tabConfigs = [
       'activities' => [
         'title' => ts('Activities'),
@@ -395,6 +486,13 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
         'title' => ts('Logistics'),
         'module' => 'afsearchInstitutionGoonjActivitiesLogistics',
         'directive' => 'afsearch-institution-goonj-activities-logistics',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+      ],
+      'eventVolunteers' => [
+        'title' => ts('Event Volunteers'),
+        'module' => 'afsearchInstitutionGoonjActivitiesEventVolunteer',
+        'directive' => 'afsearch-institution-goonj-activities-event-volunteer',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
@@ -414,27 +512,26 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
       ],
       'attendeeFeedback' => [
         'title' => ts('Attendee Feedback'),
-        'module' => 'afsearchInstitutionGoonjActivityAttendeeFeedbacks',
-        'directive' => 'afsearch-institution-goonj-activity-attendee-feedbacks',
+        'module' => 'afsearchInstitutionGoonjActivitiesAttendeeFeedback',
+        'directive' => 'afsearch-institution-goonj-activities-attendee-feedback',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
-      'monetaryContribution' => [
-        'title' => ts('Monetary Contribution'),
-        'module' => 'afsearchMonetaryContribution',
-        'directive' => 'afsearch-monetary-contribution',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['account_team', 'ho_account'],
-      ],
-      'monetaryContributionForUrbanOps' => [
-        'title' => ts('Monetary Contribution'),
-        'module' => 'afsearchMonetaryContributionForUrbanOps',
-        'directive' => 'afsearch-monetary-contribution-for-urban-ops',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops'],
-      ],
+      // 'monetaryContribution' => [
+      //   'title' => ts('Monetary Contribution'),
+      //   'module' => 'afsearchMonetaryContribution',
+      //   'directive' => 'afsearch-monetary-contribution',
+      //   'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      //   'permissions' => ['account_team', 'ho_account'],
+      // ],
+      // 'monetaryContributionForUrbanOps' => [
+      //   'title' => ts('Monetary Contribution'),
+      //   'module' => 'afsearchMonetaryContributionForUrbanOps',
+      //   'directive' => 'afsearch-monetary-contribution-for-urban-ops',
+      //   'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      //   'permissions' => ['goonj_chapter_admin', 'urbanops'],
+      // ],
     ];
-    \Civi::log()->info('check5');
 
     foreach ($tabConfigs as $key => $config) {
       $isAdmin = \CRM_Core_Permission::check('admin');
@@ -476,7 +573,6 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
     if ($objectName != 'Eck_Collection_Camp' || self::getEntitySubtypeName($objectId) !== self::ENTITY_SUBTYPE_NAME) {
       return;
     }
-    \Civi::log()->info('checasdas');
 
     $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
 
@@ -490,7 +586,6 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
       ->execute()->single();
 
     $currentStatus = $collectionCamp['Collection_Camp_Core_Details.Status'];
-    \Civi::log()->info('currentStatus', ['currentStatus' => $currentStatus]);
 
     if ($currentStatus === $newStatus || $newStatus !== 'authorized') {
       return;
@@ -529,7 +624,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
         ->addWhere('grouping', '=', 'Collection_Camp_Activity')
         ->addWhere('name', '=', 'Institution_Goonj_Activities')
         ->execute()->single();
-      \Civi::log()->info('check3');
+
       $results = EckEntity::create('Collection_Camp_Activity', TRUE)
         ->addValue('title', $activityName)
         ->addValue('subtype', $optionValue['value'])
@@ -637,7 +732,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
       $initiatorId = $collectionCamp['Institution_Goonj_Activities.Institution_POC'];
 
       $campAddress = $collectionCamp['Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'];
-      $volunteerFeedbackForm = $collectionCamp['Institution_Goonj_Activities.Select_Volunteer_Feedback_Form'] ?? NULL;
+      $volunteerFeedbackForm = $collectionCamp['Institution_Goonj_Activities.Select_Institute_POC_Feedback_Form'] ?? NULL;
 
       // Get recipient email and name.
       $campAttendedBy = Contact::get(TRUE)
@@ -695,6 +790,72 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
       <p>Warm Regards,<br>Team Goonj</p>";
 
     return $html;
+  }
+
+  /**
+   *
+   */
+  public static function linkInstitutionGoonjActivitiesToContact(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($objectName !== 'Eck_Collection_Camp' || !$objectId || !self::isCurrentSubtype($objectRef)) {
+      return;
+    }
+
+    $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
+    if (!$newStatus) {
+      return;
+    }
+
+    $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Institution_Goonj_Activities.Institution_POC', 'title')
+      ->addWhere('id', '=', $objectId)
+      ->execute();
+
+    $currentCollectionCamp = $collectionCamps->first();
+    $currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
+    $inititorId = $currentCollectionCamp['Institution_Goonj_Activities.Institution_POC'];
+
+    if (!$inititorId) {
+      return;
+    }
+
+    $collectionCampTitle = $currentCollectionCamp['title'];
+    $collectionCampId = $currentCollectionCamp['id'];
+
+    if ($currentStatus !== $newStatus && $newStatus === 'authorized') {
+      $organizationId = $objectRef['Institution_Goonj_Activities.Organization_Name'];
+      self::createInstitutionGoonjActivitiesOrganizeActivity($inititorId, $organizationId, $collectionCampTitle, $collectionCampId);
+    }
+  }
+
+  /**
+   * Log an activity in CiviCRM.
+   */
+  private static function createInstitutionGoonjActivitiesOrganizeActivity($contactId, $organizationId, $collectionCampTitle, $collectionCampId) {
+
+    try {
+      $results = Activity::create(FALSE)
+        ->addValue('subject', $collectionCampTitle)
+        ->addValue('activity_type_id:name', 'Organize Goonj Activities')
+        ->addValue('status_id:name', 'Authorized')
+        ->addValue('activity_date_time', date('Y-m-d H:i:s'))
+        ->addValue('source_contact_id', $contactId)
+        ->addValue('target_contact_id', $contactId)
+        ->addValue('Collection_Camp_Data.Collection_Camp_ID', $collectionCampId)
+        ->execute();
+      $createActivityForOrganization = Activity::create(FALSE)
+        ->addValue('subject', $collectionCampTitle)
+        ->addValue('activity_type_id:name', 'Organize Goonj Activities')
+        ->addValue('status_id:name', 'Authorized')
+        ->addValue('activity_date_time', date('Y-m-d H:i:s'))
+        ->addValue('source_contact_id', $organizationId)
+        ->addValue('target_contact_id', $organizationId)
+        ->addValue('Collection_Camp_Data.Collection_Camp_ID', $collectionCampId)
+        ->execute();
+
+    }
+    catch (\CiviCRM_API4_Exception $ex) {
+      \Civi::log()->debug("Exception while creating Organize Collection Camp activity: " . $ex->getMessage());
+    }
   }
 
 }

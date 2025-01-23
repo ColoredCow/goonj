@@ -79,7 +79,7 @@ class CRM_Goonjcustom_Form_DroppingCenterLinks extends CRM_Core_Form {
         'label' => 'Vehicle Dispatch',
         'url' => self::createUrl(
                 '/vehicle-dispatch',
-                "Camp_Vehicle_Dispatch.Collection_Camp={$this->_droppingCenterId}&Eck_Collection_Camp1={$this->_droppingCenterId}&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent={$this->_processingCenterId}&Camp_Vehicle_Dispatch.Filled_by={$contactId}",
+                "Camp_Vehicle_Dispatch.Dropping_Center={$this->_droppingCenterId}&Eck_Collection_Camp1={$this->_droppingCenterId}&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent={$this->_processingCenterId}&Camp_Vehicle_Dispatch.Filled_by={$contactId}",
                 $contactId
         ),
       ],

@@ -168,11 +168,6 @@
                   {/if}
                 {/if}
               {/if}
-              {if $is_email_receipt}
-                <p>
-                  {ts}You will receive an email receipt which includes information about how to update or cancel this recurring contribution.{/ts}
-                </p>
-              {/if}
             {/crmRegion}
           {/if}
         {/if}

@@ -31,7 +31,7 @@ add_action( 'init', 'gb_goonj_blocks_block_init' );
 
 add_action( 'init', 'gb_goonj_blocks_custom_rewrite_rules' );
 function gb_goonj_blocks_custom_rewrite_rules() {
-	$actions = array('collection-camp', 'dropping-center', 'processing-center', 'induction-schedule', 'institution-collection-camp', 'goonj-activities', 'institution-dropping-center', 'institution-goonj-activities');
+	$actions = array('collection-camp', 'dropping-center', 'processing-center', 'induction-schedule', 'institution-collection-camp', 'goonj-activities', 'institution-dropping-center', 'institution-goonj-activities', 'events');
 	foreach ( $actions as $action ) {
 		add_rewrite_rule(
 			'^actions/' . $action . '/([0-9]+)/?',
@@ -94,9 +94,16 @@ function gb_goonj_blocks_check_action_target_exists() {
 		'Goonj_Activities.Include_Attendee_Feedback_Form',
 		'Goonj_Activities.Select_Attendee_feedback_form',
 		'Institution_Dropping_Center_Intent.State',
-		'Institution_Dropping_Center_Intent.City',
+		'Institution_Dropping_Center_Intent.District_City',
 		'Institution_Dropping_Center_Intent.Institution_POC.display_name',
 		'Institution_Dropping_Center_Intent.Dropping_Center_Address',
+		'Institution_Dropping_Center_Intent.Organization_Name.display_name',
+		'Institution_Collection_Camp_Intent.State',
+		'Institution_Collection_Camp_Intent.District_City',
+		'Institution_Collection_Camp_Intent.Organization_Name.display_name',
+		'Institution_Collection_Camp_Intent.Collections_will_start_on_Date_',
+		'Institution_Collection_Camp_Intent.Collections_will_end_on_Date_',
+		'Institution_Collection_Camp_Intent.Collection_Camp_Address',
 		'Institution_Goonj_Activities.State',
 		'Institution_Goonj_Activities.City',
 		'Institution_Goonj_Activities.Start_Date',
@@ -104,6 +111,7 @@ function gb_goonj_blocks_check_action_target_exists() {
 		'Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_',
 		'Institution_Goonj_Activities.Include_Attendee_Feedback_Form',
 		'Institution_Goonj_Activities.Select_Attendee_feedback_form',
+		'Institution_Goonj_Activities.Organization_Name.display_name',
 	);
 
 	switch ( $target ) {
@@ -156,8 +164,28 @@ function gb_goonj_blocks_check_action_target_exists() {
 				$processing_center = $result->first();
 
 				$processing_center['address'] = $addresses->count() > 0 ? $addresses->first() : null;
-
 				$wp_query->set( 'action_target', $processing_center );
+			}
+			break;
+		case 'events':
+			$result = \Civi\Api4\Event::get(FALSE)
+			->addSelect('*', 'loc_block_id.address_id')
+			->addWhere('id', '=', $id)
+			->setLimit(1)
+			->execute();
+
+			if ( $result->count() === 0 ) {
+				$is_404 = true;
+			} else {
+				$event = $result->first();
+				$addresses = \Civi\Api4\Address::get( false )
+					->addWhere( 'id', '=', $event['loc_block_id.address_id'])
+					->addWhere( 'is_primary', '=', true )
+					->setLimit( 1 )
+					->execute();
+
+				$event['address'] = $addresses->count() > 0 ? $addresses->first() : null;
+				$wp_query->set( 'action_target', $event );
 			}
 			break;
 		default:

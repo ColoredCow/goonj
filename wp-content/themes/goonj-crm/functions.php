@@ -147,7 +147,7 @@ function goonj_handle_user_identification_form() {
 	$state_id = $_POST['state_id'] ?? '';
 	$city = $_POST['city'] ?? '';
 
-	$is_purpose_requiring_email = ! in_array( $purpose, array( 'material-contribution', 'processing-center-office-visit', 'processing-center-material-contribution', 'dropping-center-contribution', 'institution-collection-camp', 'institution-dropping-center') );
+	$is_purpose_requiring_email = ! in_array( $purpose, array( 'material-contribution', 'processing-center-office-visit', 'processing-center-material-contribution', 'dropping-center-contribution', 'institution-collection-camp', 'institution-dropping-center', 'event-material-contribution', 'goonj-activity-attendee-feedback', 'institute-goonj-activity-attendee-feedback') );
 
 	if ( empty( $phone ) || ( $is_purpose_requiring_email && empty( $email ) ) ) {
 		return;
@@ -173,11 +173,12 @@ function goonj_handle_user_identification_form() {
 		// If the user does not exist in the Goonj database
 		// redirect to the volunteer registration form.
 		$volunteer_registration_form_path = sprintf(
-			'/volunteer-registration/form/#?email=%s&phone=%s&message=%s&Volunteer_fields.Which_activities_are_you_interested_in_=%s',
+			'/volunteer-registration/form/#?email=%s&phone=%s&message=%s&Volunteer_fields.Which_activities_are_you_interested_in_=%s&source=%s',
 			$email,
 			$phone,
 			'not-inducted-volunteer',
 			'9', // Activity to create collection camp.
+			$source
 		);
 
 		$individual_volunteer_registration_form_path = sprintf(
@@ -194,9 +195,10 @@ function goonj_handle_user_identification_form() {
 			'not-inducted-for-dropping-center'
 		);
 		$volunteer_registration_url = sprintf(
-			'/volunteer-registration/form/#?email=%s&phone=%s',
+			'/volunteer-registration/form/#?email=%s&phone=%s&source=%s',
 			$email,
 			$phone,
+			$source
 		);
 
 		if ( empty( $found_contacts ) ) {
@@ -323,6 +325,36 @@ function goonj_handle_user_identification_form() {
 					);
 					$redirect_url = $volunteer_registration_url;
 					break;
+				case 'event-material-contribution':
+					$individual_volunteer_registration_form_path = sprintf(
+						'/individual-registration-with-volunteer-option/#?email=%s&phone=%s&source=%s&Individual_fields.Creation_Flow=%s',
+						$email,
+						$phone,
+						$source,
+						'event-material-contribution',
+					);
+					$redirect_url = $individual_volunteer_registration_form_path;
+					break;
+				case 'goonj-activity-attendee-feedback':
+					$individual_volunteer_registration_form_path = sprintf(
+						'/individual-registration-with-volunteer-option/#?email=%s&phone=%s&source=%s&Individual_fields.Creation_Flow=%s',
+						$email,
+						$phone,
+						$source,
+						'goonj-activity-attendee-feedback',
+					);
+					$redirect_url = $individual_volunteer_registration_form_path;
+					break;
+				case 'institute-goonj-activity-attendee-feedback':
+					$individual_volunteer_registration_form_path = sprintf(
+						'/individual-registration-with-volunteer-option/#?email=%s&phone=%s&source=%s&Individual_fields.Creation_Flow=%s',
+						$email,
+						$phone,
+						$source,
+						'institute-goonj-activity-attendee-feedback',
+					);
+					$redirect_url = $individual_volunteer_registration_form_path;
+					break;
 				// Contact does not exist and the purpose is not defined.
 				// Redirect to volunteer registration with collection camp activity selected.
 				default:
@@ -413,6 +445,55 @@ function goonj_handle_user_identification_form() {
 				$found_contacts['id']
 			);
 			wp_redirect( $office_visit_form_path );
+			exit;
+		}
+		if ( 'event-material-contribution' === $purpose){
+			$material_contribution_form_path = sprintf(
+				'/events-material-contribution/#?email=%s&phone=%s&Material_Contribution.Event=%s&source_contact_id=%s',
+				$email,
+				$phone,
+				$target_id,
+				$found_contacts['id']
+			);
+			wp_redirect( $material_contribution_form_path );
+			exit;
+		}
+
+		if ('goonj-activity-attendee-feedback' === $purpose){
+			$goonjActivites = \Civi\Api4\EckEntity::get( 'Collection_Camp', FALSE )
+			->addSelect('Goonj_Activities.Select_Attendee_feedback_form', 'title')
+			->addWhere( 'title', '=', $source )
+			->addWhere('subtype:name', '=', 'Goonj_Activities')
+			->execute()->first();
+
+			$redirectPath = sprintf(
+				'%s#?title=%s&Goonj_Activity_Attendee_Feedbacks.Goonj_Individual_Activity=%s&Goonj_Activity_Attendee_Feedbacks.Filled_By=%s&Eck_Collection_Camp1=%s',
+				$goonjActivites['Goonj_Activities.Select_Attendee_feedback_form'],
+				$goonjActivites['title'],
+				$goonjActivites['id'],
+				$found_contacts['id'],
+				$goonjActivites['id'],
+			);
+			wp_redirect( $redirectPath );
+			exit;
+		}
+
+		if ('institute-goonj-activity-attendee-feedback' === $purpose){
+			$goonjActivites = \Civi\Api4\EckEntity::get( 'Collection_Camp', FALSE )
+			->addSelect('Institution_Goonj_Activities.Select_Attendee_feedback_form', 'title')
+			->addWhere( 'title', '=', $source )
+			->addWhere('subtype:name', '=', 'Institution_Goonj_Activities')
+			->execute()->first();
+
+			$redirectPath = sprintf(
+				'%s#?title=%s&Goonj_Activity_Attendee_Feedbacks.Goonj_Institution_Activity=%s&Goonj_Activity_Attendee_Feedbacks.Filled_By=%s&Eck_Collection_Camp1=%s',
+				$goonjActivites['Institution_Goonj_Activities.Select_Attendee_feedback_form'],
+				$goonjActivites['title'],
+				$goonjActivites['id'],
+				$found_contacts['id'],
+				$goonjActivites['id'],
+			);
+			wp_redirect( $redirectPath );
 			exit;
 		}
 
@@ -642,7 +723,7 @@ function goonj_redirect_after_individual_creation() {
 		
 				if ( ! empty( $institutionCollectionCamp['id'] ) ) {
 					$redirectPath = sprintf(
-						'/institution-collection-camp/material-contribution/#?Material_Contribution.Institution_Collection_Camp=%s&source_contact_id=%s',
+						'/institution-collection-camp/collection-camp-material-contribution/#?Material_Contribution.Institution_Collection_Camp=%s&source_contact_id=%s',
 						$institutionCollectionCamp['id'],
 						$individual['id']
 					);
@@ -663,6 +744,49 @@ function goonj_redirect_after_individual_creation() {
 				'/processing-center/material-contribution/details/#?Material_Contribution.Goonj_Office=%s&source_contact_id=%s',
 				$sourceProcessingCenter,
 				$individual['id']
+			);
+			break;
+		case 'event-material-contribution':
+			$sourceProcessingCenter = $individual['Individual_fields.Source_Processing_Center'];
+			$events = \Civi\Api4\Event::get(TRUE)
+				->addWhere('title', '=', $source)
+				->execute()->first();
+			$redirectPath = sprintf(
+				'/events-material-contribution/#?Material_Contribution.Event=%s&source_contact_id=%s',
+				$events['id'],
+				$individual['id']
+			);
+			break;
+		case 'goonj-activity-attendee-feedback':
+			$goonjActivites = \Civi\Api4\EckEntity::get( 'Collection_Camp', FALSE )
+			->addSelect('Goonj_Activities.Select_Attendee_feedback_form', 'title')
+			->addWhere( 'title', '=', $source )
+			->addWhere('subtype:name', '=', 'Goonj_Activities')
+			->execute()->first();
+			$redirectPath = sprintf(
+				'%s#?title=%s&Goonj_Activity_Attendee_Feedbacks.Goonj_Individual_Activity=%s&Goonj_Activity_Attendee_Feedbacks.Filled_By=%s&Eck_Collection_Camp1=%s',
+				$goonjActivites['Goonj_Activities.Select_Attendee_feedback_form'],
+				$goonjActivites['title'],
+				$goonjActivites['id'],
+				$individual['id'],
+				$goonjActivites['id'],
+			);
+			break;
+		
+		case 'institute-goonj-activity-attendee-feedback':
+			$goonjActivites = \Civi\Api4\EckEntity::get( 'Collection_Camp', FALSE )
+			->addSelect('Institution_Goonj_Activities.Select_Attendee_feedback_form', 'title')
+			->addWhere( 'title', '=', $source )
+			->addWhere('subtype:name', '=', 'Institution_Goonj_Activities')
+			->execute()->first();
+
+			$redirectPath = sprintf(
+				'%s#?title=%s&Goonj_Activity_Attendee_Feedbacks.Goonj_Institution_Activity=%s&Goonj_Activity_Attendee_Feedbacks.Filled_By=%s&Eck_Collection_Camp1=%s',
+				$goonjActivites['Institution_Goonj_Activities.Select_Attendee_feedback_form'],
+				$goonjActivites['title'],
+				$goonjActivites['id'],
+				$individual['id'],
+				$goonjActivites['id'],
 			);
 			break;
 	}

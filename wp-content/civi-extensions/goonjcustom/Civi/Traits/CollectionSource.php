@@ -5,7 +5,6 @@ namespace Civi\Traits;
 use Civi\Api4\EckEntity;
 use Civi\Api4\OptionValue;
 use Civi\Api4\Organization;
-use Civi\Api4\Relationship;
 use Civi\Api4\StateProvince;
 
 /**
@@ -220,6 +219,31 @@ trait CollectionSource {
   /**
    *
    */
+  public static function shouldSendAuthorizationEmail(string $subtypeName, string $newStatus, &$objectRef) {
+    $subtypes = [
+      'Institution_Collection_Camp' => 'Institution_collection_camp_Review.Send_Authorization_Email',
+      'Institution_Dropping_Center' => 'Institution_Dropping_Center_Review.Send_Authorization_Email',
+      'Institution_Goonj_Activities' => 'Institution_Goonj_Activities.Send_Authorization_Email',
+    ];
+
+    if (in_array($subtypeName, array_keys($subtypes)) && in_array($newStatus, ['authorized', 'unauthorized'])) {
+      $sendAuthorizedEmail = $objectRef[$subtypes[$subtypeName]];
+
+      if (!$sendAuthorizedEmail) {
+        return FALSE;
+      }
+    }
+    else {
+      \Civi::log()->info("Other subtype detected: " . $subtypeName);
+
+    }
+
+    return TRUE;
+  }
+
+  /**
+   *
+   */
   public static function getStateIdForSourceType(array $objectRef, int $subtypeId, ?string $campTitle): ?int {
 
     $sourceStateFieldMapper = [
@@ -246,38 +270,17 @@ trait CollectionSource {
     $subtypeName = $collectionCamp['subtype:name'];
 
     if ($subtypeName === 'Institution_Collection_Camp') {
-      $organizationId = $collectionCamp['Institution_Collection_Camp_Intent.Organization_Name.id'];
-      $relationshipType = 'Institution POC of';
-      $alternateType = 'Primary Institution POC of';
+      return $collectionCamp['Institution_Collection_Camp_Intent.Institution_POC'];
     }
     elseif ($subtypeName === 'Institution_Dropping_Center') {
-      $organizationId = $collectionCamp['Institution_Dropping_Center_Intent.Organization_Name.id'];
-      $relationshipType = 'Institution POC of';
-      $alternateType = 'Secondary Institution POC of';
+      return $collectionCamp['Institution_Dropping_Center_Intent.Institution_POC'];
     }
     elseif ($subtypeName === 'Institution_Goonj_Activities') {
-      $organizationId = $collectionCamp['Institution_Goonj_Activities.Organization_Name.id'];
-      $relationshipType = 'Institution POC of';
-      $alternateType = 'Primary Institution POC of';
+      return $collectionCamp['Institution_Goonj_Activities.Institution_POC'];
     }
     else {
       return $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
     }
-
-    $relationships = Relationship::get(FALSE)
-      ->addWhere('contact_id_a', '=', $organizationId)
-      ->addWhere('relationship_type_id:name', '=', $relationshipType)
-      ->execute();
-    if (empty($relationships)) {
-      $relationships = Relationship::get(FALSE)
-        ->addWhere('contact_id_a', '=', $organizationId)
-        ->addWhere('relationship_type_id:name', '=', $alternateType)
-        ->execute();
-    }
-
-    return !empty($relationships) && isset($relationships[0]['contact_id_b'])
-        ? $relationships[0]['contact_id_b']
-        : $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
   }
 
   /**

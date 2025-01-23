@@ -2,12 +2,16 @@
 
 namespace Civi;
 
+use Civi\Afform\Event\AfformSubmitEvent;
+use Civi\Api4\ActivityContact;
+use Civi\Api4\Address;
 use Civi\Api4\Contact;
 use Civi\Api4\CustomField;
 use Civi\Api4\Group;
 use Civi\Api4\GroupContact;
 use Civi\Api4\Organization;
 use Civi\Api4\Relationship;
+use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 
@@ -18,19 +22,154 @@ class InstitutionService extends AutoSubscriber {
   use CollectionSource;
   const FALLBACK_OFFICE_NAME = 'Delhi';
   const ENTITY_SUBTYPE_NAME = 'Institute';
+  const Institution_INTENT_FB_NAME = 'afformInstitutionRegistration';
   private static $organizationId = NULL;
+  private static $instituteAddress = NULL;
 
   /**
    *
    */
   public static function getSubscribedEvents() {
     return [
+      'civi.afform.submit' => [
+        ['setInstituteAddress', 9],
+        ['setInstitutionPocAddress', 8],
+      ],
       '&hook_civicrm_post' => [
         ['organizationCreated'],
         ['setOfficeDetails'],
       ],
-      '&hook_civicrm_pre' => 'assignChapterGroupToIndividual',
+      '&hook_civicrm_pre' => [
+        ['assignChapterGroupToContacts'],
+      ],
     ];
+  }
+
+  /**
+   *
+   */
+  public static function setInstituteAddress(AfformSubmitEvent $event) {
+    $afform = $event->getAfform();
+    $formName = $afform['name'];
+
+    if ($formName !== self::Institution_INTENT_FB_NAME) {
+      return;
+    }
+
+    $entityType = $event->getEntityType();
+
+    if ($entityType !== 'Organization') {
+      return;
+    }
+
+    $records = $event->records;
+    foreach ($records as $record) {
+      $fields = $record['fields'];
+
+      $addressJoins = $record['joins']['Address'] ?? [];
+
+      $stateProvinceId = !empty($addressJoins[0]['state_province_id'])
+          ? $addressJoins[0]['state_province_id']
+          : NULL;
+
+      self::$instituteAddress = [
+        'location_type_id' => 3,
+        'state_province_id' => $stateProvinceId,
+        'country_id' => 1101,
+      ];
+    }
+
+  }
+
+  /**
+   *
+   */
+  public static function setInstitutionPocAddress(AfformSubmitEvent $event) {
+    $afform = $event->getAfform();
+    $formName = $afform['name'];
+
+    if ($formName !== self::Institution_INTENT_FB_NAME) {
+      return;
+    }
+
+    $entityType = $event->getEntityType();
+
+    if (!CoreUtil::isContact($entityType)) {
+      return;
+    }
+
+    foreach ($event->records as $index => $contact) {
+
+      if (empty($contact['fields'])) {
+        \Civi::log()->warning('Skipping contact due to empty fields', ['contact' => $contact]);
+        continue;
+      }
+
+      $contactId = $contact['fields']['Institute_Registration.Institution_POC'] ?? NULL;
+      $stateProvinceId = self::$instituteAddress['state_province_id'] ?? NULL;
+
+      if (!$stateProvinceId && !$contactId) {
+        return FALSE;
+      }
+
+      if ($contactId && $stateProvinceId) {
+
+        $addresses = Address::get(FALSE)
+          ->addSelect('state_province_id')
+          ->addWhere('contact_id', '=', $contactId)
+          ->execute()->single();
+
+        if ($addresses && $addresses['state_province_id']) {
+          return;
+        }
+
+        $updateResults = Address::update(FALSE)
+          ->addValue('state_province_id', $stateProvinceId)
+          ->addWhere('contact_id', '=', $contactId)
+          ->execute();
+
+        \Civi::log()->info('Institution POC address updated', [
+          'contact_id' => $contactId,
+          'state_province_id' => $stateProvinceId,
+          'update_results' => $updateResults,
+        ]);
+      }
+      else {
+        \Civi::log()->warning('Skipped Institution POC address update', [
+          'contact_id' => $contactId,
+          'state_province_id' => $stateProvinceId,
+          'reason' => 'Missing contact ID or state province ID',
+        ]);
+      }
+    }
+  }
+
+  /**
+   *
+   */
+  public static function assignChapterGroupToContacts(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($op !== 'edit' || $objectName !== 'AfformSubmission') {
+      return FALSE;
+    }
+
+    if (($objectRef['data']['Organization1'][0]['fields']['Institute_Registration.Contact_Source'] ?? '') !== 'Institute Registration') {
+      return FALSE;
+    }
+
+    $stateProvinceId = $objectRef['data']['Organization1'][0]['joins']['Address'][0]['state_province_id'] ?? NULL;
+    if (!$stateProvinceId) {
+      return FALSE;
+    }
+
+    $groupId = self::getChapterGroupForState($stateProvinceId);
+
+    if (!$groupId) {
+      return FALSE;
+    }
+    self::addContactToGroup($objectRef['data']['Individual1'][0]['id'] ?? NULL, $groupId);
+    self::addContactToGroup($objectRef['data']['Organization1'][0]['id'] ?? NULL, $groupId);
+
+    return TRUE;
   }
 
   /**
@@ -89,52 +228,21 @@ class InstitutionService extends AutoSubscriber {
   /**
    *
    */
-  public static function assignChapterGroupToIndividual(string $op, string $objectName, $objectId, &$objectRef) {
-    $assignments = [
-      'Institution Collection Camp' => [
-        'stateField' => 'Institution_Collection_Camp_Intent.State',
-        'contactField' => 'Institution_Collection_Camp_Intent.Institution_POC',
-        'organizationField' => 'Institution_Collection_Camp_Intent.Organization_Name',
-      ],
-      'Institution Dropping Center' => [
-        'stateField' => 'Institution_Dropping_Center_Intent.State',
-        'contactField' => 'Institution_Dropping_Center_Intent.Institution_POC',
-        'organizationField' => 'Institution_Dropping_Center_Intent.Organization_Name',
-      ],
-    ];
-
-    if ($objectName !== 'Eck_Collection_Camp' || empty($objectRef['title']) || !isset($assignments[$objectRef['title']])) {
-      return FALSE;
-    }
-
-    $assignment = $assignments[$objectRef['title']];
-
-    $stateId = $objectRef[$assignment['stateField']] ?? NULL;
-    $contactId = $objectRef[$assignment['contactField']] ?? NULL;
-    $organizationId = $objectRef[$assignment['organizationField']] ?? NULL;
-
-    if (!$stateId || !$contactId) {
-      \Civi::log()->info("Missing Contact ID or State ID for " . $objectRef['title']);
-      return FALSE;
-    }
-
-    // Get the group and add contacts.
-    $groupId = self::getChapterGroupForState($stateId);
-
-    if ($groupId) {
-      self::addContactToGroup($contactId, $groupId);
-      if ($organizationId) {
-        self::addContactToGroup($organizationId, $groupId);
-      }
-    }
-
-    return TRUE;
-  }
 
   /**
    *
    */
   private static function addContactToGroup($contactId, $groupId) {
+    $groupContacts = GroupContact::get(FALSE)
+      ->addSelect('contact_id', 'group_id')
+      ->addWhere('group_id.id', '=', $groupId)
+      ->addWhere('contact_id', '=', $contactId)
+      ->execute();
+
+    if ($groupContacts->count() > 0) {
+      return;
+    }
+
     if ($contactId && $groupId) {
       GroupContact::create(FALSE)
         ->addValue('contact_id', $contactId)
@@ -210,10 +318,12 @@ class InstitutionService extends AutoSubscriber {
 
     $stateOfficeId = $stateOffice['id'];
 
-    Organization::update(FALSE)
-      ->addValue('Review.Goonj_Office', $stateOfficeId)
-      ->addWhere('id', '=', self::$organizationId)
-      ->execute();
+    if ($stateOfficeId & self::$organizationId) {
+      Organization::update(FALSE)
+        ->addValue('Review.Goonj_Office', $stateOfficeId)
+        ->addWhere('id', '=', self::$organizationId)
+        ->execute();
+    }
 
     if (!$stateId) {
       return FALSE;
@@ -247,10 +357,12 @@ class InstitutionService extends AutoSubscriber {
 
     $coordinatorId = $coordinator['contact_id_a'];
 
-    Organization::update('Organization', FALSE)
-      ->addValue('Review.Coordinating_POC', $coordinatorId)
-      ->addWhere('id', '=', self::$organizationId)
-      ->execute();
+    if ($coordinatorId && self::$organizationId) {
+      Organization::update('Organization', FALSE)
+        ->addValue('Review.Coordinating_POC', $coordinatorId)
+        ->addWhere('id', '=', self::$organizationId)
+        ->execute();
+    }
 
     return TRUE;
   }
@@ -303,28 +415,92 @@ class InstitutionService extends AutoSubscriber {
    *
    */
   private static function getRelationshipTypeName($contactId) {
-    $organization = Organization::get(FALSE)
-      ->addSelect('Institute_Registration.Type_of_Institution:label')
-      ->addWhere('id', '=', $contactId)
-      ->execute()->single();
+    if ($contactId) {
+      $organization = Organization::get(FALSE)
+        ->addSelect(
+                'Institute_Registration.Type_of_Institution:label',
+                'Category_of_Institution.Education_Institute:label'
+            )
+        ->addWhere('id', '=', $contactId)
+        ->execute()
+        ->single();
+    }
 
     if (!$organization) {
       return;
     }
 
     $typeOfInstitution = $organization['Institute_Registration.Type_of_Institution:label'];
+    $categoryOfInstitution = $organization['Category_of_Institution.Education_Institute:label'];
 
+    // Define the default type-to-relationship mapping.
     $typeToRelationshipMap = [
       'Corporate'    => 'Corporate Coordinator of',
       'Foundation'   => 'Foundation Coordinator of',
-      'Education'    => 'Education Institute Coordinator of',
-      'Associations' => 'Associations Coordinator of',
-      'Others'       => 'Default Coordinator of',
+      'Association' => 'Associations Coordinator of',
+      'Other'       => 'Default Coordinator of',
     ];
 
+    if ($typeOfInstitution === 'Educational Institute') {
+      if ($categoryOfInstitution === 'School') {
+        return 'School Coordinator of';
+      }
+      elseif ($categoryOfInstitution === 'College') {
+        return 'College Coordinator of';
+      }
+      return 'Default Coordinator of';
+    }
+
     $firstWord = strtok($typeOfInstitution, ' ');
-    // Return the corresponding relationship type, or default if not found.
+    // Return the mapped relationship type, or default if not found.
     return $typeToRelationshipMap[$firstWord] ?? 'Default Coordinator of';
+  }
+
+  /**
+   *
+   */
+  public static function updateOrganizationStatus($contact) {
+    $contactId = $contact['id'];
+
+    $activityContacts = ActivityContact::get(TRUE)
+      ->addSelect('activity_id', 'activity_id.created_date')
+      ->addWhere('contact_id', '=', $contactId)
+      ->addOrderBy('activity_id.created_date', 'DESC')
+      ->execute();
+
+    if ($activityContacts->count() === 0) {
+      return;
+    }
+
+    $latestActivity = $activityContacts->last();
+    $latestCreatedDate = $latestActivity['activity_id.created_date'] ?? NULL;
+
+    if (!$latestCreatedDate) {
+      return;
+    }
+
+    try {
+      $latestActivityDate = new \DateTime($latestCreatedDate);
+      $today = new \DateTime();
+
+      $interval = $today->diff($latestActivityDate);
+
+      if ($interval->y >= 1 || ($interval->y == 0 && $interval->m >= 12)) {
+        Contact::update(FALSE)
+          ->addValue('Review.Status:label', 'Inactive')
+          ->addWhere('id', '=', $contactId)
+          ->execute();
+      }
+      else {
+        Contact::update(FALSE)
+          ->addValue('Review.Status:label', 'Active')
+          ->addWhere('id', '=', $contactId)
+          ->execute();
+      }
+    }
+    catch (\Exception $e) {
+      error_log("Error processing activity date for contact ID: " . $contactId . ". Error: " . $e->getMessage());
+    }
   }
 
 }

@@ -2,12 +2,17 @@
 
 namespace Civi;
 
+use Civi\Afform\Event\AfformSubmitEvent;
 use Civi\Api4\Activity;
 use Civi\Api4\Contact;
 use Civi\Api4\CustomField;
 use Civi\Api4\EckEntity;
 use Civi\Api4\Email;
+use Civi\Api4\Group;
+use Civi\Api4\GroupContact;
+use Civi\Api4\Organization;
 use Civi\Api4\Relationship;
+use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
@@ -26,6 +31,12 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
   const ENTITY_NAME = 'Collection_Camp';
   const FALLBACK_OFFICE_NAME = 'Delhi';
   const MATERIAL_RELATIONSHIP_TYPE_NAME = 'Material Management Team of';
+  const INSTITUTION_DROPPING_CENTER_INTENT_FB_NAMES = [
+    'afformInstitutionDroppingCenterIntent1',
+    'afformAdminInstitutionDroppingCenterIntent',
+  ];
+
+  private static $droppingCenterAddress = NULL;
 
   /**
    *
@@ -37,12 +48,154 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
         ['setOfficeDetails'],
         ['mailNotificationToMmt'],
       ],
+      'civi.afform.submit' => [
+        ['setInstitutionDroppingCenterAddress', 9],
+        ['setInstitutionEventVolunteersAddress', 8],
+      ],
       '&hook_civicrm_post' => 'processDispatchEmail',
       '&hook_civicrm_pre' => [
+        ['assignChapterGroupToIndividual'],
         ['generateInstitutionDroppingCenterQr'],
         ['linkInstitutionDroppingCenterToContact'],
       ],
     ];
+  }
+
+  /**
+   *
+   */
+  public static function setInstitutionDroppingCenterAddress(AfformSubmitEvent $event) {
+    $afform = $event->getAfform();
+    $formName = $afform['name'];
+
+    if (!in_array($formName, self::INSTITUTION_DROPPING_CENTER_INTENT_FB_NAMES, TRUE)) {
+      return;
+    }
+
+    $entityType = $event->getEntityType();
+
+    if ($entityType !== 'Eck_Collection_Camp') {
+      return;
+    }
+
+    $records = $event->records;
+
+    foreach ($records as $record) {
+      $fields = $record['fields'];
+
+      self::$droppingCenterAddress = [
+        'location_type_id' => 3,
+        'state_province_id' => $fields['Institution_Dropping_Center_Intent.State'],
+      // India.
+        'country_id' => 1101,
+        'street_address' => $fields['Institution_Dropping_Center_Intent.Dropping_Center_Address'],
+        'city' => $fields['Institution_Dropping_Center_Intent.District_City'],
+        'postal_code' => $fields['Institution_Dropping_Center_Intent.Postal_Code'],
+        'is_primary' => 1,
+      ];
+    }
+  }
+
+  /**
+   *
+   */
+  public static function setInstitutionEventVolunteersAddress(AfformSubmitEvent $event) {
+    $afform = $event->getAfform();
+    $formName = $afform['name'];
+
+    if (!in_array($formName, self::INSTITUTION_DROPPING_CENTER_INTENT_FB_NAMES, TRUE)) {
+      return;
+    }
+
+    $entityType = $event->getEntityType();
+
+    if (!CoreUtil::isContact($entityType)) {
+      return;
+    }
+
+    foreach ($event->records as $index => $contact) {
+      if (empty($contact['fields'])) {
+        continue;
+      }
+      if (self::$droppingCenterAddress === NULL) {
+        continue;
+      }
+      $event->records[$index]['joins']['Address'][] = self::$droppingCenterAddress;
+    }
+
+  }
+
+  /**
+   *
+   */
+  private static function getChapterGroupForState($stateId) {
+    $stateContactGroup = Group::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('Chapter_Contact_Group.Use_Case', '=', 'chapter-contacts')
+      ->addWhere('Chapter_Contact_Group.Contact_Catchment', 'CONTAINS', $stateId)
+      ->execute()->first();
+
+    if (!$stateContactGroup) {
+      $stateContactGroup = Group::get(FALSE)
+        ->addWhere('Chapter_Contact_Group.Use_Case', '=', 'chapter-contacts')
+        ->addWhere('Chapter_Contact_Group.Fallback_Chapter', '=', 1)
+        ->execute()->first();
+
+    }
+
+    return $stateContactGroup ? $stateContactGroup['id'] : NULL;
+  }
+
+  /**
+   *
+   */
+  public static function assignChapterGroupToIndividual(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($op !== 'edit' || $objectName !== 'AfformSubmission') {
+      return FALSE;
+    }
+
+    if (empty($objectRef['data']['Eck_Collection_Camp1']) || empty($objectRef['data']['Individual1'])) {
+      return FALSE;
+    }
+
+    $individualData = $objectRef['data']['Individual1'];
+    $droppingCenterData = $objectRef['data']['Eck_Collection_Camp1'];
+
+    foreach ($individualData as $individual) {
+      $contactId = $individual['id'];
+      foreach ($droppingCenterData as $visit) {
+        $fields = $visit['fields'] ?? [];
+        $stateProvinceId = $fields['Institution_Dropping_Center_Intent.State'] ?? NULL;
+
+        $groupId = self::getChapterGroupForState($stateProvinceId);
+
+        if ($groupId && $contactId) {
+
+          // Check if the contact is already in the group.
+          $groupContacts = GroupContact::get(FALSE)
+            ->addSelect('contact_id', 'group_id')
+            ->addWhere('group_id.id', '=', $groupId)
+            ->addWhere('contact_id', '=', $contactId)
+            ->execute();
+
+          // If the contact is already in the group.
+          if ($groupContacts->count() > 0) {
+            return;
+          }
+
+          GroupContact::create(FALSE)
+            ->addValue('contact_id', $contactId)
+            ->addValue('group_id', $groupId)
+            ->addValue('status', 'Added')
+            ->execute();
+
+        }
+
+        \Civi::log()->info("Contact ID $contactId has been added to Group ID $groupId.");
+      }
+    }
+
+    return TRUE;
   }
 
   /**
@@ -54,6 +207,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     }
 
     $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
+    $organizationId = $objectRef['Institution_Dropping_Center_Intent.Organization_Name'];
     if (!$newStatus) {
       return;
     }
@@ -66,7 +220,6 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     $currentDroppingCenter = $collectionCamps->first();
     $currentStatus = $currentDroppingCenter['Collection_Camp_Core_Details.Status'];
     $PocId = $currentDroppingCenter['Institution_Dropping_Center_Intent.Institution_POC'];
-    $organizationId = $currentDroppingCenter['Institution_Dropping_Center_Intent.Organization_Name'];
 
     if (!$PocId && !$organizationId) {
       return;
@@ -366,11 +519,12 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     }
 
     $droppingCenterData = EckEntity::get('Collection_Camp', TRUE)
-      ->addSelect('Institution_Dropping_Center_Intent.Institution_POC', 'Institution_Dropping_Center_Review.Goonj_Office', 'Institution_Dropping_Center_Review.Goonj_Office.display_name')
+      ->addSelect('Institution_Dropping_Center_Intent.Organization_Name', 'Institution_Dropping_Center_Intent.Institution_POC', 'Institution_Dropping_Center_Review.Goonj_Office', 'Institution_Dropping_Center_Review.Goonj_Office.display_name')
       ->addWhere('id', '=', $institutionDroppingCenterId)
       ->execute()
       ->single();
 
+    $organizationId = $droppingCenterData['Institution_Dropping_Center_Intent.Organization_Name'];
     $pocId = $droppingCenterData['Institution_Dropping_Center_Intent.Institution_POC'];
     $goonjOffice = $droppingCenterData['Institution_Dropping_Center_Review.Goonj_Office'];
     $goonjOfficeName = $droppingCenterData['Institution_Dropping_Center_Review.Goonj_Office.display_name'];
@@ -389,16 +543,38 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     $phone = $recipientContactInfo['phone_primary.phone'];
     $initiatorName = $recipientContactInfo['display_name'];
 
+    $organization = Organization::get(FALSE)
+      ->addSelect('display_name', 'Institute_Registration.Address')
+      ->addWhere('id', '=', $organizationId)
+      ->execute()->single();
+
+    $nameOfInstitution = $organization['display_name'];
+    $address = $organization['Institute_Registration.Address'];
+
     // Send the dispatch email.
-    self::sendDispatchEmail($email, $initiatorName, $institutionDroppingCenterId, $recipientId, $goonjOffice, $goonjOfficeName);
+    self::sendDispatchEmail($nameOfInstitution, $address, $isSelfManaged, $phone, $email, $initiatorName, $institutionDroppingCenterId, $recipientId, $goonjOffice, $goonjOfficeName);
   }
 
   /**
    *
    */
-  public static function sendDispatchEmail($email, $initiatorName, $institutionDroppingCenterId, $contactId, $goonjOffice, $goonjOfficeName) {
+  public static function sendDispatchEmail($nameOfInstitution, $address, $isSelfManaged, $phone, $email, $initiatorName, $institutionDroppingCenterId, $contactId, $goonjOffice, $goonjOfficeName) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
-    $vehicleDispatchFormUrl = $homeUrl . '/institution-dropping-center-vehicle-dispatch/#?Camp_Vehicle_Dispatch.Institution_Dropping_Center=' . $institutionDroppingCenterId . '&Camp_Vehicle_Dispatch.Filled_by=' . $contactId . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $goonjOffice . '&Camp_Vehicle_Dispatch.Goonj_Office_Name=' . $goonjOfficeName . '&Eck_Collection_Camp1=' . $institutionDroppingCenterId;
+
+    $baseUrl = $isSelfManaged ? '/institution-dropping-center-vehicle-dispatch/' : '/institution-dropping-center-vehicle-dispatch-form-not-self-managed/';
+
+    $vehicleDispatchFormUrl = $homeUrl . $baseUrl . '#?Camp_Vehicle_Dispatch.Institution_Dropping_Center=' . $institutionDroppingCenterId
+    . '&Camp_Vehicle_Dispatch.Filled_by=' . $contactId
+    . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $goonjOffice
+    . '&Camp_Vehicle_Dispatch.Goonj_Office_Name=' . $goonjOfficeName
+    . '&Eck_Collection_Camp1=' . $institutionDroppingCenterId;
+
+    if ($isSelfManaged) {
+      $vehicleDispatchFormUrl .= "&Camp_Institution_Data.Name_of_the_institution=" . $nameOfInstitution
+          . "&Camp_Institution_Data.Address=" . $address
+          . "&Camp_Institution_Data.Email=" . $email
+          . "&Camp_Institution_Data.Contact_Number=" . $phone;
+    }
 
     $emailHtml = "
     <html>
@@ -546,11 +722,29 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       return;
     }
 
+    $restrictedRoles = ['account_team', 'ho_account', 'mmt'];
+
+    $isAdmin = \CRM_Core_Permission::check('admin');
+
+    $hasRestrictedRole = !$isAdmin && \CRM_Core_Permission::checkAnyPerm($restrictedRoles);
+
+    if ($hasRestrictedRole) {
+      unset($tabs['view']);
+      unset($tabs['edit']);
+    }
+
     $tabConfigs = [
       'logistics' => [
         'title' => ts('Logistics'),
         'module' => 'afsearchInstitutionDroppingCenterLogistics',
         'directive' => 'afsearch-institution-dropping-center-logistics',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+      ],
+      'eventCoordinators' => [
+        'title' => ts('Event Coordinators'),
+        'module' => 'afsearchAddEventCoordinator',
+        'directive' => 'afsearch-add-event-coordinator',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
@@ -561,8 +755,8 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
-      'materialAuthorization' => [
-        'title' => ts('Material Authorization'),
+      'materialAcknowledgement' => [
+        'title' => ts('Material Acknowledgement'),
         'module' => 'afsearchInstitutionDroppingCenterAcknowledgementForLogisticsData',
         'directive' => 'afsearch-institution-dropping-center-acknowledgement-for-logistics-data',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
@@ -573,7 +767,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
         'module' => 'afsearchInstitutionDroppingCenterMaterialContribution',
         'directive' => 'afsearch-institution-dropping-center-material-contribution',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'mmt'],
       ],
       'status' => [
         'title' => ts('Status'),

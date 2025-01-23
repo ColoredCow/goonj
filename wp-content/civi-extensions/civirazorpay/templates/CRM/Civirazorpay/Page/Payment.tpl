@@ -8,6 +8,7 @@
      data-email="{$email}"
      data-organization-name="{$organizationName}"
      data-qf-key="{$qfKey}"
+     data-redirect-url-base="{$redirectURLBase}"
      {if $isRecur}
        data-subscription-id="{$orderId}"
        data-description="Subscription Plan"
@@ -38,14 +39,16 @@
       options.amount = razorpayOptions.getAttribute('data-amount');
       options.order_id = razorpayOptions.getAttribute('data-order-id');
       options.handler = function(response) {
-        window.location.href = "/civicrm/contribute/transact/?_qf_ThankYou_display=1&qfKey=" + razorpayOptions.getAttribute('data-qf-key') + "&payment_id=" + response.razorpay_payment_id + "&order_id=" + response.razorpay_order_id;
+        var redirectURLBase =  razorpayOptions.getAttribute('data-redirect-url-base');
+
+        window.location.href = redirectURLBase + '/?_qf_ThankYou_display=1&qfKey=' + razorpayOptions.getAttribute('data-qf-key') + '&payment_id=' + response.razorpay_payment_id + '&order_id=' + response.razorpay_order_id;
       };
     }
     // Handle recurring payment
     else {
       options.subscription_id = razorpayOptions.getAttribute('data-subscription-id');
       options.handler = function(response) {
-        window.location.href = "/civicrm/contribute/transact/?_qf_ThankYou_display=1&qfKey=" + razorpayOptions.getAttribute('data-qf-key') + "&payment_id=" + response.razorpay_payment_id + "&subscription_id=" + response.razorpay_subscription_id;
+        window.location.href = redirectURLBase + '/?_qf_ThankYou_display=1&qfKey=' + razorpayOptions.getAttribute('data-qf-key') + '&payment_id=' + response.razorpay_payment_id + '&subscription_id=' + response.razorpay_subscription_id;
       };
     }
 

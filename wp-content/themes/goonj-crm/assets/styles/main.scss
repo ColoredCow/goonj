@@ -66,7 +66,7 @@ a {
 }
 
 body p {
-  font-family: Open Sans;
+  font-family: Proxima Nova;
   font-size: 12px;
   font-weight: 400;
   line-height: 16px;
@@ -124,7 +124,7 @@ form input {
 .wp-form-block-group {
   padding-left: 24px;
   padding-right: 24px;
-  font-family: Open Sans;
+  font-family: Proxima Nova;
 }
 
 .form-heading {
@@ -153,8 +153,6 @@ form input {
     border: none;
     padding: 10px 0;
     margin: 30px 0;
-    display: flex;
-    flex-wrap: wrap;
   }
 
   .form-item {
@@ -238,7 +236,7 @@ form input {
 
   .crm-af-field-label {
     color: rgba(0, 0, 0, 1) !important;
-    font-family: Open Sans;
+    font-family: Proxima Nova;
     font-size: 12px;
     font-weight: 400 !important;
     line-height: 16.34px;
@@ -296,7 +294,7 @@ form input {
   margin-left: 0 !important;
 }
 .font-sans {
-  font-family: 'Open Sans', sans-serif !important;
+  font-family: 'Proxima Nova', sans-serif !important;
 }
 .mobile-margins-l24-r30 {
   margin-left: 24px !important;
@@ -366,7 +364,7 @@ form input {
   color: #D64631;
   margin-top: 2px;
   font-size: 0.875rem;
-  font-family: 'Open Sans', sans-serif;
+  font-family: 'Proxima Nova', sans-serif;
 }
 
 .input-error {
@@ -417,14 +415,14 @@ form input {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 20px;
-  font-family: inherit;
+  font-family: Proxima Nova;
 }
 
 .wp-block-gb-slots-wrapper .wp-block-gb-slot-box {
   border: 1px solid #ccc;
   padding: 10px;
   text-align: center;
-  font-family: inherit;
+  font-family: Proxima Nova;
   font-size: inherit;
   line-height: inherit;
 }
@@ -432,13 +430,13 @@ form input {
 .wp-block-gb-slots-wrapper .wp-block-gb-slot-day {
   font-size: 1.2em;
   font-weight: bold;
-  font-family: inherit;
+  font-family: Proxima Nova;
 }
 
 .wp-block-gb-slots-wrapper .wp-block-gb-slot-date,
 .wp-block-gb-slots-wrapper .wp-block-gb-slot-time {
   margin: 5px 0;
-  font-family: inherit;
+  font-family: Proxima Nova;
   font-size: inherit;
   line-height: inherit;
 }
@@ -452,7 +450,7 @@ form input {
   border-radius: 5px;
   cursor: pointer;
   transition: background-color 0.3s ease;
-  font-family: inherit;
+  font-family: Proxima Nova;
   font-size: inherit;
   line-height: inherit;
 }
@@ -484,7 +482,7 @@ form input {
 }
 
 .font-family {
-  font-family: 'Open Sans', sans-serif;
+  font-family: 'Proxima Nova', sans-serif;
 }
 
 .border-radius {
