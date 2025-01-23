@@ -10,11 +10,13 @@ use Civi\Core\Service\AutoSubscriber;
 use Civi\Api4\EckEntity;
 use Civi\Api4\OptionValue;
 use Civi\Api4\StateProvince;
+use Civi\Traits\CollectionSource;
 
 /**
  *
  */
 class UrbanPlannedVisitService extends AutoSubscriber {
+  use CollectionSource;
   const ENTITY_NAME = 'Institution_Visit';
   const ENTITY_SUBTYPE_NAME = 'Urban_Visit';
 
