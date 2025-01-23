@@ -313,7 +313,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
       $from = HelperService::getDefaultFromEmail();
 
       $mailParamsExternalPoc = [
-        'subject' => $externalCoordinatingGoonjPocName . ', your Learning Journey is Scheduled!',
+        'subject' => $externalCoordinatingGoonjPocName . ', your visit to Goonj is Scheduled!',
         'from' => $from,
         'toEmail' => $externalCoordinatingGoonjPocEmail,
         'replyTo' => $from,
@@ -344,7 +344,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     <p>Thank you for coordinating the learning journey at Goonj. Below are the details:</p>
 
     <p>
-        Thank you for choosing to explore Goonj through a learning journey at Goonj Center of Circularity (GCOC) ! Your visit is scheduled as per the below details :
+        Thank you for choosing to explore Goonj through a <strong>learning journey at Goonj Center of Circularity</strong>. Your visit is scheduled as per the below details :
     </p>
     <ul>
         <li><strong>At:</strong> $visitAtName </li>
