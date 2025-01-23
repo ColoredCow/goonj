@@ -590,6 +590,10 @@ class UrbanPlannedVisitService extends AutoSubscriber {
    */
   public static function sendReminderEmailToExtCoordPoc($visit) {
     $externalCoordinatingPocId = $visit['Urban_Planned_Visit.External_Coordinating_PoC'] ?? '';
+    $skipEmail = $visit['Urban_Planned_Visit.Send_Email'] ?? false;
+    if ($skipEmail) {
+      return;
+    }
 
     $externalCoordinatingGoonjPoc = Contact::get(FALSE)
       ->addSelect('email.email', 'display_name', 'phone.phone_numeric')
