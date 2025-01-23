@@ -245,8 +245,8 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         return;
       }
 
-      $sendEmail = $objectRef['Urban_Planned_Visit.Send_Email'] ?? NULL;
-      if ($sendEmail !== NULL) {
+      $skipEmail = $objectRef['Urban_Planned_Visit.Send_Email'] ?? false;
+      if ($skipEmail) {
         return;
       }
 
@@ -625,7 +625,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     $from = HelperService::getDefaultFromEmail();
 
     $reminderMailParamsExternalPoc = [
-      'subject' => $externalCoordinatingGoonjPocName . ', your Learning Journey is scheduled for today !',
+      'subject' => $externalCoordinatingGoonjPocName . ', your visit to Goonj is scheduled for today !',
       'from' => $from,
       'toEmail' => $externalCoordinatingGoonjPocEmail,
       'replyTo' => $from,
