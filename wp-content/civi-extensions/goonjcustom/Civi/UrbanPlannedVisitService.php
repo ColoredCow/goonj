@@ -789,6 +789,11 @@ class UrbanPlannedVisitService extends AutoSubscriber {
    *
    */
   public static function sendFeedbackEmailToExtCoordPoc($visit) {
+    $skipEmail = $visit['Urban_Planned_Visit.Send_Email'] ?? false;
+    if ($skipEmail) {
+      return;
+    }
+
     $emailToExtCoordPoc = EckEntity::get('Institution_Visit', FALSE)
       ->addSelect('Visit_Feedback.Feedback_Email_Sent')
       ->addWhere('id', '=', $visit['id'])
