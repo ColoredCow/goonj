@@ -39,7 +39,7 @@ function civicrm_api3_goonjcustom_urban_feedback_cron($params) {
   $nextDay = $today->modify('+1 day')->setTime(0, 0, 0)->format('Y-m-d H:i:s');
 
   $institutionVisit = EckEntity::get('Institution_Visit', FALSE)
-    ->addSelect('Urban_Planned_Visit.Coordinating_Goonj_POC', 'Urban_Planned_Visit.External_Coordinating_PoC')
+    ->addSelect('Urban_Planned_Visit.Coordinating_Goonj_POC', 'Urban_Planned_Visit.External_Coordinating_PoC', 'Urban_Planned_Visit.Send_Email')
     ->addWhere('Urban_Planned_Visit.External_Coordinating_PoC', 'IS NOT NULL')
     ->addWhere('Urban_Planned_Visit.When_do_you_wish_to_visit_Goonj', '<', $nextDay)
     ->addClause('OR',

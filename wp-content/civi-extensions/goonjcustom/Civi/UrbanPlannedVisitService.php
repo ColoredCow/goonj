@@ -245,6 +245,11 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         return;
       }
 
+      $skipEmail = $objectRef['Urban_Planned_Visit.Send_Email'] ?? false;
+      if ($skipEmail) {
+        return;
+      }
+
       $emailToExtCoordPoc = EckEntity::get('Institution_Visit', FALSE)
         ->addSelect('Urban_Planned_Visit.Email_To_Ext_Coord_Poc')
         ->addWhere('id', '=', $visitId)
@@ -308,7 +313,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
       $from = HelperService::getDefaultFromEmail();
 
       $mailParamsExternalPoc = [
-        'subject' => $externalCoordinatingGoonjPocName . ', your Learning Journey is Scheduled!',
+        'subject' => $externalCoordinatingGoonjPocName . ', your visit to Goonj is Scheduled!',
         'from' => $from,
         'toEmail' => $externalCoordinatingGoonjPocEmail,
         'replyTo' => $from,
@@ -339,7 +344,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     <p>Thank you for coordinating the learning journey at Goonj. Below are the details:</p>
 
     <p>
-        Thank you for choosing to explore Goonj through a learning journey at Goonj Center of Circularity (GCOC) ! Your visit is scheduled as per the below details :
+        Thank you for choosing to explore Goonj through a <strong>learning journey at Goonj Center of Circularity</strong>. Your visit is scheduled as per the below details :
     </p>
     <ul>
         <li><strong>At:</strong> $visitAtName </li>
@@ -585,6 +590,10 @@ class UrbanPlannedVisitService extends AutoSubscriber {
    */
   public static function sendReminderEmailToExtCoordPoc($visit) {
     $externalCoordinatingPocId = $visit['Urban_Planned_Visit.External_Coordinating_PoC'] ?? '';
+    $skipEmail = $visit['Urban_Planned_Visit.Send_Email'] ?? false;
+    if ($skipEmail) {
+      return;
+    }
 
     $externalCoordinatingGoonjPoc = Contact::get(FALSE)
       ->addSelect('email.email', 'display_name', 'phone.phone_numeric')
@@ -620,7 +629,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     $from = HelperService::getDefaultFromEmail();
 
     $reminderMailParamsExternalPoc = [
-      'subject' => $externalCoordinatingGoonjPocName . ', your Learning Journey is scheduled for today !',
+      'subject' => $externalCoordinatingGoonjPocName . ', your visit to Goonj is scheduled for today !',
       'from' => $from,
       'toEmail' => $externalCoordinatingGoonjPocEmail,
       'replyTo' => $from,
@@ -780,6 +789,11 @@ class UrbanPlannedVisitService extends AutoSubscriber {
    *
    */
   public static function sendFeedbackEmailToExtCoordPoc($visit) {
+    $skipEmail = $visit['Urban_Planned_Visit.Send_Email'] ?? false;
+    if ($skipEmail) {
+      return;
+    }
+
     $emailToExtCoordPoc = EckEntity::get('Institution_Visit', FALSE)
       ->addSelect('Visit_Feedback.Feedback_Email_Sent')
       ->addWhere('id', '=', $visit['id'])
