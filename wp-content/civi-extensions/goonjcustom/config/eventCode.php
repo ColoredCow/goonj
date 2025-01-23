@@ -30,5 +30,5 @@ return [
   'Other' => 'Other',
   'Capacity Building Session- NJPC' => 'CBS',
   'Activity' => 'AY',
-  'Urban Visit' => 'UV',
+  'Urban Visit' => 'GCOC',
 ];
