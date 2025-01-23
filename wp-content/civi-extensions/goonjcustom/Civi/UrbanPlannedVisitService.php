@@ -245,6 +245,11 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         return;
       }
 
+      $sendEmail = $objectRef['Urban_Planned_Visit.Send_Email'] ?? NULL;
+      if ($sendEmail !== NULL) {
+        return;
+      }
+
       $emailToExtCoordPoc = EckEntity::get('Institution_Visit', FALSE)
         ->addSelect('Urban_Planned_Visit.Email_To_Ext_Coord_Poc')
         ->addWhere('id', '=', $visitId)
