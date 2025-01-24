@@ -799,9 +799,9 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       ],
       'outcome' => [
         'title' => ts('Outcome'),
-        'module' => 'afformInstitutionDroppingCenterOutcome',
-        'directive' => 'afform-institution-dropping-center-outcome',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCampService.tpl',
+        'module' => 'afsearchInstitutionDroppingCenterOutcome',
+        'directive' => 'afsearch-institution-dropping-center-outcome',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
       // 'monetaryContribution' => [
