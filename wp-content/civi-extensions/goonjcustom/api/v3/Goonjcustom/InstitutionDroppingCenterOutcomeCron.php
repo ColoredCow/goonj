@@ -38,7 +38,7 @@ function civicrm_api3_goonjcustom_institution_dropping_center_outcome_cron($para
 
   $activities = Activity::get(TRUE)
     ->addSelect('Material_Contribution.Institution_Dropping_Center')
-    ->addWhere('activity_type_id:name', '=', 'Material Contribution')
+    ->addWhere('activity_type_id:name', '=', 'Volunteer Coordinator')
     ->addWhere('Material_Contribution.Institution_Dropping_Center', 'IS NOT NULL')
     ->execute();
 
