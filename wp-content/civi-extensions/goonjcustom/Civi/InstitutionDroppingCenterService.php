@@ -52,11 +52,11 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
         ['setInstitutionDroppingCenterAddress', 9],
         ['setInstitutionEventVolunteersAddress', 8],
       ],
-      '&hook_civicrm_post' => 'processDispatchEmail',
       '&hook_civicrm_pre' => [
         ['assignChapterGroupToIndividual'],
         ['generateInstitutionDroppingCenterQr'],
         ['linkInstitutionDroppingCenterToContact'],
+        ['processDispatchEmail'],
       ],
     ];
   }
@@ -495,50 +495,37 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
   /**
    *
    */
-  public static function processDispatchEmail(string $op, string $objectName, int $objectId, &$objectRef) {
+  public static function processDispatchEmail(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($objectRef['afform_name'] !== 'afformNotifyDispatchViaEmail') {
+      return;
+    }
+    $dataArray = $objectRef['data'];
 
-    if ($objectName !== 'AfformSubmission') {
+    $droppingCenterId = $dataArray['Eck_Collection_Camp1'][0]['fields']['id'] ?? NULL;
+
+    if (!$droppingCenterId) {
       return;
     }
 
-    $afformName = $objectRef->afform_name;
-
-    if ($afformName !== 'afformNotifyDispatchViaEmail') {
-      return;
-    }
-
+    $contactId = $dataArray['Eck_Collection_Camp1'][0]['fields']['Institution_Dropping_Center_Intent.Contact_Dispatch_Email'];
     $jsonData = $objectRef->data;
-    $dataArray = json_decode($jsonData, TRUE);
-
-    $institutionDroppingCenterId = $dataArray['Eck_Collection_Camp1'][0]['fields']['id'];
-    $isSelfManaged = $dataArray['Eck_Collection_Camp1'][0]['fields']['Institution_Collection_Camp_Logistics.Self_Managed_by_Institution'];
-    $campAttendedBy = $dataArray['Eck_Collection_Camp1'][0]['fields']['Institution_Dropping_Center_Logistics.Camp_to_be_attended_by'];
-
-    if (!$institutionDroppingCenterId) {
-      return;
-    }
 
     $droppingCenterData = EckEntity::get('Collection_Camp', TRUE)
       ->addSelect('Institution_Dropping_Center_Intent.Organization_Name', 'Institution_Dropping_Center_Intent.Institution_POC', 'Institution_Dropping_Center_Review.Goonj_Office', 'Institution_Dropping_Center_Review.Goonj_Office.display_name')
-      ->addWhere('id', '=', $institutionDroppingCenterId)
-      ->execute()
-      ->single();
-
+      ->addWhere('id', '=', $droppingCenterId)
+      ->execute()->single();
     $organizationId = $droppingCenterData['Institution_Dropping_Center_Intent.Organization_Name'];
     $pocId = $droppingCenterData['Institution_Dropping_Center_Intent.Institution_POC'];
     $goonjOffice = $droppingCenterData['Institution_Dropping_Center_Review.Goonj_Office'];
     $goonjOfficeName = $droppingCenterData['Institution_Dropping_Center_Review.Goonj_Office.display_name'];
-
-    $recipientId = $isSelfManaged ? $pocId : $campAttendedBy;
-    if (!$recipientId) {
+    if (!$contactId) {
       return;
     }
 
     $recipientContactInfo = Contact::get(TRUE)
       ->addSelect('email_primary.email', 'phone_primary.phone', 'display_name')
-      ->addWhere('id', '=', $recipientId)
+      ->addWhere('id', '=', $contactId)
       ->execute()->single();
-
     $email = $recipientContactInfo['email_primary.email'];
     $phone = $recipientContactInfo['phone_primary.phone'];
     $initiatorName = $recipientContactInfo['display_name'];
@@ -552,29 +539,26 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     $address = $organization['Institute_Registration.Address'];
 
     // Send the dispatch email.
-    self::sendDispatchEmail($nameOfInstitution, $address, $isSelfManaged, $phone, $email, $initiatorName, $institutionDroppingCenterId, $recipientId, $goonjOffice, $goonjOfficeName);
+    self::sendDispatchEmail($nameOfInstitution, $address, $phone, $email, $initiatorName, $droppingCenterId, $recipientId, $goonjOffice, $goonjOfficeName);
   }
 
   /**
    *
    */
-  public static function sendDispatchEmail($nameOfInstitution, $address, $isSelfManaged, $phone, $email, $initiatorName, $institutionDroppingCenterId, $contactId, $goonjOffice, $goonjOfficeName) {
+  public static function sendDispatchEmail($nameOfInstitution, $address, $phone, $email, $initiatorName, $droppingCenterId, $contactId, $goonjOffice, $goonjOfficeName) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
 
-    $baseUrl = $isSelfManaged ? '/institution-dropping-center-vehicle-dispatch/' : '/institution-dropping-center-vehicle-dispatch-form-not-self-managed/';
+    $baseUrl = '/institution-dropping-center-vehicle-dispatch/';
 
-    $vehicleDispatchFormUrl = $homeUrl . $baseUrl . '#?Camp_Vehicle_Dispatch.Institution_Dropping_Center=' . $institutionDroppingCenterId
+    $vehicleDispatchFormUrl = $homeUrl . $baseUrl . '#?Camp_Vehicle_Dispatch.Institution_Dropping_Center=' . $droppingCenterId
     . '&Camp_Vehicle_Dispatch.Filled_by=' . $contactId
     . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $goonjOffice
     . '&Camp_Vehicle_Dispatch.Goonj_Office_Name=' . $goonjOfficeName
-    . '&Eck_Collection_Camp1=' . $institutionDroppingCenterId;
-
-    if ($isSelfManaged) {
-      $vehicleDispatchFormUrl .= "&Camp_Institution_Data.Name_of_the_institution=" . $nameOfInstitution
-          . "&Camp_Institution_Data.Address=" . $address
-          . "&Camp_Institution_Data.Email=" . $email
-          . "&Camp_Institution_Data.Contact_Number=" . $phone;
-    }
+    . '&Eck_Collection_Camp1=' . $droppingCenterId
+    . '&Camp_Institution_Data.Name_of_the_institution=' . $nameOfInstitution
+    . "&Camp_Institution_Data.Address=" . $address
+    . "&Camp_Institution_Data.Email=" . $email
+    . "&Camp_Institution_Data.Contact_Number=" . $phone;
 
     $emailHtml = "
     <html>
