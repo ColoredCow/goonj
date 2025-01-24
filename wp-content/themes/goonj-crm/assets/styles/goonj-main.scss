@@ -287,6 +287,12 @@
 
 #crm-main-content-wrapper {
   form {
+    #crm-submit-buttons {
+      button#_qf_Confirm_back-top,
+      button#_qf_Confirm_next-top {
+        display: none !important;
+      }
+    }
     .crm-block {
       .action-link {
         display: none !important;
