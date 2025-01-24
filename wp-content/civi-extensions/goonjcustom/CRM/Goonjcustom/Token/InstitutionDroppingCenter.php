@@ -19,6 +19,7 @@ class CRM_Goonjcustom_Token_InstitutionDroppingCenter extends AbstractTokenSubsc
 
   public function __construct() {
     parent::__construct('institution_dropping_center', [
+      'institution_name' => \CRM_Goonjcustom_ExtensionUtil::ts('Institution Name'),
       'venue' => \CRM_Goonjcustom_ExtensionUtil::ts('Venue'),
       'date' => \CRM_Goonjcustom_ExtensionUtil::ts('Date'),
       'time' => \CRM_Goonjcustom_ExtensionUtil::ts('Time'),
@@ -55,6 +56,10 @@ class CRM_Goonjcustom_Token_InstitutionDroppingCenter extends AbstractTokenSubsc
     $collectionSource = array_merge($currentCustomData, $newCustomData);
 
     switch ($field) {
+      case 'institution_name':
+        $value = $this->formatInstitutionName($collectionSource);
+        break;
+
       case 'venue':
         $value = $this->formatVenue($collectionSource);
         break;
@@ -91,6 +96,26 @@ class CRM_Goonjcustom_Token_InstitutionDroppingCenter extends AbstractTokenSubsc
     $row->format('text/plain')->tokens($entity, $field, $value);
     return;
 
+  }
+
+  /**
+   *
+   */
+  private function formatInstitutionName($collectionSource) {
+    $id = $collectionSource['Institution_Dropping_Center_Intent.Organization_Name'];
+
+    try {
+      $contact = Contact::get(TRUE)
+        ->addSelect('display_name')
+        ->addWhere('id', '=', $id)
+        ->execute()
+        ->first();
+
+      return $contact ? $contact['display_name'] : NULL;
+    }
+    catch (Exception $e) {
+      return NULL;
+    }
   }
 
   /**
