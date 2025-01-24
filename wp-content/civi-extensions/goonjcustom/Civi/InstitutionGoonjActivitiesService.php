@@ -155,7 +155,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
 
     $stateId = $objectRef['Institution_Goonj_Activities.State'];
     $contactId = $objectRef['Institution_Goonj_Activities.Institution_POC'];
-    $organizationId = $objectRef['Institution_Goonj_Activities.Organization_Name'];
+    $organizationId = $objectRef['Institution_Goonj_Activities.Initiator_Organization_Name'];
 
     if (!$stateId || !$contactId) {
       \Civi::log()->info("Missing Contact ID and State ID");

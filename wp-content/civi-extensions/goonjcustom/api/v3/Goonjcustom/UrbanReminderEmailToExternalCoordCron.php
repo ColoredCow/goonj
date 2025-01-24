@@ -39,7 +39,7 @@ function civicrm_api3_goonjcustom_urban_reminder_email_to_external_coord_cron($p
   $endOfDay = $today->setTime(23, 59, 59)->format('Y-m-d H:i:s');
 
   $institutionVisit = EckEntity::get('Institution_Visit', FALSE)
-    ->addSelect('Urban_Planned_Visit.External_Coordinating_PoC', 'Urban_Planned_Visit.Which_Goonj_Processing_Center_do_you_wish_to_visit_', 'Urban_Planned_Visit.What_time_do_you_wish_to_visit_', 'Urban_Planned_Visit.Coordinating_Goonj_POC')
+    ->addSelect('Urban_Planned_Visit.External_Coordinating_PoC', 'Urban_Planned_Visit.Which_Goonj_Processing_Center_do_you_wish_to_visit_', 'Urban_Planned_Visit.What_time_do_you_wish_to_visit_', 'Urban_Planned_Visit.Coordinating_Goonj_POC', 'Urban_Planned_Visit.Send_Email')
     ->addWhere('Urban_Planned_Visit.External_Coordinating_PoC', 'IS NOT NULL')
     ->addWhere('Urban_Planned_Visit.When_do_you_wish_to_visit_Goonj', '<=', $endOfDay)
     ->addClause('OR',
