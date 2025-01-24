@@ -7,10 +7,10 @@
 {/foreach}
 
 {if $goonjActivitiesLinks}
-  {foreach from=$goonjActivitiesLinks item=goonjActivitiesLinks}
+  {foreach from=$goonjActivitiesLinks item=goonjActivityLink}
     <div class="crm-section">
-      <div class="label">{$goonjActivitiesLinks.label}</div>
-      <div class="content"><a href="{$goonjActivitiesLinks.url}">{$goonjActivitiesLinks.url}</a></div>
+      <div class="label">{$goonjActivityLink.label}</div>
+      <div class="content"><a href="{$goonjActivityLink.url}">{$goonjActivityLink.url}</a></div>
       <div class="clear"></div>
     </div>
   {/foreach}
