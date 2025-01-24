@@ -9,6 +9,7 @@ use Civi\Api4\EckEntity;
 use Civi\Api4\Phone;
 use Civi\Token\AbstractTokenSubscriber;
 use Civi\Token\TokenRow;
+use Civi\Api4\Activity;
 
 /**
  *
