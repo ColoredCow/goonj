@@ -655,7 +655,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
       $today = new \DateTimeImmutable();
       $endOfToday = $today->setTime(23, 59, 59);
 
-      if (TRUE) {
+      if (!$logisticEmailSent && $startDate <= $endOfToday) {
         $campAttendedBy = Contact::get(FALSE)
           ->addSelect('email.email', 'display_name')
           ->addJoin('Email AS email', 'LEFT')

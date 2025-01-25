@@ -1,4 +1,9 @@
 #crm-main-content-wrapper {
+  form#ThankYou {
+    .crm-public-form-item.crm-section {
+      display: flex !important;
+    }
+  }  
   form {
     .crm-block {
       #onBehalfOfOrg {
@@ -288,12 +293,18 @@
 #crm-main-content-wrapper {
   form {
     #crm-submit-buttons {
+      margin:inherit ;
       button#_qf_Confirm_back-top,
       button#_qf_Confirm_next-top {
         display: none !important;
       }
     }
     .crm-block {
+      #crm-submit-buttons {
+        button {
+          margin: inherit !important;
+        }
+      }
       .action-link {
         display: none !important;
       }
