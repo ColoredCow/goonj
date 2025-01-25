@@ -5,6 +5,7 @@
  */
 
 use Civi\Api4\Activity;
+use Civi\Api4\Contribution;
 use Civi\Api4\EckEntity;
 
 /**
@@ -15,6 +16,32 @@ function civicrm_api3_goonjcustom_institution_dropping_center_outcome_cron($para
 
   $cashContributionById = [];
   $productSaleAmountById = [];
+  $onlineMonetaryContributionById = [];
+
+  $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
+    ->addSelect('title', 'id')
+    ->addWhere('subtype:name', '=', 'Institution_Dropping_Center')
+    ->addWhere('Collection_Camp_Core_Details.Status', '=', 'authorized')
+    ->execute();
+  foreach ($collectionCamps as $camp) {
+    $id = $camp['id'];
+    $contributions = Contribution::get(TRUE)
+      ->addSelect('total_amount')
+      ->addWhere('Contribution_Details.Source', '=', $id)
+      ->addWhere('contribution_status_id:label', '=', 'Completed')
+      ->execute();
+
+    $contributionsArray = $contributions->getIterator()->getArrayCopy();
+
+    $totalAmount = 0;
+
+    if (!empty($contributionsArray)) {
+      $totalAmount = array_sum(array_column($contributionsArray, 'total_amount'));
+    }
+
+    $onlineMonetaryContributionById[$id] = $totalAmount;
+
+  }
 
   $droppingCenterMetas = EckEntity::get('Dropping_Center_Meta', TRUE)
     ->addSelect('Donation.Cash_Contribution', 'Donation.Product_Sale_Amount_GBG_', 'Dropping_Center_Meta.Institution_Dropping_Center')
@@ -75,6 +102,7 @@ function civicrm_api3_goonjcustom_institution_dropping_center_outcome_cron($para
   updateInstitutionDroppingCenterMetric('Total_no_of_vehicle_material_collected', $vehicleDispatchCount);
   updateInstitutionDroppingCenterMetric('Footfall_at_the_center', $totalFootfall);
   updateInstitutionDroppingCenterMetric('Total_no_of_bags_received_from_center', $bagsReceivedCount);
+  updateInstitutionDroppingCenterMetric('Online_Monetary_Contribution', $onlineMonetaryContributionById);
 
   return civicrm_api3_create_success($returnValues, $params, 'Goonjcustom', 'institution_dropping_center_outcome_cron');
 }
