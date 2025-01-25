@@ -36,7 +36,6 @@ class NavigationPermissionService extends AutoSubscriber {
    *
    */
   public function hideNavForRoles(&$params) {
-    error_log("params: " . print_r($params, TRUE));
     $isAdmin = \CRM_Core_Permission::check('admin');
     if ($isAdmin) {
       return;
@@ -78,18 +77,21 @@ class NavigationPermissionService extends AutoSubscriber {
           'Induction Tab',
           'Volunteers',
           'Individuals',
+          'Offices'
         ],
       ],
       'goonj_chapter_admin' => [
         'hide_menus' => [
           'MMT - Individuals',
           'MMT - Institutes',
+          'MMT - Offices',
         ],
       ],
       'urbanops' => [
         'hide_menus' => [
           'MMT - Individuals',
           'MMT - Institutes',
+          'MMT - Offices',
         ],
       ],
       'ho_account' => [
