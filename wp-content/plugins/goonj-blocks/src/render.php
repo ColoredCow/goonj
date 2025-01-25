@@ -104,12 +104,9 @@ $institution_collection_camp_material_contribution_link = sprintf(
     $action_target['Institution_Collection_Camp_Intent.District_City'],
 );
 
-$institution_dropping_center_material_contribution_link = sprintf(
-    '/institution-dropping-center-contribution?source=%s&target_id=%s&state_province_id=%s&city=%s',
+$institution_dropping_center_register_link = sprintf(
+    '/institution-dropping-center-individual-volunteer-check/?source=%s',
     $action_target['title'],
-    $action_target['id'],
-    $action_target['Institution_Dropping_Center_Intent.State'],
-    $action_target['Institution_Dropping_Center_Intent.District_City'],
 );
 
 $sourceField = CustomField::get(FALSE)

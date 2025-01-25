@@ -41,7 +41,7 @@ class RazorpaySubscriptionImporter {
   public function __construct() {
     civicrm_initialize();
 
-    $this->isTest = TRUE;
+    $this->isTest = FALSE;
 
     $processorConfig = PaymentProcessor::get(FALSE)
       ->addWhere('payment_processor_type_id:name', '=', 'Razorpay')
