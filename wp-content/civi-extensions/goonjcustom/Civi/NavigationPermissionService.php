@@ -78,18 +78,21 @@ class NavigationPermissionService extends AutoSubscriber {
           'Induction Tab',
           'Volunteers',
           'Individuals',
+          'Offices'
         ],
       ],
       'goonj_chapter_admin' => [
         'hide_menus' => [
           'MMT - Individuals',
           'MMT - Institutes',
+          'MMT - Offices',
         ],
       ],
       'urbanops' => [
         'hide_menus' => [
           'MMT - Individuals',
           'MMT - Institutes',
+          'MMT - Offices',
         ],
       ],
       'ho_account' => [
