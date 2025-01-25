@@ -77,7 +77,8 @@ class NavigationPermissionService extends AutoSubscriber {
           'Induction Tab',
           'Volunteers',
           'Individuals',
-          'Offices'
+          'Offices',
+          'Urban Visits'
         ],
       ],
       'goonj_chapter_admin' => [
@@ -85,6 +86,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Individuals',
           'MMT - Institutes',
           'MMT - Offices',
+          'MMT - Urban Visits',
         ],
       ],
       'urbanops' => [
@@ -92,6 +94,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Individuals',
           'MMT - Institutes',
           'MMT - Offices',
+          'MMT - Urban Visits',
         ],
       ],
       'ho_account' => [
