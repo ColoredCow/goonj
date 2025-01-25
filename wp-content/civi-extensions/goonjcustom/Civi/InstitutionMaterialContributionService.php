@@ -215,7 +215,7 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
         
         <div style="width: 100%; font-size: 14px;">
           <div style="float: left; text-align: left;">
-            <!-- Material Acknowledgment# {$activity['id']} -->
+            Material Acknowledgment#
           </div>
           <div style="float: right; text-align: right;">
             Goonj, C-544, Pocket C, Sarita Vihar, Delhi, India
