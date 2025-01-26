@@ -190,7 +190,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
    *
    */
   public static function updateNameOfTheInstitution(string $op, string $objectName, int $objectId, &$objectRef) {
-    if ($objectRef->afform_name == "afformInstitutionCollectionCampIntentVerification") {
+    if (!empty($objectRef->afform_name) && $objectRef->afform_name == "afformInstitutionCollectionCampIntentVerification") {
 
       $data = json_decode($objectRef->data, TRUE);
 
@@ -680,7 +680,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
             'toEmail' => $recipientEmail,
             'replyTo' => $from,
             'cc' => $coordinatingPOCEmail,
-            'html' => self::sendDispatchEmail($recipientName, $campId, $institutionPOCId, $campOffice, $campCode, $campAddress, $pocEmail, $pocContactNumber, $nameOfInstitution, $addressOfInstitution,  $coordinatingPOCEmail, $coordinatingPOCPhone)
+            'html' => self::sendDispatchEmail($recipientName, $campId, $institutionPOCId, $campOffice, $campCode, $campAddress, $pocEmail, $pocContactNumber, $nameOfInstitution, $addressOfInstitution, $coordinatingPOCEmail, $coordinatingPOCPhone),
           ];
 
           $dispatchEmailSendResult = \CRM_Utils_Mail::send($mailParams);

@@ -496,9 +496,10 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
    *
    */
   public static function processDispatchEmail(string $op, string $objectName, $objectId, &$objectRef) {
-    if ($objectRef['afform_name'] !== 'afformNotifyDispatchViaEmail') {
+    if (empty($objectRef['afform_name']) || $objectRef['afform_name'] !== 'afformNotifyDispatchViaEmail') {
       return;
     }
+
     $dataArray = $objectRef['data'];
 
     $droppingCenterId = $dataArray['Eck_Collection_Camp1'][0]['fields']['id'] ?? NULL;
