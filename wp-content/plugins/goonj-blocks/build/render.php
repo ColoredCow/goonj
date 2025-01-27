@@ -277,11 +277,15 @@ if (in_array($target, ['collection-camp', 'institution-collection-camp', 'droppi
             <td class="wp-block-gb-table-cell wp-block-gb-table-header">Name of Institute</td>
             <td class="wp-block-gb-table-cell"><?php echo esc_html($name_of_institute); ?></td>
         </tr>
-            <?php endif; ?>
-    <tr class="wp-block-gb-table-row">
-        <td class="wp-block-gb-table-cell wp-block-gb-table-header">Volunteer name</td>
-        <td class="wp-block-gb-table-cell"><?php echo esc_html($volunteer_name); ?></td>
-    </tr>
+        <?php endif; ?>
+        <tr class="wp-block-gb-table-row">
+            <td class="wp-block-gb-table-cell wp-block-gb-table-header">
+                <?php echo ($target === 'institution-dropping-center') ? 'Coordinator Name' : 'Volunteer Name'; ?>
+            </td>
+            <td class="wp-block-gb-table-cell">
+                <?php echo esc_html($volunteer_name); ?>
+            </td>
+        </tr>
    
         <?php endif; ?>
   <?php if ($target === 'collection-camp' || $target === 'institution-collection-camp' || $target === 'goonj-activities' || $target === 'institution-goonj-activities' || $target === 'events') : ?>
