@@ -3,7 +3,6 @@
 /**
  * @file
  * CLI Script to Opt Out Contacts and Add to Group via CSV in CiviCRM.
- *
  */
 
 use Civi\Api4\Email;
@@ -64,7 +63,7 @@ function optOutContactByEmail(string $email): void {
     // Log the email being processed for debugging.
     error_log("Processing email: $email");
 
-    // Find contact using Email API
+    // Find contact using Email API.
     $result = Email::get(FALSE)
       ->addSelect('contact_id')
       ->addWhere('email', '=', $email)
@@ -78,23 +77,23 @@ function optOutContactByEmail(string $email): void {
 
       error_log("Contact found with ID: $contactId");
 
-      // Opt out the contact
+      // Opt out the contact.
       Contact::update(FALSE)
         ->addWhere('id', '=', $contactId)
         ->addValue('is_opt_out', TRUE)
         ->execute();
 
-      // Add the contact to the specified group
+      // Add the contact to the specified group.
       GroupContact::create(FALSE)
         ->addValue('contact_id', $contactId)
         ->addValue('group_id', GROUP_ID)
         ->addValue('status', 'Added')
         ->execute();
 
-        echo "Successfully opted out contact with email $email (ID $contactId) and added to group.\n";
+      echo "Successfully opted out contact with email $email (ID $contactId) and added to group.\n";
     }
     else {
-        echo "Contact with email $email not found.\n";
+      echo "Contact with email $email not found.\n";
     }
   }
   catch (Exception $e) {
