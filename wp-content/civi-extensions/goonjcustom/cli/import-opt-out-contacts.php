@@ -15,7 +15,7 @@ if (php_sapi_name() != 'cli') {
 
 // Configuration.
 // Replace with your CSV file path.
-define('CSV_FILE_PATH', '/Users/tarunjoshi/Downloads/Opted out List - Pardot (Contact listing) - civicrm_contribution (5).csv');
+define('CSV_FILE_PATH', '/Users/tarunjoshi/Downloads/Opted out List - Pardot (Contact listing) - civicrm_contribution (6).csv');
 // Replace with the ID of the group to add contacts to.
 define('GROUP_ID', 69);
 
@@ -60,22 +60,15 @@ function readContactsFromCsv(string $filePath): array {
  */
 function optOutContactByEmail(string $email): void {
   try {
-    // Log the email being processed for debugging.
-    error_log("Processing email: $email");
-
     // Find contact using Email API.
     $result = Email::get(FALSE)
       ->addSelect('contact_id')
       ->addWhere('email', '=', $email)
       ->execute()->single();
 
-    error_log("Result: " . print_r($result, TRUE));
-
     // If email is found, process the contact.
     if (isset($result['contact_id'])) {
       $contactId = $result['contact_id'];
-
-      error_log("Contact found with ID: $contactId");
 
       // Opt out the contact.
       Contact::update(FALSE)
