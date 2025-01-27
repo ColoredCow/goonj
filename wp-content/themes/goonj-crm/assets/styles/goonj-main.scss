@@ -241,6 +241,9 @@
 #crm-main-content-wrapper {
   form {
     &.CRM_Event_Form_Registration_Register {
+      .crm-block .crm-public-form-item.crm-section {
+        display: block !important;
+      }      
       .crm-block {
         .crm-public-form-item {
           fieldset > div:nth-last-child(-n+2) {
@@ -253,7 +256,7 @@
 
           fieldset > div:nth-last-child(4) {
             display: inline !important;
-          }
+          }   
         }
       }
     }
