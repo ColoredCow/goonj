@@ -10,6 +10,7 @@
 
 use Civi\Api4\Email;
 use Civi\Api4\Contact;
+use Civi\Api4\GroupContact;
 
 if (php_sapi_name() != 'cli') {
   exit("This script can only be run from the command line.\n");
@@ -19,7 +20,7 @@ if (php_sapi_name() != 'cli') {
 // Replace with your CSV file path.
 define('CSV_FILE_PATH', '/Users/tarunjoshi/Downloads/Opted out List - Pardot (Contact listing) - civicrm_contribution (5).csv');
 // Replace with the ID of the group to add contacts to.
-define('GROUP_ID', 1234);
+define('GROUP_ID', 69);
 
 /**
  * Reads email addresses from the provided CSV file.
@@ -93,12 +94,12 @@ function optOutContactByEmail(string $email): void {
       ->addValue('is_opt_out', TRUE)
       ->execute();
 
-    // // Optionally, add the contact to the group
-    // GroupContact::create(FALSE)
-    //     ->addValue('contact_id', $contactId)
-    //     ->addValue('group_id', GROUP_ID)
-    //     ->addValue('status', 'Added')
-    //     ->execute();
+    // Add the contact to the group.
+    GroupContact::create(FALSE)
+      ->addValue('contact_id', $contactId)
+      ->addValue('group_id', GROUP_ID)
+      ->addValue('status', 'Added')
+      ->execute();
     error_log("Successfully opted out contact with email $email (ID $contactId) and added to group.");
   }
   catch (Exception $e) {
