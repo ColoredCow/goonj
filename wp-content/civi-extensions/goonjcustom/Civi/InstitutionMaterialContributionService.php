@@ -217,9 +217,6 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
           <div style="float: left; text-align: left;">
             Material Acknowledgment#
           </div>
-          <div style="float: right; text-align: right;">
-            Goonj, C-544, Pocket C, Sarita Vihar, Delhi, India
-          </div>
         </div>
         <br><br>
         <div style="font-weight: bold; font-style: italic; margin-top: 6px; margin-bottom: 6px;">
@@ -262,9 +259,6 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
         </tr>
 
         </table>
-        <div style="text-align: right; font-size: 14px;">
-          Team Goonj
-        </div>
         <div style="width: 100%; margin-top: 16px;">
         <div style="float: left; width: 60%; font-size: 14px;">
         <p>Join us, by encouraging your friends, relatives, colleagues, and neighbours to join the journey as all of us have a lot to give.</p>
