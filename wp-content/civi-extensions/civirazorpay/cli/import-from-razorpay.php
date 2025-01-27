@@ -434,7 +434,7 @@ class RazorpaySubscriptionImporter {
       $existingRecur = ContributionRecur::get(FALSE)
         ->addSelect('id')
         ->addWhere('invoice_id', '=', $invoiceID)
-        ->addValue('is_test', $this->isTest)
+        ->addWhere('is_test', '=', $this->isTest)
         ->execute()
         ->first();
 
@@ -540,7 +540,7 @@ class RazorpaySubscriptionImporter {
       $existingContribution = Contribution::get(FALSE)
         ->addSelect('id')
         ->addWhere('trxn_id', '=', $transactionId)
-        ->addValue('is_test', $this->isTest)
+        ->addWhere('is_test', '=', $this->isTest)
         ->execute()
         ->first();
 
