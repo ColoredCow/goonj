@@ -13,11 +13,17 @@ if (php_sapi_name() != 'cli') {
   exit("This script can only be run from the command line.\n");
 }
 
-// Configuration.
-// Replace with your CSV file path.
-define('CSV_FILE_PATH', '/Users/tarunjoshi/Downloads/Opted out List - Pardot (Contact listing) - civicrm_contribution (7).csv');
-// Replace with the ID of the group to add contacts to.
-define('GROUP_ID', 69);
+// Fetch the CSV file path and Group ID from the constants defined in wp-config.php.
+$csvFilePath = CSV_FILE_PATH;
+$groupId = GROUP_ID;
+
+// Check if the required constants are set.
+if (!$csvFilePath || !$groupId) {
+  exit("Error: Both CSV_FILE_PATH and GROUP_ID constants must be set.\n");
+}
+
+echo "CSV File: $csvFilePath\n";
+echo "Group ID: $groupId\n";
 
 /**
  * Reads email addresses from the provided CSV file.
