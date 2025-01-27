@@ -302,10 +302,15 @@ class RazorpaySubscriptionImporter {
    *   Returns the created contact ID or null on failure.
    */
   private function createContact($params) {
+    $fullName = $params['name'] ?? '';
+    $nameParts = $this->splitName($fullName);
+
     // Step 1: Create an Individual contact.
     $contact = Individual::create(FALSE)
       ->addValue('source', 'Razorpay subscription import')
-      ->addValue('display_name', $params['name'] ?? 'Unknown Customer')
+      ->addValue('first_name', $nameParts['firstName'])
+      ->addValue('middle_name', $nameParts['middleName'])
+      ->addValue('last_name', $nameParts['lastName'])
       ->execute()
       ->first();
 
@@ -336,6 +341,49 @@ class RazorpaySubscriptionImporter {
 
     return $contactId;
 
+  }
+
+  /**
+   * Split a full name into first, middle, and last names.
+   *
+   * @param string $fullName
+   *   The full name to be split.
+   *
+   * @return array
+   *   An array with keys 'firstName', 'middleName', 'lastName'.
+   */
+  private function splitName(string $fullName): array {
+    $nameParts = preg_split('/\s+/', trim($fullName));
+
+    $firstName = '';
+    $middleName = '';
+    $lastName = '';
+
+    $count = count($nameParts);
+
+    if ($count === 1) {
+      $firstName = $nameParts[0];
+    }
+    elseif ($count === 2) {
+      $firstName = $nameParts[0];
+      $lastName = $nameParts[1];
+    }
+    elseif ($count === 3) {
+      $firstName = $nameParts[0];
+      $middleName = $nameParts[1];
+      $lastName = $nameParts[2];
+    }
+    elseif ($count > 3) {
+      $firstName = $nameParts[0];
+      $lastName = array_pop($nameParts);
+      $middleName = implode(' ', $nameParts);
+    }
+
+    return [
+      'firstName' => $firstName,
+      'middleName' => $middleName,
+      'lastName' => $lastName,
+    ];
   }
 
   /**
