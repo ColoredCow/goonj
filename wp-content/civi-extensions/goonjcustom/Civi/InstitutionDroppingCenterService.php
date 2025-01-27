@@ -782,13 +782,13 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
-      // 'outcome' => [
-      //   'title' => ts('Outcome'),
-      //   'module' => 'afsearchInstitutionDroppingCenterOutcome',
-      //   'directive' => 'afsearch-institution-dropping-center-outcome',
-      //   'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-      //   'permissions' => ['goonj_chapter_admin', 'urbanops'],
-      // ],
+      'outcome' => [
+        'title' => ts('Outcome'),
+        'module' => 'afsearchInstitutionDroppingCenterOutcome',
+        'directive' => 'afsearch-institution-dropping-center-outcome',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+      ],
       // 'monetaryContribution' => [
       //   'title' => ts('Monetary Contribution'),
       //   'module' => 'afsearchMonetaryContribution',
