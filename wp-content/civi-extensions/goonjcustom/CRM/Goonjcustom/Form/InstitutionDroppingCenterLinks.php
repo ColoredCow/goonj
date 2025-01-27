@@ -107,24 +107,9 @@ class CRM_Goonjcustom_Form_InstitutionDroppingCenterLinks extends CRM_Core_Form 
     // Generate dropping center links.
     $links = [
         [
-          'label' => 'Vehicle Dispatch (Self Managed)',
+          'label' => 'Vehicle Dispatch',
           'url' => self::createUrl(
                 '/institution-dropping-center-vehicle-dispatch',
-                "Camp_Vehicle_Dispatch.Institution_Dropping_Center={$this->_institutionDroppingCenterId}" .
-                "&Eck_Collection_Camp1={$this->_institutionDroppingCenterId}" .
-                "&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent={$this->_processingCenterId}" .
-                "&Camp_Vehicle_Dispatch.Filled_by={$contactId}" .
-                "&Camp_Institution_Data.Name_of_the_institution={$nameOfInstitution}" .
-                "&Camp_Institution_Data.Address={$address}" .
-                "&Camp_Institution_Data.Email={$pocEmail}" .
-                "&Camp_Institution_Data.Contact_Number={$pocContactNumber}",
-                $contactId
-          ),
-        ],
-        [
-          'label' => 'Vehicle Dispatch (Not Self Managed)',
-          'url' => self::createUrl(
-                '/institution-dropping-center-vehicle-dispatch-form-not-self-managed',
                 "Camp_Vehicle_Dispatch.Institution_Dropping_Center={$this->_institutionDroppingCenterId}" .
                 "&Eck_Collection_Camp1={$this->_institutionDroppingCenterId}" .
                 "&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent={$this->_processingCenterId}" .
