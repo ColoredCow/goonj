@@ -28,6 +28,7 @@ class CRM_Goonjcustom_Token_InstitutionDroppingCenter extends AbstractTokenSubsc
       'coordinator' => \CRM_Goonjcustom_ExtensionUtil::ts('Coordinator (Goonj)'),
       'remarks' => \CRM_Goonjcustom_ExtensionUtil::ts('Remarks'),
       'address_city' => \CRM_Goonjcustom_ExtensionUtil::ts('City'),
+      'landmark' => \CRM_Goonjcustom_ExtensionUtil::ts('Landmark or Nearby Area'),
     ]);
   }
 
@@ -85,6 +86,17 @@ class CRM_Goonjcustom_Token_InstitutionDroppingCenter extends AbstractTokenSubsc
 
       case 'address_city':
         $value = $collectionSource['Institution_Dropping_Center_Intent.District_City'];
+        break;
+
+      case 'landmark':
+        $landmarkOrNearbyArea = $collectionSource['Institution_Dropping_Center_Intent.Landmark_or_Near_by_area'];
+
+        if (!empty($landmarkOrNearbyArea)) {
+          $value = "(" . $landmarkOrNearbyArea . ")";
+        }
+        else {
+          $value = '';
+        }
         break;
 
       default:
