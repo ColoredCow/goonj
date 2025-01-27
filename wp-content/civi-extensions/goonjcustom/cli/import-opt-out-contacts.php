@@ -16,8 +16,8 @@ if (php_sapi_name() != 'cli') {
 }
 
 // Configuration
-define('CSV_FILE_PATH', '/Users/tarunjoshi/Downloads/Opted out List - Pardot (Contact listing) - civicrm_contribution (4).csv'); // Replace with your CSV file path
-define('GROUP_ID', 1); // Replace with the ID of the group to add contacts to
+define('CSV_FILE_PATH', '/Users/tarunjoshi/Downloads/Opted out List - Pardot (Contact listing) - civicrm_contribution (5).csv'); // Replace with your CSV file path
+define('GROUP_ID', 1234); // Replace with the ID of the group to add contacts to
 
 /**
  * Reads email addresses from the provided CSV file.
@@ -37,15 +37,15 @@ function readContactsFromCsv(string $filePath): array {
         $header = fgetcsv($handle, 1000, ',');
         if (in_array('email', $header)) {
             while (($data = fgetcsv($handle, 1000, ',')) !== false) {
-                error_log("Raw CSV Data: " . print_r($data, TRUE)); // Log each row from CSV
-
                 $row = array_combine($header, $data);
-
+                
                 // Check if the 'Do Not Email' column indicates opt-out
                 if (isset($row['Do Not Email (Opt out contact)']) && 
                     strtolower($row['Do Not Email (Opt out contact)']) == 'yes') {
-                    // Add contact to list if they should be opted out
-                    $contacts[] = $row['email'];
+                    
+                    // Clean email by trimming any extra spaces
+                    $email = trim($row['email']);
+                    $contacts[] = $email;
                 }
             }
         } else {
@@ -57,49 +57,45 @@ function readContactsFromCsv(string $filePath): array {
     return $contacts;
 }
 
-
-/**
- * Finds a contact by email, opts them out, and adds them to the specified group.
- *
- * @param string $email The email address of the contact.
- * @return void
- */
+// Improved query to ensure case-insensitive matching
 function optOutContactByEmail(string $email): void {
     try {
         // Log the email being processed for debugging
-        echo "Processing email: $email\n";
+        error_log("Processing email: $email");
 
-        // Find contact by email with case-insensitive query
-        $result = Email::get()
+        // Find contact by email with case-insensitive search
+        $result = Email::get(TRUE)
             ->addSelect('contact_id')
-            ->addWhere('LOWER(email)', '=', strtolower($email)) // Case-insensitive search
+            ->addWhere('email', '=',  $email)
             ->execute();
-            error_log("result: " . print_r($result, TRUE));
 
-        if (count($result) > 0) {
-            $contactId = $result[0]['contact_id'];
+        error_log("Result: " . print_r($result, TRUE));
 
-            // Opt out the contact
-            Contact::update()
+        // If email is found, process the contact
+            $contactId = $result['contact_id'];
+
+            // Optionally, log the contact ID
+            error_log("Contact found with ID: $contactId");
+
+            // Opt out the contact (update the contact status or attributes)
+            Contact::update(TRUE)
                 ->addWhere('id', '=', $contactId)
-                ->setValue('is_opt_out', 1)
+                ->addValue('is_opt_out', TRUE)
                 ->execute();
 
-            // Add the contact to the group
-            GroupContact::create()
-                ->addValue('contact_id', $contactId)
-                ->addValue('group_id', GROUP_ID)
-                ->addValue('status', 'Added')
-                ->execute();
+            // // Optionally, add the contact to the group
+            // GroupContact::create(TRUE)
+            //     ->addValue('contact_id', $contactId)
+            //     ->addValue('group_id', GROUP_ID)
+            //     ->addValue('status', 'Added')
+            //     ->execute();
 
-            echo "Successfully opted out contact with email $email (ID $contactId) and added to group.\n";
-        } else {
-            echo "Contact with email $email not found.\n";
-        }
+            error_log("Successfully opted out contact with email $email (ID $contactId) and added to group.");
     } catch (Exception $e) {
-        echo "Error processing email $email: " . $e->getMessage() . "\n";
+        error_log("Error processing email $email: " . $e->getMessage());
     }
 }
+
 
 
 /**
@@ -109,7 +105,7 @@ function main(): void {
     try {
         echo "=== Starting Opt-Out Process ===\n";
         $emails = readContactsFromCsv(CSV_FILE_PATH);
-        error_log("emails: " . print_r($emails, TRUE)); // Log all emails read from CSV
+        error_log("All emails to process: " . print_r($emails, TRUE)); // Log all emails read from CSV
 
         if (empty($emails)) {
             echo "No emails to process.\n";
