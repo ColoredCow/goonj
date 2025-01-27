@@ -74,10 +74,10 @@ function optOutContactByEmail(string $email): void {
     error_log("Processing email: $email");
 
     // Find contact by email with case-insensitive search.
-    $result = Email::get(TRUE)
+    $result = Email::get(FALSE)
       ->addSelect('contact_id')
       ->addWhere('email', '=', $email)
-      ->execute();
+      ->execute()->single();
 
     error_log("Result: " . print_r($result, TRUE));
 
@@ -88,13 +88,13 @@ function optOutContactByEmail(string $email): void {
     error_log("Contact found with ID: $contactId");
 
     // Opt out the contact (update the contact status or attributes)
-    Contact::update(TRUE)
+    Contact::update(FALSE)
       ->addWhere('id', '=', $contactId)
       ->addValue('is_opt_out', TRUE)
       ->execute();
 
     // // Optionally, add the contact to the group
-    // GroupContact::create(TRUE)
+    // GroupContact::create(FALSE)
     //     ->addValue('contact_id', $contactId)
     //     ->addValue('group_id', GROUP_ID)
     //     ->addValue('status', 'Added')
