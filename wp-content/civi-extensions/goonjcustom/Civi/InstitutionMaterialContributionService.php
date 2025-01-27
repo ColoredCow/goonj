@@ -91,6 +91,7 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
   private static function getInstitutionRelationships($organizationId) {
     $contacts = [];
     $relationship = Relationship::get(FALSE)
+      ->addSelect('contact_id_b')
       ->addWhere('contact_id_a', '=', $organizationId)
       ->addWhere('relationship_type_id:name', '=', 'Institution POC of')
       ->execute()
