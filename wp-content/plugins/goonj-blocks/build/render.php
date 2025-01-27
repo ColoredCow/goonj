@@ -265,7 +265,9 @@ if (in_array($target, ['collection-camp', 'institution-collection-camp', 'droppi
 
   ?>
     <div class="wp-block-gb-heading-wrapper">
-        <h2 class="wp-block-gb-heading"><?php echo esc_html($heading_text); ?></h2>
+        <h2 class="wp-block-gb-heading">
+            <?php echo ($target === 'events') ? esc_html($action_target['title']) : ''; ?>
+        </h2>
     </div>
     <table class="wp-block-gb-table">
         <tbody>
