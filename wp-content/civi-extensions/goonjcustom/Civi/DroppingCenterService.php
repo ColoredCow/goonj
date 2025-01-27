@@ -473,7 +473,7 @@ class DroppingCenterService extends AutoSubscriber {
    *
    */
   public static function processDispatchEmail(string $op, string $objectName, $objectId, &$objectRef) {
-    if ($objectRef['afform_name'] !== 'afformSendDispatchEmail') {
+    if (empty($objectRef['afform_name']) || $objectRef['afform_name'] !== 'afformSendDispatchEmail') {
       return;
     }
 
