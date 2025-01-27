@@ -403,8 +403,12 @@ class RazorpaySubscriptionImporter {
   private function handleContributionRecur(array $subscription, int $contactID): void {
     echo "Creating ContributionRecur for Subscription ID: {$subscription['id']}\n";
 
+    // Fetch plan details from Razorpay.
+    $plan = $this->api->plan->fetch($subscription['plan_id']);
+    $planItem = $plan->item;
+
     // Mapping Razorpay data to CiviCRM fields.
-    $amount = $subscription['quantity'] ?? 0;
+    $amount = $planItem->amount / 100;
     $currency = strtoupper($subscription['currency'] ?? 'INR');
     $frequencyUnitMap = [
       'day' => 'day',
