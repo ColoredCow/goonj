@@ -15,7 +15,7 @@ if (php_sapi_name() != 'cli') {
 
 // Configuration.
 // Replace with your CSV file path.
-define('CSV_FILE_PATH', '/Users/tarunjoshi/Downloads/Opted out List - Pardot (Contact listing) - civicrm_contribution (6).csv');
+define('CSV_FILE_PATH', '/Users/tarunjoshi/Downloads/Opted out List - Pardot (Contact listing) - civicrm_contribution (7).csv');
 // Replace with the ID of the group to add contacts to.
 define('GROUP_ID', 69);
 
@@ -101,7 +101,6 @@ function main(): void {
   try {
     echo "=== Starting Opt-Out Process ===\n";
     $emails = readContactsFromCsv(CSV_FILE_PATH);
-    error_log("All emails to process: " . print_r($emails, TRUE));
 
     if (empty($emails)) {
       return;
