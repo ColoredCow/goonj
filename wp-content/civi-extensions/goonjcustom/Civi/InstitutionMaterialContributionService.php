@@ -5,6 +5,7 @@ namespace Civi;
 use Civi\Api4\Activity;
 use Civi\Api4\Campaign;
 use Civi\Api4\Contact;
+use Civi\Api4\Organization;
 use Civi\Api4\Relationship;
 use Civi\Core\Service\AutoSubscriber;
 
@@ -43,11 +44,19 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
     $organizationId = $data['Organization1'][0]['fields']['id'] ?? NULL;
     $contacts = self::fetchContributionContacts($campaignId, $organizationId);
 
+    $organizations = Organization::get(FALSE)
+      ->addSelect('Institute_Registration.Address', 'display_name')
+      ->addWhere('id', '=', $organizationId)
+      ->execute()->single();
+
+    $organizationName = $organizations['display_name'];
+    $organizationAddress = $organizations['Institute_Registration.Address'];
+
     $activities = Activity::get(FALSE)
       ->addSelect('*')
       ->addJoin('Organization AS organization', 'LEFT')
       ->addWhere('activity_type_id:name', '=', 'Institution Material Contribution')
-      ->addWhere('organization.id', '=', 17383)
+      ->addWhere('organization.id', '=', $organizationId)
       ->addOrderBy('created_date', 'DESC')
       ->setLimit(1)
       ->execute();
@@ -55,7 +64,7 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
     $contribution = $activities->first();
 
     if (!empty($contacts)) {
-      self::sendInstitutionMaterialContributionEmails($contribution, $contacts, $description, $deliveredBy, $deliveredByContact, $activityDate);
+      self::sendInstitutionMaterialContributionEmails($organizationName, $organizationAddress, $contribution, $contacts, $description, $deliveredBy, $deliveredByContact, $activityDate);
     }
   }
 
@@ -137,7 +146,8 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
   /**
    *
    */
-  private static function sendInstitutionMaterialContributionEmails(array $contribution, array $contacts, string $description, string $deliveredBy, string $deliveredByContact, string $activityDate) {
+
+  private static function sendInstitutionMaterialContributionEmails(string $organizationName, string $organizationAddress, array $contribution, array $contacts, string $description, string $deliveredBy, string $deliveredByContact, string $activityDate) {
     foreach ($contacts as $contact) {
       $email = $contact['email'];
       $name = $contact['name'];
@@ -145,7 +155,7 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
 
       $subject = 'Acknowledgement for your material contribution to Goonj';
       $body = self::generateEmailBody($name);
-      $html = self::generateContributionReceiptHtml($contribution, $email, $phone, $description, $name, $deliveredBy, $deliveredByContact, $activityDate);
+      $html = self::generateContributionReceiptHtml($organizationName, $organizationAddress, $contribution, $email, $phone, $description, $name, $deliveredBy, $deliveredByContact, $activityDate);
       $attachments = [\CRM_Utils_Mail::appendPDF('institution_material_contribution.pdf', $html)];
       $params = self::prepareEmailParams($subject, $body, $attachments, $email);
 
@@ -200,7 +210,8 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
    * @return string
    *   The generated HTML.
    */
-  private static function generateContributionReceiptHtml($contribution, $email, $contactPhone, $description, $contactName, $deliveredBy, $deliveredByContact, $activityDate) {
+
+  private static function generateContributionReceiptHtml($organizationName, $organizationAddress, $contribution, $email, $contactPhone, $description, $contactName, $deliveredBy, $deliveredByContact, $activityDate) {
 
     $baseDir = plugin_dir_path(__FILE__) . '../../../themes/goonj-crm/';
 
@@ -254,6 +265,14 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
             <tr>
               <td class="table-header">Received On</td>
               <td class="table-cell">{$activityDate}</td>
+            </tr>
+            <tr>
+              <td class="table-header">Institution Name</td>
+              <td class="table-cell">{$organizationName}</td>
+            </tr>
+            <tr>
+              <td class="table-header">Address</td>
+              <td class="table-cell">{$organizationAddress}</td>
             </tr>
             <tr>
               <td class="table-header">From</td>
