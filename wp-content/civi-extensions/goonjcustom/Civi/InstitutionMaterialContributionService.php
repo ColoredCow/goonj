@@ -29,7 +29,6 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
     if ($objectName !== 'AfformSubmission' || $objectRef->afform_name !== 'afformAddInstitutionMaterialContribution') {
       return;
     }
-    error_log("objectRef: " . print_r($objectRef, TRUE));
     $data = json_decode($objectRef->data, TRUE);
     // error_log("data: " . print_r($data, TRUE));.
     if (!$data) {
