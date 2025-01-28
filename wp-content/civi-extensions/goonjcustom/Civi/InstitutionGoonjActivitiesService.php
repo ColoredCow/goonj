@@ -480,57 +480,57 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
         'module' => 'afsearchGoonjAllInstitutionActivity',
         'directive' => 'afsearch-goonj-all-institution-activity',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
       ],
       'logistics' => [
         'title' => ts('Logistics'),
         'module' => 'afsearchInstitutionGoonjActivitiesLogistics',
         'directive' => 'afsearch-institution-goonj-activities-logistics',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
       ],
       'eventVolunteers' => [
         'title' => ts('Event Volunteers'),
         'module' => 'afsearchInstitutionGoonjActivitiesEventVolunteer',
         'directive' => 'afsearch-institution-goonj-activities-event-volunteer',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
       ],
       'campOutcome' => [
         'title' => ts('Outcome'),
         'module' => 'afsearchInstitutionGoonjActivitiesOutcomeView',
         'directive' => 'afsearch-institution-goonj-activities-outcome-view',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
       ],
       'campFeedback' => [
         'title' => ts('Volunteer Feedback'),
         'module' => 'afsearchInstitutionGoonjActivityVolunteerFeedback',
         'directive' => 'afsearch-institution-goonj-activity-volunteer-feedback',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
       ],
       'attendeeFeedback' => [
         'title' => ts('Attendee Feedback'),
         'module' => 'afsearchInstitutionGoonjActivitiesAttendeeFeedback',
         'directive' => 'afsearch-institution-goonj-activities-attendee-feedback',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+      ],
+      'monetaryContribution' => [
+        'title' => ts('Monetary Contribution'),
+        'module' => 'afsearchMonetaryContribution',
+        'directive' => 'afsearch-monetary-contribution',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['account_team', 'ho_account'],
+      ],
+      'monetaryContributionForUrbanOps' => [
+        'title' => ts('Monetary Contribution'),
+        'module' => 'afsearchMonetaryContributionForUrbanOps',
+        'directive' => 'afsearch-monetary-contribution-for-urban-ops',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
-      // 'monetaryContribution' => [
-      //   'title' => ts('Monetary Contribution'),
-      //   'module' => 'afsearchMonetaryContribution',
-      //   'directive' => 'afsearch-monetary-contribution',
-      //   'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-      //   'permissions' => ['account_team', 'ho_account'],
-      // ],
-      // 'monetaryContributionForUrbanOps' => [
-      //   'title' => ts('Monetary Contribution'),
-      //   'module' => 'afsearchMonetaryContributionForUrbanOps',
-      //   'directive' => 'afsearch-monetary-contribution-for-urban-ops',
-      //   'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-      //   'permissions' => ['goonj_chapter_admin', 'urbanops'],
-      // ],
     ];
 
     foreach ($tabConfigs as $key => $config) {
@@ -655,7 +655,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
       $today = new \DateTimeImmutable();
       $endOfToday = $today->setTime(23, 59, 59);
 
-      if (TRUE) {
+      if (!$logisticEmailSent && $startDate <= $endOfToday) {
         $campAttendedBy = Contact::get(FALSE)
           ->addSelect('email.email', 'display_name')
           ->addJoin('Email AS email', 'LEFT')

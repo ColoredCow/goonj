@@ -228,7 +228,7 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
         'directive' => 'afsearch-events-outcome-details',
         'template' => 'CRM/Goonjcustom/Tabs/Events.tpl',
         'entity' => ['id' => $eventID],
-        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
       ],
       'feedback' => [
         'id' => 'feedback',
@@ -238,7 +238,7 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
         'directive' => 'afsearch-goonj-initiated-events-feedback-view',
         'template' => 'CRM/Goonjcustom/Tabs/Events.tpl',
         'entity' => ['id' => $eventID],
-        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
       ],
       'materialContributions' => [
         'id' => 'material_contributions',
@@ -248,18 +248,8 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
         'module' => 'afsearchEventsMaterialContributions',
         'directive' => 'afsearch-events-material-contributions',
         'entity' => ['id' => $eventID],
-        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
       ],
-      // 'monetaryContributionForUrbanOps' => [
-      //     'id' => 'monetary_contributions',
-      //     'title' => ts('Monetary Contribution'),
-      //     'active' => 1,
-      //     'module' => 'afsearchEventsMonetaryContribution',
-      //     'directive' => 'afsearch-events-monetary-contribution',
-      //     'template' => 'CRM/Goonjcustom/Tabs/Events.tpl',
-      //     'entity' => ['id' => $eventID],
-      //     'permissions' => ['goonj_chapter_admin', 'urbanops'],
-      //   ],
       'monetaryContribution' => [
         'id' => 'monetary_contributions',
         'title' => ts('Monetary Contribution'),

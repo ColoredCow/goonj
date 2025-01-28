@@ -52,11 +52,11 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
         ['setInstitutionDroppingCenterAddress', 9],
         ['setInstitutionEventVolunteersAddress', 8],
       ],
-      '&hook_civicrm_post' => 'processDispatchEmail',
       '&hook_civicrm_pre' => [
         ['assignChapterGroupToIndividual'],
         ['generateInstitutionDroppingCenterQr'],
         ['linkInstitutionDroppingCenterToContact'],
+        ['processDispatchEmail'],
       ],
     ];
   }
@@ -495,50 +495,38 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
   /**
    *
    */
-  public static function processDispatchEmail(string $op, string $objectName, int $objectId, &$objectRef) {
-
-    if ($objectName !== 'AfformSubmission') {
+  public static function processDispatchEmail(string $op, string $objectName, $objectId, &$objectRef) {
+    if (empty($objectRef['afform_name']) || $objectRef['afform_name'] !== 'afformNotifyDispatchViaEmail') {
       return;
     }
 
-    $afformName = $objectRef->afform_name;
+    $dataArray = $objectRef['data'];
 
-    if ($afformName !== 'afformNotifyDispatchViaEmail') {
+    $droppingCenterId = $dataArray['Eck_Collection_Camp1'][0]['fields']['id'] ?? NULL;
+
+    if (!$droppingCenterId) {
       return;
     }
 
+    $contactId = $dataArray['Eck_Collection_Camp1'][0]['fields']['Institution_Dropping_Center_Intent.Contact_Dispatch_Email'];
     $jsonData = $objectRef->data;
-    $dataArray = json_decode($jsonData, TRUE);
-
-    $institutionDroppingCenterId = $dataArray['Eck_Collection_Camp1'][0]['fields']['id'];
-    $isSelfManaged = $dataArray['Eck_Collection_Camp1'][0]['fields']['Institution_Collection_Camp_Logistics.Self_Managed_by_Institution'];
-    $campAttendedBy = $dataArray['Eck_Collection_Camp1'][0]['fields']['Institution_Dropping_Center_Logistics.Camp_to_be_attended_by'];
-
-    if (!$institutionDroppingCenterId) {
-      return;
-    }
 
     $droppingCenterData = EckEntity::get('Collection_Camp', TRUE)
       ->addSelect('Institution_Dropping_Center_Intent.Organization_Name', 'Institution_Dropping_Center_Intent.Institution_POC', 'Institution_Dropping_Center_Review.Goonj_Office', 'Institution_Dropping_Center_Review.Goonj_Office.display_name')
-      ->addWhere('id', '=', $institutionDroppingCenterId)
-      ->execute()
-      ->single();
-
+      ->addWhere('id', '=', $droppingCenterId)
+      ->execute()->single();
     $organizationId = $droppingCenterData['Institution_Dropping_Center_Intent.Organization_Name'];
     $pocId = $droppingCenterData['Institution_Dropping_Center_Intent.Institution_POC'];
     $goonjOffice = $droppingCenterData['Institution_Dropping_Center_Review.Goonj_Office'];
     $goonjOfficeName = $droppingCenterData['Institution_Dropping_Center_Review.Goonj_Office.display_name'];
-
-    $recipientId = $isSelfManaged ? $pocId : $campAttendedBy;
-    if (!$recipientId) {
+    if (!$contactId) {
       return;
     }
 
     $recipientContactInfo = Contact::get(TRUE)
       ->addSelect('email_primary.email', 'phone_primary.phone', 'display_name')
-      ->addWhere('id', '=', $recipientId)
+      ->addWhere('id', '=', $contactId)
       ->execute()->single();
-
     $email = $recipientContactInfo['email_primary.email'];
     $phone = $recipientContactInfo['phone_primary.phone'];
     $initiatorName = $recipientContactInfo['display_name'];
@@ -552,29 +540,26 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     $address = $organization['Institute_Registration.Address'];
 
     // Send the dispatch email.
-    self::sendDispatchEmail($nameOfInstitution, $address, $isSelfManaged, $phone, $email, $initiatorName, $institutionDroppingCenterId, $recipientId, $goonjOffice, $goonjOfficeName);
+    self::sendDispatchEmail($nameOfInstitution, $address, $phone, $email, $initiatorName, $droppingCenterId, $recipientId, $goonjOffice, $goonjOfficeName);
   }
 
   /**
    *
    */
-  public static function sendDispatchEmail($nameOfInstitution, $address, $isSelfManaged, $phone, $email, $initiatorName, $institutionDroppingCenterId, $contactId, $goonjOffice, $goonjOfficeName) {
+  public static function sendDispatchEmail($nameOfInstitution, $address, $phone, $email, $initiatorName, $droppingCenterId, $contactId, $goonjOffice, $goonjOfficeName) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
 
-    $baseUrl = $isSelfManaged ? '/institution-dropping-center-vehicle-dispatch/' : '/institution-dropping-center-vehicle-dispatch-form-not-self-managed/';
+    $baseUrl = '/institution-dropping-center-vehicle-dispatch/';
 
-    $vehicleDispatchFormUrl = $homeUrl . $baseUrl . '#?Camp_Vehicle_Dispatch.Institution_Dropping_Center=' . $institutionDroppingCenterId
+    $vehicleDispatchFormUrl = $homeUrl . $baseUrl . '#?Camp_Vehicle_Dispatch.Institution_Dropping_Center=' . $droppingCenterId
     . '&Camp_Vehicle_Dispatch.Filled_by=' . $contactId
     . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $goonjOffice
     . '&Camp_Vehicle_Dispatch.Goonj_Office_Name=' . $goonjOfficeName
-    . '&Eck_Collection_Camp1=' . $institutionDroppingCenterId;
-
-    if ($isSelfManaged) {
-      $vehicleDispatchFormUrl .= "&Camp_Institution_Data.Name_of_the_institution=" . $nameOfInstitution
-          . "&Camp_Institution_Data.Address=" . $address
-          . "&Camp_Institution_Data.Email=" . $email
-          . "&Camp_Institution_Data.Contact_Number=" . $phone;
-    }
+    . '&Eck_Collection_Camp1=' . $droppingCenterId
+    . '&Camp_Institution_Data.Name_of_the_institution=' . $nameOfInstitution
+    . "&Camp_Institution_Data.Address=" . $address
+    . "&Camp_Institution_Data.Email=" . $email
+    . "&Camp_Institution_Data.Contact_Number=" . $phone;
 
     $emailHtml = "
     <html>
@@ -734,75 +719,75 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     }
 
     $tabConfigs = [
-      'logistics' => [
-        'title' => ts('Logistics'),
-        'module' => 'afsearchInstitutionDroppingCenterLogistics',
-        'directive' => 'afsearch-institution-dropping-center-logistics',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops'],
-      ],
       'eventCoordinators' => [
         'title' => ts('Event Coordinators'),
         'module' => 'afsearchAddEventCoordinator',
         'directive' => 'afsearch-add-event-coordinator',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops'],
-      ],
-      'vehicleDispatch' => [
-        'title' => ts('Dispatch'),
-        'module' => 'afsearchInstitutionDroppingCenterVehicleDispatchData',
-        'directive' => 'afsearch-institution-dropping-center-vehicle-dispatch-data',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops'],
-      ],
-      'materialAcknowledgement' => [
-        'title' => ts('Material Acknowledgement'),
-        'module' => 'afsearchInstitutionDroppingCenterAcknowledgementForLogisticsData',
-        'directive' => 'afsearch-institution-dropping-center-acknowledgement-for-logistics-data',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops'],
-      ],
-      'materialContribution' => [
-        'title' => ts('Material Contribution'),
-        'module' => 'afsearchInstitutionDroppingCenterMaterialContribution',
-        'directive' => 'afsearch-institution-dropping-center-material-contribution',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'mmt'],
-      ],
-      'status' => [
-        'title' => ts('Status'),
-        'module' => 'afsearchInstitutionDroppingCenterStatus',
-        'directive' => 'afsearch-institution-dropping-center-status',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
       ],
       'visit' => [
         'title' => ts('Visit'),
         'module' => 'afsearchInstitutionDroppingCenterVisit',
         'directive' => 'afsearch-institution-dropping-center-visit',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+      ],
+      'logistics' => [
+        'title' => ts('Logistics'),
+        'module' => 'afsearchInstitutionDroppingCenterLogistics',
+        'directive' => 'afsearch-institution-dropping-center-logistics',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
       ],
       'donationBox' => [
         'title' => ts('Donation Box'),
         'module' => 'afsearchInstitutionDroppingCenterDonation',
         'directive' => 'afsearch-institution-dropping-center-donation',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
       ],
-      'outcome' => [
-        'title' => ts('Outcome'),
-        'module' => 'afformInstitutionDroppingCenterOutcome',
-        'directive' => 'afform-institution-dropping-center-outcome',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCampService.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+      'status' => [
+        'title' => ts('Status'),
+        'module' => 'afsearchInstitutionDroppingCenterStatus',
+        'directive' => 'afsearch-institution-dropping-center-status',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+      ],
+      'materialContribution' => [
+        'title' => ts('Material Contribution'),
+        'module' => 'afsearchInstitutionDroppingCenterMaterialContribution',
+        'directive' => 'afsearch-institution-dropping-center-material-contribution',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'mmt', 'urban_ops_admin'],
+      ],
+      'vehicleDispatch' => [
+        'title' => ts('Dispatch'),
+        'module' => 'afsearchInstitutionDroppingCenterVehicleDispatchData',
+        'directive' => 'afsearch-institution-dropping-center-vehicle-dispatch-data',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+      ],
+      'dispatchAcknowledgement' => [
+        'title' => ts('Dispatch Acknowledgement'),
+        'module' => 'afsearchInstitutionDroppingCenterAcknowledgementForLogisticsData',
+        'directive' => 'afsearch-institution-dropping-center-acknowledgement-for-logistics-data',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
       ],
       'feedback' => [
         'title' => ts('Feedback'),
         'module' => 'afsearchInstitutionDroppingCenterFeedback',
         'directive' => 'afsearch-institution-dropping-center-feedback',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+      ],
+      'outcome' => [
+        'title' => ts('Outcome'),
+        'module' => 'afsearchInstitutionDroppingCenterOutcome',
+        'directive' => 'afsearch-institution-dropping-center-outcome',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
       ],
       // 'monetaryContribution' => [
       //   'title' => ts('Monetary Contribution'),

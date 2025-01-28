@@ -2,8 +2,10 @@
 
 namespace Civi;
 
+use Civi\Api4\Activity;
 use Civi\Api4\Campaign;
 use Civi\Api4\Contact;
+use Civi\Api4\Organization;
 use Civi\Api4\Relationship;
 use Civi\Core\Service\AutoSubscriber;
 
@@ -28,8 +30,8 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
     if ($objectName !== 'AfformSubmission' || $objectRef->afform_name !== 'afformAddInstitutionMaterialContribution') {
       return;
     }
-
     $data = json_decode($objectRef->data, TRUE);
+
     if (!$data) {
       return;
     }
@@ -42,8 +44,27 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
     $organizationId = $data['Organization1'][0]['fields']['id'] ?? NULL;
     $contacts = self::fetchContributionContacts($campaignId, $organizationId);
 
+    $organizations = Organization::get(FALSE)
+      ->addSelect('Institute_Registration.Address', 'display_name')
+      ->addWhere('id', '=', $organizationId)
+      ->execute()->single();
+
+    $organizationName = $organizations['display_name'];
+    $organizationAddress = $organizations['Institute_Registration.Address'];
+
+    $activities = Activity::get(FALSE)
+      ->addSelect('*')
+      ->addJoin('Organization AS organization', 'LEFT')
+      ->addWhere('activity_type_id:name', '=', 'Institution Material Contribution')
+      ->addWhere('organization.id', '=', $organizationId)
+      ->addOrderBy('created_date', 'DESC')
+      ->setLimit(1)
+      ->execute();
+
+    $contribution = $activities->first();
+
     if (!empty($contacts)) {
-      self::sendInstitutionMaterialContributionEmails($contacts, $description, $deliveredBy, $deliveredByContact, $activityDate);
+      self::sendInstitutionMaterialContributionEmails($organizationName, $organizationAddress, $contribution, $contacts, $description, $deliveredBy, $deliveredByContact, $activityDate);
     }
   }
 
@@ -125,7 +146,8 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
   /**
    *
    */
-  private static function sendInstitutionMaterialContributionEmails(array $contacts, string $description, string $deliveredBy, string $deliveredByContact, string $activityDate) {
+
+  private static function sendInstitutionMaterialContributionEmails(string $organizationName, string $organizationAddress, array $contribution, array $contacts, string $description, string $deliveredBy, string $deliveredByContact, string $activityDate) {
     foreach ($contacts as $contact) {
       $email = $contact['email'];
       $name = $contact['name'];
@@ -133,7 +155,7 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
 
       $subject = 'Acknowledgement for your material contribution to Goonj';
       $body = self::generateEmailBody($name);
-      $html = self::generateContributionReceiptHtml($email, $phone, $description, $name, $deliveredBy, $deliveredByContact, $activityDate);
+      $html = self::generateContributionReceiptHtml($organizationName, $organizationAddress, $contribution, $email, $phone, $description, $name, $deliveredBy, $deliveredByContact, $activityDate);
       $attachments = [\CRM_Utils_Mail::appendPDF('institution_material_contribution.pdf', $html)];
       $params = self::prepareEmailParams($subject, $body, $attachments, $email);
 
@@ -188,7 +210,8 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
    * @return string
    *   The generated HTML.
    */
-  private static function generateContributionReceiptHtml($email, $contactPhone, $description, $contactName, $deliveredBy, $deliveredByContact, $activityDate) {
+
+  private static function generateContributionReceiptHtml($organizationName, $organizationAddress, $contribution, $email, $contactPhone, $description, $contactName, $deliveredBy, $deliveredByContact, $activityDate) {
 
     $baseDir = plugin_dir_path(__FILE__) . '../../../themes/goonj-crm/';
 
@@ -213,16 +236,13 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
           <img src="data:image/png;base64,{$imageData['logo']}" alt="Goonj Logo" style="width: 95px; height: 80px;">
         </div>
         
-        <div style="width: 100%; font-size: 14px;">
+        <div style="width: 100%; font-size: 12px;">
           <div style="float: left; text-align: left;">
-            <!-- Material Acknowledgment# {$activity['id']} -->
-          </div>
-          <div style="float: right; text-align: right;">
-            Goonj, C-544, Pocket C, Sarita Vihar, Delhi, India
+            Material Acknowledgment# {$contribution['id']}
           </div>
         </div>
         <br><br>
-        <div style="font-weight: bold; font-style: italic; margin-top: 6px; margin-bottom: 6px;">
+        <div style="font-weight: bold; font-style: italic; margin-top: 6px; margin-bottom: 6px; font-size: 14px;">
           "We appreciate your contribution of pre-used/new material. Goonj makes sure that the material reaches people with dignity and care."
         </div>
         <table border="1" cellpadding="10" cellspacing="0" style="width: 100%; border-collapse: collapse;">
@@ -230,43 +250,52 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
             .table-header {
               text-align: left;
               font-weight: bold;
+              font-size: 14px;
+            }
+            .table-cell {
+              font-size: 14px;
+              text-align: center;
             }
           </style>
           <!-- Table rows for each item -->
-          <tr>
-            <td class="table-header">Description of Material</td>
-            <td style="text-align: center;">{$description}</td>
-          </tr>
-          <tr>
-            <td class="table-header">Received On</td>
-            <td style="text-align: center;">{$activityDate}</td>
-          </tr>
-          <tr>
-            <td class="table-header">From</td>
-            <td style="text-align: center;">{$contactName}</td>
-          </tr>
-          <tr>
-            <td class="table-header">Email</td>
-            <td style="text-align: center;">{$email}</td>
-          </tr>
-          <tr>
-            <td class="table-header">Phone</td>
-            <td style="text-align: center;">{$contactPhone}</td>
-          </tr>
-          <tr>
-            <td class="table-header">Delivered by (Name & contact no.)</td>
-            <td style="text-align: center;">
-            {$deliveredBy}<br>
-            {$deliveredByContact}
-          </td>
-        </tr>
-
-        </table>
-        <div style="text-align: right; font-size: 14px;">
-          Team Goonj
-        </div>
+            <tr>
+              <td class="table-header">Description of Material</td>
+              <td class="table-cell">{$description}</td>
+            </tr>
+            <tr>
+              <td class="table-header">Received On</td>
+              <td class="table-cell">{$activityDate}</td>
+            </tr>
+            <tr>
+              <td class="table-header">Institution Name</td>
+              <td class="table-cell">{$organizationName}</td>
+            </tr>
+            <tr>
+              <td class="table-header">Address</td>
+              <td class="table-cell">{$organizationAddress}</td>
+            </tr>
+            <tr>
+              <td class="table-header">From</td>
+              <td class="table-cell">{$contactName}</td>
+            </tr>
+            <tr>
+              <td class="table-header">Email</td>
+              <td class="table-cell">{$email}</td>
+            </tr>
+            <tr>
+              <td class="table-header">Phone</td>
+              <td class="table-cell">{$contactPhone}</td>
+            </tr>
+            <tr>
+              <td class="table-header">Delivered by (Name & contact no.)</td>
+              <td class="table-cell">
+                {$deliveredBy}<br>
+                {$deliveredByContact}
+              </td>
+            </tr>
+          </table>
         <div style="width: 100%; margin-top: 16px;">
-        <div style="float: left; width: 60%; font-size: 14px;">
+        <div style="float: left; width: 60%; font-size: 12px;">
         <p>Join us, by encouraging your friends, relatives, colleagues, and neighbours to join the journey as all of us have a lot to give.</p>
         <p style="margin-top: 8px;">
         <strong>With Material Money Matters</strong> Your monetary contribution is needed too for sorting, packing, transportation to implementation. (Financial contributions are tax-exempted u/s 80G of IT Act)
@@ -279,13 +308,13 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
         </div>
         <div style="clear: both; margin-top: 20px;"></div>
         <div style="width: 100%; margin-top: 15px; background-color: #f2f2f2; padding: 16px; font-weight: 300; color: #000000">
-          <div style="font-size: 14px; margin-bottom: 20px;">
+          <div style="font-size: 12px; margin-bottom: 20px;">
             <div style="position: relative; height: 24px;">
-              <div style="font-size: 14px; float: left; color:">
+              <div style="font-size: 12px; float: left; color:">
                 Goonj, C-544, 1st Floor, C-Pocket, Sarita Vihar,<br>
                 New Delhi-110076
               </div>
-              <div style="font-size: 14px; float: right;">
+              <div style="font-size: 12px; float: right;">
                 <img src="data:image/png;base64,{$imageData['callIcon']}" alt="Phone" style="width: 16px; height: 16px; margin-right: 5px;">
                 011-26972351/41401216
               </div>
@@ -293,7 +322,7 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
           </div>
     
           <div style="text-align: center; width: 100%; font-size: 14px; margin-bottom: 20px;">
-              <div style="font-size: 14px;">
+              <div style="font-size: 12px;">
                 <img src="data:image/png;base64,{$imageData['emailIcon']}" alt="Email" style="width: 16px; height: 16px; display: inline;">
                 <span style="display: inline; margin-left: 0;">mail@goonj.org</span>
                 <img src="data:image/png;base64,{$imageData['domainIcon']}" alt="Website" style="width: 16px; height: 16px; margin-right: 5px;">
