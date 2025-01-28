@@ -286,7 +286,14 @@ class RazorpaySubscriptionImporter {
       return NULL;
     }
 
-    // Create a new contact if no match.
+    if (count($emailContactIDs) === 1) {
+      return reset($emailContactIDs);
+    }
+
+    if (count($phoneContactIDs) === 1) {
+      return reset($phoneContactIDs);
+    }
+
     return $this->createContact(['name' => $name, 'email' => $email, 'phone' => $phone]);
   }
 
