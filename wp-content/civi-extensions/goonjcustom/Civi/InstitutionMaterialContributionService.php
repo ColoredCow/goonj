@@ -30,7 +30,7 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
       return;
     }
     $data = json_decode($objectRef->data, TRUE);
-    // error_log("data: " . print_r($data, TRUE));.
+
     if (!$data) {
       return;
     }
