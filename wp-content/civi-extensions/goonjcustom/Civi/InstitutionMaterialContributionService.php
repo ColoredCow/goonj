@@ -4,6 +4,7 @@ namespace Civi;
 
 use Civi\Api4\Campaign;
 use Civi\Api4\Contact;
+use Civi\Api4\Organization;
 use Civi\Api4\Relationship;
 use Civi\Core\Service\AutoSubscriber;
 
@@ -42,8 +43,27 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
     $organizationId = $data['Organization1'][0]['fields']['id'] ?? NULL;
     $contacts = self::fetchContributionContacts($campaignId, $organizationId);
 
+    $organizations = Organization::get(FALSE)
+      ->addSelect('Institute_Registration.Address', 'display_name')
+      ->addWhere('id', '=', $organizationId)
+      ->execute()->single();
+
+    $organizationName = $organizations['display_name'];
+    $organizationAddress = $organizations['Institute_Registration.Address'];
+
+    $activities = Activity::get(FALSE)
+      ->addSelect('*')
+      ->addJoin('Organization AS organization', 'LEFT')
+      ->addWhere('activity_type_id:name', '=', 'Institution Material Contribution')
+      ->addWhere('organization.id', '=', $organizationId)
+      ->addOrderBy('created_date', 'DESC')
+      ->setLimit(1)
+      ->execute();
+
+    $contribution = $activities->first();
+
     if (!empty($contacts)) {
-      self::sendInstitutionMaterialContributionEmails($contacts, $description, $deliveredBy, $deliveredByContact, $activityDate);
+      self::sendInstitutionMaterialContributionEmails($organizationName, $organizationAddress, $contribution, $contacts, $description, $deliveredBy, $deliveredByContact, $activityDate);
     }
   }
 
@@ -125,7 +145,7 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
   /**
    *
    */
-  private static function sendInstitutionMaterialContributionEmails(array $contacts, string $description, string $deliveredBy, string $deliveredByContact, string $activityDate) {
+  private static function sendInstitutionMaterialContributionEmails(string $organizationName, string $organizationAddress, array $contribution, array $contacts, string $description, string $deliveredBy, string $deliveredByContact, string $activityDate) {
     foreach ($contacts as $contact) {
       $email = $contact['email'];
       $name = $contact['name'];
@@ -133,7 +153,7 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
 
       $subject = 'Acknowledgement for your material contribution to Goonj';
       $body = self::generateEmailBody($name);
-      $html = self::generateContributionReceiptHtml($email, $phone, $description, $name, $deliveredBy, $deliveredByContact, $activityDate);
+      $html = self::generateContributionReceiptHtml($organizationName, $organizationAddress, $contribution, $email, $phone, $description, $name, $deliveredBy, $deliveredByContact, $activityDate);
       $attachments = [\CRM_Utils_Mail::appendPDF('institution_material_contribution.pdf', $html)];
       $params = self::prepareEmailParams($subject, $body, $attachments, $email);
 
@@ -188,7 +208,7 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
    * @return string
    *   The generated HTML.
    */
-  private static function generateContributionReceiptHtml($email, $contactPhone, $description, $contactName, $deliveredBy, $deliveredByContact, $activityDate) {
+  private static function generateContributionReceiptHtml($organizationName, $organizationAddress, $contribution, $email, $contactPhone, $description, $contactName, $deliveredBy, $deliveredByContact, $activityDate) {
 
     $baseDir = plugin_dir_path(__FILE__) . '../../../themes/goonj-crm/';
 
@@ -230,35 +250,42 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
             }
           </style>
           <!-- Table rows for each item -->
-          <tr>
-            <td class="table-header">Description of Material</td>
-            <td style="text-align: center;">{$description}</td>
-          </tr>
-          <tr>
-            <td class="table-header">Received On</td>
-            <td style="text-align: center;">{$activityDate}</td>
-          </tr>
-          <tr>
-            <td class="table-header">From</td>
-            <td style="text-align: center;">{$contactName}</td>
-          </tr>
-          <tr>
-            <td class="table-header">Email</td>
-            <td style="text-align: center;">{$email}</td>
-          </tr>
-          <tr>
-            <td class="table-header">Phone</td>
-            <td style="text-align: center;">{$contactPhone}</td>
-          </tr>
-          <tr>
-            <td class="table-header">Delivered by (Name & contact no.)</td>
-            <td style="text-align: center;">
-            {$deliveredBy}<br>
-            {$deliveredByContact}
-          </td>
-        </tr>
-
-        </table>
+            <tr>
+              <td class="table-header">Description of Material</td>
+              <td class="table-cell">{$description}</td>
+            </tr>
+            <tr>
+              <td class="table-header">Received On</td>
+              <td class="table-cell">{$activityDate}</td>
+            </tr>
+            <tr>
+              <td class="table-header">Institution Name</td>
+              <td class="table-cell">{$organizationName}</td>
+            </tr>
+            <tr>
+              <td class="table-header">Address</td>
+              <td class="table-cell">{$organizationAddress}</td>
+            </tr>
+            <tr>
+              <td class="table-header">From</td>
+              <td class="table-cell">{$contactName}</td>
+            </tr>
+            <tr>
+              <td class="table-header">Email</td>
+              <td class="table-cell">{$email}</td>
+            </tr>
+            <tr>
+              <td class="table-header">Phone</td>
+              <td class="table-cell">{$contactPhone}</td>
+            </tr>
+            <tr>
+              <td class="table-header">Delivered by (Name & contact no.)</td>
+              <td class="table-cell">
+                {$deliveredBy}<br>
+                {$deliveredByContact}
+              </td>
+            </tr>
+          </table>
         <div style="width: 100%; margin-top: 16px;">
         <div style="float: left; width: 60%; font-size: 14px;">
         <p>Join us, by encouraging your friends, relatives, colleagues, and neighbours to join the journey as all of us have a lot to give.</p>
