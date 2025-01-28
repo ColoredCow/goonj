@@ -104,6 +104,14 @@ $institution_collection_camp_material_contribution_link = sprintf(
     $action_target['Institution_Collection_Camp_Intent.District_City'],
 );
 
+$institution_dropping_center_material_contribution_link = sprintf(
+    '/institution-dropping-center-contribution?source=%s&target_id=%s&state_province_id=%s&city=%s',
+    $action_target['title'],
+    $action_target['id'],
+    $action_target['Institution_Dropping_Center_Intent.State'],
+    $action_target['Institution_Dropping_Center_Intent.District_City'],
+);
+
 $institution_dropping_center_register_link = sprintf(
     '/institution-dropping-center-individual-volunteer-check/?source=%s',
     $action_target['title'],
@@ -258,7 +266,6 @@ if (in_array($target, ['collection-camp', 'institution-collection-camp', 'droppi
   $participant_registration_link = $target_info['event_registration'];
 
   $name_of_institute = $action_target[$target_info['name_of_institute']];
-  error_log("name_of_institute: " . print_r($name_of_institute, TRUE));
 
   $include_attendee_feedback_link = $target_info['include_attendee_feedback_link'];
   $should_include_attendee_feedback = $target_info['should_include_attendee_feedback'];
