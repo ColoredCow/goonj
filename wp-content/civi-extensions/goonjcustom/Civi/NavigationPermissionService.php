@@ -23,7 +23,6 @@ class NavigationPermissionService extends AutoSubscriber {
    *
    */
   public function hideButtonsForMMT(&$page) {
-    error_log("page: " . print_r($page, TRUE));
     if ($page->getVar('_name') === 'CRM_Contact_Page_View_Summary') {
       if (\CRM_Core_Permission::check('mmt') && !\CRM_Core_Permission::check('admin')) {
         \CRM_Core_Resources::singleton()->addScript("
