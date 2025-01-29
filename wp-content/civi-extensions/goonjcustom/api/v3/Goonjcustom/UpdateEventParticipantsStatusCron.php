@@ -56,13 +56,12 @@ function civicrm_api3_goonjcustom_update_event_participants_status_cron($params)
 
     $participantArray = $eventsDetails->getArrayCopy();
     foreach ($participantArray as $participant) {
-      \Civi::log()->info('Updating participant status', ['participant_id' => $participant['participant.created_id']]);
       try {
         $results = Participant::update(TRUE)
           ->addValue('status_id', 3)
           ->addWhere('contact_id', '=', $participant['participant.created_id'])
+          ->addWhere('event_id', '=', $participant['id'])
           ->execute();
-        \Civi::log()->info('Participant status updated', ['results' => $results]);
       }
       catch (\Exception $e) {
         \Civi::log()->error('Error updating participant status', [
