@@ -3,10 +3,8 @@
 namespace Civi;
 
 use Civi\Api4\Activity;
-use Civi\Api4\Campaign;
 use Civi\Api4\Contact;
 use Civi\Api4\Organization;
-use Civi\Api4\Relationship;
 use Civi\Core\Service\AutoSubscriber;
 
 /**
@@ -42,7 +40,7 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
     $deliveredBy = $activityData['Institution_Material_Contribution.Delivered_By_Name'] ?? '';
     $deliveredByContact = $activityData['Institution_Material_Contribution.Delivered_By_Contact'] ?? '';
     $organizationId = $data['Organization1'][0]['fields']['id'] ?? NULL;
-    $contacts = self::fetchContributionContacts($campaignId, $organizationId);
+    $institutionPOCId = $data['Individual1'][0]['fields']['id'] ?? NULL;
 
     $organizations = Organization::get(FALSE)
       ->addSelect('Institute_Registration.Address', 'display_name')
@@ -63,67 +61,9 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
 
     $contribution = $activities->first();
 
-    if (!empty($contacts)) {
-      self::sendInstitutionMaterialContributionEmails($organizationName, $organizationAddress, $contribution, $contacts, $description, $deliveredBy, $deliveredByContact, $activityDate);
+    if (!empty($institutionPOCId)) {
+      self::sendInstitutionMaterialContributionEmails($institutionPOCId, $organizationName, $organizationAddress, $contribution, $description, $deliveredBy, $deliveredByContact, $activityDate);
     }
-  }
-
-  /**
-   *
-   */
-  private static function fetchContributionContacts($campaignId, $organizationId) {
-    $contacts = [];
-
-    // Case 1: Campaign Institution POC.
-    if ($campaignId) {
-      $contacts = self::getCampaignInstitutionPOC($campaignId);
-    }
-    // Case 2: Institution POC.
-    elseif ($organizationId) {
-      $contacts = self::getInstitutionRelationships($organizationId);
-    }
-
-    return $contacts;
-  }
-
-  /**
-   *
-   */
-  private static function getCampaignInstitutionPOC($campaignId) {
-    $contacts = [];
-    $campaign = Campaign::get(TRUE)
-      ->addSelect('Additional_Details.Campaign_Institution_PoC')
-      ->addWhere('id', '=', $campaignId)
-      ->execute()
-      ->first();
-
-    if (!empty($campaign['Additional_Details.Campaign_Institution_PoC'])) {
-      $contact = self::getContactDetails($campaign['Additional_Details.Campaign_Institution_PoC']);
-      if ($contact) {
-        $contacts[$contact['email']] = $contact;
-      }
-    }
-    return $contacts;
-  }
-
-  /**
-   *
-   */
-  private static function getInstitutionRelationships($organizationId) {
-    $contacts = [];
-    $relationship = Relationship::get(FALSE)
-      ->addWhere('contact_id_a', '=', $organizationId)
-      ->addWhere('relationship_type_id:name', '=', 'Institution POC of')
-      ->execute()
-      ->first();
-
-    if (!empty($relationship['contact_id_b'])) {
-      $contact = self::getContactDetails($relationship['contact_id_b']);
-      if ($contact) {
-        $contacts[$contact['email']] = $contact;
-      }
-    }
-    return $contacts;
   }
 
   /**
@@ -136,8 +76,8 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
       ->execute()
       ->first();
 
-    return (!empty($contact['email_primary.email'])) ? [
-      'email' => $contact['email_primary.email'],
+    return (!empty($contact)) ? [
+      'email' => $contact['email_primary.email'] ?? '',
       'phone' => $contact['phone_primary.phone'] ?? '',
       'name' => $contact['display_name'] ?? '',
     ] : NULL;
@@ -146,21 +86,23 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
   /**
    *
    */
+  private static function sendInstitutionMaterialContributionEmails(string $institutionPOCId, string $organizationName, string $organizationAddress, array $contribution, string $description, string $deliveredBy, string $deliveredByContact, string $activityDate) {
+    $contact = self::getContactDetails($institutionPOCId);
 
-  private static function sendInstitutionMaterialContributionEmails(string $organizationName, string $organizationAddress, array $contribution, array $contacts, string $description, string $deliveredBy, string $deliveredByContact, string $activityDate) {
-    foreach ($contacts as $contact) {
-      $email = $contact['email'];
-      $name = $contact['name'];
-      $phone = $contact['phone'];
-
-      $subject = 'Acknowledgement for your material contribution to Goonj';
-      $body = self::generateEmailBody($name);
-      $html = self::generateContributionReceiptHtml($organizationName, $organizationAddress, $contribution, $email, $phone, $description, $name, $deliveredBy, $deliveredByContact, $activityDate);
-      $attachments = [\CRM_Utils_Mail::appendPDF('institution_material_contribution.pdf', $html)];
-      $params = self::prepareEmailParams($subject, $body, $attachments, $email);
-
-      \CRM_Utils_Mail::send($params);
+    if (!$contact || empty($contact['email'])) {
+      return;
     }
+    $email = $contact['email'];
+    $name = $contact['name'];
+    $phone = $contact['phone'];
+
+    $subject = 'Acknowledgement for your material contribution to Goonj';
+    $body = self::generateEmailBody($name);
+    $html = self::generateContributionReceiptHtml($organizationName, $organizationAddress, $contribution, $email, $phone, $description, $name, $deliveredBy, $deliveredByContact, $activityDate);
+    $attachments = [\CRM_Utils_Mail::appendPDF('institution_material_contribution.pdf', $html)];
+    $params = self::prepareEmailParams($subject, $body, $attachments, $email);
+
+    \CRM_Utils_Mail::send($params);
   }
 
   /**
@@ -210,7 +152,6 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
    * @return string
    *   The generated HTML.
    */
-
   private static function generateContributionReceiptHtml($organizationName, $organizationAddress, $contribution, $email, $contactPhone, $description, $contactName, $deliveredBy, $deliveredByContact, $activityDate) {
 
     $baseDir = plugin_dir_path(__FILE__) . '../../../themes/goonj-crm/';
