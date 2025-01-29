@@ -29,7 +29,6 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
       return;
     }
     $data = json_decode($objectRef->data, TRUE);
-
     if (!$data) {
       return;
     }
@@ -40,7 +39,11 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
     $deliveredBy = $activityData['Institution_Material_Contribution.Delivered_By_Name'] ?? '';
     $deliveredByContact = $activityData['Institution_Material_Contribution.Delivered_By_Contact'] ?? '';
     $organizationId = $data['Organization1'][0]['fields']['id'] ?? NULL;
-    $institutionPOCId = $data['Individual1'][0]['fields']['id'] ?? NULL;
+    $email = $data['Individual1'][0]['joins']['Email'][0]['email'];
+    $phone = $data['Individual1'][0]['joins']['Phone'][0]['phone'];
+    $firstName = $data['Individual1'][0]['fields']['first_name'];
+    $lastName = $data['Individual1'][0]['fields']['last_name'] ?? '';
+    $displayName = trim("$firstName $lastName");
 
     $organizations = Organization::get(FALSE)
       ->addSelect('Institute_Registration.Address', 'display_name')
@@ -61,8 +64,8 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
 
     $contribution = $activities->first();
 
-    if (!empty($institutionPOCId)) {
-      self::sendInstitutionMaterialContributionEmails($institutionPOCId, $organizationName, $organizationAddress, $contribution, $description, $deliveredBy, $deliveredByContact, $activityDate);
+    if (!empty($email)) {
+      self::sendInstitutionMaterialContributionEmails($displayName, $email, $phone, $organizationName, $organizationAddress, $contribution, $description, $deliveredBy, $deliveredByContact, $activityDate);
     }
   }
 
@@ -86,19 +89,11 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
   /**
    *
    */
-  private static function sendInstitutionMaterialContributionEmails(string $institutionPOCId, string $organizationName, string $organizationAddress, array $contribution, string $description, string $deliveredBy, string $deliveredByContact, string $activityDate) {
-    $contact = self::getContactDetails($institutionPOCId);
-
-    if (!$contact || empty($contact['email'])) {
-      return;
-    }
-    $email = $contact['email'];
-    $name = $contact['name'];
-    $phone = $contact['phone'];
+  private static function sendInstitutionMaterialContributionEmails(string $displayName, string $email, string $phone, string $organizationName, string $organizationAddress, array $contribution, string $description, string $deliveredBy, string $deliveredByContact, string $activityDate) {
 
     $subject = 'Acknowledgement for your material contribution to Goonj';
-    $body = self::generateEmailBody($name);
-    $html = self::generateContributionReceiptHtml($organizationName, $organizationAddress, $contribution, $email, $phone, $description, $name, $deliveredBy, $deliveredByContact, $activityDate);
+    $body = self::generateEmailBody($displayName);
+    $html = self::generateContributionReceiptHtml($organizationName, $organizationAddress, $contribution, $email, $phone, $description, $deliveredBy, $deliveredByContact, $activityDate);
     $attachments = [\CRM_Utils_Mail::appendPDF('institution_material_contribution.pdf', $html)];
     $params = self::prepareEmailParams($subject, $body, $attachments, $email);
 
@@ -108,14 +103,14 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
   /**
    *
    */
-  private static function generateEmailBody(string $contactName) {
+  private static function generateEmailBody(string $displayName) {
     return "
       <html>
           <head>
               <title>Thank You for Your Contribution</title>
           </head>
           <body>
-              <p>Hello {$contactName},</p>
+              <p>Hello {$displayName},</p>
               <p>Thank you for contributing material to Goonj.</p>
               <p>This contribution is a step towards sustainability and serves as a reminder to 'Goonj it'.</p>
               <p>The contributions are not merely recycled; they actively participate in creating a tangible impact on the lives of many at the grassroots level and enable communities to solve their own issues on water access, education, roads, menstrual hygiene, disaster relief and rehabilitation.</p>
@@ -152,7 +147,7 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
    * @return string
    *   The generated HTML.
    */
-  private static function generateContributionReceiptHtml($organizationName, $organizationAddress, $contribution, $email, $contactPhone, $description, $contactName, $deliveredBy, $deliveredByContact, $activityDate) {
+  private static function generateContributionReceiptHtml($organizationName, $organizationAddress, $contribution, $email, $contactPhone, $description, $deliveredBy, $deliveredByContact, $activityDate) {
 
     $baseDir = plugin_dir_path(__FILE__) . '../../../themes/goonj-crm/';
 
@@ -214,10 +209,6 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
             <tr>
               <td class="table-header">Address</td>
               <td class="table-cell">{$organizationAddress}</td>
-            </tr>
-            <tr>
-              <td class="table-header">From</td>
-              <td class="table-cell">{$contactName}</td>
             </tr>
             <tr>
               <td class="table-header">Email</td>
