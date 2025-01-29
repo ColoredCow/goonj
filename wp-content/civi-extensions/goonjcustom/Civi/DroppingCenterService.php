@@ -45,7 +45,7 @@ class DroppingCenterService extends AutoSubscriber {
       '&hook_civicrm_pre' => [
         ['generateDroppingCenterQr'],
         ['linkDroppingCenterToContact'],
-        ['processDispatchEmail'],
+        ['processDispatchEmail']
       ],
       '&hook_civicrm_custom' => [
         ['setOfficeDetails'],
@@ -473,7 +473,7 @@ class DroppingCenterService extends AutoSubscriber {
    *
    */
   public static function processDispatchEmail(string $op, string $objectName, $objectId, &$objectRef) {
-    if ($objectRef['afform_name'] !== 'afformSendDispatchEmail') {
+    if (empty($objectRef['afform_name']) || $objectRef['afform_name'] !== 'afformSendDispatchEmail') {
       return;
     }
 
@@ -567,85 +567,85 @@ class DroppingCenterService extends AutoSubscriber {
         'module' => 'afsearchLogistics',
         'directive' => 'afsearch-logistics',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
       ],
       'eventCoordinators' => [
         'title' => ts('Event Coordinators'),
         'module' => 'afsearchCoordinator',
         'directive' => 'afsearch-coordinator',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
       ],
       'vehicleDispatch' => [
         'title' => ts('Dispatch'),
         'module' => 'afsearchDroppingCenterVehicleDispatchData',
         'directive' => 'afsearch-dropping-center-vehicle-dispatch-data',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
       ],
       'materialAuthorization' => [
         'title' => ts('Material Authorization'),
         'module' => 'afsearchDroppingCenterAcknowledgementForLogisticsData',
         'directive' => 'afsearch-dropping-center-acknowledgement-for-logistics-data',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
       ],
       'materialContribution' => [
         'title' => ts('Material Contribution'),
         'module' => 'afsearchDroppingCenterMaterialContributions',
         'directive' => 'afsearch-dropping-center-material-contributions',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'mmt'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'mmt', 'urban_ops_admin'],
       ],
       'status' => [
         'title' => ts('Status'),
         'module' => 'afsearchStatus',
         'directive' => 'afsearch-status',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
       ],
       'visit' => [
         'title' => ts('Visit'),
         'module' => 'afsearchVisitList',
         'directive' => 'afsearch-visit-list',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
       ],
       'donationBox' => [
         'title' => ts('Donation Box'),
         'module' => 'afsearchDonation',
         'directive' => 'afsearch-donation',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
       ],
       'outcome' => [
         'title' => ts('Outcome'),
         'module' => 'afformDroppingCenterOutcome',
         'directive' => 'afform-dropping-center-outcome',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCampService.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
       ],
       'feedback' => [
         'title' => ts('Feedback'),
         'module' => 'afsearchFeedback',
         'directive' => 'afsearch-feedback',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+      ],
+      'monetaryContribution' => [
+        'title' => ts('Monetary Contribution'),
+        'module' => 'afsearchMonetaryContribution',
+        'directive' => 'afsearch-monetary-contribution',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['account_team', 'ho_account'],
+      ],
+      'monetaryContributionForUrbanOps' => [
+        'title' => ts('Monetary Contribution'),
+        'module' => 'afsearchMonetaryContributionForUrbanOps',
+        'directive' => 'afsearch-monetary-contribution-for-urban-ops',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
-      // 'monetaryContribution' => [
-      //   'title' => ts('Monetary Contribution'),
-      //   'module' => 'afsearchMonetaryContribution',
-      //   'directive' => 'afsearch-monetary-contribution',
-      //   'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-      //   'permissions' => ['account_team', 'ho_account'],
-      // ],
-      // 'monetaryContributionForUrbanOps' => [
-      //   'title' => ts('Monetary Contribution'),
-      //   'module' => 'afsearchMonetaryContributionForUrbanOps',
-      //   'directive' => 'afsearch-monetary-contribution-for-urban-ops',
-      //   'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-      //   'permissions' => ['goonj_chapter_admin', 'urbanops'],
-      // ],
     ];
 
     foreach ($tabConfigs as $key => $config) {

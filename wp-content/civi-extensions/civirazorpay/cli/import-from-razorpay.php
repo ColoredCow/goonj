@@ -41,7 +41,7 @@ class RazorpaySubscriptionImporter {
   public function __construct() {
     civicrm_initialize();
 
-    $this->isTest = TRUE;
+    $this->isTest = FALSE;
 
     $processorConfig = PaymentProcessor::get(FALSE)
       ->addWhere('payment_processor_type_id:name', '=', 'Razorpay')
@@ -286,7 +286,14 @@ class RazorpaySubscriptionImporter {
       return NULL;
     }
 
-    // Create a new contact if no match.
+    if (count($emailContactIDs) === 1) {
+      return reset($emailContactIDs);
+    }
+
+    if (count($phoneContactIDs) === 1) {
+      return reset($phoneContactIDs);
+    }
+
     return $this->createContact(['name' => $name, 'email' => $email, 'phone' => $phone]);
   }
 
@@ -302,10 +309,15 @@ class RazorpaySubscriptionImporter {
    *   Returns the created contact ID or null on failure.
    */
   private function createContact($params) {
+    $fullName = $params['name'] ?? '';
+    $nameParts = $this->splitName($fullName);
+
     // Step 1: Create an Individual contact.
     $contact = Individual::create(FALSE)
       ->addValue('source', 'Razorpay subscription import')
-      ->addValue('display_name', $params['name'] ?? 'Unknown Customer')
+      ->addValue('first_name', $nameParts['firstName'])
+      ->addValue('middle_name', $nameParts['middleName'])
+      ->addValue('last_name', $nameParts['lastName'])
       ->execute()
       ->first();
 
@@ -339,6 +351,49 @@ class RazorpaySubscriptionImporter {
   }
 
   /**
+   * Split a full name into first, middle, and last names.
+   *
+   * @param string $fullName
+   *   The full name to be split.
+   *
+   * @return array
+   *   An array with keys 'firstName', 'middleName', 'lastName'.
+   */
+  private function splitName(string $fullName): array {
+    $nameParts = preg_split('/\s+/', trim($fullName));
+
+    $firstName = '';
+    $middleName = '';
+    $lastName = '';
+
+    $count = count($nameParts);
+
+    if ($count === 1) {
+      $firstName = $nameParts[0];
+    }
+    elseif ($count === 2) {
+      $firstName = $nameParts[0];
+      $lastName = $nameParts[1];
+    }
+    elseif ($count === 3) {
+      $firstName = $nameParts[0];
+      $middleName = $nameParts[1];
+      $lastName = $nameParts[2];
+    }
+    elseif ($count > 3) {
+      $firstName = $nameParts[0];
+      $lastName = array_pop($nameParts);
+      $middleName = implode(' ', $nameParts);
+    }
+
+    return [
+      'firstName' => $firstName,
+      'middleName' => $middleName,
+      'lastName' => $lastName,
+    ];
+  }
+
+  /**
    * Log manual intervention cases.
    */
   private function logManualIntervention($message, $params) {
@@ -355,8 +410,12 @@ class RazorpaySubscriptionImporter {
   private function handleContributionRecur(array $subscription, int $contactID): void {
     echo "Creating ContributionRecur for Subscription ID: {$subscription['id']}\n";
 
+    // Fetch plan details from Razorpay.
+    $plan = $this->api->plan->fetch($subscription['plan_id']);
+    $planItem = $plan->item;
+
     // Mapping Razorpay data to CiviCRM fields.
-    $amount = $subscription['quantity'] ?? 0;
+    $amount = $planItem->amount / 100;
     $currency = strtoupper($subscription['currency'] ?? 'INR');
     $frequencyUnitMap = [
       'day' => 'day',
@@ -379,27 +438,42 @@ class RazorpaySubscriptionImporter {
     }
 
     try {
-      $contributionRecur = ContributionRecur::create(FALSE)
-        ->addValue('contact_id', $contactID)
-        ->addValue('amount', $amount)
-        ->addValue('currency', $currency)
-        ->addValue('frequency_unit', $frequencyUnit)
-        ->addValue('frequency_interval', $frequencyInterval)
-        ->addValue('installments', $installments)
-        ->addValue('start_date', $startDate)
-        ->addValue('create_date', date('Y-m-d H:i:s'))
-        ->addValue('modified_date', date('Y-m-d H:i:s'))
-        ->addValue('processor_id', $subscription['id'])
-        ->addValue('is_test', $this->isTest)
-        ->addValue('contribution_status_id:name', 'In Progress')
-        ->addValue('financial_type_id:name', 'Donation')
-        ->addValue('payment_instrument_id:name', 'Credit Card')
-        ->addValue('trxn_id', $invoiceID)
-        ->addValue('invoice_id', $invoiceID)
-        ->addValue('payment_processor_id', $this->processorID)
-        ->execute();
+      $existingRecur = ContributionRecur::get(FALSE)
+        ->addSelect('id')
+        ->addWhere('invoice_id', '=', $invoiceID)
+        ->addWhere('is_test', '=', $this->isTest)
+        ->execute()
+        ->first();
 
-      $contributionRecurID = $contributionRecur->first()['id'];
+      if ($existingRecur) {
+        $contributionRecurID = $existingRecur['id'];
+        echo "Existing ContributionRecur found with ID: $contributionRecurID. Skipping creation.\n";
+      }
+      else {
+        $contributionRecur = ContributionRecur::create(FALSE)
+          ->addValue('contact_id', $contactID)
+          ->addValue('amount', $amount)
+          ->addValue('currency', $currency)
+          ->addValue('frequency_unit', $frequencyUnit)
+          ->addValue('frequency_interval', $frequencyInterval)
+          ->addValue('installments', $installments)
+          ->addValue('start_date', $startDate)
+          ->addValue('create_date', date('Y-m-d H:i:s'))
+          ->addValue('modified_date', date('Y-m-d H:i:s'))
+          ->addValue('processor_id', $subscription['id'])
+          ->addValue('is_test', $this->isTest)
+          ->addValue('contribution_status_id:name', 'In Progress')
+          ->addValue('financial_type_id:name', 'Donation')
+          ->addValue('payment_instrument_id:name', 'Credit Card')
+          ->addValue('trxn_id', $invoiceID)
+          ->addValue('invoice_id', $invoiceID)
+          ->addValue('payment_processor_id', $this->processorID)
+          ->execute();
+
+        $contributionRecurID = $contributionRecur->first()['id'];
+        echo "ContributionRecur successfully created with ID: $contributionRecurID.\n";
+
+      }
 
       if ($contributionRecurID) {
         $this->handleSubscriptionPayments($subscription['id'], $contributionRecurID, $contactID);
@@ -439,7 +513,7 @@ class RazorpaySubscriptionImporter {
         if (!empty($invoice['payment_id'])) {
           echo "Processing payment for Invoice ID: {$invoice['id']}\n";
           $payment = $this->api->payment->fetch($invoice['payment_id']);
-          $this->createContributionFromPayment($payment, $contributionRecurID, $contactID);
+          $this->processContributionFromPayment($payment, $contributionRecurID, $contactID);
         }
         else {
           echo "Invoice ID: {$invoice['id']} has no associated payment.\n";
@@ -459,8 +533,8 @@ class RazorpaySubscriptionImporter {
    * @param int $contributionRecurID
    * @param int $contactID
    */
-  private function createContributionFromPayment(object $payment, int $contributionRecurID, int $contactID): void {
-    echo "Creating Contribution for Payment ID: {$payment['id']}\n";
+  private function processContributionFromPayment(object $payment, int $contributionRecurID, int $contactID): void {
+    echo "Processing Contribution for Payment ID: {$payment['id']}\n";
 
     // Convert from smallest currency unit.
     $amount = $payment['amount'] / 100;
@@ -470,6 +544,18 @@ class RazorpaySubscriptionImporter {
     $invoiceId = md5(uniqid(rand(), TRUE));
 
     try {
+      $existingContribution = Contribution::get(FALSE)
+        ->addSelect('id')
+        ->addWhere('trxn_id', '=', $transactionId)
+        ->addWhere('is_test', '=', $this->isTest)
+        ->execute()
+        ->first();
+
+      if ($existingContribution) {
+        printf('Existing Contribution found with ID: %d for Payment ID: %d. Skipping creation.\n', $existingContribution['id'], $transactionId);
+        return;
+      }
+
       $contribution = Contribution::create(FALSE)
         ->addValue('contact_id', $contactID)
         ->addValue('financial_type_id:name', 'Donation')

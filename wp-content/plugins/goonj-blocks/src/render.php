@@ -112,6 +112,11 @@ $institution_dropping_center_material_contribution_link = sprintf(
     $action_target['Institution_Dropping_Center_Intent.District_City'],
 );
 
+$institution_dropping_center_register_link = sprintf(
+    '/institution-dropping-center-individual-volunteer-check/?source=%s',
+    $action_target['title'],
+);
+
 $sourceField = CustomField::get(FALSE)
   ->addSelect('id')
   ->addWhere('custom_group_id:name', '=', 'Contribution_Details')
@@ -261,14 +266,15 @@ if (in_array($target, ['collection-camp', 'institution-collection-camp', 'droppi
   $participant_registration_link = $target_info['event_registration'];
 
   $name_of_institute = $action_target[$target_info['name_of_institute']];
-  error_log("name_of_institute: " . print_r($name_of_institute, TRUE));
 
   $include_attendee_feedback_link = $target_info['include_attendee_feedback_link'];
   $should_include_attendee_feedback = $target_info['should_include_attendee_feedback'];
 
   ?>
     <div class="wp-block-gb-heading-wrapper">
-        <h2 class="wp-block-gb-heading"><?php echo esc_html($heading_text); ?></h2>
+        <h2 class="wp-block-gb-heading">
+            <?php echo ($target === 'events') ? esc_html($action_target['title']) : ''; ?>
+        </h2>
     </div>
     <table class="wp-block-gb-table">
         <tbody>
@@ -278,11 +284,15 @@ if (in_array($target, ['collection-camp', 'institution-collection-camp', 'droppi
             <td class="wp-block-gb-table-cell wp-block-gb-table-header">Name of Institute</td>
             <td class="wp-block-gb-table-cell"><?php echo esc_html($name_of_institute); ?></td>
         </tr>
-            <?php endif; ?>
-    <tr class="wp-block-gb-table-row">
-        <td class="wp-block-gb-table-cell wp-block-gb-table-header">Volunteer name</td>
-        <td class="wp-block-gb-table-cell"><?php echo esc_html($volunteer_name); ?></td>
-    </tr>
+        <?php endif; ?>
+        <tr class="wp-block-gb-table-row">
+            <td class="wp-block-gb-table-cell wp-block-gb-table-header">
+                <?php echo ($target === 'institution-dropping-center') ? 'Coordinator Name' : 'Volunteer Name'; ?>
+            </td>
+            <td class="wp-block-gb-table-cell">
+                <?php echo esc_html($volunteer_name); ?>
+            </td>
+        </tr>
    
         <?php endif; ?>
   <?php if ($target === 'collection-camp' || $target === 'institution-collection-camp' || $target === 'goonj-activities' || $target === 'institution-goonj-activities' || $target === 'events') : ?>
@@ -334,9 +344,9 @@ if (in_array($target, ['collection-camp', 'institution-collection-camp', 'droppi
                 <?php esc_html_e('Record your Material Contribution', 'goonj-blocks'); ?>
             </a>
         <?php endif; ?>
-        <!-- <a href="<?php echo esc_url($donation_link); ?>" class="wp-block-gb-action-button">
+        <a href="<?php echo esc_url($donation_link); ?>" class="wp-block-gb-action-button">
             <?php esc_html_e('Monetary Contribution', 'goonj-blocks'); ?>
-        </a> -->
+        </a>
         <?php if ($should_include_attendee_feedback): ?>
             <a href="<?php echo esc_url($include_attendee_feedback_link ?? '#'); ?>" class="wp-block-gb-action-button">
                 <?php esc_html_e('Record Attendee Feedback', 'goonj-blocks'); ?>
