@@ -23,11 +23,23 @@ class NavigationPermissionService extends AutoSubscriber {
    *
    */
   public function hideButtonsForMMT(&$page) {
+    error_log("page: " . print_r($page, TRUE));
     if ($page->getVar('_name') === 'CRM_Contact_Page_View_Summary') {
       if (\CRM_Core_Permission::check('mmt') && !\CRM_Core_Permission::check('admin')) {
         \CRM_Core_Resources::singleton()->addScript("
-              document.querySelectorAll('.crm-actions-ribbon').forEach(el => el.style.display = 'none');
-          ");
+                document.addEventListener('DOMContentLoaded', function() {
+                    document.querySelectorAll('.crm-actions-ribbon').forEach(el => el.style.display = 'none');
+                    
+                    document.querySelectorAll('afsearch-induction-details-of-contact').forEach(el => el.style.display = 'none');
+                    
+                    document.querySelectorAll('.crm-collapsible').forEach(function(el) {
+                        const title = el.querySelector('.collapsible-title');
+                        if (title && title.textContent.trim() === 'Volunteer Details') {
+                            el.style.display = 'none';  // Hides the entire collapsible section
+                        }
+                    });
+                });
+            ");
       }
     }
   }
@@ -78,7 +90,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Volunteers',
           'Individuals',
           'Offices',
-          'Urban Visit'
+          'Urban Visit',
         ],
       ],
       'goonj_chapter_admin' => [
