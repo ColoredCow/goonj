@@ -56,6 +56,9 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
       '&hook_civicrm_custom' => [
         ['setOfficeDetails'],
       ],
+      '&hook_civicrm_post' => [
+        ['updateActivityStatusOnOutcomeFilled'],
+      ],
       '&hook_civicrm_tabset' => 'institutionGoonjActivitiesTabset',
     ];
   }
@@ -640,6 +643,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
         ->addValue('Collection_Camp_Activity.Start_Date', $startDate)
         ->addValue('Collection_Camp_Activity.End_Date', $endDate)
         ->addValue('Collection_Camp_Activity.Organizing_Person', $initiator)
+        ->addValue('Collection_Camp_Activity.Activity_Status', 'planned')
         ->execute();
 
     }
@@ -866,4 +870,48 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
     }
   }
 
+    /**
+   * This hook is called after a db write on entities.
+   *
+   * @param string $op
+   *   The type of operation being performed.
+   * @param string $objectName
+   *   The name of the object.
+   * @param int $objectId
+   *   The unique identifier for the object.
+   * @param object $objectRef
+   *   The reference to the object.
+   */
+  public static function updateActivityStatusOnOutcomeFilled(string $op, string $objectName, int $objectId, &$objectRef) {
+
+    if ($objectName !== 'AfformSubmission') {
+      return;
+    }
+
+    $afformName = $objectRef->afform_name;
+
+    if (!in_array($afformName, ['afformInstitutionActivityOutcomeForm', 'afformInstitutionActivityOutcomeForm2'])) {
+      return;
+    }
+
+    $jsonData = $objectRef->data;
+    $dataArray = json_decode($jsonData, TRUE);
+
+
+    $collectionCampId = $dataArray['Eck_Collection_Camp1'][0]['fields']['id'];
+
+    if (!$collectionCampId) {
+      return;
+    }
+
+    try {
+      EckEntity::update('Collection_Camp_Activity', FALSE)
+      ->addValue('Collection_Camp_Activity.Activity_Status', 'completed')
+      ->addWhere('Collection_Camp_Activity.Collection_Camp_Id', '=', $collectionCampId)
+      ->execute();
+    }
+    catch (\Exception $e) {
+      \Civi::log()->error("Exception occurred while updating camp status for campId: $collectionCampId. Error: " . $e->getMessage());
+    }
+  }
 }
