@@ -600,11 +600,19 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
     }
 
     $activities = $objectRef['Institution_Goonj_Activities.How_do_you_want_to_engage_with_Goonj_'];
+
     $startDate = $objectRef['Institution_Goonj_Activities.Start_Date'];
     $endDate = $objectRef['Institution_Goonj_Activities.End_Date'];
     $initiator = $objectRef['Institution_Goonj_Activities.Institution_POC'];
 
-    foreach ($activities as $activityName) {
+    foreach ($activities as $activityId) {
+      $optionValues = OptionValue::get(FALSE)
+        ->addSelect('name')
+        ->addWhere('option_group_id:name', '=', 'Institution_Goonj_Activities_How_do_you_want_to_engage_with')
+        ->addWhere('value', '=', $activityId)
+        ->execute()->single();
+
+      $activityName = 'Organize ' . str_replace('_', ' ', $optionValues['name']);
       // Check if the activity is 'Others'.
       if ($activityName == 'Other') {
         $otherActivity = $objectRef['Institution_Goonj_Activities.Other_Activity_Details'] ?? '';
