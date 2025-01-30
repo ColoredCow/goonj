@@ -30,11 +30,11 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
       return;
     }
     $data = json_decode($objectRef->data, TRUE);
-  
+
     if (!$data) {
       return;
     }
-  
+
     $activityData = $data['Activity1'][0]['fields'] ?? [];
     $activityDate = $activityData['Institution_Material_Contribution.Contribution_Date'];
     $campaignId = $activityData['campaign_id'] ?? NULL;
@@ -43,15 +43,15 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
     $deliveredByContact = $activityData['Institution_Material_Contribution.Delivered_By_Contact'] ?? '';
     $organizationId = $data['Organization1'][0]['fields']['id'] ?? NULL;
     $institutionPOCId = $data['Individual1'][0]['fields']['id'] ?? NULL;
-  
+
     $organizations = Organization::get(FALSE)
       ->addSelect('Institute_Registration.Address', 'display_name')
       ->addWhere('id', '=', $organizationId)
       ->execute()->single();
-  
+
     $organizationName = $organizations['display_name'];
     $organizationAddress = $organizations['Institute_Registration.Address'];
-  
+
     $activities = Activity::get(FALSE)
       ->addSelect('*')
       ->addJoin('Organization AS organization', 'LEFT')
@@ -60,27 +60,31 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
       ->addOrderBy('created_date', 'DESC')
       ->setLimit(1)
       ->execute();
-  
+
     $contribution = $activities->first();
-  
+
+    // Determine target contact with fallback logic.
     if (!empty($institutionPOCId)) {
       $targetContactId = $institutionPOCId;
-    } else {
-      // Check for Primary Institution POC relationship
+    }
+    else {
+      // Check for Primary Institution POC relationship.
       $relationships = Relationship::get(FALSE)
         ->addWhere('contact_id_a', '=', $organizationId)
         ->addWhere('relationship_type_id:name', '=', 'Primary Institution POC of')
         ->execute();
-  
-      $initiatorId = null;
+
+      error_log("relationships: " . print_r($relationships, TRUE));
+
+      $initiatorId = NULL;
       if ($relationships) {
         $firstRelationship = $relationships->first();
-        $initiatorId = $firstRelationship['contact_id_b'] ?? null;
+        $initiatorId = $firstRelationship['contact_id_b'] ?? NULL;
       }
-  
+
       $targetContactId = $initiatorId ?? $organizationId;
     }
-  
+
     if (!empty($targetContactId)) {
       self::sendInstitutionMaterialContributionEmails(
         $targetContactId,
@@ -115,11 +119,19 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
   /**
    *
    */
-  private static function sendInstitutionMaterialContributionEmails(string $displayName, string $email, string $phone, string $organizationName, string $organizationAddress, array $contribution, string $description, string $deliveredBy, string $deliveredByContact, string $activityDate) {
+  private static function sendInstitutionMaterialContributionEmails(string $institutionPOCId, string $organizationName, string $organizationAddress, array $contribution, string $description, string $deliveredBy, string $deliveredByContact, string $activityDate) {
+    $contact = self::getContactDetails($institutionPOCId);
+
+    if (!$contact || empty($contact['email'])) {
+      return;
+    }
+    $email = $contact['email'];
+    $name = $contact['name'];
+    $phone = $contact['phone'];
 
     $subject = 'Acknowledgement for your material contribution to Goonj';
-    $body = self::generateEmailBody($displayName);
-    $html = self::generateContributionReceiptHtml($organizationName, $organizationAddress, $contribution, $email, $phone, $description, $deliveredBy, $deliveredByContact, $activityDate);
+    $body = self::generateEmailBody($name);
+    $html = self::generateContributionReceiptHtml($organizationName, $organizationAddress, $contribution, $email, $phone, $description, $name, $deliveredBy, $deliveredByContact, $activityDate);
     $attachments = [\CRM_Utils_Mail::appendPDF('institution_material_contribution.pdf', $html)];
     $params = self::prepareEmailParams($subject, $body, $attachments, $email);
 
@@ -129,14 +141,14 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
   /**
    *
    */
-  private static function generateEmailBody(string $displayName) {
+  private static function generateEmailBody(string $contactName) {
     return "
       <html>
           <head>
               <title>Thank You for Your Contribution</title>
           </head>
           <body>
-              <p>Hello {$displayName},</p>
+              <p>Hello {$contactName},</p>
               <p>Thank you for contributing material to Goonj.</p>
               <p>This contribution is a step towards sustainability and serves as a reminder to 'Goonj it'.</p>
               <p>The contributions are not merely recycled; they actively participate in creating a tangible impact on the lives of many at the grassroots level and enable communities to solve their own issues on water access, education, roads, menstrual hygiene, disaster relief and rehabilitation.</p>
@@ -173,7 +185,7 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
    * @return string
    *   The generated HTML.
    */
-  private static function generateContributionReceiptHtml($organizationName, $organizationAddress, $contribution, $email, $contactPhone, $description, $deliveredBy, $deliveredByContact, $activityDate) {
+  private static function generateContributionReceiptHtml($organizationName, $organizationAddress, $contribution, $email, $contactPhone, $description, $contactName, $deliveredBy, $deliveredByContact, $activityDate) {
 
     $baseDir = plugin_dir_path(__FILE__) . '../../../themes/goonj-crm/';
 
@@ -235,6 +247,10 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
             <tr>
               <td class="table-header">Address</td>
               <td class="table-cell">{$organizationAddress}</td>
+            </tr>
+            <tr>
+              <td class="table-header">From</td>
+              <td class="table-cell">{$contactName}</td>
             </tr>
             <tr>
               <td class="table-header">Email</td>
