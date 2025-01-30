@@ -13,14 +13,13 @@ if (php_sapi_name() != 'cli') {
   exit("This script can only be run from the command line.\n");
 }
 
-define('SOURCE_GROUP_ID', 25); //Change this ID to the one where you want to add the contact.
+// Change this ID to the one where you want to add the contact.
+define('SOURCE_GROUP_ID', 25);
 
 echo "Fetching contacts from group ID " . SOURCE_GROUP_ID . "...\n";
 
 /**
  * Fetch contacts from the specified group.
- *
- * @return array List of contacts with their state ID.
  */
 function getContactsFromGroup(): array {
   $groupContacts = GroupContact::get(FALSE)
