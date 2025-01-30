@@ -255,12 +255,12 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
     $relationshipTypeMap = [
       'Corporate' => 'Corporate Coordinator of',
       'School' => 'School Coordinator of',
-      'College/University' => 'College Coordinator of',
+      'College' => 'College Coordinator of',
       'Association' => 'Associations Coordinator of',
       'Other' => 'Default Coordinator of',
     ];
 
-    $registrationCategorySelection = $registrationType['Institution_Goonj_Activities.You_wish_to_register_as:label'];
+    $registrationCategorySelection = $registrationType['Institution_Goonj_Activities.You_wish_to_register_as:name'];
 
     $registrationCategorySelection = trim($registrationCategorySelection);
 
