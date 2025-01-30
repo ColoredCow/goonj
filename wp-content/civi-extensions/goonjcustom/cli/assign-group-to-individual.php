@@ -13,7 +13,7 @@ if (php_sapi_name() != 'cli') {
   exit("This script can only be run from the command line.\n");
 }
 
-define('SOURCE_GROUP_ID', 72);
+define('SOURCE_GROUP_ID', 25); //Change this ID to the one where you want to add the contact.
 
 echo "Fetching contacts from group ID " . SOURCE_GROUP_ID . "...\n";
 
@@ -28,8 +28,6 @@ function getContactsFromGroup(): array {
     ->addJoin('Contact AS contact', 'LEFT')
     ->addWhere('group_id', '=', SOURCE_GROUP_ID)
     ->execute();
-
-  error_log("groupContacts: " . print_r($groupContacts, TRUE));
 
   return $groupContacts->getIterator()->getArrayCopy();
 }
@@ -50,7 +48,6 @@ function getChapterGroupForState(int $stateId): ?int {
     ->addWhere('Chapter_Contact_Group.Contact_Catchment', 'CONTAINS', $stateId)
     ->execute()
     ->first();
-  error_log("group: " . print_r($group, TRUE));
 
   if (!$group) {
     echo "No specific chapter group found for state ID $stateId. Assigning fallback group.\n";
@@ -61,7 +58,6 @@ function getChapterGroupForState(int $stateId): ?int {
       ->addWhere('Chapter_Contact_Group.Fallback_Chapter', '=', 1)
       ->execute()
       ->first();
-    error_log("fallback: " . print_r($fallback, TRUE));
 
     return $fallback['id'] ?? NULL;
   }
@@ -73,29 +69,22 @@ function getChapterGroupForState(int $stateId): ?int {
  * Process contacts and assign them to the appropriate state-based group.
  */
 function assignContactsToStateGroups(): void {
-  // No arguments needed.
   $contacts = getContactsFromGroup();
-  error_log("contacts: " . print_r($contacts, TRUE));
 
   if (empty($contacts)) {
     echo "No contacts found in source group.\n";
     return;
   }
 
-  // Fix loop to correctly iterate.
   foreach ($contacts as $contact) {
     $contactId = $contact['contact_id'];
-    error_log("contactId: " . print_r($contactId, TRUE));
 
     $contactDetails = Contact::get(FALSE)
       ->addSelect('address_primary.state_province_id')
       ->addWhere('id', '=', $contactId)
       ->execute()->first();
 
-    error_log("contactDetails: " . print_r($contactDetails, TRUE));
-
     $stateId = $contactDetails['address_primary.state_province_id'] ?? NULL;
-    error_log("stateId: " . print_r($stateId, TRUE));
 
     if (!$stateId) {
       echo "Skipping contact ID $contactId: No state assigned.\n";
@@ -103,7 +92,6 @@ function assignContactsToStateGroups(): void {
     }
 
     $groupId = getChapterGroupForState($stateId);
-    error_log("groupId: " . print_r($groupId, TRUE));
 
     if (!$groupId) {
       echo "Skipping contact ID $contactId: No matching chapter group found.\n";
