@@ -47,13 +47,14 @@ class CRM_Goonjcustom_Form_InstitutionGoonjActivitiesLinks extends CRM_Core_Form
     $this->_contactId = CRM_Utils_Request::retrieve('gcid', 'Positive', $this);
 
     $goonjActivities = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Institution_Goonj_Activities.Select_Goonj_POC_Attendee_Outcome_Form')
+      ->addSelect('Institution_Goonj_Activities.Select_Goonj_POC_Attendee_Outcome_Form', 'Institution_Goonj_Activities.Select_Institute_POC_Feedback_Form')
       ->addWhere('id', '=', $this->_institutionGoonjActivitiesId)
       ->execute()->single();
 
     $this->_formUrl = $goonjActivities['Institution_Goonj_Activities.Select_Goonj_POC_Attendee_Outcome_Form'];
+    $this->_feedback_form_url = $goonjActivities['Institution_Goonj_Activities.Select_Institute_POC_Feedback_Form'];
 
-    $this->setTitle('Institution Goonj Activities Outcome Link');
+    $this->setTitle('Institution Goonj Activities Link');
     parent::preProcess();
   }
 
@@ -95,10 +96,18 @@ class CRM_Goonjcustom_Form_InstitutionGoonjActivitiesLinks extends CRM_Core_Form
             $contactId
         ),
       ],
+      [
+        'label' => 'Institution Goonj Activities Feedback',
+        'url' => self::createUrl(
+            "{$this->_feedback_form_url}",
+            "Eck_Collection_Camp1={$this->_institutionGoonjActivitiesId}&Camp_Outcome.Filled_By={$contactId}",
+            $contactId
+        ),
+      ],
     ];
     $this->assign('institutionGoonjActivitiesLinks', $links);
   }
-
+  
   /**
    * Generate an authenticated URL for viewing this form.
    *
