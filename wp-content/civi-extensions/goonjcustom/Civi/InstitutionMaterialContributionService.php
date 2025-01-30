@@ -172,13 +172,13 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
           <img src="data:image/png;base64,{$imageData['logo']}" alt="Goonj Logo" style="width: 95px; height: 80px;">
         </div>
         
-        <div style="width: 100%; font-size: 12px;">
+        <div style="width: 100%; font-size: 10px;">
           <div style="float: left; text-align: left;">
             Material Acknowledgment# {$contribution['id']}
           </div>
         </div>
         <br><br>
-        <div style="font-weight: bold; font-style: italic; margin-top: 6px; margin-bottom: 6px; font-size: 14px;">
+        <div style="font-weight: bold; font-style: italic; margin-top: 4px; margin-bottom: 6px; font-size: 14px;">
           "We appreciate your contribution of pre-used/new material. Goonj makes sure that the material reaches people with dignity and care."
         </div>
         <table border="1" cellpadding="10" cellspacing="0" style="width: 100%; border-collapse: collapse;">
@@ -186,10 +186,10 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
             .table-header {
               text-align: left;
               font-weight: bold;
-              font-size: 14px;
+              font-size: 12px;
             }
             .table-cell {
-              font-size: 14px;
+              font-size: 12px;
               text-align: center;
             }
           </style>
@@ -227,34 +227,34 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
             </tr>
           </table>
         <div style="width: 100%; margin-top: 16px;">
-        <div style="float: left; width: 60%; font-size: 12px;">
+        <div style="float: left; width: 60%; font-size: 10px;">
         <p>Join us, by encouraging your friends, relatives, colleagues, and neighbours to join the journey as all of us have a lot to give.</p>
         <p style="margin-top: 8px;">
         <strong>With Material Money Matters</strong> Your monetary contribution is needed too for sorting, packing, transportation to implementation. (Financial contributions are tax-exempted u/s 80G of IT Act)
       </p>
-      <p style="margin-top: 10px; font-size: 12px; float: left">* Received material has 'No Commercial Value' for Goonj.</p>
+      <p style="margin-top: 10px; font-size: 10px; float: left">* Received material has 'No Commercial Value' for Goonj.</p>
     </div>
-    <div style="float: right; width: 40%; text-align: right; font-size: 12px; font-style: italic;">
+    <div style="float: right; width: 40%; text-align: right; font-size: 10px; font-style: italic;">
     <p>To contribute, please scan the code.</p>
     <img src="data:image/png;base64,{$imageData['qrCode']}" alt="QR Code" style="width: 80px; height: 70px; margin-top: 2px"></div>
         </div>
         <div style="clear: both; margin-top: 20px;"></div>
         <div style="width: 100%; margin-top: 15px; background-color: #f2f2f2; padding: 16px; font-weight: 300; color: #000000">
-          <div style="font-size: 12px; margin-bottom: 20px;">
+          <div style="font-size: 10px; margin-bottom: 20px;">
             <div style="position: relative; height: 24px;">
-              <div style="font-size: 12px; float: left; color:">
+              <div style="font-size: 10px; float: left; color:">
                 Goonj, C-544, 1st Floor, C-Pocket, Sarita Vihar,<br>
                 New Delhi-110076
               </div>
-              <div style="font-size: 12px; float: right;">
+              <div style="font-size: 10px; float: right;">
                 <img src="data:image/png;base64,{$imageData['callIcon']}" alt="Phone" style="width: 16px; height: 16px; margin-right: 5px;">
                 011-26972351/41401216
               </div>
             </div>
           </div>
     
-          <div style="text-align: center; width: 100%; font-size: 14px; margin-bottom: 20px;">
-              <div style="font-size: 12px;">
+          <div style="text-align: center; width: 100%; font-size: 10px; margin-bottom: 18px;">
+              <div style="font-size: 10px;">
                 <img src="data:image/png;base64,{$imageData['emailIcon']}" alt="Email" style="width: 16px; height: 16px; display: inline;">
                 <span style="display: inline; margin-left: 0;">mail@goonj.org</span>
                 <img src="data:image/png;base64,{$imageData['domainIcon']}" alt="Website" style="width: 16px; height: 16px; margin-right: 5px;">
@@ -263,14 +263,14 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
           </div>
     
           <!-- Social Media Icons -->
-          <div style="text-align: center; width: 100%; margin-top: 28px;">
+          <div style="text-align: center; width: 100%; margin-top: 26px;">
             <a href="https://www.facebook.com/goonj.org" target="_blank"><img src="data:image/webp;base64,{$imageData['facebookIcon']}" alt="Facebook" style="width: 24px; height: 24px; margin-right: 10px;"></a>
             <a href="https://www.instagram.com/goonj/" target="_blank"><img src="data:image/webp;base64,{$imageData['instagramIcon']}" alt="Instagram" style="width: 24px; height: 24px; margin-right: 10px;"></a>
             <a href="https://x.com/goonj" target="_blank"><img src="data:image/webp;base64,{$imageData['twitterIcon']}" alt="Twitter" style="width: 24px; height: 24px; margin-right: 10px;"></a>
             <a href="https://www.youtube.com/channel/UCCq8iYlmjT7rrgPI1VHzIHg" target="_blank"><img src="data:image/webp;base64,{$imageData['youtubeIcon']}" alt="YouTube" style="width: 24px; height: 24px; margin-right: 10px;"></a>
           </div>
         </div>
-        <p style="margin-bottom: 2px; text-align: center; font-size: 12px;">* This is a computer generated receipt, signature is not required.</p>
+        <p style="margin-bottom: 2px; text-align: center; font-size: 10px;">* This is a computer generated receipt, signature is not required.</p>
       </body>
     </html>
     HTML;
