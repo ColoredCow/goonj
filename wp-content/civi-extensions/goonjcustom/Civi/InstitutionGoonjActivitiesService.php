@@ -260,7 +260,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
       'Other' => 'Default Coordinator of',
     ];
 
-    $registrationCategorySelection = $registrationType['Institution_Goonj_Activities.You_wish_to_register_as:name'];
+    $registrationCategorySelection = $registrationType['Institution_Goonj_Activities.You_wish_to_register_as:label'];
 
     $registrationCategorySelection = trim($registrationCategorySelection);
 
