@@ -5,6 +5,7 @@ namespace Civi;
 use Civi\Api4\Activity;
 use Civi\Api4\Contact;
 use Civi\Api4\Organization;
+use Civi\Api4\Relationship;
 use Civi\Core\Service\AutoSubscriber;
 
 /**
@@ -29,9 +30,11 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
       return;
     }
     $data = json_decode($objectRef->data, TRUE);
+  
     if (!$data) {
       return;
     }
+  
     $activityData = $data['Activity1'][0]['fields'] ?? [];
     $activityDate = $activityData['Institution_Material_Contribution.Contribution_Date'];
     $campaignId = $activityData['campaign_id'] ?? NULL;
@@ -39,20 +42,16 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
     $deliveredBy = $activityData['Institution_Material_Contribution.Delivered_By_Name'] ?? '';
     $deliveredByContact = $activityData['Institution_Material_Contribution.Delivered_By_Contact'] ?? '';
     $organizationId = $data['Organization1'][0]['fields']['id'] ?? NULL;
-    $email = $data['Individual1'][0]['joins']['Email'][0]['email'];
-    $phone = $data['Individual1'][0]['joins']['Phone'][0]['phone'];
-    $firstName = $data['Individual1'][0]['fields']['first_name'];
-    $lastName = $data['Individual1'][0]['fields']['last_name'] ?? '';
-    $displayName = trim("$firstName $lastName");
-
+    $institutionPOCId = $data['Individual1'][0]['fields']['id'] ?? NULL;
+  
     $organizations = Organization::get(FALSE)
       ->addSelect('Institute_Registration.Address', 'display_name')
       ->addWhere('id', '=', $organizationId)
       ->execute()->single();
-
+  
     $organizationName = $organizations['display_name'];
     $organizationAddress = $organizations['Institute_Registration.Address'];
-
+  
     $activities = Activity::get(FALSE)
       ->addSelect('*')
       ->addJoin('Organization AS organization', 'LEFT')
@@ -61,11 +60,38 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
       ->addOrderBy('created_date', 'DESC')
       ->setLimit(1)
       ->execute();
-
+  
     $contribution = $activities->first();
-
-    if (!empty($email)) {
-      self::sendInstitutionMaterialContributionEmails($displayName, $email, $phone, $organizationName, $organizationAddress, $contribution, $description, $deliveredBy, $deliveredByContact, $activityDate);
+  
+    if (!empty($institutionPOCId)) {
+      $targetContactId = $institutionPOCId;
+    } else {
+      // Check for Primary Institution POC relationship
+      $relationships = Relationship::get(FALSE)
+        ->addWhere('contact_id_a', '=', $organizationId)
+        ->addWhere('relationship_type_id:name', '=', 'Primary Institution POC of')
+        ->execute();
+  
+      $initiatorId = null;
+      if ($relationships) {
+        $firstRelationship = $relationships->first();
+        $initiatorId = $firstRelationship['contact_id_b'] ?? null;
+      }
+  
+      $targetContactId = $initiatorId ?? $organizationId;
+    }
+  
+    if (!empty($targetContactId)) {
+      self::sendInstitutionMaterialContributionEmails(
+        $targetContactId,
+        $organizationName,
+        $organizationAddress,
+        $contribution,
+        $description,
+        $deliveredBy,
+        $deliveredByContact,
+        $activityDate
+      );
     }
   }
 
