@@ -247,7 +247,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         return;
       }
 
-      $skipEmail = $objectRef['Urban_Planned_Visit.Send_Email'] ?? false;
+      $skipEmail = $objectRef['Urban_Planned_Visit.Send_Email'] ?? FALSE;
       if ($skipEmail) {
         return;
       }
@@ -592,7 +592,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
    */
   public static function sendReminderEmailToExtCoordPoc($visit) {
     $externalCoordinatingPocId = $visit['Urban_Planned_Visit.External_Coordinating_PoC'] ?? '';
-    $skipEmail = $visit['Urban_Planned_Visit.Send_Email'] ?? false;
+    $skipEmail = $visit['Urban_Planned_Visit.Send_Email'] ?? FALSE;
     if ($skipEmail) {
       return;
     }
@@ -791,7 +791,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
    *
    */
   public static function sendFeedbackEmailToExtCoordPoc($visit) {
-    $skipEmail = $visit['Urban_Planned_Visit.Send_Email'] ?? false;
+    $skipEmail = $visit['Urban_Planned_Visit.Send_Email'] ?? FALSE;
     if ($skipEmail) {
       return;
     }

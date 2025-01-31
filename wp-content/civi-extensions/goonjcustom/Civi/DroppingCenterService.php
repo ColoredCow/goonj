@@ -45,7 +45,7 @@ class DroppingCenterService extends AutoSubscriber {
       '&hook_civicrm_pre' => [
         ['generateDroppingCenterQr'],
         ['linkDroppingCenterToContact'],
-        ['processDispatchEmail']
+        ['processDispatchEmail'],
       ],
       '&hook_civicrm_custom' => [
         ['setOfficeDetails'],

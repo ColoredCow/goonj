@@ -442,7 +442,7 @@ class GoonjActivitiesService extends AutoSubscriber {
     }
   }
 
-    /**
+  /**
    *
    */
   public static function linkGoonjActivitiesToContact(string $op, string $objectName, $objectId, &$objectRef) {
@@ -498,7 +498,7 @@ class GoonjActivitiesService extends AutoSubscriber {
     }
   }
 
-    /**
+  /**
    *
    */
   private static function createActivity($contactId, $collectionCampTitle, $collectionCampId) {
@@ -514,6 +514,7 @@ class GoonjActivitiesService extends AutoSubscriber {
 
     \Civi::log()->info("Activity created for contact {$contactId} for Institution Collection Camp {$collectionCampTitle}");
   }
+
   /**
    *
    */

@@ -143,7 +143,7 @@ class InductionService extends AutoSubscriber {
       return FALSE;
     }
 
-    if(self::$volunteerId & $stateId){
+    if (self::$volunteerId & $stateId) {
       self::createInduction(self::$volunteerId, $stateId);
     }
   }
@@ -193,7 +193,7 @@ class InductionService extends AutoSubscriber {
       return FALSE;
     }
 
-    if(empty($volunteerId)){
+    if (empty($volunteerId)) {
       return;
     }
 
@@ -424,11 +424,11 @@ class InductionService extends AutoSubscriber {
    */
   private static function isEmailAlreadySent($contactId) {
 
-    if($contactId){
+    if ($contactId) {
       $contactDetails = Contact::get(FALSE)
-      ->addSelect('Individual_fields.Volunteer_Registration_Email_Sent')
-      ->addWhere('id', '=', $contactId)
-      ->execute()->single();
+        ->addSelect('Individual_fields.Volunteer_Registration_Email_Sent')
+        ->addWhere('id', '=', $contactId)
+        ->execute()->single();
     }
     $isEmailSent = $contactDetails['Individual_fields.Volunteer_Registration_Email_Sent'] ?? NULL;
 
@@ -456,7 +456,7 @@ class InductionService extends AutoSubscriber {
     $newSubtypes = $params['contact_sub_type'] ?? [];
 
     if (!is_array($newSubtypes)) {
-        $newSubtypes = [$newSubtypes];
+      $newSubtypes = [$newSubtypes];
     }
     // Check if "Volunteer" is present in the contact_sub_type array.
     if (!in_array('Volunteer', $newSubtypes)) {
@@ -496,7 +496,7 @@ class InductionService extends AutoSubscriber {
       return FALSE;
     }
 
-    if(self::$transitionedVolunteerId & $stateId){
+    if (self::$transitionedVolunteerId & $stateId) {
       self::createInduction(self::$transitionedVolunteerId, $stateId);
     }
   }
@@ -846,7 +846,7 @@ class InductionService extends AutoSubscriber {
     $inductionType = 'Offline';
 
     // Fetch contact data.
-    if(empty($volunteerId)){
+    if (empty($volunteerId)) {
       return;
     }
     $contactData = Contact::get(FALSE)
