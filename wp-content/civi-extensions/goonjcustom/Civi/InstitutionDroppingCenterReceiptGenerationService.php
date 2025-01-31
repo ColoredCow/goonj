@@ -326,4 +326,3 @@ class InstitutionDroppingCenterReceiptGenerationService extends AutoSubscriber {
   }
 
 }
-

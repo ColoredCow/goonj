@@ -870,7 +870,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
     }
   }
 
-    /**
+  /**
    * This hook is called after a db write on entities.
    *
    * @param string $op
@@ -897,7 +897,6 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
     $jsonData = $objectRef->data;
     $dataArray = json_decode($jsonData, TRUE);
 
-
     $collectionCampId = $dataArray['Eck_Collection_Camp1'][0]['fields']['id'];
 
     if (!$collectionCampId) {
@@ -906,12 +905,13 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
 
     try {
       EckEntity::update('Collection_Camp_Activity', FALSE)
-      ->addValue('Collection_Camp_Activity.Activity_Status', 'completed')
-      ->addWhere('Collection_Camp_Activity.Collection_Camp_Id', '=', $collectionCampId)
-      ->execute();
+        ->addValue('Collection_Camp_Activity.Activity_Status', 'completed')
+        ->addWhere('Collection_Camp_Activity.Collection_Camp_Id', '=', $collectionCampId)
+        ->execute();
     }
     catch (\Exception $e) {
       \Civi::log()->error("Exception occurred while updating camp status for campId: $collectionCampId. Error: " . $e->getMessage());
     }
   }
+
 }
