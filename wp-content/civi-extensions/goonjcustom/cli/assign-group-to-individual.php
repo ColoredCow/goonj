@@ -14,9 +14,9 @@ if (php_sapi_name() != 'cli') {
 }
 
 // Change this ID to the one where you want to add the contact.
-define('SOURCE_GROUP_ID', 25);
+define('SOURCE_GROUP_NAME', 'tarun testing urban');
 
-echo "Fetching contacts from group ID " . SOURCE_GROUP_ID . "...\n";
+echo "Fetching contacts from group ID " . SOURCE_GROUP_NAME . "...\n";
 
 /**
  * Fetch contacts from the specified group.
@@ -25,7 +25,7 @@ function getContactsFromGroup(): array {
   $groupContacts = GroupContact::get(FALSE)
     ->addSelect('contact_id')
     ->addJoin('Contact AS contact', 'LEFT')
-    ->addWhere('group_id', '=', SOURCE_GROUP_ID)
+    ->addWhere('group_id:label', '=', SOURCE_GROUP_NAME)
     ->execute();
 
   return $groupContacts->getIterator()->getArrayCopy();
