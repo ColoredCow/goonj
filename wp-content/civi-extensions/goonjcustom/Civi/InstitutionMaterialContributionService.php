@@ -29,8 +29,8 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
     if ($objectName !== 'AfformSubmission' || $objectRef->afform_name !== 'afformAddInstitutionMaterialContribution') {
       return;
     }
-    $data = json_decode($objectRef->data, TRUE);
 
+    $data = json_decode($objectRef->data, TRUE);
     if (!$data) {
       return;
     }
@@ -68,18 +68,30 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
       $targetContactId = $institutionPOCId;
     }
     else {
-      // Check for Primary Institution POC relationship.
-      $relationships = Relationship::get(FALSE)
+      $initiatorId = NULL;
+
+      // First, check for Primary Institution POC relationship.
+      $primaryRelationships = Relationship::get(FALSE)
         ->addWhere('contact_id_a', '=', $organizationId)
         ->addWhere('relationship_type_id:name', '=', 'Primary Institution POC of')
         ->execute();
 
-      error_log("relationships: " . print_r($relationships, TRUE));
+      if ($primaryRelationships) {
+        $firstPrimaryRelationship = $primaryRelationships->first();
+        $initiatorId = $firstPrimaryRelationship['contact_id_b'] ?? NULL;
+      }
 
-      $initiatorId = NULL;
-      if ($relationships) {
-        $firstRelationship = $relationships->first();
-        $initiatorId = $firstRelationship['contact_id_b'] ?? NULL;
+      // If Primary not found, check for Institution POC of relationship.
+      if (!$initiatorId) {
+        $pocRelationships = Relationship::get(FALSE)
+          ->addWhere('contact_id_a', '=', $organizationId)
+          ->addWhere('relationship_type_id:name', '=', 'Institution POC of')
+          ->execute();
+
+        if ($pocRelationships) {
+          $firstPocRelationship = $pocRelationships->first();
+          $initiatorId = $firstPocRelationship['contact_id_b'] ?? NULL;
+        }
       }
 
       $targetContactId = $initiatorId ?? $organizationId;
@@ -87,15 +99,15 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
 
     if (!empty($targetContactId)) {
       self::sendInstitutionMaterialContributionEmails(
-        $targetContactId,
-        $organizationName,
-        $organizationAddress,
-        $contribution,
-        $description,
-        $deliveredBy,
-        $deliveredByContact,
-        $activityDate
-      );
+            $targetContactId,
+            $organizationName,
+            $organizationAddress,
+            $contribution,
+            $description,
+            $deliveredBy,
+            $deliveredByContact,
+            $activityDate
+        );
     }
   }
 
@@ -216,7 +228,7 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
           </div>
         </div>
         <br><br>
-        <div style="font-weight: bold; font-style: italic; margin-top: 4px; margin-bottom: 6px; font-size: 14px;">
+        <div style="font-weight: bold; font-style: italic; margin-top: 4px; margin-bottom: 6px; font-size: 12px;">
           "We appreciate your contribution of pre-used/new material. Goonj makes sure that the material reaches people with dignity and care."
         </div>
         <table border="1" cellpadding="10" cellspacing="0" style="width: 100%; border-collapse: collapse;">
@@ -224,10 +236,10 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
             .table-header {
               text-align: left;
               font-weight: bold;
-              font-size: 12px;
+              font-size: 14px;
             }
             .table-cell {
-              font-size: 12px;
+              font-size: 14px;
               text-align: center;
             }
           </style>
@@ -248,10 +260,10 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
               <td class="table-header">Address</td>
               <td class="table-cell">{$organizationAddress}</td>
             </tr>
-            <tr>
+            <!-- <tr>
               <td class="table-header">From</td>
               <td class="table-cell">{$contactName}</td>
-            </tr>
+            </tr> -->
             <tr>
               <td class="table-header">Email</td>
               <td class="table-cell">{$email}</td>

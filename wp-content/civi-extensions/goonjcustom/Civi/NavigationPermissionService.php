@@ -89,7 +89,6 @@ class NavigationPermissionService extends AutoSubscriber {
           'Volunteers',
           'Individuals',
           'Offices',
-          'Urban Visit',
         ],
       ],
       'goonj_chapter_admin' => [
