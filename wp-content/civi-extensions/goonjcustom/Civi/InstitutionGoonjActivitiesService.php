@@ -93,10 +93,16 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
     }
 
     if ($eckCollectionCampId && $individualId) {
-      self::updateDatabase($eckCollectionCampId, $individualId);
-    }
-    else {
-      error_log("One or both IDs are missing. Skipping update.");
+      $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
+          ->addSelect('Institution_Goonj_Activities.Institution_POC')
+          ->addWhere('id', '=', $eckCollectionCampId) // Ensure the correct ID is used
+          ->addWhere('Institution_Goonj_Activities.Institution_POC', 'IS NOT EMPTY')
+          ->execute()
+          ->first();
+
+      if (empty($collectionCamps)) {
+          self::updateDatabase($eckCollectionCampId, $individualId);
+      }
     }
   }
 
