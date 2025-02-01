@@ -362,15 +362,10 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
     $eventFeedBackFormUrl = $homeUrl . 'goonj-events-feedbacks/#?Events_Feedback.Event=' . $eventId . '&source_contact_id=' . $eventAttendedById;
 
     $html = "
-	<p>Dear $attendeeName,</p>
-	<p>Thank you for attending the goonj events <strong>$eventCode</strong> at <strong>$eventAddress</strong>. Their is one forms that require your attention during and after the goonj event:</p>
-	<ol>
-		Please complete this form from the goonj event location once the goonj event ends.</li>
-		<li><a href=\"$eventFeedBackFormUrl\">Goonj Events Feedback Form</a><br>
-		This feedback form should be filled out after the goonj event ends, once you have an overview of the event's event.</li>
-	</ol>
-	<p>We appreciate your cooperation.</p>
-	<p>Warm Regards,<br>Urban Relations Team</p>";
+    <p>Dear $attendeeName,</p>
+    <p>Thank you for attending <strong>$eventCode</strong>. Your presence and contributions made this event a huge success.</p>
+    <p>We value your feedback to continue improving the experience of such gatherings and tailoring our future events. Kindly take a few moments to share your experience with us by filling out this <a href=\"$eventFeedBackFormUrl\">form link</a>.</p>
+    <p>Warm Regards,<br>Team Goonj</p>";
 
     return $html;
   }
