@@ -301,7 +301,6 @@ class CollectionCampService extends AutoSubscriber {
     if ($op !== 'create' || $objectName !== 'Address') {
       return FALSE;
     }
-    \Civi::log()->info('op', ['op' => $op, $objectName,$objectId, $objectRef]);
 
     if (self::$individualId !== $objectRef->contact_id || !$objectRef->is_primary) {
       return FALSE;
@@ -312,7 +311,6 @@ class CollectionCampService extends AutoSubscriber {
     }
 
     $groupId = self::getChapterGroupForState($objectRef->state_province_id);
-    \Civi::log()->info('getChapterGroupForState', ['groupId' => $groupId, self::$individualId]);
 
     if ($groupId & self::$individualId) {
       GroupContact::create(FALSE)
