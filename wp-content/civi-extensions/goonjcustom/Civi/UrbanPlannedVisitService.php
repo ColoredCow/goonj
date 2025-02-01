@@ -1126,7 +1126,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
       return;
     }
 
-    $processingCenterId = $dataArray['Eck_Institution_Visit1'][0]['fields']['Urban_Planned_Visit.Which_Goonj_Processing_Center_do_you_wish_to_visit_'] ?? null;
+    $processingCenterId = $dataArray['Eck_Institution_Visit1'][0]['fields']['Urban_Planned_Visit.Which_Goonj_Processing_Center_do_you_wish_to_visit_'];
 
     if (!$processingCenterId) {
         return;
