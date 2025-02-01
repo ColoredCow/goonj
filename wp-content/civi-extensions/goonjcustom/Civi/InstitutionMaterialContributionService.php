@@ -41,16 +41,16 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
     $description = $activityData['Institution_Material_Contribution.Description_of_Material_No_of_Bags_Material_'] ?? '';
     $deliveredBy = $activityData['Institution_Material_Contribution.Delivered_By_Name'] ?? '';
     $deliveredByContact = $activityData['Institution_Material_Contribution.Delivered_By_Contact'] ?? '';
-    $organizationId = $data['Organization1'][0]['fields']['id'] ?? NULL;
-    $institutionPOCId = $data['Individual1'][0]['fields']['id'] ?? NULL;
+    $organizationId = $activityData['Institution_Material_Contribution.Institution'];
+    $institutionPOCId = $activityData['Institution_Material_Contribution.Institution_POC'];
 
     $organizations = Organization::get(FALSE)
       ->addSelect('Institute_Registration.Address', 'display_name')
       ->addWhere('id', '=', $organizationId)
       ->execute()->single();
 
-    $organizationName = $organizations['display_name'];
-    $organizationAddress = $organizations['Institute_Registration.Address'];
+    $organizationName = $organizations['display_name'] ?? '';
+    $organizationAddress = $organizations['Institute_Registration.Address'] ?? '';
 
     $activities = Activity::get(FALSE)
       ->addSelect('*')
