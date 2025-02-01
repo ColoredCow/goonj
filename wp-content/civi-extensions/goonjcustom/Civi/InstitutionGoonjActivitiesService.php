@@ -553,7 +553,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
         'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
       ],
       'eventVolunteers' => [
-        'title' => ts('Event Volunteers'),
+        'title' => ts('Activity Coordinators'),
         'module' => 'afsearchInstitutionGoonjActivitiesEventVolunteer',
         'directive' => 'afsearch-institution-goonj-activities-event-volunteer',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
@@ -675,7 +675,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
         ->addWhere('value', '=', $activityId)
         ->execute()->single();
 
-      $activityName = 'Organize ' . str_replace('_', ' ', $optionValues['name']);
+      $activityName = str_replace('_', ' ', $optionValues['name']);
       // Check if the activity is 'Others'.
       if ($activityName == 'Other') {
         $otherActivity = $objectRef['Institution_Goonj_Activities.Other_Activity_Details'] ?? '';
