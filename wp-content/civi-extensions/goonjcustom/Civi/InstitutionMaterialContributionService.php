@@ -61,7 +61,7 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
       ->setLimit(1)
       ->execute();
 
-    $contribution = $activities->first();
+    $contribution = $activities->first() ?? [];
 
     // Determine target contact with fallback logic.
     if (!empty($institutionPOCId)) {
