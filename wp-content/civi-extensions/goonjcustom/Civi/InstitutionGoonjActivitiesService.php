@@ -72,37 +72,27 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
       return;
     }
 
-    // Access data array safely.
     $dataArray = $objectRef['data'] ?? [];
-    error_log("dataArray: " . print_r($dataArray, TRUE));
 
     // Initialize variables.
     $eckCollectionCampId = NULL;
     $individualId = NULL;
 
-    // Extract 'Eck_Collection_Camp1' ID.
     if (!empty($dataArray['Eck_Collection_Camp1'][0]['id'])) {
       $eckCollectionCampId = $dataArray['Eck_Collection_Camp1'][0]['id'];
-      error_log("Found Eck_Collection_Camp1 ID: " . $eckCollectionCampId);
     }
     else {
       error_log("Eck_Collection_Camp1 ID not found.");
     }
 
-    // Extract 'Individual1' ID.
     if (!empty($dataArray['Individual1'][0]['id'])) {
       $individualId = $dataArray['Individual1'][0]['id'];
-      error_log("Found Individual1 ID: " . $individualId);
     }
     else {
       error_log("Individual1 ID not found.");
     }
 
-    // Now use both IDs after validation.
     if ($eckCollectionCampId && $individualId) {
-      error_log("Both IDs are available. Proceeding with update...");
-
-      // Example update logic (Modify this as needed)
       self::updateDatabase($eckCollectionCampId, $individualId);
     }
     else {
@@ -111,7 +101,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
   }
 
   /**
-   * Example update function (replace with actual update logic)
+   *
    */
   private static function updateDatabase($campId, $personId) {
     $results = EckEntity::update('Collection_Camp', TRUE)
