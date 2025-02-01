@@ -31,6 +31,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         ['sendAuthorizationEmailToExtCoordPocAndVisitGuide'],
         ['sendVisitOutcomeForm'],
         ['generateUrbanVisitSourceCode'],
+        ['fillExternalCoordinatingPoc'],
       ],
       '&hook_civicrm_tabset' => 'urbanVisitTabset',
     ];
@@ -247,7 +248,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         return;
       }
 
-      $skipEmail = $objectRef['Urban_Planned_Visit.Send_Email'] ?? false;
+      $skipEmail = $objectRef['Urban_Planned_Visit.Send_Email'] ?? FALSE;
       if ($skipEmail) {
         return;
       }
@@ -592,7 +593,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
    */
   public static function sendReminderEmailToExtCoordPoc($visit) {
     $externalCoordinatingPocId = $visit['Urban_Planned_Visit.External_Coordinating_PoC'] ?? '';
-    $skipEmail = $visit['Urban_Planned_Visit.Send_Email'] ?? false;
+    $skipEmail = $visit['Urban_Planned_Visit.Send_Email'] ?? FALSE;
     if ($skipEmail) {
       return;
     }
@@ -791,7 +792,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
    *
    */
   public static function sendFeedbackEmailToExtCoordPoc($visit) {
-    $skipEmail = $visit['Urban_Planned_Visit.Send_Email'] ?? false;
+    $skipEmail = $visit['Urban_Planned_Visit.Send_Email'] ?? FALSE;
     if ($skipEmail) {
       return;
     }
@@ -1108,6 +1109,40 @@ class UrbanPlannedVisitService extends AutoSubscriber {
       'state_codes' => include $extensionPath . 'constants.php',
       'event_codes' => include $extensionPath . 'eventCode.php',
     ];
+  }
+
+  /**
+   *
+   */
+  public static function fillExternalCoordinatingPoc(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($objectName !== 'AfformSubmission') {
+      return;
+    }
+
+    $dataArray = $objectRef['data'] ?? [];
+    $institutionVisit = $dataArray['Eck_Institution_Visit1'][0];
+
+    if (!$institutionVisit) {
+      return;
+    }
+
+    $individualId = $dataArray['Individual1'][0]['id'];
+
+    if (!$individualId) {
+      return;
+    }
+
+    $urbanVisitId = $dataArray['Eck_Institution_Visit1'][0]['id'];
+
+    if (!$urbanVisitId) {
+      return;
+    }
+
+    $results = EckEntity::update('Institution_Visit', FALSE)
+      ->addValue('Urban_Planned_Visit.External_Coordinating_PoC', $individualId)
+      ->addWhere('id', '=', $urbanVisitId)
+      ->execute();
+
   }
 
 }
