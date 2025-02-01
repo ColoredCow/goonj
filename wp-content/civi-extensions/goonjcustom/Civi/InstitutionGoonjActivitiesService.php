@@ -104,7 +104,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
    *
    */
   private static function updateDatabase($campId, $personId) {
-    $results = EckEntity::update('Collection_Camp', TRUE)
+    $results = EckEntity::update('Collection_Camp', FALSE)
       ->addValue('Institution_Goonj_Activities.Institution_POC', $personId)
       ->addWhere('id', '=', $campId)
       ->execute();
