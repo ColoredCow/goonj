@@ -485,6 +485,13 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
       ],
+      'edit' => [
+        'title' => ts('Edit'),
+        'module' => 'afformInstitutionGoonjActivitiesIntentReviewEditDetails',
+        'directive' => 'afform-institution-goonj-activities-intent-review-edit-details',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+      ],
       'logistics' => [
         'title' => ts('Logistics'),
         'module' => 'afsearchInstitutionGoonjActivitiesLogistics',
