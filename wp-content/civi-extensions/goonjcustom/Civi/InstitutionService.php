@@ -65,16 +65,13 @@ class InstitutionService extends AutoSubscriber {
     $existingRelationship = Relationship::get(FALSE)
       ->addWhere('contact_id_a', '=', $institutionId)
       ->addWhere('contact_id_b', '=', $institutionPocId)
-      ->addClause('OR',
-            ['relationship_type_id:name', '=', 'Institution POC is'],
-            ['relationship_type_id:name', '=', 'Primary Institution POC is']
-        )
+      ->addClause('OR', ['relationship_type_id:name', '=', 'Institution POC of'], ['relationship_type_id:name', '=', 'Primary Institution POC of'])
       ->execute()->first();
-
+    
     if ($existingRelationship) {
       return;
     }
-
+    
     Relationship::create(FALSE)
       ->addValue('contact_id_a', $institutionId)
       ->addValue('contact_id_b', $institutionPocId)
