@@ -204,15 +204,11 @@ class RuralPlannedVisitService extends AutoSubscriber {
     $eventOutcomeFormUrl = $homeUrl . 'rural-planned-visit-outcome/#?Event1=' . $eventId;
 
     $html = "
-	<p>Dear $attendeeName,</p>
-	<p>Thank you for attending the Rural Planned Visit <strong>$eventCode</strong> at <strong>$eventAddress</strong>. Their is one forms that require your attention during and after the Rural Planned Visit:</p>
-	<ol>
-		Please complete this form from the Rural Planned Visit location once the event ends.</li>
-		<li><a href=\"$eventOutcomeFormUrl\">Rural Planned Visit Outcome Form</a><br>
-		This feedback form should be filled out after the event ends, once you have an overview of the event's outcomes.</li>
-	</ol>
+  <p>Dear $attendeeName,</p>
+	<p>Thank you for coordinating the <strong>$eventCode</strong> Please fill the below form after the event is over:</p>
+  <p><a href=\"$eventOutcomeFormUrl\">Event Outcome Form</a><br></p>
 	<p>We appreciate your cooperation.</p>
-	<p>Warm Regards,<br>Urban Relations Team</p>";
+	<p>Warm Regards,<br>Team goonj</p>";
 
     return $html;
   }
