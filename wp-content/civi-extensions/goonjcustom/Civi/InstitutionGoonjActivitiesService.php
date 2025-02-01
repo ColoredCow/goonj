@@ -487,8 +487,8 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
       ],
       'edit' => [
         'title' => ts('Edit'),
-        'module' => 'afformInstitutionGoonjActivitiesIntentReviewEditDetails',
-        'directive' => 'afform-institution-goonj-activities-intent-review-edit-details',
+        'module' => 'afformInstitutionGoonjActivitiesIntentReviewEdit',
+        'directive' => 'afform-institution-goonj-activities-intent-review-edit',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
       ],
