@@ -55,7 +55,7 @@ class InstitutionService extends AutoSubscriber {
     }
 
     $activityData = $objectRef['data']['Activity1'][0]['fields'] ?? [];
-    $institutionId = $activityData['Institution_Material_Contribution.Institution'] ?? NULL;
+    $institutionId = $activityData['source_contact_id'] ?? NULL;
     $institutionPocId = $activityData['Institution_Material_Contribution.Institution_POC'] ?? NULL;
 
     if (empty($institutionId) || empty($institutionPocId)) {
