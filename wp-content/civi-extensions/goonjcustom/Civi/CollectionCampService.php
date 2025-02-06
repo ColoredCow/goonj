@@ -1563,7 +1563,7 @@ class CollectionCampService extends AutoSubscriber {
       $uniqueId = uniqid();
       $invoiceId = hash('sha256', $timestamp . $uniqueId);
 
-      Contribution::update(TRUE)
+      Contribution::update(FALSE)
         ->addValue('invoice_id', $invoiceId)
         ->addWhere('id', '=', $contributionId)
         ->execute();
