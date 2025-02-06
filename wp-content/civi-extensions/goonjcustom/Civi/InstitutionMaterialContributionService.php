@@ -226,12 +226,12 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
         <img alt="Goonj Logo" src="https://goonj-crm.staging.coloredcow.com/wp-content/uploads/2024/07/Goonj-logo-10June20-300x193.png" style="width: 150px; height: auto;" />
         </div>      
         <div style="width: 100%; font-size: 11px;">
-          <div style="float: left; text-align: left;">
+          <div style="float: left; text-align: left; margin-bottom: 2px;">
             Material Acknowledgment# {$contribution['id']}
           </div>
         </div>
-        <br><br>
-        <div style="font-weight: bold; font-style: italic; margin-top: 4px; margin-bottom: 6px; font-size: 12px;">
+        <br>
+        <div style="font-weight: bold; font-style: italic; margin-bottom: 6px; font-size: 12px;">
           "We appreciate your contribution of pre-used/new material. Goonj makes sure that the material reaches people with dignity and care."
         </div>
         <table border="1" cellpadding="10" cellspacing="0" style="width: 100%; border-collapse: collapse;">
