@@ -275,15 +275,13 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
               <td class="table-header">Phone</td>
               <td class="table-cell">{$contactPhone}</td>
             </tr>
-            {if $deliveredBy && $deliveredByContact}
             <tr>
-      <td class="table-header">Delivered by (Name & contact no.)</td>
-      <td class="table-cell">
-        {$deliveredBy}<br>
-        {$deliveredByContact}
-      </td>
-    </tr>
-    {/if}
+              <td class="table-header">Delivered by (Name & contact no.)</td>
+              <td class="table-cell">
+                {$deliveredBy}<br>
+                {$deliveredByContact}
+              </td>
+            </tr>
           </table>
         <div style="width: 100%; margin-top: 16px;">
         <div style="float: left; width: 60%; font-size: 12px;">
