@@ -41,8 +41,45 @@ class InstitutionService extends AutoSubscriber {
       ],
       '&hook_civicrm_pre' => [
         ['assignChapterGroupToContacts'],
+        ['AddRelationshipToContact'],
       ],
     ];
+  }
+
+  /**
+   *
+   */
+  public static function AddRelationshipToContact(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($op !== 'edit' || $objectName !== 'AfformSubmission') {
+      return;
+    }
+
+    $activityData = $objectRef['data']['Activity1'][0]['fields'] ?? [];
+    $institutionId = $activityData['source_contact_id'] ?? NULL;
+    $institutionPocId = $activityData['Institution_Material_Contribution.Institution_POC'] ?? NULL;
+
+    if (empty($institutionId) || empty($institutionPocId)) {
+      return;
+    }
+
+    $existingRelationship = Relationship::get(FALSE)
+      ->addWhere('contact_id_a', '=', $institutionId)
+      ->addWhere('contact_id_b', '=', $institutionPocId)
+      ->addClause('OR', ['relationship_type_id:name', '=', 'Institution POC of'], ['relationship_type_id:name', '=', 'Primary Institution POC of'])
+      ->execute()->first();
+    
+    if ($existingRelationship) {
+      return;
+    }
+    
+    Relationship::create(FALSE)
+      ->addValue('contact_id_a', $institutionId)
+      ->addValue('contact_id_b', $institutionPocId)
+      ->addValue('relationship_type_id', 24)
+      ->addValue('relationship_type_id:label', 'Institution POC is')
+      ->addValue('is_permission_a_b', 1)
+      ->addValue('is_permission_b_a', 1)
+      ->execute();
   }
 
   /**

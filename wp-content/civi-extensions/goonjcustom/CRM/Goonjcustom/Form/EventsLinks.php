@@ -4,7 +4,7 @@
  * @file
  */
 
-use Civi\Api4\EckEntity;
+use Civi\Api4\Event;
 
 /**
  * @file
@@ -16,14 +16,14 @@ use Civi\Api4\EckEntity;
 /**
  *
  */
-class CRM_Goonjcustom_Form_InstitutionGoonjActivitiesLinks extends CRM_Core_Form {
+class CRM_Goonjcustom_Form_EventsLinks extends CRM_Core_Form {
 
   /**
    * Goonj activities Id.
    *
    * @var int
    */
-  public $_institutionGoonjActivitiesId;
+  public $_eventId;
 
   /**
    * Goonj coordinator contact Id.
@@ -32,29 +32,15 @@ class CRM_Goonjcustom_Form_InstitutionGoonjActivitiesLinks extends CRM_Core_Form
    */
   public $_contactId;
 
-  /**
-   * Goonj processing unit center id.
-   *
-   * @var int
-   */
-  public $_processingCenterId;
 
   /**
    * Preprocess .
    */
   public function preProcess() {
-    $this->_institutionGoonjActivitiesId = CRM_Utils_Request::retrieve('ccid', 'Positive', $this);
+    $this->_eventId = CRM_Utils_Request::retrieve('eid', 'Positive', $this);
+
     $this->_contactId = CRM_Utils_Request::retrieve('gcid', 'Positive', $this);
-
-    $goonjActivities = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Institution_Goonj_Activities.Select_Goonj_POC_Attendee_Outcome_Form', 'Institution_Goonj_Activities.Select_Institute_POC_Feedback_Form')
-      ->addWhere('id', '=', $this->_institutionGoonjActivitiesId)
-      ->execute()->single();
-
-    $this->_formUrl = $goonjActivities['Institution_Goonj_Activities.Select_Goonj_POC_Attendee_Outcome_Form'];
-    $this->_feedback_form_url = $goonjActivities['Institution_Goonj_Activities.Select_Institute_POC_Feedback_Form'];
-
-    $this->setTitle('Institution Goonj Activities Link');
+    $this->setTitle('Event Link');
     parent::preProcess();
   }
 
@@ -89,23 +75,23 @@ class CRM_Goonjcustom_Form_InstitutionGoonjActivitiesLinks extends CRM_Core_Form
     // Generate goonj activities links.
     $links = [
       [
-        'label' => 'Institution Goonj Activities Outcome',
+        'label' => 'Events Outcome link',
         'url' => self::createUrl(
-            "{$this->_formUrl}",
-            "Eck_Collection_Camp1={$this->_institutionGoonjActivitiesId}&Camp_Outcome.Filled_By={$contactId}",
+            '/goonj-initiated-events-outcome',
+            "Event1={$this->_eventId}&Goonj_Events_Outcome.Filled_By={$contactId}",
             $contactId
         ),
       ],
       [
-        'label' => 'Institution Goonj Activities Feedback',
+        'label' => 'Events Feedback Link',
         'url' => self::createUrl(
-            "{$this->_feedback_form_url}",
-            "Eck_Collection_Camp1={$this->_institutionGoonjActivitiesId}&Camp_Outcome.Filled_By={$contactId}",
+            '/goonj-events-feedbacks',
+            "Events_Feedback.Event={$this->_eventId}&source_contact_id={$contactId}",
             $contactId
         ),
       ],
     ];
-    $this->assign('institutionGoonjActivitiesLinks', $links);
+    $this->assign('eventsLinks', $links);
   }
   
   /**
