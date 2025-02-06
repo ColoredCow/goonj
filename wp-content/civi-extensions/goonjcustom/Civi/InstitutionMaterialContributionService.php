@@ -41,7 +41,7 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
     $description = $activityData['Institution_Material_Contribution.Description_of_Material_No_of_Bags_Material_'] ?? '';
     $deliveredBy = $activityData['Institution_Material_Contribution.Delivered_By_Name'] ?? '';
     $deliveredByContact = $activityData['Institution_Material_Contribution.Delivered_By_Contact'] ?? '';
-    $organizationId = $activityData['Institution_Material_Contribution.Institution'];
+    $organizationId = $activityData['source_contact_id'];
     $institutionPOCId = $activityData['Institution_Material_Contribution.Institution_POC'];
 
     $organizations = Organization::get(FALSE)
