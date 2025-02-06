@@ -215,6 +215,10 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
 
     $imageData = array_map(fn ($path) => base64_encode(file_get_contents($path)), $paths);
 
+    $date = new \DateTime($activityDate);
+
+    $formattedDate = $date->format('F j, Y');
+
     $html = <<<HTML
     <html>
       <body style="font-family: Arial, sans-serif;">
@@ -249,7 +253,7 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
             </tr>
             <tr>
               <td class="table-header">Received On</td>
-              <td class="table-cell">{$activityDate}</td>
+              <td class="table-cell">{$formattedDate}</td>
             </tr>
             <tr>
               <td class="table-header">Institution Name</td>
@@ -301,7 +305,7 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
               </div>
               <div style="font-size: 12px; float: right;">
                 <img src="data:image/png;base64,{$imageData['callIcon']}" alt="Phone" style="width: 16px; height: 16px; margin-right: 5px;">
-                011-26972351/41401216
+                011-41401216
               </div>
             </div>
           </div>
