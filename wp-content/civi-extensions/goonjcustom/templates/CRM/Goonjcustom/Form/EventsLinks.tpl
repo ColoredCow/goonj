@@ -7,10 +7,10 @@
 {/foreach}
 
 {if $eventsLinks}
-  {foreach from=$eventsLinks item=eventsLinks}
+  {foreach from=$eventsLinks item=eventLink}
     <div class="crm-section">
-      <div class="label">{$eventsLinks.label}</div>
-      <div class="content"><a href="{$eventsLinks.url}">{$eventsLinks.url}</a></div>
+      <div class="label">{$eventLink.label}</div>
+      <div class="content"><a href="{$eventLink.url}">{$eventLink.url}</a></div>
       <div class="clear"></div>
     </div>
   {/foreach}
