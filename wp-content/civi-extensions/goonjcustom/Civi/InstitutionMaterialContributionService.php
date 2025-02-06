@@ -219,10 +219,9 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
     <html>
       <body style="font-family: Arial, sans-serif;">
         <div style="text-align: center; margin-bottom: 16px;">
-          <img src="data:image/png;base64,{$imageData['logo']}" alt="Goonj Logo" style="width: 95px; height: 80px;">
-        </div>
-        
-        <div style="width: 100%; font-size: 10px;">
+        <img alt="Goonj Logo" src="https://goonj-crm.staging.coloredcow.com/wp-content/uploads/2024/07/Goonj-logo-10June20-300x193.png" style="width: 150px; height: auto;" />
+        </div>      
+        <div style="width: 100%; font-size: 11px;">
           <div style="float: left; text-align: left;">
             Material Acknowledgment# {$contribution['id']}
           </div>
@@ -281,14 +280,14 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
             </tr>
           </table>
         <div style="width: 100%; margin-top: 16px;">
-        <div style="float: left; width: 60%; font-size: 10px;">
+        <div style="float: left; width: 60%; font-size: 12px;">
         <p>Join us, by encouraging your friends, relatives, colleagues, and neighbours to join the journey as all of us have a lot to give.</p>
         <p style="margin-top: 8px;">
         <strong>With Material Money Matters</strong> Your monetary contribution is needed too for sorting, packing, transportation to implementation. (Financial contributions are tax-exempted u/s 80G of IT Act)
       </p>
-      <p style="margin-top: 10px; font-size: 10px; float: left">* Received material has 'No Commercial Value' for Goonj.</p>
+      <p style="margin-top: 10px; font-size: 12px; float: left">* Received material has 'No Commercial Value' for Goonj.</p>
     </div>
-    <div style="float: right; width: 40%; text-align: right; font-size: 10px; font-style: italic;">
+    <div style="float: right; width: 40%; text-align: right; font-size: 12px; font-style: italic;">
     <p>To contribute, please scan the code.</p>
     <img src="data:image/png;base64,{$imageData['qrCode']}" alt="QR Code" style="width: 80px; height: 70px; margin-top: 2px"></div>
         </div>
@@ -296,11 +295,11 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
         <div style="width: 100%; margin-top: 15px; background-color: #f2f2f2; padding: 16px; font-weight: 300; color: #000000">
           <div style="font-size: 10px; margin-bottom: 20px;">
             <div style="position: relative; height: 24px;">
-              <div style="font-size: 10px; float: left; color:">
+              <div style="font-size: 12px; float: left; color:">
                 Goonj, C-544, 1st Floor, C-Pocket, Sarita Vihar,<br>
                 New Delhi-110076
               </div>
-              <div style="font-size: 10px; float: right;">
+              <div style="font-size: 12px; float: right;">
                 <img src="data:image/png;base64,{$imageData['callIcon']}" alt="Phone" style="width: 16px; height: 16px; margin-right: 5px;">
                 011-26972351/41401216
               </div>
