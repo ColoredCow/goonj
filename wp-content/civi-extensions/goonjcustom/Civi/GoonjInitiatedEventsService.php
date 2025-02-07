@@ -64,7 +64,7 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
         }
 
         $mailParams = [
-          'subject' => 'Goonj Events Notification: ' . $eventCode . ' at ' . $eventAddress,
+          'subject' => 'Goonj Events Notification: ' . $eventCode,
           'from' => $from,
           'toEmail' => $attendeeEmail,
           'replyTo' => $from,
@@ -321,7 +321,7 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
           }
 
           $mailParams = [
-            'subject' => 'Goonj Events Notification: ' . $eventCode . ' at ' . $eventAddress,
+            'subject' => 'Goonj Events Notification: ' . $eventCode,
             'from' => $from,
             'toEmail' => $attendeeEmail,
             'replyTo' => $from,

@@ -171,7 +171,7 @@ class RuralPlannedVisitService extends AutoSubscriber {
         }
 
         $mailParams = [
-          'subject' => 'Rural Planned Visit Events Notification: ' . $eventCode . ' at ' . $eventAddress,
+          'subject' => 'Rural Planned Visit Events Notification: ' . $eventCode,
           'from' => $from,
           'toEmail' => $attendeeEmail,
           'replyTo' => $from,
@@ -253,7 +253,7 @@ class RuralPlannedVisitService extends AutoSubscriber {
           }
 
           $mailParams = [
-            'subject' => 'Rural Planned Visit Events Notification: ' . $eventCode . ' at ' . $eventAddress,
+            'subject' => 'Rural Planned Visit Events Notification: ' . $eventCode,
             'from' => $from,
             'toEmail' => $attendeeEmail,
             'replyTo' => $from,
