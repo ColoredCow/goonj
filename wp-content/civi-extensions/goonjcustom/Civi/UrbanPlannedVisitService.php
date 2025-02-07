@@ -1005,11 +1005,13 @@ class UrbanPlannedVisitService extends AutoSubscriber {
   private static function getOutcomeFormEmailHtml($coordinatingGoonjPocName, $visitDate, $visitTime, $goonjVisitGuideName, $goonjVisitGuideId, $visitId, $numberOfAttendees) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
     $visitOutcomeFormUrl = $homeUrl . '/visit-outcome/#?Eck_Urban_Source_Outcome_Details1=' . $visitId . '&Urban_Visit_Outcome.Visit_Id=' . $visitId . '&Urban_Visit_Outcome.Filled_By=' . $goonjVisitGuideId . '&Urban_Visit_Outcome.Number_of_Attendees=' . $numberOfAttendees;
+    // Convert date format
+    $formattedVisitDate = (new \DateTime($visitDate))->format('d/m/Y');
 
     $html = "
     <p>Dear $goonjVisitGuideName,</p>
 
-    <p>Thank you for guiding our visitors on the Learning Journey on <strong>$visitDate</strong> at <strong>$visitTime</strong>. We hope it was a rewarding experience!</p>
+    <p>Thank you for guiding our visitors on the Learning Journey on <strong>$formattedVisitDate</strong> at <strong>$visitTime</strong>. We hope it was a rewarding experience!</p>
 
     <p>To complete the process, kindly fill out this short <a href='$visitOutcomeFormUrl' target='_blank'>Outcome Form</a> for our records and documentation purposes.</p>
 
