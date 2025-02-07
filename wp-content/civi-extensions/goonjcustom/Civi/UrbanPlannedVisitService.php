@@ -1177,7 +1177,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     $institutionId = $data['Urban_Planned_Visit.Institution'] ?? NULL;
     $institutionPocId = $data['Urban_Planned_Visit.Institution_POC'] ?? NULL;
 
-    if (empty($institutionId) && empty($institutionPocId)) {
+    if (empty($institutionId) || empty($institutionPocId)) {
       return;
     }
 
