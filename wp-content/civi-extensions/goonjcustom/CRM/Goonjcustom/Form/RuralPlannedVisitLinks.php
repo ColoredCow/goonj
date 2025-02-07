@@ -83,7 +83,7 @@ class CRM_Goonjcustom_Form_RuralPlannedVisitLinks extends CRM_Core_Form {
         ),
       ],
       [
-        'label' => 'Events Feedback Link',
+        'label' => 'Rural Planned Visit Feedback Link',
         'url' => self::createUrl(
             '/rural-planned-visit-feedback',
             "Rural_Planned_Visit_Feedback.Event={$this->_eventId}&source_contact_id={$contactId}",
