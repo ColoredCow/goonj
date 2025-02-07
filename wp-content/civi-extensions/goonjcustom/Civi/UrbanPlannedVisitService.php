@@ -426,6 +426,13 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     }
 
     $tabConfigs = [
+      'edit' => [
+        'title' => ts('Edit'),
+        'module' => 'afformUrbanPlannedVisitIntentReviewForm',
+        'directive' => 'afform-Urban-Planned-Visit-Intent-Review-Form',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCampEdit.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+      ],
       'visitOutcome' => [
         'title' => ts('Visit Outcome'),
         'module' => 'afsearchVisitUrbanOutcomeDetails',
