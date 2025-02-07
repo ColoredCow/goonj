@@ -41,7 +41,7 @@ class InstitutionService extends AutoSubscriber {
       ],
       '&hook_civicrm_pre' => [
         ['assignChapterGroupToContacts'],
-        ['AddRelationshipToContact'],
+        ['addRelationshipToContact'],
       ],
     ];
   }
@@ -49,7 +49,7 @@ class InstitutionService extends AutoSubscriber {
   /**
    *
    */
-  public static function AddRelationshipToContact(string $op, string $objectName, $objectId, &$objectRef) {
+  public static function addRelationshipToContact(string $op, string $objectName, $objectId, &$objectRef) {
     if ($op !== 'edit' || $objectName !== 'AfformSubmission') {
       return;
     }
