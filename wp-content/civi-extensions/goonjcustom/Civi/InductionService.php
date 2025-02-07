@@ -175,6 +175,7 @@ class InductionService extends AutoSubscriber {
     $coordinators = Relationship::get(FALSE)
       ->addWhere('contact_id_b', '=', $officeId)
       ->addWhere('relationship_type_id:name', '=', self::RELATIONSHIP_TYPE_NAME)
+      ->addWhere('is_active', '=', TRUE)
       ->execute();
 
     $coordinatorCount = $coordinators->count();
