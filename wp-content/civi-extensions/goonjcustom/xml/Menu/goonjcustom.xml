@@ -54,4 +54,10 @@
     <title>EventsLinks</title>
     <access_arguments>access CiviCRM</access_arguments>
   </item>
+    <item>
+    <path>civicrm/ruralPlannedVisitLinks/links</path>
+    <page_callback>CRM_Goonjcustom_Form_RuralPlannedVisitLinks</page_callback>
+    <title>ruralPlannedVisitLinks</title>
+    <access_arguments>access CiviCRM</access_arguments>
+  </item>
 </menu>
