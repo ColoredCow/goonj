@@ -43,6 +43,7 @@ function civicrm_api3_goonjcustom_goonj_initiated_events_outcome_cron($params) {
 		['Goonj_Events_Outcome.Outcome_Email_Sent', 'IS NULL'],
 		['Goonj_Events_Outcome.Outcome_Email_Sent', '=', 0]
 	)
+	->addWhere('event_type_id:name', '!=', 'Rural Planned Visit')
 	->execute();
 
   foreach ($events as $event) {

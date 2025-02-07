@@ -44,6 +44,7 @@ function civicrm_api3_goonjcustom_rural_planned_visit_outcome_cron($params) {
     ->addWhere('Rural_Planned_Visit.Status:name', '=', 'Authorized')
     ->addWhere('start_date', '>=', $startOfDay)
     ->addWhere('start_date', '<=', $endOfDay)
+    ->addWhere('event_type_id:name', '=', 'Rural Planned Visit')
     ->addClause('OR', ['Rural_Planned_Visit_Outcome.Outcome_Email_Sent', 'IS NULL'], ['Rural_Planned_Visit_Outcome.Outcome_Email_Sent', '=', FALSE])
     ->setLimit(25)
     ->execute();
