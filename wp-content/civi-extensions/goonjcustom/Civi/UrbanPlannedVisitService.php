@@ -34,6 +34,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         ['generateUrbanVisitSourceCode'],
         ['fillExternalCoordinatingPoc'],
         ['autoAssignExternalCoordinatingPoc'],
+        ['autoAssignExternalCoordinatingPocFromIndividual'],
       ],
       '&hook_civicrm_tabset' => 'urbanVisitTabset',
     ];
@@ -1248,6 +1249,31 @@ class UrbanPlannedVisitService extends AutoSubscriber {
 
     $results = EckEntity::update('Institution_Visit', FALSE)
       ->addValue('Urban_Planned_Visit.External_Coordinating_PoC', $institutionPocId)
+      ->addWhere('id', '=', $urbanVisitId)
+      ->execute();
+
+  }
+
+  /**
+   *
+   */
+  public static function autoAssignExternalCoordinatingPocFromIndividual(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($op !== 'edit' || $objectName !== 'AfformSubmission') {
+      return;
+    }
+
+    $data = $objectRef['data']['Eck_Institution_Visit1'][0]['fields'] ?? [];
+    $urbanVisitId = $objectRef['data']['Eck_Institution_Visit1'][0]['id'] ?? [];
+
+    // Get individualContact ID.
+    $individualContact = $data['Urban_Planned_Visit.Select_Individual'] ?? NULL;
+
+    if (empty($individualContact)) {
+      return;
+    }
+
+    $results = EckEntity::update('Institution_Visit', FALSE)
+      ->addValue('Urban_Planned_Visit.External_Coordinating_PoC', $individualContact)
       ->addWhere('id', '=', $urbanVisitId)
       ->execute();
 
