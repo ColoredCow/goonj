@@ -1184,6 +1184,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     $existingRelationship = Relationship::get(FALSE)
       ->addWhere('contact_id_a', '=', $institutionId)
       ->addWhere('contact_id_b', '=', $institutionPocId)
+      ->addWhere('is_active', '=', TRUE)
       ->addClause('OR', ['relationship_type_id:name', '=', 'Institution POC of'], ['relationship_type_id:name', '=', 'Primary Institution POC of'])
       ->execute()->first();
 
