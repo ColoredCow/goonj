@@ -61,7 +61,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     $newAuthVisitStatus = $visitStatusDetails['newAuthVisitStatus'];
     $currentAuthVisitStatus = $visitStatusDetails['currentAuthVisitStatus'];
 
-    if ($currentAuthVisitStatus !== $newAuthVisitStatus && $newAuthVisitStatus === 'authorized') {
+    if ($currentAuthVisitStatus !== $newAuthVisitStatus && $newAuthVisitStatus === '3') {
       $visitId = $objectRef['id'] ?? NULL;
       if ($visitId === NULL) {
         return;
@@ -255,7 +255,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     $newAuthVisitStatus = $visitStatusDetails['newAuthVisitStatus'];
     $currentAuthVisitStatus = $visitStatusDetails['currentAuthVisitStatus'];
 
-    if ($currentAuthVisitStatus !== $newAuthVisitStatus && $newAuthVisitStatus === 'authorized') {
+    if ($currentAuthVisitStatus !== $newAuthVisitStatus && $newAuthVisitStatus === '3') {
       $visitId = $objectRef['id'] ?? NULL;
       if ($visitId === NULL) {
         return;
@@ -944,7 +944,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     $newVisitStatus = $visitStatusDetails['newVisitStatus'];
     $currentVisitStatus = $visitStatusDetails['currentVisitStatus'];
 
-    if ($currentVisitStatus !== $newVisitStatus && $newVisitStatus === 'completed') {
+    if ($currentVisitStatus !== $newVisitStatus && $newVisitStatus === '3') {
       $visitId = $objectRef['id'] ?? NULL;
       if ($visitId === NULL) {
         return;
@@ -1084,7 +1084,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     $newStatus = $statusDetails['newAuthVisitStatus'];
     $currentStatus = $statusDetails['currentAuthVisitStatus'];
 
-    if ($currentStatus !== $newStatus && $newStatus === 'authorized') {
+    if ($currentStatus !== $newStatus && $newStatus === '3') {
       $subtypeId = $objectRef['subtype'] ?? NULL;
       if (!$subtypeId) {
         return;
