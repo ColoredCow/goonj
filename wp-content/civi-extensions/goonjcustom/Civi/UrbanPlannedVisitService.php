@@ -61,7 +61,8 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     $newAuthVisitStatus = $visitStatusDetails['newAuthVisitStatus'];
     $currentAuthVisitStatus = $visitStatusDetails['currentAuthVisitStatus'];
 
-    if ($currentAuthVisitStatus !== $newAuthVisitStatus && $newAuthVisitStatus === 'authorized') {
+    // @todo Fix hardcode values.
+    if ($currentAuthVisitStatus !== $newAuthVisitStatus && $newAuthVisitStatus === '3') {
       $visitId = $objectRef['id'] ?? NULL;
       if ($visitId === NULL) {
         return;
@@ -73,7 +74,16 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         ->execute()->single();
 
       $visitDate = $visitData['Urban_Planned_Visit.When_do_you_wish_to_visit_Goonj'];
-      $visitTime = $visitData['Urban_Planned_Visit.What_time_do_you_wish_to_visit_'];
+      $visitTimeId = $visitData['Urban_Planned_Visit.What_time_do_you_wish_to_visit_'];
+
+      $optionValue = OptionValue::get(FALSE)
+        ->addSelect('name')
+        ->addWhere('option_group_id:name', '=', 'Urban_Planned_Visit_What_time_do_you_wish_to_visit_')
+        ->addWhere('value', '=', $visitTimeId)
+        ->execute()->first();
+
+      $visitTime = str_replace('_', ':', $optionValue['name']);
+
       $visitParticipation = $visitData['Urban_Planned_Visit.Number_of_people_accompanying_you'];
       $institutionName = $visitData['Urban_Planned_Visit.Institution_Name'];
 
@@ -246,7 +256,8 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     $newAuthVisitStatus = $visitStatusDetails['newAuthVisitStatus'];
     $currentAuthVisitStatus = $visitStatusDetails['currentAuthVisitStatus'];
 
-    if ($currentAuthVisitStatus !== $newAuthVisitStatus && $newAuthVisitStatus === 'authorized') {
+    // @todo Fix hardcode values.
+    if ($currentAuthVisitStatus !== $newAuthVisitStatus && $newAuthVisitStatus === '3') {
       $visitId = $objectRef['id'] ?? NULL;
       if ($visitId === NULL) {
         return;
@@ -275,7 +286,15 @@ class UrbanPlannedVisitService extends AutoSubscriber {
 
       $visitAtId = $visitData['Urban_Planned_Visit.Which_Goonj_Processing_Center_do_you_wish_to_visit_'];
       $visitDate = $visitData['Urban_Planned_Visit.When_do_you_wish_to_visit_Goonj'];
-      $visitTime = $visitData['Urban_Planned_Visit.What_time_do_you_wish_to_visit_'];
+      $visitTimeId = $visitData['Urban_Planned_Visit.What_time_do_you_wish_to_visit_'];
+
+      $optionValue = OptionValue::get(FALSE)
+        ->addSelect('name')
+        ->addWhere('option_group_id:name', '=', 'Urban_Planned_Visit_What_time_do_you_wish_to_visit_')
+        ->addWhere('value', '=', $visitTimeId)
+        ->execute()->first();
+
+      $visitTime = str_replace('_', ':', $optionValue['name']);
 
       $contact = Contact::get(FALSE)
         ->addSelect('address.street_address', 'address.city')
@@ -623,7 +642,16 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     $coordinatingGoonjPersonName = $coordinatingGoonjPocPerson['display_name'];
     $coordinatingGoonjPersonPhone = $coordinatingGoonjPocPerson['phone.phone_numeric'];
 
-    $visitTime = $visit['Urban_Planned_Visit.What_time_do_you_wish_to_visit_'];
+    $visitTimeId = $visit['Urban_Planned_Visit.What_time_do_you_wish_to_visit_'];
+
+    $optionValue = OptionValue::get(FALSE)
+      ->addSelect('name')
+      ->addWhere('option_group_id:name', '=', 'Urban_Planned_Visit_What_time_do_you_wish_to_visit_')
+      ->addWhere('value', '=', $visitTimeId)
+      ->execute()->first();
+
+    $visitTime = str_replace('_', ':', $optionValue['name']);
+
     $visitAtId = $visit['Urban_Planned_Visit.Which_Goonj_Processing_Center_do_you_wish_to_visit_'];
 
     $contact = Contact::get(FALSE)
@@ -685,7 +713,15 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     $visitParticipation = $visit['Urban_Planned_Visit.Number_of_people_accompanying_you'];
     $institutionName = $visit['Urban_Planned_Visit.Institution_Name'];
     $visitId = $visit['id'];
-    $visitTime = $visit['Urban_Planned_Visit.What_time_do_you_wish_to_visit_'];
+    $visitTimeId = $visit['Urban_Planned_Visit.What_time_do_you_wish_to_visit_'];
+
+    $optionValue = OptionValue::get(FALSE)
+      ->addSelect('name')
+      ->addWhere('option_group_id:name', '=', 'Urban_Planned_Visit_What_time_do_you_wish_to_visit_')
+      ->addWhere('value', '=', $visitTimeId)
+      ->execute()->first();
+
+    $visitTime = str_replace('_', ':', $optionValue['name']);
 
     $goonjVisitGuideId = $visit['Urban_Planned_Visit.Visit_Guide'] ?? '';
     $goonjVisitGuideIds = is_array($goonjVisitGuideId) ? $goonjVisitGuideId : [$goonjVisitGuideId];
@@ -910,7 +946,8 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     $newVisitStatus = $visitStatusDetails['newVisitStatus'];
     $currentVisitStatus = $visitStatusDetails['currentVisitStatus'];
 
-    if ($currentVisitStatus !== $newVisitStatus && $newVisitStatus === 'completed') {
+    // @todo Fix hardcode values.
+    if ($currentVisitStatus !== $newVisitStatus && $newVisitStatus === '3') {
       $visitId = $objectRef['id'] ?? NULL;
       if ($visitId === NULL) {
         return;
@@ -935,7 +972,15 @@ class UrbanPlannedVisitService extends AutoSubscriber {
       $numberOfAttendees = $visitData['Urban_Planned_Visit.Number_of_people_accompanying_you'];
 
       $visitDate = $visitData['Urban_Planned_Visit.When_do_you_wish_to_visit_Goonj'];
-      $visitTime = $visitData['Urban_Planned_Visit.What_time_do_you_wish_to_visit_'];
+      $visitTimeId = $visitData['Urban_Planned_Visit.What_time_do_you_wish_to_visit_'];
+
+      $optionValue = OptionValue::get(FALSE)
+        ->addSelect('name')
+        ->addWhere('option_group_id:name', '=', 'Urban_Planned_Visit_What_time_do_you_wish_to_visit_')
+        ->addWhere('value', '=', $visitTimeId)
+        ->execute()->first();
+
+      $visitTime = str_replace('_', ':', $optionValue['name']);
 
       $goonjCoordinatingPocId = $objectRef['Urban_Planned_Visit.Coordinating_Goonj_POC'] ?? '';
 
@@ -1042,7 +1087,8 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     $newStatus = $statusDetails['newAuthVisitStatus'];
     $currentStatus = $statusDetails['currentAuthVisitStatus'];
 
-    if ($currentStatus !== $newStatus && $newStatus === 'authorized') {
+    // @todo Fix hardcode values.
+    if ($currentStatus !== $newStatus && $newStatus === '3') {
       $subtypeId = $objectRef['subtype'] ?? NULL;
       if (!$subtypeId) {
         return;
