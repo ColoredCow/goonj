@@ -61,6 +61,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     $newAuthVisitStatus = $visitStatusDetails['newAuthVisitStatus'];
     $currentAuthVisitStatus = $visitStatusDetails['currentAuthVisitStatus'];
 
+    // @todo Fix hardcode values.
     if ($currentAuthVisitStatus !== $newAuthVisitStatus && $newAuthVisitStatus === '3') {
       $visitId = $objectRef['id'] ?? NULL;
       if ($visitId === NULL) {
@@ -255,6 +256,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     $newAuthVisitStatus = $visitStatusDetails['newAuthVisitStatus'];
     $currentAuthVisitStatus = $visitStatusDetails['currentAuthVisitStatus'];
 
+    // @todo Fix hardcode values.
     if ($currentAuthVisitStatus !== $newAuthVisitStatus && $newAuthVisitStatus === '3') {
       $visitId = $objectRef['id'] ?? NULL;
       if ($visitId === NULL) {
@@ -944,6 +946,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     $newVisitStatus = $visitStatusDetails['newVisitStatus'];
     $currentVisitStatus = $visitStatusDetails['currentVisitStatus'];
 
+    // @todo Fix hardcode values.
     if ($currentVisitStatus !== $newVisitStatus && $newVisitStatus === '3') {
       $visitId = $objectRef['id'] ?? NULL;
       if ($visitId === NULL) {
@@ -1084,6 +1087,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     $newStatus = $statusDetails['newAuthVisitStatus'];
     $currentStatus = $statusDetails['currentAuthVisitStatus'];
 
+    // @todo Fix hardcode values.
     if ($currentStatus !== $newStatus && $newStatus === '3') {
       $subtypeId = $objectRef['subtype'] ?? NULL;
       if (!$subtypeId) {
