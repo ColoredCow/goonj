@@ -287,7 +287,6 @@ class UrbanPlannedVisitService extends AutoSubscriber {
       $visitAtName = $contact['address.city'];
 
       $externalCoordinatingPocId = $objectRef['Urban_Planned_Visit.External_Coordinating_PoC'] ?? '';
-      $coordinatingPocId = $objectRef['Urban_Planned_Visit.Coordinating_Person'] ?? '';
       $coordinatingGoonjPocId = $objectRef['Urban_Planned_Visit.Coordinating_Goonj_POC'] ?? '';
 
       $coordinatingGoonjPocPerson = Contact::get(FALSE)
@@ -298,13 +297,6 @@ class UrbanPlannedVisitService extends AutoSubscriber {
 
       $coordinatingGoonjPersonName = $coordinatingGoonjPocPerson['display_name'];
       $coordinatingGoonjPersonPhone = $coordinatingGoonjPocPerson['phone.phone_numeric'];
-
-      $coordinatingPerson = Contact::get(FALSE)
-        ->addSelect('display_name')
-        ->addWhere('id', '=', $coordinatingPocId)
-        ->execute()->single();
-
-      $coordinatingPersonName = $coordinatingPerson['display_name'];
 
       $externalCoordinatingGoonjPoc = Contact::get(FALSE)
         ->addSelect('email.email', 'display_name', 'phone.phone_numeric')
@@ -324,7 +316,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         'from' => $from,
         'toEmail' => $externalCoordinatingGoonjPocEmail,
         'replyTo' => $from,
-        'html' => self::getExtCoordPocEmailHtml($externalCoordinatingGoonjPocName, $visitAtName, $visitAddress, $visitDate, $visitTime, $coordinatingPersonName, $coordinatingGoonjPersonName, $coordinatingGoonjPersonPhone),
+        'html' => self::getExtCoordPocEmailHtml($externalCoordinatingGoonjPocName, $visitAtName, $visitAddress, $visitDate, $visitTime, $coordinatingGoonjPersonName, $coordinatingGoonjPersonPhone),
       ];
 
       $emailSendResultToExternalPoc = \CRM_Utils_Mail::send($mailParamsExternalPoc);
@@ -341,7 +333,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
   /**
    *
    */
-  private static function getExtCoordPocEmailHtml($externalCoordinatingGoonjPocName, $visitAtName, $visitAddress, $visitDate, $visitTime, $coordinatingPersonName, $coordinatingGoonjPersonName, $coordinatingGoonjPersonPhone) {
+  private static function getExtCoordPocEmailHtml($externalCoordinatingGoonjPocName, $visitAtName, $visitAddress, $visitDate, $visitTime, $coordinatingGoonjPersonName, $coordinatingGoonjPersonPhone) {
     $date = new \DateTime($visitDate);
     $dayOfWeek = $date->format('l');
     // Convert date format.
@@ -361,7 +353,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         <li><strong>Directions:</strong> <a href='https://www.google.com/maps?q=$visitAddress' target='_blank'>View Directions on Google Maps</a></li>
         <li><strong>On:</strong>  $formattedVisitDate , $dayOfWeek</li>
         <li><strong>From:</strong> $visitTime </li>
-        <li><strong>Contact Point:</strong> $coordinatingPersonName</li>
+        <li><strong>Contact Point:</strong> $coordinatingGoonjPersonName</li>
     </ul>
 
     
