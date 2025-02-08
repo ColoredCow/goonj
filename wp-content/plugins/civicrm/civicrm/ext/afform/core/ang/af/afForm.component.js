@@ -315,8 +315,8 @@
           }
         });
         
-        // Date validation for the Open Dropping Center, institute dropping center, Urban Planned Visit form to ensure the selected date is not in the past.
-        if (['afformDroppingCenterDetailForm', 'afformInstitutionDroppingCenterIntent1', 'afformUrbanPlannedVisitIntentForm'].includes(ctrl.getFormMeta().name)) {
+        // Date validation for the Open Dropping Center, institute dropping center form to ensure the selected date is not in the past.
+        if (['afformDroppingCenterDetailForm', 'afformInstitutionDroppingCenterIntent1'].includes(ctrl.getFormMeta().name)) {
           var dateField = $element.find("input.crm-form-date").val().trim(); 
           if (dateField !== "") {
             var today = new Date();
@@ -330,7 +330,24 @@
               errorMessage += `The selected date (${dateField}) cannot be today or in the past.\n`;
             }
           }
-        }        
+        }    
+
+        // Date validation for the Urban Planned Visit form to ensure the selected date is not in the past.
+        if (['afformUrbanPlannedVisitIntentForm'].includes(ctrl.getFormMeta().name)) {
+          var dateField = $element.find("input.crm-form-date").val().trim(); 
+          if (dateField !== "") {
+            var today = new Date();
+            today.setHours(0, 0, 0, 0);
+            var dateParts = dateField.split('/');
+            var selectedDate = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
+            
+            // Check if the selected date is in the past
+            if (selectedDate < today) {
+              isValid = false;
+              errorMessage += `The selected date (${dateField}) cannot be in the past.\n`;
+            }
+          }
+        }
 
         if (ctrl.getFormMeta().name === 'afformInstitutionGoonjActivitiesIntent') {
           var dateField = $element.find("af-field[name='Institution_Goonj_Activities.Start_Date'] .crm-form-date-wrapper input.crm-form-date").val();
