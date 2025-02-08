@@ -188,6 +188,8 @@ class UrbanPlannedVisitService extends AutoSubscriber {
   private static function getGoonjCoordPocAndVisitEmailHtml($coordinatingGoonjPocName, $visitDate, $visitTime, $visitParticipation, $goonjVisitGuideName, $individualName, $institutionName) {
     $date = new \DateTime($visitDate);
     $dayOfWeek = $date->format('l');
+    // Convert date format.
+    $formattedVisitDate = (new \DateTime($visitDate))->format('d/m/Y');
 
     // Conditionally construct the Individual/Institute Name string.
     $individualOrInstitute = $individualName;
@@ -202,7 +204,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
 <p>A Learning Journey at our Goonj Center of Circularity (GCoC) has been confirmed, and you have been assigned for this visit as per the roster/availability. Details below:</p>
 
 <ul>
-    <li><strong>Date:</strong> $visitDate, $dayOfWeek</li>
+    <li><strong>Date:</strong> $formattedVisitDate, $dayOfWeek</li>
     <li><strong>Time:</strong> $visitTime</li>
     <li><strong>Individual/Institute Name:</strong> $individualOrInstitute</li>
     <li><strong>Number of Participants:</strong> $visitParticipation</li>
@@ -342,6 +344,8 @@ class UrbanPlannedVisitService extends AutoSubscriber {
   private static function getExtCoordPocEmailHtml($externalCoordinatingGoonjPocName, $visitAtName, $visitAddress, $visitDate, $visitTime, $coordinatingPersonName, $coordinatingGoonjPersonName, $coordinatingGoonjPersonPhone) {
     $date = new \DateTime($visitDate);
     $dayOfWeek = $date->format('l');
+    // Convert date format.
+    $formattedVisitDate = (new \DateTime($visitDate))->format('d/m/Y');
 
     $html = "
     <p>Dear $externalCoordinatingGoonjPocName,</p>
@@ -355,7 +359,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         <li><strong>At:</strong> $visitAtName </li>
         <li><strong>Address:</strong> $visitAddress </li>
         <li><strong>Directions:</strong> <a href='https://www.google.com/maps?q=$visitAddress' target='_blank'>View Directions on Google Maps</a></li>
-        <li><strong>On:</strong>  $visitDate , $dayOfWeek</li>
+        <li><strong>On:</strong>  $formattedVisitDate , $dayOfWeek</li>
         <li><strong>From:</strong> $visitTime </li>
         <li><strong>Contact Point:</strong> $coordinatingPersonName</li>
     </ul>
