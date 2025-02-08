@@ -137,12 +137,14 @@ class CRM_Goonjcustom_Token_IndividualGoonjActivities extends AbstractTokenSubsc
     $relationships = Relationship::get(FALSE)
       ->addWhere('contact_id_a', '=', $organizationId)
       ->addWhere('relationship_type_id:name', '=', 'Institution POC of')
+      ->addWhere('is_active', '=', TRUE)
       ->execute();
 
     // If no relationships found for 'Institution POC of', check for 'Primary Institution POC of'.
     if (empty($relationships)) {
       $relationships = Relationship::get(FALSE)
         ->addWhere('contact_id_a', '=', $organizationId)
+        ->addWhere('is_active', '=', TRUE)
         ->addWhere('relationship_type_id:name', '=', 'Primary Institution POC of')
         ->execute();
     }

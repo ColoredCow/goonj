@@ -74,6 +74,7 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
       $primaryRelationships = Relationship::get(FALSE)
         ->addWhere('contact_id_a', '=', $organizationId)
         ->addWhere('relationship_type_id:name', '=', 'Primary Institution POC of')
+        ->addWhere('is_active', '=', TRUE)
         ->execute();
 
       if ($primaryRelationships) {
@@ -86,6 +87,7 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
         $pocRelationships = Relationship::get(FALSE)
           ->addWhere('contact_id_a', '=', $organizationId)
           ->addWhere('relationship_type_id:name', '=', 'Institution POC of')
+          ->addWhere('is_active', '=', TRUE)
           ->execute();
 
         if ($pocRelationships) {
