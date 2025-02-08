@@ -48,7 +48,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
         ['generateInstitutionGoonjActivitiesQr'],
         ['createActivityForInstitutionGoonjActivityCollectionCamp'],
         ['linkInstitutionGoonjActivitiesToContact'],
-        ['updateInstitutionPoc'],
+        ['updateInstitutionPointOfContact'],
       ],
       'civi.afform.submit' => [
         ['setInstitutionGoonjActivitiesAddress', 9],
@@ -67,7 +67,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
   /**
    *
    */
-  public static function updateInstitutionPoc(string $op, string $objectName, $objectId, &$objectRef) {
+  public static function updateInstitutionPointOfContact(string $op, string $objectName, $objectId, &$objectRef) {
     if ($objectName !== 'AfformSubmission') {
       return;
     }
@@ -81,15 +81,9 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
     if (!empty($dataArray['Eck_Collection_Camp1'][0]['id'])) {
       $eckCollectionCampId = $dataArray['Eck_Collection_Camp1'][0]['id'];
     }
-    else {
-      error_log("Eck_Collection_Camp1 ID not found.");
-    }
 
     if (!empty($dataArray['Individual1'][0]['id'])) {
       $individualId = $dataArray['Individual1'][0]['id'];
-    }
-    else {
-      error_log("Individual1 ID not found.");
     }
 
     if ($eckCollectionCampId && $individualId) {
@@ -102,7 +96,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
         ->first();
 
       if (empty($collectionCamps)) {
-        self::updateDatabase($eckCollectionCampId, $individualId);
+        self::assignPointOfContactToCamp($eckCollectionCampId, $individualId);
       }
     }
   }
@@ -110,7 +104,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
   /**
    *
    */
-  private static function updateDatabase($campId, $personId) {
+  private static function assignPointOfContactToCamp($campId, $personId) {
     $results = EckEntity::update('Collection_Camp', FALSE)
       ->addValue('Institution_Goonj_Activities.Institution_POC', $personId)
       ->addWhere('id', '=', $campId)

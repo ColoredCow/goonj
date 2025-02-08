@@ -315,8 +315,8 @@
           }
         });
         
-        // Date validation for the Open Dropping Center and institute dropping center form to ensure the selected date is not in the past.
-        if (['afformDroppingCenterDetailForm', 'afformInstitutionDroppingCenterIntent1'].includes(ctrl.getFormMeta().name)) {
+        // Date validation for the Open Dropping Center, institute dropping center, Urban Planned Visit form to ensure the selected date is not in the past.
+        if (['afformDroppingCenterDetailForm', 'afformInstitutionDroppingCenterIntent1', 'afformUrbanPlannedVisitIntentForm'].includes(ctrl.getFormMeta().name)) {
           var dateField = $element.find("input.crm-form-date").val().trim(); 
           if (dateField !== "") {
             var today = new Date();
@@ -327,7 +327,7 @@
             // Check if the selected date is in the past or today
             if (selectedDate <= today) {
               isValid = false;
-              errorMessage += `The selected dropping center date (${dateField}) cannot be today or in the past.\n`;
+              errorMessage += `The selected date (${dateField}) cannot be today or in the past.\n`;
             }
           }
         }        

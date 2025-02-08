@@ -11,6 +11,7 @@ use Civi\Api4\EckEntity;
 use Civi\Api4\OptionValue;
 use Civi\Api4\StateProvince;
 use Civi\Traits\CollectionSource;
+use Civi\Api4\Relationship;
 
 /**
  *
@@ -32,6 +33,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         ['sendVisitOutcomeForm'],
         ['generateUrbanVisitSourceCode'],
         ['fillExternalCoordinatingPoc'],
+        ['autoAssignExternalCoordinatingPoc'],
       ],
       '&hook_civicrm_tabset' => 'urbanVisitTabset',
     ];
@@ -426,6 +428,13 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     }
 
     $tabConfigs = [
+      'edit' => [
+        'title' => ts('Edit'),
+        'module' => 'afformUrbanPlannedVisitIntentReviewForm',
+        'directive' => 'afform-Urban-Planned-Visit-Intent-Review-Form',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCampEdit.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+      ],
       'visitOutcome' => [
         'title' => ts('Visit Outcome'),
         'module' => 'afsearchVisitUrbanOutcomeDetails',
@@ -998,11 +1007,13 @@ class UrbanPlannedVisitService extends AutoSubscriber {
   private static function getOutcomeFormEmailHtml($coordinatingGoonjPocName, $visitDate, $visitTime, $goonjVisitGuideName, $goonjVisitGuideId, $visitId, $numberOfAttendees) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
     $visitOutcomeFormUrl = $homeUrl . '/visit-outcome/#?Eck_Urban_Source_Outcome_Details1=' . $visitId . '&Urban_Visit_Outcome.Visit_Id=' . $visitId . '&Urban_Visit_Outcome.Filled_By=' . $goonjVisitGuideId . '&Urban_Visit_Outcome.Number_of_Attendees=' . $numberOfAttendees;
+    // Convert date format.
+    $formattedVisitDate = (new \DateTime($visitDate))->format('d/m/Y');
 
     $html = "
     <p>Dear $goonjVisitGuideName,</p>
 
-    <p>Thank you for guiding our visitors on the Learning Journey on <strong>$visitDate</strong> at <strong>$visitTime</strong>. We hope it was a rewarding experience!</p>
+    <p>Thank you for guiding our visitors on the Learning Journey on <strong>$formattedVisitDate</strong> at <strong>$visitTime</strong>. We hope it was a rewarding experience!</p>
 
     <p>To complete the process, kindly fill out this short <a href='$visitOutcomeFormUrl' target='_blank'>Outcome Form</a> for our records and documentation purposes.</p>
 
@@ -1129,9 +1140,8 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     $processingCenterId = $dataArray['Eck_Institution_Visit1'][0]['fields']['Urban_Planned_Visit.Which_Goonj_Processing_Center_do_you_wish_to_visit_'];
 
     if (!$processingCenterId) {
-        return;
+      return;
     }
-
 
     $individualId = $dataArray['Individual1'][0]['id'];
 
@@ -1147,6 +1157,55 @@ class UrbanPlannedVisitService extends AutoSubscriber {
 
     $results = EckEntity::update('Institution_Visit', FALSE)
       ->addValue('Urban_Planned_Visit.External_Coordinating_PoC', $individualId)
+      ->addWhere('id', '=', $urbanVisitId)
+      ->execute();
+
+  }
+
+  /**
+   *
+   */
+  public static function autoAssignExternalCoordinatingPoc(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($op !== 'edit' || $objectName !== 'AfformSubmission') {
+      return;
+    }
+
+    $data = $objectRef['data']['Eck_Institution_Visit1'][0]['fields'] ?? [];
+    $urbanVisitId = $objectRef['data']['Eck_Institution_Visit1'][0]['id'] ?? [];
+
+    // Get Institution and Institution POC IDs.
+    $institutionId = $data['Urban_Planned_Visit.Institution'] ?? NULL;
+    $institutionPocId = $data['Urban_Planned_Visit.Institution_POC'] ?? NULL;
+
+    if (empty($institutionId) || empty($institutionPocId)) {
+      return;
+    }
+
+    $existingRelationship = Relationship::get(FALSE)
+      ->addWhere('contact_id_a', '=', $institutionId)
+      ->addWhere('contact_id_b', '=', $institutionPocId)
+      ->addWhere('is_active', '=', TRUE)
+      ->addClause('OR', ['relationship_type_id:name', '=', 'Institution POC of'], ['relationship_type_id:name', '=', 'Primary Institution POC of'])
+      ->execute()->first();
+
+    if ($existingRelationship) {
+      $results = EckEntity::update('Institution_Visit', FALSE)
+        ->addValue('Urban_Planned_Visit.External_Coordinating_PoC', $institutionPocId)
+        ->addWhere('id', '=', $urbanVisitId)
+        ->execute();
+
+      return;
+    }
+
+    Relationship::create(FALSE)
+      ->addValue('contact_id_a', $institutionId)
+      ->addValue('contact_id_b', $institutionPocId)
+      ->addValue('relationship_type_id:label', 'Institution POC is')
+      ->addValue('is_permission_a_b:name', 'View and update')
+      ->execute();
+
+    $results = EckEntity::update('Institution_Visit', FALSE)
+      ->addValue('Urban_Planned_Visit.External_Coordinating_PoC', $institutionPocId)
       ->addWhere('id', '=', $urbanVisitId)
       ->execute();
 

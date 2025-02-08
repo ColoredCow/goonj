@@ -41,6 +41,7 @@ function civicrm_api3_goonjcustom_goonj_initiated_events_feedback_cron($params) 
     ->addSelect('Goonj_Events_Feedback.Last_Reminder_Sent', 'end_date')
     ->addClause('OR', ['Goonj_Events_Feedback.Last_Reminder_Sent', '=', FALSE], ['Goonj_Events_Feedback.Last_Reminder_Sent', 'IS NULL'])
     ->addWhere('end_date', '<=', $endOfDay)
+    ->addWhere('event_type_id:name', '!=', 'Rural Planned Visit')
     ->setLimit(25)
     ->execute();
 

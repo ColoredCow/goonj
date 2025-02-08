@@ -41,7 +41,7 @@ class InstitutionService extends AutoSubscriber {
       ],
       '&hook_civicrm_pre' => [
         ['assignChapterGroupToContacts'],
-        ['AddRelationshipToContact'],
+        ['addRelationshipToContact'],
       ],
     ];
   }
@@ -49,7 +49,7 @@ class InstitutionService extends AutoSubscriber {
   /**
    *
    */
-  public static function AddRelationshipToContact(string $op, string $objectName, $objectId, &$objectRef) {
+  public static function addRelationshipToContact(string $op, string $objectName, $objectId, &$objectRef) {
     if ($op !== 'edit' || $objectName !== 'AfformSubmission') {
       return;
     }
@@ -65,6 +65,7 @@ class InstitutionService extends AutoSubscriber {
     $existingRelationship = Relationship::get(FALSE)
       ->addWhere('contact_id_a', '=', $institutionId)
       ->addWhere('contact_id_b', '=', $institutionPocId)
+      ->addWhere('is_active', '=', TRUE)
       ->addClause('OR', ['relationship_type_id:name', '=', 'Institution POC of'], ['relationship_type_id:name', '=', 'Primary Institution POC of'])
       ->execute()->first();
     
@@ -482,7 +483,7 @@ class InstitutionService extends AutoSubscriber {
       if ($categoryOfInstitution === 'School') {
         return 'School Coordinator of';
       }
-      elseif ($categoryOfInstitution === 'College') {
+      elseif ($categoryOfInstitution === 'Collage/University') {
         return 'College Coordinator of';
       }
       return 'Default Coordinator of';

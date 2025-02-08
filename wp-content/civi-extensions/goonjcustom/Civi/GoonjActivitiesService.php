@@ -220,6 +220,7 @@ class GoonjActivitiesService extends AutoSubscriber {
     $coordinators = Relationship::get(FALSE)
       ->addWhere('contact_id_b', '=', $stateOfficeId)
       ->addWhere('relationship_type_id:name', '=', self::RELATIONSHIP_TYPE_NAME)
+      ->addWhere('is_active', '=', TRUE)
       ->execute();
     $RELATIONSHIP_TYPE_NAME = self::RELATIONSHIP_TYPE_NAME;
 

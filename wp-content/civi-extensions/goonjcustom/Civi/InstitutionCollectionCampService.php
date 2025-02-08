@@ -47,6 +47,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
         ['linkInstitutionCollectionCampToContact'],
         ['updateInstitutionCampStatusAfterAuth'],
         ['updateCampaignType'],
+        ['updateInstitutionPointOfContact'],
       ],
       'civi.afform.submit' => [
         ['setInstitutionCollectionCampAddress', 9],
@@ -97,6 +98,43 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     catch (\Exception $e) {
       \Civi::log()->error("Exception occurred while updating camp status for campId: $collectionCampId. Error: " . $e->getMessage());
     }
+  }
+
+  /**
+   *
+   */
+  public static function updateInstitutionPointOfContact(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($objectName !== 'AfformSubmission') {
+      return;
+    }
+
+    $dataArray = $objectRef['data'] ?? [];
+
+    $eckCollectionCampId = $dataArray['Eck_Collection_Camp1'][0]['id'] ?? NULL;
+    $individualId = $dataArray['Individual1'][0]['id'] ?? NULL;
+
+    if ($eckCollectionCampId && $individualId) {
+      $hasExistingPoc = EckEntity::get('Collection_Camp', FALSE)
+        ->addSelect('Institution_Collection_Camp_Intent.Institution_POC')
+        ->addWhere('id', '=', $eckCollectionCampId)
+        ->addWhere('Institution_Collection_Camp_Intent.Institution_POC', 'IS NOT EMPTY')
+        ->execute()
+        ->first();
+
+      if (!$hasExistingPoc) {
+        self::assignPointOfContactToCamp($eckCollectionCampId, $individualId);
+      }
+    }
+  }
+
+  /**
+   *
+   */
+  private static function assignPointOfContactToCamp($campId, $personId) {
+    EckEntity::update('Collection_Camp', FALSE)
+      ->addValue('Institution_Collection_Camp_Intent.Institution_POC', $personId)
+      ->addWhere('id', '=', $campId)
+      ->execute();
   }
 
   /**
