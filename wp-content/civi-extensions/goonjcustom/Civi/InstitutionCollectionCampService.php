@@ -912,7 +912,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     $relationshipTypeMap = [
       'Corporate' => 'Corporate Coordinator of',
       'School' => 'School Coordinator of',
-      'College/University' => 'College Coordinator of',
+      'College_University' => 'College Coordinator of',
       'Association' => 'Associations Coordinator of',
       'Other' => 'Default Coordinator of',
     ];
