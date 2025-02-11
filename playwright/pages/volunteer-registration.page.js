@@ -179,19 +179,18 @@ exports.VolunteerRegistrationPage =  class VolunteerRegistrationPage {
     await this.page.getByRole('button', { name: /submit/i }).click({force: true});
   }
  
-  // async enterOtherSkills(skills)
-  // {
-  //   await this.otherSkills.fill(skills)
-  // }
-  
   getAppendedUrl(stringToAppend) {
     return this.url + stringToAppend;
   }
 
   async verifyUrlAfterFormSubmission(expectedText) {
-    // Get the current URL after navigation
-    const currentUrl = this.page.url();
-    expect(currentUrl).toContain(expectedText);
+    try {
+      const currentUrl = this.page.url();
+      expect(currentUrl).toContain(expectedText, 
+        `Expected URL to contain "${expectedText}" but got "${currentUrl}"`);
+      } catch (error) {
+        throw new Error(`URL verification failed: ${error.message}`);
+      }
   }
 
 
