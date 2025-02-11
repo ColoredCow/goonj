@@ -188,6 +188,13 @@ exports.VolunteerRegistrationPage =  class VolunteerRegistrationPage {
     return this.url + stringToAppend;
   }
 
+  async verifyUrlAfterFormSubmission(expectedText) {
+    // Get the current URL after navigation
+    const currentUrl = this.page.url();
+    expect(currentUrl).toContain(expectedText);
+  }
+
+
   async fillAndClearField(fieldName, value, clearValue = '') {
     await this[fieldName](value);
     await this.clickSubmitButton();
