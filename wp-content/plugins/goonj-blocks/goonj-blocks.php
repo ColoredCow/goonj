@@ -139,7 +139,6 @@ function gb_goonj_blocks_check_action_target_exists() {
 				->addWhere( 'id', '=', $id )
 				->setLimit( 1 )
 				->execute();
-			\Civi::log()->info('result', ['result' => $result]);
 
 			if ( $result->count() === 0 ) {
 				$is_404 = true;
