@@ -570,8 +570,10 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       return;
     }
 
+    $userId = \CRM_Core_Session::singleton()->get('userID');
+
     EckEntity::update('Collection_Source_Vehicle_Dispatch', FALSE)
-    ->addValue('Acknowledgement_For_Logistics.Filled_by', $mmtId)
+    ->addValue('Acknowledgement_For_Logistics.Filled_by', $userId)
     ->addWhere('Camp_Vehicle_Dispatch.Institution_Collection_Camp', '=', $collectionCampId)
     ->execute();
 
