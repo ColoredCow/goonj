@@ -572,7 +572,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
 
     EckEntity::update('Collection_Source_Vehicle_Dispatch', FALSE)
     ->addValue('Acknowledgement_For_Logistics.Filled_by', $mmtId)
-    ->addWhere('id', '=', $collectionCampId)
+    ->addWhere('Camp_Vehicle_Dispatch.Institution_Collection_Camp', '=', $collectionCampId)
     ->execute();
 
     $email = Email::get(FALSE)
