@@ -57,6 +57,7 @@ export async function verifyUserExist(page, userDetails) {
 export async function submitVolunteerRegistrationForm(page, userDetails) {
   const volunteerRegistrationPage = new VolunteerRegistrationPage(page);
   const volunteerUrl = volunteerRegistrationPage.getAppendedUrl('/volunteer-registration');
+  const registrationConfirmationText = 'registration-success'
   await page.goto(volunteerUrl);
   await verifyUserExist(page, userDetails);
   await volunteerRegistrationPage.enterFirstName(userDetails.firstName);
@@ -82,6 +83,7 @@ export async function submitVolunteerRegistrationForm(page, userDetails) {
   await volunteerRegistrationPage.selectReferralSource(userDetails.referralSource);
   await volunteerRegistrationPage.clickSubmitButton();
   await page.waitForTimeout(2000); // added wait as page was taking time to load
+  await volunteerRegistrationPage.verifyUrlAfterFormSubmission(registrationConfirmationText)
 };
 
 export async function searchAndVerifyContact(page, userDetails, contactType) {
