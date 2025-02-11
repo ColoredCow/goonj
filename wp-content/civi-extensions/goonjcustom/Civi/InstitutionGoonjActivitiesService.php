@@ -562,7 +562,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
         'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
       ],
       'campFeedback' => [
-        'title' => ts('Volunteer Feedback'),
+        'title' => ts('Coordinator Feedback'),
         'module' => 'afsearchInstitutionGoonjActivityVolunteerFeedback',
         'directive' => 'afsearch-institution-goonj-activity-volunteer-feedback',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
