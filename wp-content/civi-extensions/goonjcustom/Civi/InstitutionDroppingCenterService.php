@@ -354,8 +354,8 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       'Corporate' => 'Corporate Coordinator of',
       'School' => 'School Coordinator of',
       'College' => 'College Coordinator of',
-      'Associations' => 'Associations Coordinator of',
-      'Others' => 'Others Coordinator of',
+      'Associations' => 'Default Coordinator of',
+      'Others' => 'Default Coordinator of',
     ];
 
     $registrationCategorySelection = $registrationType['Institution_Dropping_Center_Intent.You_wish_to_register_as:name'];
