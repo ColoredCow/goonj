@@ -474,8 +474,8 @@ class InstitutionService extends AutoSubscriber {
     // Define the default type-to-relationship mapping.
     $typeToRelationshipMap = [
       'Corporate'    => 'Corporate Coordinator of',
-      'Foundation'   => 'Foundation Coordinator of',
-      'Association' => 'Associations Coordinator of',
+      'Foundation'   => 'Default Coordinator of',
+      'Association' => 'Default Coordinator of',
       'Other'       => 'Default Coordinator of',
     ];
 
@@ -483,7 +483,7 @@ class InstitutionService extends AutoSubscriber {
       if ($categoryOfInstitution === 'School') {
         return 'School Coordinator of';
       }
-      elseif ($categoryOfInstitution === 'Collage/University') {
+      elseif ($categoryOfInstitution === 'College/University') {
         return 'College Coordinator of';
       }
       return 'Default Coordinator of';
