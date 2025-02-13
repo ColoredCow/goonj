@@ -63,7 +63,7 @@ function assignInstitutePocToInstitute(): void {
       ->addWhere('id', '=', $contactId)
       ->execute();
 
-    echo "Assigned Institute Poc ID $institutionPocId Custom group.\n";
+    echo "Assigned Institute Poc ID $institutionPocId to Custom group.\n";
 
   }
 }
