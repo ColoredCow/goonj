@@ -50,12 +50,13 @@ function assignInstitutePocToInstitute(): void {
       ->addWhere('contact_id_a', '=', $contactId)
       ->execute()->first();
 
+      if (empty($relationship)) {
+        echo "No institution poc found in relationship.\n";
+        return;
+      }
+
     $institutionPocId = $relationship['contact_id_b'];
 
-    if (empty($institutionPocId)) {
-      echo "No institution poc found in relationship.\n";
-      return;
-    }
 
     Organization::update(FALSE)
       ->addValue('Institute_Registration.Institution_POC', $institutionPocId)
