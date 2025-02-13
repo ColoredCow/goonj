@@ -2,7 +2,7 @@
 
 /**
  * @file
- * CLI Script to assign Institute poc to Institution.
+ * CLI Script to assign Institute poc to custom group.
  */
 
 use Civi\Api4\Organization;
