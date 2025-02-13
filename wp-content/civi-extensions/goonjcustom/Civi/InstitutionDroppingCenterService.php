@@ -578,7 +578,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     $address = $organization['Institute_Registration.Address'];
 
     // Send the dispatch email.
-    self::sendDispatchEmail($nameOfInstitution, $address, $phone, $email, $initiatorName, $droppingCenterId, $recipientId, $goonjOffice, $goonjOfficeName);
+    self::sendDispatchEmail($nameOfInstitution, $address, $phone, $email, $initiatorName, $droppingCenterId, $contactId, $goonjOffice, $goonjOfficeName);
   }
 
   /**
