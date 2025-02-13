@@ -913,7 +913,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       'Corporate' => 'Corporate Coordinator of',
       'School' => 'School Coordinator of',
       'College_University' => 'College Coordinator of',
-      'Association' => 'Associations Coordinator of',
+      'Association' => 'Default Coordinator of',
       'Other' => 'Default Coordinator of',
     ];
 

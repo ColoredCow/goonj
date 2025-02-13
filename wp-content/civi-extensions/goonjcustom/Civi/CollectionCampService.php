@@ -306,7 +306,7 @@ class CollectionCampService extends AutoSubscriber {
       return FALSE;
     }
 
-    if(!$objectRef->state_province_id) {
+    if (!$objectRef->state_province_id) {
       return FALSE;
     }
 
@@ -1484,7 +1484,7 @@ class CollectionCampService extends AutoSubscriber {
       }
 
       $contribution = Contribution::get(FALSE)
-        ->addSelect('Contribution_Details.Source')
+        ->addSelect('Contribution_Details.Source', 'campaign_id')
         ->addWhere('id', '=', $contributionId)
         ->execute()->first();
 
@@ -1493,6 +1493,7 @@ class CollectionCampService extends AutoSubscriber {
       }
 
       $sourceID = $contribution['Contribution_Details.Source'];
+      $contributionCampaignId = $contribution['campaign_id'];
 
       $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
         ->addSelect('Collection_Camp_Intent_Details.Campaign')
@@ -1509,7 +1510,7 @@ class CollectionCampService extends AutoSubscriber {
         return;
       }
 
-      if (isset($objectRef->campaign_id) && $objectRef->campaign_id == $campaignId) {
+      if($contributionCampaignId){
         return;
       }
 

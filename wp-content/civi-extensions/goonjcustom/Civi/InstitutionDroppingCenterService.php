@@ -354,8 +354,8 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       'Corporate' => 'Corporate Coordinator of',
       'School' => 'School Coordinator of',
       'College' => 'College Coordinator of',
-      'Associations' => 'Associations Coordinator of',
-      'Others' => 'Others Coordinator of',
+      'Associations' => 'Default Coordinator of',
+      'Others' => 'Default Coordinator of',
     ];
 
     $registrationCategorySelection = $registrationType['Institution_Dropping_Center_Intent.You_wish_to_register_as:name'];
@@ -578,7 +578,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     $address = $organization['Institute_Registration.Address'];
 
     // Send the dispatch email.
-    self::sendDispatchEmail($nameOfInstitution, $address, $phone, $email, $initiatorName, $droppingCenterId, $recipientId, $goonjOffice, $goonjOfficeName);
+    self::sendDispatchEmail($nameOfInstitution, $address, $phone, $email, $initiatorName, $droppingCenterId, $contactId, $goonjOffice, $goonjOfficeName);
   }
 
   /**
