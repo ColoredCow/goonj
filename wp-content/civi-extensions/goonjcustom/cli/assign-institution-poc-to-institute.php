@@ -70,5 +70,5 @@ function assignInstitutePocToInstitute(): void {
 
 // Run the process.
 echo "=== Starting Assign Process ===\n";
-assignContactsToStateGroups();
+assignInstitutePocToInstitute();
 echo "=== Assign Process Completed ===\n";
