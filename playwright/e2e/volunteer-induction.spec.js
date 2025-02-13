@@ -19,11 +19,13 @@ test.describe('Volunteer Induction Tests', () => {
   test('schedule induction and update induction status as completed', async ({ page }) => {
     let userEmailAddress = userDetails.email.toLowerCase()
     let userName = userDetails.firstName
+    const updatedStatus = 'Completed'
     await searchAndVerifyContact(page, userDetails, contactType);
     await volunteerProfilePage.volunteerProfileTabs('activities');
     await volunteerProfilePage.updateInductionForm('Induction', 'To be scheduled', 'Edit', 'Scheduled', 'save')
     await page.waitForTimeout(3000)
-    await volunteerProfilePage.updateInductionForm('Induction', 'Scheduled', 'Edit', 'Completed', 'save')
+    await volunteerProfilePage.updateInductionForm('Induction', 'Scheduled', 'Edit', updatedStatus, 'save')
+    await volunteerProfilePage.verifyInductionActivity(updatedStatus)
     await page.click('a:has-text("Volunteers")');
     await page.waitForTimeout(3000)
     await volunteerProfilePage.clickVolunteerSuboption('Active')
@@ -33,18 +35,12 @@ test.describe('Volunteer Induction Tests', () => {
   });
 
   test('update induction status as Not visited', async ({ page }) => {
-    let userEmailAddress = userDetails.email.toLowerCase()
-    let userName = userDetails.firstName
+    const updatedStatus = 'Not Visited'
     await searchAndVerifyContact(page, userDetails, contactType);
     await volunteerProfilePage.volunteerProfileTabs('activities');
-    await volunteerProfilePage.updateInductionForm('Induction', 'To be scheduled', 'Edit', 'Not Visited', 'save')
-    await page.waitForTimeout(3000)
-    await page.click('a:has-text("Volunteers")');
-    await page.waitForTimeout(3000)
-    await volunteerProfilePage.clickVolunteerSuboption('Active')
-    await page.waitForTimeout(7000)
-    await inductedVolunteerPage.checkIfNameExists(userName)
-    await inductedVolunteerPage.checkIfEmailExists(userEmailAddress)
-    
+    await volunteerProfilePage.updateInductionForm('Induction', 'To be scheduled', 'Edit', updatedStatus, 'save')
+    await page.waitForTimeout(4000)
+    await volunteerProfilePage.verifyInductionActivity(updatedStatus)
+  
   });
 });
