@@ -133,3 +133,14 @@ function limitInstallmentsInput() {
 		});
 	}
 }
+
+document.addEventListener("DOMContentLoaded", function () {
+    let cancelButton = document.getElementById("_qf_Optout_cancel-bottom");
+
+    if (cancelButton) {
+      cancelButton.addEventListener("click", function (event) {
+        event.preventDefault();
+        window.location.href = "https://mail.google.com/";
+      });
+    }
+});
