@@ -5,6 +5,7 @@
  * CLI Script to assign Institute poc to Institution.
  */
 
+use Civi\Api4\Organization;
 use Civi\Api4\Relationship;
 use Civi\Api4\GroupContact;
 
@@ -36,20 +37,33 @@ function getInstituteFromGroup(): array {
 function assignInstitutePocToInstitute(): void {
   $contacts = getInstituteFromGroup();
 
-  $relationships = Relationship::get(FALSE)
-    ->addSelect('contact_id_b')
-    ->addWhere('contact_id_a', '=', $contacts)
-    ->execute()->first();
-
-  $contactId = $relationships['contact_id_b'];
-
-  if (empty($contactId)) {
-    echo "No contacts found in relationship.\n";
+  if (empty($contacts)) {
+    echo "No contacts found in source group.\n";
     return;
   }
 
   foreach ($contacts as $contact) {
     $contactId = $contact['contact_id'];
+
+    $relationship = Relationship::get(FALSE)
+      ->addSelect('contact_id_b')
+      ->addWhere('contact_id_a', '=', $contactId)
+      ->execute()->first();
+
+    $institutionPocId = $relationship['contact_id_b'];
+
+    if (empty($institutionPocId)) {
+      echo "No institution poc found in relationship.\n";
+      return;
+    }
+
+    Organization::update(FALSE)
+      ->addValue('Institute_Registration.Institution_POC', $institutionPocId)
+      ->addWhere('contact_sub_type', '=', 'Institute')
+      ->addWhere('id', '=', $contactId)
+      ->execute();
+
+    echo "Assigned Institute Poc ID $institutionPocId Custom group.\n";
 
   }
 }
