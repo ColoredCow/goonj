@@ -82,7 +82,7 @@ export async function submitVolunteerRegistrationForm(page, userDetails) {
   await volunteerRegistrationPage.selectContactMethod(userDetails.contactMethod);
   await volunteerRegistrationPage.selectReferralSource(userDetails.referralSource);
   await volunteerRegistrationPage.clickSubmitButton();
-  await page.waitForTimeout(2000); // added wait as page was taking time to load
+  await page.waitForTimeout(4000); // added wait as page was taking time to load
   await volunteerRegistrationPage.verifyUrlAfterFormSubmission(registrationConfirmationText)
 };
 
