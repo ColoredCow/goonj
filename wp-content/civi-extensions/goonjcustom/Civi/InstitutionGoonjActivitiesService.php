@@ -665,12 +665,12 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
 
     foreach ($activities as $activityId) {
       $optionValues = OptionValue::get(FALSE)
-        ->addSelect('name')
+        ->addSelect('name', 'label')
         ->addWhere('option_group_id:name', '=', 'Institution_Goonj_Activities_How_do_you_want_to_engage_with')
         ->addWhere('value', '=', $activityId)
         ->execute()->single();
 
-      $activityName = str_replace('_', ' ', $optionValues['name']);
+      $activityName = str_replace('_', ' ', $optionValues['label']);
       // Check if the activity is 'Others'.
       if ($activityName == 'Other') {
         $otherActivity = $objectRef['Institution_Goonj_Activities.Other_Activity_Details'] ?? '';
