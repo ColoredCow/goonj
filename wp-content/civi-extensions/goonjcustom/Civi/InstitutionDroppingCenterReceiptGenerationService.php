@@ -287,7 +287,7 @@ class InstitutionDroppingCenterReceiptGenerationService extends AutoSubscriber {
     </div>
     <div style="float: right; width: 40%; text-align: right; font-size: 12px; font-style: italic;">
     <p>To contribute, please scan the code.</p>
-     <img alt="Goonj Logo" src="https://goonj-crm.staging.coloredcow.com/wp-content/uploads/2024/07/Goonj-logo-10June20-300x193.png" style="width: 150px; height: auto;" />
+    <img src="data:image/png;base64,{$imageData['qrCode']}" alt="QR Code" style="width: 80px; height: 70px; margin-top: 2px"></div>
         </div>
         <div style="clear: both; margin-top: 20px;"></div>
         <div style="width: 100%; margin-top: 15px; background-color: #f2f2f2; padding: 16px; font-weight: 300; color: #000000">
