@@ -13,7 +13,7 @@ if (php_sapi_name() != 'cli') {
   exit("This script can only be run from the command line.\n");
 }
 
-// Change this ID to the one where you want to add the Institute.
+// Change this name to the one where you want to add the Institute.
 define('SOURCE_GROUP_NAME', 'test');
 
 echo "Fetching Institute from group ID " . SOURCE_GROUP_NAME . "...\n";
@@ -32,7 +32,13 @@ function getInstituteFromGroup(): array {
 }
 
 /**
+ * Assigns institution POC to the corresponding institution.
  *
+ * This function retrieves contacts from a specified group and assigns
+ * them as POCs to their respective institutions.
+ *
+ * @throws \Civi\API\Exception\UnauthorizedException
+ * @throws \API_Exception
  */
 function assignInstitutePocToInstitute(): void {
   $contacts = getInstituteFromGroup();
