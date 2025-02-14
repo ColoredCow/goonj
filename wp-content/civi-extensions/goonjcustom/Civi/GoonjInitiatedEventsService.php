@@ -393,6 +393,15 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
       return FALSE;
     }
 
+    $groupContacts = GroupContact::get(TRUE)
+      ->addSelect('*', 'group_id:name')
+      ->addWhere('contact_id', '=', $contact['id'])
+      ->execute()->first();
+
+    if ($groupContacts) {
+      return FALSE;
+    }
+
     $groupId = self::getChapterGroupForState($stateProvinceId);
 
     if ($groupId) {
