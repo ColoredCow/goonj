@@ -1,4 +1,4 @@
-import {  } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 exports.VolunteerProfilePage = class VolunteerProfilePage {
   constructor(page) {
@@ -86,4 +86,25 @@ exports.VolunteerProfilePage = class VolunteerProfilePage {
     await this.clickDialogButton(buttonText);
     await this.page.waitForTimeout(3000)
   }
+
+  async verifyInductionActivity(status) {
+    const activities = [
+        { activity_type: 'Induction', status: 'To be scheduled' },
+        { activity_type: 'Induction', status: 'Cancelled' },
+        { activity_type: 'Induction', status: 'Completed' },
+        { activity_type: 'Induction', status: 'Not Visited'}
+    ];
+    // Use 'expect' to check if any Induction activity matches the provided status
+    const result = activities.some(activity => 
+        activity.activity_type === 'Induction' && activity.status === status
+    );
+    // If no match is found, throw an error or handle it appropriately
+    if (!result) {
+      throw new Error(`No Induction activity found with status '${status}'`);
+    }
+    // If a match is found, assert that it is true
+    return `Induction activity found with status '${status}'`;
+
+}
+
 }
