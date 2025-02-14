@@ -435,6 +435,13 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
    */
   private static function addContactToGroup($contactId, $groupId) {
     if ($contactId & $groupId) {
+      $groupContact = GroupContact::get(FALSE)
+        ->addWhere('contact_id', '=', $contactId)
+        ->addWhere('group_id', '=', $groupId)
+        ->execute()->first();
+      if ($groupContact) {
+        return FALSE;
+      }
       try {
         GroupContact::create(FALSE)
           ->addValue('contact_id', $contactId)
