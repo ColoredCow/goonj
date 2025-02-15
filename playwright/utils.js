@@ -3,6 +3,7 @@ import { faker } from '@faker-js/faker/locale/en_IN'; // Import the Indian local
 import { VolunteerRegistrationPage } from '../playwright/pages/volunteer-registration.page';
 import { SearchContactsPage } from '../playwright/pages/search-contact.page';
 import { AdminHomePage } from '../playwright/pages/admin-home.page';
+import { InductedVolunteerPage } from '../playwright/pages/inducted-volunteer.page';
 // Helper function to generate an Indian mobile number
 const generateIndianMobileNumber = () => {
   const prefix = faker.helpers.arrayElement(['7', '8', '9']); // Indian mobile numbers start with 7, 8, or 9
@@ -122,3 +123,17 @@ export async function verifyVolunteerByStatus(page, userDetails, status) {
   expect(userData).toContain(userContactNumber)
 
 }
+
+export async function userLogout(page) {
+  // Click the logout link
+  await page.locator('#wp-admin-bar-logout a.ab-item').click();
+  await page.waitForTimeout(3000)
+  await page.waitForURL(/wp-login\.php\?loggedout=true/);
+}
+
+export async function  userFormLogin(page, username, password) {
+    await page.fill('#email', username); 
+    await page.fill('#phone', password); 
+    await page.click('[data-test="submitButton"]');
+}
+
