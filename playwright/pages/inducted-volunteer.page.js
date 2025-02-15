@@ -5,7 +5,7 @@ exports.InductedVolunteerPage = class InductedVolunteerPage  {
       this.page = page;
     }
 
-    async checkEmailExists(email) {
+    async checkInductedVolunteerEmailExists(email) {
         const emailLocator = this.page.locator(`tr >> text="${email}"`);
     
         // Expect the email to be present in the table
