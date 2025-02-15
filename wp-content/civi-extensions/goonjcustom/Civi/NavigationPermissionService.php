@@ -75,14 +75,14 @@ class NavigationPermissionService extends AutoSubscriber {
       ],
       'mmt' => [
         'hide_menus' => [
-          'Contacts',
           'Events',
           'Dropping Center',
           'Induction Tab',
           'Institution Collection Camp',
           'Collection Camps',
           'Goonj Activities',
-          'Institute',
+          'Institutes',
+          'Inductions',
           'Institution Dropping Center',
           'Institution Goonj Activities',
           'Induction Tab',
