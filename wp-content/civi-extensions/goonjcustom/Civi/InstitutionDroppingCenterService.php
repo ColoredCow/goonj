@@ -757,6 +757,13 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     }
 
     $tabConfigs = [
+      'edit' => [
+        'title' => ts('Edit'),
+        'module' => 'afformInstitutionDroppingCenterIntentReviewEditForm',
+        'directive' => 'afform-institution-dropping-center-intent-review-edit-form',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCampEdit.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+      ],
       'eventCoordinators' => [
         'title' => ts('Event Coordinators'),
         'module' => 'afsearchAddEventCoordinator',
