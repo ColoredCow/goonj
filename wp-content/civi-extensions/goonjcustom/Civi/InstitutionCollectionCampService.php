@@ -1138,6 +1138,13 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     }
 
     $tabConfigs = [
+      'edit' => [
+        'title' => ts('Edit'),
+        'module' => 'afformInstitutionCollectionCampIntentReviewEditForm',
+        'directive' => 'afform-institution-collection-camp-intent-review-edit-form',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCampEdit.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+      ],
       'logistics' => [
         'title' => ts('Logistics'),
         'module' => 'afsearchInstitutionCollectionCampLogistics',
