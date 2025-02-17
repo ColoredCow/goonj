@@ -1146,7 +1146,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
         'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
       ],
       'eventVolunteers' => [
-        'title' => ts('Event Volunteers'),
+        'title' => ts('Camp Coordinators'),
         'module' => 'afsearchInstitutionCollectionCampEventVolunteers',
         'directive' => 'afsearch-institution-collection-camp-event-volunteers',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
@@ -1160,7 +1160,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
         'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
       ],
       'materialAcknowledgement' => [
-        'title' => ts('Material Acknowledgement'),
+        'title' => ts('Dispatch Acknowledgement'),
         'module' => 'afsearchInstitutionCampAcknowledgementDispatch',
         'directive' => 'afsearch-institution-camp-acknowledgement-dispatch',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
