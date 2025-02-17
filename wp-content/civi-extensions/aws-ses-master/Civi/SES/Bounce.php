@@ -32,8 +32,8 @@ class Bounce {
    * Process non CiviMail bounces
    */
   protected function processNonCiviMailBounces() {
-    // let process only permanent bounces and add an extra check for bouce recipients
-    if ($this->bounce->bounceType !== 'Permanent' || empty($this->bounce->bouncedRecipients)) {
+    // Process only permanent or hard bounces and ensure bouncedRecipients is not empty
+    if (!in_array($this->bounce->bounceType, ['Permanent', 'HARD']) || empty($this->bounce->bouncedRecipients)) {
       return;
     }
 
