@@ -118,7 +118,7 @@ class CRM_Goonjcustom_Token_InstitutionDroppingCenter extends AbstractTokenSubsc
     $id = $collectionSource['Institution_Dropping_Center_Intent.Organization_Name'];
 
     try {
-      $contact = Contact::get(TRUE)
+      $contact = Contact::get(FALSE)
         ->addSelect('display_name')
         ->addWhere('id', '=', $id)
         ->execute()
