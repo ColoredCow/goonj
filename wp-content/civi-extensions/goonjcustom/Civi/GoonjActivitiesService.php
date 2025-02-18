@@ -668,6 +668,7 @@ class GoonjActivitiesService extends AutoSubscriber {
         ->addValue('Collection_Camp_Activity.Start_Date', $startDate)
         ->addValue('Collection_Camp_Activity.End_Date', $endDate)
         ->addValue('Collection_Camp_Activity.Organizing_Person', $initiator)
+        ->addValue('Collection_Camp_Activity.Activity_Status', 'planned')
         ->execute();
     }
   }
