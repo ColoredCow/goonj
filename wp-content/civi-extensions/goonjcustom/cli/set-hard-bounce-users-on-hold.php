@@ -14,12 +14,12 @@ if (php_sapi_name() != 'cli') {
 }
 
 // Fetch the CSV file path and Group ID from the constants defined in wp-config.php.
-$csvFilePath = CSV_FILE_PATH;
+$csvFilePath = ON_HOLD_CSV_FILE_PATH;
 $groupId = ON_HOLD_GROUP_ID;
 
 // Check if the required constants are set.
 if (!$csvFilePath || !$groupId) {
-  exit("Error: Both CSV_FILE_PATH and GROUP_ID constants must be set.\n");
+  exit("Error: Both ON_HOLD_CSV_FILE_PATH and GROUP_ID constants must be set.\n");
 }
 
 echo "CSV File: $csvFilePath\n";
@@ -113,7 +113,7 @@ function onHoldContactByEmail(string $email): void {
 function main(): void {
   try {
     echo "=== Starting onHold Process ===\n";
-    $emails = readContactsFromCsv(CSV_FILE_PATH);
+    $emails = readContactsFromCsv(ON_HOLD_CSV_FILE_PATH);
 
     if (empty($emails)) {
       return;
