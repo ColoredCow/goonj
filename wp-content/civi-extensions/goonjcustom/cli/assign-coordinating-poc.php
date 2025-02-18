@@ -165,7 +165,7 @@ function assignCoordinators(): void {
         ->addWhere('id', '=', $contactId)
         ->execute();
 
-      echo "Assigned contact ID $contactId to state office ID $goonjOfficeId\n";
+      echo "Assigned $goonjOfficeId to contact id $contactId\n";
 
       // Determine relationship type.
       $relationshipType = getRelationshipType($contactData);
