@@ -44,7 +44,7 @@ class CRM_Goonjcustom_Form_GoonjActivitiesLinks extends CRM_Core_Form {
       ->addWhere('id', '=', $this->_goonjActivitiesId)
       ->execute()->single();
     $this->_formUrl = $goonjActivities['Goonj_Activities.Select_Goonj_POC_Attendee_Outcome_Form'];
-    $this->_feedback_form_url = $goonjActivities['Institution_Goonj_Activities.Select_Institute_POC_Feedback_Form'];
+    $this->_feedback_form_url = $goonjActivities['Goonj_Activities.Select_Volunteer_Feedback_Form'];
 
     $this->setTitle('Goonj Activities Links');
     parent::preProcess();
