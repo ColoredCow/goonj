@@ -76,25 +76,40 @@ function onHoldContactByEmail(string $email): void {
     if (isset($result['contact_id'])) {
       $contactId = $result['contact_id'];
 
-      // Update the email to on hold.
-      $updateEmailToOnHold = Email::update(FALSE)
-        ->addValue('on_hold:label', 'On Hold Bounce')
-        ->addWhere('contact_id', '=', $contactId)
-        ->execute();
+      try {
+        // Update the email to on hold.
+        $updateEmailToOnHold = Email::update(FALSE)
+          ->addValue('on_hold:label', 'On Hold Bounce')
+          ->addWhere('contact_id', '=', $contactId)
+          ->execute();
+      }
+      catch (Exception $e) {
+        echo "Failed to update email to 'On Hold Bounce': " . $e->getMessage() . "\n";
+      }
 
-      // Add the tag 'Hard_Bounce' to the contact.
-      $addTag = EntityTag::create(FALSE)
-        ->addValue('entity_id', $contactId)
-        ->addValue('entity_table', 'civicrm_contact')
-        ->addValue('tag_id.name', 'Hard_Bounce')
-        ->execute();
+      try {
+        // Add the tag 'Hard_Bounce' to the contact.
+        $addTag = EntityTag::create(FALSE)
+          ->addValue('entity_id', $contactId)
+          ->addValue('entity_table', 'civicrm_contact')
+          ->addValue('tag_id.name', 'Hard_Bounce')
+          ->execute();
+      }
+      catch (Exception $e) {
+        echo "Failed to add 'Hard_Bounce' tag: " . $e->getMessage() . "\n";
+      }
 
-      // Add the contact to the specified group.
-      GroupContact::create(FALSE)
-        ->addValue('contact_id', $contactId)
-        ->addValue('group_id', ON_HOLD_GROUP_ID)
-        ->addValue('status', 'Added')
-        ->execute();
+      try {
+        // Add the contact to the specified group.
+        $addToGroup = GroupContact::create(FALSE)
+          ->addValue('contact_id', $contactId)
+          ->addValue('group_id', ON_HOLD_GROUP_ID)
+          ->addValue('status', 'Added')
+          ->execute();
+      }
+      catch (Exception $e) {
+        echo "Failed to add contact to group: " . $e->getMessage() . "\n";
+      }
 
       echo "Successfully onHold contact with email $email (ID $contactId) and added to group.\n";
     }
