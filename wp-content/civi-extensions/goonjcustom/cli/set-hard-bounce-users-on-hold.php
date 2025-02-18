@@ -70,7 +70,7 @@ function onHoldContactByEmail(string $email): void {
     $result = Email::get(FALSE)
       ->addSelect('contact_id')
       ->addWhere('email', '=', $email)
-      ->execute()->single();
+      ->execute()->first();
 
     // If email is found, process the contact.
     if (isset($result['contact_id'])) {
