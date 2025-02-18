@@ -5,8 +5,8 @@
  * CLI Script to set hard bounces users to on hold via CSV in CiviCRM.
  */
 
+use Civi\Api4\EntityTag;
 use Civi\Api4\Email;
-use Civi\Api4\Contact;
 use Civi\Api4\GroupContact;
 
 if (php_sapi_name() != 'cli') {
@@ -76,11 +76,18 @@ function onHoldContactByEmail(string $email): void {
     if (isset($result['contact_id'])) {
       $contactId = $result['contact_id'];
 
-    //   // Opt out the contact.
-    //   Contact::update(FALSE)
-    //     ->addWhere('id', '=', $contactId)
-    //     ->addValue('is_opt_out', TRUE)
-    //     ->execute();
+      // Update the email to on hold.
+      $updateEmailToOnHold = Email::update(FALSE)
+        ->addValue('on_hold:label', 'On Hold Bounce')
+        ->addWhere('contact_id', '=', $contactId)
+        ->execute();
+
+      // Add the tag 'Hard_Bounce' to the contact.
+      $addTag = EntityTag::create(FALSE)
+        ->addValue('entity_id', $contactId)
+        ->addValue('entity_table', 'civicrm_contact')
+        ->addValue('tag_id.name', 'Hard_Bounce')
+        ->execute();
 
       // Add the contact to the specified group.
       GroupContact::create(FALSE)
