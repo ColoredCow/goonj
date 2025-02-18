@@ -15,7 +15,7 @@ if (php_sapi_name() != 'cli') {
 
 // Fetch the CSV file path and Group ID from the constants defined in wp-config.php.
 $csvFilePath = CSV_FILE_PATH;
-$groupId = GROUP_ID;
+$groupId = ON_HOLD_GROUP_ID;
 
 // Check if the required constants are set.
 if (!$csvFilePath || !$groupId) {
@@ -92,7 +92,7 @@ function onHoldContactByEmail(string $email): void {
       // Add the contact to the specified group.
       GroupContact::create(FALSE)
         ->addValue('contact_id', $contactId)
-        ->addValue('group_id', GROUP_ID)
+        ->addValue('group_id', ON_HOLD_GROUP_ID)
         ->addValue('status', 'Added')
         ->execute();
 
