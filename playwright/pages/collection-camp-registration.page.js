@@ -103,22 +103,22 @@ async selectStateDropdownOption(dropdownSelector, inputField, option) {
   }
 
   async selectPermissionLetter(option) {
-    const valueMap = { 'Yes': '1', 'No': '2', 'Not Sure': '3' };
+    const valueMap = { 'Yes': '1', 'No': '2' };
     const value = valueMap[option] || '1'; // Default to 'Yes'
     await this.page.locator(`input[name="collection-camp-intent-details-do-you-require-permission-letters-from-goonj-to-get-permission-f-8"][value="${value}"]`).click();
 }
 
-async selectPublicCollection(option) {
-    const valueMap = { 'Yes': '1', 'No': '2', 'Maybe': '3' };
+  async selectPublicCollection(option) {
+    const valueMap = { 'Yes': '1', 'No': '2' };
     const value = valueMap[option] || '1'; // Default to 'Yes'
     await this.page.locator(`input[name="collection-camp-intent-details-will-your-collection-drive-be-open-for-general-public-9"][value="${value}"]`).click();
-}
+  }
 
-async selectEngagingActivity(option) {
-    const valueMap = { 'Yes': '1', 'No': '2', 'Considering': '3' };
+  async selectEngagingActivity(option) {
+    const valueMap = { 'Yes': '1', 'No': '2' };
     const value = valueMap[option] || '2'; 
     await this.page.locator(`input[name="collection-camp-intent-details-do-you-want-to-plan-a-creative-and-engaging-activity-where-resid-10"][value="${value}"]`).click();
-}
+  }
 
   async clickSubmitButton() {
     await this.page.getByRole('button', { name: /submit/i }).click({ force: true });
