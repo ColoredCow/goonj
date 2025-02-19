@@ -65,17 +65,17 @@ function getStateOfficeId(int $stateId): ?int {
  */
 function getRelationshipType(array $contactData): string {
   $type = $contactData['Institute_Registration.Type_of_Institution:name'] ?? '';
-  $category = $contactData['Category_of_Institution.Education_Institute:name'] ?? '';
+  $category = $contactData['Category_Of_Institution.Education_Institute:name'] ?? '';
 
   $typeToRelationshipMap = [
     'Corporate'    => 'Corporate Coordinator of',
-    'Family_foundation'   => 'Default Coordinator of',
-    'Associations' => 'Default Coordinator of',
-    'Others'       => 'Default Coordinator of',
-    'Education_Institute' => [
-      'Schools' => 'School Coordinator of',
-      'Collage_University' => 'College Coordinator of',
-      'Others' => 'Default Coordinator of',
+    'Foundation'   => 'Default Coordinator of',
+    'Association' => 'Default Coordinator of',
+    'Other'       => 'Default Coordinator of',
+    'Educational_Institute' => [
+      'School' => 'School Coordinator of',
+      'Collage_University' => 'College/University Coordinator of',
+      'Other' => 'Default Coordinator of',
     ],
   ];
 
@@ -137,7 +137,7 @@ function assignCoordinators(): void {
         ->addSelect(
                 'address_primary.state_province_id',
                 'Institute_Registration.Type_of_Institution:name',
-                'Category_of_Institution.Education_Institute:name'
+                'Category_Of_Institution.Education_Institute:name'
             )
         ->addWhere('id', '=', $contactId)
         ->execute()

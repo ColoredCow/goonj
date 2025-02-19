@@ -58,7 +58,7 @@ function assignInstitutePocToInstitute(): void {
 
     if (empty($relationship)) {
       echo "No institution poc found in relationship.\n";
-      return;
+      continue;
     }
 
     $institutionPocId = $relationship['contact_id_b'];
