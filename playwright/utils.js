@@ -3,6 +3,7 @@ import { faker } from '@faker-js/faker/locale/en_IN'; // Import the Indian local
 import { VolunteerRegistrationPage } from '../playwright/pages/volunteer-registration.page';
 import { SearchContactsPage } from '../playwright/pages/search-contact.page';
 import { AdminHomePage } from '../playwright/pages/admin-home.page';
+import { CollectionCampPage } from '../playwright/pages/collection-camp-registration.page'
 import { InductedVolunteerPage } from '../playwright/pages/inducted-volunteer.page';
 // Helper function to generate an Indian mobile number
 const generateIndianMobileNumber = () => {
@@ -34,6 +35,54 @@ export const userDetails = {
   referralSource: faker.helpers.arrayElement(['Newspaper', 'Website', 'Social media']),
   healthIssues: 'None',
   comments: faker.helpers.arrayElement(['Nice initiative', 'None']),
+};
+
+  const startDate = new Date(); 
+
+  // Generate an end date within the next 2 days
+  const endDate = faker.date.soon({ days: 2, refDate: startDate }); 
+  // Format the dates as DD/MM/YYYY
+  const formattedStartDate = `${String(startDate.getDate()).padStart(2, '0')}/${String(startDate.getMonth() + 1).padStart(2, '0')}/${startDate.getFullYear()}`;
+  const formattedEndDate = `${String(endDate.getDate()).padStart(2, '0')}/${String(endDate.getMonth() + 1).padStart(2, '0')}/${endDate.getFullYear()}`;
+
+export const collectionCampUserDetails = {
+  registerAsIndividual: 'An individual.',
+  address: faker.location.streetAddress(),
+  cityName: 'Delhi',
+  state: 'Delhi',
+  postalCode: faker.location.zipCode('110070'),
+  startDate: formattedStartDate,
+  startTime: '10:00',
+  endDate: formattedEndDate,
+  endTime: '10:00',
+  volunteerName: 'Kama Gupta-Asan',
+  contactNumber: '9376289162',
+};
+
+export async function submitCollectionCampRegistrationForm(page, userEmailAddress, userMobileNumber, collectionCampUserDetails) {
+  const collectionCampPage  = new CollectionCampPage(page);
+  const collectionCampUrl = collectionCampPage.getAppendedUrl('/collection-camp/');
+  const registrationConfirmationText = '/success'
+  await page.goto(collectionCampUrl);
+  await page.locator('div.login-submit a.button.button-primary').click();
+  await userFormLogin(page, userEmailAddress, userMobileNumber)
+  await page.waitForTimeout(3000)
+  await collectionCampPage.selectYouWishToRegisterAs('An individual');
+  await collectionCampPage.enterLocationAreaOfCamp(collectionCampUserDetails.address);
+  await collectionCampPage.enterCity(collectionCampUserDetails.cityName);
+  await collectionCampPage.selectState('Delhi')
+  await collectionCampPage.enterPinCode(collectionCampUserDetails.postalCode);
+  await collectionCampPage.enterStartDate(collectionCampUserDetails.startDate);  //  MM/DD/YYYY Format (Check your date format)
+  await collectionCampPage.enterStartTime('10:00'); 
+  await collectionCampPage.enterEndDate(collectionCampUserDetails.endDate);  //  MM/DD/YYYY Format (Check your date format)
+  await collectionCampPage.enterEndTime('14:00'); 
+  await collectionCampPage.selectPermissionLetter('1');  
+  await collectionCampPage.selectPublicCollection('1');  
+  await collectionCampPage.selectEngagingActivity('2'); 
+  await page.waitForTimeout(2000)
+  await collectionCampPage.clickSubmitButton();
+  await page.waitForTimeout(4000)
+  await collectionCampPage.verifyUrlAfterFormSubmission(registrationConfirmationText);  // Replace with your success URL
 };
 
 export async function userLogin(page) {
@@ -125,10 +174,11 @@ export async function verifyVolunteerByStatus(page, userDetails, status) {
 }
 
 export async function userLogout(page) {
+  await page.locator('a[href="#toggle-position"]').click({ force: true });
   // Click the logout link
-  await page.locator('#wp-admin-bar-logout a.ab-item').click();
-  await page.waitForTimeout(3000)
-  await page.waitForURL(/wp-login\.php\?loggedout=true/);
+  await page.hover('#wp-admin-bar-my-account'); // Hover over the profile menu
+  await page.waitForTimeout(500); // Wait for the dropdown to appear
+  await page.click('#wp-admin-bar-logout a.ab-item'); // Click the logout button
 }
 
 export async function  userFormLogin(page, username, password) {
