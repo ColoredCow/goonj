@@ -14,7 +14,7 @@ if (php_sapi_name() != 'cli') {
 }
 
 // Change this name to the one where you want to add the Institute.
-define('SOURCE_GROUP_NAME', 'NishantSir');
+define('SOURCE_GROUP_NAME', 'instituion-group');
 
 echo "Fetching Institute from group ID " . SOURCE_GROUP_NAME . "...\n";
 

@@ -570,12 +570,12 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     $initiatorName = $recipientContactInfo['display_name'];
 
     $organization = Organization::get(FALSE)
-      ->addSelect('display_name', 'Institute_Registration.Address')
+      ->addSelect('display_name', 'address_primary.street_address')
       ->addWhere('id', '=', $organizationId)
       ->execute()->single();
 
     $nameOfInstitution = $organization['display_name'];
-    $address = $organization['Institute_Registration.Address'];
+    $address = $organization['address_primary.street_address'];
 
     // Send the dispatch email.
     self::sendDispatchEmail($nameOfInstitution, $address, $phone, $email, $initiatorName, $droppingCenterId, $contactId, $goonjOffice, $goonjOfficeName);
