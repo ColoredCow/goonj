@@ -14,7 +14,7 @@ if (php_sapi_name() != 'cli') {
 }
 
 // Change this ID to the one where you want to add the contact.
-define('SOURCE_GROUP_NAME', 'Opted out List (No Bulk Email)');
+define('SOURCE_GROUP_NAME', 'Institution');
 
 echo "Fetching contacts from group ID " . SOURCE_GROUP_NAME . "...\n";
 

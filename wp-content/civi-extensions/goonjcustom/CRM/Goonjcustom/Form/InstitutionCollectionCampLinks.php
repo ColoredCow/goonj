@@ -54,7 +54,7 @@ class CRM_Goonjcustom_Form_InstitutionCollectionCampLinks extends CRM_Core_Form 
     $institutionPOCId = $collectionCamps['Institution_Collection_Camp_Intent.Institution_POC'];
     
     $this->_organization = Organization::get(FALSE)
-      ->addSelect('display_name', 'Institute_Registration.Email_of_Institute', 'Institute_Registration.Contact_number_of_Institution', 'Institute_Registration.Address')
+      ->addSelect('display_name', 'email_primary.email', 'phone_primary.phone', 'address_primary.street_address')
       ->addWhere('id', '=', $organizationId)
       ->execute()->single();
 
@@ -101,7 +101,7 @@ class CRM_Goonjcustom_Form_InstitutionCollectionCampLinks extends CRM_Core_Form 
     $contact = $this->_contact;
 
     $nameOfInstitution = $organization['display_name'];
-    $address = $organization['Institute_Registration.Address'];
+    $address = $organization['address_primary.street_address'];
     $pocEmail = $contact['email.email'];
     $pocContactNumber = $contact['phone.phone'];
 

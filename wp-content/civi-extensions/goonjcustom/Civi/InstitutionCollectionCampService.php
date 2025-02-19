@@ -653,12 +653,12 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       $coordinatingPOCPhone = $coordinatingPocEmail['phone.phone'];
 
       $organization = Organization::get(TRUE)
-        ->addSelect('Institute_Registration.Address', 'display_name')
+        ->addSelect('address_primary.street_address', 'display_name')
         ->addWhere('id', '=', $organizationId)
         ->execute()->single();
 
       $nameOfInstitution = $organization['display_name'];
-      $addressOfInstitution = $organization['Institute_Registration.Address'];
+      $addressOfInstitution = $organization['address_primary.street_address'];
 
       $today = new \DateTimeImmutable();
       $endOfToday = $today->setTime(23, 59, 59);
