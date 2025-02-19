@@ -30,7 +30,7 @@ test.describe('Volunteer Induction Tests', () => {
     await page.waitForTimeout(3000)
     await volunteerProfilePage.clickVolunteerSuboption('Active')
     await page.waitForTimeout(7000)
-    await inductedVolunteerPage.checkEmailExists(userEmailAddress)
+    await inductedVolunteerPage.checkInductedVolunteerEmailExists(userEmailAddress)
   });
 
   test('update induction status as Not visited', async ({ page }) => {
