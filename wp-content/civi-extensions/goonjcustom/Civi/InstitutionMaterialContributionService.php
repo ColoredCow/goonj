@@ -45,12 +45,12 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
     $institutionPOCId = $activityData['Institution_Material_Contribution.Institution_POC'];
 
     $organizations = Organization::get(FALSE)
-      ->addSelect('Institute_Registration.Address', 'display_name')
+      ->addSelect('address_primary.street_address', 'display_name')
       ->addWhere('id', '=', $organizationId)
       ->execute()->single();
 
     $organizationName = $organizations['display_name'] ?? '';
-    $organizationAddress = $organizations['Institute_Registration.Address'] ?? '';
+    $organizationAddress = $organizations['address_primary.street_address'] ?? '';
 
     $activities = Activity::get(FALSE)
       ->addSelect('*')
