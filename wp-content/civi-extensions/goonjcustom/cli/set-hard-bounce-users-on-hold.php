@@ -79,7 +79,7 @@ function onHoldContactByEmail(string $email): void {
       try {
         // Update the email to on hold.
         $updateEmailToOnHold = Email::update(FALSE)
-          ->addValue('on_hold:label', 'On Hold Bounce')
+          ->addValue('on_hold:name', 1)
           ->addWhere('contact_id', '=', $contactId)
           ->execute();
       }
