@@ -41,8 +41,8 @@ function readContactsFromCsv(string $filePath): array {
   $contacts = [];
   if (($handle = fopen($filePath, 'r')) !== FALSE) {
     $header = fgetcsv($handle, 1000, ',');
-    if (!in_array('email', $header) || !in_array('activity_contribution_date', $header)) {
-      throw new Exception("Error: 'email' or 'activity_contribution_date' column missing in CSV.");
+    if (!in_array('email', $header) || !in_array('contribution_date', $header)) {
+      throw new Exception("Error: 'email' or 'contribution_date' column missing in CSV.");
     }
 
     while (($data = fgetcsv($handle, 1000, ',')) !== FALSE) {
@@ -50,7 +50,7 @@ function readContactsFromCsv(string $filePath): array {
 
       // Clean values.
       $email = trim($row['email']);
-      $contributionDate = trim($row['activity_contribution_date']);
+      $contributionDate = trim($row['contribution_date']);
       $goonjOffice = trim($row['goonj_office']);
       $descriptionOfMaterial = trim($row['description_of_material']);
 
