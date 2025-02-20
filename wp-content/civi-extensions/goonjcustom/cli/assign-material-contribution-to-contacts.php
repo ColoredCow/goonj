@@ -88,7 +88,7 @@ function assignContributionByEmail(string $email): void {
  */
 function main(): void {
   try {
-    echo "=== Starting onHold Process ===\n";
+    echo "=== Starting material contribution assign Process ===\n";
     $emails = readContactsFromCsv(MATERIAL_CONTRIBUTION_CSV_FILE_PATH);
 
     if (empty($emails)) {
@@ -98,7 +98,7 @@ function main(): void {
     foreach ($emails as $email) {
       assignContributionByEmail($email);
     }
-    echo "=== onHold Process Completed ===\n";
+    echo "=== Material contribution assign Process Completed ===\n";
   }
   catch (Exception $e) {
     echo "Error: " . $e->getMessage() . "\n";
