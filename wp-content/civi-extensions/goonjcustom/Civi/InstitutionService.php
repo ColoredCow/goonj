@@ -185,30 +185,42 @@ class InstitutionService extends AutoSubscriber {
   /**
    *
    */
-  public static function assignChapterGroupToContacts(string $op, string $objectName, $objectId, &$objectRef) {
-    if ($op !== 'edit' || $objectName !== 'AfformSubmission') {
-      return FALSE;
-    }
 
-    if (($objectRef['data']['Organization1'][0]['fields']['Institute_Registration.Contact_Source'] ?? '') !== 'Institute Registration') {
-      return FALSE;
-    }
 
-    $stateProvinceId = $objectRef['data']['Organization1'][0]['joins']['Address'][0]['state_province_id'] ?? NULL;
-    if (!$stateProvinceId) {
-      return FALSE;
-    }
+public static function assignChapterGroupToContacts(string $op, string $objectName, $objectId, &$objectRef) {
 
-    $groupId = self::getChapterGroupForState($stateProvinceId);
-
-    if (!$groupId) {
-      return FALSE;
-    }
-    self::addContactToGroup($objectRef['data']['Individual1'][0]['id'] ?? NULL, $groupId);
-    self::addContactToGroup($objectRef['data']['Organization1'][0]['id'] ?? NULL, $groupId);
-
-    return TRUE;
+  if ($op !== 'edit' || $objectName !== 'AfformSubmission') {
+    return FALSE;
   }
+
+  try {
+      $stateProvinceId = $objectRef['data']['Organization1'][0]['joins']['Address'][0]['state_province_id'] ?? null;
+      
+      if (!$stateProvinceId) {
+          return TRUE;
+      }
+
+      $groupId = self::getChapterGroupForState($stateProvinceId);
+      if (!$groupId) {
+          return TRUE;
+      }
+
+      $individualContactId = $objectRef['data']['Individual1'][0]['id'] ?? null;
+      $organizationContactId = $objectRef['data']['Organization1'][0]['id'] ?? null;
+
+      if ($individualContactId) {
+          self::addContactToGroup($individualContactId, $groupId);
+      }
+      if ($organizationContactId) {
+          self::addContactToGroup($organizationContactId, $groupId);
+      }
+
+  } catch (Exception $e) {
+      // Do nothing.
+  }
+
+  return TRUE; 
+}
 
   /**
    *
