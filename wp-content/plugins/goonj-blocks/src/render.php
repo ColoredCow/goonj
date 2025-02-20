@@ -331,24 +331,24 @@ if (in_array($target, ['collection-camp', 'institution-collection-camp', 'droppi
         </tbody>
     </table>
     <div <?php echo get_block_wrapper_attributes(); ?>>
-        <a href="<?php echo esc_url($register_link); ?>" class="wp-block-gb-action-button">
+        <a href="<?php echo esc_url($register_link); ?>" class="wp-block-gb-action-button gb-button-spacing">
             <?php esc_html_e('Volunteer with Goonj', 'goonj-blocks'); ?>
         </a>
         <?php if ($target === 'events') : ?>
-            <a href="<?php echo esc_url($participant_registration_link); ?>" class="wp-block-gb-action-button">
+            <a href="<?php echo esc_url($participant_registration_link); ?>" class="wp-block-gb-action-button gb-button-spacing">
                 <?php esc_html_e('Event Registration', 'goonj-blocks'); ?>
             </a>
         <?php endif; ?>
         <?php if (!in_array($target, ['goonj-activities', 'institution-goonj-activities'])) : ?>
-            <a href="<?php echo esc_url($contribution_link ?? '#'); ?>" class="wp-block-gb-action-button">
+            <a href="<?php echo esc_url($contribution_link ?? '#'); ?>" class="wp-block-gb-action-button gb-button-spacing">
                 <?php esc_html_e('Record your Material Contribution', 'goonj-blocks'); ?>
             </a>
         <?php endif; ?>
-        <a href="<?php echo esc_url($donation_link); ?>" class="wp-block-gb-action-button">
+        <a href="<?php echo esc_url($donation_link); ?>" class="wp-block-gb-action-button gb-button-spacing">
             <?php esc_html_e('Monetary Contribution', 'goonj-blocks'); ?>
         </a>
         <?php if ($should_include_attendee_feedback): ?>
-            <a href="<?php echo esc_url($include_attendee_feedback_link ?? '#'); ?>" class="wp-block-gb-action-button">
+            <a href="<?php echo esc_url($include_attendee_feedback_link ?? '#'); ?>" class="wp-block-gb-action-button gb-button-spacing">
                 <?php esc_html_e('Record Attendee Feedback', 'goonj-blocks'); ?>
             </a>
         <?php endif; ?>
