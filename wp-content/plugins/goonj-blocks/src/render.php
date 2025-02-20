@@ -344,9 +344,9 @@ if (in_array($target, ['collection-camp', 'institution-collection-camp', 'droppi
                 <?php esc_html_e('Record your Material Contribution', 'goonj-blocks'); ?>
             </a>
         <?php endif; ?>
-        <a href="<?php echo esc_url($donation_link); ?>" class="wp-block-gb-action-button gb-button-spacing">
-            <?php esc_html_e('Monetary Contribution', 'goonj-blocks'); ?>
-        </a>
+        <!-- <a href="<?php echo esc_url($donation_link); ?>" class="wp-block-gb-action-button gb-button-spacing"> -->
+            <!-- <?php esc_html_e('Monetary Contribution', 'goonj-blocks'); ?> -->
+        <!-- </a> -->
         <?php if ($should_include_attendee_feedback): ?>
             <a href="<?php echo esc_url($include_attendee_feedback_link ?? '#'); ?>" class="wp-block-gb-action-button gb-button-spacing">
                 <?php esc_html_e('Record Attendee Feedback', 'goonj-blocks'); ?>
