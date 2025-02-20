@@ -7,6 +7,7 @@
 
 use Civi\Api4\Contact;
 use Civi\Api4\Email;
+use Civi\Api4\Activity;
 
 if (php_sapi_name() != 'cli') {
   exit("This script can only be run from the command line.\n");
@@ -42,7 +43,7 @@ function readContactsFromCsv(string $filePath): array {
   $contacts = [];
   if (($handle = fopen($filePath, 'r')) !== FALSE) {
     $header = fgetcsv($handle, 1000, ',');
-    if (!in_array('email', $header) || !in_array('contribution_date', $header)) {
+    if (!in_array('email', $header) || !in_array('contribution_date', $header) || !in_array('goonj_office', $header) || !in_array('description_of_material', $header) ) {
       throw new Exception("Error: 'email' or 'contribution_date' column missing in CSV.");
     }
 
@@ -101,8 +102,12 @@ function assignContributionByEmail(string $email, string $contributionDate, stri
 
       $goonjOfficeId = $OfficeIds['id'];
 
+      // Convert date from m/d/Y to Y-m-d H:i:s.
+      $dateTime = DateTime::createFromFormat('m/d/Y', $contributionDate);
+      $formattedContributionDate = $dateTime ? $dateTime->format('Y-m-d H:i:s') : NULL;
+
       // Assign material contribution.
-      processContribution($contactId, $contributionDate, $goonjOfficeId);
+      processContribution($contactId, $formattedContributionDate, $goonjOfficeId, $descriptionOfMaterial);
     }
     else {
       echo "Contact with email $email not found.\n";
@@ -119,9 +124,23 @@ function assignContributionByEmail(string $email, string $contributionDate, stri
  * @param int $contactId
  * @param string $contributionDate
  */
-function processContribution(int $contactId, string $contributionDate, string $goonjOfficeId): void {
-  echo "Assigning contribution for Contact ID $contactId on $contributionDate.\n";
-  // Add logic here to store or process the contribution in CiviCRM.
+function processContribution(int $contactId, string $formattedContributionDate, string $goonjOfficeId, string $descriptionOfMaterial): void {
+  echo "Assigning contribution for Contact ID $contactId on $formattedContributionDate.\n";
+
+  try {
+    $results = Activity::create(FALSE)
+      ->addValue('subject', $descriptionOfMaterial)
+      ->addValue('activity_type_id:name', 'Material Contribution')
+      ->addValue('status_id:name', 'Completed')
+      ->addValue('activity_date_time', $formattedContributionDate)
+      ->addValue('source_contact_id', $contactId)
+      ->addValue('target_contact_id', $contactId)
+      ->execute();
+
+  }
+  catch (\CiviCRM_API4_Exception $ex) {
+    \Civi::log()->debug("Exception while creating Organize Collection Camp activity: " . $ex->getMessage());
+  }
 }
 
 /**
