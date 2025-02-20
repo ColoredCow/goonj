@@ -17,7 +17,7 @@ if (php_sapi_name() != 'cli') {
 // Add the names of the groups you want to process here.
 define('SOURCE_GROUP_NAMES', ['group names']);
 
-echo "Fetching contacts from groups: " . implode(', ', SOURCE_GROUP_NAMESS) . "...\n";
+echo "Fetching contacts from groups: " . implode(', ', SOURCE_GROUP_NAMES) . "...\n";
 
 /**
  * Fetch institutions from the specified group.
