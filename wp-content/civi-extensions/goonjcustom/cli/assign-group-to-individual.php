@@ -2,7 +2,7 @@
 
 /**
  * @file
- * CLI Script to assign contacts from a group to their respective state groups.
+ * CLI Script to assign contacts from multiple groups to their respective state groups.
  */
 
 use Civi\Api4\Contact;
@@ -13,19 +13,19 @@ if (php_sapi_name() != 'cli') {
   exit("This script can only be run from the command line.\n");
 }
 
-// Change this ID to the one where you want to add the contact.
-define('SOURCE_GROUP_NAME', 'Institution');
+// Add the names of the groups you want to process here.
+define('SOURCE_GROUP_NAMES', ['group names']);
 
-echo "Fetching contacts from group ID " . SOURCE_GROUP_NAME . "...\n";
+echo "Fetching contacts from groups: " . implode(', ', SOURCE_GROUP_NAMES) . "...\n";
 
 /**
- * Fetch contacts from the specified group.
+ * Fetch contacts from the specified groups.
  */
-function getContactsFromGroup(): array {
+function getContactsFromGroups(): array {
   $groupContacts = GroupContact::get(FALSE)
     ->addSelect('contact_id')
     ->addJoin('Contact AS contact', 'LEFT')
-    ->addWhere('group_id:label', '=', SOURCE_GROUP_NAME)
+    ->addWhere('group_id:label', 'IN', SOURCE_GROUP_NAMES)
     ->execute();
 
   return $groupContacts->getIterator()->getArrayCopy();
@@ -68,10 +68,10 @@ function getChapterGroupForState(int $stateId): ?int {
  * Process contacts and assign them to the appropriate state-based group.
  */
 function assignContactsToStateGroups(): void {
-  $contacts = getContactsFromGroup();
+  $contacts = getContactsFromGroups();
 
   if (empty($contacts)) {
-    echo "No contacts found in source group.\n";
+    echo "No contacts found in source groups.\n";
     return;
   }
 

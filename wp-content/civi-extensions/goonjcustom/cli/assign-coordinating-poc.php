@@ -14,10 +14,10 @@ if (php_sapi_name() != 'cli') {
   exit("This script can only be run from the command line.\n");
 }
 
-// Change this to your source group name.
-define('SOURCE_GROUP_NAME', 'Imported: Corporate Institution');
+// Add the names of the groups you want to process here.
+define('SOURCE_GROUP_NAMES', ['group names']);
 
-echo "Fetching institutions from group '" . SOURCE_GROUP_NAME . "'...\n";
+echo "Fetching contacts from groups: " . implode(', ', SOURCE_GROUP_NAMESS) . "...\n";
 
 /**
  * Fetch institutions from the specified group.
@@ -26,7 +26,7 @@ function getContactsFromGroup(): array {
   $groupContacts = GroupContact::get(FALSE)
     ->addSelect('contact_id')
     ->addJoin('Contact AS contact', 'LEFT')
-    ->addWhere('group_id:label', '=', SOURCE_GROUP_NAME)
+    ->addWhere('group_id:label', 'IN', SOURCE_GROUP_NAMES)
     ->execute();
 
   return $groupContacts->getIterator()->getArrayCopy();

@@ -13,10 +13,10 @@ if (php_sapi_name() != 'cli') {
   exit("This script can only be run from the command line.\n");
 }
 
-// Change this name to the one where you want to add the Institute.
-define('SOURCE_GROUP_NAME', 'test');
+// Add the names of the groups you want to process here.
+define('SOURCE_GROUP_NAMES', ['group names']);
 
-echo "Fetching Institute from group ID " . SOURCE_GROUP_NAME . "...\n";
+echo "Fetching Institute from group ID " . SOURCE_GROUP_NAMES . "...\n";
 
 /**
  * Fetch institute from the specified group.
@@ -25,7 +25,7 @@ function getInstituteFromGroup(): array {
   $groupContacts = GroupContact::get(FALSE)
     ->addSelect('contact_id')
     ->addJoin('Contact AS contact', 'LEFT')
-    ->addWhere('group_id:label', '=', SOURCE_GROUP_NAME)
+    ->addWhere('group_id:label', 'IN', SOURCE_GROUP_NAMES)
     ->execute();
 
   return $groupContacts->getIterator()->getArrayCopy();
