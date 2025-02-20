@@ -44,7 +44,7 @@ function readContactsFromCsv(string $filePath): array {
   if (($handle = fopen($filePath, 'r')) !== FALSE) {
     $header = fgetcsv($handle, 1000, ',');
     if (!in_array('email', $header) || !in_array('contribution_date', $header) || !in_array('goonj_office', $header) || !in_array('description_of_material', $header) ) {
-      throw new Exception("Error: 'email' or 'contribution_date' column missing in CSV.");
+      throw new Exception("Column missing in CSV.");
     }
 
     while (($data = fgetcsv($handle, 1000, ',')) !== FALSE) {
@@ -139,7 +139,7 @@ function processContribution(int $contactId, string $formattedContributionDate, 
 
   }
   catch (\CiviCRM_API4_Exception $ex) {
-    \Civi::log()->debug("Exception while creating Organize Collection Camp activity: " . $ex->getMessage());
+    \Civi::log()->debug("Exception while creating material contribution activity: " . $ex->getMessage());
   }
 }
 
