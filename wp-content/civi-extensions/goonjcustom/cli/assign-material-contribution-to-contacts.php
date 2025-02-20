@@ -125,8 +125,6 @@ function assignContributionByEmail(string $email, string $contributionDate, stri
  * @param string $contributionDate
  */
 function processContribution(int $contactId, string $formattedContributionDate, string $goonjOfficeId, string $descriptionOfMaterial): void {
-  echo "Assigning contribution for Contact ID $contactId on $formattedContributionDate.\n";
-
   try {
     $results = Activity::create(FALSE)
       ->addValue('subject', $descriptionOfMaterial)
@@ -137,6 +135,7 @@ function processContribution(int $contactId, string $formattedContributionDate, 
       ->addValue('Material_Contribution.Goonj_Office', $goonjOfficeId)
       ->execute();
 
+      echo "Assigning contribution for Contact ID $contactId\n";
   }
   catch (\CiviCRM_API4_Exception $ex) {
     \Civi::log()->debug("Exception while creating material contribution activity: " . $ex->getMessage());
