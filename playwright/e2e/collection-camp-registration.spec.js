@@ -36,7 +36,7 @@ test.describe('Collection camp registration', () => {
     await inductedVolunteerPage.checkInductedVolunteerEmailExists(userEmailAddress)
     await page.waitForTimeout(3000)
     await userLogout(page)
-    await  submitCollectionCampRegistrationForm(page, userEmailAddress, userMobileNumber, collectionCampUserDetails)
+    await submitCollectionCampRegistrationForm(page, userEmailAddress, userMobileNumber, collectionCampUserDetails)
 
 });
     
