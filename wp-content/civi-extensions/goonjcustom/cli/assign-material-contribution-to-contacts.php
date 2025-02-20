@@ -5,6 +5,7 @@
  * CLI Script to assign material contribution via CSV in CiviCRM.
  */
 
+use Civi\Api4\Contact;
 use Civi\Api4\Email;
 
 if (php_sapi_name() != 'cli') {
@@ -90,8 +91,18 @@ function assignContributionByEmail(string $email, string $contributionDate, stri
     if (isset($result['contact_id'])) {
       $contactId = $result['contact_id'];
 
+      $OfficeIds = Contact::get(FALSE)
+        ->addSelect('sort_name')
+        ->addWhere('contact_type', '=', 'Organization')
+        ->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_office')
+        ->addWhere('sort_name', '=', $goonjOffice)
+        ->execute()
+        ->first();
+
+      $goonjOfficeId = $OfficeIds['id'];
+
       // Assign material contribution.
-      processContribution($contactId, $contributionDate);
+      processContribution($contactId, $contributionDate, $goonjOfficeId);
     }
     else {
       echo "Contact with email $email not found.\n";
@@ -108,7 +119,7 @@ function assignContributionByEmail(string $email, string $contributionDate, stri
  * @param int $contactId
  * @param string $contributionDate
  */
-function processContribution(int $contactId, string $contributionDate): void {
+function processContribution(int $contactId, string $contributionDate, string $goonjOfficeId): void {
   echo "Assigning contribution for Contact ID $contactId on $contributionDate.\n";
   // Add logic here to store or process the contribution in CiviCRM.
 }
