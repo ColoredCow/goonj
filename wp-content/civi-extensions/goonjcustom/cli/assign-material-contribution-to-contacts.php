@@ -134,7 +134,6 @@ function processContribution(int $contactId, string $formattedContributionDate, 
       ->addValue('status_id:name', 'Completed')
       ->addValue('activity_date_time', $formattedContributionDate)
       ->addValue('source_contact_id', $contactId)
-      ->addValue('target_contact_id', $contactId)
       ->addValue('Material_Contribution.Goonj_Office', $goonjOfficeId)
       ->execute();
 
