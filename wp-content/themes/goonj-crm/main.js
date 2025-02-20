@@ -89,6 +89,11 @@ function setupFormValidation() {
 			errorMessage: "Please enter a valid 10-digit mobile number.",
 		},
 		{
+			labelText: "Phone",
+			regex: /^\d{10}$/,
+			errorMessage: "Please enter a valid 10-digit mobile number.",
+		},
+		{
 			labelText: "PAN Card Number",
 			regex: /^[a-zA-Z0-9]{10}$/,
 			errorMessage: "Please enter a valid 10-digit PAN card number.",
