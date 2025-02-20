@@ -11,27 +11,27 @@ if (php_sapi_name() != 'cli') {
   exit("This script can only be run from the command line.\n");
 }
 
-// Fetch the CSV file path and Group ID from the constants defined in wp-config.php.
+// Fetch the CSV file path and Group ID from wp-config.php.
 $csvFilePath = MATERIAL_CONTRIBUTION_CSV_FILE_PATH;
 $groupId = MATERIAL_CONTRIBUTION_GROUP_ID;
 
-// Check if the required constants are set.
+// Check if constants are set.
 if (!$csvFilePath || !$groupId) {
-  exit("Error: Both MATERIAL_CONTRIBUTION_CSV_FILE_PATH and MATERIAL_CONTRIBUTION_GROUP_ID constants must be set.\n");
+  exit("Error: Both MATERIAL_CONTRIBUTION_CSV_FILE_PATH and MATERIAL_CONTRIBUTION_GROUP_ID must be set.\n");
 }
 
 echo "CSV File: $csvFilePath\n";
 echo "Group ID: $groupId\n";
 
 /**
- * Reads email addresses, Activity Contribution Date from the provided CSV file.
+ * Reads email addresses and contribution dates from CSV.
  *
  * @param string $filePath
  *   Path to the CSV file.
  *
- * @return array List of email addresses, Activity Contribution Dates.
+ * @return array List of contacts with 'email' and 'contribution_date'.
  *
- * @throws Exception If the file is not readable or the 'email' and 'activity contribution dates' column is missing.
+ * @throws Exception If file is not readable or required columns are missing.
  */
 function readContactsFromCsv(string $filePath): array {
   if (!file_exists($filePath) || !is_readable($filePath)) {
@@ -41,17 +41,21 @@ function readContactsFromCsv(string $filePath): array {
   $contacts = [];
   if (($handle = fopen($filePath, 'r')) !== FALSE) {
     $header = fgetcsv($handle, 1000, ',');
-    if (in_array('email', $header)) {
-      while (($data = fgetcsv($handle, 1000, ',')) !== FALSE) {
-        $row = array_combine($header, $data);
-
-        // Clean email by trimming any extra spaces.
-        $email = trim($row['email']);
-        $contacts[] = $email;
-      }
+    if (!in_array('email', $header) || !in_array('activity_contribution_date', $header)) {
+      throw new Exception("Error: 'email' or 'activity_contribution_date' column missing in CSV.");
     }
-    else {
-      throw new Exception("Error: 'email' column not found in CSV.");
+
+    while (($data = fgetcsv($handle, 1000, ',')) !== FALSE) {
+      $row = array_combine($header, $data);
+
+      // Clean values.
+      $email = trim($row['email']);
+      $contributionDate = trim($row['activity_contribution_date']);
+
+      $contacts[] = [
+        'email' => $email,
+        'contribution_date' => $contributionDate,
+      ];
     }
     fclose($handle);
   }
@@ -60,27 +64,49 @@ function readContactsFromCsv(string $filePath): array {
 }
 
 /**
- * Improved query to ensure case-insensitive matching.
+ * Assigns material contribution by email.
+ *
+ * @param string $email
+ * @param string $contributionDate
  */
-function assignContributionByEmail(string $email): void {
+function assignContributionByEmail(string $email, string $contributionDate): void {
   try {
+
+    if (empty($email)) {
+      echo "No email found in database.\n";
+      return;
+    }
     // Find contact using Email API.
     $result = Email::get(FALSE)
       ->addSelect('contact_id')
       ->addWhere('email', '=', $email)
-      ->execute()->first();
+      ->execute()
+      ->first();
 
-    // If email is found, process the contact.
     if (isset($result['contact_id'])) {
       $contactId = $result['contact_id'];
+
+      // Assign material contribution.
+      processContribution($contactId, $contributionDate);
     }
     else {
       echo "Contact with email $email not found.\n";
     }
   }
   catch (Exception $e) {
-    echo "An error occurred while processing email $email: " . $e->getMessage() . "\n";
+    echo "Error processing email $email: " . $e->getMessage() . "\n";
   }
+}
+
+/**
+ * Processes the contribution assignment.
+ *
+ * @param int $contactId
+ * @param string $contributionDate
+ */
+function processContribution(int $contactId, string $contributionDate): void {
+  echo "Assigning contribution for Contact ID $contactId on $contributionDate.\n";
+  // Add logic here to store or process the contribution in CiviCRM.
 }
 
 /**
@@ -88,17 +114,19 @@ function assignContributionByEmail(string $email): void {
  */
 function main(): void {
   try {
-    echo "=== Starting material contribution assign Process ===\n";
-    $emails = readContactsFromCsv(MATERIAL_CONTRIBUTION_CSV_FILE_PATH);
+    echo "=== Starting Material Contribution Assignment ===\n";
+    $contacts = readContactsFromCsv(MATERIAL_CONTRIBUTION_CSV_FILE_PATH);
 
-    if (empty($emails)) {
+    if (empty($contacts)) {
+      echo "No valid contacts found in CSV.\n";
       return;
     }
 
-    foreach ($emails as $email) {
-      assignContributionByEmail($email);
+    foreach ($contacts as $contact) {
+      assignContributionByEmail($contact['email'], $contact['contribution_date']);
     }
-    echo "=== Material contribution assign Process Completed ===\n";
+
+    echo "=== Material Contribution Assignment Completed ===\n";
   }
   catch (Exception $e) {
     echo "Error: " . $e->getMessage() . "\n";
