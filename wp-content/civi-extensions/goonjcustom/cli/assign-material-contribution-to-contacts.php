@@ -52,11 +52,13 @@ function readContactsFromCsv(string $filePath): array {
       $email = trim($row['email']);
       $contributionDate = trim($row['activity_contribution_date']);
       $goonjOffice = trim($row['goonj_office']);
+      $descriptionOfMaterial = trim($row['description_of_material']);
 
       $contacts[] = [
         'email' => $email,
         'contribution_date' => $contributionDate,
         'goonj_office' => $goonjOffice,
+        'description_of_material' => $descriptionOfMaterial,
       ];
     }
     fclose($handle);
@@ -71,7 +73,7 @@ function readContactsFromCsv(string $filePath): array {
  * @param string $email
  * @param string $contributionDate
  */
-function assignContributionByEmail(string $email, string $contributionDate, string $goonjOffice): void {
+function assignContributionByEmail(string $email, string $contributionDate, string $goonjOffice, string $descriptionOfMaterial): void {
   try {
 
     if (empty($email)) {
@@ -125,7 +127,7 @@ function main(): void {
     }
 
     foreach ($contacts as $contact) {
-      assignContributionByEmail($contact['email'], $contact['contribution_date'], $contact['goonj_office']);
+      assignContributionByEmail($contact['email'], $contact['contribution_date'], $contact['goonj_office'], $contact['description_of_material']);
     }
 
     echo "=== Material Contribution Assignment Completed ===\n";
