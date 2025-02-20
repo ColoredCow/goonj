@@ -22,7 +22,7 @@ echo "Fetching contacts from groups: " . implode(', ', SOURCE_GROUP_NAMESS) . ".
 /**
  * Fetch institutions from the specified group.
  */
-function getContactsFromGroup(): array {
+function getContactsFromGroups(): array {
   $groupContacts = GroupContact::get(FALSE)
     ->addSelect('contact_id')
     ->addJoin('Contact AS contact', 'LEFT')
@@ -120,7 +120,7 @@ function findCoordinator(int $goonjOfficeId, string $relationshipType): ?int {
  * Process institutions and assign POCs.
  */
 function assignCoordinators(): void {
-  $institutions = getContactsFromGroup();
+  $institutions = getContactsFromGroups();
 
   if (empty($institutions)) {
     echo "No institutions found in source group.\n";

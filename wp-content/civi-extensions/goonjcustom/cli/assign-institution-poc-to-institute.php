@@ -21,7 +21,7 @@ echo "Fetching Institute from group ID " . SOURCE_GROUP_NAMES . "...\n";
 /**
  * Fetch institute from the specified group.
  */
-function getInstituteFromGroup(): array {
+function getInstituteFromGroups(): array {
   $groupContacts = GroupContact::get(FALSE)
     ->addSelect('contact_id')
     ->addJoin('Contact AS contact', 'LEFT')
@@ -41,7 +41,7 @@ function getInstituteFromGroup(): array {
  * @throws \API_Exception
  */
 function assignInstitutePocToInstitute(): void {
-  $contacts = getInstituteFromGroup();
+  $contacts = getInstituteFromGroups();
 
   if (empty($contacts)) {
     echo "No contacts found in source group.\n";
