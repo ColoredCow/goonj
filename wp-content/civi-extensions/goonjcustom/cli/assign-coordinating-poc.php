@@ -14,19 +14,19 @@ if (php_sapi_name() != 'cli') {
   exit("This script can only be run from the command line.\n");
 }
 
-// Change this to your source group name.
-define('SOURCE_GROUP_NAME', 'Imported: Corporate Institution');
+// Add the names of the groups you want to process here.
+define('SOURCE_GROUP_NAMES', ['group names']);
 
-echo "Fetching institutions from group '" . SOURCE_GROUP_NAME . "'...\n";
+echo "Fetching contacts from groups: " . implode(', ', SOURCE_GROUP_NAMESS) . "...\n";
 
 /**
  * Fetch institutions from the specified group.
  */
-function getContactsFromGroup(): array {
+function getContactsFromGroups(): array {
   $groupContacts = GroupContact::get(FALSE)
     ->addSelect('contact_id')
     ->addJoin('Contact AS contact', 'LEFT')
-    ->addWhere('group_id:label', '=', SOURCE_GROUP_NAME)
+    ->addWhere('group_id:label', 'IN', SOURCE_GROUP_NAMES)
     ->execute();
 
   return $groupContacts->getIterator()->getArrayCopy();
@@ -65,17 +65,17 @@ function getStateOfficeId(int $stateId): ?int {
  */
 function getRelationshipType(array $contactData): string {
   $type = $contactData['Institute_Registration.Type_of_Institution:name'] ?? '';
-  $category = $contactData['Category_of_Institution.Education_Institute:name'] ?? '';
+  $category = $contactData['Category_Of_Institution.Education_Institute:name'] ?? '';
 
   $typeToRelationshipMap = [
     'Corporate'    => 'Corporate Coordinator of',
-    'Family_foundation'   => 'Default Coordinator of',
-    'Associations' => 'Default Coordinator of',
-    'Others'       => 'Default Coordinator of',
-    'Education_Institute' => [
-      'Schools' => 'School Coordinator of',
-      'Collage_University' => 'College Coordinator of',
-      'Others' => 'Default Coordinator of',
+    'Foundation'   => 'Default Coordinator of',
+    'Association' => 'Default Coordinator of',
+    'Other'       => 'Default Coordinator of',
+    'Educational_Institute' => [
+      'School' => 'School Coordinator of',
+      'Collage_University' => 'College/University Coordinator of',
+      'Other' => 'Default Coordinator of',
     ],
   ];
 
@@ -120,7 +120,7 @@ function findCoordinator(int $goonjOfficeId, string $relationshipType): ?int {
  * Process institutions and assign POCs.
  */
 function assignCoordinators(): void {
-  $institutions = getContactsFromGroup();
+  $institutions = getContactsFromGroups();
 
   if (empty($institutions)) {
     echo "No institutions found in source group.\n";
@@ -137,7 +137,7 @@ function assignCoordinators(): void {
         ->addSelect(
                 'address_primary.state_province_id',
                 'Institute_Registration.Type_of_Institution:name',
-                'Category_of_Institution.Education_Institute:name'
+                'Category_Of_Institution.Education_Institute:name'
             )
         ->addWhere('id', '=', $contactId)
         ->execute()
