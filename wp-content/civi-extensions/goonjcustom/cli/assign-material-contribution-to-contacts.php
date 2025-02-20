@@ -56,6 +56,7 @@ function readContactsFromCsv(string $filePath): array {
       $contacts[] = [
         'email' => $email,
         'contribution_date' => $contributionDate,
+        'goonj_office' => $goonjOffice,
       ];
     }
     fclose($handle);
