@@ -37,17 +37,17 @@ class GoonjActivitiesService extends AutoSubscriber {
         ['setGoonjActivitiesAddress', 9],
         ['setActivitiesVolunteersAddress', 8],
       ],
-      '&hook_civicrm_custom' => [
-        ['setOfficeDetails'],
-        ['linkInductionWithGoonjActivities'],
-        // ['mailNotificationToMmt'],
-      ],
+      // '&hook_civicrm_custom' => [
+      //   ['setOfficeDetails'],
+      //   ['linkInductionWithGoonjActivities'],
+      //   // ['mailNotificationToMmt'],
+      // ],
       '&hook_civicrm_tabset' => 'goonjActivitiesTabset',
-      '&hook_civicrm_pre' => [
-        ['generateGoonjActivitiesQr'],
-        ['createActivityForGoonjActivityCollectionCamp'],
-        ['linkGoonjActivitiesToContact'],
-      ],
+      // '&hook_civicrm_pre' => [
+      //   ['generateGoonjActivitiesQr'],
+      //   ['createActivityForGoonjActivityCollectionCamp'],
+      //   ['linkGoonjActivitiesToContact'],
+      // ],
     ];
   }
 
