@@ -176,6 +176,8 @@ function main() {
       ];
 
       try {
+        $i++;
+
         $results = EckEntity::create('Collection_Camp', FALSE)
           ->addValue('title', $values['title'])
           ->addValue('Goonj_Activities.How_do_you_want_to_engage_with_Goonj_:label', $values['Goonj_Activities.How_do_you_want_to_engage_with_Goonj_:name'])
@@ -198,7 +200,7 @@ function main() {
           ->addValue('Collection_Camp_Core_Details.Contact_Id', $values['Collection_Camp_Core_Details.Contact_Id'])
           ->addValue('Goonj_Activities_Outcome.No_of_Sessions', $values['Goonj_Activities_Outcome.No_of_Sessions'])
           ->addValue('Goonj_Activities_Outcome.Rate_the_activity', $values['Goonj_Activities_Outcome.Rate_the_activity'])
-          ->addWhere('subtype:name', '=', 'Goonj_Activities')
+          ->addValue('subtype', 12)
           ->execute();
         echo "Created entry for: " . $data['Title'] . "\n";
       }
