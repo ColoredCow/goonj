@@ -219,7 +219,11 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       foreach ($droppingCenterData as $visit) {
         $fields = $visit['fields'] ?? [];
         $stateProvinceId = $fields['Institution_Dropping_Center_Intent.State'] ?? NULL;
-
+        
+        if (!$stateProvinceId) {
+          return FALSE;
+        }
+        
         $groupId = self::getChapterGroupForState($stateProvinceId);
         if ($groupId && $contactId) {
           $groupContacts = GroupContact::get(FALSE)
