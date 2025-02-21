@@ -8,6 +8,7 @@
 use Civi\Api4\Contact;
 use Civi\Api4\StateProvince;
 use Civi\Api4\Relationship;
+use Civi\Api4\EckEntity;
 
 if (php_sapi_name() != 'cli') {
   exit("This script can only be run from the command line.\n");
@@ -175,6 +176,8 @@ function main() {
       ];
 
       try {
+        $i++;
+
         $results = EckEntity::create('Collection_Camp', FALSE)
           ->addValue('title', $values['title'])
           ->addValue('Goonj_Activities.How_do_you_want_to_engage_with_Goonj_:label', $values['Goonj_Activities.How_do_you_want_to_engage_with_Goonj_:name'])
@@ -197,7 +200,7 @@ function main() {
           ->addValue('Collection_Camp_Core_Details.Contact_Id', $values['Collection_Camp_Core_Details.Contact_Id'])
           ->addValue('Goonj_Activities_Outcome.No_of_Sessions', $values['Goonj_Activities_Outcome.No_of_Sessions'])
           ->addValue('Goonj_Activities_Outcome.Rate_the_activity', $values['Goonj_Activities_Outcome.Rate_the_activity'])
-          ->addWhere('subtype:name', '=', 'Goonj_Activities')
+          ->addValue('subtype:name', 'Goonj_Activities')
           ->execute();
         echo "Created entry for: " . $data['Title'] . "\n";
       }
