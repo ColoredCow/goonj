@@ -192,44 +192,52 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       return FALSE;
     }
 
-    if (empty($objectRef['data']['Eck_Collection_Camp1']) || empty($objectRef['data']['Individual1'])) {
+    if (empty($objectRef['data']['Eck_Collection_Camp1'])) {
       return FALSE;
     }
 
-    $individualData = $objectRef['data']['Individual1'];
+    // Collect all individuals from Individual1, Individual2, etc.
+    $individuals = [];
+    foreach ($objectRef['data'] as $key => $entries) {
+      if (strpos($key, 'Individual') === 0) {
+        foreach ($entries as $entry) {
+          if (!empty($entry['id'])) {
+            $individuals[] = $entry;
+          }
+        }
+      }
+    }
+
+    if (empty($individuals)) {
+      return FALSE;
+    }
+
     $droppingCenterData = $objectRef['data']['Eck_Collection_Camp1'];
 
-    foreach ($individualData as $individual) {
+    foreach ($individuals as $individual) {
       $contactId = $individual['id'];
       foreach ($droppingCenterData as $visit) {
         $fields = $visit['fields'] ?? [];
         $stateProvinceId = $fields['Institution_Dropping_Center_Intent.State'] ?? NULL;
 
         $groupId = self::getChapterGroupForState($stateProvinceId);
-
         if ($groupId && $contactId) {
-
-          // Check if the contact is already in the group.
           $groupContacts = GroupContact::get(FALSE)
-            ->addSelect('contact_id', 'group_id')
-            ->addWhere('group_id.id', '=', $groupId)
+            ->addSelect('id')
+            ->addWhere('group_id', '=', $groupId)
             ->addWhere('contact_id', '=', $contactId)
-            ->execute();
+            ->execute()->first();
 
-          // If the contact is already in the group.
-          if ($groupContacts->count() > 0) {
-            return;
+          if (!$groupContacts) {
+            GroupContact::create(FALSE)
+              ->addValue('contact_id', $contactId)
+              ->addValue('group_id', $groupId)
+              ->addValue('status', 'Added')
+              ->execute();
+
+            \Civi::log()->info("Contact ID $contactId added to Group ID $groupId.");
           }
-
-          GroupContact::create(FALSE)
-            ->addValue('contact_id', $contactId)
-            ->addValue('group_id', $groupId)
-            ->addValue('status', 'Added')
-            ->execute();
-
         }
-
-        \Civi::log()->info("Contact ID $contactId has been added to Group ID $groupId.");
       }
     }
 
