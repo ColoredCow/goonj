@@ -200,7 +200,7 @@ function main() {
           ->addValue('Collection_Camp_Core_Details.Contact_Id', $values['Collection_Camp_Core_Details.Contact_Id'])
           ->addValue('Goonj_Activities_Outcome.No_of_Sessions', $values['Goonj_Activities_Outcome.No_of_Sessions'])
           ->addValue('Goonj_Activities_Outcome.Rate_the_activity', $values['Goonj_Activities_Outcome.Rate_the_activity'])
-          ->addValue('subtype', 12)
+          ->addValue('subtype:name', 'Goonj_Activities')
           ->execute();
         echo "Created entry for: " . $data['Title'] . "\n";
       }
