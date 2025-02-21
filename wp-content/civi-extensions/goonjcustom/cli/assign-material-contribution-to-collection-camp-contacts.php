@@ -94,7 +94,7 @@ function assignContributionByEmail(string $email, string $contributionDate, stri
       $collectionCamp = EckEntity::get('Collection_Camp', TRUE)
         ->addSelect('id')
         ->addWhere('title', '=', $collectionCampCode)
-        ->addWhere('subtype', '=', 4)
+        ->addWhere('subtype:name', '=', 'Collection_Camp')
         ->execute()
         ->first();
 
