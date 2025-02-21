@@ -8,6 +8,7 @@
 use Civi\Api4\Contact;
 use Civi\Api4\StateProvince;
 use Civi\Api4\Relationship;
+use Civi\Api4\EckEntity;
 
 if (php_sapi_name() != 'cli') {
   exit("This script can only be run from the command line.\n");
