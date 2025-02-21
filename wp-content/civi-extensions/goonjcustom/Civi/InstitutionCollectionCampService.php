@@ -426,7 +426,11 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       foreach ($collectionCampData as $visit) {
         $fields = $visit['fields'] ?? [];
         $stateProvinceId = $fields['Institution_Collection_Camp_Intent.State'] ?? NULL;
-
+        
+        if (!$stateProvinceId) {
+          return FALSE;
+        }
+        
         $groupId = self::getChapterGroupForState($stateProvinceId);
         if ($groupId && $contactId) {
           $groupContacts = GroupContact::get(FALSE)
