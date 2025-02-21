@@ -124,14 +124,14 @@ function assignContributionByEmail(string $email, string $contributionDate, stri
  */
 function processContribution(int $contactId, string $formattedContributionDate, string $collectionCampId, string $descriptionOfMaterial): void {
   try {
-    // $results = Activity::create(FALSE)
-    //   ->addValue('subject', $descriptionOfMaterial)
-    //   ->addValue('activity_type_id:name', 'Material Contribution')
-    //   ->addValue('status_id:name', 'Completed')
-    //   ->addValue('activity_date_time', $formattedContributionDate)
-    //   ->addValue('source_contact_id', $contactId)
-    //   ->addValue('Material_Contribution.Goonj_Office', $goonjOfficeId)
-    //   ->execute();
+    $results = Activity::create(FALSE)
+      ->addValue('subject', $descriptionOfMaterial)
+      ->addValue('activity_type_id:name', 'Material Contribution')
+      ->addValue('status_id:name', 'Completed')
+      ->addValue('activity_date_time', $formattedContributionDate)
+      ->addValue('source_contact_id', $contactId)
+      ->addValue('Material_Contribution.Collection_Camp', $collectionCampId)
+      ->execute();
     echo "Assigning contribution for Contact ID $contactId\n";
   }
   catch (\CiviCRM_API4_Exception $ex) {
