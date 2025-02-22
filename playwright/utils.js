@@ -37,13 +37,15 @@ export const userDetails = {
   comments: faker.helpers.arrayElement(['Nice initiative', 'None']),
 };
 
-  const startDate = new Date(); 
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1); // Set the start date to tomorrow
 
-  // Generate an end date within the next 2 days
-  const endDate = faker.date.soon({ days: 2, refDate: startDate }); 
+  const dayAfterTomorrow = new Date(tomorrow);
+  dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1); // Set the end date to the day after tomorrow
+
   // Format the dates as DD/MM/YYYY
-  const formattedStartDate = `${String(startDate.getDate()).padStart(2, '0')}/${String(startDate.getMonth() + 1).padStart(2, '0')}/${startDate.getFullYear()}`;
-  const formattedEndDate = `${String(endDate.getDate()).padStart(2, '0')}/${String(endDate.getMonth() + 1).padStart(2, '0')}/${endDate.getFullYear()}`;
+  const formattedStartDate = `${String(tomorrow.getDate()).padStart(2, '0')}/${String(tomorrow.getMonth() + 1).padStart(2, '0')}/${tomorrow.getFullYear()}`;
+  const formattedEndDate = `${String(dayAfterTomorrow.getDate()).padStart(2, '0')}/${String(dayAfterTomorrow.getMonth() + 1).padStart(2, '0')}/${dayAfterTomorrow.getFullYear()}`;
 
 export const collectionCampUserDetails = {
   registerAsIndividual: 'An individual.',
@@ -73,9 +75,9 @@ export async function submitCollectionCampRegistrationForm(page, userEmailAddres
   await collectionCampPage.selectState('Delhi')
   await collectionCampPage.enterPinCode(collectionCampUserDetails.postalCode);
   await collectionCampPage.enterStartDate(collectionCampUserDetails.startDate);  //  MM/DD/YYYY Format (Check your date format)
-  await collectionCampPage.enterStartTime('10:00'); 
+  await collectionCampPage.enterStartTime(collectionCampUserDetails.startTime); 
   await collectionCampPage.enterEndDate(collectionCampUserDetails.endDate);  //  MM/DD/YYYY Format (Check your date format)
-  await collectionCampPage.enterEndTime('14:00'); 
+  await collectionCampPage.enterEndTime(collectionCampUserDetails.endTime); 
   await collectionCampPage.selectPermissionLetter('1');  
   await collectionCampPage.selectPublicCollection('1');  
   await collectionCampPage.selectEngagingActivity('2'); 
