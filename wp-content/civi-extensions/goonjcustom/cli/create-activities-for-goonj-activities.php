@@ -6,6 +6,7 @@
  */
 
 use Civi\Api4\EckEntity;
+use Civi\Api4\OptionValue;
 
 if (php_sapi_name() != 'cli') {
   exit("This script can only be run from the command line.\n");
@@ -70,8 +71,14 @@ function main() {
           continue;
         }
         foreach ($activities as $activityName) {
+          \Civi::log()->info('activities', ['activit'=>$activityName]);
+          $optionValues = OptionValue::get(FALSE)
+          ->addSelect('name', 'label')
+          ->addWhere('option_group_id:name', '=', 'Institution_Goonj_Activities_How_do_you_want_to_engage_with')
+          ->addWhere('value', '=', $activityName)
+          ->execute()->single();
           $results = EckEntity::create('Collection_Camp_Activity', FALSE)
-            ->addValue('title', $activityName)
+            ->addValue('title', $optionValues['label'])
             ->addValue('subtype:name', $collectionCamps['subtype:name'])
             ->addValue('Collection_Camp_Activity.Collection_Camp_Id', $collectionCamps['id'])
             ->addValue('Collection_Camp_Activity.Start_Date', $startDate)
