@@ -301,7 +301,7 @@ function main() {
         $results = EckEntity::create('Collection_Camp', TRUE)
           ->addValue('title', $values['title'])
           ->addValue('Institution_Goonj_Activities.You_wish_to_register_as:label', $values['Type_of_institution'])
-          ->addValue('Institution_Goonj_Activities.How_do_you_want_to_engage_with_Goonj_', $values['Institution_Goonj_Activities.How_do_you_want_to_engage_with_Goonj_:name'])
+          ->addValue('Institution_Goonj_Activities.How_do_you_want_to_engage_with_Goonj_:label', $values['Institution_Goonj_Activities.How_do_you_want_to_engage_with_Goonj_:name'])
           ->addValue('Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_', $values['Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'])
           ->addValue('Institution_Goonj_Activities.City', $values['Institution_Goonj_Activities.City'])
           ->addValue('Institution_Goonj_Activities.State', $values['Institution_Goonj_Activities.State'])
