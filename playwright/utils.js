@@ -3,7 +3,8 @@ import { faker } from '@faker-js/faker/locale/en_IN'; // Import the Indian local
 import { VolunteerRegistrationPage } from '../playwright/pages/volunteer-registration.page';
 import { SearchContactsPage } from '../playwright/pages/search-contact.page';
 import { AdminHomePage } from '../playwright/pages/admin-home.page';
-import { CollectionCampPage } from '../playwright/pages/collection-camp-registration.page'
+import { CollectionCampPage } from '../playwright/pages/collection-camp-registration.page';
+import { DroppingCenterPage } from '../playwright/pages/dropping-center-registration.page'
 import { InductedVolunteerPage } from '../playwright/pages/inducted-volunteer.page';
 // Helper function to generate an Indian mobile number
 const generateIndianMobileNumber = () => {
@@ -86,6 +87,45 @@ export async function submitCollectionCampRegistrationForm(page, userEmailAddres
   await page.waitForTimeout(4000)
   await collectionCampPage.verifyUrlAfterFormSubmission(registrationConfirmationText);  // Replace with your success URL
 };
+
+
+export const droppingCenterUserDetails = {
+  registerAsIndividual: 'An individual.',
+  address: faker.location.streetAddress(),
+  cityName: 'Delhi',
+  state: 'Delhi',
+  postalCode: faker.location.zipCode('110070'),
+  startDate: formattedStartDate,
+  volunteerName: 'Kama Gupta-Asan',
+  contactNumber: '9376289162',
+};
+
+export async function submitDroppingCenterRegistrationForm(page, userEmailAddress, userMobileNumber, droppingCenterUserDetails) {
+  const droppingCenterPage  = new DroppingCenterPage(page);
+  const droppingCenterUrl = droppingCenterPage.getAppendedUrl('/dropping-center/');
+  const registrationConfirmationText = '/success'
+  await page.goto(droppingCenterUrl);
+  await droppingCenterPage.clickContinueButton()
+  await userFormLogin(page, userEmailAddress, userMobileNumber)
+  await page.waitForTimeout(3000)
+  await droppingCenterPage.selectYouWishToRegisterAs('An individual');
+  await droppingCenterPage.enterLocationAreaOfCamp(collectionCampUserDetails.address);
+  await droppingCenterPage.enterCity(collectionCampUserDetails.cityName);
+  await droppingCenterPage.selectState('Delhi')
+  await droppingCenterPage.enterPinCode(collectionCampUserDetails.postalCode);
+  await droppingCenterPage.enterStartDate(collectionCampUserDetails.startDate);  //  MM/DD/YYYY Format (Check your date format)
+  await droppingCenterPage.enterStartTime(collectionCampUserDetails.startTime); 
+  await droppingCenterPage.enterEndDate(collectionCampUserDetails.endDate);  //  MM/DD/YYYY Format (Check your date format)
+  await droppingCenterPage.enterEndTime(collectionCampUserDetails.endTime); 
+  await droppingCenterPage.selectPermissionLetter('1');  
+  await droppingCenterPage.selectPublicCollection('1');  
+  await droppingCenterPage.selectEngagingActivity('2'); 
+  await page.waitForTimeout(2000)
+  await droppingCenterPage.clickSubmitButton();
+  await page.waitForTimeout(4000)
+  await droppingCenterPage.verifyUrlAfterFormSubmission(registrationConfirmationText);  // Replace with your success URL
+};
+
 
 export async function userLogin(page) {
   const baseURL = process.env.BASE_URL_USER_SITE;
