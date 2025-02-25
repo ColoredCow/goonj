@@ -22,9 +22,9 @@ export const userDetails = {
   mobileNumber: generateIndianMobileNumber(), // Generate Indian mobile number
   gender: faker.helpers.arrayElement(['Male', 'Female', 'Other']),
   streetAddress: faker.location.streetAddress(),
-  cityName: faker.location.city(),
+  cityName: faker.location.city('Delhi'),
   postalCode: faker.location.zipCode('######'), // Indian postal code format
-  state: faker.helpers.arrayElement(['Haryana', 'Delhi', 'Uttar Pradesh', 'Tamil Nadu']),
+  state: faker.helpers.arrayElement(['Haryana', 'Delhi', 'Uttar Pradesh']),
   activityInterested: faker.helpers.arrayElement(['Organise fundraising activities to support Goonj’s initiatives.', 'Hold Chuppi Todo Baithak’s to generate awareness on Menstruation']), 
   voluntarySkills: faker.helpers.arrayElement(['Marketing', 'Content Writing']), 
   // otherSkills: faker.helpers.arrayElement(['Research', 'Content Writing']),
@@ -91,6 +91,17 @@ export async function userLogin(page) {
   const baseURL = process.env.BASE_URL_USER_SITE;
   const username = process.env.USERNAME;
   const password = process.env.PASSWORD;
+  await page.goto(baseURL);
+  await page.waitForURL(baseURL);
+  await page.fill('#user_login', username); 
+  await page.fill('#user_pass', password); 
+  await page.click('#wp-submit');
+};
+
+export async function urbanOpsUserLogin(page) {
+  const baseURL = process.env.BASE_URL_USER_SITE;
+  const username = process.env.URBAN_OPS_USER;
+  const password = process.env.URBAN_OPS_USER_PASSWORD;
   await page.goto(baseURL);
   await page.waitForURL(baseURL);
   await page.fill('#user_login', username); 
