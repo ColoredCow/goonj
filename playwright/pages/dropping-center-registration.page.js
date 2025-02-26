@@ -11,8 +11,9 @@ exports.DroppingCenterPage = class DroppingCenterPage {
     this.cityField = page.locator('#dropping-centre-district-city-4');
     // this.stateSelect = page.locator('af-field[name="Collection_Camp_Intent_Details.State"] .select2-container');
     this.pinCodeField = page.locator('#dropping-centre-postal-code-6');
-    this.startDateForDroppingCenter = page.locator('#dp1740510055343'); //Date input
-    this.droppingCenterTiming = page.locator('dropping-centre-timing-8');
+    this.startDateForDroppingCenter = page.locator('af-field[name="Dropping_Centre.When_do_you_wish_to_open_center_Date_"] input[aria-label="Select Date"]'); //Date input
+    
+    this.daysAndTimings = page.locator('#dropping-centre-timing-8');
     this.volunteerNameField = page.locator('#dropping-centre-name-12');
     this.volunteerContactNumberField = page.locator('#dropping-centre-contact-number-13');
   }
@@ -64,6 +65,10 @@ async selectStateDropdownOption(dropdownSelector, inputField, option) {
     await this.locationAreaOfCampField.fill(location);
   }
 
+  async enterLandMarkAreaOrNearbyArea(area){
+    await this.locationAreaOfCampField.fill(area);
+  }
+
   async enterCity(city) {
     await this.cityField.fill(city);
   }
@@ -78,6 +83,10 @@ async selectStateDropdownOption(dropdownSelector, inputField, option) {
 
   async enterStartDate(date) {
     await this.startDateForDroppingCenter.fill(date);
+  }
+
+  async enterDaysAndTiming(daysAndTimings) {
+    await this.daysAndTimings.fill(daysAndTimings);
   }
 
   async enterVolunteerName(name) {

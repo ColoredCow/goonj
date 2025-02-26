@@ -2,11 +2,10 @@ import { test, expect } from '@playwright/test';
 import { userDetails, userLogin, submitVolunteerRegistrationForm, searchAndVerifyContact, userLogout, submitDroppingCenterRegistrationForm, droppingCenterUserDetails, urbanOpsUserLogin} from '../utils.js';
 import { VolunteerProfilePage } from '../pages/volunteer-profile.page';
 import { InductedVolunteerPage } from '../pages/inducted-volunteer.page';
-import { DroppingCenterPage } from '../pages/dropping-center-registration.page'; // Adjust the path
-import { CollectionCampRecordsPage  } from '../pages/collection-camp-records.page'; // Adjust the path
+import { DroppingCenterPage } from '../pages/dropping-center-registration.page';
 
 
-test.describe('Collection camp registration', () => {
+test.describe('Dropping center  registration', () => {
   let volunteerProfilePage;
   let inductedVolunteerPage
   let droppingCenterPage
@@ -22,7 +21,7 @@ test.describe('Collection camp registration', () => {
     await userLogin(page);
   });
 
-  test('Verifying collection camp is created after form submission', async ({ page }) => {
+  test('Verifying dropping center created after form submission', async ({ page }) => {
     let userEmailAddress = userDetails.email.toLowerCase()
     let userMobileNumber = userDetails.mobileNumber
     const updatedStatus = 'Completed'
@@ -39,12 +38,11 @@ test.describe('Collection camp registration', () => {
     await inductedVolunteerPage.checkInductedVolunteerEmailExists(userEmailAddress)
     await page.waitForTimeout(3000)
     await userLogout(page)
-    await submitDroppingCenterRegistrationForm(page, userEmailAddress, userMobileNumber, droppingCenterUserDetail)
+    await submitDroppingCenterRegistrationForm(page, userEmailAddress, userMobileNumber, droppingCenterUserDetails)
     await page.waitForTimeout(3000)
     await urbanOpsUserLogin(page)
     await page.waitForTimeout(3000)
-    await collectionCampRecordsPage.clickReviewLinCollectionCamp(userDetails.firstName, collectionCampUserDetails.state)
-    await collectionCampRecordsPage.selectCampaignForCollectionCamp('Rahat')
+    // await collectionCampRecordsPage.clickReviewLinCollectionCamp(userDetails.firstName, collectionCampUserDetails.state)
 });
     
 });
