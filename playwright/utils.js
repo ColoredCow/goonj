@@ -3,9 +3,10 @@ import { faker } from '@faker-js/faker/locale/en_IN'; // Import the Indian local
 import { VolunteerRegistrationPage } from '../playwright/pages/volunteer-registration.page';
 import { SearchContactsPage } from '../playwright/pages/search-contact.page';
 import { AdminHomePage } from '../playwright/pages/admin-home.page';
+import { DroppingCenterPage } from '../playwright/pages/dropping-center-registration.page';
 import { CollectionCampPage } from '../playwright/pages/collection-camp-registration.page';
-import { DroppingCenterPage } from '../playwright/pages/dropping-center-registration.page'
 import { InductedVolunteerPage } from '../playwright/pages/inducted-volunteer.page';
+
 // Helper function to generate an Indian mobile number
 const generateIndianMobileNumber = () => {
   const prefix = faker.helpers.arrayElement(['7', '8', '9']); // Indian mobile numbers start with 7, 8, or 9
@@ -92,10 +93,12 @@ export async function submitCollectionCampRegistrationForm(page, userEmailAddres
 export const droppingCenterUserDetails = {
   registerAsIndividual: 'An individual.',
   address: faker.location.streetAddress(),
+  landmarkArea: 'dwarka',
   cityName: 'Delhi',
   state: 'Delhi',
   postalCode: faker.location.zipCode('110070'),
   startDate: formattedStartDate,
+  daysAndTimings: 'Thursday 8-10am',
   volunteerName: 'Kama Gupta-Asan',
   contactNumber: '9376289162',
 };
@@ -105,21 +108,20 @@ export async function submitDroppingCenterRegistrationForm(page, userEmailAddres
   const droppingCenterUrl = droppingCenterPage.getAppendedUrl('/dropping-center/');
   const registrationConfirmationText = '/success'
   await page.goto(droppingCenterUrl);
-  await droppingCenterPage.clickContinueButton()
   await userFormLogin(page, userEmailAddress, userMobileNumber)
+  // await droppingCenterPage.clickContinueButton()
   await page.waitForTimeout(3000)
   await droppingCenterPage.selectYouWishToRegisterAs('An individual');
-  await droppingCenterPage.enterLocationAreaOfCamp(collectionCampUserDetails.address);
-  await droppingCenterPage.enterCity(collectionCampUserDetails.cityName);
+  await droppingCenterPage.enterLocationAreaOfCamp(droppingCenterUserDetails.address);
+  await droppingCenterPage.enterLandMarkAreaOrNearbyArea(droppingCenterUserDetails.landmarkArea);
+  await droppingCenterPage.enterCity(droppingCenterUserDetails.cityName);
   await droppingCenterPage.selectState('Delhi')
-  await droppingCenterPage.enterPinCode(collectionCampUserDetails.postalCode);
-  await droppingCenterPage.enterStartDate(collectionCampUserDetails.startDate);  //  MM/DD/YYYY Format (Check your date format)
-  await droppingCenterPage.enterStartTime(collectionCampUserDetails.startTime); 
-  await droppingCenterPage.enterEndDate(collectionCampUserDetails.endDate);  //  MM/DD/YYYY Format (Check your date format)
-  await droppingCenterPage.enterEndTime(collectionCampUserDetails.endTime); 
+  await droppingCenterPage.enterPinCode(droppingCenterUserDetails.postalCode);
+  await droppingCenterPage.enterStartDate(droppingCenterUserDetails.startDate);  //  MM/DD/YYYY Format (Check your date format)
+  await droppingCenterPage.enterDaysAndTiming(droppingCenterUserDetails.daysAndTimings);
   await droppingCenterPage.selectPermissionLetter('1');  
   await droppingCenterPage.selectPublicCollection('1');  
-  await droppingCenterPage.selectEngagingActivity('2'); 
+  await droppingCenterPage.selectDonationBoxMonetaryContribution('2'); 
   await page.waitForTimeout(2000)
   await droppingCenterPage.clickSubmitButton();
   await page.waitForTimeout(4000)
@@ -239,4 +241,5 @@ export async function  userFormLogin(page, username, password) {
     await page.fill('#phone', password); 
     await page.click('[data-test="submitButton"]');
 }
+
 
