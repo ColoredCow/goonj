@@ -1355,16 +1355,17 @@ class CollectionCampService extends AutoSubscriber {
             ";
       }
       else {
-        $params['text'] = "Dear $donorName,\n\nThank you for your contribution.\n\nThese contributions go a long way in sustaining our operations and implementing a series of initiatives all across. The receipt ($receiptNumber) for the same is enclosed with the details of 80G exemptions and our PAN No.\n\nFor updates on our activities and new campaigns, please visit our website www.goonj.org regularly.\n\nThank you once again for joining the journey.\n\nWith best regards,\nTeam Goonj";
+        $params['text'] = "Dear $donorName,\n\nThank you for your contribution.\n\nThese contributions go a long way in sustaining our operations and implementing series of initiatives all across.\nThe receipt No. ($receiptNumber) for the same is enclosed with the details of 80G exemptions and our PAN No.\n\nFor updates on our activities and new campaigns, please visit our website www.goonj.org and our FB page https://www.facebook.com/goonj.org, which are regularly updated.\n\nThank you once again for joining the journey.\n\nWith best regards,\nTeam Goonj";
 
-        $params['html'] = "
-                <p>Dear <strong>$donorName</strong>,</p>
-                <p>Thank you for your contribution.</p>
-                <p>These contributions go a long way in sustaining our operations and implementing a series of initiatives all across. The receipt (<strong>$receiptNumber</strong>) for the same is enclosed with the details of 80G exemptions and our PAN No.</p>
-                <p>For updates on our activities and new campaigns, please visit our website <a href='https://www.goonj.org'>www.goonj.org</a> regularly.</p>
-                <p>Thank you once again for joining the journey.</p>
-                <p>With best regards,<br>Team Goonj</p>
-            ";
+          $params['html'] = "
+              <p>Dear <strong>$donorName</strong>,</p>
+              <p>Thank you for your contribution.</p>
+              <p>These contributions go a long way in sustaining our operations and implementing series of initiatives all across.</p>
+              <p>The receipt No. (<strong>$receiptNumber</strong>) for the same is enclosed with the details of 80G exemptions and our PAN No.</p>
+              <p>For updates on our activities and new campaigns, please visit our website <a href='https://www.goonj.org'>www.goonj.org</a> and our FB page <a href='https://www.facebook.com/goonj.org'>https://www.facebook.com/goonj.org</a>, which are regularly updated.</p>
+              <p>Thank you once again for joining the journey.</p>
+              <p>With best regards,<br>Team Goonj</p>
+          ";
       }
     }
   }
@@ -1402,16 +1403,17 @@ class CollectionCampService extends AutoSubscriber {
       ";
       }
       else {
-        $params['text'] = "Dear $donorName,\n\nThank you for your contribution.\n\nThese contributions go a long way in sustaining our operations and implementing a series of initiatives all across. The receipt ($receiptNumber) for the same is enclosed with the details of 80G exemptions and our PAN No.\n\nFor updates on our activities and new campaigns, please visit our website www.goonj.org regularly.\n\nThank you once again for joining the journey.\n\nWith best regards,\nTeam Goonj";
+        $params['text'] = "Dear $donorName,\n\nThank you for your contribution.\n\nThese contributions go a long way in sustaining our operations and implementing series of initiatives all across.\nThe receipt No. ($receiptNumber) for the same is enclosed with the details of 80G exemptions and our PAN No.\n\nFor updates on our activities and new campaigns, please visit our website www.goonj.org and our FB page https://www.facebook.com/goonj.org, which are regularly updated.\n\nThank you once again for joining the journey.\n\nWith best regards,\nTeam Goonj";
 
-        $params['html'] = "
-          <p>Dear <strong>$donorName</strong>,</p>
-          <p>Thank you for your contribution.</p>
-          <p>These contributions go a long way in sustaining our operations and implementing a series of initiatives all across. The receipt (<strong>$receiptNumber</strong>) for the same is enclosed with the details of 80G exemptions and our PAN No.</p>
-          <p>For updates on our activities and new campaigns, please visit our website <a href='https://www.goonj.org'>www.goonj.org</a> regularly.</p>
-          <p>Thank you once again for joining the journey.</p>
-          <p>With best regards,<br>Team Goonj</p>
-      ";
+          $params['html'] = "
+              <p>Dear <strong>$donorName</strong>,</p>
+              <p>Thank you for your contribution.</p>
+              <p>These contributions go a long way in sustaining our operations and implementing series of initiatives all across.</p>
+              <p>The receipt No. (<strong>$receiptNumber</strong>) for the same is enclosed with the details of 80G exemptions and our PAN No.</p>
+              <p>For updates on our activities and new campaigns, please visit our website <a href='https://www.goonj.org'>www.goonj.org</a> and our FB page <a href='https://www.facebook.com/goonj.org'>https://www.facebook.com/goonj.org</a>, which are regularly updated.</p>
+              <p>Thank you once again for joining the journey.</p>
+              <p>With best regards,<br>Team Goonj</p>
+          ";
       }
     }
   }
