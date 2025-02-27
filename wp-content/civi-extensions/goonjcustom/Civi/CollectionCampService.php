@@ -1342,22 +1342,22 @@ class CollectionCampService extends AutoSubscriber {
 
       // Check if title is 'Team 5000'.
       if (!empty($params['tplParams']['title']) && $params['tplParams']['title'] === 'Team 5000') {
-        $params['text'] = "Dear $donorName,\n\nThank you for the contribution and coming on-board of Team 5000.\n\nBy joining https://goonj.org/donate/micro-team-5000 you step into this legacy of grassroots action and become an integral part of our extended family. This isn’t just about giving; it’s about becoming a vital contributor to a movement that empowers communities and amplifies the voices of the marginalised. Your committed cooperation and continued engagement fuel our sustained efforts.\n\nThe receipts ($receiptNumber) for the same is enclosed with the details of 80G exemptions and our PAN No.\n\nFor a regular update on our activities and new campaigns, please keep an eye on www.goonj.org\n\nThank you once again for joining the journey..\n\nRegards,\nPriyanka";
+        $params['text'] = "Dear $donorName,\n\nThank you for the contribution and coming on-board of Team 5000.\n\nBy joining https://goonj.org/donate/micro-team-5000 you step into this legacy of grassroots action and become an integral part of our extended family. This isn’t just about giving; it’s about becoming a vital contributor to a movement that empowers communities and amplifies the voices of the marginalised. Your committed cooperation and continued engagement fuel our sustained efforts.\n\nThe receipt No. ($receiptNumber) for the same is enclosed with the details of 80G exemptions and our PAN No.\n\nFor a regular update on our activities and new campaigns please keep an eye on www.goonj.org and our FB page https://www.facebook.com/goonj.org, which are regularly updated.\n\nThank you once again for joining the journey..\n\nRegards,\nPriyanka";
 
         $params['html'] = "
-                <p>Dear <strong>$donorName</strong>,</p>
-                <p>Thank you for the contribution and coming on-board of Team 5000.</p>
-                <p>By joining <a href='https://goonj.org/donate/micro-team-5000'>https://goonj.org/donate/micro-team-5000</a>, you step into this legacy of grassroots action and become an integral part of our extended family. This isn’t just about giving; it’s about becoming a vital contributor to a movement that empowers communities and amplifies the voices of the marginalised. Your committed cooperation and continued engagement fuel our sustained efforts.</p>
-                <p>The receipts (<strong>$receiptNumber</strong>) for the same is enclosed with the details of 80G exemptions and our PAN No.</p>
-                <p>For a regular update on our activities and new campaigns, please keep an eye on <a href='https://www.goonj.org'>www.goonj.org</a>.</p>
-                <p>Thank you once again for joining the journey.</p>
-                <p>Regards,<br>Priyanka</p>
-            ";
+              <p>Dear <strong>$donorName</strong>,</p>
+              <p>Thank you for the contribution and coming on-board of Team 5000.</p>
+              <p>By joining <a href='https://goonj.org/donate/micro-team-5000'>https://goonj.org/donate/micro-team-5000</a> you step into this legacy of grassroots action and become an integral part of our extended family. This isn’t just about giving; it’s about becoming a vital contributor to a movement that empowers communities and amplifies the voices of the marginalised. Your committed cooperation and continued engagement fuel our sustained efforts.</p>
+              <p>The receipt No. (<strong>$receiptNumber</strong>) for the same is enclosed with the details of 80G exemptions and our PAN No.</p>
+              <p>For a regular update on our activities and new campaigns please keep an eye on <a href='https://www.goonj.org'>www.goonj.org</a> and our FB page <a href='https://www.facebook.com/goonj.org'>https://www.facebook.com/goonj.org</a>, which are regularly updated.</p>
+              <p>Thank you once again for joining the journey..</p>
+              <p>Regards,<br>Priyanka</p>
+          ";
       }
       else {
         $params['text'] = "Dear $donorName,\n\nThank you for your contribution.\n\nThese contributions go a long way in sustaining our operations and implementing series of initiatives all across.\nThe receipt No. ($receiptNumber) for the same is enclosed with the details of 80G exemptions and our PAN No.\n\nFor updates on our activities and new campaigns, please visit our website www.goonj.org and our FB page https://www.facebook.com/goonj.org, which are regularly updated.\n\nThank you once again for joining the journey.\n\nWith best regards,\nTeam Goonj";
 
-          $params['html'] = "
+        $params['html'] = "
               <p>Dear <strong>$donorName</strong>,</p>
               <p>Thank you for your contribution.</p>
               <p>These contributions go a long way in sustaining our operations and implementing series of initiatives all across.</p>
@@ -1390,22 +1390,22 @@ class CollectionCampService extends AutoSubscriber {
 
       // Check if title is 'Team 5000'.
       if ($contributionName === 'Team 5000') {
-        $params['text'] = "Dear $donorName,\n\nThank you for the contribution and coming on-board of Team 5000.\n\nBy joining https://goonj.org/donate/micro-team-5000 you step into this legacy of grassroots action and become an integral part of our extended family. This isn’t just about giving; it’s about becoming a vital contributor to a movement that empowers communities and amplifies the voices of the marginalised. Your committed cooperation and continued engagement fuel our sustained efforts.\n\nThe receipts ($receiptNumber) for the same is enclosed with the details of 80G exemptions and our PAN No.\n\nFor a regular update on our activities and new campaigns, please keep an eye on www.goonj.org\n\nThank you once again for joining the journey..\n\nRegards,\nPriyanka";
+        $params['text'] = "Dear $donorName,\n\nThank you for the contribution and coming on-board of Team 5000.\n\nBy joining https://goonj.org/donate/micro-team-5000 you step into this legacy of grassroots action and become an integral part of our extended family. This isn’t just about giving; it’s about becoming a vital contributor to a movement that empowers communities and amplifies the voices of the marginalised. Your committed cooperation and continued engagement fuel our sustained efforts.\n\nThe receipt No. ($receiptNumber) for the same is enclosed with the details of 80G exemptions and our PAN No.\n\nFor a regular update on our activities and new campaigns, please keep an eye on www.goonj.org and our FB page https://www.facebook.com/goonj.org, which are regularly updated.\n\nThank you once again for joining the journey..\n\nRegards,\nPriyanka";
 
         $params['html'] = "
-          <p>Dear <strong>$donorName</strong>,</p>
-          <p>Thank you for the contribution and coming on-board of Team 5000.</p>
-          <p>By joining <a href='https://goonj.org/donate/micro-team-5000'>https://goonj.org/donate/micro-team-5000</a>, you step into this legacy of grassroots action and become an integral part of our extended family. This isn’t just about giving; it’s about becoming a vital contributor to a movement that empowers communities and amplifies the voices of the marginalised. Your committed cooperation and continued engagement fuel our sustained efforts.</p>
-          <p>The receipts (<strong>$receiptNumber</strong>) for the same is enclosed with the details of 80G exemptions and our PAN No.</p>
-          <p>For a regular update on our activities and new campaigns, please keep an eye on <a href='https://www.goonj.org'>www.goonj.org</a>.</p>
-          <p>Thank you once again for joining the journey.</p>
-          <p>Regards,<br>Priyanka</p>
-      ";
+              <p>Dear <strong>$donorName</strong>,</p>
+              <p>Thank you for the contribution and coming on-board of Team 5000.</p>
+              <p>By joining <a href='https://goonj.org/donate/micro-team-5000'>https://goonj.org/donate/micro-team-5000</a>, you step into this legacy of grassroots action and become an integral part of our extended family. This isn’t just about giving; it’s about becoming a vital contributor to a movement that empowers communities and amplifies the voices of the marginalised. Your committed cooperation and continued engagement fuel our sustained efforts.</p>
+              <p>The receipt No. (<strong>$receiptNumber</strong>) for the same is enclosed with the details of 80G exemptions and our PAN No.</p>
+              <p>For a regular update on our activities and new campaigns, please keep an eye on <a href='https://www.goonj.org'>www.goonj.org</a> and our FB page <a href='https://www.facebook.com/goonj.org'>https://www.facebook.com/goonj.org</a>, which are regularly updated.</p>
+              <p>Thank you once again for joining the journey.</p>
+              <p>Regards,<br>Priyanka</p>
+       ";
       }
       else {
         $params['text'] = "Dear $donorName,\n\nThank you for your contribution.\n\nThese contributions go a long way in sustaining our operations and implementing series of initiatives all across.\nThe receipt No. ($receiptNumber) for the same is enclosed with the details of 80G exemptions and our PAN No.\n\nFor updates on our activities and new campaigns, please visit our website www.goonj.org and our FB page https://www.facebook.com/goonj.org, which are regularly updated.\n\nThank you once again for joining the journey.\n\nWith best regards,\nTeam Goonj";
 
-          $params['html'] = "
+        $params['html'] = "
               <p>Dear <strong>$donorName</strong>,</p>
               <p>Thank you for your contribution.</p>
               <p>These contributions go a long way in sustaining our operations and implementing series of initiatives all across.</p>
@@ -1512,7 +1512,7 @@ class CollectionCampService extends AutoSubscriber {
         return;
       }
 
-      if($contributionCampaignId){
+      if ($contributionCampaignId) {
         return;
       }
 
