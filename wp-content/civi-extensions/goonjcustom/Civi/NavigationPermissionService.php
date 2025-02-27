@@ -105,6 +105,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Institutes',
           'MMT - Offices',
           'MMT - Urban Visits',
+          'Contributions',
         ],
       ],
       'ho_account' => [
