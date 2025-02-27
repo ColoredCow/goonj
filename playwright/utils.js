@@ -3,8 +3,10 @@ import { faker } from '@faker-js/faker/locale/en_IN'; // Import the Indian local
 import { VolunteerRegistrationPage } from '../playwright/pages/volunteer-registration.page';
 import { SearchContactsPage } from '../playwright/pages/search-contact.page';
 import { AdminHomePage } from '../playwright/pages/admin-home.page';
-import { CollectionCampPage } from '../playwright/pages/collection-camp-registration.page'
+import { DroppingCenterPage } from '../playwright/pages/dropping-center-registration.page';
+import { CollectionCampPage } from '../playwright/pages/collection-camp-registration.page';
 import { InductedVolunteerPage } from '../playwright/pages/inducted-volunteer.page';
+
 // Helper function to generate an Indian mobile number
 const generateIndianMobileNumber = () => {
   const prefix = faker.helpers.arrayElement(['7', '8', '9']); // Indian mobile numbers start with 7, 8, or 9
@@ -22,9 +24,9 @@ export const userDetails = {
   mobileNumber: generateIndianMobileNumber(), // Generate Indian mobile number
   gender: faker.helpers.arrayElement(['Male', 'Female', 'Other']),
   streetAddress: faker.location.streetAddress(),
-  cityName: faker.location.city(),
+  cityName: faker.location.city('Delhi'),
   postalCode: faker.location.zipCode('######'), // Indian postal code format
-  state: faker.helpers.arrayElement(['Haryana', 'Delhi', 'Uttar Pradesh', 'Tamil Nadu']),
+  state: faker.helpers.arrayElement(['Haryana', 'Delhi', 'Uttar Pradesh']),
   activityInterested: faker.helpers.arrayElement(['Organise fundraising activities to support Goonj’s initiatives.', 'Hold Chuppi Todo Baithak’s to generate awareness on Menstruation']), 
   voluntarySkills: faker.helpers.arrayElement(['Marketing', 'Content Writing']), 
   // otherSkills: faker.helpers.arrayElement(['Research', 'Content Writing']),
@@ -37,13 +39,15 @@ export const userDetails = {
   comments: faker.helpers.arrayElement(['Nice initiative', 'None']),
 };
 
-  const startDate = new Date(); 
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1); // Set the start date to tomorrow
 
-  // Generate an end date within the next 2 days
-  const endDate = faker.date.soon({ days: 2, refDate: startDate }); 
+  const dayAfterTomorrow = new Date(tomorrow);
+  dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1); // Set the end date to the day after tomorrow
+
   // Format the dates as DD/MM/YYYY
-  const formattedStartDate = `${String(startDate.getDate()).padStart(2, '0')}/${String(startDate.getMonth() + 1).padStart(2, '0')}/${startDate.getFullYear()}`;
-  const formattedEndDate = `${String(endDate.getDate()).padStart(2, '0')}/${String(endDate.getMonth() + 1).padStart(2, '0')}/${endDate.getFullYear()}`;
+  const formattedStartDate = `${String(tomorrow.getDate()).padStart(2, '0')}/${String(tomorrow.getMonth() + 1).padStart(2, '0')}/${tomorrow.getFullYear()}`;
+  const formattedEndDate = `${String(dayAfterTomorrow.getDate()).padStart(2, '0')}/${String(dayAfterTomorrow.getMonth() + 1).padStart(2, '0')}/${dayAfterTomorrow.getFullYear()}`;
 
 export const collectionCampUserDetails = {
   registerAsIndividual: 'An individual.',
@@ -73,9 +77,9 @@ export async function submitCollectionCampRegistrationForm(page, userEmailAddres
   await collectionCampPage.selectState('Delhi')
   await collectionCampPage.enterPinCode(collectionCampUserDetails.postalCode);
   await collectionCampPage.enterStartDate(collectionCampUserDetails.startDate);  //  MM/DD/YYYY Format (Check your date format)
-  await collectionCampPage.enterStartTime('10:00'); 
+  await collectionCampPage.enterStartTime(collectionCampUserDetails.startTime); 
   await collectionCampPage.enterEndDate(collectionCampUserDetails.endDate);  //  MM/DD/YYYY Format (Check your date format)
-  await collectionCampPage.enterEndTime('14:00'); 
+  await collectionCampPage.enterEndTime(collectionCampUserDetails.endTime); 
   await collectionCampPage.selectPermissionLetter('1');  
   await collectionCampPage.selectPublicCollection('1');  
   await collectionCampPage.selectEngagingActivity('2'); 
@@ -85,10 +89,61 @@ export async function submitCollectionCampRegistrationForm(page, userEmailAddres
   await collectionCampPage.verifyUrlAfterFormSubmission(registrationConfirmationText);  // Replace with your success URL
 };
 
+
+export const droppingCenterUserDetails = {
+  registerAsIndividual: 'An individual.',
+  address: faker.location.streetAddress(),
+  landmarkArea: 'dwarka',
+  cityName: 'Delhi',
+  state: 'Delhi',
+  postalCode: faker.location.zipCode('110070'),
+  startDate: formattedStartDate,
+  daysAndTimings: 'Thursday 8-10am',
+  volunteerName: 'Kama Gupta-Asan',
+  contactNumber: '9376289162',
+};
+
+export async function submitDroppingCenterRegistrationForm(page, userEmailAddress, userMobileNumber, droppingCenterUserDetails) {
+  const droppingCenterPage  = new DroppingCenterPage(page);
+  const droppingCenterUrl = droppingCenterPage.getAppendedUrl('/dropping-center/');
+  const registrationConfirmationText = '/success'
+  await page.goto(droppingCenterUrl);
+  await userFormLogin(page, userEmailAddress, userMobileNumber)
+  // await droppingCenterPage.clickContinueButton()
+  await page.waitForTimeout(3000)
+  await droppingCenterPage.selectYouWishToRegisterAs('An individual');
+  await droppingCenterPage.enterLocationAreaOfCamp(droppingCenterUserDetails.address);
+  await droppingCenterPage.enterLandMarkAreaOrNearbyArea(droppingCenterUserDetails.landmarkArea);
+  await droppingCenterPage.enterCity(droppingCenterUserDetails.cityName);
+  await droppingCenterPage.selectState('Delhi')
+  await droppingCenterPage.enterPinCode(droppingCenterUserDetails.postalCode);
+  await droppingCenterPage.enterStartDate(droppingCenterUserDetails.startDate);  //  MM/DD/YYYY Format (Check your date format)
+  await droppingCenterPage.enterDaysAndTiming(droppingCenterUserDetails.daysAndTimings);
+  await droppingCenterPage.selectPermissionLetter('1');  
+  await droppingCenterPage.selectPublicCollection('1');  
+  await droppingCenterPage.selectDonationBoxMonetaryContribution('2'); 
+  await page.waitForTimeout(2000)
+  await droppingCenterPage.clickSubmitButton();
+  await page.waitForTimeout(4000)
+  await droppingCenterPage.verifyUrlAfterFormSubmission(registrationConfirmationText);  // Replace with your success URL
+};
+
+
 export async function userLogin(page) {
   const baseURL = process.env.BASE_URL_USER_SITE;
   const username = process.env.USERNAME;
   const password = process.env.PASSWORD;
+  await page.goto(baseURL);
+  await page.waitForURL(baseURL);
+  await page.fill('#user_login', username); 
+  await page.fill('#user_pass', password); 
+  await page.click('#wp-submit');
+};
+
+export async function urbanOpsUserLogin(page) {
+  const baseURL = process.env.BASE_URL_USER_SITE;
+  const username = process.env.URBAN_OPS_USER;
+  const password = process.env.URBAN_OPS_USER_PASSWORD;
   await page.goto(baseURL);
   await page.waitForURL(baseURL);
   await page.fill('#user_login', username); 
@@ -186,4 +241,5 @@ export async function  userFormLogin(page, username, password) {
     await page.fill('#phone', password); 
     await page.click('[data-test="submitButton"]');
 }
+
 
