@@ -21,6 +21,8 @@
 <script type="text/javascript">
   document.addEventListener("DOMContentLoaded", function() {
     var razorpayOptions = document.getElementById('razorpay-options');
+    var redirectURLBase =  razorpayOptions.getAttribute('data-redirect-url-base');
+
     var options = {
       key: razorpayOptions.getAttribute('data-key'),
       currency: razorpayOptions.getAttribute('data-currency'),
@@ -39,7 +41,6 @@
       options.amount = razorpayOptions.getAttribute('data-amount');
       options.order_id = razorpayOptions.getAttribute('data-order-id');
       options.handler = function(response) {
-        var redirectURLBase =  razorpayOptions.getAttribute('data-redirect-url-base');
 
         window.location.href = redirectURLBase + '/?_qf_ThankYou_display=1&qfKey=' + razorpayOptions.getAttribute('data-qf-key') + '&payment_id=' + response.razorpay_payment_id + '&order_id=' + response.razorpay_order_id;
       };
