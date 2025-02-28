@@ -67,7 +67,7 @@ function civicrm_api3_goonjcustom_feedback_dropping_center_cron($params) {
     }
   }
   catch (Exception $e) {
-    \CRM_Core_Error::debug_log_message('Error processing Dropping Center ID: ' . $droppingCenterId . ' - ' . $e->getMessage());
+    // Do Nothing
   }
   return civicrm_api3_create_success($returnValues, $params, 'Goonjcustom', 'feedback_dropping_center_cron');
 }
