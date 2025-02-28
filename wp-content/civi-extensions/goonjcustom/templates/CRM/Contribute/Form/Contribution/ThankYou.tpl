@@ -100,7 +100,7 @@
         {/if}
         {if $installments > 1}
           {crmRegion name="contribution-thankyou-recur"}
-            {ts}Installment Amount{/ts}: <strong>{$amount|crmMoney:$currency}</strong><br />
+            {ts}Amount{/ts}: <strong>{$amount|crmMoney:$currency}</strong><br />
           {/crmRegion}
         {else}
           {ts}Amount{/ts}: <strong>{$amount|crmMoney:$currency}</strong><br />
