@@ -246,16 +246,16 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
         'entity' => ['id' => $eventID],
         'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
       ],
-      // 'monetaryContribution' => [
-      //   'id' => 'monetary_contributions',
-      //   'title' => ts('Monetary Contribution'),
-      //   'active' => 1,
-      //   'module' => 'afsearchEventsMonetaryContribution',
-      //   'directive' => 'afsearch-events-monetary-contribution',
-      //   'template' => 'CRM/Goonjcustom/Tabs/Events.tpl',
-      //   'entity' => ['id' => $eventID],
-      //   'permissions' => ['goonj_chapter_admin', 'urbanops'],
-      // ],
+      'monetaryContribution' => [
+        'id' => 'monetary_contributions',
+        'title' => ts('Monetary Contribution'),
+        'active' => 1,
+        'module' => 'afsearchEventsMonetaryContribution',
+        'directive' => 'afsearch-events-monetary-contribution',
+        'template' => 'CRM/Goonjcustom/Tabs/Events.tpl',
+        'entity' => ['id' => $eventID],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+      ],
     ];
 
     foreach ($tabConfigs as $key => $config) {
