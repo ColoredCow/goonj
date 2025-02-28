@@ -95,14 +95,17 @@
           <strong> -------------------------------------------</strong><br />
           {ts}Total{/ts}: <strong>{$orderTotal|crmMoney}</strong><br />
         {else}
-          {if $totalTaxAmount}
-            {ts}Tax Amount{/ts}: <strong>{$totalTaxAmount|crmMoney}</strong><br />
-          {/if}
-          {if $installments}{ts}Installment Amount{/ts}{else}{ts}Amount{/ts}{/if}: <strong>{$amount|crmMoney:$currency}</strong><br />
+        {if $totalTaxAmount}
+          {ts}Tax Amount{/ts}: <strong>{$totalTaxAmount|crmMoney}</strong><br />
+        {/if}
+        {if $installments > 1}
+          {crmRegion name="contribution-thankyou-recur"}
+            {ts}Installment Amount{/ts}: <strong>{$amount|crmMoney:$currency}</strong><br />
+          {/crmRegion}
+        {else}
+          {ts}Amount{/ts}: <strong>{$amount|crmMoney:$currency}</strong><br />
         {/if}
 
-        {if $receive_date}
-          {ts}Date{/ts}: <strong>{$receive_date|crmDate}</strong><br />
         {/if}
         {if $trxn_id}
           {ts}Transaction #{/ts}: {$trxn_id}<br />
