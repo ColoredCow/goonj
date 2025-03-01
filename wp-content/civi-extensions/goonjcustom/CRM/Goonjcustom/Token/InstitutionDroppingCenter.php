@@ -185,7 +185,7 @@ class CRM_Goonjcustom_Token_InstitutionDroppingCenter extends AbstractTokenSubsc
 
     foreach ($volunteerIds as $volunteerId) {
       $primaryVolunteers = array_filter($volunteersArray, function ($volunteer) use ($volunteerId) {
-        return $volunteer['id'] == $volunteerId && $volunteer['phone.phone'];
+        return $volunteer['id'] == $volunteerId && $volunteer['phone.is_primary'];
       });
 
       if (!empty($primaryVolunteer)) {
