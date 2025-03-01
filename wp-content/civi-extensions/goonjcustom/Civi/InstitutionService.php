@@ -103,8 +103,9 @@ class InstitutionService extends AutoSubscriber {
     $records = $event->records;
     foreach ($records as $record) {
       $fields = $record['fields'];
-
+   
       $addressJoins = $record['joins']['Address'] ?? [];
+      $city = $addressJoins[0]['city'] ?? [];
 
       $stateProvinceId = !empty($addressJoins[0]['state_province_id'])
           ? $addressJoins[0]['state_province_id']
@@ -113,6 +114,7 @@ class InstitutionService extends AutoSubscriber {
       self::$instituteAddress = [
         'location_type_id' => 3,
         'state_province_id' => $stateProvinceId,
+        'city' => $city,
         'country_id' => 1101,
       ];
     }
@@ -145,6 +147,7 @@ class InstitutionService extends AutoSubscriber {
 
       $contactId = $contact['fields']['Institute_Registration.Institution_POC'] ?? NULL;
       $stateProvinceId = self::$instituteAddress['state_province_id'] ?? NULL;
+      $city = self::$instituteAddress['city'] ?? NULL;
 
       if (!$stateProvinceId && !$contactId) {
         return FALSE;
@@ -153,7 +156,7 @@ class InstitutionService extends AutoSubscriber {
       if ($contactId && $stateProvinceId) {
 
         $addresses = Address::get(FALSE)
-          ->addSelect('state_province_id')
+          ->addSelect('state_province_id', 'city')
           ->addWhere('contact_id', '=', $contactId)
           ->execute()->single();
 
@@ -162,6 +165,7 @@ class InstitutionService extends AutoSubscriber {
         }
 
         $updateResults = Address::update(FALSE)
+          ->addValue('city', $city)
           ->addValue('state_province_id', $stateProvinceId)
           ->addWhere('contact_id', '=', $contactId)
           ->execute();
@@ -349,7 +353,6 @@ public static function assignChapterGroupToContacts(string $op, string $objectNa
     if ($op !== 'create' || $objectName !== 'Address' || self::$organizationId !== $objectRef->contact_id || !$objectRef->is_primary) {
       return FALSE;
     }
-
     $stateId = $objectRef->state_province_id;
 
     $officesFound = Contact::get(FALSE)
@@ -360,14 +363,12 @@ public static function assignChapterGroupToContacts(string $op, string $objectNa
       ->execute();
 
     $stateOffice = $officesFound->first();
-
     // If no state office is found, assign the fallback state office.
     if (!$stateOffice) {
       $stateOffice = self::getFallbackOffice();
     }
 
     $stateOfficeId = $stateOffice['id'];
-
     if ($stateOfficeId & self::$organizationId) {
       Organization::update(FALSE)
         ->addValue('Review.Goonj_Office', $stateOfficeId)
