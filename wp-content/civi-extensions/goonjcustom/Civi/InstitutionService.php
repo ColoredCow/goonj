@@ -481,8 +481,8 @@ public static function assignChapterGroupToContacts(string $op, string $objectNa
       return;
     }
 
-    $typeOfInstitution = $organization['Institute_Registration.Type_of_Institution:label'];
-    $categoryOfInstitution = $organization['Category_of_Institution.Education_Institute:label'];
+    $typeOfInstitution = $organization['Institute_Registration.Type_of_Institution:name'] ?? '';
+    $categoryOfInstitution = $organization['Category_Of_Institution.Education_Institute:name'] ?? '';
 
     // Define the default type-to-relationship mapping.
     $typeToRelationshipMap = [
@@ -490,21 +490,18 @@ public static function assignChapterGroupToContacts(string $op, string $objectNa
       'Foundation'   => 'Default Coordinator of',
       'Association' => 'Default Coordinator of',
       'Other'       => 'Default Coordinator of',
+      'Educational_Institute' => [
+        'School' => 'School Coordinator of',
+        'Collage_University' => 'College/University Coordinator of',
+        'Other' => 'Default Coordinator of',
+      ],
     ];
-
-    if ($typeOfInstitution === 'Educational Institute') {
-      if ($categoryOfInstitution === 'School') {
-        return 'School Coordinator of';
-      }
-      elseif ($categoryOfInstitution === 'College/University') {
-        return 'College Coordinator of';
-      }
-      return 'Default Coordinator of';
+  
+    if (is_array($typeToRelationshipMap[$typeOfInstitution]) && $categoryOfInstitution) {
+      return $typeToRelationshipMap[$typeOfInstitution][$categoryOfInstitution] ?? 'Default Coordinator of';
     }
-
-    $firstWord = strtok($typeOfInstitution, ' ');
-    // Return the mapped relationship type, or default if not found.
-    return $typeToRelationshipMap[$firstWord] ?? 'Default Coordinator of';
+  
+    return $typeToRelationshipMap[$typeOfInstitution] ?? 'Default Coordinator of';
   }
 
   /**
