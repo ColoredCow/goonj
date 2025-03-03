@@ -60,6 +60,7 @@ class CollectionCampService extends AutoSubscriber {
         ['linkCollectionCampToContact'],
         ['createActivityForCollectionCamp'],
         ['updateCampStatusAfterAuth'],
+        ['test'],
       ],
       '&hook_civicrm_custom' => [
       ['setOfficeDetails'],
@@ -83,6 +84,31 @@ class CollectionCampService extends AutoSubscriber {
       '&hook_civicrm_validateForm' => 'validateCheckNumber',
 
     ];
+  }
+
+  public static function test($op, $objectName, &$params) {
+    error_log("op: " . print_r($op, TRUE));
+    error_log("objectName: " . print_r($objectName, TRUE));
+    error_log("params: " . print_r($params, TRUE));
+    
+
+    if ($objectName === 'Contribution') {
+      if (!empty($params['receive_date'])) {
+
+
+        error_log("op: " . print_r($op, TRUE));
+        error_log("objectName: " . print_r($objectName, TRUE));
+        error_log("params: " . print_r($params, TRUE));
+        
+          // Format date as YYYYMMDD
+          $dateFormatted = date('Ymd', strtotime($params['receive_date']));
+
+          // Custom invoice number format
+          $params['invoice_id'] = "B/-" . $dateFormatted;
+
+          error_log("Custom Invoice Number Set: " . $params['invoice_id']);
+      }
+  }
   }
 
   /**
