@@ -85,14 +85,10 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       $fields = $record['fields'];
 
       self::$droppingCenterAddress = [
-        'location_type_id' => 3,
         'state_province_id' => $fields['Institution_Dropping_Center_Intent.State'],
       // India.
         'country_id' => 1101,
-        'street_address' => $fields['Institution_Dropping_Center_Intent.Dropping_Center_Address'],
         'city' => $fields['Institution_Dropping_Center_Intent.District_City'],
-        'postal_code' => $fields['Institution_Dropping_Center_Intent.Postal_Code'],
-        'is_primary' => 1,
       ];
     }
   }
@@ -363,11 +359,12 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
   public static function assignCoordinatorByRelationshipType($stateOfficeId, $registrationType, $institutionDroppingCenterId) {
     // Define the mapping of registration categories to relationship type names.
     $relationshipTypeMap = [
-      'Corporate' => 'Corporate Coordinator of',
+      'Corporate'    => 'Corporate Coordinator of',
       'School' => 'School Coordinator of',
-      'College' => 'College Coordinator of',
+      'Foundation'   => 'Default Coordinator of',
+      'College_University' => 'College/University Coordinator of',
       'Associations' => 'Default Coordinator of',
-      'Others' => 'Default Coordinator of',
+      'Other' => 'Default Coordinator of',
     ];
 
     $registrationCategorySelection = $registrationType['Institution_Dropping_Center_Intent.You_wish_to_register_as:name'];

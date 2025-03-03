@@ -183,14 +183,10 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       $fields = $record['fields'];
 
       self::$collectionCampAddress = [
-        'location_type_id' => 3,
         'state_province_id' => $fields['Institution_Collection_Camp_Intent.State'],
       // India.
         'country_id' => 1101,
-        'street_address' => $fields['Institution_Collection_Camp_Intent.Collection_Camp_Address'],
         'city' => $fields['Institution_Collection_Camp_Intent.District_City'],
-        'postal_code' => $fields['Institution_Collection_Camp_Intent.Postal_Code'],
-        'is_primary' => 1,
       ];
     }
   }
@@ -924,8 +920,9 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     $relationshipTypeMap = [
       'Corporate' => 'Corporate Coordinator of',
       'School' => 'School Coordinator of',
-      'College_University' => 'College Coordinator of',
+      'College_University' => 'College/University Coordinator of',
       'Association' => 'Default Coordinator of',
+      'Foundation'   => 'Default Coordinator of',
       'Other' => 'Default Coordinator of',
     ];
 
