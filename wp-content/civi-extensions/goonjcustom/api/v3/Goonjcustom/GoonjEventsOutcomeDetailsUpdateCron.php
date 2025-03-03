@@ -41,7 +41,7 @@ function civicrm_api3_goonjcustom_goonj_events_outcome_details_update_cron($para
   $endOfDay = $today->setTime(23, 59, 59)->format('Y-m-d H:i:s');
 
   $events = Event::get(TRUE)
-    ->addSelect('Goonj_Events_Feedback.Outcome_Email_Sent', 'end_date', 'start_date')
+    ->addSelect('Goonj_Events_Feedback.Outcome_Email_Sent', 'end_date', 'start_date', 'registration_start_date', 'registration_end_date')
     ->addWhere('Goonj_Events_Outcome.Outcome_Email_Sent', '=', TRUE)
     ->addWhere('end_date', '<=', $endOfDay)
     ->addWhere('end_date', '>=', $startOfDay)
@@ -71,7 +71,7 @@ function civicrm_api3_goonjcustom_goonj_events_outcome_details_update_cron($para
       ->setLimit(25)
       ->execute();
     // Extract start and end date of the event.
-    $eventStartDate = $event['start_date'];
+    $eventStartDate = $event['registration_start_date'];
     $eventEndDate = $event['end_date'];
 
     // Count unique participants.
@@ -80,9 +80,9 @@ function civicrm_api3_goonjcustom_goonj_events_outcome_details_update_cron($para
 
     // Count contacts created between event start and end date.
     $filteredContacts = array_filter($participantsArray, function ($participant) use ($eventStartDate, $eventEndDate) {
-      return isset($participant['created_date']) &&
-      $participant['created_date'] >= $eventStartDate &&
-      $participant['created_date'] <= $eventEndDate;
+      return isset($participant['contact_id.created_date']) &&
+      $participant['contact_id.created_date'] >= $eventStartDate &&
+      $participant['contact_id.created_date'] <= $eventEndDate;
     });
 
     $countCreatedDuringEvent = count($filteredContacts);
