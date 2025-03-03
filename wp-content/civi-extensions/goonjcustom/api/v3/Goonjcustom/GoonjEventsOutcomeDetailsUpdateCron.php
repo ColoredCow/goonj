@@ -43,32 +43,26 @@ function civicrm_api3_goonjcustom_goonj_events_outcome_details_update_cron($para
   $events = Event::get(TRUE)
     ->addSelect('Goonj_Events_Feedback.Outcome_Email_Sent', 'end_date', 'start_date')
     ->addWhere('Goonj_Events_Outcome.Outcome_Email_Sent', '=', TRUE)
+    ->addWhere('end_date', '<=', $endOfDay)
+    ->addWhere('end_date', '>=', $startOfDay)
     ->addWhere('event_type_id:name', '!=', 'Rural Planned Visit')
     ->setLimit(25)
     ->execute();
 
   foreach ($events as $event) {
-    \Civi::log()->info('Event Stats', [
-      'Event ID' => $event['id'],
-    ]);
     $participants = Participant::get(TRUE)
       ->addSelect('contact_id', 'contact_id.created_date')
       ->addWhere('event_id', '=', $event['id'])
       ->addWhere('status_id:name', '=', 'Attended')
       ->execute();
     $participantsArray = $participants->getArrayCopy();
-    \Civi::log()->info('participantsArray', [
-      'participantsArray' => $participantsArray,
-    ]);
+
     $contributions = Contribution::get(TRUE)
       ->addSelect('financial_type_id', 'total_amount', 'contact_id')
       ->addWhere('Contribution_Details.Events', '=', $event['id'])
       ->addWhere('is_test', '=', FALSE)
       ->addWhere('financial_type_id:name', '=', 'Donation')
       ->execute();
-    \Civi::log()->info('contributions', [
-      'contributions' => $contributions,
-    ]);
     $activities = Activity::get(TRUE)
       ->addSelect('source_contact_id', 'source_contact_id.created_date')
       ->addWhere('Material_Contribution.Event', '=', $event['id'])
