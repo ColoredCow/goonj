@@ -132,6 +132,10 @@ class NavigationPermissionService extends AutoSubscriber {
           'Volunteers',
           'Events',
           'Offices',
+          'MMT - Individuals',
+          'MMT - Institutes',
+          'MMT - Offices',
+          'MMT - Urban Visits',
         ],
       ],
     ];
