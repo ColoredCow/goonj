@@ -2,7 +2,7 @@ const puppeteer = require('puppeteer');
 
 (async () => {
     const browser = await puppeteer.launch({
-        executablePath: '/home/apache/.cache/puppeteer/chrome/linux-129.0.6668.89/chrome-linux64/chrome',
+        // executablePath: '/home/apache/.cache/puppeteer/chrome/linux-129.0.6668.89/chrome-linux64/chrome',
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
 

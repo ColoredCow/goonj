@@ -99,6 +99,14 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Urban Visits',
         ],
       ],
+      'urban_ops_admin' => [
+        'hide_menus' => [
+          'MMT - Individuals',
+          'MMT - Institutes',
+          'MMT - Offices',
+          'MMT - Urban Visits',
+        ],
+      ],
       'urbanops' => [
         'hide_menus' => [
           'MMT - Individuals',
