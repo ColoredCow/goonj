@@ -63,6 +63,7 @@ function civicrm_api3_goonjcustom_update_scheduled_time_cron($params) {
     $feedbackTime = $twoPmDateTime->format('Y-m-d H:i:s');
 
     // Update scheduled run time for logistics and volunteer feedback.
+    updateJobScheduledTime('institution_collection_camp_cron', $logisticsTime);
     updateJobScheduledTime('collection_camp_cron', $logisticsTime);
     updateJobScheduledTime('volunteer_feedback_collection_camp_cron', $feedbackTime);
 
