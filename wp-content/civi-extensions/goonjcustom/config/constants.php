@@ -30,7 +30,7 @@ return [
   'ML' => 'MGL',
   'MZ' => 'MZR',
   'NL' => 'NLD',
-  'OD' => 'ORS',
+  'OR' => 'ORS',
   'PY' => 'PUD',
   'PB' => 'PNB',
   'RJ' => 'RAJ',
