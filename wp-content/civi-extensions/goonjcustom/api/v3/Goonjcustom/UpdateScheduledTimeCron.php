@@ -35,31 +35,44 @@ function civicrm_api3_goonjcustom_update_scheduled_time_cron($params) {
   $returnValues = [];
   try {
     $currentDate = new DateTime();
-    // Set time to 10:00 AM.
-    $currentDate->setTime(10, 0, 0);
-    $todayDateTimeForLogistics = $currentDate->format('Y-m-d H:i:s');
+    // Get current hour.
+    $currentTime = (int) $currentDate->format('H');
 
-    $twoPmDateTime = clone $currentDate;
-    // Set time to 2:00 PM.
-    $twoPmDateTime->setTime(14, 0, 0);
-    $todayDateTimeForFeedback = $twoPmDateTime->format('Y-m-d H:i:s');
-
-
-    // Set time to 9:00 AM.
+    // Set time to 9:00 AM (next day if past 9 AM).
     $nineAmDateTime = clone $currentDate;
     $nineAmDateTime->setTime(9, 0, 0);
-    $todayDateTimeForVisit = $nineAmDateTime->format('Y-m-d H:i:s');
+    if ($currentTime >= 9) {
+      $nineAmDateTime->modify('+1 day');
+    }
+    $visitTime = $nineAmDateTime->format('Y-m-d H:i:s');
+
+    // Set time to 10:00 AM (next day if past 10 AM).
+    $tenAmDateTime = clone $currentDate;
+    $tenAmDateTime->setTime(10, 0, 0);
+    if ($currentTime >= 10) {
+      $tenAmDateTime->modify('+1 day');
+    }
+    $logisticsTime = $tenAmDateTime->format('Y-m-d H:i:s');
+
+    // Set time to 2:00 PM (next day if past 2 PM).
+    $twoPmDateTime = clone $currentDate;
+    $twoPmDateTime->setTime(14, 0, 0);
+    if ($currentTime >= 14) {
+      $twoPmDateTime->modify('+1 day');
+    }
+    $feedbackTime = $twoPmDateTime->format('Y-m-d H:i:s');
 
     // Update scheduled run time for logistics and volunteer feedback.
-    updateJobScheduledTime('collection_camp_cron', $todayDateTimeForLogistics);
-    updateJobScheduledTime('volunteer_feedback_collection_camp_cron', $todayDateTimeForFeedback);
+    updateJobScheduledTime('institution_collection_camp_cron', $logisticsTime);
+    updateJobScheduledTime('collection_camp_cron', $logisticsTime);
+    updateJobScheduledTime('volunteer_feedback_collection_camp_cron', $feedbackTime);
 
     // Update scheduled run time for urban reminder visit.
-    updateJobScheduledTime('urban_reminder_email_to_coord_person_cron', $todayDateTimeForVisit);
-    updateJobScheduledTime('urban_reminder_email_to_external_coord_cron', $todayDateTimeForVisit);
+    updateJobScheduledTime('urban_reminder_email_to_coord_person_cron', $visitTime);
+    updateJobScheduledTime('urban_reminder_email_to_external_coord_cron', $visitTime);
 
     // Update scheduled run time for urban feedback form.
-    updateJobScheduledTime('urban_feedback_cron', $todayDateTimeForLogistics);
+    updateJobScheduledTime('urban_feedback_cron', $logisticsTime);
 
   }
   catch (Exception $e) {
