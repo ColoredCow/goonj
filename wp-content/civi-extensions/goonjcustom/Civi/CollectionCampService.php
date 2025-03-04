@@ -101,18 +101,20 @@ class CollectionCampService extends AutoSubscriber {
       }
 
       $contribution = Contribution::get(FALSE)
-        ->addSelect('contribution_status_id:name')
+        ->addSelect('contribution_status_id:name', 'invoice_number')
         ->addWhere('id', '=', $contributionId)
         ->execute()->first();
 
-      $contributionStatus = $contribution['contribution_status_id:name'];
-      error_log('contributionStatus: ' . print_r($contributionStatus, TRUE));
-
-      if ($contributionStatus !== 'Completed') {
+      if (!$contribution) {
         return;
       }
 
-      if (!empty($objectRef->invoice_number)) {
+      $contributionStatus = $contribution['contribution_status_id:name'];
+      $existingInvoiceNumber = $contribution['invoice_number'];
+
+      error_log('contributionStatus: ' . print_r($contributionStatus, TRUE));
+
+      if ($contributionStatus !== 'Completed' || !empty($existingInvoiceNumber)) {
         return;
       }
 
@@ -124,7 +126,6 @@ class CollectionCampService extends AutoSubscriber {
         ->execute();
 
       $invoiceNumber = NULL;
-
       // Loop through contributions to find the first non-empty invoice_number.
       foreach ($contributions as $contribution) {
         if (!empty($contribution['invoice_number'])) {
@@ -137,7 +138,7 @@ class CollectionCampService extends AutoSubscriber {
       error_log('invoiceNumber: ' . print_r($invoiceNumber, TRUE));
 
       if (!$invoiceNumber) {
-        return NULL;
+        return;
       }
 
       // Extract number from invoice number.
@@ -147,21 +148,21 @@ class CollectionCampService extends AutoSubscriber {
       error_log('numberOnly: ' . print_r($numberOnly, TRUE));
 
       if ($numberOnly === NULL) {
-        return NULL;
+        return;
       }
 
       // Increment the number.
       $increaseNumber = (int) $numberOnly + 1;
       $invoicePrefix = 'GNJCRM/24-25/';
-      error_log('increaseNumber: ' . print_r($increaseNumber, TRUE));
-
       $newInvoiceNumber = $invoicePrefix . $increaseNumber;
 
-      $results = Contribution::update(FALSE)
+      error_log('increaseNumber: ' . print_r($increaseNumber, TRUE));
+
+      // Update contribution with new invoice number.
+      Contribution::update(FALSE)
         ->addValue('invoice_number', $newInvoiceNumber)
         ->addWhere('id', '=', $contributionId)
         ->execute();
-
     }
     catch (\Exception $e) {
       \Civi::log()->error("Exception occurred in generateInvoiceNumber.", [
