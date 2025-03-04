@@ -1658,7 +1658,6 @@ class CollectionCampService extends AutoSubscriber {
         ->addClause('OR', ['is_test', '=', TRUE], ['is_test', '=', FALSE])
         ->addWhere('contribution_status_id:label', '=', 'Completed')
         ->addOrderBy('id', 'DESC')
-        ->setLimit(25)
         ->execute();
 
       $invoiceNumber = NULL;
