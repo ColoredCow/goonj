@@ -5,6 +5,7 @@ import { SearchContactsPage } from '../playwright/pages/search-contact.page';
 import { AdminHomePage } from '../playwright/pages/admin-home.page';
 import { DroppingCenterPage } from '../playwright/pages/dropping-center-registration.page';
 import { CollectionCampPage } from '../playwright/pages/collection-camp-registration.page';
+import { InstituteRegistrationPage } from '../playwright/pages/institute-registration.page';
 import { InductedVolunteerPage } from '../playwright/pages/inducted-volunteer.page';
 
 // Helper function to generate an Indian mobile number
@@ -41,10 +42,8 @@ export const userDetails = {
 
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1); // Set the start date to tomorrow
-
   const dayAfterTomorrow = new Date(tomorrow);
   dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1); // Set the end date to the day after tomorrow
-
   // Format the dates as DD/MM/YYYY
   const formattedStartDate = `${String(tomorrow.getDate()).padStart(2, '0')}/${String(tomorrow.getMonth() + 1).padStart(2, '0')}/${tomorrow.getFullYear()}`;
   const formattedEndDate = `${String(dayAfterTomorrow.getDate()).padStart(2, '0')}/${String(dayAfterTomorrow.getMonth() + 1).padStart(2, '0')}/${dayAfterTomorrow.getFullYear()}`;
@@ -242,4 +241,55 @@ export async function  userFormLogin(page, username, password) {
     await page.click('[data-test="submitButton"]');
 }
 
+export const instituteRegistrationDetails = {
+  instituteType: faker.helpers.arrayElement(['Educational Institute']),
+  instituteCategory: faker.helpers.arrayElement(['School']),
+  organizationName: faker.helpers.arrayElement(['Taj Hotels', 'Fortis Hospital']),
+  legalName: 'Hospitality sector',
+  branchName: 'delhi branch',
+  departmentName: 'finance',
+  streetAddress: faker.location.streetAddress(),
+  country: 'India',
+  state: faker.helpers.arrayElement(['Delhi']),
+  cityName: faker.location.city('Delhi'),
+  postalCode: faker.location.zipCode('######'), // Indian postal code format
+  instituteEmail: faker.internet.email(),
+  instituteContactNumber: generateIndianMobileNumber(),
+  instituteExtension: '3434',
+  firstName: faker.person.firstName(),
+  lastName: faker.person.lastName(),
+  contactEmail: faker.internet.email(),
+  contactPhoneNumber: generateIndianMobileNumber(), // Generate Indian mobile number
+  contactDesignation: 'Executive',
+};
 
+export async function submitInstituteRegistrationForm(page, instituteRegistrationDetails) {
+  const instituteRegistrationPage = new InstituteRegistrationPage(page);
+  const instituteUrl = instituteRegistrationPage.getAppendedUrl('/institute-registration/sign-up/');
+  const registrationConfirmationText = 'institute-registration/success/'
+  await page.goto(instituteUrl);
+  await instituteRegistrationPage.selectInstituteType(instituteRegistrationDetails.instituteType);
+  await page.waitForTimeout(2000);
+  await instituteRegistrationPage.selectInstituteCategory(instituteRegistrationDetails.instituteCategory);
+  await instituteRegistrationPage.enterOrganizationName(instituteRegistrationDetails.organizationName);
+  await instituteRegistrationPage.enterInstituteLegalName(instituteRegistrationDetails.legalName);
+  await instituteRegistrationPage.enterInstituteBranchName(instituteRegistrationDetails.branchName);
+  await instituteRegistrationPage.enterInstituteDepartmentName(instituteRegistrationDetails.departmentName);
+  await instituteRegistrationPage.enterStreetAddress(instituteRegistrationDetails.streetAddress);
+  await instituteRegistrationPage.selectCountry(instituteRegistrationDetails.country);
+  await instituteRegistrationPage.enterCityName(instituteRegistrationDetails.cityName);
+  await instituteRegistrationPage.enterPostalCode(instituteRegistrationDetails.postalCode);
+  await instituteRegistrationPage.selectState(instituteRegistrationDetails.state);
+  await instituteRegistrationPage.enterContactNumber(instituteRegistrationDetails.instituteContactNumber);
+  await instituteRegistrationPage.enterInstituteEmail(instituteRegistrationDetails.instituteEmail)
+  await instituteRegistrationPage.enterInstituteExtension(instituteRegistrationDetails.instituteExtension)
+  await instituteRegistrationPage.enterFirstName(instituteRegistrationDetails.firstName);
+  await page.waitForTimeout(200);
+  await instituteRegistrationPage.enterLastName(instituteRegistrationDetails.lastName);
+  await instituteRegistrationPage.enterContactEmail(instituteRegistrationDetails.contactEmail);
+  await instituteRegistrationPage.enterPhoneNumber(instituteRegistrationDetails.contactPhoneNumber);
+  await instituteRegistrationPage.enterDesignationField(instituteRegistrationDetails.contactDesignation);
+  await instituteRegistrationPage.clickSubmitButton();
+  await page.waitForTimeout(6000); // added wait as page was taking time to load
+  await instituteRegistrationPage.verifyUrlAfterFormSubmission(registrationConfirmationText)
+};
