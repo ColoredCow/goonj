@@ -54,6 +54,7 @@ class CollectionCampService extends AutoSubscriber {
       ['assignChapterGroupToIndividualForContribution'],
       ['updateCampaignForCollectionSourceContribution'],
       ['generateInvoiceIdForContribution'],
+      ['generateInvoiceNumber'],
       ],
       '&hook_civicrm_pre' => [
         ['generateCollectionCampQr'],
@@ -83,6 +84,50 @@ class CollectionCampService extends AutoSubscriber {
       '&hook_civicrm_validateForm' => 'validateCheckNumber',
 
     ];
+  }
+
+  /**
+   *
+   */
+  public static function generateInvoiceNumber(string $op, string $objectName, int $objectId, &$objectRef) {
+    if ($objectName !== 'Contribution' || !$objectRef->id) {
+      return;
+    }
+
+    try {
+      $contributionId = $objectRef->id;
+      if (!$contributionId) {
+        return;
+      }
+
+      $contribution = Contribution::get(FALSE)
+        ->addSelect('contribution_status_id:name')
+        ->addWhere('id', '=', $contributionId)
+        ->execute()->first();
+
+      $contributionStatus = $contribution['contribution_status_id:name'];
+      error_log('contributionStatus: ' . print_r($contributionStatus, TRUE));
+
+      if ($contributionStatus !== 'Completed') {
+        return;
+      }
+
+      if (!empty($objectRef->invoice_number)) {
+        return;
+      }
+
+      $results = Contribution::update(FALSE)
+        ->addValue('invoice_number', 4)
+        ->addWhere('id', '=', $contributionId)
+        ->execute();
+
+    }
+    catch (\Exception $e) {
+      \Civi::log()->error("Exception occurred in generateInvoiceNumber.", [
+        'message' => $e->getMessage(),
+        'trace' => $e->getTraceAsString(),
+      ]);
+    }
   }
 
   /**
