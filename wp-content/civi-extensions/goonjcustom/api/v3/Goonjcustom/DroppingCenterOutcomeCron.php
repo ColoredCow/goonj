@@ -16,7 +16,7 @@ function civicrm_api3_goonjcustom_dropping_center_outcome_cron($params) {
   $cashContributionById = [];
   $productSaleAmountById = [];
 
-  $droppingCenterMetas = EckEntity::get('Dropping_Center_Meta', TRUE)
+  $droppingCenterMetas = EckEntity::get('Dropping_Center_Meta', FALSE)
     ->addSelect('Donation.Cash_Contribution', 'Donation.Product_Sale_Amount_GBG_', 'Dropping_Center_Meta.Dropping_Center')
     ->addClause('OR', ['Donation.Cash_Contribution', 'IS NOT EMPTY'], ['Donation.Product_Sale_Amount_GBG_', 'IS NOT EMPTY'])
     ->execute();
@@ -27,7 +27,7 @@ function civicrm_api3_goonjcustom_dropping_center_outcome_cron($params) {
     $productSaleAmountById[$id] = ($productSaleAmountById[$id] ?? 0) + (float) ($center['Donation.Product_Sale_Amount_GBG_'] ?? 0);
   }
 
-  $vehicleDispatches = EckEntity::get('Collection_Source_Vehicle_Dispatch', TRUE)
+  $vehicleDispatches = EckEntity::get('Collection_Source_Vehicle_Dispatch', FALSE)
     ->addSelect('Camp_Vehicle_Dispatch.Collection_Camp')
     ->addWhere('Camp_Vehicle_Dispatch.Collection_Camp', 'IS NOT NULL')
     ->execute();
@@ -36,7 +36,7 @@ function civicrm_api3_goonjcustom_dropping_center_outcome_cron($params) {
 
   $vehicleDispatchCount = array_count_values(array_column($vehicleDispatchArray, 'Camp_Vehicle_Dispatch.Collection_Camp'));
 
-  $activities = Activity::get(TRUE)
+  $activities = Activity::get(FALSE)
     ->addSelect('Material_Contribution.Dropping_Center')
     ->addWhere('activity_type_id:name', '=', 'Material Contribution')
     ->addWhere('Material_Contribution.Dropping_Center', 'IS NOT NULL')
@@ -46,7 +46,7 @@ function civicrm_api3_goonjcustom_dropping_center_outcome_cron($params) {
 
   $totalFootfall = array_count_values(array_column($activitiesArray, 'Material_Contribution.Dropping_Center'));
 
-  $bagData = EckEntity::get('Collection_Source_Vehicle_Dispatch', TRUE)
+  $bagData = EckEntity::get('Collection_Source_Vehicle_Dispatch', FALSE)
     ->addSelect('Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office', 'Camp_Vehicle_Dispatch.Collection_Camp')
     ->addWhere('Camp_Vehicle_Dispatch.Collection_Camp', 'IS NOT NULL')
     ->execute();
@@ -62,7 +62,7 @@ function civicrm_api3_goonjcustom_dropping_center_outcome_cron($params) {
    */
   function updateDroppingCenterMetric($metricName, $data) {
     foreach ($data as $id => $value) {
-      EckEntity::update('Collection_Camp', TRUE)
+      EckEntity::update('Collection_Camp', FALSE)
         ->addValue("Dropping_Center_Outcome.$metricName", max($value, 0))
         ->addWhere('id', '=', $id)
         ->addWhere('subtype:name', '=', 'Dropping_Center')
