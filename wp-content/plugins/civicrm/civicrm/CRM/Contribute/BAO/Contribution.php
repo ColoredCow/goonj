@@ -4525,48 +4525,8 @@ INNER JOIN civicrm_activity ON civicrm_activity_contact.activity_id = civicrm_ac
    */
   public static function getInvoiceNumber(int $contributionID): ?string {
     $invoicePrefix = Civi::settings()->get('invoice_prefix');
-
-    $contributions = Contribution::get(FALSE)
-        ->addSelect('invoice_number')
-        ->addClause('OR', ['is_test', '=', TRUE], ['is_test', '=', FALSE])
-        ->addOrderBy('id', 'DESC')
-        ->setLimit(25)
-        ->execute();
-
-
-    $invoiceNumber = NULL;
-
-    // Loop through contributions to find the first non-empty invoice_number
-    foreach ($contributions as $contribution) {
-        if (!empty($contribution['invoice_number'])) {
-            $invoiceNumber = $contribution['invoice_number'];
-            break; // Stop after finding the first valid invoice number
-        }
-    }
-
-    error_log('invoiceNumber: ' . print_r($invoiceNumber, TRUE));
-
-    if (!$invoiceNumber) {
-        return NULL;
-    }
-
-    // Extract number from invoice number
-    preg_match('/(\d+)$/', $invoiceNumber, $matches);
-    $numberOnly = $matches[1] ?? NULL;
-    
-    error_log('numberOnly: ' . print_r($numberOnly, TRUE));
-
-    if ($numberOnly === NULL) {
-        return NULL;
-    }
-
-    // Increment the number
-    $increaseNumber = (int) $numberOnly + 1;
-    error_log('increaseNumber: ' . print_r($increaseNumber, TRUE));
-
-    return $invoicePrefix ? $invoicePrefix . $increaseNumber : NULL;
-}
-
+    return $invoicePrefix ? $invoicePrefix . $contributionID : NULL;
+  }
 
   /**
    * Load the values needed for the event message.
