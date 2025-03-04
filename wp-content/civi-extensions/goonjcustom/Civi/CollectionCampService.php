@@ -54,6 +54,7 @@ class CollectionCampService extends AutoSubscriber {
       ['assignChapterGroupToIndividualForContribution'],
       ['updateCampaignForCollectionSourceContribution'],
       ['generateInvoiceIdForContribution'],
+      ['generateInvoiceNumber'],
       ],
       '&hook_civicrm_pre' => [
         ['generateCollectionCampQr'],
@@ -1617,6 +1618,85 @@ class CollectionCampService extends AutoSubscriber {
                 ");
         }
       }
+    }
+  }
+
+  /**
+   *
+   */
+  public static function generateInvoiceNumber(string $op, string $objectName, int $objectId, &$objectRef) {
+    if ($objectName !== 'Contribution' || !$objectRef->id) {
+      return;
+    }
+
+    try {
+      $contributionId = $objectRef->id;
+      if (!$contributionId) {
+        return;
+      }
+
+      $contribution = Contribution::get(FALSE)
+        ->addSelect('contribution_status_id:name', 'invoice_number')
+        ->addWhere('id', '=', $contributionId)
+        ->execute()->first();
+
+      if (!$contribution) {
+        return;
+      }
+
+      $contributionStatus = $contribution['contribution_status_id:name'];
+      $existingInvoiceNumber = $contribution['invoice_number'];
+
+      if ($contributionStatus !== 'Completed' || !empty($existingInvoiceNumber)) {
+        return;
+      }
+
+      $contributions = Contribution::get(FALSE)
+        ->addSelect('invoice_number')
+        ->addClause('OR', ['is_test', '=', TRUE], ['is_test', '=', FALSE])
+        ->addWhere('contribution_status_id:label', '=', 'Completed')
+        ->addOrderBy('id', 'DESC')
+        ->execute();
+
+      $invoiceNumber = NULL;
+      // Loop through contributions to find the first non-empty invoice_number.
+      foreach ($contributions as $contribution) {
+        if (!empty($contribution['invoice_number'])) {
+          $invoiceNumber = $contribution['invoice_number'];
+          // Stop after finding the first valid invoice number.
+          break;
+        }
+      }
+
+      if (!$invoiceNumber) {
+        return;
+      }
+
+      // Extract number from invoice number.
+      preg_match('/(\d+)$/', $invoiceNumber, $matches);
+      $numberOnly = $matches[1] ?? NULL;
+
+      if ($numberOnly === NULL) {
+        return;
+      }
+
+      // Increment the number.
+      $increaseNumber = (int) $numberOnly + 1;
+      $invoicePrefix = 'GNJCRM/24-25/';
+      $newInvoiceNumber = $invoicePrefix . $increaseNumber;
+
+      // Update contribution with new invoice number.
+      Contribution::update(FALSE)
+        ->addValue('invoice_number', $newInvoiceNumber)
+        ->addWhere('id', '=', $contributionId)
+        ->execute();
+
+    }
+    catch (\Exception $e) {
+      \Civi::log()->error("Exception occurred in generateInvoiceNumber.", [
+        'message' => $e->getMessage(),
+        'trace' => $e->getTraceAsString(),
+      ]);
     }
   }
 
