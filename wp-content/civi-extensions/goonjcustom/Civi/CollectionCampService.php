@@ -1691,8 +1691,6 @@ class CollectionCampService extends AutoSubscriber {
         ->addWhere('id', '=', $contributionId)
         ->execute();
 
-      eror_log('Update sucessfully');
-
     }
     catch (\Exception $e) {
       \Civi::log()->error("Exception occurred in generateInvoiceNumber.", [
