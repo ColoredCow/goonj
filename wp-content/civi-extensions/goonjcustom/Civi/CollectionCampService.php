@@ -1647,8 +1647,6 @@ class CollectionCampService extends AutoSubscriber {
       $contributionStatus = $contribution['contribution_status_id:name'];
       $existingInvoiceNumber = $contribution['invoice_number'];
 
-      error_log('contributionStatus: ' . print_r($contributionStatus, TRUE));
-
       if ($contributionStatus !== 'Completed' || !empty($existingInvoiceNumber)) {
         return;
       }
@@ -1670,8 +1668,6 @@ class CollectionCampService extends AutoSubscriber {
         }
       }
 
-      error_log('invoiceNumber: ' . print_r($invoiceNumber, TRUE));
-
       if (!$invoiceNumber) {
         return;
       }
@@ -1679,8 +1675,6 @@ class CollectionCampService extends AutoSubscriber {
       // Extract number from invoice number.
       preg_match('/(\d+)$/', $invoiceNumber, $matches);
       $numberOnly = $matches[1] ?? NULL;
-
-      error_log('numberOnly: ' . print_r($numberOnly, TRUE));
 
       if ($numberOnly === NULL) {
         return;
@@ -1691,13 +1685,14 @@ class CollectionCampService extends AutoSubscriber {
       $invoicePrefix = 'GNJCRM/24-25/';
       $newInvoiceNumber = $invoicePrefix . $increaseNumber;
 
-      error_log('increaseNumber: ' . print_r($increaseNumber, TRUE));
-
       // Update contribution with new invoice number.
       Contribution::update(FALSE)
         ->addValue('invoice_number', $newInvoiceNumber)
         ->addWhere('id', '=', $contributionId)
         ->execute();
+
+      eror_log('Update sucessfully');
+
     }
     catch (\Exception $e) {
       \Civi::log()->error("Exception occurred in generateInvoiceNumber.", [
