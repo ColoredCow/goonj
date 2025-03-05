@@ -251,7 +251,7 @@ export const instituteRegistrationDetails = {
   streetAddress: faker.location.streetAddress(),
   country: 'India',
   state: faker.helpers.arrayElement(['Delhi']),
-  cityName: faker.location.city('Delhi'),
+  cityName: faker.helpers.arrayElement(['Delhi']),
   postalCode: faker.location.zipCode('######'), // Indian postal code format
   instituteEmail: faker.internet.email(),
   instituteContactNumber: generateIndianMobileNumber(),
@@ -277,9 +277,10 @@ export async function submitInstituteRegistrationForm(page, instituteRegistratio
   await instituteRegistrationPage.enterInstituteDepartmentName(instituteRegistrationDetails.departmentName);
   await instituteRegistrationPage.enterStreetAddress(instituteRegistrationDetails.streetAddress);
   await instituteRegistrationPage.selectCountry(instituteRegistrationDetails.country);
+  await instituteRegistrationPage.selectState(instituteRegistrationDetails.state);
+  await page.waitForTimeout(2000);
   await instituteRegistrationPage.enterCityName(instituteRegistrationDetails.cityName);
   await instituteRegistrationPage.enterPostalCode(instituteRegistrationDetails.postalCode);
-  await instituteRegistrationPage.selectState(instituteRegistrationDetails.state);
   await instituteRegistrationPage.enterContactNumber(instituteRegistrationDetails.instituteContactNumber);
   await instituteRegistrationPage.enterInstituteEmail(instituteRegistrationDetails.instituteEmail)
   await instituteRegistrationPage.enterInstituteExtension(instituteRegistrationDetails.instituteExtension)
