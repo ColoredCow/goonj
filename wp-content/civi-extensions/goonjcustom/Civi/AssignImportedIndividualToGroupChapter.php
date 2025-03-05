@@ -18,22 +18,10 @@ class AssignImportedIndividualToGroupChapter extends AutoSubscriber {
 	public static function getSubscribedEvents() {
 		return [
 			'&hook_civicrm_post' => [
-				['individualCreated'],
 				['assignToGroupChapter'],
 			],
 		];
 	}
-
-	/**
-	 *
-	 */
-	public static function individualCreated(string $op, string $objectName, int $objectId, &$objectRef) {
-		if ($op !== 'create' || $objectName !== 'Individual') {
-			return FALSE;
-		}
-		self::$individualId = $objectId;
-	}
-
 	/**
 	 *
 	 */
