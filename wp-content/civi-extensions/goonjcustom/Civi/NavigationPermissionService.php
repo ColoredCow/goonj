@@ -75,7 +75,6 @@ class NavigationPermissionService extends AutoSubscriber {
       ],
       'mmt' => [
         'hide_menus' => [
-          'Events',
           'Dropping Center',
           'Induction Tab',
           'Institution Collection Camp',
