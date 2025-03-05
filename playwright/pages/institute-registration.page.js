@@ -8,16 +8,16 @@ exports.InstituteRegistrationPage =  class InstituteRegistrationPage{
     this.instituteLegalNameField = page.locator('input[id^="institute-registration-legal-name-of-institute-"]')
     this.instituteBranchNameField = page.locator('input[id^="institute-registration-branch-"]')
     this.instituteDepartmentNameField = page.locator('input[id^="institute-registration-department-branch-"]')
-    this.streetAddressField = page.locator('input[id^="street-address-"]');
-    this.cityNameField  = page.locator('input[id^="city-"]')
-    this.postalCodeField  = page.locator('input[id^="postal-code-"]')
-    this.contactNumberField = page.locator('input#phone-13');
-    this.instituteEmailField = page.locator('input[id^="email-17"]');
-    this.instituteExtensionField = page.locator('input[id^="institute-registration-extension"]');
+    this.streetAddressField = page.locator('input[id^="institute-registration-address-"]');
+    this.cityNameField  = page.locator('input[id^="institute-registration-city-"]')
+    this.postalCodeField  = page.locator('input[id^="institute-registration-postal-code-"]')
+    this.contactNumberField = page.locator('input[id^="institute-registration-contact-number-of-institution-"]');
+    this.instituteEmailField = page.locator('input[id^="institute-registration-email-of-institute-"]');
+    this.instituteExtensionField = page.locator('input[id^="institute-registration-extension-"]');
     this.firstNameField = page.locator('input[id^="first-name-"]');
     this.lastNameField = page.locator('input[id^="last-name-"]');
-    this.contactEmailField = page.locator('input[id^="email-23"]');
-    this.phoneNumberField  = page.locator('input[id^="phone-24"]')
+    this.contactEmailField = page.locator('input[id^="email-"]');
+    this.phoneNumberField  = page.locator('input[id^="phone-"]')
     this.designationField  = page.locator('input[id^="individual-fields-designation-"]')
   }
 
