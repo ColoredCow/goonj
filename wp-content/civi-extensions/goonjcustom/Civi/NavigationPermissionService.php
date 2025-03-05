@@ -71,6 +71,10 @@ class NavigationPermissionService extends AutoSubscriber {
           'Individuals',
           'Contributions',
           'Campaigns',
+          'MMT - Individuals',
+          'MMT - Institutes',
+          'MMT - Offices',
+          'MMT - Urban Visits',
         ],
       ],
       'mmt' => [
@@ -123,6 +127,10 @@ class NavigationPermissionService extends AutoSubscriber {
           'Institute',
           'Individuals',
           'Campaigns',
+          'MMT - Individuals',
+          'MMT - Institutes',
+          'MMT - Offices',
+          'MMT - Urban Visits',
         ],
       ],
       'communications_team' => [
