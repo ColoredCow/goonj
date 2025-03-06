@@ -258,6 +258,9 @@ export const instituteRegistrationDetails = {
   instituteExtension: '3434',
   firstName: faker.person.firstName(),
   lastName: faker.person.lastName(),
+  fullName: function () {
+    return `${this.firstName} ${this.lastName}`;
+  },
   contactEmail: faker.internet.email(),
   contactPhoneNumber: generateIndianMobileNumber(), // Generate Indian mobile number
   contactDesignation: 'Executive',
@@ -294,3 +297,5 @@ export async function submitInstituteRegistrationForm(page, instituteRegistratio
   await page.waitForTimeout(6000); // added wait as page was taking time to load
   await instituteRegistrationPage.verifyUrlAfterFormSubmission(registrationConfirmationText)
 };
+
+
