@@ -344,7 +344,7 @@ if (in_array($target, ['collection-camp', 'institution-collection-camp', 'droppi
                 <?php esc_html_e('Record your Material Contribution', 'goonj-blocks'); ?>
             </a>
         <?php endif; ?>
-        <?php if (in_array($target, ['events'])) : ?>
+        <?php if (in_array($target, ['events', 'collection-camp', 'dropping-center'])) : ?>
             <a href="<?php echo esc_url($donation_link); ?>" class="wp-block-gb-action-button gb-button-spacing">
                 <?php esc_html_e('Monetary Contribution', 'goonj-blocks'); ?>
             </a>
