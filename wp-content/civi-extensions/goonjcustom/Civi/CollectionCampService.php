@@ -357,9 +357,9 @@ class CollectionCampService extends AutoSubscriber {
       $groupId = self::getChapterGroupForState($stateId);
 
       $groupContacts = GroupContact::get(FALSE)
-			->addWhere('contact_id', '=', self::$individualId)
-			->addWhere('group_id', '=', $groupId)
-			->execute()->first();
+      ->addWhere('contact_id', '=', self::$individualId)
+      ->addWhere('group_id', '=', $groupId)
+      ->execute()->first();
 
       if (!empty($groupContacts)) {
         return;
