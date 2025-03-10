@@ -312,6 +312,15 @@ class CollectionCampService extends AutoSubscriber {
     }
 
     $groupId = self::getChapterGroupForState($objectRef->state_province_id);
+    // Check if already assigned to group chapter
+    $groupContacts = GroupContact::get(FALSE)
+      ->addWhere('contact_id', '=', $contact_id)
+      ->addWhere('group_id', '=', $groupId)
+      ->execute()->first();
+
+    if (!empty($groupContacts)) {
+      return;
+    }
 
     if ($groupId & self::$individualId) {
       GroupContact::create(FALSE)
