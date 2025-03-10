@@ -30,7 +30,10 @@ class CollectionCampService extends AutoSubscriber {
 
   const FALLBACK_OFFICE_NAME = 'Delhi';
   const RELATIONSHIP_TYPE_NAME = 'Collection Camp Coordinator of';
-  const COLLECTION_CAMP_INTENT_FB_NAME = 'afformCollectionCampIntentDetails';
+  const COLLECTION_CAMP_INTENT_FB_NAME = [
+    'afformAdminCollectionCampIntentDetails',
+    'afformCollectionCampIntentDetails'
+  ];
   const ENTITY_NAME = 'Collection_Camp';
   const ENTITY_SUBTYPE_NAME = 'Collection_Camp';
   const MATERIAL_RELATIONSHIP_TYPE_NAME = 'Material Management Team of';
@@ -229,8 +232,7 @@ class CollectionCampService extends AutoSubscriber {
   public static function setCollectionCampAddress(AfformSubmitEvent $event) {
     $afform = $event->getAfform();
     $formName = $afform['name'];
-
-    if ($formName !== self::COLLECTION_CAMP_INTENT_FB_NAME) {
+    if (!in_array($formName, self::COLLECTION_CAMP_INTENT_FB_NAME)) {
       return;
     }
 
@@ -265,7 +267,7 @@ class CollectionCampService extends AutoSubscriber {
     $afform = $event->getAfform();
     $formName = $afform['name'];
 
-    if ($formName !== self::COLLECTION_CAMP_INTENT_FB_NAME) {
+    if (!in_array($formName, self::COLLECTION_CAMP_INTENT_FB_NAME)) {
       return;
     }
 
