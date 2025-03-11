@@ -28,7 +28,6 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
   private static $instituteGoonjActivitiesAddress = NULL;
   private static $institutePocAddress = NULL;
   const MATERIAL_RELATIONSHIP_TYPE_NAME = 'Material Management Team of';
-  const Institution_Goonj_Activities_INTENT_FB_NAME = 'afformInstitutionGoonjActivitiesIntent';
   private static $addressAdded = FALSE;
 
   const INSTITUTION_GOONJ_ACTIVITIES_INTENT_FB_NAMES = [
