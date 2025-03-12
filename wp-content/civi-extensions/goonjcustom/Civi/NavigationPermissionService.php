@@ -145,6 +145,50 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Urban Visits',
         ],
       ],
+      'sanjha_team' => [
+        'hide_menus' => [
+          'Induction',
+          'Volunteers',
+          'Offices',
+          'MMT - Individuals',
+          'MMT - Institutes',
+          'MMT - Offices',
+          'MMT - Urban Visits',
+        ],
+      ],
+      'data_team' => [
+        'hide_menus' => [
+          'Institute',
+          'Induction',
+          'Volunteers',
+          'Events',
+          'Offices',
+          'MMT - Individuals',
+          'MMT - Institutes',
+          'MMT - Offices',
+          'MMT - Urban Visits',
+        ],
+      ],
+      'project_team_ho' => [
+        'hide_menus' => [
+          'Induction',
+          'Volunteers',
+          'MMT - Individuals',
+          'MMT - Institutes',
+          'MMT - Offices',
+          'MMT - Urban Visits',
+        ],
+      ],
+      'project_team_chapter' => [
+        'hide_menus' => [
+          'Induction',
+          'Volunteers',
+          'MMT - Individuals',
+          'MMT - Institutes',
+          'MMT - Offices',
+          'MMT - Urban Visits',
+        ],
+      ],
     ];
 
     foreach ($roleMenuMapping as $role => $menuConfig) {
