@@ -65,7 +65,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Goonj Activities',
           'Institution Dropping Center',
           'Institution Goonj Activities',
-          'Induction Tab',
+          'Inductions',
           'Volunteers',
           'Urban Visit',
           'Individuals',
@@ -80,7 +80,7 @@ class NavigationPermissionService extends AutoSubscriber {
       'mmt' => [
         'hide_menus' => [
           'Dropping Center',
-          'Induction Tab',
+          'Inductions',
           'Institution Collection Camp',
           'Collection Camps',
           'Goonj Activities',
@@ -88,7 +88,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Inductions',
           'Institution Dropping Center',
           'Institution Goonj Activities',
-          'Induction Tab',
+          'Inductions',
           'Volunteers',
           'Individuals',
           'Offices',
@@ -147,7 +147,7 @@ class NavigationPermissionService extends AutoSubscriber {
       ],
       'sanjha_team' => [
         'hide_menus' => [
-          'Induction',
+          'Inductions',
           'Volunteers',
           'Offices',
           'MMT - Individuals',
@@ -159,10 +159,9 @@ class NavigationPermissionService extends AutoSubscriber {
       'data_team' => [
         'hide_menus' => [
           'Institute',
-          'Induction',
+          'Inductions',
           'Volunteers',
           'Events',
-          'Offices',
           'MMT - Individuals',
           'MMT - Institutes',
           'MMT - Offices',
@@ -171,7 +170,7 @@ class NavigationPermissionService extends AutoSubscriber {
       ],
       'project_team_ho' => [
         'hide_menus' => [
-          'Induction',
+          'Inductions',
           'Volunteers',
           'MMT - Individuals',
           'MMT - Institutes',
@@ -181,7 +180,27 @@ class NavigationPermissionService extends AutoSubscriber {
       ],
       'project_team_chapter' => [
         'hide_menus' => [
-          'Induction',
+          'Inductions',
+          'Volunteers',
+          'MMT - Individuals',
+          'MMT - Institutes',
+          'MMT - Offices',
+          'MMT - Urban Visits',
+        ],
+      ],
+      'njpc_ho_team' => [
+        'hide_menus' => [
+          'Inductions',
+          'Volunteers',
+          'MMT - Individuals',
+          'MMT - Institutes',
+          'MMT - Offices',
+          'MMT - Urban Visits',
+        ],
+      ],
+      's2s_ho_team' => [
+        'hide_menus' => [
+          'Inductions',
           'Volunteers',
           'MMT - Individuals',
           'MMT - Institutes',
