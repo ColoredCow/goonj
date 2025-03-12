@@ -244,7 +244,7 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
         'module' => 'afsearchEventsMaterialContributions',
         'directive' => 'afsearch-events-material-contributions',
         'entity' => ['id' => $eventID],
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'sanjha_team', 'project_team_ho', 'project_team_chapter', 'project_team_chapter'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'sanjha_team', 'project_team_ho', 'project_team_chapter'],
       ],
       'monetaryContribution' => [
         'id' => 'monetary_contributions',
