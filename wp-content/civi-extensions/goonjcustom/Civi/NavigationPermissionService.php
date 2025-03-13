@@ -47,10 +47,12 @@ class NavigationPermissionService extends AutoSubscriber {
    *
    */
   public function hideNavForRoles(&$params) {
+
     $isAdmin = \CRM_Core_Permission::check('admin');
     if ($isAdmin) {
       return;
     }
+
 
     $roleMenuMapping = [
       'account_team' => [
@@ -172,6 +174,7 @@ class NavigationPermissionService extends AutoSubscriber {
         'hide_menus' => [
           'Inductions',
           'Volunteers',
+          'Individuals',
           'MMT - Individuals',
           'MMT - Institutes',
           'MMT - Offices',
@@ -182,6 +185,7 @@ class NavigationPermissionService extends AutoSubscriber {
         'hide_menus' => [
           'Inductions',
           'Volunteers',
+          'Individuals',
           'MMT - Individuals',
           'MMT - Institutes',
           'MMT - Offices',
@@ -192,6 +196,7 @@ class NavigationPermissionService extends AutoSubscriber {
         'hide_menus' => [
           'Inductions',
           'Volunteers',
+          'Individuals',
           'MMT - Individuals',
           'MMT - Institutes',
           'MMT - Offices',
@@ -201,6 +206,7 @@ class NavigationPermissionService extends AutoSubscriber {
       's2s_ho_team' => [
         'hide_menus' => [
           'Inductions',
+          'Individuals',
           'Volunteers',
           'MMT - Individuals',
           'MMT - Institutes',
