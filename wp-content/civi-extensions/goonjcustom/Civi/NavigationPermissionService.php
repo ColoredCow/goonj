@@ -174,6 +174,7 @@ class NavigationPermissionService extends AutoSubscriber {
         'hide_menus' => [
           'Inductions',
           'Volunteers',
+          'Individuals',
           'MMT - Individuals',
           'MMT - Institutes',
           'MMT - Offices',
@@ -184,6 +185,7 @@ class NavigationPermissionService extends AutoSubscriber {
         'hide_menus' => [
           'Inductions',
           'Volunteers',
+          'Individuals',
           'MMT - Individuals',
           'MMT - Institutes',
           'MMT - Offices',
@@ -194,6 +196,7 @@ class NavigationPermissionService extends AutoSubscriber {
         'hide_menus' => [
           'Inductions',
           'Volunteers',
+          'Individuals',
           'MMT - Individuals',
           'MMT - Institutes',
           'MMT - Offices',

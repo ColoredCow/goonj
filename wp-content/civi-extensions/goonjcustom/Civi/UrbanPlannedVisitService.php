@@ -449,28 +449,28 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         'module' => 'afformUrbanPlannedVisitIntentReviewForm',
         'directive' => 'afform-Urban-Planned-Visit-Intent-Review-Form',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCampEdit.tpl',
-       'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt', 'sanjha_team', 'project_team_ho', 'project_team_chapter', 'project_team_chapter'],
+       'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt', 'sanjha_team', 'project_team_ho', 'project_team_chapter'],
       ],
       'visitOutcome' => [
         'title' => ts('Visit Outcome'),
         'module' => 'afsearchVisitUrbanOutcomeDetails',
         'directive' => 'afsearch-visit-urban-outcome-details',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-       'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt', 'sanjha_team', 'project_team_ho', 'project_team_chapter', 'project_team_chapter'],
+       'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt', 'sanjha_team', 'project_team_ho',  'project_team_chapter'],
       ],
       'visitContact' => [
         'title' => ts('Visit Contact'),
         'module' => 'afsearchVisitContactPerson',
         'directive' => 'afsearch-visit-contact-person',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-       'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt', 'sanjha_team', 'project_team_ho', 'project_team_chapter', 'project_team_chapter'],
+       'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt', 'sanjha_team', 'project_team_ho', 'project_team_chapter'],
       ],
       'visitFeedback' => [
         'title' => ts('Visit Feedback'),
         'module' => 'afsearchVisitFeedbackDetails',
         'directive' => 'afsearch-visit-feedback-details',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-       'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt', 'sanjha_team', 'project_team_ho', 'project_team_chapter', 'project_team_chapter'],
+       'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt', 'sanjha_team', 'project_team_ho', 'project_team_chapter'],
       ],
     ];
 
