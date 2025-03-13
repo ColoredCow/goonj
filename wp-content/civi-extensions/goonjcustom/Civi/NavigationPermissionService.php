@@ -47,10 +47,12 @@ class NavigationPermissionService extends AutoSubscriber {
    *
    */
   public function hideNavForRoles(&$params) {
+    \Civi::log()->info('params', ['params' => $params]);
     $isAdmin = \CRM_Core_Permission::check('admin');
     if ($isAdmin) {
       return;
     }
+
 
     $roleMenuMapping = [
       'account_team' => [
@@ -201,6 +203,7 @@ class NavigationPermissionService extends AutoSubscriber {
       's2s_ho_team' => [
         'hide_menus' => [
           'Inductions',
+          'Individuals',
           'Volunteers',
           'MMT - Individuals',
           'MMT - Institutes',
