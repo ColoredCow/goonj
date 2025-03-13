@@ -47,7 +47,7 @@ class NavigationPermissionService extends AutoSubscriber {
    *
    */
   public function hideNavForRoles(&$params) {
-    \Civi::log()->info('params', ['params' => $params]);
+
     $isAdmin = \CRM_Core_Permission::check('admin');
     if ($isAdmin) {
       return;
