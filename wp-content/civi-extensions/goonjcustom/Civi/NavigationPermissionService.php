@@ -137,7 +137,7 @@ class NavigationPermissionService extends AutoSubscriber {
       ],
       'communications_team' => [
         'hide_menus' => [
-          'Institute',
+          'Institutes',
           'Volunteers',
           'Events',
           'Offices',
@@ -145,6 +145,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Institutes',
           'MMT - Offices',
           'MMT - Urban Visits',
+          'Inductions',
         ],
       ],
       'sanjha_team' => [
