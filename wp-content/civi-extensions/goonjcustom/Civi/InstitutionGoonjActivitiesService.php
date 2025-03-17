@@ -247,7 +247,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
   private static function addContactToGroup($contactId, $groupId) {
     if ($contactId & $groupId) {
       $groupContacts = GroupContact::get(FALSE)
-        ->addWhere('contact_id', '=', $contact_id)
+        ->addWhere('contact_id', '=', $contactId)
         ->addWhere('group_id', '=', $groupId)
         ->execute()->first();
 
