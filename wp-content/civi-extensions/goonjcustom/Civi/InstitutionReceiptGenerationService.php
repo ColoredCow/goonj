@@ -101,16 +101,14 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
       ->addSelect('Institution_collection_camp_Review.Coordinating_POC')
       ->addWhere('id', '=', $collectionCampId)
       ->execute()->single();
-
     $coordinatingPOCId = $collectionCamp['Institution_collection_camp_Review.Coordinating_POC'];
-
+   
     $contact = Contact::get(FALSE)
       ->addSelect('email.email', 'phone.phone')
       ->addJoin('Email AS email', 'LEFT')
       ->addJoin('Phone AS phone', 'LEFT')
       ->addWhere('id', '=', $coordinatingPOCId)
-      ->execute()->single();
-
+      ->execute()->first();
     $goonjCoordinatorEmail = $contact['email.email'];
     $goonjCoordinatorPhone = $contact['phone.phone'];
 
