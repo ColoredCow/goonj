@@ -577,7 +577,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     $groupId = self::getChapterGroupForState($stateProvinceId);
     // Check if already assigned to group chapter
     $groupContacts = GroupContact::get(FALSE)
-      ->addWhere('contact_id', '=', $contact_id)
+      ->addWhere('contact_id', '=', $contactId)
       ->addWhere('group_id', '=', $groupId)
       ->execute()->first();
 
@@ -587,7 +587,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
 
     if ($groupId & $contactId) {
       $groupContacts = GroupContact::get(FALSE)
-        ->addWhere('contact_id', '=', $contact_id)
+        ->addWhere('contact_id', '=', $contactId)
         ->addWhere('group_id', '=', $groupId)
         ->execute()->first();
 
