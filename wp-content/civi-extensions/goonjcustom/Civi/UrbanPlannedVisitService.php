@@ -449,28 +449,28 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         'module' => 'afformUrbanPlannedVisitIntentReviewForm',
         'directive' => 'afform-Urban-Planned-Visit-Intent-Review-Form',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCampEdit.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt', 'sanjha_team', 'project_team_ho', 'project_team_chapter'],
+       'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt', 'sanjha_team', 'project_team_ho', 'project_team_chapter', 'njpc_ho_team'],
       ],
       'visitOutcome' => [
         'title' => ts('Visit Outcome'),
         'module' => 'afsearchVisitUrbanOutcomeDetails',
         'directive' => 'afsearch-visit-urban-outcome-details',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt', 'sanjha_team', 'project_team_ho', 'project_team_chapter'],
+       'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt', 'sanjha_team', 'project_team_ho',  'project_team_chapter', 'njpc_ho_team'],
       ],
       'visitContact' => [
         'title' => ts('Visit Contact'),
         'module' => 'afsearchVisitContactPerson',
         'directive' => 'afsearch-visit-contact-person',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt', 'sanjha_team', 'project_team_ho', 'project_team_chapter'],
+       'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt', 'sanjha_team', 'project_team_ho', 'project_team_chapter', 'njpc_ho_team'],
       ],
       'visitFeedback' => [
         'title' => ts('Visit Feedback'),
         'module' => 'afsearchVisitFeedbackDetails',
         'directive' => 'afsearch-visit-feedback-details',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt', 'sanjha_team', 'project_team_ho', 'project_team_chapter'],
+       'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt', 'sanjha_team', 'project_team_ho', 'project_team_chapter', 'njpc_ho_team'],
       ],
     ];
 
@@ -575,6 +575,15 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     }
 
     $groupId = self::getChapterGroupForState($stateProvinceId);
+    // Check if already assigned to group chapter
+    $groupContacts = GroupContact::get(FALSE)
+      ->addWhere('contact_id', '=', $contact_id)
+      ->addWhere('group_id', '=', $groupId)
+      ->execute()->first();
+
+    if (!empty($groupContacts)) {
+      return;
+    }
 
     if ($groupId & $contactId) {
       $groupContacts = GroupContact::get(FALSE)
