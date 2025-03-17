@@ -43,7 +43,7 @@ class AssignImportedIndividualToGroupChapter extends AutoSubscriber {
 		$contactId = is_array($contact_id) ? ($contact_id[0] ?? NULL) : $contact_id;
 
 		$groupContacts = GroupContact::get(FALSE)
-			->addWhere('contact_id', '=', $contact_id)
+			->addWhere('contact_id', '=', $contactId)
 			->addWhere('group_id', '=', $groupId)
 			->execute()->first();
 
@@ -53,7 +53,7 @@ class AssignImportedIndividualToGroupChapter extends AutoSubscriber {
 
 		if ($groupId && $contactId) {
 			$result = GroupContact::create(FALSE)
-				->addValue('contact_id', $contact_id)
+				->addValue('contact_id', $contactId)
 				->addValue('group_id', $groupId)
 				->addValue('status', 'Added')
 				->execute();
