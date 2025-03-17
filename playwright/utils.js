@@ -6,6 +6,8 @@ import { AdminHomePage } from '../playwright/pages/admin-home.page';
 import { DroppingCenterPage } from '../playwright/pages/dropping-center-registration.page';
 import { CollectionCampPage } from '../playwright/pages/collection-camp-registration.page';
 import { InstituteRegistrationPage } from '../playwright/pages/institute-registration.page';
+import { InstituteCollectionCampPage } from '../playwright/pages/institute-collection-camp-registration.page';
+import { InstituteDroppingCenterPage } from '../playwright/pages/institute-dropping-center-registration.page';
 import { InductedVolunteerPage } from '../playwright/pages/inducted-volunteer.page';
 
 // Helper function to generate an Indian mobile number
@@ -88,6 +90,55 @@ export async function submitCollectionCampRegistrationForm(page, userEmailAddres
   await collectionCampPage.verifyUrlAfterFormSubmission(registrationConfirmationText);  // Replace with your success URL
 };
 
+export const instituteCollectionCampUserDetails = {
+  registerAs: 'Corporate',
+  organizationName: faker.company.name(),
+  address: faker.location.streetAddress(),
+  cityName: 'Delhi',
+  state: 'Delhi',
+  postalCode: faker.location.zipCode('110070'),
+  startDate: formattedStartDate,
+  startTime: '10:00',
+  endDate: formattedEndDate,
+  endTime: '10:00',
+  firstName: faker.person.firstName(),
+  lastName: faker.person.lastName(),
+  fullName: function () {
+    return `${this.firstName} ${this.lastName}`;
+  },
+  contactEmail: faker.internet.email(),
+  contactPhoneNumber: generateIndianMobileNumber(),
+};
+
+export async function submitInstituteCollectionCampRegistrationForm(page, userEmailAddress, userMobileNumber, collectionCampUserDetails) {
+  const instituteCollectionCampPage = new InstituteCollectionCampPage(page);
+  const instituteCollectionCampUrl = instituteCollectionCampPage.getAppendedUrl('/institution-collection-camp-intent');
+  const registrationConfirmationText = '/success'
+  await page.goto(instituteCollectionCampUrl);
+  // await userFormLogin(page, userEmailAddress, userMobileNumber)
+  await page.waitForTimeout(3000)
+  await instituteCollectionCampPage.selectYouWishToRegisterAs(instituteCollectionCampUserDetails.registerAs);
+  await instituteCollectionCampPage.enterOrganizationName(instituteCollectionCampUserDetails.organizationName);
+  await instituteCollectionCampPage.enterLocationAreaOfCamp(instituteCollectionCampUserDetails.address);
+  await instituteCollectionCampPage.enterCity(instituteCollectionCampUserDetails.cityName);
+  await instituteCollectionCampPage.selectState(instituteCollectionCampUserDetails.state);
+  await instituteCollectionCampPage.enterPinCode(instituteCollectionCampUserDetails.postalCode);
+  await instituteCollectionCampPage.enterStartDate(instituteCollectionCampUserDetails.startDate);  //  MM/DD/YYYY Format (Check your date format)
+  await instituteCollectionCampPage.enterStartTime(instituteCollectionCampUserDetails.startTime); 
+  await instituteCollectionCampPage.enterEndDate(instituteCollectionCampUserDetails.endDate);  //  MM/DD/YYYY Format (Check your date format)
+  await instituteCollectionCampPage.enterEndTime(instituteCollectionCampUserDetails.endTime);   
+  await instituteCollectionCampPage.selectPublicCollection('1');  
+  await instituteCollectionCampPage.selectEngagingActivity('2'); 
+  await page.waitForTimeout(2000)
+  await instituteCollectionCampPage.enterFirstName(instituteRegistrationDetails.firstName);
+  await page.waitForTimeout(200);
+  await instituteCollectionCampPage.enterLastName(instituteRegistrationDetails.lastName);
+  await instituteCollectionCampPage.enterPhoneNumber(instituteRegistrationDetails.contactPhoneNumber);
+  await instituteCollectionCampPage.enterContactEmail(instituteRegistrationDetails.contactEmail);
+  await instituteCollectionCampPage.clickSubmitButton();
+  await page.waitForTimeout(4000)
+  await instituteCollectionCampPage.verifyUrlAfterFormSubmission(registrationConfirmationText);  // Replace with your success URL
+};
 
 export const droppingCenterUserDetails = {
   registerAsIndividual: 'An individual.',
@@ -125,6 +176,57 @@ export async function submitDroppingCenterRegistrationForm(page, userEmailAddres
   await droppingCenterPage.clickSubmitButton();
   await page.waitForTimeout(4000)
   await droppingCenterPage.verifyUrlAfterFormSubmission(registrationConfirmationText);  // Replace with your success URL
+};
+
+export const instituteDroppingCenterUserDetails = {
+  registerAs: 'Corporate',
+  organizationName: faker.company.name(),
+  address: faker.location.streetAddress(),
+  landmarkArea: 'dwarka',
+  cityName: 'Delhi',
+  state: 'Delhi',
+  postalCode: faker.location.zipCode('110070'),
+  startDate: formattedStartDate,
+  daysAndTimings: 'Thursday 8-10am',
+  firstName: faker.person.firstName(),
+  lastName: faker.person.lastName(),
+  fullName: function () {
+    return `${this.firstName} ${this.lastName}`;
+  },
+  contactEmail: faker.internet.email(),
+  contactPhoneNumber: generateIndianMobileNumber(),
+};
+
+export async function submitInstituteDroppingCenterRegistrationForm(page, instituteDroppingCenterUserDetails) {
+  const droppingCenterPage  = new DroppingCenterPage(page);
+  const instituteDroppingCenterPage = new InstituteDroppingCenterPage(page)
+  const instituteDroppingCenterUrl = droppingCenterPage.getAppendedUrl('/institution-dropping-center-intent/');
+  const registrationConfirmationText = '/success'
+  await page.goto(instituteDroppingCenterUrl);
+  // await userFormLogin(page, userEmailAddress, userMobileNumber)
+  // await droppingCenterPage.clickContinueButton()
+  await page.waitForTimeout(3000)
+  await instituteDroppingCenterPage.selectYouWishToRegisterAs(instituteDroppingCenterUserDetails.registerAs);
+  await instituteDroppingCenterPage.enterOrganizationName(instituteDroppingCenterUserDetails.organizationName);
+  await instituteDroppingCenterPage.enterLocationAreaOfCamp(instituteDroppingCenterUserDetails.address);
+  await instituteDroppingCenterPage.enterLandMarkAreaOrNearbyArea(instituteDroppingCenterUserDetails.landmarkArea);
+  await instituteDroppingCenterPage.enterCity(instituteDroppingCenterUserDetails.cityName);
+  await instituteDroppingCenterPage.selectState('Delhi')
+  await instituteDroppingCenterPage.enterPinCode(instituteDroppingCenterUserDetails.postalCode);
+  await instituteDroppingCenterPage.enterStartDate(instituteDroppingCenterUserDetails.startDate);  //  MM/DD/YYYY Format (Check your date format)
+  await instituteDroppingCenterPage.enterDaysAndTiming(instituteDroppingCenterUserDetails.daysAndTimings);
+  await instituteDroppingCenterPage.selectPublicCollection('1');  
+  await instituteDroppingCenterPage.selectDonationBoxMonetaryContribution('2'); 
+  await instituteDroppingCenterPage.selectPermissionLetter('1');  
+  await page.waitForTimeout(2000)
+  await instituteDroppingCenterPage.enterFirstName(instituteDroppingCenterUserDetails.firstName);
+  await page.waitForTimeout(200);
+  await instituteDroppingCenterPage.enterLastName(instituteDroppingCenterUserDetails.lastName);
+  await instituteDroppingCenterPage.enterPhoneNumber(instituteDroppingCenterUserDetails.contactPhoneNumber);
+  await instituteDroppingCenterPage.enterContactEmail(instituteDroppingCenterUserDetails.contactEmail);
+  await instituteDroppingCenterPage.clickSubmitButton();
+  await page.waitForTimeout(4000)
+  await instituteDroppingCenterPage.verifyUrlAfterFormSubmission(registrationConfirmationText);  // Replace with your success URL
 };
 
 
@@ -251,13 +353,16 @@ export const instituteRegistrationDetails = {
   streetAddress: faker.location.streetAddress(),
   country: 'India',
   state: faker.helpers.arrayElement(['Delhi']),
-  cityName: faker.location.city('Delhi'),
+  cityName: faker.helpers.arrayElement(['Delhi']),
   postalCode: faker.location.zipCode('######'), // Indian postal code format
   instituteEmail: faker.internet.email(),
   instituteContactNumber: generateIndianMobileNumber(),
   instituteExtension: '3434',
   firstName: faker.person.firstName(),
   lastName: faker.person.lastName(),
+  fullName: function () {
+    return `${this.firstName} ${this.lastName}`;
+  },
   contactEmail: faker.internet.email(),
   contactPhoneNumber: generateIndianMobileNumber(), // Generate Indian mobile number
   contactDesignation: 'Executive',
@@ -277,9 +382,10 @@ export async function submitInstituteRegistrationForm(page, instituteRegistratio
   await instituteRegistrationPage.enterInstituteDepartmentName(instituteRegistrationDetails.departmentName);
   await instituteRegistrationPage.enterStreetAddress(instituteRegistrationDetails.streetAddress);
   await instituteRegistrationPage.selectCountry(instituteRegistrationDetails.country);
+  await instituteRegistrationPage.selectState(instituteRegistrationDetails.state);
+  await page.waitForTimeout(2000);
   await instituteRegistrationPage.enterCityName(instituteRegistrationDetails.cityName);
   await instituteRegistrationPage.enterPostalCode(instituteRegistrationDetails.postalCode);
-  await instituteRegistrationPage.selectState(instituteRegistrationDetails.state);
   await instituteRegistrationPage.enterContactNumber(instituteRegistrationDetails.instituteContactNumber);
   await instituteRegistrationPage.enterInstituteEmail(instituteRegistrationDetails.instituteEmail)
   await instituteRegistrationPage.enterInstituteExtension(instituteRegistrationDetails.instituteExtension)
@@ -293,3 +399,5 @@ export async function submitInstituteRegistrationForm(page, instituteRegistratio
   await page.waitForTimeout(6000); // added wait as page was taking time to load
   await instituteRegistrationPage.verifyUrlAfterFormSubmission(registrationConfirmationText)
 };
+
+

@@ -28,6 +28,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
   private static $instituteGoonjActivitiesAddress = NULL;
   private static $institutePocAddress = NULL;
   const MATERIAL_RELATIONSHIP_TYPE_NAME = 'Material Management Team of';
+
   private static $addressAdded = FALSE;
 
   const INSTITUTION_GOONJ_ACTIVITIES_INTENT_FB_NAMES = [
@@ -245,11 +246,10 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
    */
   private static function addContactToGroup($contactId, $groupId) {
     if ($contactId & $groupId) {
-      // Check if already assigned to group chapter
       $groupContacts = GroupContact::get(FALSE)
-      ->addWhere('contact_id', '=', $contact_id)
-      ->addWhere('group_id', '=', $groupId)
-      ->execute()->first();
+        ->addWhere('contact_id', '=', $contact_id)
+        ->addWhere('group_id', '=', $groupId)
+        ->execute()->first();
 
       if (!empty($groupContacts)) {
         return;

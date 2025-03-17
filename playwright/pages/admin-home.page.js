@@ -12,4 +12,8 @@ exports.AdminHomePage = class AdminHomePage  {
           // Click on the specified sub-option
         await this.page.click(`li[data-name="${optionName}"] > a`);
     }
+
+     async clickInstitutesTab() { 
+      await this.page.dblclick('li[data-name="Institute"] > a');
+    }
 }

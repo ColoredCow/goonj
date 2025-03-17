@@ -149,6 +149,7 @@ class NavigationPermissionService extends AutoSubscriber {
       ],
       'sanjha_team' => [
         'hide_menus' => [
+          'Induction',
           'Inductions',
           'Volunteers',
           'Offices',
@@ -161,6 +162,9 @@ class NavigationPermissionService extends AutoSubscriber {
       'data_team' => [
         'hide_menus' => [
           'Institute',
+          'Volunteers',
+          'Events',
+          'Offices',
           'Inductions',
           'Volunteers',
           'Events',
