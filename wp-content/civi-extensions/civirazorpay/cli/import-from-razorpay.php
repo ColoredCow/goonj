@@ -552,7 +552,14 @@ class RazorpaySubscriptionImporter {
         ->first();
 
       if ($existingContribution) {
-        printf('Existing Contribution found with ID: %d for Payment ID: %d. Skipping creation.\n', $existingContribution['id'], $transactionId);
+        printf('Existing Contribution found with ID: %d for Payment ID: %d. Linking with recurring contribution: %d.\n', $existingContribution['id'], $transactionId, $contributionRecurID);
+
+        $contribution = Contribution::update(FALSE)
+          ->addValue('contribution_recur_id', $contributionRecurID)
+          ->addWhere('id', '=', $existingContribution['id'])
+          ->addWhere('is_test', '=', $this->isTest)
+          ->execute();
+
         return;
       }
 
