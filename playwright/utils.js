@@ -8,6 +8,7 @@ import { CollectionCampPage } from '../playwright/pages/collection-camp-registra
 import { InstituteRegistrationPage } from '../playwright/pages/institute-registration.page';
 import { InstituteCollectionCampPage } from '../playwright/pages/institute-collection-camp-registration.page';
 import { InstituteDroppingCenterPage } from '../playwright/pages/institute-dropping-center-registration.page';
+import { InstituteActivityIntentPage } from '../playwright/pages/institute-activity-registration.page';
 import { InductedVolunteerPage } from '../playwright/pages/inducted-volunteer.page';
 
 // Helper function to generate an Indian mobile number
@@ -256,27 +257,27 @@ export async function submitInstituteActivityIntentForm(page, instituteActivityI
   await page.goto(instituteCollectionCampUrl);
   // await userFormLogin(page, userEmailAddress, userMobileNumber)
   await page.waitForTimeout(3000)
-  await instituteCollectionCampPage.selectYouWishToRegisterAs(instituteCollectionCampUserDetails.registerAs);
-  await instituteCollectionCampPage.enterOrganizationName(instituteCollectionCampUserDetails.organizationName);
-  await instituteCollectionCampPage.enterLocationAreaOfCamp(instituteCollectionCampUserDetails.address);
-  await instituteCollectionCampPage.enterCity(instituteCollectionCampUserDetails.cityName);
-  await instituteCollectionCampPage.selectState(instituteCollectionCampUserDetails.state);
-  await instituteCollectionCampPage.enterPinCode(instituteCollectionCampUserDetails.postalCode);
-  await instituteCollectionCampPage.enterStartDate(instituteCollectionCampUserDetails.startDate);  //  MM/DD/YYYY Format (Check your date format)
-  await instituteCollectionCampPage.enterStartTime(instituteCollectionCampUserDetails.startTime); 
-  await instituteCollectionCampPage.enterEndDate(instituteCollectionCampUserDetails.endDate);  //  MM/DD/YYYY Format (Check your date format)
-  await instituteCollectionCampPage.enterEndTime(instituteCollectionCampUserDetails.endTime);   
-  await instituteCollectionCampPage.selectPublicCollection('1');  
-  await instituteCollectionCampPage.selectEngagingActivity('2'); 
+  await instituteActivityIntentPage.selectYouWishToRegisterAs(instituteActivityIntentUserDetails.registerAs);
+  await instituteActivityIntentPage.enterOrganizationName(instituteActivityIntentUserDetails.organizationName);
+  await instituteActivityIntentPage.enterLocationAreaOfCamp(instituteActivityIntentUserDetails.address);
+  await instituteActivityIntentPage.enterCity(instituteActivityIntentUserDetails.cityName);
+  await instituteActivityIntentPage.selectState(instituteActivityIntentUserDetails.state);
+  await instituteActivityIntentPage.enterPinCode(instituteActivityIntentUserDetails.postalCode);
+  await instituteActivityIntentPage.enterStartDate(instituteActivityIntentUserDetails.startDate);  //  MM/DD/YYYY Format (Check your date format)
+  await instituteActivityIntentPage.enterStartTime(instituteActivityIntentUserDetails.startTime); 
+  await instituteActivityIntentPage.enterEndDate(instituteActivityIntentUserDetails.endDate);  //  MM/DD/YYYY Format (Check your date format)
+  await instituteActivityIntentPage.enterEndTime(instituteActivityIntentUserDetails.endTime);   
+  await instituteActivityIntentPage.selectPublicCollection('1');  
+  await instituteActivityIntentPage.selectEngagingActivity('2'); 
   await page.waitForTimeout(2000)
-  await instituteCollectionCampPage.enterFirstName(instituteRegistrationDetails.firstName);
+  await instituteActivityIntentPage.enterFirstName(instituteRegistrationDetails.firstName);
   await page.waitForTimeout(200);
-  await instituteCollectionCampPage.enterLastName(instituteRegistrationDetails.lastName);
-  await instituteCollectionCampPage.enterPhoneNumber(instituteRegistrationDetails.contactPhoneNumber);
-  await instituteCollectionCampPage.enterContactEmail(instituteRegistrationDetails.contactEmail);
-  await instituteCollectionCampPage.clickSubmitButton();
+  await instituteActivityIntentPage.enterLastName(instituteRegistrationDetails.lastName);
+  await instituteActivityIntentPage.enterPhoneNumber(instituteRegistrationDetails.contactPhoneNumber);
+  await instituteActivityIntentPage.enterContactEmail(instituteRegistrationDetails.contactEmail);
+  await instituteActivityIntentPage.clickSubmitButton();
   await page.waitForTimeout(4000)
-  await instituteCollectionCampPage.verifyUrlAfterFormSubmission(registrationConfirmationText);  // Replace with your success URL
+  await instituteActivityIntentPage.verifyUrlAfterFormSubmission(registrationConfirmationText);  // Replace with your success URL
 };
 
 
