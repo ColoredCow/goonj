@@ -39,7 +39,7 @@ exports.InstituteActivityIntentPage = class InstituteActivityIntentPage {
     await this.page.waitForTimeout(1000);
 }
 
-async selectStateDropdownOption(dropdownSelector, inputField, option) {
+async selectStateOrActivityTypeDropdownOption(dropdownSelector, inputField, option) {
     await this.page.click(dropdownSelector);
     await this.page.waitForTimeout(1000)
     await this.page.fill(inputField, option);
@@ -70,8 +70,13 @@ async selectStateDropdownOption(dropdownSelector, inputField, option) {
     await this.organizationNameField.fill(organizationName)
   }
 
-  async enterLocationAreaOfCamp(location) {
-    await this.locationAreaOfCampField.fill(location);
+  async selectActivityType(type) {
+    await  this.selectStateOrActivityTypeDropdownOption('#s2id_autogen2', '#s2id_autogen2', type);
+  }
+
+
+  async enterAreaOfActivity(location) {
+    await this.locationAreaOfActivityField.fill(location);
   }
 
   async enterCity(city) {
@@ -79,7 +84,7 @@ async selectStateDropdownOption(dropdownSelector, inputField, option) {
   }
 
   async selectState(state) {
-    await  this.selectStateDropdownOption('#select2-chosen-2', '#s2id_autogen2_search', state);
+    await  this.selectStateOrActivityTypeDropdownOption('#select2-chosen-3', '#s2id_autogen3_search', state);
   }
 
   async enterPinCode(pinCode) {
