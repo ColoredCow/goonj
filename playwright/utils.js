@@ -233,6 +233,7 @@ export async function submitInstituteDroppingCenterRegistrationForm(page, instit
 export const instituteActivityIntentUserDetails = {
   registerAs: 'Corporate',
   organizationName: faker.company.name(),
+  activityType: faker.helpers.arrayElement(['Book Fair', 'Knowing Goonj Session', 'Goonj Disaster Photo Exhibition']),
   address: faker.location.streetAddress(),
   cityName: 'Delhi',
   state: 'Delhi',
@@ -252,23 +253,22 @@ export const instituteActivityIntentUserDetails = {
 
 export async function submitInstituteActivityIntentForm(page, instituteActivityIntentUserDetails) {
   const instituteActivityIntentPage = new InstituteActivityIntentPage(page);
-  const instituteActivityIntentUrl = instituteCollectionCampPage.getAppendedUrl('/institution-collection-camp-intent');
-  const registrationConfirmationText = '/success'
-  await page.goto(instituteCollectionCampUrl);
+  const instituteActivityIntentUrl = instituteActivityIntentPage.getAppendedUrl('/institution-goonj-activities-intent');
+  const registrationConfirmationText = '/institution-goonj-activities-success'
+  await page.goto(instituteActivityIntentUrl);
   // await userFormLogin(page, userEmailAddress, userMobileNumber)
   await page.waitForTimeout(3000)
   await instituteActivityIntentPage.selectYouWishToRegisterAs(instituteActivityIntentUserDetails.registerAs);
   await instituteActivityIntentPage.enterOrganizationName(instituteActivityIntentUserDetails.organizationName);
-  await instituteActivityIntentPage.enterLocationAreaOfCamp(instituteActivityIntentUserDetails.address);
+  await instituteActivityIntentPage.selectActivityType(instituteActivityIntentUserDetails.activityType)
+  await instituteActivityIntentPage.enterAreaOfActivity(instituteActivityIntentUserDetails.address);
   await instituteActivityIntentPage.enterCity(instituteActivityIntentUserDetails.cityName);
-  await instituteActivityIntentPage.selectState(instituteActivityIntentUserDetails.state);
+  await instituteActivityIntentPage.selectState('Delhi')
   await instituteActivityIntentPage.enterPinCode(instituteActivityIntentUserDetails.postalCode);
   await instituteActivityIntentPage.enterStartDate(instituteActivityIntentUserDetails.startDate);  //  MM/DD/YYYY Format (Check your date format)
   await instituteActivityIntentPage.enterStartTime(instituteActivityIntentUserDetails.startTime); 
   await instituteActivityIntentPage.enterEndDate(instituteActivityIntentUserDetails.endDate);  //  MM/DD/YYYY Format (Check your date format)
   await instituteActivityIntentPage.enterEndTime(instituteActivityIntentUserDetails.endTime);   
-  await instituteActivityIntentPage.selectPublicCollection('1');  
-  await instituteActivityIntentPage.selectEngagingActivity('2'); 
   await page.waitForTimeout(2000)
   await instituteActivityIntentPage.enterFirstName(instituteRegistrationDetails.firstName);
   await page.waitForTimeout(200);
@@ -276,7 +276,7 @@ export async function submitInstituteActivityIntentForm(page, instituteActivityI
   await instituteActivityIntentPage.enterPhoneNumber(instituteRegistrationDetails.contactPhoneNumber);
   await instituteActivityIntentPage.enterContactEmail(instituteRegistrationDetails.contactEmail);
   await instituteActivityIntentPage.clickSubmitButton();
-  await page.waitForTimeout(4000)
+  await page.waitForTimeout(5000)
   await instituteActivityIntentPage.verifyUrlAfterFormSubmission(registrationConfirmationText);  // Replace with your success URL
 };
 
