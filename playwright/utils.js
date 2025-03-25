@@ -8,6 +8,7 @@ import { CollectionCampPage } from '../playwright/pages/collection-camp-registra
 import { InstituteRegistrationPage } from '../playwright/pages/institute-registration.page';
 import { InstituteCollectionCampPage } from '../playwright/pages/institute-collection-camp-registration.page';
 import { InstituteDroppingCenterPage } from '../playwright/pages/institute-dropping-center-registration.page';
+import { InstituteActivityIntentPage } from '../playwright/pages/institute-activity-registration.page';
 import { InductedVolunteerPage } from '../playwright/pages/inducted-volunteer.page';
 
 // Helper function to generate an Indian mobile number
@@ -227,6 +228,56 @@ export async function submitInstituteDroppingCenterRegistrationForm(page, instit
   await instituteDroppingCenterPage.clickSubmitButton();
   await page.waitForTimeout(4000)
   await instituteDroppingCenterPage.verifyUrlAfterFormSubmission(registrationConfirmationText);  // Replace with your success URL
+};
+
+export const instituteActivityIntentUserDetails = {
+  registerAs: 'Corporate',
+  organizationName: faker.company.name(),
+  activityType: faker.helpers.arrayElement(['Book Fair', 'Knowing Goonj Session', 'Goonj Disaster Photo Exhibition']),
+  address: faker.location.streetAddress(),
+  cityName: 'Delhi',
+  state: 'Delhi',
+  postalCode: faker.location.zipCode('110070'),
+  startDate: formattedStartDate,
+  startTime: '10:00',
+  endDate: formattedEndDate,
+  endTime: '10:00',
+  firstName: faker.person.firstName(),
+  lastName: faker.person.lastName(),
+  fullName: function () {
+    return `${this.firstName} ${this.lastName}`;
+  },
+  contactEmail: faker.internet.email(),
+  contactPhoneNumber: generateIndianMobileNumber(),
+};
+
+export async function submitInstituteActivityIntentForm(page, instituteActivityIntentUserDetails) {
+  const instituteActivityIntentPage = new InstituteActivityIntentPage(page);
+  const instituteActivityIntentUrl = instituteActivityIntentPage.getAppendedUrl('/institution-goonj-activities-intent');
+  const registrationConfirmationText = '/institution-goonj-activities-success'
+  await page.goto(instituteActivityIntentUrl);
+  // await userFormLogin(page, userEmailAddress, userMobileNumber)
+  await page.waitForTimeout(3000)
+  await instituteActivityIntentPage.selectYouWishToRegisterAs(instituteActivityIntentUserDetails.registerAs);
+  await instituteActivityIntentPage.enterOrganizationName(instituteActivityIntentUserDetails.organizationName);
+  await instituteActivityIntentPage.selectActivityType(instituteActivityIntentUserDetails.activityType)
+  await instituteActivityIntentPage.enterAreaOfActivity(instituteActivityIntentUserDetails.address);
+  await instituteActivityIntentPage.enterCity(instituteActivityIntentUserDetails.cityName);
+  await instituteActivityIntentPage.selectState('Delhi')
+  await instituteActivityIntentPage.enterPinCode(instituteActivityIntentUserDetails.postalCode);
+  await instituteActivityIntentPage.enterStartDate(instituteActivityIntentUserDetails.startDate);  //  MM/DD/YYYY Format (Check your date format)
+  await instituteActivityIntentPage.enterStartTime(instituteActivityIntentUserDetails.startTime); 
+  await instituteActivityIntentPage.enterEndDate(instituteActivityIntentUserDetails.endDate);  //  MM/DD/YYYY Format (Check your date format)
+  await instituteActivityIntentPage.enterEndTime(instituteActivityIntentUserDetails.endTime);   
+  await page.waitForTimeout(2000)
+  await instituteActivityIntentPage.enterFirstName(instituteRegistrationDetails.firstName);
+  await page.waitForTimeout(200);
+  await instituteActivityIntentPage.enterLastName(instituteRegistrationDetails.lastName);
+  await instituteActivityIntentPage.enterPhoneNumber(instituteRegistrationDetails.contactPhoneNumber);
+  await instituteActivityIntentPage.enterContactEmail(instituteRegistrationDetails.contactEmail);
+  await instituteActivityIntentPage.clickSubmitButton();
+  await page.waitForTimeout(5000)
+  await instituteActivityIntentPage.verifyUrlAfterFormSubmission(registrationConfirmationText);  // Replace with your success URL
 };
 
 
