@@ -55,12 +55,12 @@ We made modifications to the mail templates in CiviCRM → Mailings → Message 
 - Contributions – Receipt (on-line)
 - Contributions – Invoice
 
-Document:
+**Document:**
 The custom code for the message templates is saved in the following files:
 
 - [**Contributions – Receipt (off-line)**](https://docs.google.com/document/d/16DVrSJIr53f1RxnMwOlh9ArQv9TSU8e0xr_6qx_ipMQ/edit?tab=t.0#bookmark=id.32pvoqqsyxro)  
 - [**Contributions – Receipt (on-line)**](https://docs.google.com/document/d/16DVrSJIr53f1RxnMwOlh9ArQv9TSU8e0xr_6qx_ipMQ/edit?tab=t.0#bookmark=id.1hltgupi60d0)  
 - [**Contributions – Invoice**](https://docs.google.com/document/d/16DVrSJIr53f1RxnMwOlh9ArQv9TSU8e0xr_6qx_ipMQ/edit?tab=t.0#bookmark=id.xurmsqnh8ecl)  
 
-Note:
+**Note:**
 The custom changes made to the receipt templates were implemented to meet specific project requirements and priorities. When updating CiviCRM, we need to revisit these templates and apply the necessary modifications accordingly.
