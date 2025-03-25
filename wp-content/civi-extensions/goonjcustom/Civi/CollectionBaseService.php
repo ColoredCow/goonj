@@ -179,7 +179,7 @@ class CollectionBaseService extends AutoSubscriber {
       return FALSE;
     }
 
-    $restrictedRoles = ['admin', 'urban_ops_admin'];
+    $restrictedRoles = ['admin', 'urban_ops_admin', 'ho_account', 'project_team_ho', 's2s_ho_team', 'njpc_ho_team'];
 
     $hasRestrictedRole = \CRM_Core_Permission::checkAnyPerm($restrictedRoles);
 
