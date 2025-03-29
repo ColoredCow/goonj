@@ -469,9 +469,9 @@ export const monetaryContributionUserDetails = {
   
 };
 
-export async function submitMonetaryContributionForm(page, monetaryContributionUserDetails) {
+export async function submitMonetaryContributionForm(page, monetaryContributionUserDetails, individualMonetaryContributionUrl) {
   const individualMonetaryContributionPage  = new IndividualMonetaryContributionPage(page);
-  const individualMonetaryContributionUrl = individualMonetaryContributionPage.getAppendedUrl('/contribute/?custom_554=970');
+  // const individualMonetaryContributionUrl = individualMonetaryContributionPage.getAppendedUrl('/contribute/?custom_554=970');
   const registrationConfirmationText = 'razorpay%2Fpayment&contribution'
   await page.goto(individualMonetaryContributionUrl);
   // await userFormLogin(page, userEmailAddress, userMobileNumber)
