@@ -15,7 +15,7 @@ exports.IndividualMonetaryContributionPage =  class IndividualMonetaryContributi
     this.pancardField = page.locator('[data-crm-custom="Contribution_Details:PAN_Card_Number"]');
 
   }
-  
+
   async enterOtherAmountField(otherAmount)
   {
     await this.otherAmountField(otherAmount)
@@ -52,7 +52,7 @@ exports.IndividualMonetaryContributionPage =  class IndividualMonetaryContributi
     await this.streetAddressField.fill(streetAddress)
   }
 
-  async enterPanCardField(pancardNumber)
+  async enterPancard(pancardNumber)
   {
     await this.pancardField.fill(pancardNumber)
   }
@@ -89,7 +89,7 @@ exports.IndividualMonetaryContributionPage =  class IndividualMonetaryContributi
   
 
   async selectState(state) {
-    await this.selectDropdownOption('#select2-chosen-1', '#s2id_autogen1_search', state);
+    await this.selectDropdownOption('#select2-chosen-2', '#s2id_autogen2_search', state);
   }
 
   async selectCountryAndClear(country) {
@@ -117,8 +117,8 @@ exports.IndividualMonetaryContributionPage =  class IndividualMonetaryContributi
     });
   }
 
-  async clickSubmitButton() {
-    await this.page.getByRole('button', { name: /submit/i }).click({force: true});
+  async clickContributeButton() {
+    await this.page.click('button.crm-button_qf_Main_upload[type="submit"]');
   }
 
   async selectConfirmationCheckbox() {
