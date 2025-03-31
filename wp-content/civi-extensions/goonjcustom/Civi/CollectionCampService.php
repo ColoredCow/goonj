@@ -1705,7 +1705,7 @@ class CollectionCampService extends AutoSubscriber {
 
       // Increment the number.
       $increaseNumber = (int) $numberOnly + 1;
-      $invoicePrefix = 'GNJCRM/24-25/';
+      $invoicePrefix = 'GNJCRM/25-26/';
       $newInvoiceNumber = $invoicePrefix . $increaseNumber;
 
       // Update contribution with new invoice number.
