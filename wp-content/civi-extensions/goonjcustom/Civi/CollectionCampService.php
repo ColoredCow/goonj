@@ -80,10 +80,10 @@ class CollectionCampService extends AutoSubscriber {
       ['autofillFinancialType'],
       ['autofillReceiptFrom'],
       ],
-      '&hook_civicrm_alterMailParams' => [
-      ['alterReceiptMail'],
-      ['handleOfflineReceipt'],
-      ],
+      // '&hook_civicrm_alterMailParams' => [
+      // ['alterReceiptMail'],
+      // ['handleOfflineReceipt'],
+      // ],
       '&hook_civicrm_validateForm' => 'validateCheckNumber',
 
     ];
