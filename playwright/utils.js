@@ -9,6 +9,7 @@ import { InstituteRegistrationPage } from '../playwright/pages/institute-registr
 import { InstituteCollectionCampPage } from '../playwright/pages/institute-collection-camp-registration.page';
 import { InstituteDroppingCenterPage } from '../playwright/pages/institute-dropping-center-registration.page';
 import { InstituteActivityIntentPage } from '../playwright/pages/institute-activity-registration.page';
+import { IndividualMonetaryContributionPage } from '../playwright/pages/individual-monetary-contribution.page.js';
 import { InductedVolunteerPage } from '../playwright/pages/inducted-volunteer.page';
 
 // Helper function to generate an Indian mobile number
@@ -452,3 +453,44 @@ export async function submitInstituteRegistrationForm(page, instituteRegistratio
 };
 
 
+export const monetaryContributionUserDetails = {
+  otherAmount: faker.helpers.arrayElement(['2000', '3000']),
+  contactEmail: faker.internet.email(),
+  contactPhoneNumber: generateIndianMobileNumber(),
+  firstName: faker.person.firstName(),
+  lastName: faker.person.lastName(),
+  fullName: function () {
+    return `${this.firstName} ${this.lastName}`;
+  },
+  cityName: 'Delhi',
+  postalCode: faker.location.zipCode('110070'),
+  address: faker.location.streetAddress(),
+  pancardNumber: 'CENPS7490Q'
+  
+};
+
+export async function submitMonetaryContributionForm(page, monetaryContributionUserDetails, individualMonetaryContributionUrl) {
+  const individualMonetaryContributionPage  = new IndividualMonetaryContributionPage(page);
+  // const individualMonetaryContributionUrl = individualMonetaryContributionPage.getAppendedUrl('/contribute/?custom_554=970');
+  const registrationConfirmationText = 'razorpay%2Fpayment&contribution'
+  await page.goto(individualMonetaryContributionUrl);
+  // await userFormLogin(page, userEmailAddress, userMobileNumber)
+  // await droppingCenterPage.clickContinueButton()
+  await page.waitForTimeout(3000)
+  await individualMonetaryContributionPage.enterContactEmail(monetaryContributionUserDetails.contactEmail);
+  await individualMonetaryContributionPage.enterContactNumber(monetaryContributionUserDetails.contactPhoneNumber);
+  await individualMonetaryContributionPage.enterFirstName(monetaryContributionUserDetails.firstName);
+  await page.waitForTimeout(200);
+  await individualMonetaryContributionPage.enterLastName(monetaryContributionUserDetails.lastName);
+  await individualMonetaryContributionPage.enterCityName(monetaryContributionUserDetails.cityName);
+  await individualMonetaryContributionPage.selectState('Delhi')
+  await page.waitForTimeout(200);
+  await individualMonetaryContributionPage.enterPostalCode(monetaryContributionUserDetails.postalCode); 
+  await individualMonetaryContributionPage.enterStreetAddress(monetaryContributionUserDetails.address); 
+  await individualMonetaryContributionPage.enterPancard(monetaryContributionUserDetails.pancardNumber); 
+  await individualMonetaryContributionPage.selectConfirmationCheckbox()
+  await page.waitForTimeout(3000)
+  await individualMonetaryContributionPage.clickContributeButton();
+  await page.waitForTimeout(4000)
+  await individualMonetaryContributionPage.verifyUrlAfterFormSubmission(registrationConfirmationText);  // Replace with your success URL
+};
