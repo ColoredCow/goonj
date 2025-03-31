@@ -1349,7 +1349,9 @@ class CollectionCampService extends AutoSubscriber {
   public static function alterReceiptMail(&$params, $context) {
     // Handle contribution_online_receipt workflow.
     if (!empty($params['workflow']) && $params['workflow'] === 'contribution_online_receipt') {
-      $mail = false;
+      error_log("checking: " . print_r($params, TRUE));
+      $params['toName'] = '';
+      $params['toEmail'] = '';
       // Extract donor name or use a default value.
       // $donorName = !empty($params['tplParams']['displayName']) ? $params['tplParams']['displayName'] : 'Valued Supporter';
       // $contributionID = !empty($params['tplParams']['contributionID']) ? $params['tplParams']['contributionID'] : NULL;
