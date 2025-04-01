@@ -371,9 +371,9 @@ if (in_array($target, ['collection-camp', 'institution-collection-camp', 'droppi
             <a href="<?php echo esc_url($pu_material_contribution_check_link); ?>" class="wp-block-gb-action-button">
                 <?php esc_html_e('Material Contribution', 'goonj-blocks'); ?>
             </a>
-            <!-- <a href="<?php echo esc_url($pu_donation_link); ?>" class="wp-block-gb-action-button">
+            <a href="<?php echo esc_url($pu_donation_link); ?>" class="wp-block-gb-action-button">
                 <?php esc_html_e('Monetary Contribution', 'goonj-blocks'); ?>
-            </a> -->
+            </a>
         </div>
   <?php elseif ('induction-schedule' === $target) : ?>
     <div class="wp-block-gb-slots-wrapper">
