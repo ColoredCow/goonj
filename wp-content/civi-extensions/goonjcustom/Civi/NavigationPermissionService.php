@@ -231,6 +231,8 @@ class NavigationPermissionService extends AutoSubscriber {
           'Volunteers',
           'Urban Visit',
           'Induction Tab',
+          'Induction',
+          'Inductions',
         ],
       ],
     ];
