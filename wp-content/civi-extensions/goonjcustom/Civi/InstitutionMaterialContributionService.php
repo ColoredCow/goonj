@@ -47,7 +47,7 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
     $organizations = Organization::get(FALSE)
       ->addSelect('address_primary.street_address', 'display_name')
       ->addWhere('id', '=', $organizationId)
-      ->execute()->single();
+      ->execute()->first();
 
     $organizationName = $organizations['display_name'] ?? '';
     $organizationAddress = $organizations['address_primary.street_address'] ?? '';
