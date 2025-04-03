@@ -53,7 +53,6 @@ class NavigationPermissionService extends AutoSubscriber {
       return;
     }
 
-
     $roleMenuMapping = [
       'account_team' => [
         'hide_menus' => [
@@ -217,6 +216,21 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Institutes',
           'MMT - Offices',
           'MMT - Urban Visits',
+        ],
+      ],
+      'data_entry' => [
+        'hide_menus' => [
+          'MMT - Individuals',
+          'MMT - Institutes',
+          'MMT - Offices',
+          'MMT - Urban Visits',
+          'Contributions',
+          'Contacts',
+          'Events',
+          'Campaigns',
+          'Volunteers',
+          'Urban Visit',
+          'Induction Tab',
         ],
       ],
     ];
