@@ -53,22 +53,14 @@ class InstitutionService extends AutoSubscriber {
     if ($op !== 'edit' || $objectName !== 'AfformSubmission') {
       return;
     }
-    error_log('Working 1');
-
 
     $activityData = $objectRef['data']['Activity1'][0]['fields'] ?? [];
     $institutionId = $activityData['source_contact_id'] ?? NULL;
     $institutionPocId = $activityData['Institution_Material_Contribution.Institution_POC'] ?? NULL;
 
-    error_log('Activity Data: ' . print_r($activityData, TRUE));
-    error_log('institutionId: ' . print_r($institutionId, TRUE));
-    error_log('institutionPocId: ' . print_r($institutionPocId, TRUE));
-
     if (empty($institutionId) || empty($institutionPocId)) {
       return;
     }
-
-    error_log('Working 2');
 
     $existingRelationship = Relationship::get(FALSE)
       ->addWhere('contact_id_a', '=', $institutionId)
@@ -77,15 +69,11 @@ class InstitutionService extends AutoSubscriber {
       ->addClause('OR', ['relationship_type_id:name', '=', 'Institution POC of'], ['relationship_type_id:name', '=', 'Primary Institution POC of'])
       ->execute()->first();
 
-    error_log('existingRelationship: ' . print_r($existingRelationship, TRUE));
-
     
     if ($existingRelationship) {
       return;
     }
 
-    error_log('Working 3');
-    
     Relationship::create(FALSE)
       ->addValue('contact_id_a', $institutionId)
       ->addValue('contact_id_b', $institutionPocId)
@@ -94,8 +82,6 @@ class InstitutionService extends AutoSubscriber {
       ->addValue('is_permission_a_b', 1)
       ->addValue('is_permission_b_a', 1)
       ->execute();
-
-    error_log('Working 4');
 
   }
 
