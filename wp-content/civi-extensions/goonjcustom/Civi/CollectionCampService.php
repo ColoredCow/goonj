@@ -1352,7 +1352,7 @@ class CollectionCampService extends AutoSubscriber {
       // Extract donor name or use a default value.
       $donorName = !empty($params['tplParams']['displayName']) ? $params['tplParams']['displayName'] : 'Valued Supporter';
       $contributionID = !empty($params['tplParams']['contributionID']) ? $params['tplParams']['contributionID'] : NULL;
-      $params['cc'] = 'priyanka@goonj.org';
+      $params['cc'] = ['priyanka@goonj.org', 'accounts@goonj.org'];
 
       $contribution = Contribution::get(FALSE)
         ->addSelect('invoice_number')
@@ -1399,7 +1399,7 @@ class CollectionCampService extends AutoSubscriber {
       // Extract donor name or use a default value.
       $donorName = !empty($params['toName']) ? $params['toName'] : 'Valued Supporter';
       $contributionID = !empty($params['contributionId']) ? $params['contributionId'] : NULL;
-      $params['cc'] = 'priyanka@goonj.org';
+      $params['cc'] = ['priyanka@goonj.org', 'accounts@goonj.org'];
 
       $contribution = Contribution::get(FALSE)
         ->addSelect('invoice_number', 'contribution_page_id:label')
