@@ -366,7 +366,7 @@ if (in_array($target, ['collection-camp', 'institution-collection-camp', 'droppi
         </table>
         <div <?php echo get_block_wrapper_attributes(); ?>>
             <a href="<?php echo esc_url($pu_visit_check_link); ?>" class="wp-block-gb-action-button">
-                <?php esc_html_e('Processing Center Tour', 'goonj-blocks'); ?>
+                <?php esc_html_e('Learning Journey', 'goonj-blocks'); ?>
             </a>
             <a href="<?php echo esc_url($pu_material_contribution_check_link); ?>" class="wp-block-gb-action-button">
                 <?php esc_html_e('Material Contribution', 'goonj-blocks'); ?>
