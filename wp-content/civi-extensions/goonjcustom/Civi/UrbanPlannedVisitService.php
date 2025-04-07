@@ -834,8 +834,8 @@ class UrbanPlannedVisitService extends AutoSubscriber {
 
 <p>Just a little nudge to remind you about today’s Learning Journey at $visitTime!  Here are the details:</p>
 
-<ul
-<li><strong>Individual/Institute Name:</strong> $individualOrInstitute</li>
+<ul>
+    <li><strong>Individual/Institute Name:</strong> $individualOrInstitute</li>
     <li><strong>Number of Participants:</strong> $visitParticipation</li>
 </ul>
 
