@@ -188,15 +188,15 @@ document.addEventListener("DOMContentLoaded", function () {
 		}
 	}
 
-	// If we have visit_id, simulate the Eck_Institution_Visit1=... for CiviCRM
-	if (visitId) {
+	// If we have visit_id and token in URL, inject for CiviCRM
+	if (visitId && token) {
 		const tempHash = `?Eck_Institution_Visit1=${visitId}`;
 		window.location.hash = tempHash;
 
-		// Restore _authx if it exists, or just clean hash
+		// After delay, put _authx token back in hash (keeps it visible)
 		setTimeout(() => {
-			const originalHash = token ? `?_authx=${token}` : "";
-			history.replaceState(null, null, `${window.location.pathname}${originalHash}`);
-		}, 500); // Keep delay short but long enough for CiviCRM to init
+			const restoredHash = `?_authx=${token}`;
+			window.location.hash = restoredHash; // instead of replaceState
+		}, 500);
 	}
 })();
