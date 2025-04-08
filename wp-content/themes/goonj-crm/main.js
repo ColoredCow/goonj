@@ -199,4 +199,4 @@ document.addEventListener("DOMContentLoaded", function () {
 			window.location.hash = restoredHash; // instead of replaceState
 		}, 500);
 	}
-})();
+})(); 
