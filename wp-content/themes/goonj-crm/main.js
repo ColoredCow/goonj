@@ -161,3 +161,42 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     }
 });
+
+(function () {
+	const hashParams = new URLSearchParams(window.location.hash.substring(2));
+	const token = hashParams.get("_authx");
+
+	let visitId = null;
+
+	if (token) {
+		try {
+			const decoded = jwt_decode(token);
+			visitId = decoded.visit_id;
+			console.log("Decoded visit_id from token:", visitId);
+
+			if (visitId) {
+				sessionStorage.setItem("visit_id", visitId);
+			}
+		} catch (err) {
+			console.error("JWT decode error:", err);
+		}
+	} else {
+		// No token, try to get from sessionStorage
+		visitId = sessionStorage.getItem("visit_id");
+		if (visitId) {
+			console.log("Retrieved visit_id from sessionStorage:", visitId);
+		}
+	}
+
+	// If we have visit_id, simulate the Eck_Institution_Visit1=... for CiviCRM
+	if (visitId) {
+		const tempHash = `?Eck_Institution_Visit1=${visitId}`;
+		window.location.hash = tempHash;
+
+		// Restore _authx if it exists, or just clean hash
+		setTimeout(() => {
+			const originalHash = token ? `?_authx=${token}` : "";
+			history.replaceState(null, null, `${window.location.pathname}${originalHash}`);
+		}, 500); // Keep delay short but long enough for CiviCRM to init
+	}
+})();

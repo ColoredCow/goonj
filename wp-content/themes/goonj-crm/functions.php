@@ -11,11 +11,21 @@ function goonj_enqueue_scripts() {
 		array(),
 		wp_get_theme()->get( 'Version' )
 	);
+
+	wp_enqueue_script(
+		'jwt-decode',
+		'https://cdn.jsdelivr.net/npm/jwt-decode@3.1.2/build/jwt-decode.min.js',
+		array(),
+		null,
+		true
+	);
+
 	wp_enqueue_script(
 		'goonj-script',
 		get_template_directory_uri() . '/main.js',
-		array(),
-		wp_get_theme()->get( 'Version' )
+		array( 'jwt-decode' ),
+		wp_get_theme()->get( 'Version' ),
+		true
 	);
 	wp_enqueue_script(
 		'validation-script',
