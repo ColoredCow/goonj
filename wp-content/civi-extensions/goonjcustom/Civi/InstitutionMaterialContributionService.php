@@ -1,6 +1,7 @@
 <?php
 
 namespace Civi;
+use Dompdf\Dompdf;
 
 use Civi\Api4\Activity;
 use Civi\Api4\Contact;
@@ -18,10 +19,65 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
    */
   public static function getSubscribedEvents() {
     return [
-      '&hook_civicrm_post' => 'processInstitutionMaterialContributions',
+      '&hook_civicrm_post' => [
+        ['processInstitutionMaterialContributions'],
+        ['generatePdf'],
+      ],
     ];
   }
 
+  public static function generatePdf(string $op, string $objectName, int $objectId, &$objectRef) {
+    error_log("generatePdf triggered for objectName: $objectName, afform_name: " . ($objectRef->afform_name ?? 'N/A'));
+  
+    if (
+      $op !== 'create' ||
+      $objectName !== 'AfformSubmission' ||
+      empty($objectRef->afform_name) ||
+      $objectRef->afform_name !== 'afformSendReminderToCollectionCampMaterialContributions'
+    ) {
+      error_log("Conditions not met for generating PDF.");
+      return;
+    }
+  
+    if (!class_exists('Dompdf\Dompdf')) {
+      error_log("Dompdf class not found.");
+      \Civi::log()->error('Dompdf is not available. Make sure it is installed via composer.');
+      return;
+    }
+  
+    $uploadDir = \CRM_Core_Config::singleton()->uploadDir;
+    error_log("Upload directory is: $uploadDir");
+  
+    $fileName = 'example_' . uniqid() . '.pdf';
+    $filePath = $uploadDir . $fileName;
+  
+    $dompdf = new \Dompdf\Dompdf();
+    $html = '<h1>Reminder Confirmation</h1><p>This is your generated PDF from CiviCRM.</p>';
+    $dompdf->loadHtml($html);
+    $dompdf->setPaper('A4', 'portrait');
+    $dompdf->render();
+  
+    $pdfOutput = $dompdf->output();
+    if (file_put_contents($filePath, $pdfOutput)) {
+      error_log("PDF successfully saved to: $filePath");
+    } else {
+      error_log("Failed to save PDF to: $filePath");
+      return;
+    }
+  
+    $pdfUrl = \CRM_Utils_System::url('civicrm/file', 'reset=1&name=' . $fileName, true, null, false);
+    error_log("Generated PDF URL: $pdfUrl");
+  
+    // Redirect to a page where JS can open the PDF in a new tab
+    $redirectUrl = \CRM_Utils_System::url('civicrm/acknowledgement-form-for-logistics', 'pdfUrl=' . urlencode($pdfUrl));
+    error_log("Redirecting to intermediate page: $redirectUrl");
+  
+    \CRM_Utils_System::redirect($redirectUrl);
+  }
+  
+
+
+  
   /**
    *
    */
