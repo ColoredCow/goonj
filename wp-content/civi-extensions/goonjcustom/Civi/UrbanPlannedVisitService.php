@@ -904,13 +904,13 @@ class UrbanPlannedVisitService extends AutoSubscriber {
 
     $emailSendResultToExternalPoc = \CRM_Utils_Mail::send($mailParamsExternalPoc);
 
-    if ($emailSendResultToExternalPoc) {
-      EckEntity::update('Institution_Visit', FALSE)
-        ->addValue('Visit_Feedback.Feedback_Email_Sent', 1)
-        ->addWhere('id', '=', $visit['id'])
-        ->execute();
-    }
-
+    // Only for testing need to remove the comment code later.
+    // If ($emailSendResultToExternalPoc) {
+    //   EckEntity::update('Institution_Visit', FALSE)
+    //     ->addValue('Visit_Feedback.Feedback_Email_Sent', 1)
+    //     ->addWhere('id', '=', $visit['id'])
+    //     ->execute();
+    // }
   }
 
   /**
@@ -918,7 +918,12 @@ class UrbanPlannedVisitService extends AutoSubscriber {
    */
   private static function getExtCoordPocFeedbackEmailHtml($externalCoordinatingGoonjPocName, $coordinatingGoonjPersonName, $coordinatingGoonjPersonPhone, $visitId) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
-    $visitFeedbackFormUrl = $homeUrl . '/visit-feedback/#?Eck_Institution_Visit1=' . $visitId;
+    $jwt = \Civi::service('crypto.jwt');
+    $token = $jwt->encode([
+      'exp' => time() + (86400 * 3),
+      'visit_id' => $visitId,
+    ]);
+    $visitFeedbackFormUrl = $homeUrl . '/visit-feedback/#?_authx=' . $token;
 
     $html = "
     <p>Dear $externalCoordinatingGoonjPocName,</p>

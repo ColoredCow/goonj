@@ -161,3 +161,42 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     }
 });
+
+(function () {
+	const hashParams = new URLSearchParams(window.location.hash.substring(2));
+	const token = hashParams.get("_authx");
+
+	let visitId = null;
+
+	if (token) {
+		try {
+			const decoded = jwt_decode(token);
+			visitId = decoded.visit_id;
+			console.log("Decoded visit_id from token:", visitId);
+
+			if (visitId) {
+				sessionStorage.setItem("visit_id", visitId);
+			}
+		} catch (err) {
+			console.error("JWT decode error:", err);
+		}
+	} else {
+		// No token, try to get from sessionStorage
+		visitId = sessionStorage.getItem("visit_id");
+		if (visitId) {
+			console.log("Retrieved visit_id from sessionStorage:", visitId);
+		}
+	}
+
+	// If we have visit_id and token in URL, inject for CiviCRM
+	if (visitId && token) {
+		const tempHash = `?Eck_Institution_Visit1=${visitId}`;
+		window.location.hash = tempHash;
+
+		// After delay, put _authx token back in hash (keeps it visible)
+		setTimeout(() => {
+			const restoredHash = `?_authx=${token}`;
+			window.location.hash = restoredHash; // instead of replaceState
+		}, 500);
+	}
+})(); 
