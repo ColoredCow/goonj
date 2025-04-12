@@ -68,11 +68,12 @@ class InstitutionService extends AutoSubscriber {
       ->addWhere('is_active', '=', TRUE)
       ->addClause('OR', ['relationship_type_id:name', '=', 'Institution POC of'], ['relationship_type_id:name', '=', 'Primary Institution POC of'])
       ->execute()->first();
+
     
     if ($existingRelationship) {
       return;
     }
-    
+
     Relationship::create(FALSE)
       ->addValue('contact_id_a', $institutionId)
       ->addValue('contact_id_b', $institutionPocId)
@@ -81,6 +82,7 @@ class InstitutionService extends AutoSubscriber {
       ->addValue('is_permission_a_b', 1)
       ->addValue('is_permission_b_a', 1)
       ->execute();
+
   }
 
   /**
@@ -103,8 +105,9 @@ class InstitutionService extends AutoSubscriber {
     $records = $event->records;
     foreach ($records as $record) {
       $fields = $record['fields'];
-
+   
       $addressJoins = $record['joins']['Address'] ?? [];
+      $city = $addressJoins[0]['city'] ?? [];
 
       $stateProvinceId = !empty($addressJoins[0]['state_province_id'])
           ? $addressJoins[0]['state_province_id']
@@ -113,6 +116,7 @@ class InstitutionService extends AutoSubscriber {
       self::$instituteAddress = [
         'location_type_id' => 3,
         'state_province_id' => $stateProvinceId,
+        'city' => $city,
         'country_id' => 1101,
       ];
     }
@@ -145,6 +149,7 @@ class InstitutionService extends AutoSubscriber {
 
       $contactId = $contact['fields']['Institute_Registration.Institution_POC'] ?? NULL;
       $stateProvinceId = self::$instituteAddress['state_province_id'] ?? NULL;
+      $city = self::$instituteAddress['city'] ?? NULL;
 
       if (!$stateProvinceId && !$contactId) {
         return FALSE;
@@ -153,7 +158,7 @@ class InstitutionService extends AutoSubscriber {
       if ($contactId && $stateProvinceId) {
 
         $addresses = Address::get(FALSE)
-          ->addSelect('state_province_id')
+          ->addSelect('state_province_id', 'city')
           ->addWhere('contact_id', '=', $contactId)
           ->execute()->single();
 
@@ -162,6 +167,7 @@ class InstitutionService extends AutoSubscriber {
         }
 
         $updateResults = Address::update(FALSE)
+          ->addValue('city', $city)
           ->addValue('state_province_id', $stateProvinceId)
           ->addWhere('contact_id', '=', $contactId)
           ->execute();
@@ -349,7 +355,6 @@ public static function assignChapterGroupToContacts(string $op, string $objectNa
     if ($op !== 'create' || $objectName !== 'Address' || self::$organizationId !== $objectRef->contact_id || !$objectRef->is_primary) {
       return FALSE;
     }
-
     $stateId = $objectRef->state_province_id;
 
     $officesFound = Contact::get(FALSE)
@@ -360,14 +365,12 @@ public static function assignChapterGroupToContacts(string $op, string $objectNa
       ->execute();
 
     $stateOffice = $officesFound->first();
-
     // If no state office is found, assign the fallback state office.
     if (!$stateOffice) {
       $stateOffice = self::getFallbackOffice();
     }
 
     $stateOfficeId = $stateOffice['id'];
-
     if ($stateOfficeId & self::$organizationId) {
       Organization::update(FALSE)
         ->addValue('Review.Goonj_Office', $stateOfficeId)
@@ -480,8 +483,8 @@ public static function assignChapterGroupToContacts(string $op, string $objectNa
       return;
     }
 
-    $typeOfInstitution = $organization['Institute_Registration.Type_of_Institution:label'];
-    $categoryOfInstitution = $organization['Category_of_Institution.Education_Institute:label'];
+    $typeOfInstitution = $organization['Institute_Registration.Type_of_Institution:name'] ?? '';
+    $categoryOfInstitution = $organization['Category_Of_Institution.Education_Institute:name'] ?? '';
 
     // Define the default type-to-relationship mapping.
     $typeToRelationshipMap = [
@@ -489,21 +492,18 @@ public static function assignChapterGroupToContacts(string $op, string $objectNa
       'Foundation'   => 'Default Coordinator of',
       'Association' => 'Default Coordinator of',
       'Other'       => 'Default Coordinator of',
+      'Educational_Institute' => [
+        'School' => 'School Coordinator of',
+        'Collage_University' => 'College/University Coordinator of',
+        'Other' => 'Default Coordinator of',
+      ],
     ];
-
-    if ($typeOfInstitution === 'Educational Institute') {
-      if ($categoryOfInstitution === 'School') {
-        return 'School Coordinator of';
-      }
-      elseif ($categoryOfInstitution === 'College/University') {
-        return 'College Coordinator of';
-      }
-      return 'Default Coordinator of';
+  
+    if (is_array($typeToRelationshipMap[$typeOfInstitution]) && $categoryOfInstitution) {
+      return $typeToRelationshipMap[$typeOfInstitution][$categoryOfInstitution] ?? 'Default Coordinator of';
     }
-
-    $firstWord = strtok($typeOfInstitution, ' ');
-    // Return the mapped relationship type, or default if not found.
-    return $typeToRelationshipMap[$firstWord] ?? 'Default Coordinator of';
+  
+    return $typeToRelationshipMap[$typeOfInstitution] ?? 'Default Coordinator of';
   }
 
   /**

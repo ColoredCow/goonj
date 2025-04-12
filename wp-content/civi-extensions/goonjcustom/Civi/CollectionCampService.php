@@ -30,7 +30,10 @@ class CollectionCampService extends AutoSubscriber {
 
   const FALLBACK_OFFICE_NAME = 'Delhi';
   const RELATIONSHIP_TYPE_NAME = 'Collection Camp Coordinator of';
-  const COLLECTION_CAMP_INTENT_FB_NAME = 'afformCollectionCampIntentDetails';
+  const COLLECTION_CAMP_INTENT_FB_NAME = [
+    'afformAdminCollectionCampIntentDetails',
+    'afformCollectionCampIntentDetails'
+  ];
   const ENTITY_NAME = 'Collection_Camp';
   const ENTITY_SUBTYPE_NAME = 'Collection_Camp';
   const MATERIAL_RELATIONSHIP_TYPE_NAME = 'Material Management Team of';
@@ -54,6 +57,7 @@ class CollectionCampService extends AutoSubscriber {
       ['assignChapterGroupToIndividualForContribution'],
       ['updateCampaignForCollectionSourceContribution'],
       ['generateInvoiceIdForContribution'],
+      ['generateInvoiceNumber'],
       ],
       '&hook_civicrm_pre' => [
         ['generateCollectionCampQr'],
@@ -93,7 +97,7 @@ class CollectionCampService extends AutoSubscriber {
       return;
     }
 
-    $restrictedRoles = ['account_team', 'ho_account', 'mmt'];
+    $restrictedRoles = ['account_team', 'ho_account', 'mmt', 'data_entry'];
 
     $isAdmin = \CRM_Core_Permission::check('admin');
 
@@ -145,7 +149,7 @@ class CollectionCampService extends AutoSubscriber {
         'module' => 'afsearchCollectionCampMaterialContributions',
         'directive' => 'afsearch-collection-camp-material-contributions',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'mmt', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'mmt', 'urban_ops_admin', 'data_entry'],
       ],
       'campOutcome' => [
         'title' => ts('Camp Outcome'),
@@ -228,8 +232,7 @@ class CollectionCampService extends AutoSubscriber {
   public static function setCollectionCampAddress(AfformSubmitEvent $event) {
     $afform = $event->getAfform();
     $formName = $afform['name'];
-
-    if ($formName !== self::COLLECTION_CAMP_INTENT_FB_NAME) {
+    if (!in_array($formName, self::COLLECTION_CAMP_INTENT_FB_NAME)) {
       return;
     }
 
@@ -264,7 +267,7 @@ class CollectionCampService extends AutoSubscriber {
     $afform = $event->getAfform();
     $formName = $afform['name'];
 
-    if ($formName !== self::COLLECTION_CAMP_INTENT_FB_NAME) {
+    if (!in_array($formName, self::COLLECTION_CAMP_INTENT_FB_NAME)) {
       return;
     }
 
@@ -311,6 +314,15 @@ class CollectionCampService extends AutoSubscriber {
     }
 
     $groupId = self::getChapterGroupForState($objectRef->state_province_id);
+    // Check if already assigned to group chapter
+		$groupContacts = GroupContact::get(FALSE)
+			->addWhere('contact_id', '=', self::$individualId)
+			->addWhere('group_id', '=', $groupId)
+			->execute()->first();
+
+		if (!empty($groupContacts)) {
+			return;
+		}
 
     if ($groupId & self::$individualId) {
       GroupContact::create(FALSE)
@@ -345,6 +357,15 @@ class CollectionCampService extends AutoSubscriber {
 
     if ($stateId) {
       $groupId = self::getChapterGroupForState($stateId);
+
+      $groupContacts = GroupContact::get(FALSE)
+        ->addWhere('contact_id', '=', self::$individualId)
+        ->addWhere('group_id', '=', $groupId)
+        ->execute()->first();
+
+      if (!empty($groupContacts)) {
+        return;
+      }
 
       if ($groupId & self::$individualId) {
         GroupContact::create(FALSE)
@@ -1331,7 +1352,7 @@ class CollectionCampService extends AutoSubscriber {
       // Extract donor name or use a default value.
       $donorName = !empty($params['tplParams']['displayName']) ? $params['tplParams']['displayName'] : 'Valued Supporter';
       $contributionID = !empty($params['tplParams']['contributionID']) ? $params['tplParams']['contributionID'] : NULL;
-      $params['cc'] = 'priyanka@goonj.org';
+      $params['cc'] = 'priyanka@goonj.org, accounts@goonj.org';
 
       $contribution = Contribution::get(FALSE)
         ->addSelect('invoice_number')
@@ -1342,29 +1363,30 @@ class CollectionCampService extends AutoSubscriber {
 
       // Check if title is 'Team 5000'.
       if (!empty($params['tplParams']['title']) && $params['tplParams']['title'] === 'Team 5000') {
-        $params['text'] = "Dear $donorName,\n\nThank you for the contribution and coming on-board of Team 5000.\n\nBy joining https://goonj.org/donate/micro-team-5000 you step into this legacy of grassroots action and become an integral part of our extended family. This isn’t just about giving; it’s about becoming a vital contributor to a movement that empowers communities and amplifies the voices of the marginalised. Your committed cooperation and continued engagement fuel our sustained efforts.\n\nThe receipts ($receiptNumber) for the same is enclosed with the details of 80G exemptions and our PAN No.\n\nFor a regular update on our activities and new campaigns, please keep an eye on www.goonj.org\n\nThank you once again for joining the journey..\n\nRegards,\nPriyanka";
+        $params['text'] = "Dear $donorName,\n\nThank you for the contribution and coming on-board of Team 5000.\n\nBy joining https://goonj.org/donate/micro-team-5000 you step into this legacy of grassroots action and become an integral part of our extended family. This isn’t just about giving; it’s about becoming a vital contributor to a movement that empowers communities and amplifies the voices of the marginalised. Your committed cooperation and continued engagement fuel our sustained efforts.\n\nThe receipt No. ($receiptNumber) for the same is enclosed with the details of 80G exemptions and our PAN No.\n\nFor a regular update on our activities and new campaigns please keep an eye on www.goonj.org and our FB page https://www.facebook.com/goonj.org, which are regularly updated.\n\nThank you once again for joining the journey..\n\nRegards,\nPriyanka";
 
         $params['html'] = "
-                <p>Dear <strong>$donorName</strong>,</p>
-                <p>Thank you for the contribution and coming on-board of Team 5000.</p>
-                <p>By joining <a href='https://goonj.org/donate/micro-team-5000'>https://goonj.org/donate/micro-team-5000</a>, you step into this legacy of grassroots action and become an integral part of our extended family. This isn’t just about giving; it’s about becoming a vital contributor to a movement that empowers communities and amplifies the voices of the marginalised. Your committed cooperation and continued engagement fuel our sustained efforts.</p>
-                <p>The receipts (<strong>$receiptNumber</strong>) for the same is enclosed with the details of 80G exemptions and our PAN No.</p>
-                <p>For a regular update on our activities and new campaigns, please keep an eye on <a href='https://www.goonj.org'>www.goonj.org</a>.</p>
-                <p>Thank you once again for joining the journey.</p>
-                <p>Regards,<br>Priyanka</p>
-            ";
+              <p>Dear <strong>$donorName</strong>,</p>
+              <p>Thank you for the contribution and coming on-board of Team 5000.</p>
+              <p>By joining <a href='https://goonj.org/donate/micro-team-5000'>https://goonj.org/donate/micro-team-5000</a> you step into this legacy of grassroots action and become an integral part of our extended family. This isn’t just about giving; it’s about becoming a vital contributor to a movement that empowers communities and amplifies the voices of the marginalised. Your committed cooperation and continued engagement fuel our sustained efforts.</p>
+              <p>The receipt No. (<strong>$receiptNumber</strong>) for the same is enclosed with the details of 80G exemptions and our PAN No.</p>
+              <p>For a regular update on our activities and new campaigns please keep an eye on <a href='https://www.goonj.org'>www.goonj.org</a> and our FB page <a href='https://www.facebook.com/goonj.org'>https://www.facebook.com/goonj.org</a>, which are regularly updated.</p>
+              <p>Thank you once again for joining the journey..</p>
+              <p>Regards,<br>Priyanka</p>
+          ";
       }
       else {
-        $params['text'] = "Dear $donorName,\n\nThank you for your contribution.\n\nThese contributions go a long way in sustaining our operations and implementing a series of initiatives all across. The receipt ($receiptNumber) for the same is enclosed with the details of 80G exemptions and our PAN No.\n\nFor updates on our activities and new campaigns, please visit our website www.goonj.org regularly.\n\nThank you once again for joining the journey.\n\nWith best regards,\nTeam Goonj";
+        $params['text'] = "Dear $donorName,\n\nThank you for your contribution.\n\nThese contributions go a long way in sustaining our operations and implementing series of initiatives all across.\nThe receipt No. ($receiptNumber) for the same is enclosed with the details of 80G exemptions and our PAN No.\n\nFor updates on our activities and new campaigns, please visit our website www.goonj.org and our FB page https://www.facebook.com/goonj.org, which are regularly updated.\n\nThank you once again for joining the journey.\n\nWith best regards,\nTeam Goonj";
 
         $params['html'] = "
-                <p>Dear <strong>$donorName</strong>,</p>
-                <p>Thank you for your contribution.</p>
-                <p>These contributions go a long way in sustaining our operations and implementing a series of initiatives all across. The receipt (<strong>$receiptNumber</strong>) for the same is enclosed with the details of 80G exemptions and our PAN No.</p>
-                <p>For updates on our activities and new campaigns, please visit our website <a href='https://www.goonj.org'>www.goonj.org</a> regularly.</p>
-                <p>Thank you once again for joining the journey.</p>
-                <p>With best regards,<br>Team Goonj</p>
-            ";
+              <p>Dear <strong>$donorName</strong>,</p>
+              <p>Thank you for your contribution.</p>
+              <p>These contributions go a long way in sustaining our operations and implementing series of initiatives all across.</p>
+              <p>The receipt No. (<strong>$receiptNumber</strong>) for the same is enclosed with the details of 80G exemptions and our PAN No.</p>
+              <p>For updates on our activities and new campaigns, please visit our website <a href='https://www.goonj.org'>www.goonj.org</a> and our FB page <a href='https://www.facebook.com/goonj.org'>https://www.facebook.com/goonj.org</a>, which are regularly updated.</p>
+              <p>Thank you once again for joining the journey.</p>
+              <p>With best regards,<br>Team Goonj</p>
+          ";
       }
     }
   }
@@ -1377,7 +1399,7 @@ class CollectionCampService extends AutoSubscriber {
       // Extract donor name or use a default value.
       $donorName = !empty($params['toName']) ? $params['toName'] : 'Valued Supporter';
       $contributionID = !empty($params['contributionId']) ? $params['contributionId'] : NULL;
-      $params['cc'] = 'priyanka@goonj.org';
+      $params['cc'] = 'priyanka@goonj.org, accounts@goonj.org';
 
       $contribution = Contribution::get(FALSE)
         ->addSelect('invoice_number', 'contribution_page_id:label')
@@ -1389,29 +1411,30 @@ class CollectionCampService extends AutoSubscriber {
 
       // Check if title is 'Team 5000'.
       if ($contributionName === 'Team 5000') {
-        $params['text'] = "Dear $donorName,\n\nThank you for the contribution and coming on-board of Team 5000.\n\nBy joining https://goonj.org/donate/micro-team-5000 you step into this legacy of grassroots action and become an integral part of our extended family. This isn’t just about giving; it’s about becoming a vital contributor to a movement that empowers communities and amplifies the voices of the marginalised. Your committed cooperation and continued engagement fuel our sustained efforts.\n\nThe receipts ($receiptNumber) for the same is enclosed with the details of 80G exemptions and our PAN No.\n\nFor a regular update on our activities and new campaigns, please keep an eye on www.goonj.org\n\nThank you once again for joining the journey..\n\nRegards,\nPriyanka";
+        $params['text'] = "Dear $donorName,\n\nThank you for the contribution and coming on-board of Team 5000.\n\nBy joining https://goonj.org/donate/micro-team-5000 you step into this legacy of grassroots action and become an integral part of our extended family. This isn’t just about giving; it’s about becoming a vital contributor to a movement that empowers communities and amplifies the voices of the marginalised. Your committed cooperation and continued engagement fuel our sustained efforts.\n\nThe receipt No. ($receiptNumber) for the same is enclosed with the details of 80G exemptions and our PAN No.\n\nFor a regular update on our activities and new campaigns, please keep an eye on www.goonj.org and our FB page https://www.facebook.com/goonj.org, which are regularly updated.\n\nThank you once again for joining the journey..\n\nRegards,\nPriyanka";
 
         $params['html'] = "
-          <p>Dear <strong>$donorName</strong>,</p>
-          <p>Thank you for the contribution and coming on-board of Team 5000.</p>
-          <p>By joining <a href='https://goonj.org/donate/micro-team-5000'>https://goonj.org/donate/micro-team-5000</a>, you step into this legacy of grassroots action and become an integral part of our extended family. This isn’t just about giving; it’s about becoming a vital contributor to a movement that empowers communities and amplifies the voices of the marginalised. Your committed cooperation and continued engagement fuel our sustained efforts.</p>
-          <p>The receipts (<strong>$receiptNumber</strong>) for the same is enclosed with the details of 80G exemptions and our PAN No.</p>
-          <p>For a regular update on our activities and new campaigns, please keep an eye on <a href='https://www.goonj.org'>www.goonj.org</a>.</p>
-          <p>Thank you once again for joining the journey.</p>
-          <p>Regards,<br>Priyanka</p>
-      ";
+              <p>Dear <strong>$donorName</strong>,</p>
+              <p>Thank you for the contribution and coming on-board of Team 5000.</p>
+              <p>By joining <a href='https://goonj.org/donate/micro-team-5000'>https://goonj.org/donate/micro-team-5000</a>, you step into this legacy of grassroots action and become an integral part of our extended family. This isn’t just about giving; it’s about becoming a vital contributor to a movement that empowers communities and amplifies the voices of the marginalised. Your committed cooperation and continued engagement fuel our sustained efforts.</p>
+              <p>The receipt No. (<strong>$receiptNumber</strong>) for the same is enclosed with the details of 80G exemptions and our PAN No.</p>
+              <p>For a regular update on our activities and new campaigns, please keep an eye on <a href='https://www.goonj.org'>www.goonj.org</a> and our FB page <a href='https://www.facebook.com/goonj.org'>https://www.facebook.com/goonj.org</a>, which are regularly updated.</p>
+              <p>Thank you once again for joining the journey.</p>
+              <p>Regards,<br>Priyanka</p>
+       ";
       }
       else {
-        $params['text'] = "Dear $donorName,\n\nThank you for your contribution.\n\nThese contributions go a long way in sustaining our operations and implementing a series of initiatives all across. The receipt ($receiptNumber) for the same is enclosed with the details of 80G exemptions and our PAN No.\n\nFor updates on our activities and new campaigns, please visit our website www.goonj.org regularly.\n\nThank you once again for joining the journey.\n\nWith best regards,\nTeam Goonj";
+        $params['text'] = "Dear $donorName,\n\nThank you for your contribution.\n\nThese contributions go a long way in sustaining our operations and implementing series of initiatives all across.\nThe receipt No. ($receiptNumber) for the same is enclosed with the details of 80G exemptions and our PAN No.\n\nFor updates on our activities and new campaigns, please visit our website www.goonj.org and our FB page https://www.facebook.com/goonj.org, which are regularly updated.\n\nThank you once again for joining the journey.\n\nWith best regards,\nTeam Goonj";
 
         $params['html'] = "
-          <p>Dear <strong>$donorName</strong>,</p>
-          <p>Thank you for your contribution.</p>
-          <p>These contributions go a long way in sustaining our operations and implementing a series of initiatives all across. The receipt (<strong>$receiptNumber</strong>) for the same is enclosed with the details of 80G exemptions and our PAN No.</p>
-          <p>For updates on our activities and new campaigns, please visit our website <a href='https://www.goonj.org'>www.goonj.org</a> regularly.</p>
-          <p>Thank you once again for joining the journey.</p>
-          <p>With best regards,<br>Team Goonj</p>
-      ";
+              <p>Dear <strong>$donorName</strong>,</p>
+              <p>Thank you for your contribution.</p>
+              <p>These contributions go a long way in sustaining our operations and implementing series of initiatives all across.</p>
+              <p>The receipt No. (<strong>$receiptNumber</strong>) for the same is enclosed with the details of 80G exemptions and our PAN No.</p>
+              <p>For updates on our activities and new campaigns, please visit our website <a href='https://www.goonj.org'>www.goonj.org</a> and our FB page <a href='https://www.facebook.com/goonj.org'>https://www.facebook.com/goonj.org</a>, which are regularly updated.</p>
+              <p>Thank you once again for joining the journey.</p>
+              <p>With best regards,<br>Team Goonj</p>
+          ";
       }
     }
   }
@@ -1510,7 +1533,7 @@ class CollectionCampService extends AutoSubscriber {
         return;
       }
 
-      if($contributionCampaignId){
+      if ($contributionCampaignId) {
         return;
       }
 
@@ -1615,6 +1638,85 @@ class CollectionCampService extends AutoSubscriber {
                 ");
         }
       }
+    }
+  }
+
+  /**
+   *
+   */
+  public static function generateInvoiceNumber(string $op, string $objectName, int $objectId, &$objectRef) {
+    if ($objectName !== 'Contribution' || !$objectRef->id) {
+      return;
+    }
+
+    try {
+      $contributionId = $objectRef->id;
+      if (!$contributionId) {
+        return;
+      }
+
+      $contribution = Contribution::get(FALSE)
+        ->addSelect('contribution_status_id:name', 'invoice_number')
+        ->addWhere('id', '=', $contributionId)
+        ->execute()->first();
+
+      if (!$contribution) {
+        return;
+      }
+
+      $contributionStatus = $contribution['contribution_status_id:name'];
+      $existingInvoiceNumber = $contribution['invoice_number'];
+
+      if ($contributionStatus !== 'Completed' || !empty($existingInvoiceNumber)) {
+        return;
+      }
+
+      $contributions = Contribution::get(FALSE)
+        ->addSelect('invoice_number')
+        ->addClause('OR', ['is_test', '=', TRUE], ['is_test', '=', FALSE])
+        ->addWhere('contribution_status_id:label', '=', 'Completed')
+        ->addOrderBy('id', 'DESC')
+        ->execute();
+
+      $invoiceNumber = NULL;
+      // Loop through contributions to find the first non-empty invoice_number.
+      foreach ($contributions as $contribution) {
+        if (!empty($contribution['invoice_number'])) {
+          $invoiceNumber = $contribution['invoice_number'];
+          // Stop after finding the first valid invoice number.
+          break;
+        }
+      }
+
+      if (!$invoiceNumber) {
+        return;
+      }
+
+      // Extract number from invoice number.
+      preg_match('/(\d+)$/', $invoiceNumber, $matches);
+      $numberOnly = $matches[1] ?? NULL;
+
+      if ($numberOnly === NULL) {
+        return;
+      }
+
+      // Increment the number.
+      $increaseNumber = (int) $numberOnly + 1;
+      $invoicePrefix = 'GNJCRM/25-26/';
+      $newInvoiceNumber = $invoicePrefix . $increaseNumber;
+
+      // Update contribution with new invoice number.
+      Contribution::update(FALSE)
+        ->addValue('invoice_number', $newInvoiceNumber)
+        ->addWhere('id', '=', $contributionId)
+        ->execute();
+
+    }
+    catch (\Exception $e) {
+      \Civi::log()->error("Exception occurred in generateInvoiceNumber.", [
+        'message' => $e->getMessage(),
+        'trace' => $e->getTraceAsString(),
+      ]);
     }
   }
 

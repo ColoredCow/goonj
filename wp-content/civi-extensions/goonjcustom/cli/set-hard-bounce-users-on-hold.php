@@ -92,7 +92,7 @@ function onHoldContactByEmail(string $email): void {
         $addTag = EntityTag::create(FALSE)
           ->addValue('entity_id', $contactId)
           ->addValue('entity_table', 'civicrm_contact')
-          ->addValue('tag_id.name', 'Hard_Bounce')
+          ->addValue('tag_id.name', 'Bounced_Cleanups_Required')
           ->execute();
       }
       catch (Exception $e) {

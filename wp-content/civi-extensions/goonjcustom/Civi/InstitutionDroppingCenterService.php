@@ -85,14 +85,10 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       $fields = $record['fields'];
 
       self::$droppingCenterAddress = [
-        'location_type_id' => 3,
         'state_province_id' => $fields['Institution_Dropping_Center_Intent.State'],
       // India.
         'country_id' => 1101,
-        'street_address' => $fields['Institution_Dropping_Center_Intent.Dropping_Center_Address'],
         'city' => $fields['Institution_Dropping_Center_Intent.District_City'],
-        'postal_code' => $fields['Institution_Dropping_Center_Intent.Postal_Code'],
-        'is_primary' => 1,
       ];
     }
   }
@@ -192,44 +188,56 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       return FALSE;
     }
 
-    if (empty($objectRef['data']['Eck_Collection_Camp1']) || empty($objectRef['data']['Individual1'])) {
+    if (empty($objectRef['data']['Eck_Collection_Camp1'])) {
       return FALSE;
     }
 
-    $individualData = $objectRef['data']['Individual1'];
+    // Collect all individuals from Individual1, Individual2, etc.
+    $individuals = [];
+    foreach ($objectRef['data'] as $key => $entries) {
+      if (strpos($key, 'Individual') === 0) {
+        foreach ($entries as $entry) {
+          if (!empty($entry['id'])) {
+            $individuals[] = $entry;
+          }
+        }
+      }
+    }
+
+    if (empty($individuals)) {
+      return FALSE;
+    }
+
     $droppingCenterData = $objectRef['data']['Eck_Collection_Camp1'];
 
-    foreach ($individualData as $individual) {
+    foreach ($individuals as $individual) {
       $contactId = $individual['id'];
       foreach ($droppingCenterData as $visit) {
         $fields = $visit['fields'] ?? [];
         $stateProvinceId = $fields['Institution_Dropping_Center_Intent.State'] ?? NULL;
-
-        $groupId = self::getChapterGroupForState($stateProvinceId);
-
-        if ($groupId && $contactId) {
-
-          // Check if the contact is already in the group.
-          $groupContacts = GroupContact::get(FALSE)
-            ->addSelect('contact_id', 'group_id')
-            ->addWhere('group_id.id', '=', $groupId)
-            ->addWhere('contact_id', '=', $contactId)
-            ->execute();
-
-          // If the contact is already in the group.
-          if ($groupContacts->count() > 0) {
-            return;
-          }
-
-          GroupContact::create(FALSE)
-            ->addValue('contact_id', $contactId)
-            ->addValue('group_id', $groupId)
-            ->addValue('status', 'Added')
-            ->execute();
-
+        
+        if (!$stateProvinceId) {
+          return FALSE;
         }
+        
+        $groupId = self::getChapterGroupForState($stateProvinceId);
+        if ($groupId && $contactId) {
+          $groupContacts = GroupContact::get(FALSE)
+            ->addSelect('id')
+            ->addWhere('group_id', '=', $groupId)
+            ->addWhere('contact_id', '=', $contactId)
+            ->execute()->first();
 
-        \Civi::log()->info("Contact ID $contactId has been added to Group ID $groupId.");
+          if (!$groupContacts) {
+            GroupContact::create(FALSE)
+              ->addValue('contact_id', $contactId)
+              ->addValue('group_id', $groupId)
+              ->addValue('status', 'Added')
+              ->execute();
+
+            \Civi::log()->info("Contact ID $contactId added to Group ID $groupId.");
+          }
+        }
       }
     }
 
@@ -351,11 +359,12 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
   public static function assignCoordinatorByRelationshipType($stateOfficeId, $registrationType, $institutionDroppingCenterId) {
     // Define the mapping of registration categories to relationship type names.
     $relationshipTypeMap = [
-      'Corporate' => 'Corporate Coordinator of',
+      'Corporate'    => 'Corporate Coordinator of',
       'School' => 'School Coordinator of',
-      'College' => 'College Coordinator of',
+      'Foundation'   => 'Default Coordinator of',
+      'College_University' => 'College/University Coordinator of',
       'Associations' => 'Default Coordinator of',
-      'Others' => 'Default Coordinator of',
+      'Other' => 'Default Coordinator of',
     ];
 
     $registrationCategorySelection = $registrationType['Institution_Dropping_Center_Intent.You_wish_to_register_as:name'];
@@ -745,7 +754,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       return;
     }
 
-    $restrictedRoles = ['account_team', 'ho_account', 'mmt'];
+    $restrictedRoles = ['account_team', 'ho_account', 'mmt', 'data_entry'];
 
     $isAdmin = \CRM_Core_Permission::check('admin');
 
@@ -762,77 +771,77 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
         'module' => 'afformInstitutionDroppingCenterIntentReviewEditForm',
         'directive' => 'afform-institution-dropping-center-intent-review-edit-form',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCampEdit.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter'],
       ],
       'eventCoordinators' => [
-        'title' => ts('Event Coordinators'),
+        'title' => ts('Center Coordinators'),
         'module' => 'afsearchAddEventCoordinator',
         'directive' => 'afsearch-add-event-coordinator',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter'],
       ],
       'visit' => [
         'title' => ts('Visit'),
         'module' => 'afsearchInstitutionDroppingCenterVisit',
         'directive' => 'afsearch-institution-dropping-center-visit',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter'],
       ],
       'logistics' => [
         'title' => ts('Logistics'),
         'module' => 'afsearchInstitutionDroppingCenterLogistics',
         'directive' => 'afsearch-institution-dropping-center-logistics',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter'],
       ],
       'donationBox' => [
         'title' => ts('Donation Box'),
         'module' => 'afsearchInstitutionDroppingCenterDonation',
         'directive' => 'afsearch-institution-dropping-center-donation',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter'],
       ],
       'status' => [
         'title' => ts('Status'),
         'module' => 'afsearchInstitutionDroppingCenterStatus',
         'directive' => 'afsearch-institution-dropping-center-status',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter'],
       ],
       'materialContribution' => [
         'title' => ts('Material Contribution'),
         'module' => 'afsearchInstitutionDroppingCenterMaterialContribution',
         'directive' => 'afsearch-institution-dropping-center-material-contribution',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'mmt', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'mmt', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter', 'data_entry'],
       ],
       'vehicleDispatch' => [
         'title' => ts('Dispatch'),
         'module' => 'afsearchInstitutionDroppingCenterVehicleDispatchData',
         'directive' => 'afsearch-institution-dropping-center-vehicle-dispatch-data',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter'],
       ],
       'dispatchAcknowledgement' => [
         'title' => ts('Dispatch Acknowledgement'),
         'module' => 'afsearchInstitutionDroppingCenterAcknowledgementForLogisticsData',
         'directive' => 'afsearch-institution-dropping-center-acknowledgement-for-logistics-data',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter'],
       ],
       'feedback' => [
         'title' => ts('Feedback'),
         'module' => 'afsearchInstitutionDroppingCenterFeedback',
         'directive' => 'afsearch-institution-dropping-center-feedback',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter'],
       ],
       'outcome' => [
         'title' => ts('Outcome'),
         'module' => 'afsearchInstitutionDroppingCenterOutcome',
         'directive' => 'afsearch-institution-dropping-center-outcome',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter'],
       ],
       // 'monetaryContribution' => [
       //   'title' => ts('Monetary Contribution'),

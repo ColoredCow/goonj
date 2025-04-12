@@ -49,7 +49,7 @@ function civicrm_api3_goonjcustom_institution_poc_feedback_goonj_activity_cron($
   $todayFormatted = $today->format('Y-m-d');
 
 
-  $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
+  $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
     ->addSelect('Institution_Goonj_Activities.End_Date', 'Logistics_Coordination.Feedback_Email_Sent', 'Institution_Goonj_Activities.Institution_POC', 'Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_', 'Institution_Goonj_Activities.Select_Institute_POC_Feedback_Form')
     ->addWhere('Collection_Camp_Core_Details.Status', '=', 'authorized')
     ->addWhere('subtype', '=', $collectionCampSubtype)

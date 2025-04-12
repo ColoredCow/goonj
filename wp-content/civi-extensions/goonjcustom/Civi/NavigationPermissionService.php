@@ -47,6 +47,7 @@ class NavigationPermissionService extends AutoSubscriber {
    *
    */
   public function hideNavForRoles(&$params) {
+
     $isAdmin = \CRM_Core_Permission::check('admin');
     if ($isAdmin) {
       return;
@@ -65,19 +66,22 @@ class NavigationPermissionService extends AutoSubscriber {
           'Goonj Activities',
           'Institution Dropping Center',
           'Institution Goonj Activities',
-          'Induction Tab',
+          'Inductions',
           'Volunteers',
           'Urban Visit',
           'Individuals',
           'Contributions',
           'Campaigns',
+          'MMT - Individuals',
+          'MMT - Institutes',
+          'MMT - Offices',
+          'MMT - Urban Visits',
         ],
       ],
       'mmt' => [
         'hide_menus' => [
-          'Events',
           'Dropping Center',
-          'Induction Tab',
+          'Inductions',
           'Institution Collection Camp',
           'Collection Camps',
           'Goonj Activities',
@@ -85,7 +89,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Inductions',
           'Institution Dropping Center',
           'Institution Goonj Activities',
-          'Induction Tab',
+          'Inductions',
           'Volunteers',
           'Individuals',
           'Offices',
@@ -99,12 +103,21 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Urban Visits',
         ],
       ],
+      'urban_ops_admin' => [
+        'hide_menus' => [
+          'MMT - Individuals',
+          'MMT - Institutes',
+          'MMT - Offices',
+          'MMT - Urban Visits',
+        ],
+      ],
       'urbanops' => [
         'hide_menus' => [
           'MMT - Individuals',
           'MMT - Institutes',
           'MMT - Offices',
           'MMT - Urban Visits',
+          'Contributions',
         ],
       ],
       'ho_account' => [
@@ -115,14 +128,111 @@ class NavigationPermissionService extends AutoSubscriber {
           'Institute',
           'Individuals',
           'Campaigns',
+          'MMT - Individuals',
+          'MMT - Institutes',
+          'MMT - Offices',
+          'MMT - Urban Visits',
         ],
       ],
       'communications_team' => [
+        'hide_menus' => [
+          'Institutes',
+          'Volunteers',
+          'Events',
+          'Offices',
+          'MMT - Individuals',
+          'MMT - Institutes',
+          'MMT - Offices',
+          'MMT - Urban Visits',
+          'Inductions',
+        ],
+      ],
+      'sanjha_team' => [
+        'hide_menus' => [
+          'Induction',
+          'Inductions',
+          'Volunteers',
+          'Offices',
+          'MMT - Individuals',
+          'MMT - Institutes',
+          'MMT - Offices',
+          'MMT - Urban Visits',
+        ],
+      ],
+      'data_team' => [
         'hide_menus' => [
           'Institute',
           'Volunteers',
           'Events',
           'Offices',
+          'Inductions',
+          'Volunteers',
+          'Events',
+          'MMT - Individuals',
+          'MMT - Institutes',
+          'MMT - Offices',
+          'MMT - Urban Visits',
+        ],
+      ],
+      'project_team_ho' => [
+        'hide_menus' => [
+          'Inductions',
+          'Volunteers',
+          'Individuals',
+          'MMT - Individuals',
+          'MMT - Institutes',
+          'MMT - Offices',
+          'MMT - Urban Visits',
+        ],
+      ],
+      'project_team_chapter' => [
+        'hide_menus' => [
+          'Inductions',
+          'Volunteers',
+          'Individuals',
+          'MMT - Individuals',
+          'MMT - Institutes',
+          'MMT - Offices',
+          'MMT - Urban Visits',
+        ],
+      ],
+      'njpc_ho_team' => [
+        'hide_menus' => [
+          'Inductions',
+          'Volunteers',
+          'Individuals',
+          'MMT - Individuals',
+          'MMT - Institutes',
+          'MMT - Offices',
+          'MMT - Urban Visits',
+        ],
+      ],
+      's2s_ho_team' => [
+        'hide_menus' => [
+          'Inductions',
+          'Individuals',
+          'Volunteers',
+          'MMT - Individuals',
+          'MMT - Institutes',
+          'MMT - Offices',
+          'MMT - Urban Visits',
+        ],
+      ],
+      'data_entry' => [
+        'hide_menus' => [
+          'MMT - Individuals',
+          'MMT - Institutes',
+          'MMT - Offices',
+          'MMT - Urban Visits',
+          'Contributions',
+          'Contacts',
+          'Events',
+          'Campaigns',
+          'Volunteers',
+          'Urban Visit',
+          'Induction Tab',
+          'Induction',
+          'Inductions',
         ],
       ],
     ];

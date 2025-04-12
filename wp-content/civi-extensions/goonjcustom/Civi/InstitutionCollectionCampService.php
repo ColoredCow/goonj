@@ -183,14 +183,10 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       $fields = $record['fields'];
 
       self::$collectionCampAddress = [
-        'location_type_id' => 3,
         'state_province_id' => $fields['Institution_Collection_Camp_Intent.State'],
       // India.
         'country_id' => 1101,
-        'street_address' => $fields['Institution_Collection_Camp_Intent.Collection_Camp_Address'],
         'city' => $fields['Institution_Collection_Camp_Intent.District_City'],
-        'postal_code' => $fields['Institution_Collection_Camp_Intent.Postal_Code'],
-        'is_primary' => 1,
       ];
     }
   }
@@ -403,40 +399,52 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       return FALSE;
     }
 
-    $individualData = $objectRef['data']['Individual1'];
+    // Collect all individuals from Individual1, Individual2, etc.
+    $individuals = [];
+    foreach ($objectRef['data'] as $key => $entries) {
+      if (strpos($key, 'Individual') === 0) {
+        foreach ($entries as $entry) {
+          if (!empty($entry['id'])) {
+            $individuals[] = $entry;
+          }
+        }
+      }
+    }
+
+    if (empty($individuals)) {
+      return FALSE;
+    }
+
     $collectionCampData = $objectRef['data']['Eck_Collection_Camp1'];
 
-    foreach ($individualData as $individual) {
+    foreach ($individuals as $individual) {
       $contactId = $individual['id'];
       foreach ($collectionCampData as $visit) {
         $fields = $visit['fields'] ?? [];
         $stateProvinceId = $fields['Institution_Collection_Camp_Intent.State'] ?? NULL;
-
-        $groupId = self::getChapterGroupForState($stateProvinceId);
-
-        if ($groupId && $contactId) {
-
-          // Check if the contact is already in the group.
-          $groupContacts = GroupContact::get(FALSE)
-            ->addSelect('contact_id', 'group_id')
-            ->addWhere('group_id.id', '=', $groupId)
-            ->addWhere('contact_id', '=', $contactId)
-            ->execute();
-
-          // If the contact is already in the group.
-          if ($groupContacts->count() > 0) {
-            return;
-          }
-
-          GroupContact::create(FALSE)
-            ->addValue('contact_id', $contactId)
-            ->addValue('group_id', $groupId)
-            ->addValue('status', 'Added')
-            ->execute();
-
+        
+        if (!$stateProvinceId) {
+          return FALSE;
         }
+        
+        $groupId = self::getChapterGroupForState($stateProvinceId);
+        if ($groupId && $contactId) {
+          $groupContacts = GroupContact::get(FALSE)
+            ->addSelect('id')
+            ->addWhere('group_id', '=', $groupId)
+            ->addWhere('contact_id', '=', $contactId)
+            ->execute()->first();
 
-        \Civi::log()->info("Contact ID $contactId has been added to Group ID $groupId.");
+          if (!$groupContacts) {
+            GroupContact::create(FALSE)
+              ->addValue('contact_id', $contactId)
+              ->addValue('group_id', $groupId)
+              ->addValue('status', 'Added')
+              ->execute();
+
+            \Civi::log()->info("Contact ID $contactId added to Group ID $groupId.");
+          }
+        }
       }
     }
 
@@ -912,8 +920,9 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     $relationshipTypeMap = [
       'Corporate' => 'Corporate Coordinator of',
       'School' => 'School Coordinator of',
-      'College_University' => 'College Coordinator of',
+      'College_University' => 'College/University Coordinator of',
       'Association' => 'Default Coordinator of',
+      'Foundation'   => 'Default Coordinator of',
       'Other' => 'Default Coordinator of',
     ];
 
@@ -1126,7 +1135,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       return;
     }
 
-    $restrictedRoles = ['account_team', 'ho_account', 'mmt'];
+    $restrictedRoles = ['account_team', 'ho_account', 'mmt', 'data_entry'];
 
     $isAdmin = \CRM_Core_Permission::check('admin');
 
@@ -1143,56 +1152,56 @@ class InstitutionCollectionCampService extends AutoSubscriber {
         'module' => 'afformInstitutionCollectionCampIntentReviewEditForm',
         'directive' => 'afform-institution-collection-camp-intent-review-edit-form',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCampEdit.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin','s2s_ho_team', 'project_team_ho', 'project_team_chapter'],
       ],
       'logistics' => [
         'title' => ts('Logistics'),
         'module' => 'afsearchInstitutionCollectionCampLogistics',
         'directive' => 'afsearch-institution-collection-camp-logistics',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter'],
       ],
       'eventVolunteers' => [
         'title' => ts('Camp Coordinators'),
         'module' => 'afsearchInstitutionCollectionCampEventVolunteers',
         'directive' => 'afsearch-institution-collection-camp-event-volunteers',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter'],
       ],
       'vehicleDispatch' => [
         'title' => ts('Dispatch'),
         'module' => 'afsearchInstitutionCampVehicleDispatchData',
         'directive' => 'afsearch-institution-camp-vehicle-dispatch-data',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter'],
       ],
       'materialAcknowledgement' => [
         'title' => ts('Dispatch Acknowledgement'),
         'module' => 'afsearchInstitutionCampAcknowledgementDispatch',
         'directive' => 'afsearch-institution-camp-acknowledgement-dispatch',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter'],
       ],
       'materialContribution' => [
         'title' => ts('Material Contribution'),
         'module' => 'afsearchInstitutionCollectionCampMaterialContribution',
         'directive' => 'afsearch-institution-collection-camp-material-contribution',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'mmt', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'mmt', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter', 'data_entry'],
       ],
       'campOutcome' => [
         'title' => ts('Camp Outcome'),
         'module' => 'afsearchInstitutionCampOutcome',
         'directive' => 'afsearch-institution-camp-outcome',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter'],
       ],
       'campFeedback' => [
         'title' => ts('Volunteer Feedback'),
         'module' => 'afsearchInstitutionCollectionCampFeedback',
         'directive' => 'afsearch-institution-collection-camp-feedback',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter'],
       ],
       // 'monetaryContribution' => [
       //   'title' => ts('Monetary Contribution'),

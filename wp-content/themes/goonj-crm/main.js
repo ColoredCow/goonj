@@ -89,6 +89,11 @@ function setupFormValidation() {
 			errorMessage: "Please enter a valid 10-digit mobile number.",
 		},
 		{
+			labelText: "Phone",
+			regex: /^\d{10}$/,
+			errorMessage: "Please enter a valid 10-digit mobile number.",
+		},
+		{
 			labelText: "PAN Card Number",
 			regex: /^[a-zA-Z0-9]{10}$/,
 			errorMessage: "Please enter a valid 10-digit PAN card number.",
@@ -99,18 +104,29 @@ function setupFormValidation() {
 		const label = Array.from(document.querySelectorAll("label")).find((el) =>
 			el.textContent.includes(field.labelText)
 		);
+	
 		if (label) {
 			const input = document.querySelector(
 				`input[name="${label.getAttribute("for")}"]`
 			);
-
+	
 			if (input) {
 				const form = input.closest("form");
-
+	
 				if (form) {
 					form.addEventListener("submit", function (event) {
-						const value = input.value;
-						if (!field.regex.test(value)) {
+						const value = input.value.trim();
+	
+						// If the field is required, validate it
+						if (field.required && !value) {
+							event.preventDefault();
+							alert(`${field.labelText} is required.`);
+							input.focus();
+							return;
+						}
+	
+						// If the field has a regex validation, apply it only when value is present
+						if (value && field.regex && !field.regex.test(value)) {
 							event.preventDefault();
 							alert(field.errorMessage);
 							input.focus();
@@ -120,6 +136,7 @@ function setupFormValidation() {
 			}
 		}
 	});
+	
 }
 
 // Limit the length of installments input

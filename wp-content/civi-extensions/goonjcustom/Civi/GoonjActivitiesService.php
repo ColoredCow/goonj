@@ -23,7 +23,7 @@ class GoonjActivitiesService extends AutoSubscriber {
 
   const ENTITY_NAME = 'Collection_Camp';
   const ENTITY_SUBTYPE_NAME = 'Goonj_Activities';
-  const GOONJ_ACTIVITIES_INTENT_FB_NAME = 'afformGoonjActivitiesIndividualIntentForm';
+  const GOONJ_ACTIVITIES_INTENT_FB_NAME = ['afformGoonjActivitiesIndividualIntentForm','afformGoonjActivitiesIndividualIntentFormCRM'];
   const RELATIONSHIP_TYPE_NAME = 'Goonj Activities Coordinator of';
   private static $goonjActivitiesAddress = NULL;
   const FALLBACK_OFFICE_NAME = 'Delhi';
@@ -58,7 +58,7 @@ class GoonjActivitiesService extends AutoSubscriber {
     $afform = $event->getAfform();
     $formName = $afform['name'];
 
-    if ($formName !== self::GOONJ_ACTIVITIES_INTENT_FB_NAME) {
+    if (!in_array($formName, self::GOONJ_ACTIVITIES_INTENT_FB_NAME)) {
       return;
     }
 
@@ -93,7 +93,7 @@ class GoonjActivitiesService extends AutoSubscriber {
     $afform = $event->getAfform();
     $formName = $afform['name'];
 
-    if ($formName !== self::GOONJ_ACTIVITIES_INTENT_FB_NAME) {
+    if (!in_array($formName, self::GOONJ_ACTIVITIES_INTENT_FB_NAME)) {
       return;
     }
 
@@ -403,20 +403,20 @@ class GoonjActivitiesService extends AutoSubscriber {
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
       ],
-      'monetaryContribution' => [
-        'title' => ts('Monetary Contribution'),
-        'module' => 'afsearchMonetaryContribution',
-        'directive' => 'afsearch-monetary-contribution',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['account_team', 'ho_account'],
-      ],
-      'monetaryContributionForUrbanOps' => [
-        'title' => ts('Monetary Contribution'),
-        'module' => 'afsearchMonetaryContributionForUrbanOps',
-        'directive' => 'afsearch-monetary-contribution-for-urban-ops',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops'],
-      ],
+      // 'monetaryContribution' => [
+      //   'title' => ts('Monetary Contribution'),
+      //   'module' => 'afsearchMonetaryContribution',
+      //   'directive' => 'afsearch-monetary-contribution',
+      //   'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      //   'permissions' => ['account_team', 'ho_account'],
+      // ],
+      // 'monetaryContributionForUrbanOps' => [
+      //   'title' => ts('Monetary Contribution'),
+      //   'module' => 'afsearchMonetaryContributionForUrbanOps',
+      //   'directive' => 'afsearch-monetary-contribution-for-urban-ops',
+      //   'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      //   'permissions' => ['goonj_chapter_admin', 'urbanops'],
+      // ],
     ];
 
     foreach ($tabConfigs as $key => $config) {

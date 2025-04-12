@@ -178,6 +178,15 @@ class CollectionBaseService extends AutoSubscriber {
     if (!in_array($entity, ['Eck_Collection_Camp', 'Eck_Institution_Visit'])) {
       return FALSE;
     }
+
+    $restrictedRoles = ['admin', 'urban_ops_admin', 'ho_account', 'project_team_ho', 's2s_ho_team', 'njpc_ho_team'];
+
+    $hasRestrictedRole = \CRM_Core_Permission::checkAnyPerm($restrictedRoles);
+
+    if ($hasRestrictedRole) {
+        return;
+    }
+    
     try {
       $teamGroupContacts = GroupContact::get(FALSE)
         ->addSelect('group_id')

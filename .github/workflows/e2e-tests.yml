@@ -19,6 +19,8 @@ jobs:
       BASE_URL_USER_SITE: ${{ secrets.GOONJ_STAGING_SITE_URL }}
       USERNAME: ${{ secrets.PLAYWRIGHT_TEST_ADMIN }}
       PASSWORD: ${{ secrets.PLAYWRIGHT_TEST_ADMIN_PASSWORD }}
+      URBAN_OPS_USER: ${{ secrets.URBAN_OPS_USER }}
+      URBAN_OPS_USER_PASSWORD: ${{ secrets.URBAN_OPS_USER_PASSWORD }}
       ARTIFACT_PASSWORD: ${{ secrets.ARTIFACT_ZIP_PASSWORD }}
     steps:
       - uses: actions/checkout@v4

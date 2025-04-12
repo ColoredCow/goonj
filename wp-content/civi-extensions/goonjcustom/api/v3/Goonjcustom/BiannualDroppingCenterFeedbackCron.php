@@ -25,7 +25,7 @@ function civicrm_api3_goonjcustom_biannual_dropping_center_feedback_cron($params
   $thresholdDate = (new \DateTime())->modify('-6 months')->format('Y-m-d');
 
   // And the last feedback email was either never sent or sent more than 6 months ago.
-  $droppingCenters = EckEntity::get('Collection_Camp', TRUE)
+  $droppingCenters = EckEntity::get('Collection_Camp', FALSE)
     ->addSelect('Collection_Camp_Core_Details.Contact_Id', 'Dropping_Centre.last_feedback_sent_date')
     ->addWhere('Dropping_Centre.When_do_you_wish_to_open_center_Date_', '<=', $thresholdDate)
     ->addWhere('Collection_Camp_Core_Details.Status:name', '=', 'Authorized')
@@ -39,7 +39,7 @@ function civicrm_api3_goonjcustom_biannual_dropping_center_feedback_cron($params
       $droppingCenterId = $center['id'];
       $initiatorId = $center['Collection_Camp_Core_Details.Contact_Id'];
 
-      $droppingCenterMeta = EckEntity::get('Dropping_Center_Meta', TRUE)
+      $droppingCenterMeta = EckEntity::get('Dropping_Center_Meta', FALSE)
         ->addSelect('Status.Status:name', 'Status.Feedback_Email_Delivered')
         ->addWhere('Dropping_Center_Meta.Dropping_Center', '=', $droppingCenterId)
         ->addWhere('Status.Status:name', '=', 'Permanently_Closed')
