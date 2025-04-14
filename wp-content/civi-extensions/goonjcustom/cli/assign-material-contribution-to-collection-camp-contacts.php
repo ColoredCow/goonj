@@ -15,15 +15,13 @@ if (php_sapi_name() != 'cli') {
 
 // Fetch the CSV file path and Group ID from wp-config.php.
 $csvFilePath = MATERIAL_CONTRIBUTION_CSV_FILE_PATH;
-$groupId = MATERIAL_CONTRIBUTION_GROUP_ID;
 
 // Check if constants are set.
-if (!$csvFilePath || !$groupId) {
-  exit("Error: Both MATERIAL_CONTRIBUTION_CSV_FILE_PATH and MATERIAL_CONTRIBUTION_GROUP_ID must be set.\n");
+if (!$csvFilePath) {
+  exit("Error: MATERIAL_CONTRIBUTION_CSV_FILE_PATH must be set.\n");
 }
 
 echo "CSV File: $csvFilePath\n";
-echo "Group ID: $groupId\n";
 
 /**
  * Reads email addresses and contribution dates from CSV.
