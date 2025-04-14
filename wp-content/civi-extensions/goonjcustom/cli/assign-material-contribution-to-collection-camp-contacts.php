@@ -42,7 +42,7 @@ function readContactsFromCsv(string $filePath): array {
   $contacts = [];
   if (($handle = fopen($filePath, 'r')) !== FALSE) {
     $header = fgetcsv($handle, 1000, ',');
-    if (!in_array('email', $header) || !in_array('contribution_date', $header) || !in_array('collection_camp', $header) || !in_array('description_of_material', $header) || !in_array('phone', $header)) {
+    if (!in_array('email', $header) || !in_array('collection_camp', $header) || !in_array('description_of_material', $header) || !in_array('phone', $header)) {
       throw new Exception("Column missing in CSV.");
     }
 
@@ -51,14 +51,12 @@ function readContactsFromCsv(string $filePath): array {
 
       // Clean values.
       $email = trim($row['email']);
-      $contributionDate = trim($row['contribution_date']);
       $collectionCampCode = trim($row['collection_camp']);
       $descriptionOfMaterial = trim($row['description_of_material']);
       $phone = trim($row['phone']);
 
       $contacts[] = [
         'email' => $email,
-        'contribution_date' => $contributionDate,
         'collection_camp' => $collectionCampCode,
         'description_of_material' => $descriptionOfMaterial,
         'phone' => $phone,
@@ -74,9 +72,8 @@ function readContactsFromCsv(string $filePath): array {
  * Assigns material contribution by email.
  *
  * @param string $email
- * @param string $contributionDate
  */
-function assignContributionByEmail(string $email, string $contributionDate, string $collectionCampCode, string $descriptionOfMaterial, string $phone): void {
+function assignContributionByEmail(string $email, string $collectionCampCode, string $descriptionOfMaterial, string $phone): void {
   try {
 
     if (empty($email) && empty($phone)) {
@@ -105,7 +102,7 @@ function assignContributionByEmail(string $email, string $contributionDate, stri
       $contactId = $result['contact_id'];
 
       $collectionCamp = EckEntity::get('Collection_Camp', TRUE)
-        ->addSelect('id')
+        ->addSelect('id', 'Collection_Camp_Intent_Details.End_Date')
         ->addWhere('title', '=', $collectionCampCode)
         ->addWhere('subtype:name', '=', 'Collection_Camp')
         ->execute()
@@ -113,9 +110,8 @@ function assignContributionByEmail(string $email, string $contributionDate, stri
 
       $collectionCampId = $collectionCamp['id'];
 
-      // Convert date from m/d/Y to Y-m-d H:i:s.
-      $dateTime = DateTime::createFromFormat('m/d/Y', $contributionDate);
-      $formattedContributionDate = $dateTime ? $dateTime->format('Y-m-d H:i:s') : NULL;
+
+      $formattedContributionDate = $collectionCamp['Collection_Camp_Intent_Details.End_Date'];
 
       // Assign material contribution.
       processContribution($contactId, $formattedContributionDate, $collectionCampId, $descriptionOfMaterial);
@@ -166,7 +162,7 @@ function main(): void {
     }
 
     foreach ($contacts as $contact) {
-      assignContributionByEmail($contact['email'], $contact['contribution_date'], $contact['collection_camp'], $contact['description_of_material'], $contact['phone']);
+      assignContributionByEmail($contact['email'], $contact['collection_camp'], $contact['description_of_material'], $contact['phone']);
     }
 
     echo "=== Material Contribution Assignment Completed ===\n";
