@@ -42,7 +42,7 @@ function readContactsFromCsv(string $filePath): array {
   $contacts = [];
   if (($handle = fopen($filePath, 'r')) !== FALSE) {
     $header = fgetcsv($handle, 1000, ',');
-    if (!in_array('email', $header) || !in_array('contribution_date', $header) || !in_array('collection_camp', $header) || !in_array('description_of_material', $header)) {
+    if (!in_array('email', $header) || !in_array('contribution_date', $header) || !in_array('collection_camp', $header) || !in_array('description_of_material', $header) || !in_array('phone', $header)) {
       throw new Exception("Column missing in CSV.");
     }
 
@@ -54,12 +54,14 @@ function readContactsFromCsv(string $filePath): array {
       $contributionDate = trim($row['contribution_date']);
       $collectionCampCode = trim($row['collection_camp']);
       $descriptionOfMaterial = trim($row['description_of_material']);
+      $phone = trim($row['phone']);
 
       $contacts[] = [
         'email' => $email,
         'contribution_date' => $contributionDate,
         'collection_camp' => $collectionCampCode,
         'description_of_material' => $descriptionOfMaterial,
+        'phone' => $phone,
       ];
     }
     fclose($handle);
