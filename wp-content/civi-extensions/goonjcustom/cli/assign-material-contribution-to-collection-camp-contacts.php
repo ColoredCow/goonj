@@ -108,6 +108,11 @@ function assignContributionByEmail(string $email, string $collectionCampCode, st
         ->execute()
         ->first();
 
+      if (!$collectionCamp) {
+      echo "Camp with title $collectionCampCode not found.\n";
+        return;
+      }
+
       $collectionCampId = $collectionCamp['id'];
 
 
