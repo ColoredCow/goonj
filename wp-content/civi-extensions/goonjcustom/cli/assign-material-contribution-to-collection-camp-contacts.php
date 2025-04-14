@@ -5,6 +5,7 @@
  * CLI Script to assign material contribution via CSV in CiviCRM.
  */
 
+use Civi\Api4\Phone;
 use Civi\Api4\EckEntity;
 use Civi\Api4\Email;
 
@@ -76,19 +77,30 @@ function readContactsFromCsv(string $filePath): array {
  * @param string $email
  * @param string $contributionDate
  */
-function assignContributionByEmail(string $email, string $contributionDate, string $collectionCampCode, string $descriptionOfMaterial): void {
+function assignContributionByEmail(string $email, string $contributionDate, string $collectionCampCode, string $descriptionOfMaterial, string $phone): void {
   try {
 
     if (empty($email)) {
       echo "No email found in database.\n";
       return;
     }
-    // Find contact using Email API.
-    $result = Email::get(FALSE)
-      ->addSelect('contact_id')
-      ->addWhere('email', '=', $email)
-      ->execute()
-      ->first();
+
+    if ($email) {
+      // Find contact using Email API.
+      $result = Email::get(FALSE)
+        ->addSelect('contact_id')
+        ->addWhere('email', '=', $email)
+        ->execute()
+        ->first();
+    }
+    else {
+      // Find contact using Phone API.
+      $result = Phone::get(FALSE)
+        ->addSelect('contact_id')
+        ->addWhere('phone', '=', $phone)
+        ->execute()
+        ->first();
+    }
 
     if (isset($result['contact_id'])) {
       $contactId = $result['contact_id'];
