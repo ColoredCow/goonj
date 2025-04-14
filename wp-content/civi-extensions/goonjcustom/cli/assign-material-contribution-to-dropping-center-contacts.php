@@ -42,7 +42,7 @@ function readContactsFromCsv(string $filePath): array {
   $contacts = [];
   if (($handle = fopen($filePath, 'r')) !== FALSE) {
     $header = fgetcsv($handle, 1000, ',');
-    if (!in_array('email', $header) || !in_array('collection_camp', $header) || !in_array('description_of_material', $header) || !in_array('phone', $header) || !in_array('contribution_date', $header)) {
+    if (!in_array('email', $header) || !in_array('dropping_center', $header) || !in_array('description_of_material', $header) || !in_array('phone', $header) || !in_array('contribution_date', $header)) {
       throw new Exception("Column missing in CSV.");
     }
 
@@ -51,14 +51,14 @@ function readContactsFromCsv(string $filePath): array {
 
       // Clean values.
       $email = trim($row['email']);
-      $collectionCampCode = trim($row['collection_camp']);
+      $droppingCenterCode = trim($row['dropping_center']);
       $descriptionOfMaterial = trim($row['description_of_material']);
       $phone = trim($row['phone']);
       $contributionDate = trim($row['contribution_date']);
 
       $contacts[] = [
         'email' => $email,
-        'collection_camp' => $collectionCampCode,
+        'dropping_center' => $droppingCenterCode,
         'description_of_material' => $descriptionOfMaterial,
         'phone' => $phone,
         'contribution_date' => $contributionDate,
@@ -76,7 +76,7 @@ function readContactsFromCsv(string $filePath): array {
  * @param string $email
  * @param string $contributionDate
  */
-function assignContributionByEmail(string $email, string $collectionCampCode, string $descriptionOfMaterial, string $phone, string $contributionDate): void {
+function assignContributionByEmail(string $email, string $droppingCenterCode, string $descriptionOfMaterial, string $phone, string $contributionDate): void {
   try {
 
     if (empty($email) && empty($phone)) {
@@ -104,26 +104,26 @@ function assignContributionByEmail(string $email, string $collectionCampCode, st
     if (isset($result['contact_id'])) {
       $contactId = $result['contact_id'];
 
-      $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+      $droppingCenter = EckEntity::get('Collection_Camp', FALSE)
         ->addSelect('id')
-        ->addWhere('title', '=', $collectionCampCode)
-        ->addWhere('subtype:name', '=', 'Collection_Camp')
+        ->addWhere('title', '=', $droppingCenterCode)
+        ->addWhere('subtype:name', '=', 'Dropping_Center')
         ->execute()
         ->first();
 
-      if (!$collectionCamp) {
-      echo "Camp with title $collectionCampCode not found.\n";
+      if (!$droppingCenter) {
+      echo "Camp with title $droppingCenterCode not found.\n";
         return;
       }
 
-      $collectionCampId = $collectionCamp['id'];
+      $droppingCenterId = $droppingCenter['id'];
 
       // Convert date from m/d/Y to Y-m-d H:i:s.
       $dateTime = DateTime::createFromFormat('m/d/Y', $contributionDate);
       $formattedContributionDate = $dateTime ? $dateTime->format('Y-m-d H:i:s') : NULL;
 
       // Assign material contribution.
-      processContribution($contactId, $formattedContributionDate, $collectionCampId, $descriptionOfMaterial);
+      processContribution($contactId, $formattedContributionDate, $droppingCenterId, $descriptionOfMaterial);
     }
     else {
       echo "Contact with email $email not found.\n";
@@ -140,7 +140,7 @@ function assignContributionByEmail(string $email, string $collectionCampCode, st
  * @param int $contactId
  * @param string $contributionDate
  */
-function processContribution(int $contactId, string $formattedContributionDate, string $collectionCampId, string $descriptionOfMaterial): void {
+function processContribution(int $contactId, string $formattedContributionDate, string $droppingCenterId, string $descriptionOfMaterial): void {
   try {
     $results = Activity::create(FALSE)
       ->addValue('subject', $descriptionOfMaterial)
@@ -148,13 +148,13 @@ function processContribution(int $contactId, string $formattedContributionDate, 
       ->addValue('status_id:name', 'Completed')
       ->addValue('activity_date_time', $formattedContributionDate)
       ->addValue('source_contact_id', $contactId)
-      ->addValue('Material_Contribution.Collection_Camp', $collectionCampId)
+      ->addValue('Material_Contribution.Dropping_Center', $droppingCenterId)
       ->execute();
-    echo "Assigning contribution for Contact ID $contactId\n and is assigned to $collectionCampId\n";
+    echo "Assigning contribution for Contact ID $contactId\n and is assigned to $droppingCenterId\n";
   }
   catch (\CiviCRM_API4_Exception $ex) {
     \Civi::log()->debug("Exception while creating material contribution activity: " . $ex->getMessage());
-    echo "Assigning contribution for Contact ID $contactId\nIs not assigned to $collectionCampId\n";
+    echo "Assigning contribution for Contact ID $contactId\nIs not assigned to $droppingCenterId\n";
   }
 }
 
@@ -172,7 +172,7 @@ function main(): void {
     }
 
     foreach ($contacts as $contact) {
-      assignContributionByEmail($contact['email'], $contact['collection_camp'], $contact['description_of_material'], $contact['phone'], $contact['contribution_date']);
+      assignContributionByEmail($contact['email'], $contact['dropping_center'], $contact['description_of_material'], $contact['phone'], $contact['contribution_date']);
     }
 
     echo "=== Material Contribution Assignment Completed ===\n";
