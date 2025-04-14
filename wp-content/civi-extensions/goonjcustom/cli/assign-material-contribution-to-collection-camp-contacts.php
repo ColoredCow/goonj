@@ -77,7 +77,7 @@ function assignContributionByEmail(string $email, string $collectionCampCode, st
   try {
 
     if (empty($email) && empty($phone)) {
-      echo "No email found in database.\n";
+      echo "No email and phone found in database.\n";
       return;
     }
 
