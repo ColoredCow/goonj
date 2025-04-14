@@ -146,7 +146,7 @@ function processContribution(int $contactId, string $formattedContributionDate, 
       ->addValue('source_contact_id', $contactId)
       ->addValue('Material_Contribution.Collection_Camp', $collectionCampId)
       ->execute();
-    echo "Assigning contribution for Contact ID $contactId\n";
+    echo "Assigning contribution for Contact ID $contactId\nand is assigned to $collectionCampId\n";
   }
   catch (\CiviCRM_API4_Exception $ex) {
     \Civi::log()->debug("Exception while creating material contribution activity: " . $ex->getMessage());
