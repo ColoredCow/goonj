@@ -118,7 +118,6 @@ function assignContributionByEmail(string $email, string $collectionCampCode, st
 
       $collectionCampId = $collectionCamp['id'];
 
-
       // Convert date from m/d/Y to Y-m-d H:i:s.
       $dateTime = DateTime::createFromFormat('m/d/Y', $contributionDate);
       $formattedContributionDate = $dateTime ? $dateTime->format('Y-m-d H:i:s') : NULL;
