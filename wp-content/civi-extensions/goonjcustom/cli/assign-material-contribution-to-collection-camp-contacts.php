@@ -101,7 +101,7 @@ function assignContributionByEmail(string $email, string $collectionCampCode, st
     if (isset($result['contact_id'])) {
       $contactId = $result['contact_id'];
 
-      $collectionCamp = EckEntity::get('Collection_Camp', TRUE)
+      $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
         ->addSelect('id', 'Collection_Camp_Intent_Details.End_Date')
         ->addWhere('title', '=', $collectionCampCode)
         ->addWhere('subtype:name', '=', 'Collection_Camp')
