@@ -145,6 +145,7 @@ function processContribution(int $contactId, string $formattedContributionDate, 
   }
   catch (\CiviCRM_API4_Exception $ex) {
     \Civi::log()->debug("Exception while creating material contribution activity: " . $ex->getMessage());
+    echo "Assigning contribution for Contact ID $contactId\nIs not assigned to $collectionCampId\n";
   }
 }
 
