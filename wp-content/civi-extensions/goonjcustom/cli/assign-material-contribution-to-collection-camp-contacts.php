@@ -8,6 +8,7 @@
 use Civi\Api4\Phone;
 use Civi\Api4\EckEntity;
 use Civi\Api4\Email;
+use Civi\Api4\Activity;
 
 if (php_sapi_name() != 'cli') {
   exit("This script can only be run from the command line.\n");
@@ -78,7 +79,7 @@ function readContactsFromCsv(string $filePath): array {
 function assignContributionByEmail(string $email, string $contributionDate, string $collectionCampCode, string $descriptionOfMaterial, string $phone): void {
   try {
 
-    if (empty($email)) {
+    if (empty($email) && empty($phone)) {
       echo "No email found in database.\n";
       return;
     }
@@ -165,7 +166,7 @@ function main(): void {
     }
 
     foreach ($contacts as $contact) {
-      assignContributionByEmail($contact['email'], $contact['contribution_date'], $contact['collection_camp'], $contact['description_of_material']);
+      assignContributionByEmail($contact['email'], $contact['contribution_date'], $contact['collection_camp'], $contact['description_of_material'], $contact['phone']);
     }
 
     echo "=== Material Contribution Assignment Completed ===\n";
