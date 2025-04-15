@@ -11,7 +11,7 @@ use Civi\Traits\QrCodeable;
 /**
  *
  */
-class GenerateMaterialReceipt extends AutoSubscriber {
+class GenerateMaterialReceiptService extends AutoSubscriber {
   use QrCodeable;
 
   /**
