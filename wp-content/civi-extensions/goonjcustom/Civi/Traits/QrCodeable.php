@@ -122,7 +122,7 @@ trait QrCodeable {
       $dompdf->render();
 
       $pdfOutput = $dompdf->output();
-      $fileName = "acknowledgement_{$entityId}.pdf";
+      $fileName = "material_contribution.pdf";
       $tempFilePath = \CRM_Utils_File::tempnam($fileName);
 
       file_put_contents($tempFilePath, $pdfOutput);
@@ -149,12 +149,6 @@ trait QrCodeable {
    *
    */
   public static function savePdfAttachmentToCustomField($entityId, $fileName, $filePath, $customGroupName, $customFieldName) {
-    error_log("entityId: " . print_r($entityId, TRUE));
-    error_log("fileName: " . print_r($fileName, TRUE));
-    error_log("filePath: " . print_r($filePath, TRUE));
-    error_log("customGroupName: " . print_r($customGroupName, TRUE));
-    error_log("customFieldName: " . print_r($customFieldName, TRUE));
-
     $customFields = CustomField::get(FALSE)
       ->addSelect('id')
       ->addWhere('custom_group_id:name', '=', $customGroupName)
@@ -163,7 +157,6 @@ trait QrCodeable {
       ->execute();
 
     $field = $customFields->first();
-    error_log("field: " . print_r($field, TRUE));
 
     if (!$field) {
       \CRM_Core_Error::debug_log_message("Custom field not found: {$customGroupName} / {$customFieldName}");
@@ -171,7 +164,6 @@ trait QrCodeable {
     }
 
     $fieldId = 'custom_' . $field['id'];
-    error_log("fieldId: " . print_r($fieldId, TRUE));
 
     $params = [
       'entity_id' => $entityId,
@@ -182,7 +174,6 @@ trait QrCodeable {
         'move-file' => $filePath,
       ],
     ];
-    error_log("params: " . print_r($params, TRUE));
 
     $result = civicrm_api3('Attachment', 'create', $params);
     error_log("result: " . print_r($result, TRUE));

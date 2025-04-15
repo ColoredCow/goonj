@@ -50,8 +50,6 @@ class GenerateMaterialReceiptService extends AutoSubscriber {
       ->addWhere('id', '=', $activityId)
       ->execute()->first();
 
-    error_log("activities: " . print_r($activities, TRUE));
-
     $entityId = $activities['id'];
     error_log("entityId: " . print_r($entityId, TRUE));
 
