@@ -423,6 +423,7 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
           'trxn_id' => $paymentId,
           'receive_date' => date('Y-m-d H:i:s'),
           'is_test' => $recurringContribution['is_test'],
+          'payment_instrument_id' => $recurringContribution['payment_instrument_id'] ?? NULL,
         ]);
       }
       else {
@@ -432,11 +433,24 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
       civicrm_api3('Payment', 'create', [
         'contribution_id' => $contributionToUpdate['id'],
         'total_amount' => $amount,
-        'payment_instrument_id' => $recurringContribution['payment_instrument_id'] ?? NULL,
+        // 'payment_instrument_id' => $recurringContribution['payment_instrument_id'] ?? NULL,
         'trxn_id' => $paymentId,
       ]);
 
-      $this->sendReceipt($contributionToUpdate['id'], $contactId);
+      $contributionDate = Contribution::get(FALSE)
+        ->addSelect('receipt_date')
+        ->addWhere('id', '=', $contributionToUpdate['id'])
+        ->execute()->first();
+
+      $receiptDate = $contributionDate['receipt_date'];
+      error_log("id" . print_r($contributionToUpdate['id'], TRUE));
+
+      error_log("receiptDate" . print_r($receiptDate, TRUE));
+      
+      if (!$receiptDate) {
+        $this->sendReceipt($contributionToUpdate['id'], $contactId);
+
+      }
 
       \Civi::log()->info("Recurring payment processed: {$paymentId} for subscription: {$subscriptionId}");
     }
