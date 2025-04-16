@@ -6,6 +6,8 @@ use chillerlan\QRCode\QRCode;
 use chillerlan\QRCode\QROptions;
 use Civi\Api4\CustomField;
 use Dompdf\Dompdf;
+use Civi\MaterialContributionService;
+
 
 /**
  *
@@ -107,15 +109,11 @@ trait QrCodeable {
   /**
    *
    */
-  public static function generatePdfForCollectionCamp($entityId) {
+  public static function generatePdfForCollectionCamp($entityId, $activity, $email, $phone, $locationAreaOfCamp, $contributionDate) {
     try {
       $dompdf = new Dompdf(['isRemoteEnabled' => TRUE]);
 
-      $html = '
-        <h1>Collection Camp Acknowledgement</h1>
-        <p>This is to acknowledge the material contribution.</p>
-        <p>Activity ID: ' . $entityId . '</p>
-      ';
+      $html = MaterialContributionService::generateContributionReceiptHtml($contribution, $email, $phone, $locationAreaOfCamp, $contributionDate);
 
       $dompdf->loadHtml($html);
       $dompdf->setPaper('A4', 'portrait');
