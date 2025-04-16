@@ -291,6 +291,7 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
    * @throws CiviCRM_API3_Exception
    */
   public function processPaymentNotification(array $event): void {
+    error_log('event: ' . print_r($event, TRUE));
     if (isset($event['event'])) {
       switch ($event['event']) {
         case 'payment.captured':
@@ -423,20 +424,29 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
           'trxn_id' => $paymentId,
           'receive_date' => date('Y-m-d H:i:s'),
           'is_test' => $recurringContribution['is_test'],
+          'payment_instrument_id' => $recurringContribution['payment_instrument_id'] ?? NULL,
         ]);
       }
       else {
         $contributionToUpdate = $pendingContribution;
+        civicrm_api3('Payment', 'create', [
+          'contribution_id' => $contributionToUpdate['id'],
+          'total_amount' => $amount,
+          'payment_instrument_id' => $recurringContribution['payment_instrument_id'] ?? NULL,
+          'trxn_id' => $paymentId,
+        ]);
       }
 
-      civicrm_api3('Payment', 'create', [
-        'contribution_id' => $contributionToUpdate['id'],
-        'total_amount' => $amount,
-        'payment_instrument_id' => $recurringContribution['payment_instrument_id'] ?? NULL,
-        'trxn_id' => $paymentId,
-      ]);
+      $contributionDate = Contribution::get(FALSE)
+        ->addSelect('receipt_date')
+        ->addWhere('id', '=', $contributionToUpdate['id'])
+        ->execute()->first();
 
-      $this->sendReceipt($contributionToUpdate['id'], $contactId);
+      $receiptDate = $contributionDate['receipt_date'];
+
+      if (!$receiptDate) {
+        $this->sendReceipt($contributionToUpdate['id']);
+      }
 
       \Civi::log()->info("Recurring payment processed: {$paymentId} for subscription: {$subscriptionId}");
     }
@@ -450,7 +460,7 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
   /**
    *
    */
-  private function sendReceipt($contributionId, $contactId) {
+  private function sendReceipt($contributionId) {
     try {
       civicrm_api3('Contribution', 'sendconfirmation', [
         'id' => $contributionId,
