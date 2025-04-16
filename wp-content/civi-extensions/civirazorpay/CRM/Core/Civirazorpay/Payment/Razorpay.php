@@ -436,10 +436,29 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
         'trxn_id' => $paymentId,
       ]);
 
+      $this->sendReceipt($contributionToUpdate['id'], $contactId);
+
       \Civi::log()->info("Recurring payment processed: {$paymentId} for subscription: {$subscriptionId}");
     }
     catch (Exception $e) {
       \Civi::log()->error("Failed to process recurring payment for subscription: {$subscriptionId}", [
+        'error' => $e->getMessage(),
+      ]);
+    }
+  }
+
+  /**
+   *
+   */
+  private function sendReceipt($contributionId, $contactId) {
+    try {
+      civicrm_api3('Contribution', 'sendconfirmation', [
+        'id' => $contributionId,
+      ]);
+      \Civi::log()->info("Receipt sent for contribution ID: {$contributionId}");
+    }
+    catch (Exception $e) {
+      \Civi::log()->error("Failed to send receipt for contribution ID: {$contributionId}", [
         'error' => $e->getMessage(),
       ]);
     }
