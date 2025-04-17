@@ -42,9 +42,30 @@ class GenerateMaterialReceiptService extends AutoSubscriber {
     $campId = $data['Eck_Collection_Camp1'][0]['fields']['id'] ?? NULL;
     $activityId = $data['Activity1'][0]['fields']['id'] ?? NULL;
 
+    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect('subtype:name')
+      ->addWhere('id', '=', $campId)
+      ->execute()->first();
+
+    $subtype = $collectionCamp['subtype:name'];
+
+    if ($subtype == 'Collection_Camp') {
+      $contributionName = 'Material_Contribution.Collection_Camp';
+    }
+    elseif ($subtype == 'Dropping_Center') {
+      $contributionName = 'Material_Contribution.Dropping_Center';
+    }
+    elseif ($subtype == 'Institution_Collection_Camp') {
+      $contributionName = 'Material_Contribution.Institution_Collection_Camp';
+    }
+    elseif ($subtype == 'Institution_Dropping_Center') {
+      $contributionName = 'Material_Contribution.Institution_Dropping_Center';
+    }
+
+
     $activities = Activity::get(TRUE)
       ->addSelect('*', 'contact.display_name', 'Material_Contribution.Delivered_By', 'Material_Contribution.Delivered_By_Contact', 'Material_Contribution.Goonj_Office', 'Material_Contribution.Collection_Camp.subtype:name', 'Material_Contribution.Institution_Collection_Camp.subtype:name', 'Material_Contribution.Dropping_Center.subtype:name', 'Material_Contribution.Institution_Dropping_Center.subtype:name', 'Material_Contribution.Contribution_Date', 'source_contact_id', 'activity_date_time', 'subject')
-      ->addWhere('Material_Contribution.Collection_Camp', '=', $campId)
+      ->addWhere($contributionName, '=', $campId)
       ->addWhere('id', '=', $activityId)
       ->addJoin('ActivityContact AS activity_contact', 'LEFT')
       ->addJoin('Contact AS contact', 'LEFT')
@@ -53,7 +74,6 @@ class GenerateMaterialReceiptService extends AutoSubscriber {
     $contribution = $activities->first();
 
     $contributionDate = $contribution['Material_Contribution.Contribution_Date'];
-
 
     $subtype = NULL;
     if (!empty($contribution['Material_Contribution.Collection_Camp.subtype:name'])) {
@@ -80,7 +100,6 @@ class GenerateMaterialReceiptService extends AutoSubscriber {
 
     $email = $contactData['email_primary.email'] ?? 'N/A';
     $phone = $contactData['phone_primary.phone'] ?? 'N/A';
-
 
     $entityId = $contribution['id'];
 
