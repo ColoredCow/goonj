@@ -2,6 +2,8 @@
 
 require_once __DIR__ . '/../../../../lib/razorpay/Razorpay.php';
 
+use Civi\Api4\StateProvince;
+use Civi\Api4\Country;
 use Civi\Api4\Contribution;
 use Civi\Api4\ContributionRecur;
 use Civi\Payment\Exception\PaymentProcessorException;
@@ -147,17 +149,40 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
 
         $installmentCount = $this->prepareInstallmentCount($params);
 
+        $contributions = Contribution::get(FALSE)
+          ->addSelect('campaign_id.title', 'Contribution_Details.PAN_Card_Number')
+          ->addWhere('id', '=', $params['contributionID'])
+          ->execute()->first();
+
+        $country = Country::get(FALSE)
+          ->addSelect('name')
+          ->addWhere('id', '=', $params['country-Primary'])
+          ->execute()->first();
+
+        $stateProvinces = StateProvince::get(FALSE)
+          ->addSelect('name')
+          ->addWhere('id', '=', $params['state_province-Primary'])
+          ->execute()->first();
+
         $subscription = $api->subscription->create([
           'plan_id' => $newPlan->id,
           'customer_notify' => 0,
           'total_count' => $installmentCount,
           'quantity' => 1,
           'notes' => [
+            'mobile' => $params['phone-Primary-2'],
+            'purpose' => $contributions['campaign_id.title'],
+            'name' => $params['first_name'],
+            'identity_type' => $contributions['Contribution_Details.PAN_Card_Number'],
+            'donor_email' => $params['email'],
+            'address' => $params['street_address-Primary'],
+            'pin' => $params['postal_code-Primary'],
+            'country' => $country['name'],
+            'state' => $stateProvinces['name'],
+            'city' => $params['city-Primary'],
             'contribution_recur_id' => $params['contributionRecurID'],
             'contact_id' => $params['contactID'],
             'source' => 'CiviCRM Recurring Contribution',
-            'email' => $params['email'] ?? NULL,
-            'phone' => $params['phone'] ?? NULL,
           ],
         ]);
 
@@ -189,6 +214,22 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
     }
     else {
       try {
+
+        $contributions = Contribution::get(FALSE)
+          ->addSelect('campaign_id.title', 'Contribution_Details.PAN_Card_Number')
+          ->addWhere('id', '=', $params['contributionID'])
+          ->execute()->first();
+
+        $country = Country::get(FALSE)
+          ->addSelect('name')
+          ->addWhere('id', '=', $params['country-Primary'])
+          ->execute()->first();
+
+        $stateProvinces = StateProvince::get(FALSE)
+          ->addSelect('name')
+          ->addWhere('id', '=', $params['state_province-Primary'])
+          ->execute()->first();
+
         $order = $api->order->create([
         // Amount in paise.
           'amount' => $params['amount'] * 100,
@@ -197,11 +238,19 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
         // Auto-capture payment.
           'payment_capture' => 1,
           'notes' => [
+            'mobile' => $params['phone-Primary-2'],
+            'purpose' => $contributions['campaign_id.title'],
+            'name' => $params['first_name'],
+            'identity_type' => $contributions['Contribution_Details.PAN_Card_Number'],
+            'donor_email' => $params['email'],
+            'address' => $params['street_address-Primary'],
+            'pin' => $params['postal_code-Primary'],
+            'country' => $country['name'],
+            'state' => $stateProvinces['name'],
+            'city' => $params['city-Primary'],
             'contribution_id' => $params['contributionID'],
             'contact_id' => $params['contactID'],
             'source' => 'CiviCRM One-Time Contribution',
-            'email' => $params['email'] ?? NULL,
-            'phone' => $params['phone'] ?? NULL,
           ],
         ]);
 
