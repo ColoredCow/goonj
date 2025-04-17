@@ -42,7 +42,8 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
         $result['Contact_Number'] ?? NULL,
         $result['Institution_POC'] ?? NULL,
         $result['collectionCampId'] ?? NULL,
-        $result['description_of_material'] ?? NULL
+        $result['description_of_material'] ?? NULL,
+        $result['contribution_date'] ?? NULL
     );
 
     return $result;
@@ -62,6 +63,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
         'Institution_POC' => $fields['Camp_Institution_Data.Email'],
         'collectionCampId' => $fields['Camp_Vehicle_Dispatch.Institution_Collection_Camp'],
         'description_of_material' => $fields['Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office'],
+        'contribution_date' => $fields['Acknowledgement_For_Logistics.Contribution_Date'],
       ]);
     }
 
@@ -95,6 +97,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
     $institutionEmail,
     $collectionCampId,
     $descriptionOfMaterial,
+    $contributionDate
   ) {
 
     $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
@@ -124,7 +127,8 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
         $address,
         $contactNumber,
         $institutionEmail,
-        $descriptionOfMaterial
+        $descriptionOfMaterial,
+        $contributionDate
     );
 
     $attachments = [\CRM_Utils_Mail::appendPDF('receipt.pdf', $html)];
@@ -196,7 +200,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
   /**
    *
    */
-  private static function generateAcknowledgedReceiptHtml($institutionName, $address, $contactNumber, $institutionEmail, $descriptionOfMaterial) {
+  private static function generateAcknowledgedReceiptHtml($institutionName, $address, $contactNumber, $institutionEmail, $descriptionOfMaterial, $contributionDate) {
 
     $baseDir = plugin_dir_path(__FILE__) . '../../../themes/goonj-crm/';
 
@@ -214,6 +218,9 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
 
     $imageData = array_map(fn ($path) => base64_encode(file_get_contents($path)), $paths);
     $currentDate = date('F j, Y');
+    $receivedOnDate = !empty($contributionDate)
+    ? date("F j, Y", strtotime($contributionDate))
+    : $currentDate;
     $html = <<<HTML
     <html>
       <body style="font-family: Arial, sans-serif;">
@@ -248,7 +255,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
           </tr>
           <tr>
             <td class="table-header">Received On</td>
-            <td style="text-align: center;">{$currentDate}</td>
+            <td style="text-align: center;">{$receivedOnDate}</td>
           </tr>
           <tr>
             <td class="table-header">Institution Name</td>

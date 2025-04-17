@@ -58,7 +58,7 @@ class MaterialContributionService extends AutoSubscriber {
 
     // Hack: Retrieve the most recent "Material Contribution" activity for this contact.
     $activities = Activity::get(FALSE)
-      ->addSelect('*', 'contact.display_name', 'Material_Contribution.Delivered_By', 'Material_Contribution.Delivered_By_Contact', 'Material_Contribution.Goonj_Office', 'Material_Contribution.Collection_Camp.subtype:name', 'Material_Contribution.Institution_Collection_Camp.subtype:name', 'Material_Contribution.Dropping_Center.subtype:name', 'Material_Contribution.Institution_Dropping_Center.subtype:name')
+      ->addSelect('*', 'contact.display_name', 'Material_Contribution.Delivered_By', 'Material_Contribution.Delivered_By_Contact', 'Material_Contribution.Goonj_Office', 'Material_Contribution.Collection_Camp.subtype:name', 'Material_Contribution.Institution_Collection_Camp.subtype:name', 'Material_Contribution.Dropping_Center.subtype:name', 'Material_Contribution.Institution_Dropping_Center.subtype:name', 'Material_Contribution.Contribution_Date')
       ->addJoin('ActivityContact AS activity_contact', 'LEFT')
       ->addJoin('Contact AS contact', 'LEFT')
       ->addWhere('source_contact_id', '=', $params['contactId'])
@@ -71,6 +71,7 @@ class MaterialContributionService extends AutoSubscriber {
     $contribution = $activities->first();
 
     $goonjOfficeId = $contribution['Material_Contribution.Goonj_Office'];
+    $contributionDate = $contribution['Material_Contribution.Contribution_Date'];
 
     $subtype = NULL;
     if (!empty($contribution['Material_Contribution.Collection_Camp.subtype:name'])) {
@@ -100,7 +101,7 @@ class MaterialContributionService extends AutoSubscriber {
       return;
     }
 
-    $html = self::generateContributionReceiptHtml($contribution, $email, $phone, $locationAreaOfCamp);
+    $html = self::generateContributionReceiptHtml($contribution, $email, $phone, $locationAreaOfCamp, $contributionDate);
     $fileName = 'material_contribution_' . $contribution['id'] . '.pdf';
     $params['attachments'][] = \CRM_Utils_Mail::appendPDF($fileName, $html);
   }
@@ -168,8 +169,11 @@ class MaterialContributionService extends AutoSubscriber {
    * @return string
    *   The generated HTML.
    */
-  private static function generateContributionReceiptHtml($activity, $email, $phone, $locationAreaOfCamp) {
+  private static function generateContributionReceiptHtml($activity, $email, $phone, $locationAreaOfCamp, $contributionDate) {
     $activityDate = date("F j, Y", strtotime($activity['activity_date_time']));
+    $receivedOnDate = !empty($contributionDate)
+    ? date("F j, Y", strtotime($contributionDate))
+    : $activityDate;
 
     $baseDir = plugin_dir_path(__FILE__) . '../../../themes/goonj-crm/';
     $deliveredBy = empty($activity['Material_Contribution.Delivered_By']) ? $activity['contact.display_name'] : $activity['Material_Contribution.Delivered_By'];
@@ -220,7 +224,7 @@ class MaterialContributionService extends AutoSubscriber {
           </tr>
           <tr>
             <td class="table-header">Received On</td>
-            <td style="text-align: center;">{$activityDate}</td>
+            <td style="text-align: center;">{$receivedOnDate}</td>
           </tr>
           <tr>
             <td class="table-header">From</td>
