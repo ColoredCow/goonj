@@ -6,6 +6,7 @@ require_once __DIR__ . '/../../../../wp-content/civi-extensions/goonjcustom/vend
 
 use Civi\Api4\Activity;
 use Civi\Api4\EckEntity;
+use Civi\Api4\Contact;
 
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\QrCodeable;
@@ -38,28 +39,21 @@ class GenerateMaterialReceiptService extends AutoSubscriber {
 
     $data = json_decode($objectRef->data, TRUE);
 
-    $activityData = $data['Eck_Collection_Camp1'][0]['fields'] ?? [];
-
     $campId = $data['Eck_Collection_Camp1'][0]['fields']['id'] ?? NULL;
     $activityId = $data['Activity1'][0]['fields']['id'] ?? NULL;
 
     $activities = Activity::get(TRUE)
-      ->addSelect('*', 'contact.display_name', 'Material_Contribution.Delivered_By', 'Material_Contribution.Delivered_By_Contact', 'Material_Contribution.Goonj_Office', 'Material_Contribution.Collection_Camp.subtype:name', 'Material_Contribution.Institution_Collection_Camp.subtype:name', 'Material_Contribution.Dropping_Center.subtype:name', 'Material_Contribution.Institution_Dropping_Center.subtype:name', 'Material_Contribution.Contribution_Date')
+      ->addSelect('*', 'contact.display_name', 'Material_Contribution.Delivered_By', 'Material_Contribution.Delivered_By_Contact', 'Material_Contribution.Goonj_Office', 'Material_Contribution.Collection_Camp.subtype:name', 'Material_Contribution.Institution_Collection_Camp.subtype:name', 'Material_Contribution.Dropping_Center.subtype:name', 'Material_Contribution.Institution_Dropping_Center.subtype:name', 'Material_Contribution.Contribution_Date', 'source_contact_id', 'activity_date_time', 'subject')
       ->addWhere('Material_Contribution.Collection_Camp', '=', $campId)
       ->addWhere('id', '=', $activityId)
+      ->addJoin('ActivityContact AS activity_contact', 'LEFT')
+      ->addJoin('Contact AS contact', 'LEFT')
       ->execute();
 
     $contribution = $activities->first();
-    $descriptionOfMaterial = $contribution['subject'] ?? NULL;
 
     $contributionDate = $contribution['Material_Contribution.Contribution_Date'];
-    $activityDate = date("F j, Y", strtotime($contribution['activity_date_time']));
 
-    $receivedOnDate = !empty($contributionDate)
-    ? date("F j, Y", strtotime($contributionDate))
-    : $activityDate;
-
-    $from = $contribution['contact.display_name'];
 
     $subtype = NULL;
     if (!empty($contribution['Material_Contribution.Collection_Camp.subtype:name'])) {
@@ -77,12 +71,16 @@ class GenerateMaterialReceiptService extends AutoSubscriber {
 
     $contributionVenue = self::getContributionCity($contribution, $subtype);
 
+    $contactId = $contribution['source_contact_id'];
+
+    $contactData = Contact::get(FALSE)
+      ->addSelect('email_primary.email', 'phone_primary.phone')
+      ->addWhere('id', '=', $contactId)
+      ->execute()->single();
+
     $email = $contactData['email_primary.email'] ?? 'N/A';
     $phone = $contactData['phone_primary.phone'] ?? 'N/A';
 
-    $deliveredBy = empty($contribution['Material_Contribution.Delivered_By']) ? $contribution['contact.display_name'] : $contribution['Material_Contribution.Delivered_By'];
-
-    $deliveredByContact = empty($contribution['Material_Contribution.Delivered_By_Contact']) ? $phone : $contribution['Material_Contribution.Delivered_By_Contact'];
 
     $entityId = $contribution['id'];
 

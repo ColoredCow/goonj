@@ -113,7 +113,7 @@ trait QrCodeable {
     try {
       $dompdf = new Dompdf(['isRemoteEnabled' => TRUE]);
 
-      $html = MaterialContributionService::generateContributionReceiptHtml($contribution, $email, $phone, $locationAreaOfCamp, $contributionDate);
+      $html = MaterialContributionService::generateContributionReceiptHtml($activity, $email, $phone, $locationAreaOfCamp, $contributionDate);
 
       $dompdf->loadHtml($html);
       $dompdf->setPaper('A4', 'portrait');
@@ -174,7 +174,6 @@ trait QrCodeable {
     ];
 
     $result = civicrm_api3('Attachment', 'create', $params);
-    error_log("result: " . print_r($result, TRUE));
 
     if (!empty($result['is_error'])) {
       \CRM_Core_Error::debug_log_message("Failed to attach PDF for entity ID $entityId");
