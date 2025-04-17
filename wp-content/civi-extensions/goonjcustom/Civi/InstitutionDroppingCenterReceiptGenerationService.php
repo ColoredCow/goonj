@@ -83,8 +83,7 @@ class InstitutionDroppingCenterReceiptGenerationService extends AutoSubscriber {
       ->addJoin('Email AS email', 'LEFT')
       ->addJoin('Phone AS phone', 'LEFT')
       ->addWhere('id', '=', $contactId)
-      ->execute()
-      ->single();
+      ->execute()->first();
   }
 
   /**
@@ -112,7 +111,7 @@ class InstitutionDroppingCenterReceiptGenerationService extends AutoSubscriber {
       ->addJoin('Email AS email', 'LEFT')
       ->addJoin('Phone AS phone', 'LEFT')
       ->addWhere('id', '=', $coordinatingPOCId)
-      ->execute()->single();
+      ->execute()->first();
 
     $goonjCoordinatorEmail = $contact['email.email'];
     $goonjCoordinatorPhone = $contact['phone.phone'];
