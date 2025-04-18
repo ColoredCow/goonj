@@ -58,7 +58,7 @@ class MaterialContributionService extends AutoSubscriber {
 
     // Hack: Retrieve the most recent "Material Contribution" activity for this contact.
     $activities = Activity::get(FALSE)
-      ->addSelect('*', 'contact.display_name', 'Material_Contribution.Delivered_By', 'Material_Contribution.Delivered_By_Contact', 'Material_Contribution.Goonj_Office', 'Material_Contribution.Collection_Camp.subtype:name', 'Material_Contribution.Institution_Collection_Camp.subtype:name', 'Material_Contribution.Dropping_Center.subtype:name', 'Material_Contribution.Institution_Dropping_Center.subtype:name', 'Material_Contribution.Contribution_Date')
+      ->addSelect('*', 'contact.display_name', 'Material_Contribution.Delivered_By', 'Material_Contribution.Delivered_By_Contact', 'Material_Contribution.Goonj_Office', 'Material_Contribution.Collection_Camp.subtype:name', 'Material_Contribution.Institution_Collection_Camp.subtype:name', 'Material_Contribution.Dropping_Center.subtype:name', 'Material_Contribution.Institution_Dropping_Center.subtype:name', 'Material_Contribution.Contribution_Date', 'Material_Contribution.Event')
       ->addJoin('ActivityContact AS activity_contact', 'LEFT')
       ->addJoin('Contact AS contact', 'LEFT')
       ->addWhere('source_contact_id', '=', $params['contactId'])
@@ -111,6 +111,7 @@ class MaterialContributionService extends AutoSubscriber {
    */
   private static function getContributionCity($contribution, $subtype) {
     $officeId = $contribution['Material_Contribution.Goonj_Office'];
+    $eventId = $contribution['Material_Contribution.Event'];
 
     if ($officeId) {
       $organization = Organization::get(FALSE)
@@ -118,6 +119,30 @@ class MaterialContributionService extends AutoSubscriber {
         ->addWhere('id', '=', $officeId)
         ->execute()->single();
       return $organization['address_primary.street_address'] ?? '';
+    }
+
+    if ($eventId) {
+      try {
+        $events = Event::get(FALSE)
+          ->addSelect('loc_block_id.address_id')
+          ->addJoin('LocBlock AS loc_block', 'LEFT')
+          ->addWhere('id', '=', $eventId)
+          ->execute()->first();
+
+        $addressId = $events['loc_block_id.address_id'];
+
+        $addresses = Address::get(FALSE)
+          ->addSelect('street_address')
+          ->addWhere('id', '=', $addressId)
+          ->execute()->first();
+
+        $streetAddress = $addresses['street_address'];
+
+        return $streetAddress ?? '';
+      }
+      catch (\Exception $e) {
+        error_log("Error fetching organization address: " . $e->getMessage());
+      }
     }
 
     $campFieldMapping = [
