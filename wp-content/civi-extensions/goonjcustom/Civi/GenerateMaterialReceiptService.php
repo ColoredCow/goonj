@@ -4,6 +4,8 @@ namespace Civi;
 
 require_once __DIR__ . '/../../../../wp-content/civi-extensions/goonjcustom/vendor/autoload.php';
 
+use Civi\Api4\Address;
+use Civi\Api4\Event;
 use Civi\Api4\Activity;
 use Civi\Api4\EckEntity;
 use Civi\Api4\Contact;
@@ -59,6 +61,7 @@ class GenerateMaterialReceiptService extends AutoSubscriber {
     $campId = $data['Eck_Collection_Camp1'][0]['fields']['id'] ?? NULL;
     $puId = $data['Activity1'][0]['fields']['Material_Contribution.Goonj_Office'] ?? NULL;
     $activityId = $data['Activity1'][0]['fields']['id'] ?? NULL;
+    $eventId = $data['Activity1'][0]['fields']['Material_Contribution.Event'] ?? NULL;
 
     if ($campId) {
       $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
@@ -89,10 +92,21 @@ class GenerateMaterialReceiptService extends AutoSubscriber {
         ->addJoin('Contact AS contact', 'LEFT')
         ->execute();
     }
-    else {
+    elseif ($puId) {
+
       $activities = Activity::get(FALSE)
         ->addSelect('*', 'contact.display_name', 'Material_Contribution.Delivered_By', 'Material_Contribution.Delivered_By_Contact', 'Material_Contribution.Goonj_Office', 'Material_Contribution.Collection_Camp.subtype:name', 'Material_Contribution.Institution_Collection_Camp.subtype:name', 'Material_Contribution.Dropping_Center.subtype:name', 'Material_Contribution.Institution_Dropping_Center.subtype:name', 'Material_Contribution.Contribution_Date', 'source_contact_id', 'activity_date_time', 'subject')
         ->addWhere('Material_Contribution.Goonj_Office', '=', $puId)
+        ->addWhere('id', '=', $activityId)
+        ->addJoin('ActivityContact AS activity_contact', 'LEFT')
+        ->addJoin('Contact AS contact', 'LEFT')
+        ->execute();
+    }
+    elseif ($eventId) {
+
+      $activities = Activity::get(FALSE)
+        ->addSelect('*', 'contact.display_name', 'Material_Contribution.Delivered_By', 'Material_Contribution.Delivered_By_Contact', 'Material_Contribution.Goonj_Office', 'Material_Contribution.Collection_Camp.subtype:name', 'Material_Contribution.Institution_Collection_Camp.subtype:name', 'Material_Contribution.Dropping_Center.subtype:name', 'Material_Contribution.Institution_Dropping_Center.subtype:name', 'Material_Contribution.Contribution_Date', 'source_contact_id', 'activity_date_time', 'subject', 'Material_Contribution.Event')
+        ->addWhere('Material_Contribution.Event', '=', $eventId)
         ->addWhere('id', '=', $activityId)
         ->addJoin('ActivityContact AS activity_contact', 'LEFT')
         ->addJoin('Contact AS contact', 'LEFT')
@@ -148,6 +162,7 @@ class GenerateMaterialReceiptService extends AutoSubscriber {
    */
   private static function getContributionCity($contribution, $subtype) {
     $officeId = $contribution['Material_Contribution.Goonj_Office'];
+    $eventId = $contribution['Material_Contribution.Event'];
 
     if ($officeId) {
       try {
@@ -156,6 +171,30 @@ class GenerateMaterialReceiptService extends AutoSubscriber {
           ->addWhere('id', '=', $officeId)
           ->execute()->single();
         return $organization['address_primary.street_address'] ?? '';
+      }
+      catch (\Exception $e) {
+        error_log("Error fetching organization address: " . $e->getMessage());
+      }
+    }
+
+    if ($eventId) {
+      try {
+        $events = Event::get(FALSE)
+          ->addSelect('loc_block_id.address_id')
+          ->addJoin('LocBlock AS loc_block', 'LEFT')
+          ->addWhere('id', '=', $eventId)
+          ->execute()->first();
+
+        $addressId = $events['loc_block_id.address_id'];
+
+        $addresses = Address::get(FALSE)
+          ->addSelect('street_address')
+          ->addWhere('id', '=', $addressId)
+          ->execute()->first();
+
+        $streetAddress = $addresses['street_address'];
+
+        return $streetAddress ?? '';
       }
       catch (\Exception $e) {
         error_log("Error fetching organization address: " . $e->getMessage());
