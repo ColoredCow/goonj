@@ -31,7 +31,16 @@ class GenerateMaterialReceiptService extends AutoSubscriber {
   }
 
   /**
+   * Generate a PDF receipt for material contributions when a specific form is submitted.
    *
+   * @param string $op
+   *   The operation being performed (create, edit, delete).
+   * @param string $objectName
+   *   The entity type being operated on.
+   * @param int $objectId
+   *   The ID of the entity being operated on.
+   * @param object $objectRef
+   *   Reference to the entity being operated on.
    */
   public static function generateMaterialReceipt(string $op, string $objectName, int $objectId, &$objectRef) {
     if (
@@ -129,17 +138,30 @@ class GenerateMaterialReceiptService extends AutoSubscriber {
   }
 
   /**
+   * Get the contribution venue city/address based on contribution data and subtype.
    *
+   * @param array $contribution
+   *   The contribution data array.
+   * @param string $subtype
+   *   The subtype of the contribution.
+   *
+   * @return string
+   *   The formatted address or empty string if not found.
    */
   private static function getContributionCity($contribution, $subtype) {
     $officeId = $contribution['Material_Contribution.Goonj_Office'];
 
     if ($officeId) {
-      $organization = Organization::get(FALSE)
-        ->addSelect('address_primary.street_address')
-        ->addWhere('id', '=', $officeId)
-        ->execute()->single();
-      return $organization['address_primary.street_address'] ?? '';
+      try {
+        $organization = Organization::get(FALSE)
+          ->addSelect('address_primary.street_address')
+          ->addWhere('id', '=', $officeId)
+          ->execute()->single();
+        return $organization['address_primary.street_address'] ?? '';
+      }
+      catch (\Exception $e) {
+        error_log("Error fetching organization address: " . $e->getMessage());
+      }
     }
 
     $campFieldMapping = [
