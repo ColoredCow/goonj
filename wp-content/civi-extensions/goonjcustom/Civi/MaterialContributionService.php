@@ -8,6 +8,7 @@ use Civi\Api4\Contact;
 use Civi\Api4\EckEntity;
 use Civi\Api4\Organization;
 use Civi\Api4\Event;
+use Civi\Api4\Address;
 use Civi\Core\Service\AutoSubscriber;
 
 /**
