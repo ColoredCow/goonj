@@ -5,6 +5,9 @@ namespace Civi\Traits;
 use chillerlan\QRCode\QRCode;
 use chillerlan\QRCode\QROptions;
 use Civi\Api4\CustomField;
+use Dompdf\Dompdf;
+use Civi\MaterialContributionService;
+
 
 /**
  *
@@ -101,6 +104,83 @@ trait QrCodeable {
 
     return $attachment;
 
+  }
+
+  /**
+   *
+   */
+  public static function generatePdfForCollectionCamp($entityId, $activity, $email, $phone, $locationAreaOfCamp, $contributionDate) {
+    try {
+      $dompdf = new Dompdf(['isRemoteEnabled' => TRUE]);
+
+      $html = MaterialContributionService::generateContributionReceiptHtml($activity, $email, $phone, $locationAreaOfCamp, $contributionDate);
+
+      $dompdf->loadHtml($html);
+      $dompdf->setPaper('A4', 'portrait');
+      $dompdf->render();
+
+      $pdfOutput = $dompdf->output();
+      $fileName = "material_contribution.pdf";
+      $tempFilePath = \CRM_Utils_File::tempnam($fileName);
+
+      file_put_contents($tempFilePath, $pdfOutput);
+
+      // Save to custom field.
+      return self::savePdfAttachmentToCustomField(
+        $entityId,
+        $fileName,
+        $tempFilePath,
+      // Your custom group name.
+        'Material_Contribution',
+      // Your custom field name.
+        'Receipt'
+      );
+
+    }
+    catch (\Exception $e) {
+      \CRM_Core_Error::debug_log_message('PDF error: ' . $e->getMessage());
+      return FALSE;
+    }
+  }
+
+  /**
+   *
+   */
+  public static function savePdfAttachmentToCustomField($entityId, $fileName, $filePath, $customGroupName, $customFieldName) {
+    $customFields = CustomField::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('custom_group_id:name', '=', $customGroupName)
+      ->addWhere('name', '=', $customFieldName)
+      ->setLimit(1)
+      ->execute();
+
+    $field = $customFields->first();
+
+    if (!$field) {
+      \CRM_Core_Error::debug_log_message("Custom field not found: {$customGroupName} / {$customFieldName}");
+      return FALSE;
+    }
+
+    $fieldId = 'custom_' . $field['id'];
+
+    $params = [
+      'entity_id' => $entityId,
+      'name' => $fileName,
+      'mime_type' => 'application/pdf',
+      'field_name' => $fieldId,
+      'options' => [
+        'move-file' => $filePath,
+      ],
+    ];
+
+    $result = civicrm_api3('Attachment', 'create', $params);
+
+    if (!empty($result['is_error'])) {
+      \CRM_Core_Error::debug_log_message("Failed to attach PDF for entity ID $entityId");
+      return FALSE;
+    }
+
+    return $result['values'][$result['id']];
   }
 
 }
