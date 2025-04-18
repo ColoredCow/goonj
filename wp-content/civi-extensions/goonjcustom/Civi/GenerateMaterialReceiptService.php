@@ -26,6 +26,7 @@ class GenerateMaterialReceiptService extends AutoSubscriber {
     return [
       '&hook_civicrm_post' => [
       ['generateMaterialReceipt'],
+      ['generateMaterialReceiptForInstitution'],
       ],
 
     ];
