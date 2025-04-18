@@ -8,7 +8,6 @@ use Civi\Api4\Activity;
 use Civi\Api4\EckEntity;
 use Civi\Api4\Contact;
 use Civi\Api4\Organization;
-
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\QrCodeable;
 
@@ -62,7 +61,6 @@ class GenerateMaterialReceiptService extends AutoSubscriber {
     $activityId = $data['Activity1'][0]['fields']['id'] ?? NULL;
 
     if ($campId) {
-
       $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
         ->addSelect('subtype:name')
         ->addWhere('id', '=', $campId)
@@ -83,7 +81,7 @@ class GenerateMaterialReceiptService extends AutoSubscriber {
         $contributionName = 'Material_Contribution.Institution_Dropping_Center';
       }
 
-      $activities = Activity::get(TRUE)
+      $activities = Activity::get(FALSE)
         ->addSelect('*', 'contact.display_name', 'Material_Contribution.Delivered_By', 'Material_Contribution.Delivered_By_Contact', 'Material_Contribution.Goonj_Office', 'Material_Contribution.Collection_Camp.subtype:name', 'Material_Contribution.Institution_Collection_Camp.subtype:name', 'Material_Contribution.Dropping_Center.subtype:name', 'Material_Contribution.Institution_Dropping_Center.subtype:name', 'Material_Contribution.Contribution_Date', 'source_contact_id', 'activity_date_time', 'subject')
         ->addWhere($contributionName, '=', $campId)
         ->addWhere('id', '=', $activityId)
@@ -92,7 +90,7 @@ class GenerateMaterialReceiptService extends AutoSubscriber {
         ->execute();
     }
     else {
-      $activities = Activity::get(TRUE)
+      $activities = Activity::get(FALSE)
         ->addSelect('*', 'contact.display_name', 'Material_Contribution.Delivered_By', 'Material_Contribution.Delivered_By_Contact', 'Material_Contribution.Goonj_Office', 'Material_Contribution.Collection_Camp.subtype:name', 'Material_Contribution.Institution_Collection_Camp.subtype:name', 'Material_Contribution.Dropping_Center.subtype:name', 'Material_Contribution.Institution_Dropping_Center.subtype:name', 'Material_Contribution.Contribution_Date', 'source_contact_id', 'activity_date_time', 'subject')
         ->addWhere('Material_Contribution.Goonj_Office', '=', $puId)
         ->addWhere('id', '=', $activityId)
@@ -172,6 +170,7 @@ class GenerateMaterialReceiptService extends AutoSubscriber {
     ];
 
     $campField = $campFieldMapping[$subtype] ?? NULL;
+
     if (empty($campField)) {
       return;
     }
