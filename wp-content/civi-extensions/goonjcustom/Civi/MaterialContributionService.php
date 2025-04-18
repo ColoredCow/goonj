@@ -131,14 +131,14 @@ class MaterialContributionService extends AutoSubscriber {
           ->addWhere('id', '=', $eventId)
           ->execute()->first();
 
-        $addressId = $events['loc_block_id.address_id'];
+        $addressId = $events['loc_block_id.address_id'] ?? '';
 
         $addresses = Address::get(FALSE)
           ->addSelect('street_address')
           ->addWhere('id', '=', $addressId)
           ->execute()->first();
 
-        $streetAddress = $addresses['street_address'];
+        $streetAddress = $addresses['street_address'] ?? '';
 
         return $streetAddress ?? '';
       }
