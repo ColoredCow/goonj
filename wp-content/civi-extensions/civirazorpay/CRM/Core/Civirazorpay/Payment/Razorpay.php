@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../../../../lib/razorpay/Razorpay.php';
 
+use Civi\Api4\Campaign;
 use Civi\Api4\StateProvince;
 use Civi\Api4\Country;
 use Civi\Api4\Contribution;
@@ -10,6 +11,7 @@ use Civi\Payment\Exception\PaymentProcessorException;
 use Civi\Payment\PropertyBag;
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors\SignatureVerificationError;
+use Civi\Api4\CustomField;
 
 /**
  * Class CRM_Core_Civirazorpay_Payment_Razorpay
@@ -443,6 +445,8 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
     $paymentId = $event['payload']['payment']['entity']['id'] ?? NULL;
     // Convert from paise to INR.
     $amount = $event['payload']['payment']['entity']['amount'] / 100;
+    $panCard = $event['payload']['subscription']['entity']['notes']['identity_type'] ?? NULL;
+    $campaignTitle = $event['payload']['subscription']['entity']['notes']['purpose'] ?? NULL;
 
     if (!$subscriptionId || !$paymentId) {
       \Civi::log()->error("Missing subscription or payment ID in charged event");
@@ -462,6 +466,21 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
 
       $pendingContribution = $this->getPendingContributionByRecurId($recurringContribution['id']);
 
+      $sourceField = CustomField::get(FALSE)
+        ->addSelect('id')
+        ->addWhere('custom_group_id:name', '=', 'Contribution_Details')
+        ->addWhere('name', '=', 'PAN_Card_Number')
+        ->execute()->single();
+
+      $sourceFieldId = 'custom_' . $sourceField['id'];
+
+      $campaign = Campaign::get(FALSE)
+        ->addSelect('id')
+        ->addWhere('title', '=', $campaignTitle)
+        ->execute()->first();
+
+      $campaignId = $campaign['id'] ?? NULL;
+
       if (!$pendingContribution) {
         $contributionToUpdate = civicrm_api3('Contribution', 'create', [
           'contact_id' => $contactId,
@@ -473,6 +492,8 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
           'receive_date' => date('Y-m-d H:i:s'),
           'is_test' => $recurringContribution['is_test'],
           'payment_instrument_id' => $recurringContribution['payment_instrument_id'] ?? NULL,
+          $sourceFieldId  => $panCard,
+          'campaign_id' => $campaignId,
         ]);
       }
       else {
