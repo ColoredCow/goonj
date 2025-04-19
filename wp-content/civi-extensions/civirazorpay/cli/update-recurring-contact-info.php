@@ -195,7 +195,7 @@ class RazorpaySubscriptionUpdater {
       ->execute();
 
     foreach ($allRecurs as $record) {
-        $this->updatePanCard($record, $panCard);
+      $this->updatePanCard($record, $panCard);
     }
   }
 
@@ -203,22 +203,20 @@ class RazorpaySubscriptionUpdater {
    *
    */
   public function updatePanCard($contribution, $panCard) {
-    foreach ($contribution as $item) {
-      $contributionId = $item['id'] ?? NULL;
+    $contributionId = $contribution['id'] ?? NULL;
 
-      if ($contributionId) {
-        try {
-          Contribution::update(FALSE)
-            ->addWhere('id', '=', $contributionId)
-            ->addWhere('is_test', '=', $this->isTest)
-            ->addValue('Contribution_Details.PAN_Card_Number', $panCard)
-            ->execute();
+    if ($contributionId) {
+      try {
+        Contribution::update(FALSE)
+          ->addWhere('id', '=', $contributionId)
+          ->addWhere('is_test', '=', $this->isTest)
+          ->addValue('Contribution_Details.PAN_Card_Number', $panCard)
+          ->execute();
 
-          echo "Updated PAN Card for Contribution ID: $contributionId\n";
-        }
-        catch (\Exception $e) {
-          \Civi::log()->error("Failed to update PAN for contribution ID $contributionId: " . $e->getMessage());
-        }
+        echo "Updated PAN Card for Contribution ID: $contributionId\n";
+      }
+      catch (\Exception $e) {
+        \Civi::log()->error("Failed to update PAN for contribution ID $contributionId: " . $e->getMessage());
       }
     }
   }
