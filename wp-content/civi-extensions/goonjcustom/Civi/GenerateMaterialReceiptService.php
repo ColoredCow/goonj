@@ -26,9 +26,32 @@ class GenerateMaterialReceiptService extends AutoSubscriber {
     return [
       '&hook_civicrm_post' => [
       ['generateMaterialReceipt'],
+      ['generateMaterialReceiptForInstitution'],
       ],
 
     ];
+  }
+
+  public static function generateMaterialReceiptForInstitution(string $op, string $objectName, int $objectId, &$objectRef) {
+    if (
+      $op !== 'create' ||
+      $objectName !== 'AfformSubmission' ||
+      empty($objectRef->afform_name) ||
+      (
+          $objectRef->afform_name !== 'afformInstitutionReceiptGeneration'
+      )
+    ) {
+      return;
+    }
+    $data = json_decode($objectRef->data, TRUE);
+    $activityId = $data['Activity1'][0]['fields']['id'] ?? NULL;
+
+    error_log("data: " . print_r($data, TRUE));
+
+
+    error_log("activityId: " . print_r($activityId, TRUE));
+
+
   }
 
   /**
