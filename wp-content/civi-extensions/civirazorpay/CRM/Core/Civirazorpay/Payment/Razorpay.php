@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../../../../lib/razorpay/Razorpay.php';
 
+use Civi\Api4\Campaign;
 use Civi\Api4\StateProvince;
 use Civi\Api4\Country;
 use Civi\Api4\Contribution;
@@ -445,8 +446,8 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
     // Convert from paise to INR.
     $amount = $event['payload']['payment']['entity']['amount'] / 100;
     $panCard = $event['payload']['subscription']['entity']['notes']['identity_type'];
+    $campaignTitle = $event['payload']['subscription']['entity']['notes']['purpose'];
     error_log('panCard: ' . print_r($panCard, TRUE));
-
 
     if (!$subscriptionId || !$paymentId) {
       \Civi::log()->error("Missing subscription or payment ID in charged event");
@@ -474,6 +475,12 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
 
       $sourceFieldId = 'custom_' . $sourceField['id'];
 
+      $campaigns = Campaign::get(FALSE)
+        ->addSelect('id')
+        ->addWhere('title', '=', $campaignTitle)
+        ->execute()->first();
+
+      $campaignId = $campaigns['id'];
 
       if (!$pendingContribution) {
         $contributionToUpdate = civicrm_api3('Contribution', 'create', [
@@ -486,7 +493,8 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
           'receive_date' => date('Y-m-d H:i:s'),
           'is_test' => $recurringContribution['is_test'],
           'payment_instrument_id' => $recurringContribution['payment_instrument_id'] ?? NULL,
-          $sourceFieldId  =>  $panCard,
+          $sourceFieldId  => $panCard,
+          'campaign_id' => $campaignId,
         ]);
       }
       else {
