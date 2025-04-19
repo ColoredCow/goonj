@@ -8,6 +8,9 @@
  *   php import-from-razorpay.php.
  */
 
+use Civi\Api4\Contribution;
+use Civi\Api4\Address;
+use Civi\Api4\Phone;
 use Civi\Api4\ContributionRecur;
 use Civi\Payment\System;
 use Civi\Api4\PaymentProcessor;
@@ -141,17 +144,18 @@ class RazorpaySubscriptionImporter {
     error_log('Notes: ' . print_r($notes, TRUE));
 
     $contributionRecur = ContributionRecur::get(FALSE)
-      ->addSelect('contact_id')
+      ->addSelect('contact_id', 'contribution.id')
       ->addJoin('Contribution AS contribution', 'LEFT')
       ->addWhere('processor_id', '=', $subscriptionId)
       ->addWhere('contribution.source', '=', 'Imported from Razorpay')
       ->execute()->first();
 
     $contactId = $contributionRecur['contact_id'];
+    $contributionId = $contributionRecur['contribution.id'];
 
     if ($contactID) {
       echo "Contact found/created successfully. Contact ID: $contactID\n";
-      $contactIDData = $this->updateDetailsOnContact($contactId);
+      $contactIDData = $this->updateDetailsOnContact($contactId, $mobile, $address, $panCard, $contributionId);
       return $contactID;
     }
     echo "Could not identify a unique contact. Logged for manual intervention.\n";
@@ -162,8 +166,21 @@ class RazorpaySubscriptionImporter {
   /**
    *
    */
-  public function updateDetailsOnContact($contactId) {
+  public function updateDetailsOnContact($contactId, $mobile, $address, $panCard, $contributionId) {
+    $updatePhone = Phone::update(FALSE)
+      ->addValue('phone', $mobile)
+      ->addWhere('contact_id', '=', $contactId)
+      ->execute();
 
+    $updateAddress = Address::update(FALSE)
+      ->addValue('street_address', $address)
+      ->addWhere('contact_id', '=', $contactId)
+      ->execute();
+
+    $updatePanCard = Contribution::update(FALSE)
+      ->addValue('Contribution_Details.PAN_Card_Number', $panCard)
+      ->addWhere('id', '=', $contributionId)
+      ->execute();
   }
 
   /**
