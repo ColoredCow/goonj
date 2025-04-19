@@ -8,10 +8,8 @@
  *   php import-from-razorpay.php.
  */
 
-use Civi\Api4\Individual;
+use Civi\Api4\ContributionRecur;
 use Civi\Payment\System;
-use Civi\Api4\Email;
-use Civi\Api4\Phone;
 use Civi\Api4\PaymentProcessor;
 
 require_once __DIR__ . '/../lib/razorpay/Razorpay.php';
@@ -52,10 +50,10 @@ class RazorpaySubscriptionImporter {
   }
 
   /**
-   * Start the subscription import process.
+   * Start the subscription update process.
    */
   public function run($limit = NULL): void {
-    echo "=== Importing Razorpay Subscriptions into CiviCRM ===\n";
+    echo "=== Update Razorpay Subscriptions data into CiviCRM ===\n";
 
     while (TRUE) {
       try {
@@ -64,7 +62,7 @@ class RazorpaySubscriptionImporter {
         $subscriptions = $this->fetchSubscriptions($limit);
 
         if (empty($subscriptions)) {
-          echo "No more subscriptions to import. Total imported: $this->totalImported\n";
+          echo "No more subscriptions to Update. Total imported: $this->totalImported\n";
           break;
         }
 
@@ -112,9 +110,13 @@ class RazorpaySubscriptionImporter {
     echo "Processing Subscription ID: {$subscription['id']}\n";
     echo "Status: {$subscription['status']}\n";
     echo "Customer ID: {$subscription['customer_id']}\n";
+    echo "Subscription ID: {$subscription['id']}\n";
+
+    error_log('subscription: ' . print_r($subscription, TRUE));
+    die;
 
     try {
-      $contactID = $this->handleCustomerData($subscription);
+      $contactID = $this->handleCustomerDataAndFindContact($subscription);
 
       if (!$contactID) {
         throw new Exception("No valid contact could be associated with subscription {$subscription['id']}");
@@ -131,37 +133,22 @@ class RazorpaySubscriptionImporter {
    *
    * @param array $subscription
    */
-  private function handleCustomerData(array $subscription) {
+  private function handleCustomerDataAndFindContact(array $subscription) {
+    $subscriptionId = $subscription['id'] ?? NULL;
     $customerId = $subscription['customer_id'] ?? NULL;
     $notes = $subscription['notes'] ?? NULL;
     $mobile = $notes['mobile'] ?? NULL;
     $email = $notes['email'] ?? NULL;
     $name = $notes['name'] ?? NULL;
 
-    $findContactArgs = [];
+    $contributionRecur = ContributionRecur::get(FALSE)
+      ->addSelect('contact_id')
+      ->addJoin('Contribution AS contribution', 'LEFT')
+      ->addWhere('processor_id', '=', $subscriptionId)
+      ->addWhere('contribution.source', '=', 'Imported from Razorpay')
+      ->execute()->first();
 
-    if ($name || $mobile) {
-      $findContactArgs = [
-        'name' => $name ?? 'Unknown Customer',
-        'email' => $email ?? NULL,
-        'phone' => $mobile ?? NULL,
-      ];
-    }
-    elseif ($customerId) {
-      $customer = $this->api->customer->fetch($customerId);
-      $findContactArgs = [
-        'name' => $customer->name ?? 'Unknown Customer',
-        'email' => $customer->email ?? NULL,
-        'phone' => $customer->contact ?? NULL,
-      ];
-    }
-
-    if (empty($findContactArgs)) {
-      echo "No customer data available for subscription {$subscription['id']}\n";
-      return NULL;
-    }
-
-    $contactID = $this->findContact($findContactArgs);
+    $contactId = $contributionRecur['contact_id'];
 
     if ($contactID) {
       echo "Contact found/created successfully. Contact ID: $contactID\n";
@@ -170,224 +157,6 @@ class RazorpaySubscriptionImporter {
     echo "Could not identify a unique contact. Logged for manual intervention.\n";
 
     return NULL;
-  }
-
-  /**
-   * Find or create a CiviCRM contact based on email and phone.
-   *
-   * @param array $params
-   *   - name: Customer name (optional, used when creating a new contact).
-   *   - email: Customer email (optional).
-   *   - phone: Customer phone number (optional).
-   *
-   * @return int|null
-   *   Contact ID if found or created, null if manual intervention is required.
-   */
-  public function findContact($params) {
-    // Case 1: No email, No phone.
-    if (empty($params['email']) && empty($params['phone'])) {
-      $this->logManualIntervention('Neither email nor phone is provided.', $params);
-      return NULL;
-    }
-
-    // Case 2: No email, Phone available.
-    if (empty($params['email']) && !empty($params['phone'])) {
-      return $this->handlePhoneSearch($params['phone'], $params['name']);
-    }
-
-    // Case 3: Email available, No phone.
-    if (!empty($params['email']) && empty($params['phone'])) {
-      return $this->handleEmailSearch($params['email'], $params['name']);
-    }
-
-    // Case 4: Email available, Phone available.
-    if (!empty($params['email']) && !empty($params['phone'])) {
-      return $this->handleEmailAndPhoneSearch($params['email'], $params['phone'], $params['name']);
-    }
-
-    return NULL;
-  }
-
-  /**
-   * Handle search by phone.
-   */
-  private function handlePhoneSearch($phone, $name) {
-    $phoneResults = Phone::get(FALSE)
-      ->addWhere('phone', '=', $phone)
-      ->execute();
-
-    if ($phoneResults->count() === 1) {
-      $contact = $phoneResults->first();
-      return $contact['contact_id'];
-    }
-
-    if ($phoneResults->count() > 1) {
-      $this->logManualIntervention('Multiple contacts found with the same phone number.', ['phone' => $phone]);
-      return NULL;
-    }
-
-    // Create a new contact if no match.
-    return $this->createContact(['name' => $name, 'phone' => $phone]);
-  }
-
-  /**
-   * Handle search by email.
-   */
-  private function handleEmailSearch($email, $name) {
-    $emailResults = Email::get(FALSE)
-      ->addWhere('email', '=', $email)
-      ->execute();
-
-    if ($emailResults->count() === 1) {
-      $contact = $emailResults->first();
-      return $contact['contact_id'];
-    }
-
-    if ($emailResults->count() > 1) {
-      $this->logManualIntervention('Multiple contacts found with the same email.', ['email' => $email]);
-      return NULL;
-    }
-
-    // Create a new contact if no match.
-    return $this->createContact(['name' => $name, 'email' => $email]);
-  }
-
-  /**
-   * Handle search by both email and phone.
-   */
-  private function handleEmailAndPhoneSearch($email, $phone, $name) {
-    $emailResults = Email::get(FALSE)
-      ->addWhere('email', '=', $email)
-      ->execute();
-
-    $phoneResults = Phone::get(FALSE)
-      ->addWhere('phone', '=', $phone)
-      ->execute();
-
-    $emailContactIDs = array_column($emailResults->jsonSerialize(), 'contact_id');
-    $phoneContactIDs = array_column($phoneResults->jsonSerialize(), 'contact_id');
-
-    // Find intersection of email and phone results.
-    $commonContactIDs = array_intersect($emailContactIDs, $phoneContactIDs);
-
-    if (count($commonContactIDs) === 1) {
-      // Return the single matching contact.
-      return reset($commonContactIDs);
-    }
-
-    if (count($commonContactIDs) > 1) {
-      $this->logManualIntervention('Multiple contacts found with matching email and phone.', [
-        'email' => $email,
-        'phone' => $phone,
-      ]);
-      return NULL;
-    }
-
-    if (count($emailContactIDs) === 1) {
-      return reset($emailContactIDs);
-    }
-
-    if (count($phoneContactIDs) === 1) {
-      return reset($phoneContactIDs);
-    }
-
-    return $this->createContact(['name' => $name, 'email' => $email, 'phone' => $phone]);
-  }
-
-  /**
-   * Create a new Individual contact in CiviCRM with optional email and phone.
-   *
-   * @param array $params
-   *   - name: Customer name (optional, defaults to 'Unknown Customer').
-   *   - email: Customer email (optional).
-   *   - phone: Customer phone number (optional).
-   *
-   * @return int|null
-   *   Returns the created contact ID or null on failure.
-   */
-  private function createContact($params) {
-    $fullName = $params['name'] ?? '';
-    $nameParts = $this->splitName($fullName);
-
-    // Step 1: Create an Individual contact.
-    $contact = Individual::create(FALSE)
-      ->addValue('source', 'Razorpay subscription import')
-      ->addValue('first_name', $nameParts['firstName'])
-      ->addValue('middle_name', $nameParts['middleName'])
-      ->addValue('last_name', $nameParts['lastName'])
-      ->execute()
-      ->first();
-
-    $contactId = $contact['id'];
-    echo "Created new contact. Contact ID: $contactId\n";
-
-    // Step 2: Add email if available.
-    if (!empty($params['email'])) {
-      Email::create(FALSE)
-        ->addValue('contact_id', $contactId)
-        ->addValue('email', $params['email'])
-        ->addValue('is_primary', TRUE)
-        ->execute();
-
-      echo "Added email '{$params['email']}' to contact ID: $contactId\n";
-    }
-
-    // Step 3: Add phone if available.
-    if (!empty($params['phone'])) {
-      Phone::create(FALSE)
-        ->addValue('contact_id', $contactId)
-        ->addValue('phone', $params['phone'])
-        ->addValue('is_primary', TRUE)
-        ->execute();
-
-      echo "Added phone '{$params['phone']}' to contact ID: $contactId\n";
-    }
-
-    return $contactId;
-
-  }
-
-  /**
-   * Split a full name into first, middle, and last names.
-   *
-   * @param string $fullName
-   *   The full name to be split.
-   *
-   * @return array
-   *   An array with keys 'firstName', 'middleName', 'lastName'.
-   */
-  private function splitName(string $fullName): array {
-    $nameParts = preg_split('/\s+/', trim($fullName));
-
-    $firstName = '';
-    $middleName = '';
-    $lastName = '';
-
-    $count = count($nameParts);
-
-    if ($count === 1) {
-      $firstName = $nameParts[0];
-    }
-    elseif ($count === 2) {
-      $firstName = $nameParts[0];
-      $lastName = $nameParts[1];
-    }
-    elseif ($count === 3) {
-      $firstName = $nameParts[0];
-      $middleName = $nameParts[1];
-      $lastName = $nameParts[2];
-    }
-    elseif ($count > 3) {
-      $firstName = $nameParts[0];
-      $lastName = array_pop($nameParts);
-      $middleName = implode(' ', $nameParts);
-    }
-
-    return [
-      'firstName' => $firstName,
-      'middleName' => $middleName,
-      'lastName' => $lastName,
-    ];
   }
 
   /**
