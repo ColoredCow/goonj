@@ -474,12 +474,12 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
 
       $sourceFieldId = 'custom_' . $sourceField['id'];
 
-      $campaigns = Campaign::get(FALSE)
+      $campaign = Campaign::get(FALSE)
         ->addSelect('id')
         ->addWhere('title', '=', $campaignTitle)
         ->execute()->first();
 
-      $campaignId = $campaigns['id'] ?? NULL;
+      $campaignId = $campaign['id'] ?? NULL;
 
       if (!$pendingContribution) {
         $contributionToUpdate = civicrm_api3('Contribution', 'create', [
