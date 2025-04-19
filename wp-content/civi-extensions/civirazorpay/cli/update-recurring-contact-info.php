@@ -190,7 +190,7 @@ class RazorpaySubscriptionUpdater {
     $allRecurs = Contribution::get(FALSE)
       ->addSelect('contact_id', 'id')
       ->addWhere('contribution_recur_id', '=', $id)
-      ->addWhere('is_test', '=', $this->is_test)
+      ->addWhere('is_test', '=', $this->isTest)
       ->addWhere('source', '=', 'Imported from Razorpay')
       ->execute();
 
