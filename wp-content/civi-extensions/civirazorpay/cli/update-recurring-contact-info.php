@@ -109,7 +109,6 @@ class RazorpaySubscriptionImporter {
   private function processSubscription(array $subscription): void {
     echo "Processing Subscription ID: {$subscription['id']}\n";
     echo "Status: {$subscription['status']}\n";
-    echo "Customer ID: {$subscription['customer_id']}\n";
     echo "Subscription ID: {$subscription['id']}\n";
 
     error_log('subscription: ' . print_r($subscription, TRUE));
@@ -135,7 +134,6 @@ class RazorpaySubscriptionImporter {
    */
   private function handleCustomerDataAndFindContact(array $subscription) {
     $subscriptionId = $subscription['id'] ?? NULL;
-    $customerId = $subscription['customer_id'] ?? NULL;
     $notes = $subscription['notes'] ?? NULL;
     $mobile = $notes['mobile'] ?? NULL;
     $email = $notes['email'] ?? NULL;
