@@ -195,15 +195,15 @@ class RazorpaySubscriptionUpdater {
       ->execute();
 
     foreach ($allRecurs as $record) {
-      $this->updatePanCard([$record], $panCard);
+        $this->updatePanCard($record, $panCard);
     }
   }
 
   /**
    *
    */
-  public function updatePanCard($contributionRecurs, $panCard) {
-    foreach ($contributionRecurs as $item) {
+  public function updatePanCard($contribution, $panCard) {
+    foreach ($contribution as $item) {
       $contributionId = $item['id'] ?? NULL;
 
       if ($contributionId) {
