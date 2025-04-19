@@ -2,10 +2,10 @@
 
 /**
  * @file
- * CLI Script to Import Razorpay Subscriptions into CiviCRM.
+ * CLI Script to Update Razorpay Subscriptions into CiviCRM.
  *
  * Usage:
- *   php import-from-razorpay.php.
+ *   php update-recurring-contact-info.php.
  */
 
 use Civi\Api4\Contribution;
@@ -17,7 +17,7 @@ use Civi\Api4\PaymentProcessor;
 
 require_once __DIR__ . '/../lib/razorpay/Razorpay.php';
 
-const RP_IMPORT_SUBSCRIPTIONS_LIMIT = 100;
+const RP_UPDATE_SUBSCRIPTIONS_LIMIT = 100;
 const RP_API_MAX_RETRIES = 3;
 
 if (php_sapi_name() != 'cli') {
@@ -27,7 +27,7 @@ if (php_sapi_name() != 'cli') {
 /**
  *
  */
-class RazorpaySubscriptionImporter {
+class RazorpaySubscriptionUpdater {
 
   private $api;
   private $skip = 0;
@@ -237,15 +237,15 @@ class RazorpaySubscriptionImporter {
     echo "Retrying... ($this->retryCount/" . RP_API_MAX_RETRIES . ")\n";
     sleep(2);
 
-    $this->run(RP_IMPORT_SUBSCRIPTIONS_LIMIT);
+    $this->run(RP_UPDATE_SUBSCRIPTIONS_LIMIT);
   }
 
 }
 
 
 try {
-  $importer = new RazorpaySubscriptionImporter();
-  $importer->run(RP_IMPORT_SUBSCRIPTIONS_LIMIT);
+  $importer = new RazorpaySubscriptionUpdater();
+  $importer->run(RP_UPDATE_SUBSCRIPTIONS_LIMIT);
 }
 catch (\Exception $e) {
   print "Error: " . $e->getMessage() . "\n\n" . $e->getTraceAsString();
