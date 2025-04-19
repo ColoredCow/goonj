@@ -8,8 +8,6 @@
  *   php import-from-razorpay.php.
  */
 
-use Civi\Api4\Contribution;
-use Civi\Api4\ContributionRecur;
 use Civi\Api4\Individual;
 use Civi\Payment\System;
 use Civi\Api4\Email;
