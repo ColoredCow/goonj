@@ -161,7 +161,7 @@ class RazorpaySubscriptionUpdater {
     $contributionId = $contributionRecur['contribution.id'] ?? NULL;
 
     if ($contactId) {
-      echo "Contact found/created successfully. Contact ID: $contactId\n";
+      echo "Contact found successfully. Contact ID: $contactId\n";
 
       try {
         $this->updateDetailsOnContact($contactId, $mobile, $address, $panCard, $contributionId);
@@ -181,30 +181,66 @@ class RazorpaySubscriptionUpdater {
    *
    */
   public function updateDetailsOnContact($contactId, $mobile, $address, $panCard, $contributionId) {
+    // Update or create phone.
     try {
-      $updatePhone = Phone::update(FALSE)
-        ->addValue('phone', $mobile)
+      $existingPhone = Phone::get(FALSE)
         ->addWhere('contact_id', '=', $contactId)
-        ->execute();
+        ->execute()
+        ->first();
+
+      if ($existingPhone) {
+        Phone::update(FALSE)
+          ->addValue('phone', $mobile)
+          ->addWhere('id', '=', $existingPhone['id'])
+          ->execute();
+        echo "Updated phone for contact ID: $contactId\n";
+      }
+      else {
+        Phone::create(FALSE)
+          ->addValue('contact_id', $contactId)
+          ->addValue('location_type_id:name', 'Main')
+          ->addValue('is_primary', TRUE)
+          ->addValue('phone', $mobile)
+          ->execute();
+        echo "Created phone for contact ID: $contactId\n";
+      }
     }
     catch (\Exception $e) {
-      \Civi::log()->error('Failed to update phone number: ' . $e->getMessage());
+      \Civi::log()->error('Failed to update or create phone number: ' . $e->getMessage());
     }
 
+    // Update or create address.
     try {
-      $updateAddress = Address::update(FALSE)
-        ->addValue('street_address', $address)
+      $existingAddress = Address::get(FALSE)
         ->addWhere('contact_id', '=', $contactId)
-        ->execute();
+        ->execute()
+        ->first();
+
+      if ($existingAddress) {
+        Address::update(FALSE)
+          ->addValue('street_address', $address)
+          ->addWhere('id', '=', $existingAddress['id'])
+          ->execute();
+        echo "Updated address for contact ID: $contactId\n";
+      }
+      else {
+        Address::create(FALSE)
+          ->addValue('contact_id', $contactId)
+          ->addValue('location_type_id:name', 'Main')
+          ->addValue('is_primary', TRUE)
+          ->addValue('street_address', $address)
+          ->execute();
+        echo "Created address for contact ID: $contactId\n";
+      }
     }
     catch (\Exception $e) {
-      \Civi::log()->error('Failed to update address: ' . $e->getMessage());
+      \Civi::log()->error('Failed to update or create address: ' . $e->getMessage());
     }
 
     try {
       $updatePanCard = Contribution::update(FALSE)
-        ->addValue('Contribution_Details.PAN_Card_Number', $panCard)
         ->addWhere('id', '=', $contributionId)
+        ->addValue('Contribution_Details.PAN_Card_Number', $panCard)
         ->execute();
     }
     catch (\Exception $e) {
