@@ -141,8 +141,6 @@ class RazorpaySubscriptionUpdater {
     $address = $notes['address1'] ?? NULL;
     $panCard = $notes['PAN Card'] ?? NULL;
 
-    error_log('Notes: ' . print_r($notes, TRUE));
-
     try {
       // Step 1: Fetch first recurring contribution to get contact ID.
       $firstRecur = ContributionRecur::get(FALSE)
