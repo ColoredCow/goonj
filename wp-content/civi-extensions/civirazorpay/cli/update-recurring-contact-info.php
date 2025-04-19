@@ -167,20 +167,35 @@ class RazorpaySubscriptionImporter {
    *
    */
   public function updateDetailsOnContact($contactId, $mobile, $address, $panCard, $contributionId) {
-    $updatePhone = Phone::update(FALSE)
-      ->addValue('phone', $mobile)
-      ->addWhere('contact_id', '=', $contactId)
-      ->execute();
+    try {
+      $updatePhone = Phone::update(FALSE)
+        ->addValue('phone', $mobile)
+        ->addWhere('contact_id', '=', $contactId)
+        ->execute();
+    }
+    catch (\Exception $e) {
+      \Civi::log()->error('Failed to update phone number: ' . $e->getMessage());
+    }
 
-    $updateAddress = Address::update(FALSE)
-      ->addValue('street_address', $address)
-      ->addWhere('contact_id', '=', $contactId)
-      ->execute();
+    try {
+      $updateAddress = Address::update(FALSE)
+        ->addValue('street_address', $address)
+        ->addWhere('contact_id', '=', $contactId)
+        ->execute();
+    }
+    catch (\Exception $e) {
+      \Civi::log()->error('Failed to update address: ' . $e->getMessage());
+    }
 
-    $updatePanCard = Contribution::update(FALSE)
-      ->addValue('Contribution_Details.PAN_Card_Number', $panCard)
-      ->addWhere('id', '=', $contributionId)
-      ->execute();
+    try {
+      $updatePanCard = Contribution::update(FALSE)
+        ->addValue('Contribution_Details.PAN_Card_Number', $panCard)
+        ->addWhere('id', '=', $contributionId)
+        ->execute();
+    }
+    catch (\Exception $e) {
+      \Civi::log()->error('Failed to update PAN card number: ' . $e->getMessage());
+    }
   }
 
   /**
