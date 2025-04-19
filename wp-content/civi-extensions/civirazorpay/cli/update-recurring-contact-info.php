@@ -111,9 +111,6 @@ class RazorpaySubscriptionImporter {
     echo "Status: {$subscription['status']}\n";
     echo "Subscription ID: {$subscription['id']}\n";
 
-    error_log('subscription: ' . print_r($subscription, TRUE));
-    die;
-
     try {
       $contactID = $this->handleCustomerDataAndFindContact($subscription);
 
@@ -135,9 +132,13 @@ class RazorpaySubscriptionImporter {
   private function handleCustomerDataAndFindContact(array $subscription) {
     $subscriptionId = $subscription['id'] ?? NULL;
     $notes = $subscription['notes'] ?? NULL;
-    $mobile = $notes['mobile'] ?? NULL;
     $email = $notes['email'] ?? NULL;
     $name = $notes['name'] ?? NULL;
+    $mobile = $notes['mobile'] ?? NULL;
+    $address = $notes['address1'] ?? NULL;
+    $panCard = $notes['PAN Card'] ?? NULL;
+
+    error_log('Notes: ' . print_r($notes, TRUE));
 
     $contributionRecur = ContributionRecur::get(FALSE)
       ->addSelect('contact_id')
@@ -150,11 +151,19 @@ class RazorpaySubscriptionImporter {
 
     if ($contactID) {
       echo "Contact found/created successfully. Contact ID: $contactID\n";
+      $contactIDData = $this->updateDetailsOnContact($contactId);
       return $contactID;
     }
     echo "Could not identify a unique contact. Logged for manual intervention.\n";
 
     return NULL;
+  }
+
+  /**
+   *
+   */
+  public function updateDetailsOnContact($contactId) {
+
   }
 
   /**
