@@ -134,7 +134,7 @@ class RazorpaySubscriptionImporter {
    */
   private function handleCustomerDataAndFindContact(array $subscription) {
     $subscriptionId = $subscription['id'] ?? NULL;
-    $notes = $subscription['notes'] ?? NULL;
+    $notes = $subscription['notes'] ?? [];
     $email = $notes['email'] ?? NULL;
     $name = $notes['name'] ?? NULL;
     $mobile = $notes['mobile'] ?? NULL;
@@ -143,23 +143,37 @@ class RazorpaySubscriptionImporter {
 
     error_log('Notes: ' . print_r($notes, TRUE));
 
-    $contributionRecur = ContributionRecur::get(FALSE)
-      ->addSelect('contact_id', 'contribution.id')
-      ->addJoin('Contribution AS contribution', 'LEFT')
-      ->addWhere('processor_id', '=', $subscriptionId)
-      ->addWhere('contribution.source', '=', 'Imported from Razorpay')
-      ->execute()->first();
-
-    $contactId = $contributionRecur['contact_id'];
-    $contributionId = $contributionRecur['contribution.id'];
-
-    if ($contactID) {
-      echo "Contact found/created successfully. Contact ID: $contactID\n";
-      $contactIDData = $this->updateDetailsOnContact($contactId, $mobile, $address, $panCard, $contributionId);
-      return $contactID;
+    try {
+      $contributionRecur = ContributionRecur::get(FALSE)
+        ->addSelect('contact_id', 'contribution.id')
+        ->addJoin('Contribution AS contribution', 'LEFT')
+        ->addWhere('processor_id', '=', $subscriptionId)
+        ->addWhere('contribution.source', '=', 'Imported from Razorpay')
+        ->execute()
+        ->first();
     }
-    echo "Could not identify a unique contact. Logged for manual intervention.\n";
+    catch (\Exception $e) {
+      \Civi::log()->error('Error fetching recurring contribution: ' . $e->getMessage());
+      return NULL;
+    }
 
+    $contactId = $contributionRecur['contact_id'] ?? NULL;
+    $contributionId = $contributionRecur['contribution.id'] ?? NULL;
+
+    if ($contactId) {
+      echo "Contact found/created successfully. Contact ID: $contactId\n";
+
+      try {
+        $this->updateDetailsOnContact($contactId, $mobile, $address, $panCard, $contributionId);
+      }
+      catch (\Exception $e) {
+        \Civi::log()->error('Error updating contact details: ' . $e->getMessage());
+      }
+
+      return $contactId;
+    }
+
+    echo "Could not identify a unique contact. Logged for manual intervention.\n";
     return NULL;
   }
 
