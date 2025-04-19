@@ -157,7 +157,7 @@ class RazorpaySubscriptionUpdater {
         echo "Contact found successfully. Contact ID: $contactId\n";
 
         try {
-          $this->updateDetailsOnContact($contactId, $mobile, $address, $panCard);
+          $this->updateDetailsOnContact($contactId, $mobile, $address);
         }
         catch (\Exception $e) {
           \Civi::log()->error('Error updating contact details: ' . $e->getMessage());
@@ -226,7 +226,7 @@ class RazorpaySubscriptionUpdater {
   /**
    *
    */
-  public function updateDetailsOnContact($contactId, $mobile, $address, $panCard) {
+  public function updateDetailsOnContact($contactId, $mobile, $address) {
     // Update or create phone.
     try {
       $existingPhone = Phone::get(FALSE)
