@@ -445,9 +445,8 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
     $paymentId = $event['payload']['payment']['entity']['id'] ?? NULL;
     // Convert from paise to INR.
     $amount = $event['payload']['payment']['entity']['amount'] / 100;
-    $panCard = $event['payload']['subscription']['entity']['notes']['identity_type'];
-    $campaignTitle = $event['payload']['subscription']['entity']['notes']['purpose'];
-    error_log('panCard: ' . print_r($panCard, TRUE));
+    $panCard = $event['payload']['subscription']['entity']['notes']['identity_type'] ?? NULL;
+    $campaignTitle = $event['payload']['subscription']['entity']['notes']['purpose'] ?? NULL;
 
     if (!$subscriptionId || !$paymentId) {
       \Civi::log()->error("Missing subscription or payment ID in charged event");
@@ -480,7 +479,7 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
         ->addWhere('title', '=', $campaignTitle)
         ->execute()->first();
 
-      $campaignId = $campaigns['id'];
+      $campaignId = $campaigns['id'] ?? NULL;
 
       if (!$pendingContribution) {
         $contributionToUpdate = civicrm_api3('Contribution', 'create', [
