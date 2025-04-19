@@ -165,7 +165,7 @@ class RazorpaySubscriptionUpdater {
 
         // Step 2: Now fetch all contributions and update PAN card.
         try {
-          $this->updateDetailsOnImportedContributions($subscriptionId, $panCard);
+          $this->updateDetailsOnImportedContributions($firstRecur['id'], $panCard);
         }
         catch (\Exception $e) {
           \Civi::log()->error('Error updating PAN card: ' . $e->getMessage());
@@ -186,12 +186,12 @@ class RazorpaySubscriptionUpdater {
   /**
    *
    */
-  public function updateDetailsOnImportedContributions($subscriptionId, $panCard) {
-    $allRecurs = ContributionRecur::get(FALSE)
-      ->addSelect('contact_id', 'contribution.id')
-      ->addJoin('Contribution AS contribution', 'LEFT')
-      ->addWhere('processor_id', '=', $subscriptionId)
-      ->addWhere('contribution.source', '=', 'Imported from Razorpay')
+  public function updateDetailsOnImportedContributions($id, $panCard) {
+    $allRecurs = Contribution::get(FALSE)
+      ->addSelect('contact_id', 'id')
+      ->addWhere('contribution_recur_id', '=', $id)
+      ->addWhere('is_test', '=', $this->is_test)
+      ->addWhere('source', '=', 'Imported from Razorpay')
       ->execute();
 
     foreach ($allRecurs as $record) {
@@ -204,7 +204,7 @@ class RazorpaySubscriptionUpdater {
    */
   public function updatePanCard($contributionRecurs, $panCard) {
     foreach ($contributionRecurs as $item) {
-      $contributionId = $item['contribution.id'] ?? NULL;
+      $contributionId = $item['id'] ?? NULL;
 
       if ($contributionId) {
         try {
