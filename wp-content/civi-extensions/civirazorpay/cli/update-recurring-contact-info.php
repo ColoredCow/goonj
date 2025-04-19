@@ -144,33 +144,50 @@ class RazorpaySubscriptionUpdater {
     error_log('Notes: ' . print_r($notes, TRUE));
 
     try {
-      $contributionRecur = ContributionRecur::get(FALSE)
+      // Step 1: Fetch first recurring contribution to get contact ID.
+      $firstRecur = ContributionRecur::get(FALSE)
         ->addSelect('contact_id', 'contribution.id')
         ->addJoin('Contribution AS contribution', 'LEFT')
         ->addWhere('processor_id', '=', $subscriptionId)
         ->addWhere('contribution.source', '=', 'Imported from Razorpay')
         ->execute()
         ->first();
+
+      $contactId = $firstRecur['contact_id'] ?? NULL;
+
+      if ($contactId) {
+        echo "Contact found successfully. Contact ID: $contactId\n";
+
+        try {
+          $this->updateDetailsOnContact($contactId, $mobile, $address, $panCard);
+        }
+        catch (\Exception $e) {
+          \Civi::log()->error('Error updating contact details: ' . $e->getMessage());
+        }
+
+        // Step 2: Now fetch all contributions and update PAN card.
+        try {
+          $allRecurs = ContributionRecur::get(FALSE)
+            ->addSelect('contact_id', 'contribution.id')
+            ->addJoin('Contribution AS contribution', 'LEFT')
+            ->addWhere('processor_id', '=', $subscriptionId)
+            ->addWhere('contribution.source', '=', 'Imported from Razorpay')
+            ->execute();
+
+          foreach ($allRecurs as $record) {
+            $this->updatePanCard([$record], $panCard);
+          }
+        }
+        catch (\Exception $e) {
+          \Civi::log()->error('Error updating PAN card: ' . $e->getMessage());
+        }
+
+        return $contactId;
+      }
+
     }
     catch (\Exception $e) {
       \Civi::log()->error('Error fetching recurring contribution: ' . $e->getMessage());
-      return NULL;
-    }
-
-    $contactId = $contributionRecur['contact_id'] ?? NULL;
-    $contributionId = $contributionRecur['contribution.id'] ?? NULL;
-
-    if ($contactId) {
-      echo "Contact found successfully. Contact ID: $contactId\n";
-
-      try {
-        $this->updateDetailsOnContact($contactId, $mobile, $address, $panCard, $contributionId);
-      }
-      catch (\Exception $e) {
-        \Civi::log()->error('Error updating contact details: ' . $e->getMessage());
-      }
-
-      return $contactId;
     }
 
     echo "Could not identify a unique contact. Logged for manual intervention.\n";
@@ -180,7 +197,30 @@ class RazorpaySubscriptionUpdater {
   /**
    *
    */
-  public function updateDetailsOnContact($contactId, $mobile, $address, $panCard, $contributionId) {
+  public function updatePanCard($contributionRecurs, $panCard) {
+    foreach ($contributionRecurs as $item) {
+      $contributionId = $item['contribution.id'] ?? NULL;
+
+      if ($contributionId) {
+        try {
+          Contribution::update(FALSE)
+            ->addWhere('id', '=', $contributionId)
+            ->addValue('Contribution_Details.PAN_Card_Number', $panCard)
+            ->execute();
+
+          echo "Updated PAN Card for Contribution ID: $contributionId\n";
+        }
+        catch (\Exception $e) {
+          \Civi::log()->error("Failed to update PAN for contribution ID $contributionId: " . $e->getMessage());
+        }
+      }
+    }
+  }
+
+  /**
+   *
+   */
+  public function updateDetailsOnContact($contactId, $mobile, $address, $panCard) {
     // Update or create phone.
     try {
       $existingPhone = Phone::get(FALSE)
@@ -237,15 +277,6 @@ class RazorpaySubscriptionUpdater {
       \Civi::log()->error('Failed to update or create address: ' . $e->getMessage());
     }
 
-    try {
-      $updatePanCard = Contribution::update(FALSE)
-        ->addWhere('id', '=', $contributionId)
-        ->addValue('Contribution_Details.PAN_Card_Number', $panCard)
-        ->execute();
-    }
-    catch (\Exception $e) {
-      \Civi::log()->error('Failed to update PAN card number: ' . $e->getMessage());
-    }
   }
 
   /**
