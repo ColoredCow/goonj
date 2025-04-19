@@ -213,14 +213,6 @@ class RazorpaySubscriptionUpdater {
   }
 
   /**
-   * Log manual intervention cases.
-   */
-  private function logManualIntervention($message, $params) {
-    echo "Manual Intervention Required: $message\n";
-    \Civi::log('razorpay')->warning($message, $params);
-  }
-
-  /**
    * Handle retry logic on failure.
    *
    * @param Exception $e
