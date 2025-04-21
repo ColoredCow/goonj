@@ -206,7 +206,6 @@ class MaterialContributionService extends AutoSubscriber {
     $deliveredBy = empty($activity['Material_Contribution.Delivered_By']) ? $activity['contact.display_name'] : $activity['Material_Contribution.Delivered_By'];
 
     $deliveredByContact = empty($activity['Material_Contribution.Delivered_By_Contact']) ? $phone : $activity['Material_Contribution.Delivered_By_Contact'];
-    error_log('subtype:' . print_r($subtype, TRUE));
     $paths = [
       'logo' => $baseDir . 'images/goonj-logo.png',
       'qrCode' => $baseDir . 'images/qr-code.png',
