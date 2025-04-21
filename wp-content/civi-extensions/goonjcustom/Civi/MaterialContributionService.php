@@ -223,6 +223,16 @@ class MaterialContributionService extends AutoSubscriber {
 
     $excludedSubtypes = ['Collection_Camp', 'Dropping_Center', 'Institution_Collection_Camp', 'Institution_Dropping_Center'];
 
+    // Conditional subject row.
+    $subjectRow = '';
+    if (!empty($activity['subject'])) {
+      $subjectRow = '
+                <tr>
+                  <td class="table-header">Description of Material</td>
+                  <td style="text-align: center;">' . htmlspecialchars($activity['subject']) . '</td>
+                </tr>';
+    }
+
     $deliveredByRow = '';
     if (empty($subtype) || !in_array($subtype, $excludedSubtypes)) {
       $deliveredByRow = "
