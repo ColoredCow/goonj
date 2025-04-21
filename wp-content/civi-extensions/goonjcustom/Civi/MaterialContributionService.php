@@ -102,8 +102,9 @@ class MaterialContributionService extends AutoSubscriber {
     if (!$contribution) {
       return;
     }
+    $eventId = $contribution['Material_Contribution.Event'];
 
-    $html = self::generateContributionReceiptHtml($contribution, $email, $phone, $locationAreaOfCamp, $contributionDate, $subtype);
+    $html = self::generateContributionReceiptHtml($contribution, $email, $phone, $locationAreaOfCamp, $contributionDate, $subtype, $eventId);
     $fileName = 'material_contribution_' . $contribution['id'] . '.pdf';
     $params['attachments'][] = \CRM_Utils_Mail::appendPDF($fileName, $html);
   }
@@ -196,7 +197,7 @@ class MaterialContributionService extends AutoSubscriber {
    * @return string
    *   The generated HTML.
    */
-  public static function generateContributionReceiptHtml($activity, $email, $phone, $locationAreaOfCamp, $contributionDate, $subtype) {
+  public static function generateContributionReceiptHtml($activity, $email, $phone, $locationAreaOfCamp, $contributionDate, $subtype, $eventId) {
     $activityDate = date("F j, Y", strtotime($activity['activity_date_time']));
     $receivedOnDate = !empty($contributionDate)
     ? date("F j, Y", strtotime($contributionDate))
@@ -233,7 +234,7 @@ class MaterialContributionService extends AutoSubscriber {
     }
 
     $deliveredByRow = '';
-    if (empty($subtype) || !in_array($subtype, $excludedSubtypes)) {
+    if ((empty($subtype) || !in_array($subtype, $excludedSubtypes)) && empty($eventId)) {
       $deliveredByRow = "
           <tr>
             <td class='table-header'>Delivered by (Name & contact no.)</td>
