@@ -191,7 +191,7 @@ trait QrCodeable {
     try {
       $dompdf = new Dompdf(['isRemoteEnabled' => TRUE]);
 
-      $html = InstitutionMaterialContributionService::generateContributionReceiptHtml($organizationName, $organizationAddress, $contribution, $email, $contactPhone, $description, $contactName, $deliveredBy, $deliveredByContact, $activityDate);
+      $html = InstitutionMaterialContributionService::generateContributionReceiptHtml($organizationName, $organizationAddress, $contribution, $email, $phone, $description, $name, $deliveredBy, $deliveredByContact, $activityDate);
 
       $dompdf->loadHtml($html);
       $dompdf->setPaper('A4', 'portrait');
