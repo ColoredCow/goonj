@@ -199,7 +199,7 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
    * @return string
    *   The generated HTML.
    */
-  private static function generateContributionReceiptHtml($organizationName, $organizationAddress, $contribution, $email, $contactPhone, $description, $contactName, $deliveredBy, $deliveredByContact, $activityDate) {
+  public static function generateContributionReceiptHtml($organizationName, $organizationAddress, $contribution, $email, $contactPhone, $description, $contactName, $deliveredBy, $deliveredByContact, $activityDate) {
 
     $baseDir = plugin_dir_path(__FILE__) . '../../../themes/goonj-crm/';
 

@@ -32,6 +32,9 @@ class GenerateMaterialReceiptService extends AutoSubscriber {
     ];
   }
 
+  /**
+   *
+   */
   public static function generateMaterialReceiptForInstitution(string $op, string $objectName, int $objectId, &$objectRef) {
     if (
       $op !== 'create' ||
@@ -48,10 +51,103 @@ class GenerateMaterialReceiptService extends AutoSubscriber {
 
     error_log("data: " . print_r($data, TRUE));
 
-
     error_log("activityId: " . print_r($activityId, TRUE));
 
+    $activities = Activity::get(FALSE)
+      ->addSelect('Institution_Material_Contribution.Contribution_Date', 'campaign_id', 'Institution_Material_Contribution.Description_of_Material_No_of_Bags_Material_', 'Institution_Material_Contribution.Delivered_By_Name', 'Institution_Material_Contribution.Delivered_By_Contact_New', 'source_contact_id', 'Institution_Material_Contribution.Institution_POC')
+      ->addWhere('id', '=', $activityId)
+      ->execute()->first();
 
+    $activityDate = $activities['Institution_Material_Contribution.Contribution_Date'];
+    $campaignId = $activities['campaign_id'] ?? NULL;
+    $description = $activities['Institution_Material_Contribution.Description_of_Material_No_of_Bags_Material_'] ?? '';
+    $deliveredBy = $activities['Institution_Material_Contribution.Delivered_By_Name'] ?? '';
+    $deliveredByContact = $activities['Institution_Material_Contribution.Delivered_By_Contact_New'] ?? '';
+    $organizationId = $activities['source_contact_id'];
+    $institutionPOCId = $activities['Institution_Material_Contribution.Institution_POC'];
+
+    $organizations = Organization::get(FALSE)
+      ->addSelect('address_primary.street_address', 'display_name')
+      ->addWhere('id', '=', $organizationId)
+      ->execute()->first();
+
+    $organizationName = $organizations['display_name'] ?? '';
+    $organizationAddress = $organizations['address_primary.street_address'] ?? '';
+
+    $activities = Activity::get(FALSE)
+      ->addSelect('*')
+      ->addJoin('Organization AS organization', 'LEFT')
+      ->addWhere('activity_type_id:name', '=', 'Institution Material Contribution')
+      ->addWhere('organization.id', '=', $organizationId)
+      ->addOrderBy('created_date', 'DESC')
+      ->setLimit(1)
+      ->execute();
+
+    $contribution = $activities->first() ?? [];
+
+    // Determine target contact with fallback logic.
+    if (!empty($institutionPOCId)) {
+      $targetContactId = $institutionPOCId;
+    }
+    else {
+      $initiatorId = NULL;
+
+      // First, check for Primary Institution POC relationship.
+      $primaryRelationships = Relationship::get(FALSE)
+        ->addWhere('contact_id_a', '=', $organizationId)
+        ->addWhere('relationship_type_id:name', '=', 'Primary Institution POC of')
+        ->addWhere('is_active', '=', TRUE)
+        ->execute();
+
+      if ($primaryRelationships) {
+        $firstPrimaryRelationship = $primaryRelationships->first();
+        $initiatorId = $firstPrimaryRelationship['contact_id_b'] ?? NULL;
+      }
+
+      // If Primary not found, check for Institution POC of relationship.
+      if (!$initiatorId) {
+        $pocRelationships = Relationship::get(FALSE)
+          ->addWhere('contact_id_a', '=', $organizationId)
+          ->addWhere('relationship_type_id:name', '=', 'Institution POC of')
+          ->addWhere('is_active', '=', TRUE)
+          ->execute();
+
+        if ($pocRelationships) {
+          $firstPocRelationship = $pocRelationships->first();
+          $initiatorId = $firstPocRelationship['contact_id_b'] ?? NULL;
+        }
+      }
+
+      $targetContactId = $initiatorId ?? $organizationId;
+    }
+
+    $contact = self::getContactDetails($institutionPOCId);
+
+    if (!$contact || empty($contact['email'])) {
+      return;
+    }
+    $email = $contact['email'];
+    $name = $contact['name'];
+    $phone = $contact['phone'];
+
+    QrCodeable::generatePdfForEvent($organizationName, $organizationAddress, $contribution, $email, $phone, $description, $name, $deliveredBy, $deliveredByContact, $activityDate, $activityId);
+  }
+
+  /**
+   *
+   */
+  public static function getContactDetails($contactId) {
+    $contact = Contact::get(TRUE)
+      ->addSelect('email_primary.email', 'phone_primary.phone', 'display_name')
+      ->addWhere('id', '=', $contactId)
+      ->execute()
+      ->first();
+
+    return (!empty($contact)) ? [
+      'email' => $contact['email_primary.email'] ?? '',
+      'phone' => $contact['phone_primary.phone'] ?? '',
+      'name' => $contact['display_name'] ?? '',
+    ] : NULL;
   }
 
   /**
@@ -68,13 +164,13 @@ class GenerateMaterialReceiptService extends AutoSubscriber {
    */
   public static function generateMaterialReceipt(string $op, string $objectName, int $objectId, &$objectRef) {
     if (
-      $op !== 'create' ||
-      $objectName !== 'AfformSubmission' ||
-      empty($objectRef->afform_name) ||
-      (
-          $objectRef->afform_name !== 'afformSendReminderToCollectionCampMaterialContributions' &&
-          $objectRef->afform_name !== 'afformSendReminderToGoonjOffice'
-      )
+    $op !== 'create' ||
+    $objectName !== 'AfformSubmission' ||
+    empty($objectRef->afform_name) ||
+    (
+        $objectRef->afform_name !== 'afformSendReminderToCollectionCampMaterialContributions' &&
+        $objectRef->afform_name !== 'afformSendReminderToGoonjOffice'
+    )
     ) {
       return;
     }
@@ -250,12 +346,12 @@ class GenerateMaterialReceiptService extends AutoSubscriber {
 
     ? 'Collection_Camp_Intent_Details.Location_Area_of_camp'
     : (($subtype == 'Dropping_Center')
-        ? 'Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_'
-        : (($subtype == 'Institution_Collection_Camp')
-            ? 'Institution_Collection_Camp_Intent.Collection_Camp_Address'
-            : (($subtype == 'Institution_Dropping_Center')
-                ? 'Institution_Dropping_Center_Intent.Dropping_Center_Address'
-                : NULL)));
+      ? 'Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_'
+      : (($subtype == 'Institution_Collection_Camp')
+          ? 'Institution_Collection_Camp_Intent.Collection_Camp_Address'
+          : (($subtype == 'Institution_Dropping_Center')
+              ? 'Institution_Dropping_Center_Intent.Dropping_Center_Address'
+              : NULL)));
 
     $collectionCamp = EckEntity::get('Collection_Camp', TRUE)
       ->addSelect($addressField)
