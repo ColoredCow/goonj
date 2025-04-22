@@ -12,6 +12,7 @@ use Civi\Api4\Contact;
 use Civi\Api4\Organization;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\QrCodeable;
+use Civi\Api4\Relationship;
 
 /**
  *
@@ -121,7 +122,7 @@ class GenerateMaterialReceiptService extends AutoSubscriber {
       $targetContactId = $initiatorId ?? $organizationId;
     }
 
-    $contact = self::getContactDetails($institutionPOCId);
+    $contact = self::getContactDetails($targetContactId);
 
     if (!$contact || empty($contact['email'])) {
       return;
