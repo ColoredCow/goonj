@@ -32,7 +32,7 @@ class CollectionCampService extends AutoSubscriber {
   const RELATIONSHIP_TYPE_NAME = 'Collection Camp Coordinator of';
   const COLLECTION_CAMP_INTENT_FB_NAME = [
     'afformAdminCollectionCampIntentDetails',
-    'afformCollectionCampIntentDetails'
+    'afformCollectionCampIntentDetails',
   ];
   const ENTITY_NAME = 'Collection_Camp';
   const ENTITY_SUBTYPE_NAME = 'Collection_Camp';
@@ -314,15 +314,15 @@ class CollectionCampService extends AutoSubscriber {
     }
 
     $groupId = self::getChapterGroupForState($objectRef->state_province_id);
-    // Check if already assigned to group chapter
-		$groupContacts = GroupContact::get(FALSE)
-			->addWhere('contact_id', '=', self::$individualId)
-			->addWhere('group_id', '=', $groupId)
-			->execute()->first();
+    // Check if already assigned to group chapter.
+    $groupContacts = GroupContact::get(FALSE)
+      ->addWhere('contact_id', '=', self::$individualId)
+      ->addWhere('group_id', '=', $groupId)
+      ->execute()->first();
 
-		if (!empty($groupContacts)) {
-			return;
-		}
+    if (!empty($groupContacts)) {
+      return;
+    }
 
     if ($groupId & self::$individualId) {
       GroupContact::create(FALSE)
@@ -1158,14 +1158,21 @@ class CollectionCampService extends AutoSubscriber {
    *   The reference to the object.
    */
   public static function updateCampStatusAfterAuth(string $op, string $objectName, $objectId, &$objectRef) {
+    error_log('Working 1');
+
     $statusDetails = self::checkCampStatusAndIds($objectName, $objectId, $objectRef);
+    error_log('Working 2');
 
     if (!$statusDetails) {
       return;
     }
+    error_log('Working 3');
 
     $newStatus = $statusDetails['newStatus'];
+    error_log('newstatus: ' . print_r($newStatus, TRUE));
+
     $currentStatus = $statusDetails['currentStatus'];
+    error_log('currentStatus: ' . print_r($currentStatus, TRUE));
 
     if ($currentStatus !== $newStatus) {
       if ($newStatus === 'authorized') {
@@ -1174,10 +1181,14 @@ class CollectionCampService extends AutoSubscriber {
           return;
         }
 
+        error_log('campId: ' . print_r($campId, TRUE));
+
         $results = EckEntity::update('Collection_Camp', TRUE)
           ->addValue('Collection_Camp_Intent_Details.Camp_Status', 'planned')
           ->addWhere('id', '=', $campId)
           ->execute();
+        error_log('results: ' . print_r($results, TRUE));
+
       }
     }
   }
