@@ -175,17 +175,23 @@ class CollectionBaseService extends AutoSubscriber {
    *
    */
   public static function aclCollectionCamp($entity, &$clauses, $userId, $conditions) {
+    error_log('working');
     if (!in_array($entity, ['Eck_Collection_Camp', 'Eck_Institution_Visit'])) {
       return FALSE;
     }
+    error_log('working1');
 
     $restrictedRoles = ['admin', 'urban_ops_admin', 'ho_account', 'project_team_ho', 's2s_ho_team', 'njpc_ho_team'];
 
     $hasRestrictedRole = \CRM_Core_Permission::checkAnyPerm($restrictedRoles);
+    error_log('working2');
+
 
     if ($hasRestrictedRole) {
         return;
     }
+    error_log('working3');
+
     
     try {
       $teamGroupContacts = GroupContact::get(FALSE)
@@ -196,6 +202,9 @@ class CollectionBaseService extends AutoSubscriber {
         ->execute();
 
       $teamGroupContact = $teamGroupContacts->first();
+      error_log('userId: ' . print_r($userId, TRUE));
+
+      error_log('teamgroupcontact: ' . print_r($teamGroupContact, TRUE));
 
       if (!$teamGroupContact) {
         // @todo we should handle it in a better way.
@@ -206,6 +215,8 @@ class CollectionBaseService extends AutoSubscriber {
       }
 
       $groupId = $teamGroupContact['group_id'];
+      error_log('groupId: ' . print_r($groupId, TRUE));
+
 
       $chapterGroups = Group::get(FALSE)
         ->addSelect('Chapter_Contact_Group.States_controlled')
@@ -213,7 +224,11 @@ class CollectionBaseService extends AutoSubscriber {
         ->execute();
 
       $group = $chapterGroups->first();
+      error_log('group: ' . print_r($group, TRUE));
+
       $statesControlled = $group['Chapter_Contact_Group.States_controlled'];
+      error_log('statesControlled: ' . print_r($statesControlled, TRUE));
+
 
       if (empty($statesControlled)) {
         // Handle the case when the group is not controlling any state.
@@ -225,6 +240,8 @@ class CollectionBaseService extends AutoSubscriber {
       $statesList = implode(',', array_map('intval', $statesControlled));
 
       $stateFields = self::getStateFieldDbDetails();
+      error_log('stateFields: ' . print_r($stateFields, TRUE));
+
 
       $clausesArray = [];
       foreach ($stateFields as $stateField) {
@@ -237,6 +254,8 @@ class CollectionBaseService extends AutoSubscriber {
       }
 
       $concatenatedQuery = implode(' UNION ', $selectQueries);
+      error_log('concatenatedQuery: ' . print_r($concatenatedQuery, TRUE));
+
 
       $clauseString = "IN ($concatenatedQuery)";
 
@@ -264,6 +283,8 @@ class CollectionBaseService extends AutoSubscriber {
           ->addWhere('name', '=', 'state')
           ->execute()
           ->single();
+      error_log('customField: ' . print_r($customField, TRUE));
+
 
         if ($customField) {
           $stateFields[] = [
@@ -525,6 +546,8 @@ class CollectionBaseService extends AutoSubscriber {
       ->execute();
 
     $statefieldNames = array_map(fn ($field) => 'custom_' . $field['id'], $intentStateFields->jsonSerialize());
+    error_log('statefieldNames: ' . print_r($statefieldNames, TRUE));
+    
 
     return $statefieldNames;
   }
