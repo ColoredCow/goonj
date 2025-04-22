@@ -102,8 +102,9 @@ class MaterialContributionService extends AutoSubscriber {
     if (!$contribution) {
       return;
     }
+    $eventId = $contribution['Material_Contribution.Event'];
 
-    $html = self::generateContributionReceiptHtml($contribution, $email, $phone, $locationAreaOfCamp, $contributionDate);
+    $html = self::generateContributionReceiptHtml($contribution, $email, $phone, $locationAreaOfCamp, $contributionDate, $subtype, $eventId);
     $fileName = 'material_contribution_' . $contribution['id'] . '.pdf';
     $params['attachments'][] = \CRM_Utils_Mail::appendPDF($fileName, $html);
   }
@@ -196,7 +197,7 @@ class MaterialContributionService extends AutoSubscriber {
    * @return string
    *   The generated HTML.
    */
-  public static function generateContributionReceiptHtml($activity, $email, $phone, $locationAreaOfCamp, $contributionDate) {
+  public static function generateContributionReceiptHtml($activity, $email, $phone, $locationAreaOfCamp, $contributionDate, $subtype, $eventId) {
     $activityDate = date("F j, Y", strtotime($activity['activity_date_time']));
     $receivedOnDate = !empty($contributionDate)
     ? date("F j, Y", strtotime($contributionDate))
@@ -206,7 +207,6 @@ class MaterialContributionService extends AutoSubscriber {
     $deliveredBy = empty($activity['Material_Contribution.Delivered_By']) ? $activity['contact.display_name'] : $activity['Material_Contribution.Delivered_By'];
 
     $deliveredByContact = empty($activity['Material_Contribution.Delivered_By_Contact']) ? $phone : $activity['Material_Contribution.Delivered_By_Contact'];
-
     $paths = [
       'logo' => $baseDir . 'images/goonj-logo.png',
       'qrCode' => $baseDir . 'images/qr-code.png',
@@ -220,6 +220,30 @@ class MaterialContributionService extends AutoSubscriber {
     ];
 
     $imageData = array_map(fn ($path) => base64_encode(file_get_contents($path)), $paths);
+
+    $excludedSubtypes = ['Collection_Camp', 'Dropping_Center', 'Institution_Collection_Camp', 'Institution_Dropping_Center'];
+
+    // Conditional subject row.
+    $subjectRow = '';
+    if (!empty($activity['subject'])) {
+      $subjectRow = '
+                <tr>
+                  <td class="table-header">Description of Material</td>
+                  <td style="text-align: center;">' . htmlspecialchars($activity['subject']) . '</td>
+                </tr>';
+    }
+
+    $deliveredByRow = '';
+    if ((empty($subtype) || !in_array($subtype, $excludedSubtypes)) && empty($eventId)) {
+      $deliveredByRow = "
+          <tr>
+            <td class='table-header'>Delivered by (Name & contact no.)</td>
+            <td style='text-align: center;'>
+              {$deliveredBy}<br>
+              {$deliveredByContact}
+            </td>
+          </tr>";
+    }
 
     $html = <<<HTML
     <html>
@@ -245,10 +269,7 @@ class MaterialContributionService extends AutoSubscriber {
             }
           </style>
           <!-- Table rows for each item -->
-          <tr>
-            <td class="table-header">Description of Material</td>
-            <td style="text-align: center;">{$activity['subject']}</td>
-          </tr>
+          {$subjectRow}
           <tr>
             <td class="table-header">Received On</td>
             <td style="text-align: center;">{$receivedOnDate}</td>
@@ -269,12 +290,7 @@ class MaterialContributionService extends AutoSubscriber {
             <td class="table-header">Phone</td>
             <td style="text-align: center;">{$phone}</td>
           </tr>
-          <tr>
-            <td class="table-header">Delivered by (Name & contact no.)</td>
-            <td style="text-align: center;">
-            {$deliveredBy}<br>
-            {$deliveredByContact}
-          </td>
+          {$deliveredByRow}
         </tr>
 
         </table>
