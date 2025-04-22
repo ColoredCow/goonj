@@ -661,8 +661,8 @@ function goonj_redirect_after_individual_creation() {
 					$collectionCamp['id'],
 					$individual['id']
 				);
-				break;
 			}
+			break;
 			case 'dropping-center-contribution':
 				if ( ! $source ) {
 					\Civi::log()->warning('Source is missing for material contribution flow', ['individualId' => $_GET['individualId']]);
@@ -683,8 +683,8 @@ function goonj_redirect_after_individual_creation() {
 						$droppingCenter['id'],
 						$individual['id']
 					);
-					break;
 				}
+				break;
 			case 'institution-dropping-center':
 				if ( ! $source ) {
 					\Civi::log()->info('Source is missing for material contribution flow', ['individualId' => $_GET['individualId']]);
@@ -696,7 +696,7 @@ function goonj_redirect_after_individual_creation() {
 				// First, we check if the source of Individual is Institution Dropping Center.
 				$institutionDroppingCenter = \Civi\Api4\EckEntity::get( 'Collection_Camp', false )
 					->addWhere( 'title', '=', $source )
-					->addWhere('subtype:name', '=', 'Institution_Collection_Camp')
+					->addWhere('subtype:name', '=', 'Institution_Dropping_Center')
 					->execute()->first();
 		
 				if ( ! empty( $institutionDroppingCenter['id'] ) ) {
@@ -705,8 +705,8 @@ function goonj_redirect_after_individual_creation() {
 						$institutionDroppingCenter['id'],
 						$individual['id']
 					);
-					break;
 				}
+				break;
 			case 'institution-collection-camp':
 				if ( ! $source ) {
 					\Civi::log()->info('Source is missing for material contribution flow', ['individualId' => $_GET['individualId']]);
@@ -727,8 +727,8 @@ function goonj_redirect_after_individual_creation() {
 						$institutionCollectionCamp['id'],
 						$individual['id']
 					);
-					break;
 				}
+				break;
 
 		case 'office-visit':
 			$sourceProcessingCenter = $individual['Individual_fields.Source_Processing_Center'];
