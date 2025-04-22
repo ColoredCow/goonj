@@ -198,7 +198,7 @@ trait QrCodeable {
       $dompdf->render();
 
       $pdfOutput = $dompdf->output();
-      $fileName = "material_contribution_{$entityId}.pdf";
+      $fileName = "institution_material_contribution_{$entityId}.pdf";
       $tempFilePath = \CRM_Utils_File::tempnam($fileName);
 
       file_put_contents($tempFilePath, $pdfOutput);
