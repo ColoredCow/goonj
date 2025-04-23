@@ -50,10 +50,6 @@ class GenerateMaterialReceiptService extends AutoSubscriber {
     $data = json_decode($objectRef->data, TRUE);
     $activityId = $data['Activity1'][0]['fields']['id'] ?? NULL;
 
-    error_log("data: " . print_r($data, TRUE));
-
-    error_log("activityId: " . print_r($activityId, TRUE));
-
     $activities = Activity::get(FALSE)
       ->addSelect('Institution_Material_Contribution.Contribution_Date', 'campaign_id', 'Institution_Material_Contribution.Description_of_Material_No_of_Bags_Material_', 'Institution_Material_Contribution.Delivered_By_Name', 'Institution_Material_Contribution.Delivered_By_Contact_New', 'source_contact_id', 'Institution_Material_Contribution.Institution_POC')
       ->addWhere('id', '=', $activityId)
