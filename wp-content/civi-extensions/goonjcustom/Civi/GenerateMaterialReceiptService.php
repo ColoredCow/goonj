@@ -34,7 +34,7 @@ class GenerateMaterialReceiptService extends AutoSubscriber {
   }
 
   /**
-   *
+   * Generate a PDF receipt for organization contributions when a specific form is submitted.
    */
   public static function generateMaterialReceiptForInstitution(string $op, string $objectName, int $objectId, &$objectRef) {
     if (
