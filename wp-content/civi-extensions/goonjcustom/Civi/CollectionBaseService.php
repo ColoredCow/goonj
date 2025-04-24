@@ -256,7 +256,7 @@ class CollectionBaseService extends AutoSubscriber {
     if (empty(self::$stateCustomFieldDbDetails)) {
 
       if ($entity == 'Eck_Institution_Visit') {
-        $stateGroupNameMapper = self::getStateGroupNameMapperForUrbanOps();
+        $stateGroupNameMapper = self::getStateGroupNameMapperForUrbanVisit();
       }
       else {
         $stateGroupNameMapper = self::getStateGroupNameMapper();
@@ -492,11 +492,17 @@ class CollectionBaseService extends AutoSubscriber {
    *
    */
   public static function setIndianStateOptions(string $entity, string $field, ?array &$options, array $params) {
-    if ($entity !== 'Eck_Collection_Camp') {
-      return;
+    if (!in_array($entity, ['Eck_Collection_Camp', 'Eck_Institution_Visit'])) {
+      return FALSE;
     }
 
-    $stateGroupNameMapper = self::getStateGroupNameMapper();
+    if ($entity == 'Eck_Institution_Visit') {
+      $stateGroupNameMapper = self::getStateGroupNameMapperForUrbanVisit();
+    }
+    else {
+      $stateGroupNameMapper = self::getStateGroupNameMapper();
+    }
+
     $stateFieldNames = array_map(fn ($i) => "{$i}.State", $stateGroupNameMapper);
 
     if (!in_array($field, $stateFieldNames)) {
@@ -552,7 +558,7 @@ class CollectionBaseService extends AutoSubscriber {
   /**
    *
    */
-  private static function getStateGroupNameMapperForUrbanOps() {
+  private static function getStateGroupNameMapperForUrbanVisit() {
     return [
       'Institution_Visit' => 'Urban_Planned_Visit',
     ];
