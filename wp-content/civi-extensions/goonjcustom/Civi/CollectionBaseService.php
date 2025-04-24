@@ -184,9 +184,9 @@ class CollectionBaseService extends AutoSubscriber {
     $hasRestrictedRole = \CRM_Core_Permission::checkAnyPerm($restrictedRoles);
 
     if ($hasRestrictedRole) {
-        return;
+      return;
     }
-    
+
     try {
       $teamGroupContacts = GroupContact::get(FALSE)
         ->addSelect('group_id')
@@ -224,7 +224,7 @@ class CollectionBaseService extends AutoSubscriber {
       $statesControlled = array_unique($statesControlled);
       $statesList = implode(',', array_map('intval', $statesControlled));
 
-      $stateFields = self::getStateFieldDbDetails();
+      $stateFields = self::getStateFieldDbDetails($entity);
 
       $clausesArray = [];
       foreach ($stateFields as $stateField) {
@@ -252,9 +252,15 @@ class CollectionBaseService extends AutoSubscriber {
   /**
    *
    */
-  private static function getStateFieldDbDetails() {
+  private static function getStateFieldDbDetails($entity) {
     if (empty(self::$stateCustomFieldDbDetails)) {
-      $stateGroupNameMapper = self::getStateGroupNameMapper();
+
+      if ($entity == 'Eck_Institution_Visit') {
+        $stateGroupNameMapper = self::getStateGroupNameMapperForUrbanOps();
+      }
+      else {
+        $stateGroupNameMapper = self::getStateGroupNameMapper();
+      }
 
       $stateFields = [];
       foreach ($stateGroupNameMapper as $subtype => $groupName) {
@@ -540,6 +546,14 @@ class CollectionBaseService extends AutoSubscriber {
       'Goonj_Activities' => 'Goonj_Activities',
       'Institution_Dropping_Center' => 'Institution_Dropping_Center_Intent',
       'Institution_Goonj_Activities' => 'Institution_Goonj_Activities',
+    ];
+  }
+
+  /**
+   *
+   */
+  private static function getStateGroupNameMapperForUrbanOps() {
+    return [
       'Institution_Visit' => 'Urban_Planned_Visit',
     ];
   }
