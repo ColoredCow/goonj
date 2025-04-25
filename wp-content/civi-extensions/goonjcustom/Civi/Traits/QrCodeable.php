@@ -7,6 +7,7 @@ use chillerlan\QRCode\QROptions;
 use Civi\Api4\CustomField;
 use Dompdf\Dompdf;
 use Civi\MaterialContributionService;
+use Civi\InstitutionMaterialContributionService;
 
 
 /**
@@ -181,6 +182,43 @@ trait QrCodeable {
     }
 
     return $result['values'][$result['id']];
+  }
+
+   /**
+   *
+   */
+  public static function generatePdfForEvent($organizationName, $organizationAddress, $contribution, $email, $phone, $description, $name, $deliveredBy, $deliveredByContact, $activityDate, $entityId) {
+    try {
+      $dompdf = new Dompdf(['isRemoteEnabled' => TRUE]);
+
+      $html = InstitutionMaterialContributionService::generateContributionReceiptHtml($organizationName, $organizationAddress, $contribution, $email, $phone, $description, $name, $deliveredBy, $deliveredByContact, $activityDate);
+
+      $dompdf->loadHtml($html);
+      $dompdf->setPaper('A4', 'portrait');
+      $dompdf->render();
+
+      $pdfOutput = $dompdf->output();
+      $fileName = "institution_material_contribution_{$entityId}.pdf";
+      $tempFilePath = \CRM_Utils_File::tempnam($fileName);
+
+      file_put_contents($tempFilePath, $pdfOutput);
+
+      // Save to custom field.
+      return self::savePdfAttachmentToCustomField(
+        $entityId,
+        $fileName,
+        $tempFilePath,
+      // Your custom group name.
+        'Institution_Material_Contribution',
+      // Your custom field name.
+        'Receipt'
+      );
+
+    }
+    catch (\Exception $e) {
+      \CRM_Core_Error::debug_log_message('PDF error: ' . $e->getMessage());
+      return FALSE;
+    }
   }
 
 }
