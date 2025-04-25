@@ -104,7 +104,7 @@ class MaterialContributionService extends AutoSubscriber {
     }
     $eventId = $contribution['Material_Contribution.Event'];
 
-    $html = self::generateContributionReceiptHtml($contribution, $email, $phone, $locationAreaOfCamp, $contributionDate, $subtype, $eventId);
+    $html = self::generateContributionReceiptHtml($contribution, $email, $phone, $locationAreaOfCamp, $contributionDate, $subtype, $eventId, $goonjOfficeId);
     $fileName = 'material_contribution_' . $contribution['id'] . '.pdf';
     $params['attachments'][] = \CRM_Utils_Mail::appendPDF($fileName, $html);
   }
@@ -197,7 +197,7 @@ class MaterialContributionService extends AutoSubscriber {
    * @return string
    *   The generated HTML.
    */
-  public static function generateContributionReceiptHtml($activity, $email, $phone, $locationAreaOfCamp, $contributionDate, $subtype, $eventId) {
+  public static function generateContributionReceiptHtml($activity, $email, $phone, $locationAreaOfCamp, $contributionDate, $subtype, $eventId, $goonjOfficeId) {
     $activityDate = date("F j, Y", strtotime($activity['activity_date_time']));
     $receivedOnDate = !empty($contributionDate)
     ? date("F j, Y", strtotime($contributionDate))
@@ -223,6 +223,8 @@ class MaterialContributionService extends AutoSubscriber {
 
     $excludedSubtypes = ['Collection_Camp', 'Dropping_Center', 'Institution_Collection_Camp', 'Institution_Dropping_Center'];
 
+    $subject = $activity['subject'];
+
     // Conditional subject row.
     $subjectRow = '';
     if (!empty($activity['subject'])) {
@@ -234,15 +236,15 @@ class MaterialContributionService extends AutoSubscriber {
     }
 
     $deliveredByRow = '';
-    if ((empty($subtype) || !in_array($subtype, $excludedSubtypes)) && empty($eventId)) {
+    if (!in_array($subtype, $excludedSubtypes) && empty($eventId) && (empty($goonjOfficeId) || !empty($subject))) {
       $deliveredByRow = "
-          <tr>
-            <td class='table-header'>Delivered by (Name & contact no.)</td>
-            <td style='text-align: center;'>
-              {$deliveredBy}<br>
-              {$deliveredByContact}
-            </td>
-          </tr>";
+        <tr>
+          <td class='table-header'>Delivered by (Name & contact no.)</td>
+          <td style='text-align: center;'>
+            {$deliveredBy}<br>
+            {$deliveredByContact}
+          </td>
+        </tr>";
     }
 
     $html = <<<HTML

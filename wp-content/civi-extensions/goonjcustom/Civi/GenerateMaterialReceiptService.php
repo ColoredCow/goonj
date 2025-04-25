@@ -261,7 +261,7 @@ class GenerateMaterialReceiptService extends AutoSubscriber {
 
     $entityId = $contribution['id'];
 
-    QrCodeable::generatePdfForCollectionCamp($entityId, $contribution, $email, $phone, $contributionVenue, $contributionDate, $subtype, $eventId);
+    QrCodeable::generatePdfForCollectionCamp($entityId, $contribution, $email, $phone, $contributionVenue, $contributionDate, $subtype, $eventId, $puId);
 
   }
 
