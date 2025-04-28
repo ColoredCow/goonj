@@ -546,7 +546,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
 
     $collectionCampId = $collectionSourceVehicleDispatch['Camp_Vehicle_Dispatch.Institution_Collection_Camp'];
     $nameOfInstitution = $collectionSourceVehicleDispatch['Camp_Institution_Data.Name_of_the_institution'];
-    $addressOfInstitution = $collectionSourceVehicleDispatch['Camp_Institution_Data.Address'];
+    $addressOfInstitution = urlencode($collectionSourceVehicleDispatch['Camp_Institution_Data.Address']);
     $pocEmail = $collectionSourceVehicleDispatch['Camp_Institution_Data.Email'];
     $pocContactNumber = $collectionSourceVehicleDispatch['Camp_Institution_Data.Contact_Number'];
 
@@ -801,7 +801,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice
     . '&Eck_Collection_Camp1=' . $collectionCampId
     . '&Camp_Institution_Data.Name_of_the_institution=' . $nameOfInstitution
-    . '&Camp_Institution_Data.Address=' . $addressOfInstitution
+    . '&Camp_Institution_Data.Address=' . urlencode($addressOfInstitution)
     . '&Camp_Institution_Data.Email=' . $pocEmail
     . '&Camp_Institution_Data.Contact_Number=' . $pocContactNumber
     . '&Institution_Collection_Camp_Intent.Collection_Camp_Address=' . $campAddress;
