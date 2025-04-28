@@ -161,3 +161,23 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     }
 });
+
+document.addEventListener("DOMContentLoaded", function() {
+	// Select all the crm-public-form-item elements within the fieldset
+	var formItems = document.querySelectorAll('.crm-event-thankyou-form-block .crm-group.participant_info-group fieldset .crm-public-form-item');
+  
+	// Loop through each form item and check its label
+	formItems.forEach(function(item) {
+	  var label = item.querySelector('.label');
+	  
+	  if (label) {
+		var labelText = label.textContent.trim();
+		
+		// Check if the label matches either of the two specific labels
+		if (labelText === "Number of Adults Including You" || labelText === "Number of Children Accompanying You") {
+			item.style.setProperty('display', 'none', 'important');
+		}
+	  }
+	});
+});
+  
