@@ -470,23 +470,39 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
       $donorName = !empty($params['toName']) ? $params['toName'] : 'Valued Supporter';
       $contributionID = NULL;
 
-      if (!empty($params['tplParams']['lineItem'][0])) {
-        foreach ($params['tplParams']['lineItem'][0] as $lineItem) {
-          if (!empty($lineItem['contribution_id'])) {
-            $contributionID = $lineItem['contribution_id'];
-            break;
+      try {
+        if (!empty($params['tplParams']['lineItem'][0])) {
+          foreach ($params['tplParams']['lineItem'][0] as $lineItem) {
+            if (!empty($lineItem['contribution_id'])) {
+              $contributionID = $lineItem['contribution_id'];
+              break;
+            }
           }
         }
+        if (empty($contributionID)) {
+          \Civi::log()->warning('Unable to find contribution ID in event receipt parameters');
+        }
+      }
+      catch (\Exception $e) {
+        \Civi::log()->error('Error extracting contribution ID: ' . $e->getMessage());
       }
 
       $params['cc'] = 'priyanka@goonj.org, accounts@goonj.org';
 
-      $contribution = Contribution::get(FALSE)
-        ->addSelect('invoice_number')
-        ->addWhere('id', '=', $contributionID)
-        ->execute()->single();
+      try {
+        $contribution = Contribution::get(FALSE)
+          ->addSelect('invoice_number')
+          ->addWhere('id', '=', $contributionID)
+          ->execute()->single();
 
-      $receiptNumber = $contribution['invoice_number'];
+        $receiptNumber = $contribution['invoice_number'];
+      }
+      catch (\Exception $e) {
+        \Civi::log()->error('Failed to retrieve contribution: ' . $e->getMessage(), [
+          'contributionID' => $contributionID,
+        ]);
+        $receiptNumber = 'N/A';
+      }
 
       $params['text'] = "Dear $donorName,\n\nThank you for your contribution.\n\nThese contributions go a long way in sustaining our operations and implementing series of initiatives all across.\nThe receipt No. ($receiptNumber) for the same is enclosed with the details of 80G exemptions and our PAN No.\n\nFor updates on our activities and new campaigns, please visit our website www.goonj.org and our FB page https://www.facebook.com/goonj.org, which are regularly updated.\n\nThank you once again for joining the journey.\n\nWith best regards,\nTeam Goonj";
 
@@ -509,7 +525,7 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
     if (!empty($params['workflow']) && $params['workflow'] === 'event_offline_receipt') {
       // Extract donor name or use a default value.
       $donorName = !empty($params['toName']) ? $params['toName'] : 'Valued Supporter';
-      $contributionID = isset($params['tplParams']['contributionID']) ? $params['tplParams']['contributionID'] : NULL;
+      $contributionID = $params['tplParams']['contributionID'] ?? NULL;
       $params['cc'] = 'priyanka@goonj.org, accounts@goonj.org';
 
       $contribution = Contribution::get(FALSE)
