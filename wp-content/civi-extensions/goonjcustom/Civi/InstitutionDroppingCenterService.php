@@ -604,7 +604,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     . '&Camp_Vehicle_Dispatch.Goonj_Office_Name=' . $goonjOfficeName
     . '&Eck_Collection_Camp1=' . $droppingCenterId
     . '&Camp_Institution_Data.Name_of_the_institution=' . $nameOfInstitution
-    . "&Camp_Institution_Data.Address=" . $address
+    . "&Camp_Institution_Data.Address=" . urlencode($address)
     . "&Camp_Institution_Data.Email=" . $email
     . "&Camp_Institution_Data.Contact_Number=" . $phone;
 

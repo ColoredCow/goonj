@@ -115,7 +115,7 @@ class CRM_Goonjcustom_Form_InstitutionDroppingCenterLinks extends CRM_Core_Form 
                 "&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent={$this->_processingCenterId}" .
                 "&Camp_Vehicle_Dispatch.Filled_by={$contactId}" .
                 "&Camp_Institution_Data.Name_of_the_institution={$nameOfInstitution}" .
-                "&Camp_Institution_Data.Address={$address}" .
+                "&Camp_Institution_Data.Address=" . urlencode($address) .
                 "&Camp_Institution_Data.Email={$pocEmail}" .
                 "&Camp_Institution_Data.Contact_Number={$pocContactNumber}",
                 $contactId
