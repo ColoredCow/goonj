@@ -162,6 +162,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 });
 
+// Hide specific form items in the thank you page for events.
 document.addEventListener("DOMContentLoaded", function() {
 	var formItems = document.querySelectorAll('.crm-event-thankyou-form-block .crm-group.participant_info-group fieldset .crm-public-form-item');
   
