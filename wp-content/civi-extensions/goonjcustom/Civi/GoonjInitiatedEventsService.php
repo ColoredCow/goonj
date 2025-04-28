@@ -506,12 +506,10 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
    *
    */
   public static function handleOfflineReceipt(&$params, $context) {
-    error_log('params: ' . print_r($params, TRUE));
-
-    if (!empty($params['workflow']) && $params['workflow'] === 'contribution_offline_receipt') {
+    if (!empty($params['workflow']) && $params['workflow'] === 'event_offline_receipt') {
       // Extract donor name or use a default value.
       $donorName = !empty($params['toName']) ? $params['toName'] : 'Valued Supporter';
-      $contributionID = !empty($params['contributionId']) ? $params['contributionId'] : NULL;
+      $contributionID = $params['tplParams']['contributionId'] ?? NULL;
       $params['cc'] = 'priyanka@goonj.org, accounts@goonj.org';
 
       $contribution = Contribution::get(FALSE)
