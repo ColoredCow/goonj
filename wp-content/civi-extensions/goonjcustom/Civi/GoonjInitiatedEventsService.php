@@ -509,7 +509,7 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
     if (!empty($params['workflow']) && $params['workflow'] === 'event_offline_receipt') {
       // Extract donor name or use a default value.
       $donorName = !empty($params['toName']) ? $params['toName'] : 'Valued Supporter';
-      $contributionID = $params['tplParams']['contributionId'] ?? NULL;
+      $contributionID = isset($params['tplParams']['contributionID']) ? $params['tplParams']['contributionID'] : NULL;
       $params['cc'] = 'priyanka@goonj.org, accounts@goonj.org';
 
       $contribution = Contribution::get(FALSE)
