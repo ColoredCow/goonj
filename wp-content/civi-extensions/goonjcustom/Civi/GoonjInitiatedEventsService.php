@@ -9,6 +9,7 @@ use Civi\Api4\Address;
 use Civi\Traits\QrCodeable;
 use Civi\Api4\Group;
 use Civi\Api4\GroupContact;
+use Civi\Api4\Contribution;
 
 /**
  *
@@ -24,6 +25,10 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
       '&hook_civicrm_pre' => 'generateGoonjEventsQr',
       '&hook_civicrm_tabset' => 'goonjEventsTabset',
       '&hook_civicrm_post' => 'assignChapterGroupToIndividual',
+      '&hook_civicrm_alterMailParams' => [
+        ['alterReceiptMail'],
+        ['handleOfflineReceipt'],
+      ],
     ];
   }
 
@@ -452,6 +457,81 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
       catch (Exception $e) {
         \Civi::log()->error("Error adding contact_id: $contactId to group_id: $groupId. Exception: " . $e->getMessage());
       }
+    }
+  }
+
+  /**
+   *
+   */
+  public static function alterReceiptMail(&$params, $context) {
+    // Handle event_online_receipt workflow.
+    if (!empty($params['workflow']) && $params['workflow'] === 'event_online_receipt') {
+      // Extract donor name or use a default value.
+      $donorName = !empty($params['toName']) ? $params['toName'] : 'Valued Supporter';
+      $contributionID = NULL;
+
+      if (!empty($params['tplParams']['lineItem'][0])) {
+        foreach ($params['tplParams']['lineItem'][0] as $lineItem) {
+          if (!empty($lineItem['contribution_id'])) {
+            $contributionID = $lineItem['contribution_id'];
+            break;
+          }
+        }
+      }
+
+      $params['cc'] = 'priyanka@goonj.org, accounts@goonj.org';
+
+      $contribution = Contribution::get(FALSE)
+        ->addSelect('invoice_number')
+        ->addWhere('id', '=', $contributionID)
+        ->execute()->single();
+
+      $receiptNumber = $contribution['invoice_number'];
+
+      $params['text'] = "Dear $donorName,\n\nThank you for your contribution.\n\nThese contributions go a long way in sustaining our operations and implementing series of initiatives all across.\nThe receipt No. ($receiptNumber) for the same is enclosed with the details of 80G exemptions and our PAN No.\n\nFor updates on our activities and new campaigns, please visit our website www.goonj.org and our FB page https://www.facebook.com/goonj.org, which are regularly updated.\n\nThank you once again for joining the journey.\n\nWith best regards,\nTeam Goonj";
+
+      $params['html'] = "
+              <p>Dear <strong>$donorName</strong>,</p>
+              <p>Thank you for your contribution.</p>
+              <p>These contributions go a long way in sustaining our operations and implementing series of initiatives all across.</p>
+              <p>The receipt No. (<strong>$receiptNumber</strong>) for the same is enclosed with the details of 80G exemptions and our PAN No.</p>
+              <p>For updates on our activities and new campaigns, please visit our website <a href='https://www.goonj.org'>www.goonj.org</a> and our FB page <a href='https://www.facebook.com/goonj.org'>https://www.facebook.com/goonj.org</a>, which are regularly updated.</p>
+              <p>Thank you once again for joining the journey.</p>
+              <p>With best regards,<br>Team Goonj</p>
+          ";
+    }
+  }
+
+  /**
+   *
+   */
+  public static function handleOfflineReceipt(&$params, $context) {
+    error_log('params: ' . print_r($params, TRUE));
+
+    if (!empty($params['workflow']) && $params['workflow'] === 'contribution_offline_receipt') {
+      // Extract donor name or use a default value.
+      $donorName = !empty($params['toName']) ? $params['toName'] : 'Valued Supporter';
+      $contributionID = !empty($params['contributionId']) ? $params['contributionId'] : NULL;
+      $params['cc'] = 'priyanka@goonj.org, accounts@goonj.org';
+
+      $contribution = Contribution::get(FALSE)
+        ->addSelect('invoice_number', 'contribution_page_id:label')
+        ->addWhere('id', '=', $contributionID)
+        ->execute()->single();
+
+      $receiptNumber = $contribution['invoice_number'];
+
+      $params['text'] = "Dear $donorName,\n\nThank you for your contribution.\n\nThese contributions go a long way in sustaining our operations and implementing series of initiatives all across.\nThe receipt No. ($receiptNumber) for the same is enclosed with the details of 80G exemptions and our PAN No.\n\nFor updates on our activities and new campaigns, please visit our website www.goonj.org and our FB page https://www.facebook.com/goonj.org, which are regularly updated.\n\nThank you once again for joining the journey.\n\nWith best regards,\nTeam Goonj";
+
+      $params['html'] = "
+              <p>Dear <strong>$donorName</strong>,</p>
+              <p>Thank you for your contribution.</p>
+              <p>These contributions go a long way in sustaining our operations and implementing series of initiatives all across.</p>
+              <p>The receipt No. (<strong>$receiptNumber</strong>) for the same is enclosed with the details of 80G exemptions and our PAN No.</p>
+              <p>For updates on our activities and new campaigns, please visit our website <a href='https://www.goonj.org'>www.goonj.org</a> and our FB page <a href='https://www.facebook.com/goonj.org'>https://www.facebook.com/goonj.org</a>, which are regularly updated.</p>
+              <p>Thank you once again for joining the journey.</p>
+              <p>With best regards,<br>Team Goonj</p>
+          ";
     }
   }
 
