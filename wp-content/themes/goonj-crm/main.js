@@ -161,3 +161,21 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     }
 });
+
+// Hide specific form items in the thank you page for events.
+document.addEventListener("DOMContentLoaded", function() {
+	var formItems = document.querySelectorAll('.crm-event-thankyou-form-block .crm-group.participant_info-group fieldset .crm-public-form-item');
+  
+	formItems.forEach(function(item) {
+	  var label = item.querySelector('.label');
+	  
+	  if (label) {
+		var labelText = label.textContent.trim();
+		
+		// Check if the label matches either of the two specific labels
+		if (labelText === "Number of Adults Including You" || labelText === "Number of Children Accompanying You") {
+			item.style.setProperty('display', 'none', 'important');
+		}
+	  }
+	});
+});
