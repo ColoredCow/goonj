@@ -163,10 +163,8 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 document.addEventListener("DOMContentLoaded", function() {
-	// Select all the crm-public-form-item elements within the fieldset
 	var formItems = document.querySelectorAll('.crm-event-thankyou-form-block .crm-group.participant_info-group fieldset .crm-public-form-item');
   
-	// Loop through each form item and check its label
 	formItems.forEach(function(item) {
 	  var label = item.querySelector('.label');
 	  
