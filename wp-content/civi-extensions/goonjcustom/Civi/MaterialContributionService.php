@@ -7,6 +7,8 @@ use Civi\Api4\Activity;
 use Civi\Api4\Contact;
 use Civi\Api4\EckEntity;
 use Civi\Api4\Organization;
+use Civi\Api4\Event;
+use Civi\Api4\Address;
 use Civi\Core\Service\AutoSubscriber;
 
 /**
@@ -58,7 +60,7 @@ class MaterialContributionService extends AutoSubscriber {
 
     // Hack: Retrieve the most recent "Material Contribution" activity for this contact.
     $activities = Activity::get(FALSE)
-      ->addSelect('*', 'contact.display_name', 'Material_Contribution.Delivered_By', 'Material_Contribution.Delivered_By_Contact', 'Material_Contribution.Goonj_Office', 'Material_Contribution.Collection_Camp.subtype:name', 'Material_Contribution.Institution_Collection_Camp.subtype:name', 'Material_Contribution.Dropping_Center.subtype:name', 'Material_Contribution.Institution_Dropping_Center.subtype:name', 'Material_Contribution.Contribution_Date')
+      ->addSelect('*', 'contact.display_name', 'Material_Contribution.Delivered_By', 'Material_Contribution.Delivered_By_Contact', 'Material_Contribution.Goonj_Office', 'Material_Contribution.Collection_Camp.subtype:name', 'Material_Contribution.Institution_Collection_Camp.subtype:name', 'Material_Contribution.Dropping_Center.subtype:name', 'Material_Contribution.Institution_Dropping_Center.subtype:name', 'Material_Contribution.Contribution_Date', 'Material_Contribution.Event')
       ->addJoin('ActivityContact AS activity_contact', 'LEFT')
       ->addJoin('Contact AS contact', 'LEFT')
       ->addWhere('source_contact_id', '=', $params['contactId'])
@@ -100,8 +102,9 @@ class MaterialContributionService extends AutoSubscriber {
     if (!$contribution) {
       return;
     }
+    $eventId = $contribution['Material_Contribution.Event'];
 
-    $html = self::generateContributionReceiptHtml($contribution, $email, $phone, $locationAreaOfCamp, $contributionDate);
+    $html = self::generateContributionReceiptHtml($contribution, $email, $phone, $locationAreaOfCamp, $contributionDate, $subtype, $eventId, $goonjOfficeId);
     $fileName = 'material_contribution_' . $contribution['id'] . '.pdf';
     $params['attachments'][] = \CRM_Utils_Mail::appendPDF($fileName, $html);
   }
@@ -111,6 +114,7 @@ class MaterialContributionService extends AutoSubscriber {
    */
   private static function getContributionCity($contribution, $subtype) {
     $officeId = $contribution['Material_Contribution.Goonj_Office'];
+    $eventId = $contribution['Material_Contribution.Event'];
 
     if ($officeId) {
       $organization = Organization::get(FALSE)
@@ -118,6 +122,30 @@ class MaterialContributionService extends AutoSubscriber {
         ->addWhere('id', '=', $officeId)
         ->execute()->single();
       return $organization['address_primary.street_address'] ?? '';
+    }
+
+    if ($eventId) {
+      try {
+        $events = Event::get(FALSE)
+          ->addSelect('loc_block_id.address_id')
+          ->addJoin('LocBlock AS loc_block', 'LEFT')
+          ->addWhere('id', '=', $eventId)
+          ->execute()->first();
+
+        $addressId = $events['loc_block_id.address_id'] ?? '';
+
+        $addresses = Address::get(FALSE)
+          ->addSelect('street_address')
+          ->addWhere('id', '=', $addressId)
+          ->execute()->first();
+
+        $streetAddress = $addresses['street_address'] ?? '';
+
+        return $streetAddress ?? '';
+      }
+      catch (\Exception $e) {
+        error_log("Error fetching organization address: " . $e->getMessage());
+      }
     }
 
     $campFieldMapping = [
@@ -169,7 +197,7 @@ class MaterialContributionService extends AutoSubscriber {
    * @return string
    *   The generated HTML.
    */
-  private static function generateContributionReceiptHtml($activity, $email, $phone, $locationAreaOfCamp, $contributionDate) {
+  public static function generateContributionReceiptHtml($activity, $email, $phone, $locationAreaOfCamp, $contributionDate, $subtype, $eventId, $goonjOfficeId) {
     $activityDate = date("F j, Y", strtotime($activity['activity_date_time']));
     $receivedOnDate = !empty($contributionDate)
     ? date("F j, Y", strtotime($contributionDate))
@@ -179,7 +207,6 @@ class MaterialContributionService extends AutoSubscriber {
     $deliveredBy = empty($activity['Material_Contribution.Delivered_By']) ? $activity['contact.display_name'] : $activity['Material_Contribution.Delivered_By'];
 
     $deliveredByContact = empty($activity['Material_Contribution.Delivered_By_Contact']) ? $phone : $activity['Material_Contribution.Delivered_By_Contact'];
-
     $paths = [
       'logo' => $baseDir . 'images/goonj-logo.png',
       'qrCode' => $baseDir . 'images/qr-code.png',
@@ -193,6 +220,32 @@ class MaterialContributionService extends AutoSubscriber {
     ];
 
     $imageData = array_map(fn ($path) => base64_encode(file_get_contents($path)), $paths);
+
+    $excludedSubtypes = ['Collection_Camp', 'Dropping_Center', 'Institution_Collection_Camp', 'Institution_Dropping_Center'];
+
+    $subject = $activity['subject'];
+
+    // Conditional subject row.
+    $subjectRow = '';
+    if (!empty($activity['subject'])) {
+      $subjectRow = '
+                <tr>
+                  <td class="table-header">Description of Material</td>
+                  <td style="text-align: center;">' . htmlspecialchars($activity['subject']) . '</td>
+                </tr>';
+    }
+
+    $deliveredByRow = '';
+    if (!in_array($subtype, $excludedSubtypes) && empty($eventId) && (empty($goonjOfficeId) || !empty($subject))) {
+      $deliveredByRow = "
+        <tr>
+          <td class='table-header'>Delivered by (Name & contact no.)</td>
+          <td style='text-align: center;'>
+            {$deliveredBy}<br>
+            {$deliveredByContact}
+          </td>
+        </tr>";
+    }
 
     $html = <<<HTML
     <html>
@@ -218,10 +271,7 @@ class MaterialContributionService extends AutoSubscriber {
             }
           </style>
           <!-- Table rows for each item -->
-          <tr>
-            <td class="table-header">Description of Material</td>
-            <td style="text-align: center;">{$activity['subject']}</td>
-          </tr>
+          {$subjectRow}
           <tr>
             <td class="table-header">Received On</td>
             <td style="text-align: center;">{$receivedOnDate}</td>
@@ -242,12 +292,7 @@ class MaterialContributionService extends AutoSubscriber {
             <td class="table-header">Phone</td>
             <td style="text-align: center;">{$phone}</td>
           </tr>
-          <tr>
-            <td class="table-header">Delivered by (Name & contact no.)</td>
-            <td style="text-align: center;">
-            {$deliveredBy}<br>
-            {$deliveredByContact}
-          </td>
+          {$deliveredByRow}
         </tr>
 
         </table>
@@ -295,7 +340,7 @@ class MaterialContributionService extends AutoSubscriber {
             <a href="https://www.youtube.com/channel/UCCq8iYlmjT7rrgPI1VHzIHg" target="_blank"><img src="data:image/webp;base64,{$imageData['youtubeIcon']}" alt="YouTube" style="width: 24px; height: 24px; margin-right: 10px;"></a>
           </div>
         </div>
-        <p style="margin-bottom: 2px; text-align: center; font-size: 12px;">* This is a computer generated receipt, signature is not required.</p>
+        <p style="margin-bottom: 2px; text-align: center; font-size: 12px;">* This is a computer-generated acknowledgement, signature is not required.</p>
       </body>
     </html>
     HTML;
