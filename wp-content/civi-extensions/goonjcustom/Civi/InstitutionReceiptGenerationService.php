@@ -326,7 +326,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
             <a href="https://www.youtube.com/channel/UCCq8iYlmjT7rrgPI1VHzIHg" target="_blank"><img src="data:image/webp;base64,{$imageData['youtubeIcon']}" alt="YouTube" style="width: 24px; height: 24px; margin-right: 10px;"></a>
           </div>
         </div>
-        <p style="margin-bottom: 2px; text-align: center; font-size: 12px;">* This is a computer generated receipt, signature is not required.</p>
+        <p style="margin-bottom: 2px; text-align: center; font-size: 12px;">* This is a computer-generated acknowledgement, signature is not required.</p>
       </body>
     </html>
     HTML;
