@@ -501,6 +501,10 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
         \Civi::log()->error('Failed to retrieve contribution: ' . $e->getMessage(), [
           'contributionID' => $contributionID,
         ]);
+        $params['toEmail'] = NULL;
+        $params['text'] = '';
+        $params['html'] = '';
+        $params['subject'] = '';
         return;
       }
 
