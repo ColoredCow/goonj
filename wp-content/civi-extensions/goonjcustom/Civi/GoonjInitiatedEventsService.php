@@ -497,15 +497,15 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
 
         $receiptNumber = $contribution['invoice_number'];
 
-        if(!$receiptNumber) {
-          return;
-        }
-
       }
       catch (\Exception $e) {
         \Civi::log()->error('Failed to retrieve contribution: ' . $e->getMessage(), [
           'contributionID' => $contributionID,
         ]);
+        $params['toEmail'] = NULL;
+        $params['text'] = '';
+        $params['html'] = '';
+        $params['subject'] = '';
         return;
       }
 
