@@ -267,8 +267,8 @@ class RazorpaySubscriptionImporter {
       ->addWhere('phone', '=', $phone)
       ->execute();
 
-    $emailContactIDs = array_column($emailResults->jsonSerialize(), 'contact_id');
-    $phoneContactIDs = array_column($phoneResults->jsonSerialize(), 'contact_id');
+      $emailContactIDs = array_unique(array_column($emailResults->jsonSerialize(), 'contact_id'));
+      $phoneContactIDs = array_unique(array_column($phoneResults->jsonSerialize(), 'contact_id'));
 
     // Find intersection of email and phone results.
     $commonContactIDs = array_intersect($emailContactIDs, $phoneContactIDs);
