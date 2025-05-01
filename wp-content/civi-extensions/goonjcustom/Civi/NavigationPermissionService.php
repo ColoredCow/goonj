@@ -111,6 +111,8 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Urban Visits',
           'Account - Individuals',
           'Account - Institutions',
+          'eck_entities',
+          'My Office',
         ],
       ],
       'urbanops' => [
