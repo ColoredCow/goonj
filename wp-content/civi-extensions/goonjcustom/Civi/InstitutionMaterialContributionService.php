@@ -221,6 +221,10 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
 
     $formattedDate = $date->format('F j, Y');
 
+    // Handle the "Delivered by" logic outside the HTML
+    $deliveredByName = $deliveredBy ? $deliveredBy : $contactName;
+    $deliveredByPhone = $deliveredByContact ? $deliveredByContact : $contactPhone;
+
     $html = <<<HTML
     <html>
       <body style="font-family: Arial, sans-serif;">
@@ -280,8 +284,8 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
             <tr>
               <td class="table-header">Delivered by (Name & contact no.)</td>
               <td class="table-cell">
-                {$deliveredBy}<br>
-                {$deliveredByContact}
+                {$deliveredByName}<br>
+                {$deliveredByPhone}
               </td>
             </tr>
           </table>
