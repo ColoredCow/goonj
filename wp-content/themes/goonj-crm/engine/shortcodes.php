@@ -12,7 +12,7 @@ use Civi\Api4\MessageTemplate;
 add_shortcode('goonj_check_user_form', 'goonj_check_user_action');
 add_shortcode('goonj_volunteer_message', 'goonj_custom_message_placeholder');
 add_shortcode('goonj_contribution_volunteer_signup_button', 'goonj_contribution_volunteer_signup_button');
-add_shortcode('goonj_contribution_monetory_button', 'goonj_contribution_monetory_button');
+add_shortcode('goonj_contribution_monetary_button', 'goonj_contribution_monetary_button');
 add_shortcode('goonj_pu_activity_button', 'goonj_pu_activity_button');
 add_shortcode('goonj_collection_landing_page', 'goonj_collection_camp_landing_page');
 add_shortcode('goonj_collection_camp_past', 'goonj_collection_camp_past_data');
@@ -103,7 +103,7 @@ function goonj_generate_monetary_button($contact_id, $selectedValue) {
 /**
  * Monetary contribution button shortcode.
  */
-function goonj_contribution_monetory_button() {
+function goonj_contribution_monetary_button() {
   $activity_id = isset($_GET['activityId']) ? intval($_GET['activityId']) : 0;
   $source = $_GET['source'] ?? '';
 
@@ -139,7 +139,7 @@ function goonj_contribution_monetory_button() {
     return goonj_generate_monetary_button($activity_id, $selectedValue);
   }
   catch (\Exception $e) {
-    \Civi::log()->error('Error in goonj_contribution_monetory_button: ' . $e->getMessage());
+    \Civi::log()->error('Error in goonj_contribution_monetary_button: ' . $e->getMessage());
     return '';
   }
 }
