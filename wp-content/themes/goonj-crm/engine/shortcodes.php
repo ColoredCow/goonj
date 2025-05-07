@@ -106,10 +106,6 @@ function goonj_generate_monetary_button($contact_id, $selectedValue) {
  */
 function goonj_contribution_monetary_button() {
   $activity_id = isset($_GET['activityId']) ? intval($_GET['activityId']) : 0;
-  $source = $_GET['source'] ?? '';
-
-  error_log("source: " . print_r($source, TRUE));
-  error_log("activity_id: " . print_r($activity_id, TRUE));
 
   if (empty($activity_id)) {
     \Civi::log()->warning('Activity ID is missing');
