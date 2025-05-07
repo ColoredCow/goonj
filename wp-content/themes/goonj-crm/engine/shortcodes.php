@@ -46,6 +46,63 @@ function goonj_generate_button_html($button_url, $button_text) {
 /**
  *
  */
+
+/**
+ * Common helper to fetch activity with contact ID.
+ */
+function goonj_get_activity_with_contact($activity_id) {
+  return Activity::get(FALSE)
+    ->addSelect('source_contact_id')
+    ->addJoin('ActivityContact AS activity_contact', 'LEFT')
+    ->addWhere('id', '=', $activity_id)
+    ->execute()
+    ->first();
+}
+
+/**
+ * Common helper to get source field ID.
+ */
+function goonj_get_contribution_source_field_id() {
+  $sourceField = CustomField::get(FALSE)
+    ->addSelect('id')
+    ->addWhere('custom_group_id:name', '=', 'Contribution_Details')
+    ->addWhere('name', '=', 'Source')
+    ->execute()
+    ->single();
+  return 'custom_' . $sourceField['id'];
+}
+
+/**
+ * Common helper to generate checksum for contact.
+ */
+function goonj_generate_checksum($contact_id) {
+  return Contact::getChecksum(FALSE)
+    ->setContactId($contact_id)
+    ->setTtl(7 * 24 * 60 * 60)
+    ->execute()
+    ->first()['checksum'];
+}
+
+/**
+ * Generate Monetary Contribution button if source is present.
+ */
+function goonj_generate_monetary_button($contact_id, $selectedValue) {
+  if (!$selectedValue) {
+    return '';
+  }
+
+  $sourceFieldId = goonj_get_contribution_source_field_id();
+  $checksum = goonj_generate_checksum($contact_id);
+
+  $monetaryUrl = "/contribute/?$sourceFieldId=$selectedValue&cid=$contact_id&cs=$checksum";
+  $buttonText = __('Monetary Contribution', 'goonj-crm');
+
+  return goonj_generate_button_html($monetaryUrl, $buttonText);
+}
+
+/**
+ * Monetary contribution button shortcode.
+ */
 function goonj_contribution_monetory_button() {
   $activity_id = isset($_GET['activityId']) ? intval($_GET['activityId']) : 0;
   $source = $_GET['source'] ?? '';
@@ -59,19 +116,13 @@ function goonj_contribution_monetory_button() {
   }
 
   try {
-    $activities = Activity::get(FALSE)
-      ->addSelect('source_contact_id')
-      ->addJoin('ActivityContact AS activity_contact', 'LEFT')
-      ->addWhere('id', '=', $activity_id)
-      ->execute()
-      ->first();
+    $activity = goonj_get_activity_with_contact($activity_id);
 
-    if (empty($activities)) {
+    if (empty($activity)) {
       \Civi::log()->info('No activities found for Activity ID:', ['activityId' => $activity_id]);
       return;
     }
 
-    $individual_id = $activities['source_contact_id'];
     $contactData = Contact::get(FALSE)
       ->addSelect('source')
       ->addWhere('id', '=', $activity_id)
@@ -85,29 +136,7 @@ function goonj_contribution_monetory_button() {
       $selectedValue = end($parts);
     }
 
-    if ($selectedValue) {
-      $sourceField = CustomField::get(FALSE)
-        ->addSelect('id')
-        ->addWhere('custom_group_id:name', '=', 'Contribution_Details')
-        ->addWhere('name', '=', 'Source')
-        ->execute()
-        ->single();
-
-      $sourceFieldId = 'custom_' . $sourceField['id'];
-
-      $checksum = Contact::getChecksum(FALSE)
-        ->setContactId($activity_id)
-        ->setTtl(7 * 24 * 60 * 60)
-        ->execute()
-        ->first()['checksum'];
-
-      $monetaryUrl = "/contribute/?$sourceFieldId=$selectedValue&cid=$activity_id&cs=$checksum";
-      $buttonText = __('Monetary Contribution', 'goonj-crm');
-
-      return goonj_generate_button_html($monetaryUrl, $buttonText);
-    }
-
-    return '';
+    return goonj_generate_monetary_button($activity_id, $selectedValue);
   }
   catch (\Exception $e) {
     \Civi::log()->error('Error in goonj_contribution_monetory_button: ' . $e->getMessage());
@@ -116,7 +145,7 @@ function goonj_contribution_monetory_button() {
 }
 
 /**
- *
+ * Volunteer signup + monetary contribution button shortcode.
  */
 function goonj_contribution_volunteer_signup_button() {
   $activity_id = isset($_GET['activityId']) ? intval($_GET['activityId']) : 0;
@@ -127,19 +156,19 @@ function goonj_contribution_volunteer_signup_button() {
   }
 
   try {
-    $activities = Activity::get(FALSE)
+    $activity = Activity::get(FALSE)
       ->addSelect('source_contact_id')
       ->addJoin('ActivityContact AS activity_contact', 'LEFT')
       ->addWhere('id', '=', $activity_id)
       ->addWhere('activity_type_id:label', '=', 'Material Contribution')
-      ->execute();
+      ->execute()
+      ->first();
 
-    if ($activities->count() === 0) {
+    if (empty($activity)) {
       \Civi::log()->info('No activities found for Activity ID:', ['activityId' => $activity_id]);
       return;
     }
 
-    $activity = $activities->first();
     $individual_id = $activity['source_contact_id'];
 
     $contact = Contact::get(FALSE)
@@ -149,14 +178,13 @@ function goonj_contribution_volunteer_signup_button() {
       ->first();
 
     if (empty($contact)) {
-      \Civi::log()->info('Contact not found', ['contact' => $contact['id']]);
+      \Civi::log()->info('Contact not found', ['contact' => $individual_id]);
       return;
     }
 
     $contactSubTypes = $contact['contact_sub_type'] ?? [];
     $buttonsHtml = '';
 
-    // Generate volunteer signup button if not already a volunteer.
     if (!in_array('Volunteer', $contactSubTypes)) {
       $redirectPath = '/volunteer-registration/form-with-details/';
       $redirectPathWithParams = $redirectPath . '#?' . http_build_query([
@@ -169,11 +197,11 @@ function goonj_contribution_volunteer_signup_button() {
 
     $activityDetails = Activity::get(FALSE)
       ->addSelect(
-              'Material_Contribution.Collection_Camp',
-              'Material_Contribution.Dropping_Center',
-              'Material_Contribution.Institution_Collection_Camp',
-              'Material_Contribution.Institution_Dropping_Center'
-          )
+          'Material_Contribution.Collection_Camp',
+          'Material_Contribution.Dropping_Center',
+          'Material_Contribution.Institution_Collection_Camp',
+          'Material_Contribution.Institution_Dropping_Center'
+    )
       ->addWhere('id', '=', $activity_id)
       ->execute()
       ->first();
@@ -193,29 +221,7 @@ function goonj_contribution_volunteer_signup_button() {
       }
     }
 
-    // Generate monetary contribution button if a value is found.
-    if ($selectedValue) {
-      // Get custom field ID for "Source".
-      $sourceField = CustomField::get(FALSE)
-        ->addSelect('id')
-        ->addWhere('custom_group_id:name', '=', 'Contribution_Details')
-        ->addWhere('name', '=', 'Source')
-        ->execute()
-        ->single();
-
-      $sourceFieldId = 'custom_' . $sourceField['id'];
-
-      // Generate checksum for secure URL.
-      $checksum = Contact::getChecksum(FALSE)
-        ->setContactId($individual_id)
-        ->setTtl(7 * 24 * 60 * 60)
-        ->execute()
-        ->first()['checksum'];
-
-      $monetaryUrl = "/contribute/?$sourceFieldId=$selectedValue&cid=$individual_id&cs=$checksum";
-      $monetaryButtonText = __('Monetary Contribution', 'goonj-crm');
-      $buttonsHtml .= goonj_generate_button_html($monetaryUrl, $monetaryButtonText);
-    }
+    $buttonsHtml .= goonj_generate_monetary_button($individual_id, $selectedValue);
 
     return $buttonsHtml;
   }
