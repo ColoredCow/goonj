@@ -22,6 +22,7 @@ add_shortcode('goonj_induction_slot_details', 'goonj_induction_slot_details');
  *
  */
 function goonj_check_user_action($atts) {
+  ob_start();
   get_template_part('templates/form', 'check-user', ['purpose' => $atts['purpose']]);
   return ob_get_clean();
 }
