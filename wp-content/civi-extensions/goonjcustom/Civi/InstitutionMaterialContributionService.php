@@ -221,9 +221,9 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
 
     $formattedDate = $date->format('F j, Y');
 
-    // Handle the "Delivered by" logic outside the HTML
-    $deliveredByName = $deliveredBy ? $deliveredBy : $contactName;
-    $deliveredByPhone = $deliveredByContact ? $deliveredByContact : $contactPhone;
+    // Handle the "Delivered by" logic.
+    $deliveredByName = $deliveredBy ? $deliveredBy : "-";
+    $deliveredByPhone = $deliveredByContact ? $deliveredByContact : "-";
 
     $html = <<<HTML
     <html>
