@@ -113,6 +113,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Account - Institutions',
           'eck_entities',
           'My Office',
+          'Contributions',
         ],
       ],
       'urbanops' => [
