@@ -47,10 +47,6 @@ function goonj_generate_button_html($button_url, $button_text) {
 /**
  *
  */
-
-/**
- * Common helper to fetch activity with contact ID.
- */
 function goonj_get_activity_with_contact($activity_id) {
   return Activity::get(FALSE)
     ->addSelect('source_contact_id')
@@ -61,7 +57,7 @@ function goonj_get_activity_with_contact($activity_id) {
 }
 
 /**
- * Common helper to get source field ID.
+ *
  */
 function goonj_get_contribution_source_field_id() {
   $sourceField = CustomField::get(FALSE)
@@ -74,7 +70,7 @@ function goonj_get_contribution_source_field_id() {
 }
 
 /**
- * Common helper to generate checksum for contact.
+ *
  */
 function goonj_generate_checksum($contact_id) {
   return Contact::getChecksum(FALSE)
@@ -85,7 +81,7 @@ function goonj_generate_checksum($contact_id) {
 }
 
 /**
- * Generate Monetary Contribution button if source is present.
+ *
  */
 function goonj_generate_monetary_button($contact_id, $selectedValue) {
   if (!$selectedValue) {
