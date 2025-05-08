@@ -7,12 +7,14 @@
 use Civi\Api4\Activity;
 use Civi\Api4\Contact;
 use Civi\Api4\CustomField;
+use Civi\Api4\EckEntity;
 use Civi\Api4\MessageTemplate;
 
 add_shortcode('goonj_check_user_form', 'goonj_check_user_action');
 add_shortcode('goonj_volunteer_message', 'goonj_custom_message_placeholder');
 add_shortcode('goonj_contribution_volunteer_signup_button', 'goonj_contribution_volunteer_signup_button');
 add_shortcode('goonj_contribution_monetary_button', 'goonj_contribution_monetary_button');
+add_shortcode('goonj_material_contribution_button', 'goonj_material_contribution_button');
 add_shortcode('goonj_pu_activity_button', 'goonj_pu_activity_button');
 add_shortcode('goonj_collection_landing_page', 'goonj_collection_camp_landing_page');
 add_shortcode('goonj_collection_camp_past', 'goonj_collection_camp_past_data');
@@ -98,11 +100,26 @@ function goonj_generate_monetary_button($contact_id, $selectedValue) {
 }
 
 /**
+ *
+ */
+function goonj_generate_material_contribution_button($contact_id, $selectedValue, $url = '') {
+  if (!$selectedValue || !$url) {
+    return '';
+  }
+
+  $checksum = goonj_generate_checksum($contact_id);
+  $fullUrl = $url . "&cs=" . $checksum;
+
+  $buttonText = __('Material Contribution', 'goonj-crm');
+
+  return goonj_generate_button_html($fullUrl, $buttonText);
+}
+
+/**
  * Monetary contribution button shortcode.
  */
 function goonj_contribution_monetary_button() {
   $activity_id = isset($_GET['activityId']) ? intval($_GET['activityId']) : 0;
-  
 
   if (empty($activity_id)) {
     \Civi::log()->warning('Activity ID is missing');
@@ -134,6 +151,71 @@ function goonj_contribution_monetary_button() {
   }
   catch (\Exception $e) {
     \Civi::log()->error('Error in goonj_contribution_monetary_button: ' . $e->getMessage());
+    return '';
+  }
+}
+
+/**
+ *
+ */
+function goonj_material_contribution_button() {
+  $activity_id = isset($_GET['activityId']) ? intval($_GET['activityId']) : 0;
+
+  if (empty($activity_id)) {
+    \Civi::log()->warning('Activity ID is missing');
+    return '';
+  }
+
+  try {
+    $activity = goonj_get_activity_with_contact($activity_id);
+
+    if (empty($activity)) {
+      \Civi::log()->info('No activities found for Activity ID:', ['activityId' => $activity_id]);
+      return '';
+    }
+
+    $contactData = Contact::get(FALSE)
+      ->addSelect('source')
+      ->addWhere('id', '=', $activity_id)
+      ->execute()
+      ->first();
+
+    $selectedValue = NULL;
+    if (!empty($contactData['source'])) {
+      $parts = explode('/', $contactData['source']);
+      $selectedValue = end($parts);
+    }
+
+    if (!$selectedValue) {
+      return '';
+    }
+
+    $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect('subtype:name')
+      ->addWhere('id', '=', $selectedValue)
+      ->execute()
+      ->first();
+
+    $subtype = $collectionCamps['subtype:name'] ?? '';
+    $sourceContactId = $activity['source_contact_id'] ?? 0;
+
+    $subtypeToUrlMap = [
+      'Collection_Camp' => "/material-contribution/#?Material_Contribution.Collection_Camp={$selectedValue}",
+      'Dropping_Center' => "/dropping-center/material-contribution/#?Material_Contribution.Dropping_Center={$selectedValue}",
+      'Institution_Collection_Camp' => "/collection-camp-material-contribution/#?Material_Contribution.Institution_Collection_Camp={$selectedValue}",
+      'Institution_Dropping_Center' => "/dropping-center-material-contribution/#?Material_Contribution.Institution_Dropping_Center={$selectedValue}",
+    ];
+
+    $url = $subtypeToUrlMap[$subtype] ?? '';
+
+    if ($url) {
+      $url .= "&source_contact_id={$sourceContactId}";
+    }
+
+    return goonj_generate_material_contribution_button($sourceContactId, $selectedValue, $url);
+  }
+  catch (\Exception $e) {
+    \Civi::log()->error('Error in goonj_material_contribution_button: ' . $e->getMessage());
     return '';
   }
 }
