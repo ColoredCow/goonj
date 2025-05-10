@@ -42,7 +42,7 @@ function goonj_get_contribution_source_field_id() {
 	->execute()->single();
 
 	if ($sourceField) {
-			return 'custom_' . $sourceField['id'];
+		return 'custom_' . $sourceField['id'];
 	}
 }
 
@@ -67,7 +67,7 @@ function goonj_generate_monetary_button($individualId, $collectionCampId) {
   }
 
   $sourceFieldId = goonj_get_contribution_source_field_id();
-  $checksum = goonj_generate_checksum($collectionCampId);
+  $checksum = goonj_generate_checksum($individualId);
 
   $monetaryUrl = "/contribute/?$sourceFieldId=$collectionCampId&cid=$individualId&cs=$checksum";
   $buttonText = __('Monetary Contribution', 'goonj-crm');
@@ -100,21 +100,20 @@ function goonj_monetary_contribution_button() {
 	$activityId = isset($_GET['activityId']) ? intval($_GET['activityId']) : 0;
 
 	if ($activityId) {
-			$activity = Activity::get(false)
-					->addSelect('source_contact_id')
-					->addWhere('id', '=', $activityId)
-					->addWhere('activity_type_id:label', '=', 'Material Contribution')
-					->execute()->first();
-
-			$individualId = $activity['source_contact_id'];
+		$activity = Activity::get(false)
+		->addSelect('source_contact_id')
+		->addWhere('id', '=', $activityId)
+		->addWhere('activity_type_id:label', '=', 'Material Contribution')
+		->execute()->first();
+		$individualId = $activity['source_contact_id'];
 	}
 
 	try {
-			$contactData = Contact::get(FALSE)
-					->addSelect('source')
-					->addWhere('id', '=', $individualId)
-					->execute()
-					->first();
+		$contactData = Contact::get(FALSE)
+		->addSelect('source')
+		->addWhere('id', '=', $individualId)
+		->execute()
+		->first();
 
 			if (empty($contactData)) {
 					return;
