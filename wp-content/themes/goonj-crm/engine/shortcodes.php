@@ -49,28 +49,6 @@ function goonj_generate_button_html($button_url, $button_text) {
 /**
  *
  */
-function goonj_get_activity_with_contact($activity_id) {
-  try {
-    $result = Activity::get(FALSE)
-      ->addSelect('source_contact_id')
-      ->addJoin('ActivityContact AS activity_contact', 'LEFT')
-      ->addWhere('id', '=', $activity_id)
-      ->execute();
-
-    return $result->first();
-  }
-  catch (\Exception $e) {
-    \Civi::log()->info('Error retrieving activity with contact', [
-      'activity_id' => $activity_id,
-      'error' => $e->getMessage(),
-    ]);
-    return NULL;
-  }
-}
-
-/**
- *
- */
 function goonj_get_contribution_source_field_id() {
   try {
     $result = CustomField::get(FALSE)
@@ -98,9 +76,9 @@ function goonj_get_contribution_source_field_id() {
 /**
  *
  */
-function goonj_generate_checksum($contact_id) {
+function goonj_generate_checksum($individualId) {
   return Contact::getChecksum(FALSE)
-    ->setContactId($contact_id)
+    ->setContactId($individualId)
     ->setTtl(7 * 24 * 60 * 60)
     ->execute()
     ->first()['checksum'];
@@ -109,15 +87,15 @@ function goonj_generate_checksum($contact_id) {
 /**
  *
  */
-function goonj_generate_monetary_button($contact_id, $selectedValue) {
+function goonj_generate_monetary_button($individualId, $selectedValue) {
   if (!$selectedValue) {
     return '';
   }
 
   $sourceFieldId = goonj_get_contribution_source_field_id();
-  $checksum = goonj_generate_checksum($contact_id);
+  $checksum = goonj_generate_checksum($individualId);
 
-  $monetaryUrl = "/contribute/?$sourceFieldId=$selectedValue&cid=$contact_id&cs=$checksum";
+  $monetaryUrl = "/contribute/?$sourceFieldId=$selectedValue&cid=$individualId&cs=$checksum";
   $buttonText = __('Monetary Contribution', 'goonj-crm');
 
   return goonj_generate_button_html($monetaryUrl, $buttonText);
@@ -126,12 +104,12 @@ function goonj_generate_monetary_button($contact_id, $selectedValue) {
 /**
  *
  */
-function goonj_generate_material_contribution_button($contact_id, $selectedValue, $url = '') {
-  if (!$selectedValue || !$url) {
+function goonj_generate_material_contribution_button($individualId, $url = '') {
+  if (!$url) {
     return '';
   }
 
-  $checksum = goonj_generate_checksum($contact_id);
+  $checksum = goonj_generate_checksum($individualId);
   $separator = (strpos($url, '?') !== FALSE) ? '&' : '?';
   $fullUrl = $url . $separator . http_build_query(['cs' => $checksum]);
 
@@ -144,23 +122,22 @@ function goonj_generate_material_contribution_button($contact_id, $selectedValue
  * Monetary contribution button shortcode.
  */
 function goonj_monetary_contribution_button() {
-  $activity_id = isset($_GET['activityId']) ? intval($_GET['activityId']) : 0;
+  $individualId = isset($_GET['individualId']) ? intval($_GET['individualId']) : 0;
 
-  if (empty($activity_id)) {
+  if (empty($individualId)) {
     return;
   }
 
   try {
-    $activity = goonj_get_activity_with_contact($activity_id);
 
-    if (empty($activity)) {
-      \Civi::log()->info('No activities found for Activity ID:', ['activityId' => $activity_id]);
+    if (empty($individualId)) {
+      \Civi::log()->info('No individual id:', ['individualId' => $individualId]);
       return;
     }
 
     $contactData = Contact::get(FALSE)
       ->addSelect('source')
-      ->addWhere('id', '=', $activity_id)
+      ->addWhere('id', '=', $individualId)
       ->execute()
       ->first();
 
@@ -170,7 +147,7 @@ function goonj_monetary_contribution_button() {
       $selectedValue = end($parts);
     }
 
-    return goonj_generate_monetary_button($activity_id, $selectedValue);
+    return goonj_generate_monetary_button($individualId, $selectedValue);
   }
   catch (\Exception $e) {
     \Civi::log()->error('Error in goonj_monetary_contribution_button: ' . $e->getMessage());
@@ -182,9 +159,9 @@ function goonj_monetary_contribution_button() {
  *
  */
 function goonj_material_contribution_button() {
-  $activity_id = isset($_GET['activityId']) ? intval($_GET['activityId']) : 0;
+  $individualId = isset($_GET['individualId']) ? intval($_GET['individualId']) : 0;
 
-  if (empty($activity_id)) {
+  if (empty($individualId)) {
     return '';
   }
 
@@ -192,42 +169,34 @@ function goonj_material_contribution_button() {
 
     $contactData = Contact::get(FALSE)
       ->addSelect('source')
-      ->addWhere('id', '=', $activity_id)
+      ->addWhere('id', '=', $individualId)
       ->execute()
       ->first();
 
-    $selectedValue = NULL;
-    if (!empty($contactData['source'])) {
-      $parts = explode('/', $contactData['source']);
-      $selectedValue = end($parts);
-    }
-
-    if (!$selectedValue) {
-      return '';
-    }
-
+    $title = $contactData['source'];
     $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
       ->addSelect('subtype:name')
-      ->addWhere('id', '=', $selectedValue)
+      ->addWhere('title', '=', $title)
       ->execute()
       ->first();
 
     $subtype = $collectionCamps['subtype:name'] ?? '';
+    $id = $collectionCamps['id'];
     $subtypeToUrlMap = [
-      'Collection_Camp' => "/material-contribution/#?Material_Contribution.Collection_Camp={$selectedValue}",
-      'Dropping_Center' => "/dropping-center/material-contribution/#?Material_Contribution.Dropping_Center={$selectedValue}",
-      'Institution_Collection_Camp' => "/collection-camp-material-contribution/#?Material_Contribution.Institution_Collection_Camp={$selectedValue}",
-      'Institution_Dropping_Center' => "/dropping-center-material-contribution/#?Material_Contribution.Institution_Dropping_Center={$selectedValue}",
+      'Collection_Camp' => "/material-contribution/#?Material_Contribution.Collection_Camp={$id}",
+      'Dropping_Center' => "/dropping-center/material-contribution/#?Material_Contribution.Dropping_Center={$id}",
+      'Institution_Collection_Camp' => "/collection-camp-material-contribution/#?Material_Contribution.Institution_Collection_Camp={$id}",
+      'Institution_Dropping_Center' => "/dropping-center-material-contribution/#?Material_Contribution.Institution_Dropping_Center={$id}",
     ];
 
     $url = $subtypeToUrlMap[$subtype] ?? '';
 
     if ($url) {
       $separator = (strpos($url, '?') !== FALSE) ? '&' : '?';
-      $url .= $separator . http_build_query(['source_contact_id' => $activity_id]);
+      $url .= $separator . http_build_query(['source_contact_id' => $individualId]);
     }
 
-    return goonj_generate_material_contribution_button($activity_id, $selectedValue, $url);
+    return goonj_generate_material_contribution_button($individualId, $url);
   }
   catch (\Exception $e) {
     \Civi::log()->error('Error in goonj_material_contribution_button: ' . $e->getMessage());
@@ -239,9 +208,9 @@ function goonj_material_contribution_button() {
  * Volunteer signup + monetary contribution button shortcode.
  */
 function goonj_contribution_volunteer_signup_button() {
-  $activity_id = isset($_GET['activityId']) ? intval($_GET['activityId']) : 0;
+  $activityId = isset($_GET['activityId']) ? intval($_GET['activityId']) : 0;
 
-  if (empty($activity_id)) {
+  if (empty($activityId)) {
     return;
   }
 
@@ -249,26 +218,26 @@ function goonj_contribution_volunteer_signup_button() {
     $activity = Activity::get(FALSE)
       ->addSelect('source_contact_id')
       ->addJoin('ActivityContact AS activity_contact', 'LEFT')
-      ->addWhere('id', '=', $activity_id)
+      ->addWhere('id', '=', $activityId)
       ->addWhere('activity_type_id:label', '=', 'Material Contribution')
       ->execute()
       ->first();
 
     if (empty($activity)) {
-      \Civi::log()->info('No activities found for Activity ID:', ['activityId' => $activity_id]);
+      \Civi::log()->info('No activities found for Activity ID:', ['activityId' => $activityId]);
       return;
     }
 
-    $individual_id = $activity['source_contact_id'];
+    $individualId = $activity['source_contact_id'];
 
     $contact = Contact::get(FALSE)
       ->addSelect('contact_sub_type')
-      ->addWhere('id', '=', $individual_id)
+      ->addWhere('id', '=', $individualId)
       ->execute()
       ->first();
 
     if (empty($contact)) {
-      \Civi::log()->info('Contact not found', ['contact' => $individual_id]);
+      \Civi::log()->info('Contact not found', ['contact' => $individualId]);
       return;
     }
 
@@ -278,7 +247,7 @@ function goonj_contribution_volunteer_signup_button() {
     if (!in_array('Volunteer', $contactSubTypes)) {
       $redirectPath = '/volunteer-registration/form-with-details/';
       $redirectPathWithParams = $redirectPath . '#?' . http_build_query([
-        'Individual1' => $individual_id,
+        'Individual1' => $individualId,
         'message' => 'individual-user',
       ]);
       $buttonText = __('Wish to Volunteer?', 'goonj-crm');
@@ -292,7 +261,7 @@ function goonj_contribution_volunteer_signup_button() {
           'Material_Contribution.Institution_Collection_Camp',
           'Material_Contribution.Institution_Dropping_Center'
     )
-      ->addWhere('id', '=', $activity_id)
+      ->addWhere('id', '=', $activityId)
       ->execute()
       ->first();
 
@@ -311,7 +280,7 @@ function goonj_contribution_volunteer_signup_button() {
       }
     }
 
-    $buttonsHtml .= goonj_generate_monetary_button($individual_id, $selectedValue);
+    $buttonsHtml .= goonj_generate_monetary_button($individualId, $selectedValue);
 
     return $buttonsHtml;
   }
