@@ -61,15 +61,15 @@ function goonj_generate_checksum($individualId) {
 /**
  *
  */
-function goonj_generate_monetary_button($individualId, $id) {
-  if (!$id) {
+function goonj_generate_monetary_button($individualId, $collectionCampId) {
+  if (!$collectionCampId) {
     return '';
   }
 
   $sourceFieldId = goonj_get_contribution_source_field_id();
-  $checksum = goonj_generate_checksum($id);
+  $checksum = goonj_generate_checksum($collectionCampId);
 
-  $monetaryUrl = "/contribute/?$sourceFieldId=$id&cid=$individualId&cs=$checksum";
+  $monetaryUrl = "/contribute/?$sourceFieldId=$collectionCampId&cid=$individualId&cs=$checksum";
   $buttonText = __('Monetary Contribution', 'goonj-crm');
 
   return goonj_generate_button_html($monetaryUrl, $buttonText);
@@ -133,9 +133,9 @@ function goonj_monetary_contribution_button() {
 					return;
 			}
 
-			$id = $collectionCamps['id'];
+			$collectionCampId = $collectionCamps['id'];
 
-			return goonj_generate_monetary_button($individualId, $id);
+			return goonj_generate_monetary_button($individualId, $collectionCampId);
 	} catch (\Exception $e) {
 			\Civi::log()->error('Error in goonj_monetary_contribution_button: ' . $e->getMessage());
 			return '';
