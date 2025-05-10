@@ -62,7 +62,7 @@ function goonj_generate_checksum($individualId) {
  *
  */
 function goonj_generate_monetary_button($individualId, $collectionCampId) {
-  if (!$collectionCampId) {
+  if (empty($collectionCampId)) {
     return '';
   }
 
@@ -79,7 +79,7 @@ function goonj_generate_monetary_button($individualId, $collectionCampId) {
  *
  */
 function goonj_generate_material_contribution_button($individualId, $url = '') {
-  if (!$url) {
+  if (empty($url)) {
     return '';
   }
 
