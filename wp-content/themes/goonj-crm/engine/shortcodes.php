@@ -213,7 +213,6 @@ function goonj_material_contribution_button() {
       ->first();
 
     $subtype = $collectionCamps['subtype:name'] ?? '';
-    // $sourceContactId = $activity['source_contact_id'] ?? 0;
     $subtypeToUrlMap = [
       'Collection_Camp' => "/material-contribution/#?Material_Contribution.Collection_Camp={$selectedValue}",
       'Dropping_Center' => "/dropping-center/material-contribution/#?Material_Contribution.Dropping_Center={$selectedValue}",
