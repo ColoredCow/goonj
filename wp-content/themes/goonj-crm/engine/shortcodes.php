@@ -122,7 +122,6 @@ function goonj_contribution_monetary_button() {
   $activity_id = isset($_GET['activityId']) ? intval($_GET['activityId']) : 0;
 
   if (empty($activity_id)) {
-    \Civi::log()->warning('Activity ID is missing');
     return;
   }
 
@@ -137,7 +136,6 @@ function goonj_contribution_monetary_button() {
     $contactData = Contact::get(FALSE)
       ->addSelect('source')
       ->addWhere('id', '=', $activity_id)
-      ->setLimit(1)
       ->execute()
       ->first();
 
@@ -162,7 +160,6 @@ function goonj_material_contribution_button() {
   $activity_id = isset($_GET['activityId']) ? intval($_GET['activityId']) : 0;
 
   if (empty($activity_id)) {
-    \Civi::log()->warning('Activity ID is missing');
     return '';
   }
 
@@ -227,7 +224,6 @@ function goonj_contribution_volunteer_signup_button() {
   $activity_id = isset($_GET['activityId']) ? intval($_GET['activityId']) : 0;
 
   if (empty($activity_id)) {
-    \Civi::log()->warning('Activity ID is missing');
     return;
   }
 
