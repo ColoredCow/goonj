@@ -35,28 +35,17 @@ function goonj_generate_button_html( $button_url, $button_text ) {
 }
 
 function goonj_get_contribution_source_field_id() {
-  try {
-    $result = CustomField::get(FALSE)
-      ->addSelect('id')
-      ->addWhere('custom_group_id:name', '=', 'Contribution_Details')
-      ->addWhere('name', '=', 'Source')
-      ->execute();
+	$sourceField = CustomField::get(FALSE)
+	->addSelect('id')
+	->addWhere('custom_group_id:name', '=', 'Contribution_Details')
+	->addWhere('name', '=', 'Source')
+	->execute()->single();
 
-    if ($result->count() === 0) {
-      \Civi::log()->error('Source custom field not found');
-      return NULL;
-    }
-
-    $sourceField = $result->single();
-    return 'custom_' . $sourceField['id'];
-  }
-  catch (\Exception $e) {
-    \Civi::log()->info('Error retrieving contribution source field', [
-      'error' => $e->getMessage(),
-    ]);
-    return NULL;
-  }
+	if ($sourceField) {
+			return 'custom_' . $sourceField['id'];
+	}
 }
+
 
 /**
  *
@@ -111,23 +100,16 @@ function goonj_monetary_contribution_button() {
 	$activityId = isset($_GET['activityId']) ? intval($_GET['activityId']) : 0;
 
 	if ($activityId) {
-			$activities = Activity::get(false)
+			$activity = Activity::get(false)
 					->addSelect('source_contact_id')
 					->addWhere('id', '=', $activityId)
 					->addWhere('activity_type_id:label', '=', 'Material Contribution')
-					->execute();
+					->execute()->first();
 
-			if ($activities->count() === 0) {
-					\Civi::log()->info('No activities found for Activity ID: ' . $activityId);
-					return;
-			}
-
-			$activity = $activities->first();
 			$individualId = $activity['source_contact_id'];
 	}
 
 	try {
-			// Fetch contact data
 			$contactData = Contact::get(FALSE)
 					->addSelect('source')
 					->addWhere('id', '=', $individualId)
