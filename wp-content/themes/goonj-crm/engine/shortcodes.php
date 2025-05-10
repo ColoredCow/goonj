@@ -168,12 +168,12 @@ function goonj_material_contribution_button() {
       ->first();
 
     $subtype = $collectionCamps['subtype:name'] ?? '';
-    $id = $collectionCamps['id'];
+    $collectionCampId = $collectionCamps['id'];
     $subtypeToUrlMap = [
-      'Collection_Camp' => "/material-contribution/#?Material_Contribution.Collection_Camp={$id}",
-      'Dropping_Center' => "/dropping-center/material-contribution/#?Material_Contribution.Dropping_Center={$id}",
-      'Institution_Collection_Camp' => "/collection-camp-material-contribution/#?Material_Contribution.Institution_Collection_Camp={$id}",
-      'Institution_Dropping_Center' => "/dropping-center-material-contribution/#?Material_Contribution.Institution_Dropping_Center={$id}",
+      'Collection_Camp' => "/material-contribution/#?Material_Contribution.Collection_Camp={$collectionCampId}",
+      'Dropping_Center' => "/dropping-center/material-contribution/#?Material_Contribution.Dropping_Center={$collectionCampId}",
+      'Institution_Collection_Camp' => "/collection-camp-material-contribution/#?Material_Contribution.Institution_Collection_Camp={$collectionCampId}",
+      'Institution_Dropping_Center' => "/dropping-center-material-contribution/#?Material_Contribution.Institution_Dropping_Center={$collectionCampId}",
     ];
 
     $url = $subtypeToUrlMap[$subtype] ?? '';
