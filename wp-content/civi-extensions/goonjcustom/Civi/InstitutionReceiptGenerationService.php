@@ -102,7 +102,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
     $institutionEmail,
     $noOfBagsReceived,
     $contributionDate,
-    $entityId,
+    $entityId
   ) {
     try {
       $dompdf = new Dompdf(['isRemoteEnabled' => TRUE]);
