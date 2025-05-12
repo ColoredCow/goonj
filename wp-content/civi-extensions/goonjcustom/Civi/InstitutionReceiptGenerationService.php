@@ -218,13 +218,13 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
       $coordinatingPOCId = $collectionCamp['Institution_collection_camp_Review.Coordinating_POC'] ?? NULL;
     }
     elseif ($droppingCenterId) {
-      $droppingCenter = EckEntity::get('Collection_Camp', FALSE)
+      $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
         ->addSelect('Institution_Dropping_Center_Review.Coordinating_POC')
         ->addWhere('id', '=', $droppingCenterId)
         ->execute()
         ->first();
 
-      $coordinatingPOCId = $droppingCenter['Institution_Dropping_Center_Review.Coordinating_POC'] ?? NULL;
+      $coordinatingPOCId = $collectionCamp['Institution_Dropping_Center_Review.Coordinating_POC'] ?? NULL;
     }
 
     if (!$coordinatingPOCId) {
