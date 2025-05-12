@@ -81,7 +81,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
     $noOfBagsReceived = $record['Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office'] ?? '';
     $contributionDate = $record['Acknowledgement_For_Logistics.Contribution_Date'] ?? '';
 
-    self::generatePdfForInstitutionCollectionCamp(
+    self::generatePdfForInstitution(
       $institutionName,
       $institutionAddress,
       $institutionContactNumber,
@@ -95,7 +95,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
   /**
    *
    */
-  public static function generatePdfForInstitutionCollectionCamp(
+  public static function generatePdfForInstitution(
     $institutionName,
     $institutionAddress,
     $institutionContactNumber,
@@ -113,7 +113,6 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
         $institutionEmail,
         $noOfBagsReceived,
         $contributionDate,
-        $entityId
       );
       $dompdf->loadHtml($html);
       $dompdf->setPaper('A4', 'portrait');
@@ -399,14 +398,6 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
             <td class="table-header">Phone</td>
             <td style="text-align: center;">{$contactNumber}</td>
           </tr>
-          <!-- <tr>
-            <td class="table-header">Delivered by (Name & contact no.)</td>
-            <td style="text-align: center;">
-            {$deliveredBy}<br>
-            {$deliveredByContact}
-          </td> -->
-        </tr>
-
         </table>
         <div style="width: 100%; margin-top: 16px;">
         <div style="float: left; width: 60%; font-size: 12px;">
