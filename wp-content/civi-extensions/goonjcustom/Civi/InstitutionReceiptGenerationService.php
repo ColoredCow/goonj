@@ -30,25 +30,30 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
    *
    */
   public static function generateMaterialAcknowledgmentReceipt(string $op, string $objectName, int $objectId, &$objectRef) {
-
     if (
       $op !== 'create' ||
       $objectName !== 'AfformSubmission' ||
       empty($objectRef->afform_name) ||
-      $objectRef->afform_name !== 'afformInstitutionGenerateMaterialContributionReceipt'
+      !in_array($objectRef->afform_name, ['afformInstitutionGenerateMaterialContributionReceipt'], TRUE)
     ) {
       return;
     }
 
     $data = json_decode($objectRef->data, TRUE);
-    if (
-      empty($data['Eck_Collection_Source_Vehicle_Dispatch1'][0]['fields']['Camp_Vehicle_Dispatch.Institution_Collection_Camp'])
-    ) {
-      return;
+
+    $fields = $data['Eck_Collection_Source_Vehicle_Dispatch1'][0]['fields'] ?? [];
+
+    $entityId = NULL;
+    if (!empty($fields['Camp_Vehicle_Dispatch.Institution_Collection_Camp'])) {
+      $entityId = $fields['Camp_Vehicle_Dispatch.Institution_Collection_Camp'];
+    }
+    elseif (!empty($fields['Camp_Vehicle_Dispatch.Institution_Dropping_Center'])) {
+      $entityId = $fields['Camp_Vehicle_Dispatch.Institution_Dropping_Center'];
     }
 
-    $fields = $data['Eck_Collection_Source_Vehicle_Dispatch1'][0]['fields'];
-    $entityId = $fields['Camp_Vehicle_Dispatch.Institution_Collection_Camp'];
+    if (empty($entityId)) {
+      return;
+    }
 
     $record = EckEntity::get('Collection_Source_Vehicle_Dispatch', TRUE)
       ->addSelect(
@@ -57,6 +62,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
         'Camp_Institution_Data.Contact_Number',
         'Camp_Institution_Data.Email',
         'Camp_Vehicle_Dispatch.Institution_Collection_Camp',
+        'Camp_Vehicle_Dispatch.Institution_Dropping_Center',
         'Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office',
         'Acknowledgement_For_Logistics.Contribution_Date'
       )
@@ -139,7 +145,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
    */
   public static function sendAcknowledgedDataToInstitutionPOC(string $op, string $objectName, int $objectId, &$objectRef) {
 
-    if ($objectName !== 'AfformSubmission' || !in_array($objectRef->afform_name, ['afformInstitutionAcknowledgementForm', 'afformInstitutionCampAcknowledgementFormForLogistics'])) {
+    if ($objectName !== 'AfformSubmission' || !in_array($objectRef->afform_name, ['afformInstitutionAcknowledgementForm', 'afformInstitutionCampAcknowledgementFormForLogistics', 'afformInstitutionDroppingCenterAcknowledgementForm', 'afformInstitutionDroppingCenterAcknowledgementFormForLogistics'])) {
       return;
     }
 
@@ -156,6 +162,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
         $result['Contact_Number'] ?? NULL,
         $result['Institution_POC'] ?? NULL,
         $result['collectionCampId'] ?? NULL,
+        $result['droppingCenterId'] ?? NULL,
         $result['description_of_material'] ?? NULL,
         $result['contribution_date'] ?? NULL
     );
@@ -176,6 +183,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
         'Contact_Number' => $fields['Camp_Institution_Data.Contact_Number'],
         'Institution_POC' => $fields['Camp_Institution_Data.Email'],
         'collectionCampId' => $fields['Camp_Vehicle_Dispatch.Institution_Collection_Camp'],
+        'droppingCenterId' => $fields['Camp_Vehicle_Dispatch.Institution_Dropping_Center'],
         'description_of_material' => $fields['Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office'],
         'contribution_date' => $fields['Acknowledgement_For_Logistics.Contribution_Date'],
       ]);
@@ -187,38 +195,33 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
   /**
    *
    */
-  private static function fetchContactDetails($contactId): array {
-    if (!$contactId) {
-      return [];
-    }
-
-    return Contact::get(FALSE)
-      ->addSelect('display_name', 'email.email', 'phone.phone')
-      ->addJoin('Email AS email', 'LEFT')
-      ->addJoin('Phone AS phone', 'LEFT')
-      ->addWhere('id', '=', $contactId)
-      ->execute()
-      ->single();
-  }
-
-  /**
-   *
-   */
   private static function notifyInstitutionPOC(
     $institutionName,
     $address,
     $contactNumber,
     $institutionEmail,
     $collectionCampId,
+    $droppingCenterId,
     $descriptionOfMaterial,
     $contributionDate,
   ) {
 
-    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Institution_collection_camp_Review.Coordinating_POC')
-      ->addWhere('id', '=', $collectionCampId)
-      ->execute()->single();
-    $coordinatingPOCId = $collectionCamp['Institution_collection_camp_Review.Coordinating_POC'];
+    if ($collectionCampId) {
+      $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+        ->addSelect('Institution_collection_camp_Review.Coordinating_POC')
+        ->addWhere('id', '=', $collectionCampId)
+        ->execute()->single();
+
+      $coordinatingPOCId = $collectionCamp['Institution_collection_camp_Review.Coordinating_POC'];
+    }
+    else {
+      $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+        ->addSelect('Institution_Dropping_Center_Review.Coordinating_POC')
+        ->addWhere('id', '=', $droppingCenterId)
+        ->execute()->single();
+
+      $coordinatingPOCId = $collectionCamp['Institution_Dropping_Center_Review.Coordinating_POC'];
+    }
 
     $contact = Contact::get(FALSE)
       ->addSelect('email.email', 'phone.phone')
@@ -226,6 +229,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
       ->addJoin('Phone AS phone', 'LEFT')
       ->addWhere('id', '=', $coordinatingPOCId)
       ->execute()->first();
+
     $goonjCoordinatorEmail = $contact['email.email'];
     $goonjCoordinatorPhone = $contact['phone.phone'];
 
