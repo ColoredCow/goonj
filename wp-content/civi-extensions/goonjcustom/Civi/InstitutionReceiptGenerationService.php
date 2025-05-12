@@ -102,7 +102,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
     $institutionEmail,
     $noOfBagsReceived,
     $contributionDate,
-    $entityId
+    $entityId,
   ) {
     try {
       $dompdf = new Dompdf(['isRemoteEnabled' => TRUE]);
@@ -206,21 +206,29 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
     $contributionDate,
   ) {
 
+    $coordinatingPOCId = NULL;
+
     if ($collectionCampId) {
       $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
         ->addSelect('Institution_collection_camp_Review.Coordinating_POC')
         ->addWhere('id', '=', $collectionCampId)
-        ->execute()->single();
+        ->execute()
+        ->first();
 
-      $coordinatingPOCId = $collectionCamp['Institution_collection_camp_Review.Coordinating_POC'];
+      $coordinatingPOCId = $collectionCamp['Institution_collection_camp_Review.Coordinating_POC'] ?? NULL;
     }
-    else {
-      $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+    elseif ($droppingCenterId) {
+      $droppingCenter = EckEntity::get('Collection_Camp', FALSE)
         ->addSelect('Institution_Dropping_Center_Review.Coordinating_POC')
         ->addWhere('id', '=', $droppingCenterId)
-        ->execute()->single();
+        ->execute()
+        ->first();
 
-      $coordinatingPOCId = $collectionCamp['Institution_Dropping_Center_Review.Coordinating_POC'];
+      $coordinatingPOCId = $droppingCenter['Institution_Dropping_Center_Review.Coordinating_POC'] ?? NULL;
+    }
+
+    if (!$coordinatingPOCId) {
+      return;
     }
 
     $contact = Contact::get(FALSE)
