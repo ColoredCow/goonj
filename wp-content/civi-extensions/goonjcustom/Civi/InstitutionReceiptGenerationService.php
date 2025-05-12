@@ -65,7 +65,6 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
       ->first();
 
     if (empty($record)) {
-      error_log("No record found for Vehicle Dispatch ID: $entityId");
       return;
     }
 
