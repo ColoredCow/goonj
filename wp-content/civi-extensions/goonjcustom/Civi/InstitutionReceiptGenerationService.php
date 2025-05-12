@@ -44,7 +44,6 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
     if (
       empty($data['Eck_Collection_Source_Vehicle_Dispatch1'][0]['fields']['Camp_Vehicle_Dispatch.Institution_Collection_Camp'])
     ) {
-      error_log("Vehicle Dispatch ID missing in form data.");
       return;
     }
 
