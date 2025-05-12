@@ -5,6 +5,8 @@ namespace Civi;
 use Civi\Api4\Contact;
 use Civi\Api4\EckEntity;
 use Civi\Core\Service\AutoSubscriber;
+use Civi\Traits\QrCodeable;
+use Dompdf\Dompdf;
 
 /**
  *
@@ -16,8 +18,122 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
    */
   public static function getSubscribedEvents() {
     return [
-      '&hook_civicrm_post' => 'sendAcknowledgedDataToInstitutionPOC',
+      '&hook_civicrm_post' => [
+      ['generateMaterialAcknowledgmentReceipt'],
+      ['sendAcknowledgedDataToInstitutionPOC'],
+      ],
+
     ];
+  }
+
+  /**
+   *
+   */
+  public static function generateMaterialAcknowledgmentReceipt(string $op, string $objectName, int $objectId, &$objectRef) {
+
+    if (
+      $op !== 'create' ||
+      $objectName !== 'AfformSubmission' ||
+      empty($objectRef->afform_name) ||
+      $objectRef->afform_name !== 'afformInstitutionGenerateMaterialContributionReceipt'
+    ) {
+      return;
+    }
+
+    $data = json_decode($objectRef->data, TRUE);
+    if (
+      empty($data['Eck_Collection_Source_Vehicle_Dispatch1'][0]['fields']['Camp_Vehicle_Dispatch.Institution_Collection_Camp'])
+    ) {
+      error_log("Vehicle Dispatch ID missing in form data.");
+      return;
+    }
+
+    $fields = $data['Eck_Collection_Source_Vehicle_Dispatch1'][0]['fields'];
+    $entityId = $fields['Camp_Vehicle_Dispatch.Institution_Collection_Camp'];
+
+    $record = EckEntity::get('Collection_Source_Vehicle_Dispatch', TRUE)
+      ->addSelect(
+        'Camp_Institution_Data.Name_of_the_institution',
+        'Camp_Institution_Data.Address',
+        'Camp_Institution_Data.Contact_Number',
+        'Camp_Institution_Data.Email',
+        'Camp_Vehicle_Dispatch.Institution_Collection_Camp',
+        'Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office',
+        'Acknowledgement_For_Logistics.Contribution_Date'
+      )
+      ->addWhere('id', '=', $entityId)
+      ->execute()
+      ->first();
+
+    if (empty($record)) {
+      error_log("No record found for Vehicle Dispatch ID: $entityId");
+      return;
+    }
+
+    $institutionName = $record['Camp_Institution_Data.Name_of_the_institution'] ?? '';
+    $institutionAddress = $record['Camp_Institution_Data.Address'] ?? '';
+    $institutionContactNumber = $record['Camp_Institution_Data.Contact_Number'] ?? '';
+    $institutionEmail = $record['Camp_Institution_Data.Email'] ?? '';
+    $noOfBagsReceived = $record['Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office'] ?? '';
+    $contributionDate = $record['Acknowledgement_For_Logistics.Contribution_Date'] ?? '';
+
+    self::generatePdfForInstitutionCollectionCamp(
+      $institutionName,
+      $institutionAddress,
+      $institutionContactNumber,
+      $institutionEmail,
+      $noOfBagsReceived,
+      $contributionDate,
+      $entityId
+    );
+  }
+
+  /**
+   *
+   */
+  public static function generatePdfForInstitutionCollectionCamp(
+    $institutionName,
+    $institutionAddress,
+    $institutionContactNumber,
+    $institutionEmail,
+    $noOfBagsReceived,
+    $contributionDate,
+    $entityId,
+  ) {
+    try {
+      $dompdf = new Dompdf(['isRemoteEnabled' => TRUE]);
+      $html = self::generateAcknowledgedReceiptHtml(
+        $institutionName,
+        $institutionAddress,
+        $institutionContactNumber,
+        $institutionEmail,
+        $noOfBagsReceived,
+        $contributionDate,
+        $entityId
+      );
+      $dompdf->loadHtml($html);
+      $dompdf->setPaper('A4', 'portrait');
+      $dompdf->render();
+
+      $pdfOutput = $dompdf->output();
+      $fileName = "acknowledgement_receipt.pdf";
+      $tempFilePath = \CRM_Utils_File::tempnam($fileName);
+
+      file_put_contents($tempFilePath, $pdfOutput);
+
+      return QrCodeable::savePdfAttachmentToCustomField(
+        $entityId,
+        $fileName,
+        $tempFilePath,
+        'Acknowledgement_For_Logistics',
+        'Acknowledgement_Receipt'
+      );
+
+    }
+    catch (\Exception $e) {
+      \CRM_Core_Error::debug_log_message('PDF error: ' . $e->getMessage());
+      return FALSE;
+    }
   }
 
   /**
@@ -97,7 +213,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
     $institutionEmail,
     $collectionCampId,
     $descriptionOfMaterial,
-    $contributionDate
+    $contributionDate,
   ) {
 
     $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
@@ -105,7 +221,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
       ->addWhere('id', '=', $collectionCampId)
       ->execute()->single();
     $coordinatingPOCId = $collectionCamp['Institution_collection_camp_Review.Coordinating_POC'];
-   
+
     $contact = Contact::get(FALSE)
       ->addSelect('email.email', 'phone.phone')
       ->addJoin('Email AS email', 'LEFT')
