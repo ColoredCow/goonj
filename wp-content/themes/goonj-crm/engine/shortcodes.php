@@ -150,14 +150,14 @@ function getIndividualIdFromActivity($activityId) {
   $activity = Activity::get(FALSE)
     ->addSelect('source_contact_id')
     ->addWhere('id', '=', $activityId)
-    ->addWhere('activity_type_id:label', '=', 'Material Contribution')
+    ->addWhere('activity_type_id:name', 'IN', ['Office visit', 'Material Contribution'])
     ->execute()
     ->first();
   return $activity['source_contact_id'] ?? NULL;
 }
 
 /**
- *
+ *f
  */
 function getCollectionCampIdFromActivity($activityId) {
   $activities = Activity::get(FALSE)
@@ -167,6 +167,7 @@ function getCollectionCampIdFromActivity($activityId) {
             'Material_Contribution.Dropping_Center',
             'Material_Contribution.Institution_Dropping_Center',
             'Material_Contribution.Goonj_Office',
+			'Office_Visit.Goonj_Processing_Center',
             'Material_Contribution.Event'
         )
     ->addWhere('id', '=', $activityId)
