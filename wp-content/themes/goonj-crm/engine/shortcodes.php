@@ -177,7 +177,10 @@ function getCollectionCampIdFromActivity($activityId) {
     return;
   }
 
-  foreach ($activities as $value) {
+  foreach ($activities as $key => $value) {
+    if ($key === 'id') {
+      continue;
+    }
     if (!empty($value)) {
       return $value;
     }
