@@ -1,8 +1,15 @@
 <?php
 
+use Civi\Api4\Activity;
+use Civi\Api4\Contact;
+use Civi\Api4\CustomField;
+use Civi\Api4\EckEntity;
+
 add_shortcode( 'goonj_check_user_form', 'goonj_check_user_action' );
 add_shortcode( 'goonj_volunteer_message', 'goonj_custom_message_placeholder' );
 add_shortcode( 'goonj_contribution_volunteer_signup_button', 'goonj_contribution_volunteer_signup_button' );
+add_shortcode('goonj_monetary_contribution_button', 'goonj_monetary_contribution_button');
+add_shortcode('goonj_material_contribution_button', 'goonj_material_contribution_button');
 add_shortcode( 'goonj_pu_activity_button', 'goonj_pu_activity_button' );
 add_shortcode( 'goonj_collection_landing_page', 'goonj_collection_camp_landing_page' );
 add_shortcode( 'goonj_collection_camp_past', 'goonj_collection_camp_past_data' );
@@ -25,6 +32,166 @@ function goonj_generate_button_html( $button_url, $button_text ) {
 	);
 
 	return ob_get_clean();
+}
+
+function goonj_get_contribution_source_field_id() {
+	$sourceField = CustomField::get(FALSE)
+	->addSelect('id')
+	->addWhere('custom_group_id:name', '=', 'Contribution_Details')
+	->addWhere('name', '=', 'Source')
+	->execute()->single();
+
+	if ($sourceField) {
+		return 'custom_' . $sourceField['id'];
+	}
+}
+
+
+/**
+ *
+ */
+function goonj_generate_checksum($individualId) {
+  return Contact::getChecksum(FALSE)
+    ->setContactId($individualId)
+    ->setTtl(7 * 24 * 60 * 60)
+    ->execute()
+    ->first()['checksum'];
+}
+
+/**
+ *
+ */
+function goonj_generate_monetary_button($individualId, $collectionCampId) {
+  if (empty($collectionCampId)) {
+    return;
+  }
+
+  $sourceFieldId = goonj_get_contribution_source_field_id();
+  $checksum = goonj_generate_checksum($individualId);
+
+  $monetaryUrl = "/contribute/?$sourceFieldId=$collectionCampId&cid=$individualId&cs=$checksum";
+  $buttonText = __('Monetary Contribution', 'goonj-crm');
+
+  return goonj_generate_button_html($monetaryUrl, $buttonText);
+}
+
+/**
+ *
+ */
+function goonj_generate_material_contribution_button($individualId, $url = '') {
+  if (empty($url)) {
+	return;
+  }
+
+  $checksum = goonj_generate_checksum($individualId);
+  $separator = (strpos($url, '?') !== FALSE) ? '&' : '?';
+  $fullUrl = $url . $separator . http_build_query(['cs' => $checksum]);
+
+  $buttonText = __('Material Contribution', 'goonj-crm');
+
+  return goonj_generate_button_html($fullUrl, $buttonText);
+}
+
+/**
+ * Monetary contribution button shortcode.
+ */
+function goonj_monetary_contribution_button() {
+	$individualId = isset($_GET['individualId']) ? intval($_GET['individualId']) : 0;
+	$activityId = isset($_GET['activityId']) ? intval($_GET['activityId']) : 0;
+
+	if (empty($activityId) && empty($individualId)) {
+		return;
+	}	
+
+	if ($activityId) {
+		$activity = Activity::get(FALSE)
+		->addSelect('source_contact_id')
+		->addWhere('id', '=', $activityId)
+		->addWhere('activity_type_id:label', '=', 'Material Contribution')
+		->execute()->first();
+		$individualId = $activity['source_contact_id'];
+	}
+
+	try {
+		$contactData = Contact::get(FALSE)
+		->addSelect('source')
+		->addWhere('id', '=', $individualId)
+		->execute()
+		->first();
+
+			if (empty($contactData)) {
+					return;
+			}
+
+			$title = $contactData['source'];
+
+			$collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+					->addSelect('id')
+					->addWhere('title', '=', $title)
+					->execute()
+					->first();
+
+			if (empty($collectionCamp)) {
+					\Civi::log()->info('No collection camp found for title: ' . $title);
+					return;
+			}
+
+			$collectionCampId = $collectionCamp['id'];
+
+			return goonj_generate_monetary_button($individualId, $collectionCampId);
+	} catch (\Exception $e) {
+			\Civi::log()->error('Error in goonj_monetary_contribution_button: ' . $e->getMessage());
+			return '';
+	}
+}
+
+/**
+ *
+ */
+function goonj_material_contribution_button() {
+  $individualId = isset($_GET['individualId']) ? intval($_GET['individualId']) : 0;
+
+  if (empty($individualId)) {
+    return '';
+  }
+
+  try {
+
+    $contactData = Contact::get(FALSE)
+      ->addSelect('source')
+      ->addWhere('id', '=', $individualId)
+      ->execute()
+      ->first();
+
+    $title = $contactData['source'];
+    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect('subtype:name')
+      ->addWhere('title', '=', $title)
+      ->execute()
+      ->first();
+
+    $subtype = $collectionCamp['subtype:name'] ?? '';
+    $collectionCampId = $collectionCamp['id'];
+    $subtypeToUrlMap = [
+      'Collection_Camp' => "/material-contribution/#?Material_Contribution.Collection_Camp={$collectionCampId}",
+      'Dropping_Center' => "/dropping-center/material-contribution/#?Material_Contribution.Dropping_Center={$collectionCampId}",
+      'Institution_Collection_Camp' => "/collection-camp-material-contribution/#?Material_Contribution.Institution_Collection_Camp={$collectionCampId}",
+      'Institution_Dropping_Center' => "/dropping-center-material-contribution/#?Material_Contribution.Institution_Dropping_Center={$collectionCampId}",
+    ];
+
+    $url = $subtypeToUrlMap[$subtype] ?? '';
+
+    if ($url) {
+      $separator = (strpos($url, '?') !== FALSE) ? '&' : '?';
+      $url .= $separator . http_build_query(['source_contact_id' => $individualId]);
+    }
+
+    return goonj_generate_material_contribution_button($individualId, $url);
+  }
+  catch (\Exception $e) {
+    \Civi::log()->error('Error in goonj_material_contribution_button: ' . $e->getMessage());
+    return '';
+  }
 }
 
 function goonj_contribution_volunteer_signup_button() {
