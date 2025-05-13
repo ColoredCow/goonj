@@ -23,22 +23,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 document.addEventListener('DOMContentLoaded', function() {
-    var isRecurCheckbox = document.getElementById('is_recur');
-    var installmentsField = document.getElementById('installments');
-    var recurHelp = document.getElementById('recurHelp');
-
-    // Check the checkbox by default
-    isRecurCheckbox.checked = true;
-
-    // Prevent checkbox toggle
-    isRecurCheckbox.addEventListener('click', function(event) {
-        event.preventDefault();
-    });
-
-    // Enable field and help
-    installmentsField.disabled = false;
-    recurHelp.style.display = 'block';
-
     // Create the select dropdown
     var select = document.createElement('select');
     select.id = 'installments';
