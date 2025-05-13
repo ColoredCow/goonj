@@ -1,29 +1,27 @@
 /*
  * This script automatically checks the 'is_recur' checkbox by default.
  * The checkbox cannot be changed by the user.
- * When the checkbox is checked, the 'installments' field is enabled, and the 'recurHelp' section is displayed.
+ * It also replaces the installments text input with a select dropdown,
+ * pre-selecting 7 years (84 months), and displays the recurHelp section.
  */
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     var isRecurCheckbox = document.getElementById('is_recur');
     var installmentsField = document.getElementById('installments');
     var recurHelp = document.getElementById('recurHelp');
 
-    // Check the checkbox by default
-    isRecurCheckbox.checked = true;
+    // Ensure all elements are found before proceeding
+    if (!isRecurCheckbox || !installmentsField || !recurHelp) return;
 
-    // Prevent the user from changing the checkbox state
-    isRecurCheckbox.addEventListener('click', function(event) {
+    // Automatically check the checkbox and prevent user interaction
+    isRecurCheckbox.checked = true;
+    isRecurCheckbox.addEventListener('click', function (event) {
         event.preventDefault();
     });
 
-    // Enable the installments field and display recurHelp by default
-    installmentsField.disabled = false;
+    // Enable installments field and display the help section
     recurHelp.style.display = 'block';
-});
 
-
-document.addEventListener('DOMContentLoaded', function() {
-    // Create the select dropdown
+    // Create a select dropdown for duration options
     var select = document.createElement('select');
     select.id = 'installments';
     select.name = 'installments';
@@ -39,16 +37,16 @@ document.addEventListener('DOMContentLoaded', function() {
         { label: '7 years - 84 months', value: 84 }
     ];
 
-    options.forEach(function(opt) {
+    options.forEach(function (opt) {
         var option = document.createElement('option');
         option.value = opt.value;
         option.textContent = opt.label;
         select.appendChild(option);
     });
 
-    // Set default selected value to 84 (7 years)
+    // Pre-select "7 years - 84 months"
     select.value = "84";
 
-    // Replace the old input field
+    // Replace the input field with the dropdown
     installmentsField.parentNode.replaceChild(select, installmentsField);
 });
