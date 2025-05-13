@@ -8,13 +8,16 @@ use Civi\Api4\Activity;
 use Civi\Api4\Contact;
 use Civi\Api4\CustomField;
 use Civi\Api4\EckEntity;
+use Civi\Api4\Event;
 use Civi\Api4\MessageTemplate;
 
 add_shortcode('goonj_check_user_form', 'goonj_check_user_action');
 add_shortcode('goonj_volunteer_message', 'goonj_custom_message_placeholder');
 add_shortcode('goonj_contribution_volunteer_signup_button', 'goonj_contribution_volunteer_signup_button');
 add_shortcode('goonj_monetary_contribution_button', 'goonj_monetary_contribution_button');
+add_shortcode('goonj_event_monetary_contribution_button', 'goonj_event_monetary_contribution_button');
 add_shortcode('goonj_material_contribution_button', 'goonj_material_contribution_button');
+add_shortcode('goonj_event_material_contribution_button', 'goonj_event_material_contribution_button');
 add_shortcode('goonj_pu_activity_button', 'goonj_pu_activity_button');
 add_shortcode('goonj_collection_landing_page', 'goonj_collection_camp_landing_page');
 add_shortcode('goonj_collection_camp_past', 'goonj_collection_camp_past_data');
@@ -106,56 +109,237 @@ function goonj_generate_material_contribution_button($individualId, $url = '') {
 }
 
 /**
- * Monetary contribution button shortcode.
+ * Resolves the event ID from the contact's source title.
+ *
+ * @param int $individualId The individual contact ID.
+ *
+ * @return mixed Returns the event ID if found, or null if not found.
  */
-function goonj_monetary_contribution_button() {
-  $individualId = isset($_GET['individualId']) ? intval($_GET['individualId']) : 0;
-  $activityId = isset($_GET['activityId']) ? intval($_GET['activityId']) : 0;
 
-  if (empty($activityId) && empty($individualId)) {
+/**
+ * Fetches the 'source' field for a given contact ID.
+ *
+ * @param int $individualId
+ *   The contact ID.
+ *
+ * @return array|null Contact data or null if not found.
+ */
+function getContactSource($individualId) {
+  return Contact::get(FALSE)
+    ->addSelect('source')
+    ->addWhere('id', '=', $individualId)
+    ->execute()
+    ->first();
+}
+
+/**
+ * Fetches the event ID by title.
+ *
+ * @param string $title
+ *   The event title.
+ *
+ * @return int|null The event ID or null if not found.
+ */
+function getEventIdByTitle($title) {
+  $event = Event::get(FALSE)
+    ->addSelect('id')
+    ->addWhere('title', '=', $title)
+    ->execute()
+    ->first();
+  return $event['id'] ?? NULL;
+}
+
+/**
+ * Fetches the collection camp ID by title.
+ *
+ * @param string $title
+ *   The collection camp title.
+ *
+ * @return int|null The collection camp ID or null if not found.
+ */
+function getCollectionCampIdByTitle($title) {
+  $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+    ->addSelect('id')
+    ->addWhere('title', '=', $title)
+    ->execute()
+    ->first();
+  return $collectionCamp['id'] ?? NULL;
+}
+
+/**
+ * Fetches the individual ID from an activity.
+ *
+ * @param int $activityId
+ *   The activity ID.
+ *
+ * @return int|null The source contact ID or null if not found.
+ */
+function getIndividualIdFromActivity($activityId) {
+  $activity = Activity::get(FALSE)
+    ->addSelect('source_contact_id')
+    ->addWhere('id', '=', $activityId)
+    ->addWhere('activity_type_id:label', '=', 'Material Contribution')
+    ->execute()
+    ->first();
+  return $activity['source_contact_id'] ?? NULL;
+}
+
+/**
+ * Fetches the collection camp ID from activity fields.
+ *
+ * @param int $activityId
+ *   The activity ID.
+ *
+ * @return int|null The collection camp ID or null if not found.
+ */
+function getCollectionCampIdFromActivity($activityId) {
+  $activities = Activity::get(FALSE)
+    ->addSelect(
+            'Material_Contribution.Collection_Camp',
+            'Material_Contribution.Institution_Collection_Camp',
+            'Material_Contribution.Dropping_Center',
+            'Material_Contribution.Institution_Dropping_Center',
+            'Material_Contribution.Goonj_Office',
+            'Material_Contribution.Event'
+        )
+    ->addWhere('id', '=', $activityId)
+    ->execute()
+    ->first();
+
+  if (empty($activities)) {
     return;
   }
 
-  if ($activityId) {
-    $activity = Activity::get(FALSE)
-      ->addSelect('source_contact_id')
-      ->addWhere('id', '=', $activityId)
-      ->addWhere('activity_type_id:label', '=', 'Material Contribution')
-      ->execute()->first();
-    $individualId = $activity['source_contact_id'];
+  foreach ($activities as $value) {
+    if (!empty($value)) {
+      return $value;
+    }
+  }
+  return;
+}
+
+/**
+ * Appends query parameters to a URL.
+ *
+ * @param string $url
+ *   The base URL.
+ * @param array $params
+ *   Query parameters to append.
+ *
+ * @return string The updated URL.
+ */
+function appendQueryParams($url, $params) {
+  $separator = strpos($url, '?') !== FALSE ? '&' : '?';
+  return $url . $separator . http_build_query($params);
+}
+
+/**
+ * Generates a monetary contribution button for an event.
+ *
+ * @return string|null The button HTML or null if conditions aren't met.
+ */
+function goonj_event_monetary_contribution_button() {
+  $individualId = isset($_GET['individualId']) ? intval($_GET['individualId']) : 0;
+
+  if (empty($individualId)) {
+    return;
+  }
+
+  $contactData = getContactSource($individualId);
+  if (empty($contactData['source'])) {
+    \Civi::log()->info("No source title found for contact ID: $individualId");
+    return;
+  }
+
+  $title = $contactData['source'];
+  $eventId = getEventIdByTitle($title);
+  if (empty($eventId)) {
+    \Civi::log()->info("No event found for source title: $title");
+    return;
+  }
+
+  return goonj_generate_monetary_button($individualId, $eventId);
+}
+
+/**
+ * Generates a monetary contribution button for a collection camp.
+ *
+ * @return string The button HTML or empty string if conditions aren't met.
+ */
+function goonj_monetary_contribution_button() {
+  $activityId = isset($_GET['activityId']) ? intval($_GET['activityId']) : 0;
+  $individualId = isset($_GET['individualId']) ? intval($_GET['individualId']) : 0;
+
+  if (empty($individualId) && empty($activityId)) {
+    return;
   }
 
   try {
-    $contactData = Contact::get(FALSE)
-      ->addSelect('source')
-      ->addWhere('id', '=', $individualId)
-      ->execute()
-      ->first();
-
-    if (empty($contactData)) {
-      return;
+    if (!empty($individualId)) {
+      $contactData = getContactSource($individualId);
+      if (empty($contactData['source'])) {
+        \Civi::log()->info("No source title found for contact ID: $individualId");
+        return;
+      }
+      $title = $contactData['source'];
+      $collectionCampId = getCollectionCampIdByTitle($title);
+      if (empty($collectionCampId)) {
+        \Civi::log()->info("No collection camp id found for title: $title");
+        return;
+      }
+      return goonj_generate_monetary_button($individualId, $collectionCampId);
     }
 
-    $title = $contactData['source'];
-
-    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('id')
-      ->addWhere('title', '=', $title)
-      ->execute()
-      ->first();
-
-    if (empty($collectionCamp)) {
-      \Civi::log()->info('No collection camp found for title: ' . $title);
-      return;
+    if (!empty($activityId)) {
+      $individualId = getIndividualIdFromActivity($activityId);
+      if (empty($individualId)) {
+        \Civi::log()->info("No source_contact_id found for activity ID: $activityId");
+        return;
+      }
+      $collectionCampId = getCollectionCampIdFromActivity($activityId);
+      if (empty($collectionCampId)) {
+        \Civi::log()->info("No collection camp id found for activity ID: $activityId");
+        return;
+      }
+      return goonj_generate_monetary_button($individualId, $collectionCampId);
     }
-
-    $collectionCampId = $collectionCamp['id'];
-
-    return goonj_generate_monetary_button($individualId, $collectionCampId);
   }
   catch (\Exception $e) {
-    \Civi::log()->error('Error in goonj_monetary_contribution_button: ' . $e->getMessage());
-    return '';
+    \Civi::log()->error("Error in goonj_monetary_contribution_button: {$e->getMessage()}");
+    return;
+  }
+  return;
+}
+
+/**
+ * Generates a material contribution button for an event.
+ *
+ * @return string The button HTML or empty string if conditions aren't met.
+ */
+function goonj_event_material_contribution_button() {
+  $individualId = isset($_GET['individualId']) ? intval($_GET['individualId']) : 0;
+
+  if (empty($individualId)) {
+    return;
+  }
+
+  try {
+    $contactData = getContactSource($individualId);
+    $title = $contactData['source'] ?? '';
+    $eventId = getEventIdByTitle($title);
+    if (empty($eventId)) {
+      \Civi::log()->info("No event found for source title: $title");
+      return;
+    }
+
+    $url = "/events-material-contribution/#?Material_Contribution.Event=$eventId";
+    $url = appendQueryParams($url, ['source_contact_id' => $individualId]);
+
+    return goonj_generate_material_contribution_button($individualId, $url);
+  }
+  catch (\Exception $e) {
+    \Civi::log()->error("Error in goonj_event_material_contribution_button: {$e->getMessage()}");
+    return;
   }
 }
 
@@ -166,18 +350,13 @@ function goonj_material_contribution_button() {
   $individualId = isset($_GET['individualId']) ? intval($_GET['individualId']) : 0;
 
   if (empty($individualId)) {
-    return '';
+    return;
   }
 
   try {
+    $contactData = getContactSource($individualId);
+    $title = $contactData['source'] ?? '';
 
-    $contactData = Contact::get(FALSE)
-      ->addSelect('source')
-      ->addWhere('id', '=', $individualId)
-      ->execute()
-      ->first();
-
-    $title = $contactData['source'];
     $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
       ->addSelect('subtype:name')
       ->addWhere('title', '=', $title)
@@ -194,10 +373,8 @@ function goonj_material_contribution_button() {
     ];
 
     $url = $subtypeToUrlMap[$subtype] ?? '';
-
     if ($url) {
-      $separator = (strpos($url, '?') !== FALSE) ? '&' : '?';
-      $url .= $separator . http_build_query(['source_contact_id' => $individualId]);
+      $url = appendQueryParams($url, ['source_contact_id' => $individualId]);
     }
 
     return goonj_generate_material_contribution_button($individualId, $url);
