@@ -413,7 +413,7 @@ function goonj_pu_activity_button() {
     return;
   }
 
-  $activity_id = absint($_GET['activityId']);
+  $activity_id = isset($_GET['activityId']) ? intval($_GET['activityId']) : 0;
 
   try {
     $activity = Activity::get(FALSE)
@@ -423,7 +423,7 @@ function goonj_pu_activity_button() {
       ->first();
 
     if (!$activity) {
-      \Civi::log()->info('No activity found', ['activityId' => $activityId]);
+      \Civi::log()->info('No activity found', ['activityId' => $activity_id]);
       return;
     }
 
