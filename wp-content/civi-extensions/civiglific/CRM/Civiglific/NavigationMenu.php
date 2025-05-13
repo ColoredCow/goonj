@@ -2,6 +2,9 @@
 
 /**
  * @file
+ * Contains functions for Glific API integration in the Civiglific extension.
+ * This file provides functionality to authenticate with the Glific API and
+ * retrieve access tokens for further API interactions.
  */
 
 use GuzzleHttp\Client;
