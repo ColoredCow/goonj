@@ -99,6 +99,10 @@ function goonj_monetary_contribution_button() {
 	$individualId = isset($_GET['individualId']) ? intval($_GET['individualId']) : 0;
 	$activityId = isset($_GET['activityId']) ? intval($_GET['activityId']) : 0;
 
+	if (empty($activityId) && empty($individualId)) {
+		return;
+	}	
+
 	if ($activityId) {
 		$activity = Activity::get(false)
 		->addSelect('source_contact_id')
