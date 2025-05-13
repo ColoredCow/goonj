@@ -1,5 +1,8 @@
 <?xml version="1.0"?>
 <extension key="civiglific" type="module">
+<files>
+  <file>CRM/Civiglific/NavigationMenu.php</file>
+</files>
   <file>civiglific</file>
   <name>civiglific</name>
   <description>FIXME</description>
