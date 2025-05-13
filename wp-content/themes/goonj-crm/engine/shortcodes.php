@@ -109,20 +109,7 @@ function goonj_generate_material_contribution_button($individualId, $url = '') {
 }
 
 /**
- * Resolves the event ID from the contact's source title.
  *
- * @param int $individualId The individual contact ID.
- *
- * @return mixed Returns the event ID if found, or null if not found.
- */
-
-/**
- * Fetches the 'source' field for a given contact ID.
- *
- * @param int $individualId
- *   The contact ID.
- *
- * @return array|null Contact data or null if not found.
  */
 function getContactSource($individualId) {
   return Contact::get(FALSE)
@@ -133,12 +120,7 @@ function getContactSource($individualId) {
 }
 
 /**
- * Fetches the event ID by title.
  *
- * @param string $title
- *   The event title.
- *
- * @return int|null The event ID or null if not found.
  */
 function getEventIdByTitle($title) {
   $event = Event::get(FALSE)
@@ -150,12 +132,7 @@ function getEventIdByTitle($title) {
 }
 
 /**
- * Fetches the collection camp ID by title.
  *
- * @param string $title
- *   The collection camp title.
- *
- * @return int|null The collection camp ID or null if not found.
  */
 function getCollectionCampIdByTitle($title) {
   $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
@@ -167,12 +144,7 @@ function getCollectionCampIdByTitle($title) {
 }
 
 /**
- * Fetches the individual ID from an activity.
  *
- * @param int $activityId
- *   The activity ID.
- *
- * @return int|null The source contact ID or null if not found.
  */
 function getIndividualIdFromActivity($activityId) {
   $activity = Activity::get(FALSE)
@@ -185,12 +157,7 @@ function getIndividualIdFromActivity($activityId) {
 }
 
 /**
- * Fetches the collection camp ID from activity fields.
  *
- * @param int $activityId
- *   The activity ID.
- *
- * @return int|null The collection camp ID or null if not found.
  */
 function getCollectionCampIdFromActivity($activityId) {
   $activities = Activity::get(FALSE)
@@ -219,14 +186,7 @@ function getCollectionCampIdFromActivity($activityId) {
 }
 
 /**
- * Appends query parameters to a URL.
  *
- * @param string $url
- *   The base URL.
- * @param array $params
- *   Query parameters to append.
- *
- * @return string The updated URL.
  */
 function appendQueryParams($url, $params) {
   $separator = strpos($url, '?') !== FALSE ? '&' : '?';
@@ -234,9 +194,7 @@ function appendQueryParams($url, $params) {
 }
 
 /**
- * Generates a monetary contribution button for an event.
  *
- * @return string|null The button HTML or null if conditions aren't met.
  */
 function goonj_event_monetary_contribution_button() {
   $individualId = isset($_GET['individualId']) ? intval($_GET['individualId']) : 0;
@@ -262,9 +220,7 @@ function goonj_event_monetary_contribution_button() {
 }
 
 /**
- * Generates a monetary contribution button for a collection camp.
  *
- * @return string The button HTML or empty string if conditions aren't met.
  */
 function goonj_monetary_contribution_button() {
   $activityId = isset($_GET['activityId']) ? intval($_GET['activityId']) : 0;
@@ -312,9 +268,7 @@ function goonj_monetary_contribution_button() {
 }
 
 /**
- * Generates a material contribution button for an event.
  *
- * @return string The button HTML or empty string if conditions aren't met.
  */
 function goonj_event_material_contribution_button() {
   $individualId = isset($_GET['individualId']) ? intval($_GET['individualId']) : 0;
