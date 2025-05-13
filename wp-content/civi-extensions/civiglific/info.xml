@@ -41,4 +41,5 @@
     <mixin>setting-php@1.0.0</mixin>
     <mixin>smarty@1.0.3</mixin>
   </mixins>
+  <upgrader>CRM_Civiglific_Upgrader</upgrader>
 </extension>
