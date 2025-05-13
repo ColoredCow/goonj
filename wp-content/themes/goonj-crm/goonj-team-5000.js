@@ -27,13 +27,10 @@ document.addEventListener('DOMContentLoaded', function () {
     select.className = 'crm-form-text valid';
 
     var options = [
-        { label: '1 year - 12 months', value: 12 },
-        { label: '2 years - 24 months', value: 24 },
-        { label: '3 years - 36 months', value: 36 },
-        { label: '4 years - 48 months', value: 48 },
-        { label: '5 years - 60 months', value: 60 },
-        { label: '6 years - 72 months', value: 72 },
-        { label: '7 years - 84 months', value: 84 }
+        { label: '1 year', value: 12 },
+        { label: '3 years', value: 36 },
+        { label: '7 years', value: 84 },
+        { label: '10 years', value: 120 }
     ];
 
     options.forEach(function (opt) {
