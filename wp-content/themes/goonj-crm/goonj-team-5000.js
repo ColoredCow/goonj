@@ -9,19 +9,18 @@ document.addEventListener('DOMContentLoaded', function () {
     var installmentsField = document.getElementById('installments');
     var recurHelp = document.getElementById('recurHelp');
 
-    // Ensure all elements are found before proceeding
     if (!isRecurCheckbox || !installmentsField || !recurHelp) return;
 
-    // Automatically check the checkbox and prevent user interaction
+    // Check and lock the checkbox
     isRecurCheckbox.checked = true;
     isRecurCheckbox.addEventListener('click', function (event) {
         event.preventDefault();
     });
 
-    // Enable installments field and display the help section
+    // Show help section
     recurHelp.style.display = 'block';
 
-    // Create a select dropdown for duration options
+    // Create the new select dropdown
     var select = document.createElement('select');
     select.id = 'installments';
     select.name = 'installments';
@@ -44,9 +43,15 @@ document.addEventListener('DOMContentLoaded', function () {
         select.appendChild(option);
     });
 
-    // Pre-select "7 years - 84 months"
+    // Set default value to 7 years
     select.value = "84";
 
-    // Replace the input field with the dropdown
+    // Replace old input field with new dropdown
     installmentsField.parentNode.replaceChild(select, installmentsField);
+
+    // Remove the adjacent label with text "installments"
+    var labelForInstallments = document.querySelector('label[for="installments"]');
+    if (labelForInstallments) {
+        labelForInstallments.remove();
+    }
 });
