@@ -20,3 +20,51 @@ document.addEventListener('DOMContentLoaded', function() {
     installmentsField.disabled = false;
     recurHelp.style.display = 'block';
 });
+
+
+document.addEventListener('DOMContentLoaded', function() {
+    var isRecurCheckbox = document.getElementById('is_recur');
+    var installmentsField = document.getElementById('installments');
+    var recurHelp = document.getElementById('recurHelp');
+
+    // Check the checkbox by default
+    isRecurCheckbox.checked = true;
+
+    // Prevent checkbox toggle
+    isRecurCheckbox.addEventListener('click', function(event) {
+        event.preventDefault();
+    });
+
+    // Enable field and help
+    installmentsField.disabled = false;
+    recurHelp.style.display = 'block';
+
+    // Create the select dropdown
+    var select = document.createElement('select');
+    select.id = 'installments';
+    select.name = 'installments';
+    select.className = 'crm-form-text valid';
+
+    var options = [
+        { label: '1 year - 12 months', value: 12 },
+        { label: '2 years - 24 months', value: 24 },
+        { label: '3 years - 36 months', value: 36 },
+        { label: '4 years - 48 months', value: 48 },
+        { label: '5 years - 60 months', value: 60 },
+        { label: '6 years - 72 months', value: 72 },
+        { label: '7 years - 84 months', value: 84 }
+    ];
+
+    options.forEach(function(opt) {
+        var option = document.createElement('option');
+        option.value = opt.value;
+        option.textContent = opt.label;
+        select.appendChild(option);
+    });
+
+    // Set default selected value to 84 (7 years)
+    select.value = "84";
+
+    // Replace the old input field
+    installmentsField.parentNode.replaceChild(select, installmentsField);
+});
