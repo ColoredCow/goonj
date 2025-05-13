@@ -30,3 +30,8 @@ function civiglific_civicrm_install(): void {
 function civiglific_civicrm_enable(): void {
   _civiglific_civix_civicrm_enable();
 }
+
+function civiglific_civicrm_xmlMenu(&$files) {
+  error_log('first test it is working');
+  $files[] = __DIR__ . '/xml/Menu.xml';
+}
