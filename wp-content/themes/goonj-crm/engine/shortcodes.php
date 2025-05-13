@@ -63,7 +63,7 @@ function goonj_generate_checksum($individualId) {
  */
 function goonj_generate_monetary_button($individualId, $collectionCampId) {
   if (empty($collectionCampId)) {
-    return '';
+    return;
   }
 
   $sourceFieldId = goonj_get_contribution_source_field_id();
@@ -80,7 +80,7 @@ function goonj_generate_monetary_button($individualId, $collectionCampId) {
  */
 function goonj_generate_material_contribution_button($individualId, $url = '') {
   if (empty($url)) {
-    return '';
+	return;
   }
 
   $checksum = goonj_generate_checksum($individualId);
@@ -104,7 +104,7 @@ function goonj_monetary_contribution_button() {
 	}	
 
 	if ($activityId) {
-		$activity = Activity::get(false)
+		$activity = Activity::get(FALSE)
 		->addSelect('source_contact_id')
 		->addWhere('id', '=', $activityId)
 		->addWhere('activity_type_id:label', '=', 'Material Contribution')
@@ -125,18 +125,18 @@ function goonj_monetary_contribution_button() {
 
 			$title = $contactData['source'];
 
-			$collectionCamps = EckEntity::get('Collection_Camp', FALSE)
+			$collectionCamp = EckEntity::get('Collection_Camp', FALSE)
 					->addSelect('id')
 					->addWhere('title', '=', $title)
 					->execute()
 					->first();
 
-			if (empty($collectionCamps)) {
+			if (empty($collectionCamp)) {
 					\Civi::log()->info('No collection camp found for title: ' . $title);
 					return;
 			}
 
-			$collectionCampId = $collectionCamps['id'];
+			$collectionCampId = $collectionCamp['id'];
 
 			return goonj_generate_monetary_button($individualId, $collectionCampId);
 	} catch (\Exception $e) {
@@ -164,14 +164,14 @@ function goonj_material_contribution_button() {
       ->first();
 
     $title = $contactData['source'];
-    $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
+    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
       ->addSelect('subtype:name')
       ->addWhere('title', '=', $title)
       ->execute()
       ->first();
 
-    $subtype = $collectionCamps['subtype:name'] ?? '';
-    $collectionCampId = $collectionCamps['id'];
+    $subtype = $collectionCamp['subtype:name'] ?? '';
+    $collectionCampId = $collectionCamp['id'];
     $subtypeToUrlMap = [
       'Collection_Camp' => "/material-contribution/#?Material_Contribution.Collection_Camp={$collectionCampId}",
       'Dropping_Center' => "/dropping-center/material-contribution/#?Material_Contribution.Dropping_Center={$collectionCampId}",
