@@ -34,7 +34,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
       $op !== 'create' ||
       $objectName !== 'AfformSubmission' ||
       empty($objectRef->afform_name) ||
-      !in_array($objectRef->afform_name, ['afformInstitutionGenerateMaterialContributionReceipt'], TRUE)
+      !in_array($objectRef->afform_name, ['afformInstitutionDroppingCenterMaterialReceipt', 'afformInstitutionCollectionCampMaterialReceipt'], TRUE)
     ) {
       return;
     }
