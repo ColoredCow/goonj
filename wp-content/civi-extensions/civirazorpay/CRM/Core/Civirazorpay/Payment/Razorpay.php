@@ -480,6 +480,11 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
         ->execute()->first();
 
       $campaignId = $campaign['id'] ?? NULL;
+      \Civi::log()->error('Record payment for subscription id', [
+        'subscriptionId' => $subscriptionId,
+        'paymentId' => $paymentId,
+        'pendingContribution' => $pendingContribution,
+      ]);
 
       if (!$pendingContribution) {
         $contributionToUpdate = civicrm_api3('Contribution', 'create', [
@@ -498,6 +503,14 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
       }
       else {
         $contributionToUpdate = $pendingContribution;
+
+        \Civi::log()->error('Pending contribution exist recording payment', [
+          'contributionToUpdateId' => $contributionToUpdate['id'],
+          'amount' => $amount,
+          'payment_instrument_id' => $recurringContribution['payment_instrument_id'],
+          'paymentId' => $paymentId,
+        ]);
+
         civicrm_api3('Payment', 'create', [
           'contribution_id' => $contributionToUpdate['id'],
           'total_amount' => $amount,
