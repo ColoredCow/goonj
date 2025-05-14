@@ -150,14 +150,14 @@ function getIndividualIdFromActivity($activityId) {
   $activity = Activity::get(FALSE)
     ->addSelect('source_contact_id')
     ->addWhere('id', '=', $activityId)
-    ->addWhere('activity_type_id:label', '=', 'Material Contribution')
+    ->addWhere('activity_type_id:name', 'IN', ['Office visit', 'Material Contribution'])
     ->execute()
     ->first();
   return $activity['source_contact_id'] ?? NULL;
 }
 
 /**
- *
+ *f
  */
 function getCollectionCampIdFromActivity($activityId) {
   $activities = Activity::get(FALSE)
@@ -167,6 +167,7 @@ function getCollectionCampIdFromActivity($activityId) {
             'Material_Contribution.Dropping_Center',
             'Material_Contribution.Institution_Dropping_Center',
             'Material_Contribution.Goonj_Office',
+			'Office_Visit.Goonj_Processing_Center',
             'Material_Contribution.Event'
         )
     ->addWhere('id', '=', $activityId)
@@ -177,7 +178,10 @@ function getCollectionCampIdFromActivity($activityId) {
     return;
   }
 
-  foreach ($activities as $value) {
+  foreach ($activities as $key => $value) {
+    if ($key === 'id') {
+      continue;
+    }
     if (!empty($value)) {
       return $value;
     }
@@ -409,7 +413,7 @@ function goonj_pu_activity_button() {
     return;
   }
 
-  $activity_id = absint($_GET['activityId']);
+  $activity_id = isset($_GET['activityId']) ? intval($_GET['activityId']) : 0;
 
   try {
     $activity = Activity::get(FALSE)
@@ -419,7 +423,7 @@ function goonj_pu_activity_button() {
       ->first();
 
     if (!$activity) {
-      \Civi::log()->info('No activity found', ['activityId' => $activityId]);
+      \Civi::log()->info('No activity found', ['activityId' => $activity_id]);
       return;
     }
 
