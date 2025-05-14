@@ -1158,21 +1158,15 @@ class CollectionCampService extends AutoSubscriber {
    *   The reference to the object.
    */
   public static function updateCampStatusAfterAuth(string $op, string $objectName, $objectId, &$objectRef) {
-    error_log('Working 1');
-
     $statusDetails = self::checkCampStatusAndIds($objectName, $objectId, $objectRef);
-    error_log('Working 2');
 
     if (!$statusDetails) {
       return;
     }
-    error_log('Working 3');
 
     $newStatus = $statusDetails['newStatus'];
-    error_log('newstatus: ' . print_r($newStatus, TRUE));
 
     $currentStatus = $statusDetails['currentStatus'];
-    error_log('currentStatus: ' . print_r($currentStatus, TRUE));
 
     if ($currentStatus !== $newStatus) {
       if ($newStatus === 'authorized') {
