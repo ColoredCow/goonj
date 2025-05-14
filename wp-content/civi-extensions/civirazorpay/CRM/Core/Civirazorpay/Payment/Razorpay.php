@@ -480,6 +480,7 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
         ->execute()->first();
 
       $campaignId = $campaign['id'] ?? NULL;
+
       \Civi::log()->error('Record payment for subscription id', [
         'subscriptionId' => $subscriptionId,
         'paymentId' => $paymentId,
