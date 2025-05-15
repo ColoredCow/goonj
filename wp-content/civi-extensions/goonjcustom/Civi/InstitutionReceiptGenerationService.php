@@ -237,6 +237,10 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
       ->addWhere('id', '=', $coordinatingPOCId)
       ->execute()->first();
 
+    if (empty($contact)) {
+      return;
+    }
+
     $goonjCoordinatorEmail = $contact['email.email'];
     $goonjCoordinatorPhone = $contact['phone.phone'];
 
