@@ -34,3 +34,15 @@ function civiglific_civicrm_enable(): void {
 function civiglific_civicrm_xmlMenu(&$files) {
   $files[] = __DIR__ . '/xml/Menu.xml';
 }
+
+/**
+ * Implementation of hook_civicrm_api4_entities
+ */
+function civiglific_civicrm_api4_entities(&$entities) {
+  \Civi::log()->debug('civiglific: civicrm_api4_entities hook called');
+  $entities['GlificGroupMap'] = [
+    'class' => 'Civi\Api4\GlificGroupMap',
+    'path' => __DIR__ . '/api/v4/GlificGroupMap.php',
+  ];
+  \Civi::log()->debug('civiglific: Registered GlificGroupMap entity', ['entities' => $entities]);
+}
