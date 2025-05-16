@@ -34,10 +34,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
       $op !== 'create' ||
       $objectName !== 'AfformSubmission' ||
       empty($objectRef->afform_name) ||
-      !in_array($objectRef->afform_name, [
-        'afformInstitutionDroppingCenterMaterialReceipt',
-        'afformInstitutionCollectionCampMaterialReceipt',
-      ], TRUE)
+      !in_array($objectRef->afform_name, ['afformInstitutionDroppingCenterMaterialReceipt', 'afformInstitutionCollectionCampMaterialReceipt'], TRUE)
     ) {
       return;
     }
@@ -46,58 +43,19 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
 
     $fields = $data['Eck_Collection_Source_Vehicle_Dispatch1'][0]['fields'] ?? [];
 
-    $recordId = $fields['id'] ?? NULL;
-
-    if (empty($recordId)) {
-      return;
-    }
-
-    $entityIdFieldMap = [
-      'Camp_Vehicle_Dispatch.Institution_Collection_Camp',
-      'Camp_Vehicle_Dispatch.Institution_Dropping_Center',
-    ];
-
     $entityId = NULL;
-    foreach ($entityIdFieldMap as $fieldKey) {
-      if (!empty($fields[$fieldKey])) {
-        $entityId = $fields[$fieldKey];
-        break;
-      }
+    if (!empty($fields['Camp_Vehicle_Dispatch.Institution_Collection_Camp'])) {
+      $entityId = $fields['Camp_Vehicle_Dispatch.Institution_Collection_Camp'];
+    }
+    elseif (!empty($fields['Camp_Vehicle_Dispatch.Institution_Dropping_Center'])) {
+      $entityId = $fields['Camp_Vehicle_Dispatch.Institution_Dropping_Center'];
     }
 
     if (empty($entityId)) {
       return;
     }
 
-    $record = self::getVehicleDispatchRecord($entityId, $recordId);
-    if (empty($record)) {
-      return;
-    }
-
-    $institutionName    = $record['Camp_Institution_Data.Name_of_the_institution'] ?? '';
-    $institutionAddress = $record['Camp_Institution_Data.Address'] ?? '';
-    $institutionContact = $record['Camp_Institution_Data.Contact_Number'] ?? '';
-    $institutionEmail   = $record['Camp_Institution_Data.Email'] ?? '';
-    $noOfBagsReceived   = $record['Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office'] ?? '';
-    $contributionDate   = $record['Acknowledgement_For_Logistics.Contribution_Date'] ?? '';
-
-    // Generate PDF.
-    self::generatePdfForInstitution(
-      $institutionName,
-      $institutionAddress,
-      $institutionContact,
-      $institutionEmail,
-      $noOfBagsReceived,
-      $contributionDate,
-      $recordId
-    );
-  }
-
-  /**
-   * Fetches vehicle dispatch record for a given entity ID.
-   */
-  private static function getVehicleDispatchRecord($entityId, $recordId) {
-    return EckEntity::get('Collection_Source_Vehicle_Dispatch', FALSE)
+    $record = EckEntity::get('Collection_Source_Vehicle_Dispatch', TRUE)
       ->addSelect(
         'Camp_Institution_Data.Name_of_the_institution',
         'Camp_Institution_Data.Address',
@@ -108,10 +66,30 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
         'Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office',
         'Acknowledgement_For_Logistics.Contribution_Date'
       )
-      ->addClause('OR', ['Camp_Vehicle_Dispatch.Institution_Collection_Camp', '=', $entityId], ['Camp_Vehicle_Dispatch.Institution_Dropping_Center', '=', $entityId])
-      ->addWhere('id', '=', $recordId)
+      ->addWhere('id', '=', $entityId)
       ->execute()
       ->first();
+
+    if (empty($record)) {
+      return;
+    }
+
+    $institutionName = $record['Camp_Institution_Data.Name_of_the_institution'] ?? '';
+    $institutionAddress = $record['Camp_Institution_Data.Address'] ?? '';
+    $institutionContactNumber = $record['Camp_Institution_Data.Contact_Number'] ?? '';
+    $institutionEmail = $record['Camp_Institution_Data.Email'] ?? '';
+    $noOfBagsReceived = $record['Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office'] ?? '';
+    $contributionDate = $record['Acknowledgement_For_Logistics.Contribution_Date'] ?? '';
+
+    self::generatePdfForInstitution(
+      $institutionName,
+      $institutionAddress,
+      $institutionContactNumber,
+      $institutionEmail,
+      $noOfBagsReceived,
+      $contributionDate,
+      $entityId
+    );
   }
 
   /**
@@ -124,9 +102,8 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
     $institutionEmail,
     $noOfBagsReceived,
     $contributionDate,
-    $recordId,
+    $entityId,
   ) {
-
     try {
       $dompdf = new Dompdf(['isRemoteEnabled' => TRUE]);
       $html = self::generateAcknowledgedReceiptHtml(
@@ -148,7 +125,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
       file_put_contents($tempFilePath, $pdfOutput);
 
       return QrCodeable::savePdfAttachmentToCustomField(
-        $recordId,
+        $entityId,
         $fileName,
         $tempFilePath,
         'Acknowledgement_For_Logistics',
