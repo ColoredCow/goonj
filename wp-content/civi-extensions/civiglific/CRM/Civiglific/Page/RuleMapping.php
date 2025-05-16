@@ -49,38 +49,37 @@ class CRM_Civiglific_Page_RuleMapping extends CRM_Core_Page {
     $data = json_decode($response, TRUE);
     $glificGroups = $data['data']['groups'] ?? [];
 
-    // Fetch CiviCRM groups for dropdown.
-    $civicrmGroups = Group::get(TRUE)
+    // Fetch CiviCRM groups and format as [id => title].
+    $rawGroups = Group::get(TRUE)
       ->addSelect('id', 'title')
       ->addWhere('is_active', '=', 1)
-      ->setLimit(100)
-      ->execute()
-      ->indexBy('id');
+      ->execute();
 
-    // Handle form submission to add new rule.
+    $civicrmGroups = [];
+    foreach ($rawGroups as $group) {
+      $civicrmGroups[$group['id']] = $group['title'];
+    }
+
+    // Handle form submission.
     if (!empty($_POST['add_rule'])) {
       $civiGroupId = (int) $_POST['civicrm_group_id'];
       $glificGroupId = (int) $_POST['glific_group_id'];
 
       if ($civiGroupId && $glificGroupId) {
-        // Insert new mapping into custom table.
         $insertQuery = "INSERT INTO civicrm_glific_group_map (group_id, collection_id, last_sync_date)
                         VALUES (%1, %2, NOW())";
         CRM_Core_DAO::executeQuery($insertQuery, [
           1 => [$civiGroupId, 'Integer'],
           2 => [$glificGroupId, 'Integer'],
         ]);
-
-        // Set a flag or message without redirect.
         $this->assign('success_message', 'New rule added successfully.');
       }
       else {
         $this->assign('error_message', 'Please select both groups.');
       }
-
     }
 
-    // Fetch existing mappings from custom table.
+    // Fetch existing mappings.
     $sql = "SELECT gm.id, gm.group_id, gm.collection_id, gm.last_sync_date, cg.title AS group_name
             FROM civicrm_glific_group_map gm
             LEFT JOIN civicrm_group cg ON cg.id = gm.group_id";
@@ -97,7 +96,7 @@ class CRM_Civiglific_Page_RuleMapping extends CRM_Core_Page {
       ];
     }
 
-    // Assign variables to template.
+    // Assign to template.
     $this->assign('groups', $glificGroups);
     $this->assign('mappings', $mappings);
     $this->assign('civicrmGroups', $civicrmGroups);
