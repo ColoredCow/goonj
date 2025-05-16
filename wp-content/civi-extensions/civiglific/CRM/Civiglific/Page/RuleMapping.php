@@ -71,15 +71,13 @@ class CRM_Civiglific_Page_RuleMapping extends CRM_Core_Page {
           2 => [$glificGroupId, 'Integer'],
         ]);
 
-        // Show success and reload.
-        CRM_Core_Session::setStatus('New rule added successfully.', 'Success', 'success');
-
-        // Used for redirection in the future when needed
-        // CRM_Utils_System::redirect(CRM_Utils_System::url('civicrm/glific/rule-mapping', ['reset' => 1]));
+        // Set a flag or message without redirect.
+        $this->assign('success_message', 'New rule added successfully.');
       }
       else {
-        CRM_Core_Session::setStatus('Please select both groups.', 'Error', 'error');
+        $this->assign('error_message', 'Please select both groups.');
       }
+
     }
 
     // Fetch existing mappings from custom table.
