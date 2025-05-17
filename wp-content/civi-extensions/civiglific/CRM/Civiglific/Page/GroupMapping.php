@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__ . '/../Helper.php';
+require_once __DIR__ . '/../GlificHelper.php';
 
 /**
  *
@@ -11,7 +11,7 @@ use GuzzleHttp\Exception\RequestException;
 /**
  *
  */
-class CRM_Civiglific_Page_RuleMapping extends CRM_Core_Page {
+class CRM_Civiglific_Page_GroupMapping extends CRM_Core_Page {
 
   /**
    *
