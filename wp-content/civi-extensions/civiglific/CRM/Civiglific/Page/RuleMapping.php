@@ -67,12 +67,20 @@ class CRM_Civiglific_Page_RuleMapping extends CRM_Core_Page {
       $glificGroupId = (int) $_POST['glific_group_id'];
 
       if ($civiGroupId && $glificGroupId) {
-        $insertQuery = "INSERT INTO civicrm_glific_group_map (group_id, collection_id, last_sync_date)
-                        VALUES (%1, %2, NOW())";
-        CRM_Core_DAO::executeQuery($insertQuery, [
-          1 => [$civiGroupId, 'Integer'],
-          2 => [$glificGroupId, 'Integer'],
-        ]);
+        try {
+          GlificGroupMap::create()
+            ->addValue('group_id', $civiGroupId)
+            ->addValue('collection_id', $glificGroupId)
+            ->addValue('last_sync_date', date('Y-m-d H:i:s'))
+            ->execute();
+
+          $this->assign('success_message', 'New rule added successfully.');
+        }
+        catch (Exception $e) {
+          CRM_Core_Error::debug_log_message('Error creating Glific Group Map: ' . $e->getMessage());
+          $this->assign('error_message', 'Failed to add rule: ' . $e->getMessage());
+        }
+
         $this->assign('success_message', 'New rule added successfully.');
       }
       else {
