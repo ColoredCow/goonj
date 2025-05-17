@@ -1,5 +1,6 @@
 <?php
 
+use Civi\Api4\GlificGroupMap;
 use Civi\Api4\Group;
 
 require_once __DIR__ . '/../Helper.php';
@@ -80,19 +81,21 @@ class CRM_Civiglific_Page_RuleMapping extends CRM_Core_Page {
     }
 
     // Fetch existing mappings.
-    $sql = "SELECT gm.id, gm.group_id, gm.collection_id, gm.last_sync_date, cg.title AS group_name
-            FROM civicrm_glific_group_map gm
-            LEFT JOIN civicrm_group cg ON cg.id = gm.group_id";
-    $dao = CRM_Core_DAO::executeQuery($sql);
+    $glificGroupMaps = GlificGroupMap::get(TRUE)
+      ->addSelect('id', 'group_id', 'collection_id', 'last_sync_date')
+      ->execute();
 
     $mappings = [];
-    while ($dao->fetch()) {
+    foreach ($glificGroupMaps as $map) {
+      $groupId = $map['group_id'];
+      $groupTitle = $civicrmGroups[$groupId] ?? 'Unknown';
+
       $mappings[] = [
-        'id' => $dao->id,
-        'group_id' => $dao->group_id,
-        'collection_id' => $dao->collection_id,
-        'last_sync_date' => $dao->last_sync_date,
-        'group_name' => $dao->group_name,
+        'id' => $map['id'],
+        'group_id' => $groupId,
+        'collection_id' => $map['collection_id'],
+        'last_sync_date' => $map['last_sync_date'],
+        'group_name' => $groupTitle,
       ];
     }
 
