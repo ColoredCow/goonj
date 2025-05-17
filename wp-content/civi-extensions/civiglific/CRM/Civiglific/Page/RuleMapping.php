@@ -5,6 +5,12 @@ require_once __DIR__ . '/../Helper.php';
 /**
  *
  */
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
+
+/**
+ *
+ */
 class CRM_Civiglific_Page_RuleMapping extends CRM_Core_Page {
 
   /**
@@ -22,29 +28,29 @@ class CRM_Civiglific_Page_RuleMapping extends CRM_Core_Page {
     }
 
     $url = rtrim(CIVICRM_GLIFIC_API_BASE_URL, '/') . '/api/';
-    $query = json_encode([
-      'query' => 'query { groups { id label } }',
-    ]);
 
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-    curl_setopt($ch, CURLOPT_POST, TRUE);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $query);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-      'Content-Type: application/json',
-      'Authorization: ' . $token,
-    ]);
+    $client = new Client();
 
-    $response = curl_exec($ch);
+    try {
+      $response = $client->post($url, [
+        'headers' => [
+          'Content-Type'  => 'application/json',
+          'Authorization' => $token,
+        ],
+        'body' => json_encode([
+          'query' => 'query { groups { id label } }',
+        ]),
+      ]);
 
-    if (curl_errno($ch)) {
-      CRM_Core_Error::debug_log_message('Glific API cURL error: ' . curl_error($ch));
+      $body = $response->getBody()->getContents();
+      $data = json_decode($body, TRUE);
+      $groups = $data['data']['groups'] ?? [];
+
     }
-
-    curl_close($ch);
-
-    $data = json_decode($response, TRUE);
-    $groups = $data['data']['groups'] ?? [];
+    catch (RequestException $e) {
+      CRM_Core_Error::debug_log_message('Glific API HTTP error: ' . $e->getMessage());
+      $groups = [];
+    }
 
     $this->assign('groups', $groups);
     parent::run();
