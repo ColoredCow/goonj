@@ -1,6 +1,7 @@
 <?php
 
 require_once 'civiglific.civix.php';
+require_once __DIR__ . '/vendor/autoload.php';
 
 use CRM_Civiglific_ExtensionUtil as E;
 
