@@ -27,8 +27,6 @@ function civicrm_api3_civiglific_civicrm_glific_contact_sync_cron($params) {
     ->execute()
     ->jsonSerialize();
 
-  error_log('glificgroup:' . print_r($glificGroupMaps, TRUE));
-
   foreach ($glificGroupMaps as $rule) {
     $civiGroupId = $rule['group_id'];
     $glificGroupId = $rule['collection_id'];
@@ -37,14 +35,11 @@ function civicrm_api3_civiglific_civicrm_glific_contact_sync_cron($params) {
 
     // 2. Get contacts from CiviCRM group
     $civiContacts = _getCiviContactsFromGroup($civiGroupId);
-    error_log('civiContacts:' . print_r($civiContacts, TRUE));
 
     // 3. Get contacts from Glific group
     $glificPhones = _getGlificContactsFromGroup($glificGroupId);
-    error_log('glificPhones:' . print_r($glificPhones, TRUE));
 
     $civiPhones = array_column($civiContacts, 'phone');
-    error_log('civiPhones:' . print_r($civiPhones, TRUE));
 
     // 4. Add new contacts to Glific group.
     foreach ($civiContacts as $contact) {
@@ -72,15 +67,12 @@ function civicrm_api3_civiglific_civicrm_glific_contact_sync_cron($params) {
 function _getCiviContactsFromGroup($groupId) {
   $result = [];
 
-  error_log('woking contact');
-
   $groupContacts = GroupContact::get(TRUE)
     ->addSelect('contact_id', 'contact_id.display_name')
     ->addWhere('group_id', '=', $groupId)
   // Optional: skip removed contacts.
     ->addWhere('status', '=', 'Added')
     ->execute();
-  error_log('groupContacts:' . print_r($groupContacts, TRUE));
 
   foreach ($groupContacts as $gc) {
     $contactId = $gc['contact_id'];
@@ -190,18 +182,13 @@ function _addContactToGlificGroup($contactId, $groupId) {
 }
 
 /**
- * Helper: Call Glific GraphQL API using Guzzle.
+ * Call Glific GraphQL API using Guzzle.
  */
 function _glificGraphQLQuery($query, $variables = []) {
   $client = new Client();
 
-  // 🔁 Replace with your Glific API URL
   $url = rtrim(CIVICRM_GLIFIC_API_BASE_URL, '/') . '/api/';
-  // 🔁 Replace with your actual token
   $token = GlificHelper::getToken();
-
-  error_log('url:' . print_r($url, TRUE));
-  error_log('token:' . print_r($token, TRUE));
 
   try {
     $response = $client->post($url, [
@@ -214,7 +201,6 @@ function _glificGraphQLQuery($query, $variables = []) {
         'variables' => $variables,
       ],
     ]);
-    error_log('response11Body:' . print_r($response->getBody(), TRUE));
 
     return json_decode((string) $response->getBody(), TRUE);
   }
