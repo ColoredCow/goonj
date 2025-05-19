@@ -108,26 +108,39 @@ function _getCiviContactsFromGroup($groupId) {
  * Get contact phone numbers from a Glific group.
  */
 function _getGlificContactsFromGroup($groupId) {
-  $phones = [];
-
-  $query = '
-    query {
-      contacts(filter: { groupIds: [' . $groupId . '] }) {
-        phone
+  $query = <<<'GQL'
+  query GetGroupContacts($groupId: ID!) {
+    group(id: $groupId) {
+      group {
+        contacts {
+          phone
+        }
       }
     }
-  ';
-  error_log('query:' . print_r($query, TRUE));
+  }
+  GQL;
 
-  $response = _glificGraphQLQuery($query);
+  $variables = ['groupId' => $groupId];
 
-  error_log('responseafter Body:' . print_r($response, TRUE));
+  $response = _glificGraphQLQuery($query, $variables);
 
-  foreach ($response['data']['contacts'] ?? [] as $contact) {
-    $phones[] = _normalizePhone($contact['phone']);
+  if (
+    empty($response['data']['group']['group']['contacts'])
+  ) {
+    return [];
   }
 
-  return $phones;
+  $phones = [];
+  foreach ($response['data']['group']['group']['contacts'] as $contact) {
+    if (!empty($contact['phone'])) {
+      $normalized = preg_replace('/\D+/', '', $contact['phone']);
+      if ($normalized) {
+        $phones[] = $normalized;
+      }
+    }
+  }
+
+  return array_unique($phones);
 }
 
 /**
