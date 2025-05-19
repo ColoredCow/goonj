@@ -98,7 +98,6 @@ class CRM_Civiglific_Page_GroupMapping extends CRM_Core_Page {
         GlificGroupMap::create()
           ->addValue('group_id', $civiGroupId)
           ->addValue('collection_id', $glificGroupId)
-          ->addValue('last_sync_date', date('Y-m-d H:i:s'))
           ->execute();
 
         $this->assign('success_message', 'New rule added successfully.');
