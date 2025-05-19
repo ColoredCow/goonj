@@ -27,7 +27,6 @@ class CRM_Civiglific_Page_GroupMapping extends CRM_Core_Page {
       return;
     }
 
-    // Fetch groups from Glific API using Guzzle.
     $url = rtrim(CIVICRM_GLIFIC_API_BASE_URL, '/') . '/api/';
     $client = new Client();
 
