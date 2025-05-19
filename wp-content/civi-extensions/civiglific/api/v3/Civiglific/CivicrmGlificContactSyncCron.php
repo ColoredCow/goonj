@@ -4,6 +4,8 @@
  * @file
  */
 
+use Civi\Api4\Contact;
+use Civi\Api4\SubscriptionHistory;
 use CRM\Civiglific\GlificHelper;
 use Civi\Api4\Phone;
 use Civi\Api4\GroupContact;
@@ -31,10 +33,22 @@ function civicrm_api3_civiglific_civicrm_glific_contact_sync_cron($params) {
     $civiGroupId = $rule['group_id'];
     $glificGroupId = $rule['collection_id'];
     $mapId = $rule['id'];
-    error_log('woking');
+    $lastSyncDate = $rule['last_sync_date'];
 
-    // 2. Get contacts from CiviCRM group
-    $civiContacts = _getCiviContactsFromGroup($civiGroupId);
+    // 1. Get new or all contacts based on sync status
+    if (empty($lastSyncDate)) {
+      // Initial sync - get all contacts.
+      $civiContacts = _getCiviContactsFromGroup($civiGroupId);
+    }
+    else {
+      // Incremental sync - only get newly added contacts.
+      $civiContacts = _getNewlyAddedCiviContacts($civiGroupId, $lastSyncDate);
+    }
+
+    if (empty($civiContacts)) {
+      // Skip if there are no new contacts.
+      continue;
+    }
 
     // 3. Get contacts from Glific group
     $glificPhones = _getGlificContactsFromGroup($glificGroupId);
@@ -59,6 +73,50 @@ function civicrm_api3_civiglific_civicrm_glific_contact_sync_cron($params) {
   }
 
   return civicrm_api3_create_success($returnValues, $params, 'Civiglific', 'civicrm_glific_contact_sync_cron');
+}
+
+/**
+ * Get newly added contacts to a CiviCRM group since last sync.
+ */
+function _getNewlyAddedCiviContacts($groupId, $lastSyncDate) {
+  $result = [];
+
+  // 1. Get contacts from SubscriptionHistory with 'Added' status
+  $subscriptions = SubscriptionHistory::get(TRUE)
+    ->addSelect('contact_id', 'date')
+    ->addWhere('group_id', '=', $groupId)
+    ->addWhere('status', '=', 'Added')
+    ->addWhere('date', '>=', $lastSyncDate)
+    ->execute();
+
+  foreach ($subscriptions as $sub) {
+    $contactId = $sub['contact_id'];
+
+    // 2. Get display name and primary phone
+    $phones = Phone::get(TRUE)
+      ->addSelect('phone')
+      ->addWhere('contact_id', '=', $contactId)
+      ->addWhere('is_primary', '=', 1)
+      ->execute();
+
+    $contact = Contact::get(FALSE)
+      ->addSelect('display_name')
+      ->addWhere('id', '=', $contactId)
+      ->execute()
+      ->first();
+
+    $displayName = $contact ? $contact['display_name'] : NULL;
+    $phoneNumber = count($phones) ? $phones[0]['phone'] : NULL;
+
+    if ($phoneNumber) {
+      $result[] = [
+        'name' => $displayName,
+        'phone' => _normalizePhone($phoneNumber),
+      ];
+    }
+  }
+
+  return $result;
 }
 
 /**
