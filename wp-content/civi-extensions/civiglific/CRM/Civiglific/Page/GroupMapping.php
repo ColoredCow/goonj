@@ -1,8 +1,8 @@
 <?php
 
+use GuzzleHttp\Client;
 use Civi\Api4\GlificGroupMap;
 use Civi\Api4\Group;
-use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use CRM\Civiglific\GlificHelper;
 
@@ -26,13 +26,33 @@ class CRM_Civiglific_Page_GroupMapping extends CRM_Core_Page {
       return;
     }
 
+    $glificGroups = $this->fetchGlificGroups($token);
+    $civicrmGroups = $this->fetchCiviGroups();
+
+    if (!empty($_POST['add_rule'])) {
+      $this->handleRuleSubmission();
+    }
+
+    $mappings = $this->getExistingMappings($civicrmGroups);
+
+    $this->assign('groups', $glificGroups);
+    $this->assign('mappings', $mappings);
+    $this->assign('civicrmGroups', $civicrmGroups);
+
+    parent::run();
+  }
+
+  /**
+   *
+   */
+  protected function fetchGlificGroups($token) {
     $url = rtrim(CIVICRM_GLIFIC_API_BASE_URL, '/') . '/api/';
     $client = new Client();
 
     try {
       $response = $client->post($url, [
         'headers' => [
-          'Content-Type'  => 'application/json',
+          'Content-Type' => 'application/json',
           'Authorization' => $token,
         ],
         'body' => json_encode([
@@ -40,53 +60,63 @@ class CRM_Civiglific_Page_GroupMapping extends CRM_Core_Page {
         ]),
       ]);
 
-      $body = $response->getBody()->getContents();
-      $data = json_decode($body, TRUE);
-      $glificGroups = $data['data']['groups'] ?? [];
-
+      $data = json_decode($response->getBody()->getContents(), TRUE);
+      return $data['data']['groups'] ?? [];
     }
     catch (RequestException $e) {
       CRM_Core_Error::debug_log_message('Glific API HTTP error: ' . $e->getMessage());
-      $glificGroups = [];
+      return [];
     }
+  }
 
-    // Fetch CiviCRM groups.
+  /**
+   *
+   */
+  protected function fetchCiviGroups() {
     $rawGroups = Group::get(TRUE)
       ->addSelect('id', 'title')
       ->addWhere('is_active', '=', 1)
       ->execute();
 
-    $civicrmGroups = [];
+    $groups = [];
     foreach ($rawGroups as $group) {
-      $civicrmGroups[$group['id']] = $group['title'];
+      $groups[$group['id']] = $group['title'];
     }
 
-    // Handle form submission.
-    if (!empty($_POST['add_rule'])) {
-      $civiGroupId = (int) $_POST['civicrm_group_id'];
-      $glificGroupId = (int) $_POST['glific_group_id'];
+    return $groups;
+  }
 
-      if ($civiGroupId && $glificGroupId) {
-        try {
-          GlificGroupMap::create()
-            ->addValue('group_id', $civiGroupId)
-            ->addValue('collection_id', $glificGroupId)
-            ->addValue('last_sync_date', date('Y-m-d H:i:s'))
-            ->execute();
+  /**
+   *
+   */
+  protected function handleRuleSubmission() {
+    $civiGroupId = (int) $_POST['civicrm_group_id'];
+    $glificGroupId = (int) $_POST['glific_group_id'];
 
-          $this->assign('success_message', 'New rule added successfully.');
-        }
-        catch (Exception $e) {
-          CRM_Core_Error::debug_log_message('Error creating Glific Group Map: ' . $e->getMessage());
-          $this->assign('error_message', 'Failed to add rule: ' . $e->getMessage());
-        }
+    if ($civiGroupId && $glificGroupId) {
+      try {
+        GlificGroupMap::create()
+          ->addValue('group_id', $civiGroupId)
+          ->addValue('collection_id', $glificGroupId)
+          ->addValue('last_sync_date', date('Y-m-d H:i:s'))
+          ->execute();
+
+        $this->assign('success_message', 'New rule added successfully.');
       }
-      else {
-        $this->assign('error_message', 'Please select both groups.');
+      catch (Exception $e) {
+        CRM_Core_Error::debug_log_message('Error creating Glific Group Map: ' . $e->getMessage());
+        $this->assign('error_message', 'Failed to add rule: ' . $e->getMessage());
       }
     }
+    else {
+      $this->assign('error_message', 'Please select both groups.');
+    }
+  }
 
-    // Fetch existing mappings.
+  /**
+   *
+   */
+  protected function getExistingMappings($civicrmGroups) {
     $glificGroupMaps = GlificGroupMap::get(TRUE)
       ->addSelect('id', 'group_id', 'collection_id', 'last_sync_date')
       ->execute();
@@ -105,12 +135,7 @@ class CRM_Civiglific_Page_GroupMapping extends CRM_Core_Page {
       ];
     }
 
-    // Assign data to template.
-    $this->assign('groups', $glificGroups);
-    $this->assign('mappings', $mappings);
-    $this->assign('civicrmGroups', $civicrmGroups);
-
-    parent::run();
+    return $mappings;
   }
 
 }
