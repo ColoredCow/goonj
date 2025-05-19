@@ -4,8 +4,7 @@
  * @file
  */
 
-require_once __DIR__ . '/../../../CRM/Civiglific/GlificHelper.php';
-
+use CRM\Civiglific\GlificHelper;
 use Civi\Api4\Phone;
 use Civi\Api4\GroupContact;
 use Civi\Api4\GlificGroupMap;
@@ -199,7 +198,7 @@ function _glificGraphQLQuery($query, $variables = []) {
   // 🔁 Replace with your Glific API URL
   $url = rtrim(CIVICRM_GLIFIC_API_BASE_URL, '/') . '/api/';
   // 🔁 Replace with your actual token
-  $token = glific_get_token();
+  $token = GlificHelper::getToken();
 
   error_log('url:' . print_r($url, TRUE));
   error_log('token:' . print_r($token, TRUE));
