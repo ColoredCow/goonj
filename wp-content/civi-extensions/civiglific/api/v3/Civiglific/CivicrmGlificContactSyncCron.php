@@ -57,11 +57,21 @@ function civicrm_api3_civiglific_civicrm_glific_contact_sync_cron($params) {
 
     // 4. Add new contacts to Glific group.
     foreach ($civiContacts as $contact) {
-      if (!in_array($contact['phone'], $glificPhones)) {
-        $glificId = _createGlificContact($contact['name'], $contact['phone']);
-        if ($glificId) {
-          _addContactToGlificGroup($glificId, $glificGroupId);
+      try {
+        if (!in_array($contact['phone'], $glificPhones)) {
+          $glificId = _createGlificContact($contact['name'], $contact['phone']);
+          if ($glificId) {
+            _addContactToGlificGroup($glificId, $glificGroupId);
+          }
+          else {
+            \Civi::log()->error("Failed to create Glific contact for phone: {$contact['phone']}");
+          }
         }
+      }
+      catch (Exception $e) {
+        \Civi::log()->error("Error syncing contact {$contact['phone']}: " . $e->getMessage());
+        // Continue to next contact.
+        continue;
       }
     }
 
