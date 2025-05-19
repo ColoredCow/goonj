@@ -2,13 +2,15 @@
 
 use Civi\Api4\GlificGroupMap;
 use Civi\Api4\Group;
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
 
-require_once __DIR__ . '/../Helper.php';
+require_once __DIR__ . '/../GlificHelper.php';
 
 /**
  *
  */
-class CRM_Civiglific_Page_RuleMapping extends CRM_Core_Page {
+class CRM_Civiglific_Page_GroupMapping extends CRM_Core_Page {
 
   /**
    *
@@ -16,7 +18,6 @@ class CRM_Civiglific_Page_RuleMapping extends CRM_Core_Page {
   public function run() {
     CRM_Utils_System::setTitle(ts('Rule Mapping Page'));
 
-    // Get Glific Token.
     $token = glific_get_token();
     if (!$token) {
       $this->assign('groups', []);
@@ -26,31 +27,32 @@ class CRM_Civiglific_Page_RuleMapping extends CRM_Core_Page {
       return;
     }
 
-    // Fetch groups from Glific API.
+    // Fetch groups from Glific API using Guzzle.
     $url = rtrim(CIVICRM_GLIFIC_API_BASE_URL, '/') . '/api/';
-    $query = json_encode([
-      'query' => 'query { groups { id label } }',
-    ]);
+    $client = new Client();
 
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-    curl_setopt($ch, CURLOPT_POST, TRUE);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $query);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-      'Content-Type: application/json',
-      'Authorization: ' . $token,
-    ]);
+    try {
+      $response = $client->post($url, [
+        'headers' => [
+          'Content-Type'  => 'application/json',
+          'Authorization' => $token,
+        ],
+        'body' => json_encode([
+          'query' => 'query { groups { id label } }',
+        ]),
+      ]);
 
-    $response = curl_exec($ch);
-    if (curl_errno($ch)) {
-      CRM_Core_Error::debug_log_message('Glific API cURL error: ' . curl_error($ch));
+      $body = $response->getBody()->getContents();
+      $data = json_decode($body, TRUE);
+      $glificGroups = $data['data']['groups'] ?? [];
+
     }
-    curl_close($ch);
+    catch (RequestException $e) {
+      CRM_Core_Error::debug_log_message('Glific API HTTP error: ' . $e->getMessage());
+      $glificGroups = [];
+    }
 
-    $data = json_decode($response, TRUE);
-    $glificGroups = $data['data']['groups'] ?? [];
-
-    // Fetch CiviCRM groups and format as [id => title].
+    // Fetch CiviCRM groups.
     $rawGroups = Group::get(TRUE)
       ->addSelect('id', 'title')
       ->addWhere('is_active', '=', 1)
@@ -80,8 +82,6 @@ class CRM_Civiglific_Page_RuleMapping extends CRM_Core_Page {
           CRM_Core_Error::debug_log_message('Error creating Glific Group Map: ' . $e->getMessage());
           $this->assign('error_message', 'Failed to add rule: ' . $e->getMessage());
         }
-
-        $this->assign('success_message', 'New rule added successfully.');
       }
       else {
         $this->assign('error_message', 'Please select both groups.');
@@ -107,7 +107,7 @@ class CRM_Civiglific_Page_RuleMapping extends CRM_Core_Page {
       ];
     }
 
-    // Assign to template.
+    // Assign data to template.
     $this->assign('groups', $glificGroups);
     $this->assign('mappings', $mappings);
     $this->assign('civicrmGroups', $civicrmGroups);
