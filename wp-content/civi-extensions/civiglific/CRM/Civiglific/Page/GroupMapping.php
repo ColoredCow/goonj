@@ -4,8 +4,7 @@ use Civi\Api4\GlificGroupMap;
 use Civi\Api4\Group;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
-
-require_once __DIR__ . '/../GlificHelper.php';
+use CRM\Civiglific\GlificHelper;
 
 /**
  *
@@ -18,7 +17,7 @@ class CRM_Civiglific_Page_GroupMapping extends CRM_Core_Page {
   public function run() {
     CRM_Utils_System::setTitle(ts('Rule Mapping Page'));
 
-    $token = glific_get_token();
+    $token = GlificHelper::getToken();
     if (!$token) {
       $this->assign('groups', []);
       $this->assign('mappings', []);
