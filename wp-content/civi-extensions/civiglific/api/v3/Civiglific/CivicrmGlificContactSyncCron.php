@@ -13,7 +13,7 @@ use Civi\Api4\GlificGroupMap;
 use GuzzleHttp\Client;
 
 /**
- * Define API spec (no parameters).
+ * Define API spec.
  */
 function _civicrm_api3_civiglific_civicrm_glific_contact_sync_cron_spec(&$spec) {}
 
@@ -74,6 +74,7 @@ function civicrm_api3_civiglific_civicrm_glific_contact_sync_cron($params) {
             if ($glificId) {
               // Opt-in contact after creation.
               _optinGlificContact($contact['phone'], $contact['name']);
+
               _addContactToGlificGroup($glificId, $glificGroupId);
               // Add to glificPhones to avoid duplicates in same run.
               $glificPhones[] = $contact['phone'];
@@ -332,7 +333,6 @@ function _optinGlificContact($phone, $name = NULL) {
 
   $response = _glificGraphQLQuery($query, $variables);
 
-  // Optional: log if opt-in failed.
   if (!empty($response['data']['optinContact']['errors'])) {
     \Civi::log()->error("Glific opt-in error for {$phone}: " . json_encode($response['data']['optinContact']['errors']));
   }
