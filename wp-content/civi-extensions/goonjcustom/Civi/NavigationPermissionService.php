@@ -61,12 +61,11 @@ class NavigationPermissionService extends AutoSubscriber {
       ],
       'account_team' => [
         'hide_menus' => [
-          'Contacts',
-          'Events',
           'Offices',
           'Dropping Center',
           'Institution Collection Camp',
           'Institute',
+          'Institutes',
           'Collection Camps',
           'Goonj Activities',
           'Institution Dropping Center',
@@ -138,6 +137,8 @@ class NavigationPermissionService extends AutoSubscriber {
           'Account: Goonj Offices',
           'Volunteers',
           'Institute',
+          'Institutes',
+          'Inductions',
           'Individuals',
           'Campaigns',
           'MMT - Individuals',
@@ -223,6 +224,12 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Offices',
           'MMT - Urban Visits',
         ],
+        'hide_child_menus' => [
+        'Institution Collection Camps ',
+        'Material Contributions',
+        'Dropping Center',
+        'Institution Goonj Activities',
+      ],
       ],
       's2s_ho_team' => [
         'hide_menus' => [
