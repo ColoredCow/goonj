@@ -23,6 +23,11 @@ function _civicrm_api3_civiglific_civicrm_glific_contact_sync_cron_spec(&$spec) 
 function civicrm_api3_civiglific_civicrm_glific_contact_sync_cron($params) {
   $returnValues = [];
 
+  // Batch size to process contacts in smaller chunks to avoid timeout.
+  $batchSize = 50;
+  // Sleep time between batches (seconds) to reduce API rate limits and server load.
+  $sleepSeconds = 1;
+
   // 1. Fetch all sync rules
   $glificGroupMaps = GlificGroupMap::get(TRUE)
     ->addSelect('id', 'group_id', 'collection_id', 'last_sync_date')
@@ -57,35 +62,46 @@ function civicrm_api3_civiglific_civicrm_glific_contact_sync_cron($params) {
     error_log('civiPhones: ' . print_r($civiPhones, TRUE));
     error_log('civiContacts: ' . print_r($civiContacts, TRUE));
 
-    // 4. Add new contacts to Glific group.
-    foreach ($civiContacts as $contact) {
-      try {
-        if (!in_array($contact['phone'], $glificPhones)) {
-          $glificId = _createGlificContact($contact['name'], $contact['phone']);
-          error_log('glificId: ' . print_r($glificId, TRUE));
+    // Process contacts in batches.
+    $totalContacts = count($civiContacts);
+    for ($offset = 0; $offset < $totalContacts; $offset += $batchSize) {
+      $batch = array_slice($civiContacts, $offset, $batchSize);
 
-          if ($glificId) {
-            // Opt-in contact after creation.
-            _optinGlificContact($contact['phone'], $contact['name']);
-            _addContactToGlificGroup($glificId, $glificGroupId);
-          }
-          else {
-            \Civi::log()->error("Failed to create Glific contact for phone: {$contact['phone']}");
+      // 4. Add new contacts to Glific group.
+      foreach ($batch as $contact) {
+        try {
+          if (!in_array($contact['phone'], $glificPhones)) {
+            $glificId = _createGlificContact($contact['name'], $contact['phone']);
+            error_log('glificId: ' . print_r($glificId, TRUE));
+
+            if ($glificId) {
+              // Opt-in contact after creation.
+              _optinGlificContact($contact['phone'], $contact['name']);
+              _addContactToGlificGroup($glificId, $glificGroupId);
+              // Add to glificPhones to avoid duplicates in same run.
+              $glificPhones[] = $contact['phone'];
+            }
+            else {
+              \Civi::log()->error("Failed to create Glific contact for phone: {$contact['phone']}");
+            }
           }
         }
+        catch (Exception $e) {
+          \Civi::log()->error("Error syncing contact {$contact['phone']}: " . $e->getMessage());
+          // Continue to next contact.
+          continue;
+        }
       }
-      catch (Exception $e) {
-        \Civi::log()->error("Error syncing contact {$contact['phone']}: " . $e->getMessage());
-        // Continue to next contact.
-        continue;
-      }
+
+      // Sleep to avoid hitting rate limits or causing timeouts.
+      sleep($sleepSeconds);
     }
 
-    // // 6. Update last_sync_date
-    // GlificGroupMap::update()
-    //   ->addValue('last_sync_date', date('Y-m-d H:i:s'))
-    //   ->addWhere('id', '=', $mapId)
-    //   ->execute();
+    // 6. Update last_sync_date once all contacts processed
+    GlificGroupMap::update()
+      ->addValue('last_sync_date', date('Y-m-d H:i:s'))
+      ->addWhere('id', '=', $mapId)
+      ->execute();
   }
 
   return civicrm_api3_create_success($returnValues, $params, 'Civiglific', 'civicrm_glific_contact_sync_cron');
