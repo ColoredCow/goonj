@@ -100,7 +100,16 @@ class InductionService extends AutoSubscriber {
     }
 
     $sourceContactId = self::getCurrentUserOrVolunteer($contactId);
+    if (!$sourceContactId) {
+      \Civi::log()->info('Cannot found sourceContactId', ['id' => $sourceContactId]);
+      return FALSE;
+    }
+
     $targetContactId = ($sourceContactId === $contactId) ? $contactId : $contactId;
+    if (!$targetContactId) {
+      \Civi::log()->info('Cannot found targetContactId', ['id' => $targetContactId]);
+      return FALSE;
+    }
 
     $placeholderActivityDate = self::getPlaceholderActivityDate();
 
@@ -143,7 +152,7 @@ class InductionService extends AutoSubscriber {
       return FALSE;
     }
 
-    if(self::$volunteerId & $stateId){
+    if (self::$volunteerId & $stateId) {
       self::createInduction(self::$volunteerId, $stateId);
     }
   }
@@ -194,8 +203,20 @@ class InductionService extends AutoSubscriber {
       return FALSE;
     }
 
-    if(empty($volunteerId)){
+    if (empty($volunteerId)) {
       return;
+    }
+
+    $contact = Contact::get(FALSE)
+      ->addSelect('address.state_province_id')
+      ->addJoin('Address AS address', 'LEFT')
+      ->addWhere('id', '=', $volunteerId)
+      ->execute()->single();
+
+    $stateId = $contact['address.state_province_id'];
+    if (!$stateId) {
+      \Civi::log()->info(['State not found :', ['contactId' => $contact['id'], 'StateId' => $stateId]]);
+      return FALSE;
     }
 
     $inductionType = self::fetchTypeOfInduction($volunteerId);
@@ -220,6 +241,19 @@ class InductionService extends AutoSubscriber {
       'template_id' => $template['id'],
       'cc' => self::$volunteerInductionAssigneeEmail,
     ];
+
+    // Check if the activity is already created.
+    $inductionActivity = Activity::get(FALSE)
+      ->addWhere('activity_type_id:name', '=', self::INDUCTION_ACTIVITY_TYPE_NAME)
+      ->addWhere('status_id:name', 'IN', ['Scheduled', 'Completed', 'To be scheduled', 'Cancelled'])
+      ->addWhere('target_contact_id', '=', $volunteerId)
+      ->setLimit(1)
+      ->execute();
+
+    if ($inductionActivity->count() === 0) {
+      // Create the induction activity if it doesn't exist.
+      self::createInduction($volunteerId, $stateId);
+    }
 
     self::queueInductionEmail($emailParams);
 
@@ -425,11 +459,11 @@ class InductionService extends AutoSubscriber {
    */
   private static function isEmailAlreadySent($contactId) {
 
-    if($contactId){
+    if ($contactId) {
       $contactDetails = Contact::get(FALSE)
-      ->addSelect('Individual_fields.Volunteer_Registration_Email_Sent')
-      ->addWhere('id', '=', $contactId)
-      ->execute()->single();
+        ->addSelect('Individual_fields.Volunteer_Registration_Email_Sent')
+        ->addWhere('id', '=', $contactId)
+        ->execute()->single();
     }
     $isEmailSent = $contactDetails['Individual_fields.Volunteer_Registration_Email_Sent'] ?? NULL;
 
@@ -457,7 +491,7 @@ class InductionService extends AutoSubscriber {
     $newSubtypes = $params['contact_sub_type'] ?? [];
 
     if (!is_array($newSubtypes)) {
-        $newSubtypes = [$newSubtypes];
+      $newSubtypes = [$newSubtypes];
     }
     // Check if "Volunteer" is present in the contact_sub_type array.
     if (!in_array('Volunteer', $newSubtypes)) {
@@ -497,7 +531,7 @@ class InductionService extends AutoSubscriber {
       return FALSE;
     }
 
-    if(self::$transitionedVolunteerId & $stateId){
+    if (self::$transitionedVolunteerId & $stateId) {
       self::createInduction(self::$transitionedVolunteerId, $stateId);
     }
   }
@@ -847,7 +881,7 @@ class InductionService extends AutoSubscriber {
     $inductionType = 'Offline';
 
     // Fetch contact data.
-    if(empty($volunteerId)){
+    if (empty($volunteerId)) {
       return;
     }
     $contactData = Contact::get(FALSE)
