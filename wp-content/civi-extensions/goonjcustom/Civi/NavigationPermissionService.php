@@ -54,6 +54,13 @@ class NavigationPermissionService extends AutoSubscriber {
     }
 
     $roleMenuMapping = [
+      'administrator' => [
+        'hide_menus' => [],
+        'hide_child_menus' => [
+          'Dashboard',
+        ],
+
+      ],
       'account_team' => [
         'hide_menus' => [
           'Contacts',
@@ -68,7 +75,6 @@ class NavigationPermissionService extends AutoSubscriber {
           'Institution Goonj Activities',
           'Inductions',
           'Volunteers',
-          'Urban Visit',
           'Individuals',
           'Contributions',
           'Campaigns',
@@ -181,6 +187,7 @@ class NavigationPermissionService extends AutoSubscriber {
       ],
       'project_team_ho' => [
         'hide_menus' => [
+          'Campaigns',
           'Inductions',
           'Volunteers',
           'Individuals',
@@ -205,6 +212,7 @@ class NavigationPermissionService extends AutoSubscriber {
         'hide_menus' => [
           'Inductions',
           'Volunteers',
+          'Campaigns',
           'Individuals',
           'MMT - Individuals',
           'MMT - Institutes',
@@ -238,6 +246,27 @@ class NavigationPermissionService extends AutoSubscriber {
           'Induction Tab',
           'Induction',
           'Inductions',
+        ],
+      ],
+      'mmt_and_accounts_chapter_team' => [
+        'hide_menus' => [
+          'Campaigns',
+          'Offices',
+          'Volunteers',
+          'Individuals',
+          'Induction Tab',
+          'Induction',
+          'Inductions',
+          'Institutes',
+        ],
+      ],
+      'urban_ops_and_accounts_chapter_team' => [
+        'hide_menus' => [
+          'Campaigns',
+          'MMT - Individuals',
+          'MMT - Institutes',
+          'MMT - Offices',
+          'MMT - Urban Visits',
         ],
       ],
     ];
