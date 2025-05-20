@@ -54,19 +54,19 @@ function civicrm_api3_civiglific_civicrm_glific_contact_sync_cron($params) {
     $glificPhones = _getGlificContactsFromGroup($glificGroupId);
 
     $civiPhones = array_column($civiContacts, 'phone');
-  error_log('civiPhones: ' . print_r($civiPhones, TRUE));
-
+    error_log('civiPhones: ' . print_r($civiPhones, TRUE));
+    error_log('civiContacts: ' . print_r($civiContacts, TRUE));
 
     // 4. Add new contacts to Glific group.
     foreach ($civiContacts as $contact) {
       try {
         if (!in_array($contact['phone'], $glificPhones)) {
           $glificId = _createGlificContact($contact['name'], $contact['phone']);
-  error_log('glificId: ' . print_r($glificId, TRUE));
+          error_log('glificId: ' . print_r($glificId, TRUE));
 
           if ($glificId) {
-            // Opt-in contact after creation
-            // _optinGlificContact($contact['phone'], $contact['name']);
+            // Opt-in contact after creation.
+            _optinGlificContact($contact['phone'], $contact['name']);
             _addContactToGlificGroup($glificId, $glificGroupId);
           }
           else {
@@ -81,11 +81,11 @@ function civicrm_api3_civiglific_civicrm_glific_contact_sync_cron($params) {
       }
     }
 
-    // 6. Update last_sync_date
-    GlificGroupMap::update()
-      ->addValue('last_sync_date', date('Y-m-d H:i:s'))
-      ->addWhere('id', '=', $mapId)
-      ->execute();
+    // // 6. Update last_sync_date
+    // GlificGroupMap::update()
+    //   ->addValue('last_sync_date', date('Y-m-d H:i:s'))
+    //   ->addWhere('id', '=', $mapId)
+    //   ->execute();
   }
 
   return civicrm_api3_create_success($returnValues, $params, 'Civiglific', 'civicrm_glific_contact_sync_cron');
@@ -229,6 +229,8 @@ function _createGlificContact($name, $phone) {
   ];
 
   $response = _glificGraphQLQuery($query, $variables);
+  error_log('response: ' . print_r($response, TRUE));
+
   return $response['data']['createContact']['contact']['id'] ?? NULL;
 }
 
@@ -291,39 +293,39 @@ function _normalizePhone($phone) {
   return preg_replace('/\D+/', '', $phone);
 }
 
-// /**
-//  * Opt-in a contact in Glific.
-//  */
-// function _optinGlificContact($phone, $name = NULL) {
-//   $query = '
-//     mutation optinContact($phone: String!, $name: String) {
-//       optinContact(phone: $phone, name: $name) {
-//         contact {
-//           id
-//           phone
-//           name
-//           optinTime
-//         }
-//         errors {
-//           key
-//           message
-//         }
-//       }
-//     }
-//   ';
+/**
+ * Opt-in a contact in Glific.
+ */
+function _optinGlificContact($phone, $name = NULL) {
+  $query = '
+    mutation optinContact($phone: String!, $name: String) {
+      optinContact(phone: $phone, name: $name) {
+        contact {
+          id
+          phone
+          name
+          optinTime
+        }
+        errors {
+          key
+          message
+        }
+      }
+    }
+  ';
 
-//   $variables = [
-//     'phone' => $phone,
-//     'name' => $name,
-//   ];
+  $variables = [
+    'phone' => $phone,
+    'name' => $name,
+  ];
 
-//   $response = _glificGraphQLQuery($query, $variables);
-//   error_log('respose: ' . print_r($response, TRUE));
+  $response = _glificGraphQLQuery($query, $variables);
+  error_log('respose: ' . print_r($response, TRUE));
 
-//   // Optional: log if opt-in failed.
-//   if (!empty($response['data']['optinContact']['errors'])) {
-//     \Civi::log()->error("Glific opt-in error for {$phone}: " . json_encode($response['data']['optinContact']['errors']));
-//   }
+  // Optional: log if opt-in failed.
+  if (!empty($response['data']['optinContact']['errors'])) {
+    \Civi::log()->error("Glific opt-in error for {$phone}: " . json_encode($response['data']['optinContact']['errors']));
+  }
 
-//   return $response['data']['optinContact']['contact']['id'] ?? NULL;
-// }
+  return $response['data']['optinContact']['contact']['id'] ?? NULL;
+}
