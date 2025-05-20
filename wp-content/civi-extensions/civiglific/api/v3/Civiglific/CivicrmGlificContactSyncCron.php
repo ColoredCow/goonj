@@ -42,16 +42,16 @@ function civicrm_api3_civiglific_civicrm_glific_contact_sync_cron($params) {
 
     // 1. Get new or all contacts based on sync status
     if (empty($lastSyncDate)) {
-      // Initial sync - get all contacts.
+      // Initial sync - get all contacts from group.
       $civiContacts = _getCiviContactsFromGroup($civiGroupId);
     }
     else {
-      // Incremental sync - only get newly added contacts.
+      // Incremental sync - only get newly added contacts from group.
       $civiContacts = _getNewlyAddedCiviContacts($civiGroupId, $lastSyncDate);
     }
 
     if (empty($civiContacts)) {
-      // Skip if there are no new contacts.
+      // Skip if there are no new contacts on group.
       continue;
     }
 
