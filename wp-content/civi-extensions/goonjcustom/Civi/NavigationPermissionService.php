@@ -46,6 +46,8 @@ class NavigationPermissionService extends AutoSubscriber {
   /**
    *
    */
+
+   
   public function hideNavForRoles(&$params) {
     $isAdmin = \CRM_Core_Permission::check('admin');
     if ($isAdmin) {
@@ -168,6 +170,9 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Offices',
           'MMT - Urban Visits',
         ],
+        'hide_child_menus' => [
+        'Institution Collection Camps ',
+      ],
       ],
       'data_team' => [
         'hide_menus' => [
