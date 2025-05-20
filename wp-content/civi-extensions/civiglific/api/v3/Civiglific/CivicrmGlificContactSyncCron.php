@@ -59,8 +59,6 @@ function civicrm_api3_civiglific_civicrm_glific_contact_sync_cron($params) {
     $glificPhones = _getGlificContactsFromGroup($glificGroupId);
 
     $civiPhones = array_column($civiContacts, 'phone');
-    error_log('civiPhones: ' . print_r($civiPhones, TRUE));
-    error_log('civiContacts: ' . print_r($civiContacts, TRUE));
 
     // Process contacts in batches.
     $totalContacts = count($civiContacts);
@@ -72,7 +70,6 @@ function civicrm_api3_civiglific_civicrm_glific_contact_sync_cron($params) {
         try {
           if (!in_array($contact['phone'], $glificPhones)) {
             $glificId = _createGlificContact($contact['name'], $contact['phone']);
-            error_log('glificId: ' . print_r($glificId, TRUE));
 
             if ($glificId) {
               // Opt-in contact after creation.
@@ -160,7 +157,6 @@ function _getCiviContactsFromGroup($groupId) {
   $groupContacts = GroupContact::get(TRUE)
     ->addSelect('contact_id', 'contact_id.display_name')
     ->addWhere('group_id', '=', $groupId)
-  // Optional: skip removed contacts.
     ->addWhere('status', '=', 'Added')
     ->execute();
 
@@ -245,7 +241,6 @@ function _createGlificContact($name, $phone) {
   ];
 
   $response = _glificGraphQLQuery($query, $variables);
-  error_log('response: ' . print_r($response, TRUE));
 
   return $response['data']['createContact']['contact']['id'] ?? NULL;
 }
@@ -336,7 +331,6 @@ function _optinGlificContact($phone, $name = NULL) {
   ];
 
   $response = _glificGraphQLQuery($query, $variables);
-  error_log('respose: ' . print_r($response, TRUE));
 
   // Optional: log if opt-in failed.
   if (!empty($response['data']['optinContact']['errors'])) {
