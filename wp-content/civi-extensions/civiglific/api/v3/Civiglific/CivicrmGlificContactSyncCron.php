@@ -40,7 +40,7 @@ function civicrm_api3_civiglific_civicrm_glific_contact_sync_cron($params) {
     $mapId = $rule['id'];
     $lastSyncDate = $rule['last_sync_date'];
 
-    // 1. Get new or all contacts based on sync status
+    // Get new or all contacts based on sync status.
     if (empty($lastSyncDate)) {
       // Initial sync - get all contacts from group.
       $civiContacts = _getCiviContactsFromGroup($civiGroupId);
@@ -50,12 +50,39 @@ function civicrm_api3_civiglific_civicrm_glific_contact_sync_cron($params) {
       $civiContacts = _getNewlyAddedCiviContacts($civiGroupId, $lastSyncDate);
     }
 
+    // Remove contacts from Glific group who were removed from CiviCRM group since last sync.
+    $removedContacts = _getRemovedCiviContacts($civiGroupId, $lastSyncDate);
+
+    if (!empty($removedContacts)) {
+      foreach ($removedContacts as $contact) {
+        try {
+          $normalizedPhone = $contact['phone'];
+          $glificId = _getGlificContactIdByPhone($normalizedPhone);
+
+          if ($glificId) {
+            _removeContactFromGlificGroup($glificId, $glificGroupId);
+            \Civi::log()->info(
+              "Removed contact {$normalizedPhone} (Glific ID {$glificId}) from Glific group {$glificGroupId}"
+            );
+          }
+          else {
+            \Civi::log()->warning(
+              "Could not find any Glific contact for phone {$normalizedPhone}; skipping removal."
+            );
+          }
+        }
+        catch (Exception $e) {
+          \Civi::log()->error("Error removing contact {$contact['phone']} from Glific: " . $e->getMessage());
+        }
+      }
+    }
+
     if (empty($civiContacts)) {
       // Skip if there are no new contacts on group.
       continue;
     }
 
-    // 3. Get contacts from Glific group
+    // Get contacts from Glific group.
     $glificPhones = _getGlificContactsFromGroup($glificGroupId);
 
     $civiPhones = array_column($civiContacts, 'phone');
@@ -65,7 +92,7 @@ function civicrm_api3_civiglific_civicrm_glific_contact_sync_cron($params) {
     for ($offset = 0; $offset < $totalContacts; $offset += $batchSize) {
       $batch = array_slice($civiContacts, $offset, $batchSize);
 
-      // 4. Add new contacts to Glific group.
+      // Add new contacts to Glific group.
       foreach ($batch as $contact) {
         try {
           if (!in_array($contact['phone'], $glificPhones)) {
@@ -95,7 +122,7 @@ function civicrm_api3_civiglific_civicrm_glific_contact_sync_cron($params) {
       sleep($sleepSeconds);
     }
 
-    // 6. Update last_sync_date once all contacts processed
+    // Update last_sync_date once all contacts processed.
     GlificGroupMap::update()
       ->addValue('last_sync_date', date('Y-m-d H:i:s'))
       ->addWhere('id', '=', $mapId)
@@ -338,4 +365,95 @@ function _optinGlificContact($phone, $name = NULL) {
   }
 
   return $response['data']['optinContact']['contact']['id'] ?? NULL;
+}
+
+/**
+ *
+ */
+function _getRemovedCiviContacts($groupId, $lastSyncDate) {
+  $result = [];
+
+  $removedSubs = SubscriptionHistory::get(TRUE)
+    ->addSelect('contact_id', 'date')
+    ->addWhere('group_id', '=', $groupId)
+    ->addWhere('status', '=', 'Removed')
+    ->addWhere('date', '>=', $lastSyncDate)
+    ->execute();
+
+  foreach ($removedSubs as $sub) {
+    $contactId = $sub['contact_id'];
+
+    $phones = Phone::get(TRUE)
+      ->addSelect('phone')
+      ->addWhere('contact_id', '=', $contactId)
+      ->addWhere('is_primary', '=', 1)
+      ->execute();
+
+    $phoneNumber = count($phones) ? $phones[0]['phone'] : NULL;
+
+    if ($phoneNumber) {
+      $result[] = [
+        'contact_id' => $contactId,
+        'phone' => _normalizePhone($phoneNumber),
+      ];
+    }
+  }
+
+  return $result;
+}
+
+/**
+ *
+ */
+function _getGlificContactIdByPhone($phone) {
+  $query = <<<'GQL'
+    query GetContactByPhone($phone: String!) {
+      contacts(filter: { phone: $phone }) {
+        id
+        name
+        phone
+      }
+    }
+  GQL;
+
+  $variables = ['phone' => $phone];
+  $response = _glificGraphQLQuery($query, $variables);
+
+  if (!empty($response['data']['contacts'][0]['id'])) {
+    return $response['data']['contacts'][0]['id'];
+  }
+
+  return NULL;
+}
+
+/**
+ * Remove a contact from a Glific group using contactId + groupId,
+ * by using the updateGroupContacts mutation.
+ */
+function _removeContactFromGlificGroup($contactId, $groupId) {
+  $query = '
+    mutation updateGroupContacts($input: GroupContactsInput!) {
+      updateGroupContacts(input: $input) {
+        groupContacts {
+          id
+          value
+          __typename
+        }
+        numberDeleted
+        __typename
+      }
+    }
+  ';
+
+  $variables = [
+    'input' => [
+      'groupId' => $groupId,
+  // No contacts to add.
+      'addContactIds' => [],
+  // Contact to remove.
+      'deleteContactIds' => [$contactId],
+    ],
+  ];
+
+  return _glificGraphQLQuery($query, $variables);
 }
