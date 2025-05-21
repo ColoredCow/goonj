@@ -10,6 +10,7 @@ use Civi\Api4\Phone;
 use Civi\Api4\GroupContact;
 use Civi\Api4\GlificGroupMap;
 use CRM\Civiglific\GlificClient;
+use CRM\Civiglific\GlificUtils;
 
 /**
  * Define API spec.
@@ -152,7 +153,7 @@ function _getNewlyAddedCiviContacts($groupId, $lastSyncDate) {
     if ($phoneNumber) {
       $result[] = [
         'name' => $displayName,
-        'phone' => _normalizePhone($phoneNumber),
+        'phone' => GlificUtils::normalizePhone($phoneNumber),
       ];
     }
   }
@@ -186,18 +187,11 @@ function _getCiviContactsFromGroup($groupId) {
 
     $result[] = [
       'name' => $displayName,
-      'phone' => _normalizePhone($phoneNumber),
+      'phone' => GlificUtils::normalizePhone($phoneNumber),
     ];
   }
 
   return $result;
-}
-
-/**
- * Normalize phone numbers.
- */
-function _normalizePhone($phone) {
-  return preg_replace('/\D+/', '', $phone);
 }
 
 /**
@@ -227,7 +221,7 @@ function _getRemovedCiviContacts($groupId, $lastSyncDate) {
     if ($phoneNumber) {
       $result[] = [
         'contact_id' => $contactId,
-        'phone' => _normalizePhone($phoneNumber),
+        'phone' => GlificUtils::normalizePhone($phoneNumber),
       ];
     }
   }
