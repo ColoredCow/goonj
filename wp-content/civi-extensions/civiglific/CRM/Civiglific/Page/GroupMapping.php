@@ -33,7 +33,7 @@ class CRM_Civiglific_Page_GroupMapping extends CRM_Core_Page {
       $this->handleRuleSubmission();
     }
 
-    $mappings = $this->getExistingMappings($civicrmGroups);
+    $mappings = $this->getExistingMappings($civicrmGroups, $glificGroups);
 
     $this->assign('groups', $glificGroups);
     $this->assign('mappings', $mappings);
@@ -116,7 +116,13 @@ class CRM_Civiglific_Page_GroupMapping extends CRM_Core_Page {
   /**
    *
    */
-  protected function getExistingMappings($civicrmGroups) {
+  protected function getExistingMappings($civicrmGroups, $glificGroups) {
+    // Convert Glific group list to a lookup array for easy access.
+    $glificGroupLookup = [];
+    foreach ($glificGroups as $glificGroup) {
+      $glificGroupLookup[$glificGroup['id']] = $glificGroup['label'];
+    }
+
     $glificGroupMaps = GlificGroupMap::get(TRUE)
       ->addSelect('id', 'group_id', 'collection_id', 'last_sync_date')
       ->execute();
@@ -125,11 +131,13 @@ class CRM_Civiglific_Page_GroupMapping extends CRM_Core_Page {
     foreach ($glificGroupMaps as $map) {
       $groupId = $map['group_id'];
       $groupTitle = $civicrmGroups[$groupId] ?? 'Unknown';
+      $glificGroupName = $glificGroupLookup[$map['collection_id']] ?? 'Unknown';
 
       $mappings[] = [
         'id' => $map['id'],
         'group_id' => $groupId,
         'collection_id' => $map['collection_id'],
+        'glific_group_name' => $glificGroupName,
         'last_sync_date' => $map['last_sync_date'],
         'group_name' => $groupTitle,
       ];
