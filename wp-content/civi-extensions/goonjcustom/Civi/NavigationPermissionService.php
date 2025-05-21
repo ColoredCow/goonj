@@ -46,14 +46,12 @@ class NavigationPermissionService extends AutoSubscriber {
   /**
    *
    */
-
-   
   public function hideNavForRoles(&$params) {
     $isAdmin = \CRM_Core_Permission::check('admin');
     if ($isAdmin) {
       return;
     }
-  
+
     $roleMenuMapping = [
       'account_team' => [
         'hide_menus' => [
@@ -77,8 +75,8 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Urban Visits',
         ],
         'hide_child_menus' => [
-        'Material Contributions',
-      ],
+          'Material Contributions',
+        ],
       ],
       'mmt' => [
         'hide_menus' => [
@@ -168,8 +166,8 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Urban Visits',
         ],
         'hide_child_menus' => [
-        'Institution Collection Camps ',
-      ],
+          'Institution Collection Camps ',
+        ],
       ],
       'data_team' => [
         'hide_menus' => [
@@ -221,11 +219,11 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Urban Visits',
         ],
         'hide_child_menus' => [
-        'Institution Collection Camps ',
-        'Material Contributions',
-        'Dropping Center',
-        'Institution Goonj Activities',
-      ],
+          'Institution Collection Camps ',
+          'Material Contributions',
+          'Dropping Center',
+          'Institution Goonj Activities',
+        ],
       ],
       's2s_ho_team' => [
         'hide_menus' => [
@@ -277,19 +275,19 @@ class NavigationPermissionService extends AutoSubscriber {
         ],
       ],
     ];
-  
+
     foreach ($roleMenuMapping as $role => $menuConfig) {
       if (\CRM_Core_Permission::check($role)) {
         $menusToHide = $menuConfig['hide_menus'] ?? [];
         $childMenusToHide = $menuConfig['hide_child_menus'] ?? [];
-  
+
         foreach ($params as $key => &$menu) {
-          // Hide top-level menu
+          // Hide top-level menu.
           if (isset($menu['attributes']['name']) && in_array($menu['attributes']['name'], $menusToHide)) {
             $menu['attributes']['active'] = 0;
           }
-  
-          // Hide child menus
+
+          // Hide child menus.
           if (isset($menu['child']) && is_array($menu['child'])) {
             foreach ($menu['child'] as $childKey => &$child) {
               if (isset($child['attributes']['name']) && in_array($child['attributes']['name'], $childMenusToHide)) {
@@ -301,4 +299,5 @@ class NavigationPermissionService extends AutoSubscriber {
       }
     }
   }
-}  
+
+}
