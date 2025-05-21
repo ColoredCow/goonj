@@ -506,7 +506,7 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
         // $params['text'] = '';
         // $params['html'] = '';
         // $params['subject'] = '';
-        // return;
+        return;
       }
 
       $params['text'] = "Dear $donorName,\n\nThank you for your contribution.\n\nThese contributions go a long way in sustaining our operations and implementing series of initiatives all across.\nThe receipt No. ($receiptNumber) for the same is enclosed with the details of 80G exemptions and our PAN No.\n\nFor updates on our activities and new campaigns, please visit our website www.goonj.org and our FB page https://www.facebook.com/goonj.org, which are regularly updated.\n\nThank you once again for joining the journey.\n\nWith best regards,\nTeam Goonj";
