@@ -77,14 +77,17 @@ class GlificContactSyncService {
 
         if ($glificId) {
           $this->glific->removeFromGroup($glificId, $glificGroupId);
-          \Civi::log()->info("Removed contact {$phone} from Glific group {$glificGroupId}");
+          \Civi::log()->info('Contact removed from Glific', ['phone' => $normalizedPhone, 'glificId' => $glificId, 'groupId' => $glificGroupId]);
         }
         else {
           \Civi::log()->warning("Phone {$phone} not found in Glific; skipping removal.");
         }
       }
       catch (\Exception $e) {
-        \Civi::log()->error("Error removing {$contact['phone']}: " . $e->getMessage());
+        \Civi::log()->error('Error removing contact from Glific group', [
+          'phone' => $contact['phone'],
+          'exception_message' => $e->getMessage(),
+        ]);
       }
     }
   }
@@ -118,7 +121,10 @@ class GlificContactSyncService {
           }
         }
         catch (\Exception $e) {
-          \Civi::log()->error("Error syncing {$phone}: " . $e->getMessage());
+          \Civi::log()->error('Error syncing', [
+            'phone' => $contact['phone'],
+            'exception_message' => $e->getMessage(),
+          ]);
         }
       }
 
