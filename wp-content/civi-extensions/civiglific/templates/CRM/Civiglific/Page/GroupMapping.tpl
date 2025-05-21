@@ -59,6 +59,7 @@
         <th>CiviCRM Group</th>
         <th>CiviCRM Group ID</th>
         <th>Glific Group ID</th>
+        <th>Glific Group Name</th>
         <th>Last Sync Date</th>
       </tr>
     </thead>
@@ -66,8 +67,9 @@
       {foreach from=$mappings item=map}
         <tr>
           <td>{$map.group_name|escape}</td>
-          <td>{$map.group_id}</td>
           <td>{$map.collection_id}</td>
+          <td>{$map.group_id}</td>
+          <td>{$map.glific_group_name|escape}</td>
           <td>{$map.last_sync_date|default:'N/A'}</td>
         </tr>
       {/foreach}
