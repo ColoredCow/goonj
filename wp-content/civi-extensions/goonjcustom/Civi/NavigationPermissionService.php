@@ -264,6 +264,17 @@ class NavigationPermissionService extends AutoSubscriber {
           'Inductions',
           'Institutes',
         ],
+        'hide_child_menus' => [
+          'Dashboard',
+          'Contribution Reports',
+          'Import Contributions',
+          'Batch Data Entry',
+          'Accounting Batches',
+          'Manage Contribution Pages',
+          'Personal Campaign Pages',
+          'Premiums',
+          'Manage Price Sets'
+        ],
       ],
       'urban_ops_and_accounts_chapter_team' => [
         'hide_menus' => [
@@ -272,6 +283,16 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Institutes',
           'MMT - Offices',
           'MMT - Urban Visits',
+        ],
+        'hide_child_menus' => [
+          'Contribution Reports',
+          'Import Contributions',
+          'Batch Data Entry',
+          'Accounting Batches',
+          'Manage Contribution Pages',
+          'Personal Campaign Pages',
+          'Premiums',
+          'Manage Price Sets'
         ],
       ],
     ];
