@@ -55,10 +55,6 @@ class NavigationPermissionService extends AutoSubscriber {
     }
   
     $roleMenuMapping = [
-      'administrator' => [
-        'hide_menus' => [],
-        'hide_child_menus' => [],
-      ],
       'account_team' => [
         'hide_menus' => [
           'Offices',
