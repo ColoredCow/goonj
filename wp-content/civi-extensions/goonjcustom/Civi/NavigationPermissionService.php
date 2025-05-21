@@ -47,7 +47,6 @@ class NavigationPermissionService extends AutoSubscriber {
    *
    */
   public function hideNavForRoles(&$params) {
-
     $isAdmin = \CRM_Core_Permission::check('admin');
     if ($isAdmin) {
       return;
@@ -56,19 +55,17 @@ class NavigationPermissionService extends AutoSubscriber {
     $roleMenuMapping = [
       'account_team' => [
         'hide_menus' => [
-          'Contacts',
-          'Events',
           'Offices',
           'Dropping Center',
           'Institution Collection Camp',
           'Institute',
+          'Institutes',
           'Collection Camps',
           'Goonj Activities',
           'Institution Dropping Center',
           'Institution Goonj Activities',
           'Inductions',
           'Volunteers',
-          'Urban Visit',
           'Individuals',
           'Contributions',
           'Campaigns',
@@ -76,6 +73,9 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Institutes',
           'MMT - Offices',
           'MMT - Urban Visits',
+        ],
+        'hide_child_menus' => [
+          'Material Contributions',
         ],
       ],
       'mmt' => [
@@ -131,6 +131,8 @@ class NavigationPermissionService extends AutoSubscriber {
           'Account: Goonj Offices',
           'Volunteers',
           'Institute',
+          'Institutes',
+          'Inductions',
           'Individuals',
           'Campaigns',
           'MMT - Individuals',
@@ -163,6 +165,9 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Offices',
           'MMT - Urban Visits',
         ],
+        'hide_child_menus' => [
+          'Institution Collection Camps ',
+        ],
       ],
       'data_team' => [
         'hide_menus' => [
@@ -181,6 +186,7 @@ class NavigationPermissionService extends AutoSubscriber {
       ],
       'project_team_ho' => [
         'hide_menus' => [
+          'Campaigns',
           'Inductions',
           'Volunteers',
           'Individuals',
@@ -205,11 +211,18 @@ class NavigationPermissionService extends AutoSubscriber {
         'hide_menus' => [
           'Inductions',
           'Volunteers',
+          'Campaigns',
           'Individuals',
           'MMT - Individuals',
           'MMT - Institutes',
           'MMT - Offices',
           'MMT - Urban Visits',
+        ],
+        'hide_child_menus' => [
+          'Institution Collection Camps ',
+          'Material Contributions',
+          'Dropping Center',
+          'Institution Goonj Activities',
         ],
       ],
       's2s_ho_team' => [
@@ -240,15 +253,68 @@ class NavigationPermissionService extends AutoSubscriber {
           'Inductions',
         ],
       ],
+      'mmt_and_accounts_chapter_team' => [
+        'hide_menus' => [
+          'Campaigns',
+          'Offices',
+          'Volunteers',
+          'Individuals',
+          'Induction Tab',
+          'Induction',
+          'Inductions',
+          'Institutes',
+        ],
+        'hide_child_menus' => [
+          'Dashboard',
+          'Contribution Reports',
+          'Import Contributions',
+          'Batch Data Entry',
+          'Accounting Batches',
+          'Manage Contribution Pages',
+          'Personal Campaign Pages',
+          'Premiums',
+          'Manage Price Sets'
+        ],
+      ],
+      'urban_ops_and_accounts_chapter_team' => [
+        'hide_menus' => [
+          'Campaigns',
+          'MMT - Individuals',
+          'MMT - Institutes',
+          'MMT - Offices',
+          'MMT - Urban Visits',
+        ],
+        'hide_child_menus' => [
+          'Contribution Reports',
+          'Import Contributions',
+          'Batch Data Entry',
+          'Accounting Batches',
+          'Manage Contribution Pages',
+          'Personal Campaign Pages',
+          'Premiums',
+          'Manage Price Sets'
+        ],
+      ],
     ];
 
     foreach ($roleMenuMapping as $role => $menuConfig) {
       if (\CRM_Core_Permission::check($role)) {
-        $menusToHide = $menuConfig['hide_menus'];
+        $menusToHide = $menuConfig['hide_menus'] ?? [];
+        $childMenusToHide = $menuConfig['hide_child_menus'] ?? [];
 
         foreach ($params as $key => &$menu) {
+          // Hide top-level menu.
           if (isset($menu['attributes']['name']) && in_array($menu['attributes']['name'], $menusToHide)) {
             $menu['attributes']['active'] = 0;
+          }
+
+          // Hide child menus.
+          if (isset($menu['child']) && is_array($menu['child'])) {
+            foreach ($menu['child'] as $childKey => &$child) {
+              if (isset($child['attributes']['name']) && in_array($child['attributes']['name'], $childMenusToHide)) {
+                $child['attributes']['active'] = 0;
+              }
+            }
           }
         }
       }
