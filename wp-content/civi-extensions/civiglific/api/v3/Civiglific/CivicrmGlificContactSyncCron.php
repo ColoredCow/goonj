@@ -6,11 +6,10 @@
 
 use Civi\Api4\Contact;
 use Civi\Api4\SubscriptionHistory;
-use CRM\Civiglific\GlificHelper;
 use Civi\Api4\Phone;
 use Civi\Api4\GroupContact;
 use Civi\Api4\GlificGroupMap;
-use GuzzleHttp\Client;
+use CRM\Civiglific\GlificClient;
 
 /**
  * Define API spec.
@@ -21,6 +20,7 @@ function _civicrm_api3_civiglific_civicrm_glific_contact_sync_cron_spec(&$spec) 
  * Cron job to sync contacts between CiviCRM group and Glific group.
  */
 function civicrm_api3_civiglific_civicrm_glific_contact_sync_cron($params) {
+  $glific = new GlificClient();
   $returnValues = [];
 
   $batchSize = 50;
@@ -51,10 +51,10 @@ function civicrm_api3_civiglific_civicrm_glific_contact_sync_cron($params) {
       foreach ($removedContacts as $contact) {
         try {
           $normalizedPhone = $contact['phone'];
-          $glificId = _getGlificContactIdByPhone($normalizedPhone);
+          $glificId = $glific->getContactIdByPhone($normalizedPhone);
 
           if ($glificId) {
-            _removeContactFromGlificGroup($glificId, $glificGroupId);
+            $glific->removeFromGroup($glificId, $glificGroupId);
             \Civi::log()->info(
               "Removed contact {$normalizedPhone} (Glific ID {$glificId}) from Glific group {$glificGroupId}"
             );
@@ -75,7 +75,7 @@ function civicrm_api3_civiglific_civicrm_glific_contact_sync_cron($params) {
       continue;
     }
 
-    $glificPhones = _getGlificContactsFromGroup($glificGroupId);
+    $glificPhones = $glific->getContactsInGroup($glificGroupId);
 
     $civiPhones = array_column($civiContacts, 'phone');
 
@@ -86,12 +86,12 @@ function civicrm_api3_civiglific_civicrm_glific_contact_sync_cron($params) {
       foreach ($batch as $contact) {
         try {
           if (!in_array($contact['phone'], $glificPhones)) {
-            $glificId = _createGlificContact($contact['name'], $contact['phone']);
+            $glificId = $glific->createContact($contact['name'], $contact['phone']);
 
             if ($glificId) {
-              _optinGlificContact($contact['phone'], $contact['name']);
+              $glific->optinContact($contact['phone'], $contact['name']);
 
-              _addContactToGlificGroup($glificId, $glificGroupId);
+              $glific->addToGroup($glificId, $glificGroupId);
               $glificPhones[] = $contact['phone'];
             }
             else {
@@ -194,161 +194,10 @@ function _getCiviContactsFromGroup($groupId) {
 }
 
 /**
- * Get contact phone numbers from a Glific group.
- */
-function _getGlificContactsFromGroup($groupId) {
-  $query = <<<'GQL'
-  query GetGroupContacts($groupId: ID!) {
-    group(id: $groupId) {
-      group {
-        contacts {
-          phone
-        }
-      }
-    }
-  }
-  GQL;
-
-  $variables = ['groupId' => $groupId];
-
-  $response = _glificGraphQLQuery($query, $variables);
-
-  if (
-    empty($response['data']['group']['group']['contacts'])
-  ) {
-    return [];
-  }
-
-  $phones = [];
-  foreach ($response['data']['group']['group']['contacts'] as $contact) {
-    if (!empty($contact['phone'])) {
-      $normalized = preg_replace('/\D+/', '', $contact['phone']);
-      if ($normalized) {
-        $phones[] = $normalized;
-      }
-    }
-  }
-
-  return array_unique($phones);
-}
-
-/**
- * Create a new contact in Glific.
- */
-function _createGlificContact($name, $phone) {
-  $query = '
-    mutation($input: ContactInput!) {
-      createContact(input: $input) {
-        contact { id }
-        errors { key message }
-      }
-    }
-  ';
-
-  $variables = [
-    'input' => [
-      'name' => $name,
-      'phone' => $phone,
-    ],
-  ];
-
-  $response = _glificGraphQLQuery($query, $variables);
-
-  return $response['data']['createContact']['contact']['id'] ?? NULL;
-}
-
-/**
- * Add contact to a Glific group.
- */
-function _addContactToGlificGroup($contactId, $groupId) {
-  $query = '
-    mutation($input: ContactGroupInput!) {
-      createContactGroup(input: $input) {
-        contactGroup { id }
-        errors { key message }
-      }
-    }
-  ';
-
-  $variables = [
-    'input' => [
-      'contactId' => $contactId,
-      'groupId' => $groupId,
-    ],
-  ];
-
-  _glificGraphQLQuery($query, $variables);
-}
-
-/**
- * Call Glific GraphQL API using Guzzle.
- */
-function _glificGraphQLQuery($query, $variables = []) {
-  $client = new Client();
-
-  $url = rtrim(CIVICRM_GLIFIC_API_BASE_URL, '/') . '/api/';
-  $token = GlificHelper::getToken();
-
-  try {
-    $response = $client->post($url, [
-      'headers' => [
-        'Content-Type' => 'application/json',
-        'Authorization' => $token,
-      ],
-      'json' => [
-        'query' => $query,
-        'variables' => $variables,
-      ],
-    ]);
-
-    return json_decode((string) $response->getBody(), TRUE);
-  }
-  catch (Exception $e) {
-    \Civi::log()->error('Glific API error: ' . $e->getMessage());
-    return [];
-  }
-}
-
-/**
  * Normalize phone numbers.
  */
 function _normalizePhone($phone) {
   return preg_replace('/\D+/', '', $phone);
-}
-
-/**
- * Opt-in a contact in Glific.
- */
-function _optinGlificContact($phone, $name = NULL) {
-  $query = '
-    mutation optinContact($phone: String!, $name: String) {
-      optinContact(phone: $phone, name: $name) {
-        contact {
-          id
-          phone
-          name
-          optinTime
-        }
-        errors {
-          key
-          message
-        }
-      }
-    }
-  ';
-
-  $variables = [
-    'phone' => $phone,
-    'name' => $name,
-  ];
-
-  $response = _glificGraphQLQuery($query, $variables);
-
-  if (!empty($response['data']['optinContact']['errors'])) {
-    \Civi::log()->error("Glific opt-in error for {$phone}: " . json_encode($response['data']['optinContact']['errors']));
-  }
-
-  return $response['data']['optinContact']['contact']['id'] ?? NULL;
 }
 
 /**
@@ -384,58 +233,4 @@ function _getRemovedCiviContacts($groupId, $lastSyncDate) {
   }
 
   return $result;
-}
-
-/**
- *
- */
-function _getGlificContactIdByPhone($phone) {
-  $query = <<<'GQL'
-    query GetContactByPhone($phone: String!) {
-      contacts(filter: { phone: $phone }) {
-        id
-        name
-        phone
-      }
-    }
-  GQL;
-
-  $variables = ['phone' => $phone];
-  $response = _glificGraphQLQuery($query, $variables);
-
-  if (!empty($response['data']['contacts'][0]['id'])) {
-    return $response['data']['contacts'][0]['id'];
-  }
-
-  return NULL;
-}
-
-/**
- * Remove a contact from a Glific group using contactId + groupId,
- * by using the updateGroupContacts mutation.
- */
-function _removeContactFromGlificGroup($contactId, $groupId) {
-  $query = '
-    mutation updateGroupContacts($input: GroupContactsInput!) {
-      updateGroupContacts(input: $input) {
-        groupContacts {
-          id
-          value
-          __typename
-        }
-        numberDeleted
-        __typename
-      }
-    }
-  ';
-
-  $variables = [
-    'input' => [
-      'groupId' => $groupId,
-      'addContactIds' => [],
-      'deleteContactIds' => [$contactId],
-    ],
-  ];
-
-  return _glificGraphQLQuery($query, $variables);
 }
