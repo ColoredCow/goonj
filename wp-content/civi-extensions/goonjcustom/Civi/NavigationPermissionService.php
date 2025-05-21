@@ -67,7 +67,6 @@ class NavigationPermissionService extends AutoSubscriber {
           'Inductions',
           'Volunteers',
           'Individuals',
-          'Contributions',
           'Campaigns',
           'MMT - Individuals',
           'MMT - Institutes',
@@ -76,6 +75,17 @@ class NavigationPermissionService extends AutoSubscriber {
         ],
         'hide_child_menus' => [
           'Material Contributions',
+          'hide_child_menus' => [
+          'Dashboard',
+          'Contribution Reports',
+          'Import Contributions',
+          'Batch Data Entry',
+          'Accounting Batches',
+          'Manage Contribution Pages',
+          'Personal Campaign Pages',
+          'Premiums',
+          'Manage Price Sets',
+        ],
         ],
       ],
       'mmt' => [
@@ -143,7 +153,6 @@ class NavigationPermissionService extends AutoSubscriber {
       ],
       'communications_team' => [
         'hide_menus' => [
-          'Institutes',
           'Volunteers',
           'Events',
           'Offices',
@@ -153,6 +162,12 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Urban Visits',
           'Inductions',
         ],
+        'hide_child_menus' => [
+          'Material Contributions',
+          'Institution Collection Camps',
+          'Dropping Center',
+          'Institution Goonj Activities',
+        ],    
       ],
       'sanjha_team' => [
         'hide_menus' => [
@@ -166,7 +181,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Urban Visits',
         ],
         'hide_child_menus' => [
-          'Institution Collection Camps ',
+          'Institution Collection Camps',
         ],
       ],
       'data_team' => [
@@ -219,7 +234,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Urban Visits',
         ],
         'hide_child_menus' => [
-          'Institution Collection Camps ',
+          'Institution Collection Camps',
           'Material Contributions',
           'Dropping Center',
           'Institution Goonj Activities',
