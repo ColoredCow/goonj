@@ -403,13 +403,13 @@ class GoonjActivitiesService extends AutoSubscriber {
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
       ],
-      // 'monetaryContribution' => [
-      //   'title' => ts('Monetary Contribution'),
-      //   'module' => 'afsearchMonetaryContribution',
-      //   'directive' => 'afsearch-monetary-contribution',
-      //   'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-      //   'permissions' => ['account_team', 'ho_account'],
-      // ],
+      'monetaryContribution' => [
+        'title' => ts('Monetary Contribution'),
+        'module' => 'afsearchMonetaryContribution',
+        'directive' => 'afsearch-monetary-contribution',
+        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'permissions' => ['ho_account'],
+      ],
       // 'monetaryContributionForUrbanOps' => [
       //   'title' => ts('Monetary Contribution'),
       //   'module' => 'afsearchMonetaryContributionForUrbanOps',
