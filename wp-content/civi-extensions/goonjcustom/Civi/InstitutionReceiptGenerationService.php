@@ -8,12 +8,12 @@ use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\QrCodeable;
 
 /**
- * Service class for generating and sending material acknowledgment receipts.
+ *
  */
 class InstitutionReceiptGenerationService extends AutoSubscriber {
 
   /**
-   * Defines the events this service subscribes to.
+   *
    */
   public static function getSubscribedEvents() {
     return [
@@ -206,7 +206,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
   }
 
   /**
-   * Notifies the institution POC with an email containing the receipt PDF.
+   *
    */
   private static function notifyInstitutionPOC(
     $institutionName,
