@@ -130,21 +130,21 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     }
 
     $status = $objectRef['Status.Status'] ?? NULL;
-    $institutionId = $objectRef['Dropping_Center_Meta.Institution_Dropping_Center'] ?? NULL;
+    $institutionDroppingcenterId = $objectRef['Dropping_Center_Meta.Institution_Dropping_Center'] ?? NULL;
 
-    if (!$status || !$institutionId) {
+    if (!$status || !$institutionDroppingcenterId) {
       return;
     }
 
     try {
       EckEntity::update('Collection_Camp', FALSE)
         ->addValue('Institution_Dropping_Center_Intent.Current_Status', $status)
-        ->addWhere('id', '=', $institutionId)
+        ->addWhere('id', '=', $institutionDroppingcenterId)
         ->execute();
 
     }
     catch (\Exception $e) {
-      \Civi::log()->error('Error updating Collection_Camp status: ' . $e->getMessage());
+      \Civi::log()->error('Error updating institution dropping center status: ' . $e->getMessage());
     }
   }
 
