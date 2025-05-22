@@ -58,7 +58,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
         ['linkInstitutionDroppingCenterToContact'],
         ['processDispatchEmail'],
         ['updateInstitutionPointOfContact'],
-        ['syncDroppingCenterStatus'],
+        ['syncInstitutionDroppingCenterStatus'],
       ],
     ];
   }
@@ -124,7 +124,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
   /**
    *
    */
-  public static function syncDroppingCenterStatus(string $op, string $objectName, $objectId, &$objectRef) {
+  public static function syncInstitutionDroppingCenterStatus(string $op, string $objectName, $objectId, &$objectRef) {
     if ($objectName !== 'Eck_Dropping_Center_Meta') {
       return;
     }
