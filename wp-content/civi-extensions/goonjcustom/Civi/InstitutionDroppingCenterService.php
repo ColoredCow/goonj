@@ -58,6 +58,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
         ['linkInstitutionDroppingCenterToContact'],
         ['processDispatchEmail'],
         ['updateInstitutionPointOfContact'],
+        ['syncDroppingCenterStatus'],
       ],
     ];
   }
@@ -117,6 +118,33 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       if (!$hasExistingPoc) {
         self::assignPointOfContactToCamp($eckCollectionCampId, $individualId);
       }
+    }
+  }
+
+  /**
+   *
+   */
+  public static function syncDroppingCenterStatus(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($objectName !== 'Eck_Dropping_Center_Meta') {
+      return;
+    }
+
+    $status = $objectRef['Status.Status'] ?? NULL;
+    $institutionId = $objectRef['Dropping_Center_Meta.Institution_Dropping_Center'] ?? NULL;
+
+    if (!$status || !$institutionId) {
+      return;
+    }
+
+    try {
+      EckEntity::update('Collection_Camp', FALSE)
+        ->addValue('Institution_Dropping_Center_Intent.Current_Status', $status)
+        ->addWhere('id', '=', $institutionId)
+        ->execute();
+
+    }
+    catch (\Exception $e) {
+      \Civi::log()->error('Error updating Collection_Camp status: ' . $e->getMessage());
     }
   }
 
@@ -215,11 +243,11 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       foreach ($droppingCenterData as $visit) {
         $fields = $visit['fields'] ?? [];
         $stateProvinceId = $fields['Institution_Dropping_Center_Intent.State'] ?? NULL;
-        
+
         if (!$stateProvinceId) {
           return FALSE;
         }
-        
+
         $groupId = self::getChapterGroupForState($stateProvinceId);
         if ($groupId && $contactId) {
           $groupContacts = GroupContact::get(FALSE)
