@@ -6,28 +6,26 @@ use Civi\Api4\Contact;
 use Civi\Api4\EckEntity;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\QrCodeable;
-use Dompdf\Dompdf;
 
 /**
- *
+ * Service class for generating and sending material acknowledgment receipts.
  */
 class InstitutionReceiptGenerationService extends AutoSubscriber {
 
   /**
-   *
+   * Defines the events this service subscribes to.
    */
   public static function getSubscribedEvents() {
     return [
       '&hook_civicrm_post' => [
-      ['generateMaterialAcknowledgmentReceipt'],
-      ['sendAcknowledgedDataToInstitutionPOC'],
+        ['generateMaterialAcknowledgmentReceipt'],
+        ['sendAcknowledgedDataToInstitutionPOC'],
       ],
-
     ];
   }
 
   /**
-   *
+   * Generates a material acknowledgment receipt PDF when an Afform submission is created.
    */
   public static function generateMaterialAcknowledgmentReceipt(string $op, string $objectName, int $objectId, &$objectRef) {
     if (
@@ -43,9 +41,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
     }
 
     $data = json_decode($objectRef->data, TRUE);
-
     $fields = $data['Eck_Collection_Source_Vehicle_Dispatch1'][0]['fields'] ?? [];
-
     $recordId = $fields['id'] ?? NULL;
 
     if (empty($recordId)) {
@@ -115,7 +111,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
   }
 
   /**
-   *
+   * Generates a PDF receipt for an institution and attaches it to a custom field.
    */
   public static function generatePdfForInstitution(
     $institutionName,
@@ -126,26 +122,19 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
     $contributionDate,
     $recordId,
   ) {
-
     try {
-      $dompdf = new Dompdf(['isRemoteEnabled' => TRUE]);
       $html = self::generateAcknowledgedReceiptHtml(
         $institutionName,
         $institutionAddress,
         $institutionContactNumber,
         $institutionEmail,
         $noOfBagsReceived,
-        $contributionDate,
+        $contributionDate
       );
-      $dompdf->loadHtml($html);
-      $dompdf->setPaper('A4', 'portrait');
-      $dompdf->render();
-
-      $pdfOutput = $dompdf->output();
+      $pdfContent = \CRM_Utils_PDF_Utils::html2pdf($html, NULL, ['paper_size' => 'a4', 'orientation' => 'portrait']);
       $fileName = "acknowledgement_receipt.pdf";
       $tempFilePath = \CRM_Utils_File::tempnam($fileName);
-
-      file_put_contents($tempFilePath, $pdfOutput);
+      file_put_contents($tempFilePath, $pdfContent);
 
       return QrCodeable::savePdfAttachmentToCustomField(
         $recordId,
@@ -154,7 +143,6 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
         'Acknowledgement_For_Logistics',
         'Acknowledgement_Receipt'
       );
-
     }
     catch (\Exception $e) {
       \CRM_Core_Error::debug_log_message('PDF error: ' . $e->getMessage());
@@ -163,11 +151,15 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
   }
 
   /**
-   *
+   * Sends acknowledgment data to the institution's point of contact via email.
    */
   public static function sendAcknowledgedDataToInstitutionPOC(string $op, string $objectName, int $objectId, &$objectRef) {
-
-    if ($objectName !== 'AfformSubmission' || !in_array($objectRef->afform_name, ['afformInstitutionAcknowledgementForm', 'afformInstitutionCampAcknowledgementFormForLogistics', 'afformInstitutionDroppingCenterAcknowledgementForm', 'afformInstitutionDroppingCenterAcknowledgementFormForLogistics'])) {
+    if ($objectName !== 'AfformSubmission' || !in_array($objectRef->afform_name, [
+      'afformInstitutionAcknowledgementForm',
+      'afformInstitutionCampAcknowledgementFormForLogistics',
+      'afformInstitutionDroppingCenterAcknowledgementForm',
+      'afformInstitutionDroppingCenterAcknowledgementFormForLogistics',
+    ])) {
       return;
     }
 
@@ -179,21 +171,21 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
     $result = self::extractAcknowledgedData($data);
 
     self::notifyInstitutionPOC(
-        $result['Name_of_the_institution'] ?? NULL,
-        $result['address'] ?? NULL,
-        $result['Contact_Number'] ?? NULL,
-        $result['Institution_POC'] ?? NULL,
-        $result['collectionCampId'] ?? NULL,
-        $result['droppingCenterId'] ?? NULL,
-        $result['description_of_material'] ?? NULL,
-        $result['contribution_date'] ?? NULL
+      $result['Name_of_the_institution'] ?? NULL,
+      $result['address'] ?? NULL,
+      $result['Contact_Number'] ?? NULL,
+      $result['Institution_POC'] ?? NULL,
+      $result['collectionCampId'] ?? NULL,
+      $result['droppingCenterId'] ?? NULL,
+      $result['description_of_material'] ?? NULL,
+      $result['contribution_date'] ?? NULL
     );
 
     return $result;
   }
 
   /**
-   *
+   * Extracts acknowledgment data from the submission.
    */
   private static function extractAcknowledgedData(array $data): array {
     $result = [];
@@ -210,12 +202,11 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
         'contribution_date' => $fields['Acknowledgement_For_Logistics.Contribution_Date'],
       ]);
     }
-
     return $result;
   }
 
   /**
-   *
+   * Notifies the institution POC with an email containing the receipt PDF.
    */
   private static function notifyInstitutionPOC(
     $institutionName,
@@ -227,7 +218,6 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
     $descriptionOfMaterial,
     $contributionDate,
   ) {
-
     $coordinatingPOCId = NULL;
 
     if ($collectionCampId) {
@@ -236,7 +226,6 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
         ->addWhere('id', '=', $collectionCampId)
         ->execute()
         ->first();
-
       $coordinatingPOCId = $collectionCamp['Institution_collection_camp_Review.Coordinating_POC'] ?? NULL;
     }
     elseif ($droppingCenterId) {
@@ -245,7 +234,6 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
         ->addWhere('id', '=', $droppingCenterId)
         ->execute()
         ->first();
-
       $coordinatingPOCId = $collectionCamp['Institution_Dropping_Center_Review.Coordinating_POC'] ?? NULL;
     }
 
@@ -267,36 +255,29 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
     $goonjCoordinatorEmail = $contact['email.email'];
     $goonjCoordinatorPhone = $contact['phone.phone'];
 
-    // Generate the email body and receipt.
-    $body = self::generateEmailBody(
-          $institutionName,
-          $goonjCoordinatorEmail,
-          $goonjCoordinatorPhone,
-      );
-
+    $body = self::generateEmailBody($institutionName, $goonjCoordinatorEmail, $goonjCoordinatorPhone);
     $html = self::generateAcknowledgedReceiptHtml(
-        $institutionName,
-        $address,
-        $contactNumber,
-        $institutionEmail,
-        $descriptionOfMaterial,
-        $contributionDate
+      $institutionName,
+      $address,
+      $contactNumber,
+      $institutionEmail,
+      $descriptionOfMaterial,
+      $contributionDate
     );
 
     $attachments = [\CRM_Utils_Mail::appendPDF('receipt.pdf', $html)];
-    // Prepare the email parameters and send the email.
     $params = self::prepareEmailParams(
-        'Acknowledgement for your material contribution to Goonj',
-        $body,
-        $attachments,
-        $institutionEmail ?? '',
-        $goonjCoordinatorEmail
+      'Acknowledgement for your material contribution to Goonj',
+      $body,
+      $attachments,
+      $institutionEmail ?? '',
+      $goonjCoordinatorEmail
     );
     \CRM_Utils_Mail::send($params);
   }
 
   /**
-   * Generate the email body for the acknowledgment.
+   * Generates the email body for the acknowledgment.
    */
   private static function generateEmailBody(?string $institutionPOCName, ?string $goonjCoordinatorEmail, ?string $goonjCoordinatorPhone): string {
     $institutionPOCName = $institutionPOCName ?? '';
@@ -305,36 +286,36 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
 
     return "
       <html>
-          <head>
-              <title>Material Acknowledgment Receipt</title>
-          </head>
-          <body>
-              <p>Dear {$institutionPOCName},</p>
-              <p>Greetings from Goonj!</p>
-              <p>
-                  We are pleased to acknowledge the receipt of materials dispatched from your collection camp drive. 
-                  Your efforts and contribution are invaluable in supporting our mission to create meaningful change 
-                  in underserved communities.
-              </p>
-              <p>
-                  Attached, please find the Material Acknowledgment Receipt for your reference and records.
-              </p>
-              <p>
-                  Your support strengthens our ability to reach those in need and implement impactful initiatives. 
-                  If you have any questions regarding the acknowledgment or need further assistance, please feel free 
-                  to reach out to us at <strong>$goonjCoordinatorEmail</strong> / <strong>$goonjCoordinatorPhone</strong>.
-              </p>
-              <p>
-                  Thank you once again for partnering with us and making a difference!
-              </p>
-              <p>Warm Regards,<br>Team Goonj</p>
-          </body>
+        <head>
+          <title>Material Acknowledgment Receipt</title>
+        </head>
+        <body>
+          <p>Dear {$institutionPOCName},</p>
+          <p>Greetings from Goonj!</p>
+          <p>
+            We are pleased to acknowledge the receipt of materials dispatched from your collection camp drive. 
+            Your efforts and contribution are invaluable in supporting our mission to create meaningful change 
+            in underserved communities.
+          </p>
+          <p>
+            Attached, please find the Material Acknowledgment Receipt for your reference and records.
+          </p>
+          <p>
+            Your support strengthens our ability to reach those in need and implement impactful initiatives. 
+            If you have any questions regarding the acknowledgment or need further assistance, please feel free 
+            to reach out to us at <strong>$goonjCoordinatorEmail</strong> / <strong>$goonjCoordinatorPhone</strong>.
+          </p>
+          <p>
+            Thank you once again for partnering with us and making a difference!
+          </p>
+          <p>Warm Regards,<br>Team Goonj</p>
+        </body>
       </html>
     ";
   }
 
   /**
-   *
+   * Prepares email parameters for sending.
    */
   private static function prepareEmailParams(string $emailSubject, string $emailBody, array $attachments, string $recipientEmail, string $goonjCoordinatorEmail) {
     $from = HelperService::getDefaultFromEmail();
@@ -350,12 +331,10 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
   }
 
   /**
-   *
+   * Generates the HTML content for the acknowledgment receipt PDF.
    */
   private static function generateAcknowledgedReceiptHtml($institutionName, $address, $contactNumber, $institutionEmail, $descriptionOfMaterial, $contributionDate) {
-
     $baseDir = plugin_dir_path(__FILE__) . '../../../themes/goonj-crm/';
-
     $paths = [
       'logo' => $baseDir . 'images/goonj-logo.png',
       'qrCode' => $baseDir . 'images/qr-code.png',
@@ -370,16 +349,33 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
 
     $imageData = array_map(fn ($path) => base64_encode(file_get_contents($path)), $paths);
     $currentDate = date('F j, Y');
-    $receivedOnDate = !empty($contributionDate)
-    ? date("F j, Y", strtotime($contributionDate))
-    : $currentDate;
+    $receivedOnDate = !empty($contributionDate) ? date("F j, Y", strtotime($contributionDate)) : $currentDate;
+
     $html = <<<HTML
     <html>
-      <body style="font-family: Arial, sans-serif;">
+      <head>
+        <title>Material Acknowledgment Receipt</title>
+        <style>
+          @page {
+            margin: 15mm;
+          }
+          body, table, div, p, span {
+            font-family: Arial, sans-serif;
+          }
+          .table-header {
+            text-align: left;
+            font-weight: bold;
+          }
+          .table-cell {
+            font-size: 14px;
+            text-align: center;
+          }
+        </style>
+      </head>
+      <body>
         <div style="text-align: center; margin-bottom: 16px;">
-        <img alt="Goonj Logo" src="https://goonj-crm.staging.coloredcow.com/wp-content/uploads/2024/07/Goonj-logo-10June20-300x193.png" style="width: 150px; height: auto;" />
+          <img alt="Goonj Logo" src="https://goonj-crm.staging.coloredcow.com/wp-content/uploads/2024/07/Goonj-logo-10June20-300x193.png" style="width: 150px; height: auto;" />
         </div>
-        
         <div style="width: 100%; font-size: 11px;">
           <div style="float: left; text-align: left;">
             Material Acknowledgment#
@@ -390,59 +386,49 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
           "We appreciate your contribution of pre-used/new material. Goonj makes sure that the material reaches people with dignity and care."
         </div>
         <table border="1" cellpadding="10" cellspacing="0" style="width: 100%; border-collapse: collapse;">
-          <style>
-            .table-header {
-              text-align: left;
-              font-weight: bold;
-            }
-            .table-cell {
-              font-size: 14px;
-              text-align: center;
-            }
-          </style>
-          <!-- Table rows for each item -->
           <tr>
             <td class="table-header">Description of Material</td>
-            <td style="text-align: center;">{$descriptionOfMaterial}</td>
+            <td class="table-cell">{$descriptionOfMaterial}</td>
           </tr>
           <tr>
             <td class="table-header">Received On</td>
-            <td style="text-align: center;">{$receivedOnDate}</td>
+            <td class="table-cell">{$receivedOnDate}</td>
           </tr>
           <tr>
             <td class="table-header">Institution Name</td>
-            <td style="text-align: center;">{$institutionName}</td>
+            <td class="table-cell">{$institutionName}</td>
           </tr>
           <tr>
             <td class="table-header">Address</td>
-            <td style="text-align: center;">{$address}</td>
+            <td class="table-cell">{$address}</td>
           </tr>
           <tr>
             <td class="table-header">Email</td>
-            <td style="text-align: center;">{$institutionEmail}</td>
+            <td class="table-cell">{$institutionEmail}</td>
           </tr>
           <tr>
             <td class="table-header">Phone</td>
-            <td style="text-align: center;">{$contactNumber}</td>
+            <td class="table-cell">{$contactNumber}</td>
           </tr>
         </table>
         <div style="width: 100%; margin-top: 16px;">
-        <div style="float: left; width: 60%; font-size: 12px;">
-        <p>Join us, by encouraging your friends, relatives, colleagues, and neighbours to join the journey as all of us have a lot to give.</p>
-        <p style="margin-top: 8px;">
-        <strong>With Material Money Matters</strong> Your monetary contribution is needed too for sorting, packing, transportation to implementation. (Financial contributions are tax-exempted u/s 80G of IT Act)
-      </p>
-      <p style="margin-top: 10px; font-size: 12px; float: left">* Received material has 'No Commercial Value' for Goonj.</p>
-    </div>
-    <div style="float: right; width: 40%; text-align: right; font-size: 12px; font-style: italic;">
-    <p>To contribute, please scan the code.</p>
-    <img src="data:image/png;base64,{$imageData['qrCode']}" alt="QR Code" style="width: 80px; height: 70px; margin-top: 2px"></div>
+          <div style="float: left; width: 60%; font-size: 12px;">
+            <p>Join us, by encouraging your friends, relatives, colleagues, and neighbours to join the journey as all of us have a lot to give.</p>
+            <p style="margin-top: 8px;">
+              <strong>With Material Money Matters</strong> Your monetary contribution is needed too for sorting, packing, transportation to implementation. (Financial contributions are tax-exempted u/s 80G of IT Act)
+            </p>
+            <p style="margin-top: 10px; font-size: 12px; float: left">* Received material has 'No Commercial Value' for Goonj.</p>
+          </div>
+          <div style="float: right; width: 40%; text-align: right; font-size: 12px; font-style: italic;">
+            <p>To contribute, please scan the code.</p>
+            <img src="data:image/png;base64,{$imageData['qrCode']}" alt="QR Code" style="width: 80px; height: 70px; margin-top: 2px">
+          </div>
         </div>
         <div style="clear: both; margin-top: 20px;"></div>
         <div style="width: 100%; margin-top: 15px; background-color: #f2f2f2; padding: 16px; font-weight: 300; color: #000000">
           <div style="font-size: 10px; margin-bottom: 20px;">
             <div style="position: relative; height: 24px;">
-              <div style="font-size: 12px; float: left; color:">
+              <div style="font-size: 12px; float: left;">
                 Goonj, C-544, 1st Floor, C-Pocket, Sarita Vihar,<br>
                 New Delhi-110076
               </div>
@@ -452,17 +438,14 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
               </div>
             </div>
           </div>
-    
           <div style="text-align: center; width: 100%; font-size: 10px; margin-bottom: 18px;">
-              <div style="font-size: 10px;">
-                <img src="data:image/png;base64,{$imageData['emailIcon']}" alt="Email" style="width: 16px; height: 16px; display: inline;">
-                <span style="display: inline; margin-left: 0;">mail@goonj.org</span>
-                <img src="data:image/png;base64,{$imageData['domainIcon']}" alt="Website" style="width: 16px; height: 16px; margin-right: 5px;">
-                <span style="display: inline; margin-left: 0;">www.goonj.org</span>
-              </div>
+            <div style="font-size: 10px;">
+              <img src="data:image/png;base64,{$imageData['emailIcon']}" alt="Email" style="width: 16px; height: 16px; display: inline;">
+              <span style="display: inline; margin-left: 0;">mail@goonj.org</span>
+              <img src="data:image/png;base64,{$imageData['domainIcon']}" alt="Website" style="width: 16px; height: 16px; margin-right: 5px;">
+              <span style="display: inline; margin-left: 0;">www.goonj.org</span>
+            </div>
           </div>
-    
-          <!-- Social Media Icons -->
           <div style="text-align: center; width: 100%; margin-top: 26px;">
             <a href="https://www.facebook.com/goonj.org" target="_blank"><img src="data:image/webp;base64,{$imageData['facebookIcon']}" alt="Facebook" style="width: 24px; height: 24px; margin-right: 10px;"></a>
             <a href="https://www.instagram.com/goonj/" target="_blank"><img src="data:image/webp;base64,{$imageData['instagramIcon']}" alt="Instagram" style="width: 24px; height: 24px; margin-right: 10px;"></a>
