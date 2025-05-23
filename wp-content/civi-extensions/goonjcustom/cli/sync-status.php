@@ -6,7 +6,7 @@
 
 use Civi\Api4\EckEntity;
 
-define('CIVICRM_SETTINGS_PATH', '/Users/shubhambelwal/Sites/goonj/wp-content/uploads/civicrm/civicrm.settings.php');
++define('CIVICRM_SETTINGS_PATH', getenv('CIVICRM_SETTINGS_PATH'));
 require_once CIVICRM_SETTINGS_PATH;
 require_once 'CRM/Core/Config.php';
 CRM_Core_Config::singleton();
