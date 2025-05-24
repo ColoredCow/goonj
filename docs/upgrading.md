@@ -62,7 +62,7 @@ The custom code for the message templates is saved in the following files:
 - [**Contributions – Receipt (on-line)**](https://docs.google.com/document/d/16DVrSJIr53f1RxnMwOlh9ArQv9TSU8e0xr_6qx_ipMQ/edit?tab=t.0#bookmark=id.1hltgupi60d0)  
 - [**Contributions – Invoice**](https://docs.google.com/document/d/16DVrSJIr53f1RxnMwOlh9ArQv9TSU8e0xr_6qx_ipMQ/edit?tab=t.0#bookmark=id.xurmsqnh8ecl)  
 
-### 3. Modification on event email template
+### 4. Modification on event email template
 We made modifications to the mail templates in CiviCRM → Mailings → Message Template → System Workflow Message. Specifically, we updated the following templates for event flow:
 
 - Events - Pending Registration Expiration Notice
