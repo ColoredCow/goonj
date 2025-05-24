@@ -387,27 +387,27 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
         </div>
         <table border="1" cellpadding="10" cellspacing="0" style="width: 100%; border-collapse: collapse;">
           <tr>
-            <td class="table-header">Description of Material</td>
+            <td class="table-header" style="font-weight: bold;">Description of Material</td>
             <td class="table-cell">{$descriptionOfMaterial}</td>
           </tr>
           <tr>
-            <td class="table-header">Received On</td>
+            <td class="table-header" style="font-weight: bold;">Received On</td>
             <td class="table-cell">{$receivedOnDate}</td>
           </tr>
           <tr>
-            <td class="table-header">Institution Name</td>
+            <td class="table-header" style="font-weight: bold;">Institution Name</td>
             <td class="table-cell">{$institutionName}</td>
           </tr>
           <tr>
-            <td class="table-header">Address</td>
+            <td class="table-header" style="font-weight: bold;">Address</td>
             <td class="table-cell">{$address}</td>
           </tr>
           <tr>
-            <td class="table-header">Email</td>
+            <td class="table-header" style="font-weight: bold;">Email</td>
             <td class="table-cell">{$institutionEmail}</td>
           </tr>
           <tr>
-            <td class="table-header">Phone</td>
+            <td class="table-header" style="font-weight: bold;">Phone</td>
             <td class="table-cell">{$contactNumber}</td>
           </tr>
         </table>
