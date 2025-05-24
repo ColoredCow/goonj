@@ -62,5 +62,26 @@ The custom code for the message templates is saved in the following files:
 - [**Contributions – Receipt (on-line)**](https://docs.google.com/document/d/16DVrSJIr53f1RxnMwOlh9ArQv9TSU8e0xr_6qx_ipMQ/edit?tab=t.0#bookmark=id.1hltgupi60d0)  
 - [**Contributions – Invoice**](https://docs.google.com/document/d/16DVrSJIr53f1RxnMwOlh9ArQv9TSU8e0xr_6qx_ipMQ/edit?tab=t.0#bookmark=id.xurmsqnh8ecl)  
 
+### 3. Modification on event email template
+We made modifications to the mail templates in CiviCRM → Mailings → Message Template → System Workflow Message. Specifically, we updated the following templates for event flow:
+
+- Events - Pending Registration Expiration Notice
+- Events - Registration Cancellation Notice
+- Events - Registration Confirmation and Receipt (off-line)
+- Events - Registration Confirmation and Receipt (on-line)
+- Events - Registration Confirmation Invite
+- Events - Registration Transferred Notice
+
+**Document:**
+The custom code for the message templates is saved in the following files:
+
+- [**Events - Pending Registration Expiration Notice)**](https://docs.google.com/document/d/1671sv0ImNDeij4JLrSQwOpnPu_zXkYbc077JfmNnDHI/edit?tab=t.0#bookmark=id.k7nbfbm8lkdz)  
+- [**Events - Registration Cancellation Notice**](https://docs.google.com/document/d/1671sv0ImNDeij4JLrSQwOpnPu_zXkYbc077JfmNnDHI/edit?tab=t.0#bookmark=id.bt36cqqw775o)  
+- [**Events - Registration Confirmation and Receipt (off-line)**](https://docs.google.com/document/d/1671sv0ImNDeij4JLrSQwOpnPu_zXkYbc077JfmNnDHI/edit?tab=t.0#bookmark=id.8yxtwd1zqc69)
+- [**Events - Registration Confirmation and Receipt (on-line)**](https://docs.google.com/document/d/1671sv0ImNDeij4JLrSQwOpnPu_zXkYbc077JfmNnDHI/edit?tab=t.0#bookmark=id.h6sq2aby2n6s)  
+- [**Events - Registration Confirmation Invite**](https://docs.google.com/document/d/1671sv0ImNDeij4JLrSQwOpnPu_zXkYbc077JfmNnDHI/edit?tab=t.0#bookmark=id.o28wm8hjzxp6)  
+- [**Events - Registration Transferred Notice**](https://docs.google.com/document/d/1671sv0ImNDeij4JLrSQwOpnPu_zXkYbc077JfmNnDHI/edit?tab=t.0#bookmark=id.djrw4g5ykid6)  
+- 
+
 **Note:**
 The custom changes made to the receipt templates were implemented to meet specific project requirements and priorities. When updating CiviCRM, we need to revisit these templates and apply the necessary modifications accordingly.
