@@ -13,10 +13,10 @@ CRM_Core_Config::singleton();
 
 
 if (php_sapi_name() !== 'cli') {
-  exit("❌ This script can only be run from the command line.\n");
+  exit("This script can only be run from the command line.\n");
 }
 
-echo "🔄 Starting Dropping Center Status Sync...\n";
+echo "Starting Dropping Center Status Sync...\n";
 
 /**
  *
@@ -42,7 +42,7 @@ function syncAllCurrentStatusesFromDroppingCenterMeta() {
     }
   }
 
-  echo "✅ Found " . count($latestStatuses) . " unique Dropping Centers with latest status.\n";
+  echo "Found " . count($latestStatuses) . " unique Dropping Centers with latest status.\n";
 
   foreach ($latestStatuses as $droppingCenterId => $status) {
     try {
@@ -52,14 +52,14 @@ function syncAllCurrentStatusesFromDroppingCenterMeta() {
         ->execute();
 
       $count = count($results);
-      echo "✅ Updated Dropping Center ID [$droppingCenterId] to Status [$status] — $count record(s) affected.\n";
+      echo "Updated Dropping Center ID [$droppingCenterId] to Status [$status] — $count record(s) affected.\n";
     }
     catch (\Exception $e) {
-      echo "❌ Error updating Dropping Center ID [$droppingCenterId]: " . $e->getMessage() . "\n";
+      echo "Error updating Dropping Center ID [$droppingCenterId]: " . $e->getMessage() . "\n";
     }
   }
 
-  echo "🏁 Sync complete.\n";
+  echo "Sync complete.\n";
 }
 
 syncAllCurrentStatusesFromDroppingCenterMeta();
