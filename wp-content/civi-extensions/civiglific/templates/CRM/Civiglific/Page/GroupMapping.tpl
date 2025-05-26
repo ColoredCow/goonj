@@ -19,7 +19,7 @@
     <tr>
       <td><label for="civicrm_group_id">CiviCRM Group</label></td>
       <td>
-        <select name="civicrm_group_id" id="civicrm_group_id" required>
+        <select name="civicrm_group_id" id="civicrm_group_id" class="select2" required>
           <option value="">-- Select CiviCRM Group --</option>
           {foreach from=$civicrmGroups key=group_id item=group_title}
             <option value="{$group_id}">{$group_title|escape}</option>
@@ -31,7 +31,7 @@
     <tr>
       <td><label for="glific_group_id">Glific Group</label></td>
       <td>
-        <select name="glific_group_id" id="glific_group_id" required>
+        <select name="glific_group_id" id="glific_group_id" class="select2" required>
           <option value="">-- Select Glific Group --</option>
           {foreach from=$groups item=glificGroup}
             <option value="{$glificGroup.id}">{$glificGroup.label|escape}</option>
