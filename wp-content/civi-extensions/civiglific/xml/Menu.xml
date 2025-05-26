@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<menu>
+  <item>
+    <path>civicrm/group-mapping</path>
+    <page_callback>CRM_Civiglific_Page_GroupMapping</page_callback>
+    <title>Group Mapping</title>
+    <access_callback>1</access_callback>
+    <is_public>true</is_public>
+  </item>
+</menu>
