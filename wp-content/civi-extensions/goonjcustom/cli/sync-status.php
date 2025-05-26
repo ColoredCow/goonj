@@ -6,11 +6,10 @@
 
 use Civi\Api4\EckEntity;
 
-+define('CIVICRM_SETTINGS_PATH', getenv('CIVICRM_SETTINGS_PATH'));
+define('CIVICRM_SETTINGS_PATH', getenv('CIVICRM_SETTINGS_PATH'));
 require_once CIVICRM_SETTINGS_PATH;
 require_once 'CRM/Core/Config.php';
 CRM_Core_Config::singleton();
-
 
 if (php_sapi_name() !== 'cli') {
   exit("This script can only be run from the command line.\n");
@@ -22,7 +21,7 @@ echo "Starting Dropping Center Status Sync...\n";
  *
  */
 function syncAllCurrentStatusesFromDroppingCenterMeta() {
-  echo "📦 Fetching latest statuses from Dropping_Center_Meta...\n";
+  echo "Fetching latest statuses from Dropping_Center_Meta...\n";
 
   $allMetas = EckEntity::get('Dropping_Center_Meta', TRUE)
     ->addSelect('Status.Status', 'Dropping_Center_Meta.Institution_Dropping_Center')
