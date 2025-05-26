@@ -347,7 +347,195 @@
         CRM.alert(errorMsg, ts('Sorry'), 'error');
       }
 
+      // NOTE: This function currently provides basic validation for email, phone number, and postal code fields.
+      // For now, we have implemented these simple checks to meet current project requirements.
+      // In the future, we need to change this.
+      function customValidateFields() {
+        var isValid = true;
+        var errorMessage = "";
+
+        // Email validation
+        $element.find("input#institute-registration-email-of-institute-11, input[type='email']").each(function () {
+          var emailValue = $(this).val().trim();
+          if (emailValue !== "") {
+            var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailPattern.test(emailValue)) {
+              errorMessage += "Please enter a valid email address.\n";
+              isValid = false;
+            }
+          }
+        });
+          
+        // Phone number validation
+        $element.find("af-field[name='phone'] input[type='text'], af-field[name='Material_Contribution.Delivered_By_Contact'] input[type='text'], af-field[name='Institute_Registration.Contact_number_of_Institution'] input[type='text']").each(function () {
+          var phoneNumberValue = $(this).val().trim();
+          if (phoneNumberValue !== "") {
+            var phonePattern = /^\d{10}$/;  // 10-digit phone number pattern
+            if (!phonePattern.test(phoneNumberValue)) {
+              errorMessage += "Please enter a valid 10-digit mobile number.\n";
+              isValid = false;
+            }
+          }
+        });
+        
+        // Date validation for the Open Dropping Center, institute dropping center form to ensure the selected date is not in the past.
+        if (['afformDroppingCenterDetailForm', 'afformInstitutionDroppingCenterIntent1'].includes(ctrl.getFormMeta().name)) {
+          var dateField = $element.find("input.crm-form-date").val().trim(); 
+          if (dateField !== "") {
+            var today = new Date();
+            today.setHours(0, 0, 0, 0);
+            var dateParts = dateField.split('/');
+            var selectedDate = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
+            
+            // Check if the selected date is in the past or today
+            if (selectedDate <= today) {
+              isValid = false;
+              errorMessage += `The selected date (${dateField}) cannot be today or in the past.\n`;
+            }
+          }
+        }    
+
+        // Date validation for the Urban Planned Visit form to ensure the selected date is not in the past.
+        if (['afformUrbanPlannedVisitIntentForm'].includes(ctrl.getFormMeta().name)) {
+          var dateField = $element.find("input.crm-form-date").val().trim(); 
+          if (dateField !== "") {
+            var today = new Date();
+            today.setHours(0, 0, 0, 0);
+            var dateParts = dateField.split('/');
+            var selectedDate = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
+            
+            // Check if the selected date is in the past
+            if (selectedDate < today) {
+              isValid = false;
+              errorMessage += `The selected date (${dateField}) cannot be in the past.\n`;
+            }
+          }
+        }
+
+        if (ctrl.getFormMeta().name === 'afformInstitutionGoonjActivitiesIntent') {
+          var dateField = $element.find("af-field[name='Institution_Goonj_Activities.Start_Date'] .crm-form-date-wrapper input.crm-form-date").val();
+          if (dateField !== "") {
+            var today = new Date();
+            today.setHours(0, 0, 0, 0);
+            var dateParts = dateField.split('/');
+            var selectedDate = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
+
+            // Check if the selected date is in the past
+            if (selectedDate <= today) {
+              isValid = false;
+              errorMessage+=`The selected date (${dateField}) cannot be today or in the past.`;
+            }
+          }
+        }
+        
+        // Collection camp start date and end date validation
+        if (['afformCollectionCampIntentDetails', 'afformGoonjActivitiesIndividualIntentForm', 'afformInstitutionCollectionCampIntent'].includes(ctrl.getFormMeta().name)) {
+          var dateFields = [
+            {
+              startDateField: "af-field[name='Collection_Camp_Intent_Details.Start_Date'] .crm-form-date-wrapper input.crm-form-date",
+              endDateField: "af-field[name='Collection_Camp_Intent_Details.End_Date'] .crm-form-date-wrapper input.crm-form-date"
+            },
+            {
+              startDateField: "af-field[name='Goonj_Activities.Start_Date'] .crm-form-date-wrapper input.crm-form-date",
+              endDateField: "af-field[name='Goonj_Activities.End_Date'] .crm-form-date-wrapper input.crm-form-date"
+            },
+            {
+              startDateField: "af-field[name='Institution_Collection_Camp_Intent.Collections_will_start_on_Date_'] .crm-form-date-wrapper input.crm-form-date",
+              endDateField: "af-field[name='Institution_Collection_Camp_Intent.Collections_will_end_on_Date_'] .crm-form-date-wrapper input.crm-form-date"
+            }
+          ];
+        
+          var today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
+          var errorMessage = '';
+          var isValid = true;
+        
+          dateFields.forEach(function(fields) {
+            var startDateValue = $element.find(fields.startDateField).val();
+            var endDateValue = $element.find(fields.endDateField).val();
+            
+            if (startDateValue && endDateValue) {
+              var startDateParts = startDateValue.split('/');
+              var endDateParts = endDateValue.split('/');
+              
+              var startDate = new Date(startDateParts[2], startDateParts[1] - 1, startDateParts[0]);
+              var endDate = new Date(endDateParts[2], endDateParts[1] - 1, endDateParts[0]);
+        
+              // Check if the start date is today or in the past
+              if (startDate <= today) {
+                errorMessage += `Collections cannot start (${startDateValue}) today or in the past.\n`;
+                isValid = false;
+              }
+        
+              // Check if the end date is today or in the past
+              if (endDate <= today) {
+                errorMessage += `Collections cannot end (${endDateValue}) today or in the past.\n`;
+                isValid = false;
+              }
+        
+              // Check if the end date is before the start date
+              if (endDate < startDate) {
+                errorMessage += `Collections cannot end (${endDateValue}) before start (${startDateValue}).\n`;
+                isValid = false;
+              }
+            }
+          });
+        }
+        
+        // Birth date validation
+        var birthDateField = $element.find("af-field[name='birth_date'] input[type='text']");
+        if (birthDateField.length) {
+          var birthDateValue = birthDateField.val().trim();
+          if (birthDateValue !== "") {
+            var birthDateParts = birthDateValue.split('/');
+            if (birthDateParts.length === 3) {
+              var birthDate = new Date(birthDateParts[2], birthDateParts[1] - 1, birthDateParts[0]);
+              var today = new Date();
+              today.setHours(0, 0, 0, 0);
+              
+              if (birthDate.toDateString() === today.toDateString()) {
+                errorMessage += `Date of Birth cannot be today.\n`;
+                isValid = false;
+              }
+              
+              if (birthDate > today) {
+                errorMessage += `Date of Birth cannot be in the future.\n`;
+                isValid = false;
+              }
+            } else {
+              errorMessage += "Invalid Date of Birth format.\n";
+              isValid = false;
+            
+            }
+          }
+        }
+        
+        // Postal code validation
+        var postalCodeLabel = $element.find("label:contains('Postal Code')");
+        var postalCodeField = postalCodeLabel.closest('af-field').find("input[type='text']");
+        if (postalCodeField.length) {
+          var postalCodeValue = postalCodeField.val().trim();
+          if (postalCodeValue !== "") {
+            var postalCodePattern = /^\d{6}$/;
+            if (!postalCodePattern.test(postalCodeValue)) {
+              errorMessage += "Please enter a valid 6-digit postal code.\n";
+              isValid = false;
+            }
+          }
+        }
+        
+        if (!isValid) {
+          CRM.alert(errorMessage, ts("Form Error"));
+        }
+        
+        return isValid;
+      }
+
       this.submit = function() {
+        if (!customValidateFields()) {
+          return;
+        }
         // validate required fields on the form
         if (!ctrl.ngForm.$valid || !validateFileFields()) {
           CRM.alert(ts('Please fill all required fields.'), ts('Form Error'));
