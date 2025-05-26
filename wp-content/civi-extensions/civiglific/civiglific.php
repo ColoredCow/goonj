@@ -35,3 +35,10 @@ function civiglific_civicrm_enable(): void {
 function civiglific_civicrm_xmlMenu(&$files) {
   $files[] = __DIR__ . '/xml/Menu.xml';
 }
+
+/**
+ * Implements hook_civicrm_pageRun().
+ */
+function civiglific_civicrm_pageRun(&$page) {
+  CRM_Core_Resources::singleton()->addScriptFile('civiglific', 'js/main.js');
+}
