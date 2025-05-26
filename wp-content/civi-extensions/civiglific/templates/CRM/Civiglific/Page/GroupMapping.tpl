@@ -61,6 +61,7 @@
         <th>Glific Group ID</th>
         <th>Glific Group Name</th>
         <th>Last Sync Date</th>
+        <th>Actions</th>
       </tr>
     </thead>
     <tbody>
@@ -71,6 +72,12 @@
           <td>{$map.group_id}</td>
           <td>{$map.glific_group_name|escape}</td>
           <td>{$map.last_sync_date|default:'N/A'}</td>
+          <td>
+            <form method="post" action="" style="display:inline;">
+              <input type="hidden" name="delete_mapping_id" value="{$map.id}">
+              <input type="submit" name="delete_rule" value="Delete" class="crm-button crm-button-delete" onclick="return confirm('Are you sure you want to delete this mapping?');">
+            </form>
+          </td>
         </tr>
       {/foreach}
     </tbody>

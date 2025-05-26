@@ -32,6 +32,9 @@ class CRM_Civiglific_Page_GroupMapping extends CRM_Core_Page {
     if (!empty($_POST['add_rule'])) {
       $this->handleRuleSubmission();
     }
+    elseif (!empty($_POST['delete_rule']) && !empty($_POST['delete_mapping_id'])) {
+      $this->handleDeleteMapping((int) $_POST['delete_mapping_id']);
+    }
 
     $mappings = $this->getExistingMappings($civicrmGroups, $glificGroups);
 
@@ -143,6 +146,23 @@ class CRM_Civiglific_Page_GroupMapping extends CRM_Core_Page {
     }
 
     return $mappings;
+  }
+
+  /**
+   *
+   */
+  protected function handleDeleteMapping($mappingId) {
+    try {
+      GlificGroupMap::delete()
+        ->addWhere('id', '=', $mappingId)
+        ->execute();
+
+      $this->assign('success_message', 'Mapping deleted successfully.');
+    }
+    catch (Exception $e) {
+      CRM_Core_Error::debug_log_message('Error deleting Glific Group Map: ' . $e->getMessage());
+      $this->assign('error_message', 'Failed to delete mapping: ' . $e->getMessage());
+    }
   }
 
 }
