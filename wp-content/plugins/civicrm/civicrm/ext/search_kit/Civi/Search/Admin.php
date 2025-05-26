@@ -132,7 +132,7 @@ class Admin {
   public static function getSchema(): array {
     $schema = [];
     $entities = Entity::get()
-      ->addSelect('name', 'title', 'title_plural', 'bridge_title', 'type', 'primary_key', 'description', 'label_field', 'search_fields', 'icon', 'dao', 'bridge', 'ui_join_filters', 'searchable', 'order_by')
+      ->addSelect('name', 'title', 'title_plural', 'bridge_title', 'type', 'primary_key', 'description', 'label_field', 'parent_field', 'search_fields', 'icon', 'dao', 'bridge', 'ui_join_filters', 'searchable', 'order_by')
       ->addWhere('searchable', '!=', 'none')
       ->addOrderBy('title_plural')
       ->setChain([
@@ -167,6 +167,9 @@ class Admin {
           }
           $entity['fields'][] = $field;
         }
+        if (empty($entity['fields'])) {
+          continue;
+        }
         $entity['default_columns'] = self::getDefaultColumns($entity, $getFields);
         $params = $entity['get'][0];
         // Entity must support at least these params or it is too weird for search kit
@@ -190,7 +193,7 @@ class Admin {
   private static function getDefaultColumns(array $entity, iterable $getFields): array {
     // Start with id & label
     $defaultColumns = array_merge(
-      $entity['primary_key'],
+      $entity['primary_key'] ?? [],
       $entity['search_fields'] ?? []
     );
     $possibleColumns = [];
@@ -327,7 +330,8 @@ class Admin {
                   'description' => '',
                   'entity' => $targetEntityName,
                   'conditions' => self::getJoinConditions($keyField['name'], $alias . '.' . $reference->getTargetKey(), $dynamicValue, $dynamicCol),
-                  'defaults' => self::getJoinDefaults($alias, $targetEntity),
+                  // No default conditions for straight joins as they ought to be direct 1-1
+                  'defaults' => [],
                   'alias' => $alias,
                   'multi' => FALSE,
                 ];
@@ -506,28 +510,30 @@ class Admin {
    * @throws \CRM_Core_Exception
    * @throws \Civi\API\Exception\NotImplementedException
    */
-  private static function getJoinDefaults(string $alias, ...$entities):array {
+  private static function getJoinDefaults(string $alias, ...$entities): array {
     $conditions = [];
     foreach ($entities as $entity) {
-      foreach ($entity['ui_join_filters'] ?? [] as $fieldName) {
-        $field = civicrm_api4($entity['name'], 'getFields', [
-          'select' => ['options', 'data_type'],
-          'where' => [['name', '=', $fieldName]],
+      if (!empty($entity['ui_join_filters'])) {
+        $filterFields = civicrm_api4($entity['name'], 'getFields', [
+          'select' => ['name', 'options', 'data_type'],
+          'where' => [['name', 'IN', $entity['ui_join_filters']]],
           'loadOptions' => ['name'],
-        ])->first();
-        $value = '';
-        if ($field['data_type'] === 'Boolean') {
-          $value = TRUE;
+        ])->indexBy('name');
+        foreach ($filterFields as $fieldName => $field) {
+          $value = '';
+          if ($field['data_type'] === 'Boolean') {
+            $value = TRUE;
+          }
+          elseif (isset($field['options'][0])) {
+            $fieldName .= ':name';
+            $value = json_encode($field['options'][0]['name']);
+          }
+          $conditions[] = [
+            $alias . '.' . $fieldName,
+            '=',
+            $value,
+          ];
         }
-        elseif (isset($field['options'][0])) {
-          $fieldName .= ':name';
-          $value = json_encode($field['options'][0]['name']);
-        }
-        $conditions[] = [
-          $alias . '.' . $fieldName,
-          '=',
-          $value,
-        ];
       }
     }
     return $conditions;

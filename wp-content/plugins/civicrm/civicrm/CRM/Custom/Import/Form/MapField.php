@@ -39,13 +39,8 @@ class CRM_Custom_Import_Form_MapField extends CRM_Import_Form_MapField {
     // todo - this could be shared with other mapFields forms.
     $errors = [];
     if (!array_key_exists('savedMapping', $fields)) {
-      $importKeys = [];
-      foreach ($fields['mapper'] as $mapperPart) {
-        $importKeys[] = $mapperPart[0];
-      }
-
       // check either contact id or external identifier
-      if (!in_array('contact_id', $importKeys) && !in_array('external_identifier', $importKeys)) {
+      if (!in_array('contact_id', $fields['mapper']) && !in_array('external_identifier', $fields['mapper'])) {
         if (!isset($errors['_qf_default'])) {
           $errors['_qf_default'] = '';
         }

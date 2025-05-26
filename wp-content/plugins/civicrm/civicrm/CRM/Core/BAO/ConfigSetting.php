@@ -245,12 +245,17 @@ class CRM_Core_BAO_ConfigSetting {
 
   /**
    * @param array $defaultValues
+   * @deprecated
+   *
+   * Does anyone use this function? Does it do what you expect?
    *
    * @return string
    * @throws Exception
    */
   public static function doSiteMove($defaultValues = []) {
-    $moveStatus = ts('Beginning site move process...') . '<br />';
+    $deprecatedMessage = ts('WARNING: doSiteMove is deprecated and might not do what you want');
+    \CRM_Core_Error::deprecatedWarning($deprecatedMessage);
+    $moveStatus = ts('Beginning site move process...') . '<br />' . $deprecatedMessage . '<br />';
     $settings = Civi::settings();
 
     foreach (array_merge(self::getPathSettings(), self::getUrlSettings()) as $key) {
@@ -285,15 +290,18 @@ class CRM_Core_BAO_ConfigSetting {
 
     $resetSessionTable = CRM_Utils_Request::retrieve('resetSessionTable',
       'Boolean',
-      CRM_Core_DAO::$_nullArray,
+      NULL,
       FALSE,
       FALSE
     );
-    if ($config->userSystem->is_drupal &&
-      $resetSessionTable
-    ) {
+
+    if ($resetSessionTable && $config->userSystem->is_drupal) {
       db_query("DELETE FROM {sessions} WHERE 1");
       $moveStatus .= ts('Drupal session table cleared.') . '<br />';
+    }
+    elseif (!$resetSessionTable && CIVICRM_UF === 'Standalone') {
+      // dont reset CRM sessions on Standalone unless explicitly requested
+      // as otherwise it will log you out
     }
     else {
       $session = CRM_Core_Session::singleton();

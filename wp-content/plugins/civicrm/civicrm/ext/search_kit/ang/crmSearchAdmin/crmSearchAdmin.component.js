@@ -10,9 +10,21 @@
   //     return $delegate;
   //   });
   var hook = {
+    findCriticalChanges: [],
     preSaveDisplay: [],
     postSaveDisplay: []
   };
+
+  // Dispatch {hookName} on behalf of each {target}. Pass-through open-ended {data}.
+  function fireHooks(hookName, targets, data) {
+    if (hook[hookName].length) {
+      targets.forEach(function(target) {
+        hook[hookName].forEach(function(callback) {
+          callback(target, data);
+        });
+      });
+    }
+  }
 
   // Controller function for main crmSearchAdmin component
   var ctrl = function($scope, $element, $location, $timeout, crmApi4, dialogService, searchMeta, crmUiHelp) {
@@ -90,8 +102,11 @@
       this.entityTitle = searchMeta.getEntity(this.savedSearch.api_entity).title_plural;
 
       this.savedSearch.displays = this.savedSearch.displays || [];
+      this.savedSearch.form_values = this.savedSearch.form_values || {};
+      this.savedSearch.form_values.join = this.savedSearch.form_values.join || {};
       this.savedSearch.groups = this.savedSearch.groups || [];
       this.savedSearch.tag_id = this.savedSearch.tag_id || [];
+      this.originalSavedSearch = _.cloneDeep(this.savedSearch);
       this.groupExists = !!this.savedSearch.groups.length;
 
       const path = $location.path();
@@ -129,6 +144,8 @@
         });
       }
 
+      $scope.getJoin = _.wrap(this.savedSearch, searchMeta.getJoin);
+
       $scope.mainEntitySelect = searchMeta.getPrimaryAndSecondaryEntitySelect();
 
       $scope.$watchCollection('$ctrl.savedSearch.api_params.select', onChangeSelect);
@@ -144,9 +161,38 @@
       loadAfforms();
     };
 
+    this.canAddSmartGroup = function() {
+      return !ctrl.savedSearch.groups.length && !ctrl.savedSearch.is_template;
+    };
+
     function onChangeAnything() {
       $scope.status = 'unsaved';
     }
+
+    // Generate the confirmation dialog
+    this.confirmSave = function() {
+      // Build displays. For each, identify the {original: ..., updated: ...} variants..
+      const targets = {}, data = {messages: []};
+      let newCount = 0;
+      ctrl.originalSavedSearch.displays.forEach(function(original) {
+        const key = original.id ? ('id_' + original.id) : ('new_' + (newCount++));
+        targets[key] = targets[key] || {};
+        targets[key].original = _.cloneDeep(original);
+      });
+      ctrl.savedSearch.displays.forEach(function(updated) {
+        const key = updated.id ? ('id_' + updated.id) : ('new_' + (newCount++));
+        targets[key] = targets[key] || {};
+        targets[key].updated = _.cloneDeep(updated);
+      });
+
+      fireHooks('findCriticalChanges', _.values(targets), data);
+      if (data.messages.length < 1) return {confirmed: true};
+      return {
+        title: ts('Are you sure?'),
+        template: '<p>' + ts('The following change(s) may affect other customizations:') +'</p><hr/><p ng-repeat="message in messages"><small>{{::message}}</small></p>',
+        export: data
+      };
+    };
 
     this.save = function() {
       if (!validate()) {
@@ -164,14 +210,7 @@
       }
       _.remove(params.displays, {trashed: true});
       if (params.displays && params.displays.length) {
-        // Call preSaveDisplay hook
-        if (hook.preSaveDisplay.length) {
-          params.displays.forEach(function(display) {
-            hook.preSaveDisplay.forEach(function(callback) {
-              callback(display, apiCalls);
-            });
-          });
-        }
+        fireHooks('preSaveDisplay', params.displays, apiCalls);
         chain.displays = ['SearchDisplay', 'replace', {where: [['saved_search_id', '=', '$id']], records: params.displays}];
       } else if (params.id) {
         apiCalls.deleteDisplays = ['SearchDisplay', 'delete', {where: [['saved_search_id', '=', params.id]]}];
@@ -192,12 +231,8 @@
       apiCalls.saved = ['SavedSearch', 'save', {records: [params], chain: chain}, 0];
       crmApi4(apiCalls).then(function(results) {
         // Call postSaveDisplay hook
-        if (chain.displays && hook.postSaveDisplay.length) {
-          results.saved.displays.forEach(function(display) {
-            hook.postSaveDisplay.forEach(function(callback) {
-              callback(display, results);
-            });
-          });
+        if (chain.displays) {
+          fireHooks('postSaveDisplay', results.saved.displays, results);
         }
         // After saving a new search, redirect to the edit url
         if (!ctrl.savedSearch.id) {
@@ -209,6 +244,7 @@
           ctrl.savedSearch.groups[0].id = results.saved.groups[0].id;
         }
         ctrl.savedSearch.displays = results.saved.displays || [];
+        ctrl.originalSavedSearch = _.cloneDeep(ctrl.savedSearch);
         // Wait until after onChangeAnything to update status
         $timeout(function() {
           $scope.status = newStatus;
@@ -266,7 +302,7 @@
       var newDisplay = angular.copy(display);
       delete newDisplay.name;
       delete newDisplay.id;
-      newDisplay.label += ts(' (copy)');
+      newDisplay.label += ' ' + ts('(copy)');
       ctrl.savedSearch.displays.push(newDisplay);
       $scope.selectTab('display_' + (ctrl.savedSearch.displays.length - 1));
     };
@@ -285,7 +321,7 @@
     $scope.selectTab = function(tab) {
       if (tab === 'group') {
         loadFieldOptions('Group');
-        $scope.smartGroupColumns = searchMeta.getSmartGroupColumns(ctrl.savedSearch.api_entity, ctrl.savedSearch.api_params);
+        $scope.smartGroupColumns = searchMeta.getSmartGroupColumns(ctrl.savedSearch);
         var smartGroupColumns = _.map($scope.smartGroupColumns, 'id');
         if (smartGroupColumns.length && !_.includes(smartGroupColumns, ctrl.savedSearch.api_params.select[0])) {
           ctrl.savedSearch.api_params.select.unshift(smartGroupColumns[0]);
@@ -312,11 +348,9 @@
 
     function getExistingJoins() {
       return _.transform(ctrl.savedSearch.api_params.join || [], function(joins, join) {
-        joins[join[0].split(' AS ')[1]] = searchMeta.getJoin(join[0]);
+        joins[join[0].split(' AS ')[1]] = searchMeta.getJoin(ctrl.savedSearch, join[0]);
       }, {});
     }
-
-    $scope.getJoin = searchMeta.getJoin;
 
     $scope.getJoinEntities = function() {
       var existingJoins = getExistingJoins();
@@ -358,7 +392,7 @@
     this.addJoin = function(value) {
       if (value) {
         ctrl.savedSearch.api_params.join = ctrl.savedSearch.api_params.join || [];
-        var join = searchMeta.getJoin(value),
+        var join = searchMeta.getJoin(ctrl.savedSearch, value),
           entity = searchMeta.getEntity(join.entity),
           params = [value, $scope.controls.joinType || 'LEFT'];
         _.each(_.cloneDeep(join.conditions), function(condition) {
@@ -384,9 +418,27 @@
       }
     };
 
+    // Factory returns a getter-setter function for ngModel
+    this.getSetJoinLabel = function(joinName) {
+      return _.wrap(joinName, getSetJoinLabel);
+    };
+
+    function getSetJoinLabel(joinName, value) {
+      const joinInfo = searchMeta.getJoin(ctrl.savedSearch, joinName);
+      const alias = joinInfo.alias;
+      // Setter
+      if (arguments.length > 1) {
+        ctrl.savedSearch.form_values.join[alias] = value;
+        if (!value || value === joinInfo.defaultLabel) {
+          delete ctrl.savedSearch.form_values.join[alias];
+        }
+      }
+      return ctrl.savedSearch.form_values.join[alias] || joinInfo.defaultLabel;
+    }
+
     // Remove an explicit join + all SELECT, WHERE & other JOINs that use it
     this.removeJoin = function(index) {
-      var alias = searchMeta.getJoin(ctrl.savedSearch.api_params.join[index][0]).alias;
+      var alias = searchMeta.getJoin(ctrl.savedSearch, ctrl.savedSearch.api_params.join[index][0]).alias;
       ctrl.clearParam('join', index);
       removeJoinStuff(alias);
     };
@@ -400,16 +452,17 @@
         return clauseUsesJoin(clause, alias);
       });
       _.eachRight(ctrl.savedSearch.api_params.join, function(item, i) {
-        var joinAlias = searchMeta.getJoin(item[0]).alias;
+        var joinAlias = searchMeta.getJoin(ctrl.savedSearch, item[0]).alias;
         if (joinAlias !== alias && joinAlias.indexOf(alias) === 0) {
           ctrl.removeJoin(i);
         }
       });
+      delete ctrl.savedSearch.form_values.join[alias];
     }
 
     this.changeJoinType = function(join) {
       if (join[1] === 'EXCLUDE') {
-        removeJoinStuff(searchMeta.getJoin(join[0]).alias);
+        removeJoinStuff(searchMeta.getJoin(ctrl.savedSearch, join[0]).alias);
       }
     };
 
@@ -635,7 +688,7 @@
         result = [];
 
       function addJoin(join) {
-        var joinInfo = searchMeta.getJoin(join),
+        let joinInfo = searchMeta.getJoin(ctrl.savedSearch, join),
           joinEntity = searchMeta.getEntity(joinInfo.entity);
         result.push({
           text: joinInfo.label,
@@ -698,7 +751,7 @@
 
       // Join entities + bridge entities
       _.each(ctrl.savedSearch.api_params.join, function(join) {
-        var joinInfo = searchMeta.getJoin(join[0]);
+        var joinInfo = searchMeta.getJoin(ctrl.savedSearch, join[0]);
         entitiesToLoad.push(joinInfo.entity);
         if (joinInfo.bridge) {
           entitiesToLoad.push(joinInfo.bridge);
@@ -729,7 +782,7 @@
       });
       // Links to explicitly joined entities
       _.each(ctrl.savedSearch.api_params.join, function(joinClause) {
-        var join = searchMeta.getJoin(joinClause[0]),
+        var join = searchMeta.getJoin(ctrl.savedSearch, joinClause[0]),
           joinEntity = searchMeta.getEntity(join.entity),
           bridgeEntity = _.isString(joinClause[2]) ? searchMeta.getEntity(joinClause[2]) : null;
         _.each(_.cloneDeep(joinEntity.links), function(link) {

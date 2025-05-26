@@ -14,6 +14,9 @@
         status,
         args,
         submissionResponse,
+        saveDraftButtons = [],
+        draftStatus = 'unsaved',
+        cancelDraftWatcher,
         ts = CRM.ts('org.civicrm.afform'),
         ctrl = this;
 
@@ -21,7 +24,12 @@
         // This component has no template. It makes its controller available within it by adding it to the parent scope.
         $scope.$parent[this.ctrl] = this;
 
-        $timeout(ctrl.loadData);
+        $timeout(function() {
+          ctrl.loadData()
+            .then(setupDraftWatcher);
+
+          ctrl.showSubmitButton = displaySubmitButton(args);
+        });
       };
 
       this.registerEntity = function registerEntity(entity) {
@@ -39,8 +47,14 @@
         return schema[name];
       };
       // Returns the 'meta' record ('name', 'description', etc) of the active form.
+      // @see afform_civicrm_buildAsset() for whitelist of form metadata
       this.getFormMeta = function getFormMeta() {
         return $scope.$parent.meta;
+      };
+      this.resetForm = function() {
+        this.ngForm.$setPristine();
+        $scope.$parent.$broadcast('afFormReset');
+        this.loadData();
       };
       // With no arguments this will prefill the entire form based on url args
       // and also check if the form is open for submissions.
@@ -74,25 +88,32 @@
             }
           });
           params.args = args;
+          ctrl.showSubmitButton = displaySubmitButton(args);
         }
         if (toLoad) {
-          crmApi4('Afform', 'prefill', params)
+          if (params.fillMode === 'form') {
+            $element.block();
+          }
+          return crmApi4('Afform', 'prefill', params)
             .then((result) => {
               // In some cases (noticed on Wordpress) the response header incorrectly outputs success when there's an error.
               if (result.error_message) {
                 disableForm(result.error_message);
+                $element.unblock();
                 return;
               }
               result.forEach((item) => {
                 // Use _.each() because item.values could be cast as an object if array keys are not sequential
                 _.each(item.values, (values, index) => {
                   data[item.name][index] = data[item.name][index] || {};
-                  data[item.name][index].joins = {};
+                  data[item.name][index].joins = data[item.name][index].joins || {};
                   angular.merge(data[item.name][index], values, {fields: _.cloneDeep(schema[item.name].data || {})});
                 });
               });
+              $element.unblock();
             }, (error) => {
               disableForm(error.error_message);
+              $element.unblock();
             });
         }
         // Clear existing join selection
@@ -107,8 +128,6 @@
           angular.merge(data[selectedEntity][selectedIndex].fields, _.cloneDeep(schema[selectedEntity].data || {}));
           data[selectedEntity][selectedIndex].joins = {};
         }
-
-        ctrl.showSubmitButton = displaySubmitButton(args);
       };
 
       function displaySubmitButton(args) {
@@ -119,15 +138,51 @@
       }
 
       // Used when submitting file fields
+      var token = new URLSearchParams(window.location.search).get('_aff');
+      var headers = {'X-Requested-With': 'XMLHttpRequest'};
+      if (token) {
+        headers['X-Civi-Auth-Afform'] = token;
+      }
       this.fileUploader = new FileUploader({
         url: CRM.url('civicrm/ajax/api4/Afform/submitFile'),
-        headers: {'X-Requested-With': 'XMLHttpRequest'},
+        headers: headers,
         onCompleteAll: postProcess,
         onBeforeUploadItem: function(item) {
           status.resolve();
           status = CRM.status({start: ts('Uploading %1', {1: item.file.name})});
         }
       });
+
+      // Set up background tasks for saving draft
+      function setupDraftWatcher() {
+        const buttons = getDraftButtons();
+        const autoSaveEnabled = ctrl.getFormMeta().autosave_draft;
+
+        if ((!autoSaveEnabled && !buttons.length) || !ctrl.showSubmitButton || !CRM.config.cid) {
+          // No watchers needed
+          return;
+        }
+
+        // Store initial state of any save-draft buttons on the form
+        $.each(buttons, function(index, button) {
+          saveDraftButtons[index] = {
+            text: $(button).text(),
+            icon: $(button).attr('crm-icon'),
+          };
+        });
+
+        // If autosave enabled, save every ten seconds if changes have been made
+        const saveEveryTenSeconds = autoSaveEnabled ? _.debounce(ctrl.submitDraft, 10000) : _.noop;
+
+        cancelDraftWatcher = $scope.$watch(() => data, function (newVal, oldVal) {
+            if (oldVal) {
+              setDraftStatus('unsaved');
+              saveEveryTenSeconds(newVal);
+            }
+          },
+          true
+        );
+      }
 
       // Handle the logic for conditional fields
       this.checkConditions = function(conditions, op) {
@@ -167,6 +222,13 @@
           case '!=':
           // Legacy operator, changed to '=', but may still exist on older forms.
           case '==':
+            // Case-insensitive string comparisons
+            if (typeof val1 === 'string') {
+              val1 = val1.toLowerCase();
+            }
+            if (typeof val2 === 'string') {
+              val2 = val2.toLowerCase();
+            }
             return angular.equals(val1, val2) === yes;
 
           case '>':
@@ -284,195 +346,8 @@
           .find('button[ng-click="afform.submit()"]').prop('disabled', true);
         CRM.alert(errorMsg, ts('Sorry'), 'error');
       }
-      // NOTE: This function currently provides basic validation for email, phone number, and postal code fields.
-      // For now, we have implemented these simple checks to meet current project requirements.
-      // In the future, we need to change this.
-      function customValidateFields() {
-        var isValid = true;
-        var errorMessage = "";
 
-        // Email validation
-        $element.find("input#institute-registration-email-of-institute-11, input[type='email']").each(function () {
-          var emailValue = $(this).val().trim();
-          if (emailValue !== "") {
-            var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailPattern.test(emailValue)) {
-              errorMessage += "Please enter a valid email address.\n";
-              isValid = false;
-            }
-          }
-        });
-          
-        // Phone number validation
-        $element.find("af-field[name='phone'] input[type='text'], af-field[name='Material_Contribution.Delivered_By_Contact'] input[type='text'], af-field[name='Institute_Registration.Contact_number_of_Institution'] input[type='text']").each(function () {
-          var phoneNumberValue = $(this).val().trim();
-          if (phoneNumberValue !== "") {
-            var phonePattern = /^\d{10}$/;  // 10-digit phone number pattern
-            if (!phonePattern.test(phoneNumberValue)) {
-              errorMessage += "Please enter a valid 10-digit mobile number.\n";
-              isValid = false;
-            }
-          }
-        });
-        
-        // Date validation for the Open Dropping Center, institute dropping center form to ensure the selected date is not in the past.
-        if (['afformDroppingCenterDetailForm', 'afformInstitutionDroppingCenterIntent1'].includes(ctrl.getFormMeta().name)) {
-          var dateField = $element.find("input.crm-form-date").val().trim(); 
-          if (dateField !== "") {
-            var today = new Date();
-            today.setHours(0, 0, 0, 0);
-            var dateParts = dateField.split('/');
-            var selectedDate = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
-            
-            // Check if the selected date is in the past or today
-            if (selectedDate <= today) {
-              isValid = false;
-              errorMessage += `The selected date (${dateField}) cannot be today or in the past.\n`;
-            }
-          }
-        }    
-
-        // Date validation for the Urban Planned Visit form to ensure the selected date is not in the past.
-        if (['afformUrbanPlannedVisitIntentForm'].includes(ctrl.getFormMeta().name)) {
-          var dateField = $element.find("input.crm-form-date").val().trim(); 
-          if (dateField !== "") {
-            var today = new Date();
-            today.setHours(0, 0, 0, 0);
-            var dateParts = dateField.split('/');
-            var selectedDate = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
-            
-            // Check if the selected date is in the past
-            if (selectedDate < today) {
-              isValid = false;
-              errorMessage += `The selected date (${dateField}) cannot be in the past.\n`;
-            }
-          }
-        }
-
-        if (ctrl.getFormMeta().name === 'afformInstitutionGoonjActivitiesIntent') {
-          var dateField = $element.find("af-field[name='Institution_Goonj_Activities.Start_Date'] .crm-form-date-wrapper input.crm-form-date").val();
-          if (dateField !== "") {
-            var today = new Date();
-            today.setHours(0, 0, 0, 0);
-            var dateParts = dateField.split('/');
-            var selectedDate = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
-
-            // Check if the selected date is in the past
-            if (selectedDate <= today) {
-              isValid = false;
-              errorMessage+=`The selected date (${dateField}) cannot be today or in the past.`;
-            }
-          }
-        }
-        
-        // Collection camp start date and end date validation
-        if (['afformCollectionCampIntentDetails', 'afformGoonjActivitiesIndividualIntentForm', 'afformInstitutionCollectionCampIntent'].includes(ctrl.getFormMeta().name)) {
-          var dateFields = [
-            {
-              startDateField: "af-field[name='Collection_Camp_Intent_Details.Start_Date'] .crm-form-date-wrapper input.crm-form-date",
-              endDateField: "af-field[name='Collection_Camp_Intent_Details.End_Date'] .crm-form-date-wrapper input.crm-form-date"
-            },
-            {
-              startDateField: "af-field[name='Goonj_Activities.Start_Date'] .crm-form-date-wrapper input.crm-form-date",
-              endDateField: "af-field[name='Goonj_Activities.End_Date'] .crm-form-date-wrapper input.crm-form-date"
-            },
-            {
-              startDateField: "af-field[name='Institution_Collection_Camp_Intent.Collections_will_start_on_Date_'] .crm-form-date-wrapper input.crm-form-date",
-              endDateField: "af-field[name='Institution_Collection_Camp_Intent.Collections_will_end_on_Date_'] .crm-form-date-wrapper input.crm-form-date"
-            }
-          ];
-        
-          var today = new Date();
-          today.setHours(0, 0, 0, 0);
-          
-          var errorMessage = '';
-          var isValid = true;
-        
-          dateFields.forEach(function(fields) {
-            var startDateValue = $element.find(fields.startDateField).val();
-            var endDateValue = $element.find(fields.endDateField).val();
-            
-            if (startDateValue && endDateValue) {
-              var startDateParts = startDateValue.split('/');
-              var endDateParts = endDateValue.split('/');
-              
-              var startDate = new Date(startDateParts[2], startDateParts[1] - 1, startDateParts[0]);
-              var endDate = new Date(endDateParts[2], endDateParts[1] - 1, endDateParts[0]);
-        
-              // Check if the start date is today or in the past
-              if (startDate <= today) {
-                errorMessage += `Collections cannot start (${startDateValue}) today or in the past.\n`;
-                isValid = false;
-              }
-        
-              // Check if the end date is today or in the past
-              if (endDate <= today) {
-                errorMessage += `Collections cannot end (${endDateValue}) today or in the past.\n`;
-                isValid = false;
-              }
-        
-              // Check if the end date is before the start date
-              if (endDate < startDate) {
-                errorMessage += `Collections cannot end (${endDateValue}) before start (${startDateValue}).\n`;
-                isValid = false;
-              }
-            }
-          });
-        }
-        
-        // Birth date validation
-        var birthDateField = $element.find("af-field[name='birth_date'] input[type='text']");
-        if (birthDateField.length) {
-          var birthDateValue = birthDateField.val().trim();
-          if (birthDateValue !== "") {
-            var birthDateParts = birthDateValue.split('/');
-            if (birthDateParts.length === 3) {
-              var birthDate = new Date(birthDateParts[2], birthDateParts[1] - 1, birthDateParts[0]);
-              var today = new Date();
-              today.setHours(0, 0, 0, 0);
-              
-              if (birthDate.toDateString() === today.toDateString()) {
-                errorMessage += `Date of Birth cannot be today.\n`;
-                isValid = false;
-              }
-              
-              if (birthDate > today) {
-                errorMessage += `Date of Birth cannot be in the future.\n`;
-                isValid = false;
-              }
-            } else {
-              errorMessage += "Invalid Date of Birth format.\n";
-              isValid = false;
-            
-            }
-          }
-        }
-        
-        // Postal code validation
-        var postalCodeLabel = $element.find("label:contains('Postal Code')");
-        var postalCodeField = postalCodeLabel.closest('af-field').find("input[type='text']");
-        if (postalCodeField.length) {
-          var postalCodeValue = postalCodeField.val().trim();
-          if (postalCodeValue !== "") {
-            var postalCodePattern = /^\d{6}$/;
-            if (!postalCodePattern.test(postalCodeValue)) {
-              errorMessage += "Please enter a valid 6-digit postal code.\n";
-              isValid = false;
-            }
-          }
-        }
-        
-        if (!isValid) {
-          CRM.alert(errorMessage, ts("Form Error"));
-        }
-        
-        return isValid;
-      }
-      
-      this.submit = function () {
-        if (!customValidateFields()) {
-          return;
-        }
+      this.submit = function() {
         // validate required fields on the form
         if (!ctrl.ngForm.$valid || !validateFileFields()) {
           CRM.alert(ts('Please fill all required fields.'), ts('Form Error'));
@@ -480,12 +355,15 @@
         }
         status = CRM.status({});
         $element.block();
+        if (cancelDraftWatcher) {
+          cancelDraftWatcher();
+        }
 
         crmApi4('Afform', 'submit', {
           name: ctrl.getFormMeta().name,
           args: args,
-          values: data}
-        ).then(function(response) {
+          values: data,
+        }).then(function(response) {
           submissionResponse = response;
           if (ctrl.fileUploader.getNotUploadedItems().length) {
             _.each(ctrl.fileUploader.getNotUploadedItems(), function(file) {
@@ -507,6 +385,54 @@
           CRM.alert(error.error_message || '', ts('Form Error'));
         });
       };
+
+      this.submitDraft = function() {
+        setDraftStatus('saving');
+        crmApi4('Afform', 'submitDraft', {
+          name: ctrl.getFormMeta().name,
+          args: args,
+          values: data,
+        }).then(function(response) {
+          setDraftStatus('saved');
+          crmStatus(ts('Draft saved'));
+        });
+      };
+
+      function getDraftButtons() {
+        return $element.find('button[ng-click="afform.submitDraft()"]');
+      }
+
+      function setDraftStatus(newStatus) {
+        const buttons = getDraftButtons();
+        if (draftStatus === newStatus || !buttons.length) {
+          return;
+        }
+        if (draftStatus === 'unsaved' && newStatus === 'saved') {
+          // If form was altered during a save operation, keep the 'unsaved' status
+          return;
+        }
+        // Setting to 'unsaved' - restore buttons to initial state
+        if (newStatus === 'unsaved') {
+          $.each(buttons, function(index, button) {
+            const initialState = saveDraftButtons[index] || saveDraftButtons[0];
+            $(button).text(initialState.text).attr('disabled', false);
+            if (initialState.icon) {
+              $(button).prepend('<i class="crm-i ' + saveDraftButtons[index].icon + '" aria-hidden="true"></i> ');
+            }
+          });
+        }
+        // Change icon, text & disable button for 'saving' or 'saved' status
+        else {
+          const newText = newStatus === 'saving' ? ts('Saving Draft') : ts('Draft Saved');
+          const newIcon = newStatus === 'saving' ? 'fa-spinner fa-spin' : 'fa-check';
+          $.each(buttons, function(index, button) {
+            $(button).text(newText).attr('disabled', true);
+            $(button).prepend('<i class="crm-i ' + newIcon + '" aria-hidden="true"></i> ');
+          });
+        }
+        draftStatus = newStatus;
+      }
+
     }
   });
 })(angular, CRM.$, CRM._);
