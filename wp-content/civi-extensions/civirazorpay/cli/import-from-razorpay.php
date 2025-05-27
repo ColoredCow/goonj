@@ -95,8 +95,6 @@ class RazorpaySubscriptionImporter {
     $options = [
       'count' => $limit,
       'skip' => $this->skip,
-    // Only fetch active subscriptions.
-      'status' => 'active',
     ];
 
     $response = $this->api->subscription->all($options);
@@ -114,6 +112,10 @@ class RazorpaySubscriptionImporter {
     echo "Processing Subscription ID: {$subscription['id']}\n";
     echo "Status: {$subscription['status']}\n";
     echo "Customer ID: {$subscription['customer_id']}\n";
+
+    if (!in_array($subscription['status'], ['active', 'completed', 'cancelled', 'paused', 'halted', 'pending'])) {
+      return;
+    }
 
     try {
       $contactID = $this->handleCustomerData($subscription);
