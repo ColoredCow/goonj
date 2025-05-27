@@ -116,7 +116,6 @@ class RazorpaySubscriptionImporter {
     if (!in_array($subscription['status'], ['active', 'completed', 'cancelled', 'paused', 'halted', 'pending'])) {
       return;
     }
-    
 
     try {
       $contactID = $this->handleCustomerData($subscription);
