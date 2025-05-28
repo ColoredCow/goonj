@@ -45,7 +45,8 @@ class DroppingCenterService extends AutoSubscriber {
       '&hook_civicrm_pre' => [
         ['generateDroppingCenterQr'],
         ['linkDroppingCenterToContact'],
-        ['processDispatchEmail']
+        ['processDispatchEmail'],
+        ['syncDroppingCenterStatus'],
       ],
       '&hook_civicrm_custom' => [
         ['setOfficeDetails'],
@@ -112,6 +113,33 @@ class DroppingCenterService extends AutoSubscriber {
       $event->records[$index]['joins']['Address'][] = self::$droppingCentreAddress;
     }
 
+  }
+
+  /**
+   *
+   */
+  public static function syncDroppingCenterStatus(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($objectName !== 'Eck_Dropping_Center_Meta') {
+      return;
+    }
+
+    $status = $objectRef['Status.Status'] ?? NULL;
+    $droppingCenterId = $objectRef['Dropping_Center_Meta.Dropping_Center'] ?? NULL;
+
+    if (!$status || !$droppingCenterId) {
+      return;
+    }
+
+    try {
+      EckEntity::update('Collection_Camp', FALSE)
+        ->addValue('Dropping_Centre.Current_Status', $status)
+        ->addWhere('id', '=', $droppingCenterId)
+        ->execute();
+
+    }
+    catch (\Exception $e) {
+      \Civi::log()->error('Error updating dropping center status: ' . $e->getMessage());
+    }
   }
 
   /**

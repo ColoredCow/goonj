@@ -58,6 +58,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
         ['linkInstitutionDroppingCenterToContact'],
         ['processDispatchEmail'],
         ['updateInstitutionPointOfContact'],
+        ['syncInstitutionDroppingCenterStatus'],
       ],
     ];
   }
@@ -117,6 +118,33 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       if (!$hasExistingPoc) {
         self::assignPointOfContactToCamp($eckCollectionCampId, $individualId);
       }
+    }
+  }
+
+  /**
+   *
+   */
+  public static function syncInstitutionDroppingCenterStatus(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($objectName !== 'Eck_Dropping_Center_Meta') {
+      return;
+    }
+
+    $status = $objectRef['Status.Status'] ?? NULL;
+    $institutionDroppingcenterId = $objectRef['Dropping_Center_Meta.Institution_Dropping_Center'] ?? NULL;
+
+    if (!$status || !$institutionDroppingcenterId) {
+      return;
+    }
+
+    try {
+      EckEntity::update('Collection_Camp', FALSE)
+        ->addValue('Institution_Dropping_Center_Intent.Current_Status', $status)
+        ->addWhere('id', '=', $institutionDroppingcenterId)
+        ->execute();
+
+    }
+    catch (\Exception $e) {
+      \Civi::log()->error('Error updating institution dropping center status: ' . $e->getMessage());
     }
   }
 
@@ -215,11 +243,11 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       foreach ($droppingCenterData as $visit) {
         $fields = $visit['fields'] ?? [];
         $stateProvinceId = $fields['Institution_Dropping_Center_Intent.State'] ?? NULL;
-        
+
         if (!$stateProvinceId) {
           return FALSE;
         }
-        
+
         $groupId = self::getChapterGroupForState($stateProvinceId);
         if ($groupId && $contactId) {
           $groupContacts = GroupContact::get(FALSE)
@@ -855,7 +883,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       //   'module' => 'afsearchMonetaryContributionForUrbanOps',
       //   'directive' => 'afsearch-monetary-contribution-for-urban-ops',
       //   'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
-      //   'permissions' => ['goonj_chapter_admin', 'urbanops'],
+      //   'permissions' => ['mmt_and_accounts_chapter_team', 'urban_ops_and_accounts_chapter_team'],
       // ],
     ];
 
