@@ -14,6 +14,7 @@ class CRM_Civiglific_DAO_GlificGroupMap extends CRM_Core_DAO {
    * Static instance to avoid multiple calls.
    */
   static $_fields = NULL;
+  static $_links = NULL;
 
   /**
    * Return the table name.
