@@ -2,13 +2,12 @@
 
 namespace Civi\Traits;
 
+use Civi\Api4\CustomField;
+use Civi\InstitutionMaterialContributionService;
+use Civi\MaterialContributionService;
+use Dompdf\Dompdf;
 use chillerlan\QRCode\QRCode;
 use chillerlan\QRCode\QROptions;
-use Civi\Api4\CustomField;
-use Dompdf\Dompdf;
-use Civi\MaterialContributionService;
-use Civi\InstitutionMaterialContributionService;
-
 
 /**
  *
@@ -184,7 +183,7 @@ trait QrCodeable {
     return $result['values'][$result['id']];
   }
 
-   /**
+  /**
    *
    */
   public static function generatePdfForEvent($organizationName, $organizationAddress, $contribution, $email, $phone, $description, $name, $deliveredBy, $deliveredByContact, $activityDate, $entityId) {
