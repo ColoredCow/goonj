@@ -2,6 +2,7 @@
 
 namespace CRM\Civiglific\Service;
 
+use Civi\Api4\Email;
 use Civi\Api4\GroupContact;
 use CRM\Civiglific\GlificClient;
 use CRM\Civiglific\GlificUtils;
@@ -144,7 +145,20 @@ class GlificContactSyncService {
       ->execute();
 
     foreach ($contacts as $row) {
-      $result[] = $this->buildContact($row['contact_id']);
+      $contactId = $row['contact_id'];
+
+      // Check if contact has a email.
+      $email = Email::get(FALSE)
+        ->addSelect('email')
+        ->addWhere('contact_id', '=', $contactId)
+        ->addWhere('is_primary', '=', 1)
+        ->execute()
+        ->first();
+
+      if (empty($email['email'])) {
+        $result[] = $this->buildContact($contactId);
+      }
+
     }
     return array_filter($result);
   }
@@ -162,7 +176,20 @@ class GlificContactSyncService {
       ->execute();
 
     foreach ($subs as $sub) {
-      $result[] = $this->buildContact($sub['contact_id']);
+      $contactId = $sub['contact_id'];
+
+      // Check if contact has a email.
+      $email = Email::get(FALSE)
+        ->addSelect('email')
+        ->addWhere('contact_id', '=', $contactId)
+        ->addWhere('is_primary', '=', 1)
+        ->execute()
+        ->first();
+
+      if (empty($email['email'])) {
+        $result[] = $this->buildContact($contactId);
+      }
+
     }
     return array_filter($result);
   }
