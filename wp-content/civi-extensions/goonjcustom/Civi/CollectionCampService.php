@@ -1668,16 +1668,20 @@ class CollectionCampService extends AutoSubscriber {
     if ($objectName !== 'Contribution' || !$objectRef->id) {
       return;
     }
+
     try {
       $contributionId = $objectRef->id;
+
       if (!$contributionId) {
         \Civi::log()->debug("generateInvoiceNumber: No contribution ID $contributionId found.");
         return;
       }
+
       $contribution = Contribution::get(FALSE)
         ->addSelect('contribution_status_id:name', 'invoice_number')
         ->addWhere('id', '=', $contributionId)
         ->execute()->first();
+
       if (!$contribution) {
         \Civi::log()->debug("generateInvoiceNumber: Contribution ID $contributionId not found.");
         return;
@@ -1690,52 +1694,72 @@ class CollectionCampService extends AutoSubscriber {
         return;
       }
 
-      // Start a transaction to ensure atomicity.
       $transaction = new \CRM_Core_Transaction();
 
-      // Prevent race conditions.
-      $query = "
-        SELECT invoice_number
-        FROM civicrm_contribution
-        WHERE contribution_status_id = 1
-        AND invoice_number IS NOT NULL
-        ORDER BY CAST(SUBSTRING_INDEX(invoice_number, '/', -1) AS UNSIGNED) DESC
-        ORDER BY id DESC
-        FOR UPDATE
-      ";
+      // Batch fetch recent contributions to find last 5 valid invoice numbers.
+      $validInvoiceNumbers = [];
+      $offset = 0;
+      $batchSize = 50;
 
-      $dao = \CRM_Core_DAO::executeQuery($query);
-      $invoiceNumber = NULL;
+      while (count($validInvoiceNumbers) < 5) {
+        $query = "
+          SELECT invoice_number
+          FROM civicrm_contribution
+          WHERE contribution_status_id = 1
+          ORDER BY id DESC
+          LIMIT {$batchSize} OFFSET {$offset}
+        ";
 
-      // Iterate through contributions to find the first valid invoice number.
-      while ($dao->fetch()) {
-        $currentInvoiceNumber = $dao->invoice_number;
-        if (preg_match('/(\d+)$/', $currentInvoiceNumber, $matches)) {
-          $invoiceNumber = $currentInvoiceNumber;
+        $dao = \CRM_Core_DAO::executeQuery($query);
+        $found = FALSE;
+
+        while ($dao->fetch()) {
+          $found = TRUE;
+          $invoice = $dao->invoice_number;
+
+          if (empty($invoice)) {
+            continue;
+          }
+
+          if (preg_match('/(\d+)$/', $invoice, $matches)) {
+            $validInvoiceNumbers[] = [
+              'full' => $invoice,
+              'number' => (int) $matches[1],
+            ];
+          }
+          else {
+            \Civi::log()->debug("generateInvoiceNumber: Skipping invalid invoice format: $invoice");
+          }
+
+          if (count($validInvoiceNumbers) >= 5) {
+            // Break both loops.
+            break 2;
+          }
+        }
+
+        if (!$found) {
+          // No more rows to fetch.
           break;
         }
-        \Civi::log()->debug("generateInvoiceNumber: Skipping invalid invoice number format: $currentInvoiceNumber");
+
+        $offset += $batchSize;
       }
 
-      $increaseNumber = 1;
-      if (!$invoiceNumber) {
-        return;
-      }
-
-      // Extract number from invoice number.
-      preg_match('/(\d+)$/', $invoiceNumber, $matches);
-      $numberOnly = $matches[1] ?? NULL;
-      if ($numberOnly === NULL) {
-        \Civi::log()->debug("generateInvoiceNumber: Invalid invoice number format: $invoiceNumber");
+      if (empty($validInvoiceNumbers)) {
+        \Civi::log()->debug("generateInvoiceNumber: No valid invoice numbers found.");
         $transaction->rollback();
         return;
       }
 
-      // Increment the number.
-      $increaseNumber = (int) $numberOnly + 1;
+      // Sort and pick the highest numeric value.
+      usort($validInvoiceNumbers, fn($a, $b) => $b['number'] <=> $a['number']);
+      $lastNumber = $validInvoiceNumbers[0]['number'] ?? 0;
+
       $invoicePrefix = 'GNJCRM/25-26/';
-      $newInvoiceNumber = $invoicePrefix . $increaseNumber;
+      $newInvoiceNumber = $invoicePrefix . ($lastNumber + 1);
+
       \Civi::log()->debug("generateInvoiceNumber: Generated new invoice number: $newInvoiceNumber for contribution ID $contributionId");
+
       // Update contribution with new invoice number.
       Contribution::update(FALSE)
         ->addValue('invoice_number', $newInvoiceNumber)
@@ -1754,7 +1778,6 @@ class CollectionCampService extends AutoSubscriber {
         $transaction->rollback();
       }
     }
-
   }
 
 }
