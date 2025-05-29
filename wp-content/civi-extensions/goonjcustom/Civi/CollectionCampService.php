@@ -55,7 +55,7 @@ class CollectionCampService extends AutoSubscriber {
       ['reGenerateCollectionCampQr'],
       ['updateCampStatusOnOutcomeFilled'],
       ['assignChapterGroupToIndividualForContribution'],
-      ['updateCampaignForCollectionSourceContribution'],
+      // ['updateCampaignForCollectionSourceContribution'],
       ['generateInvoiceIdForContribution'],
       ['generateInvoiceNumber'],
       ],
@@ -1358,7 +1358,6 @@ class CollectionCampService extends AutoSubscriber {
       $donorName = !empty($params['tplParams']['displayName']) ? $params['tplParams']['displayName'] : 'Valued Supporter';
       $contributionID = !empty($params['tplParams']['contributionID']) ? $params['tplParams']['contributionID'] : NULL;
       // $params['cc'] = 'priyanka@goonj.org, accounts@goonj.org';
-
       $contribution = Contribution::get(FALSE)
         ->addSelect('invoice_number')
         ->addWhere('id', '=', $contributionID)
@@ -1414,7 +1413,6 @@ class CollectionCampService extends AutoSubscriber {
       $donorName = !empty($params['toName']) ? $params['toName'] : 'Valued Supporter';
       $contributionID = !empty($params['contributionId']) ? $params['contributionId'] : NULL;
       // $params['cc'] = 'priyanka@goonj.org, accounts@goonj.org';
-
       $contribution = Contribution::get(FALSE)
         ->addSelect('invoice_number', 'contribution_page_id:label')
         ->addWhere('id', '=', $contributionID)
@@ -1670,19 +1668,18 @@ class CollectionCampService extends AutoSubscriber {
     if ($objectName !== 'Contribution' || !$objectRef->id) {
       return;
     }
-
     try {
       $contributionId = $objectRef->id;
       if (!$contributionId) {
+        \Civi::log()->debug("generateInvoiceNumber: No contribution ID $contributionId found.");
         return;
       }
-
       $contribution = Contribution::get(FALSE)
         ->addSelect('contribution_status_id:name', 'invoice_number')
         ->addWhere('id', '=', $contributionId)
         ->execute()->first();
-
       if (!$contribution) {
+        \Civi::log()->debug("generateInvoiceNumber: Contribution ID $contributionId not found.");
         return;
       }
 
@@ -1693,23 +1690,34 @@ class CollectionCampService extends AutoSubscriber {
         return;
       }
 
-      $contributions = Contribution::get(FALSE)
-        ->addSelect('invoice_number')
-        ->addClause('OR', ['is_test', '=', TRUE], ['is_test', '=', FALSE])
-        ->addWhere('contribution_status_id:label', '=', 'Completed')
-        ->addOrderBy('id', 'DESC')
-        ->execute();
+      // Start a transaction to ensure atomicity.
+      $transaction = new \CRM_Core_Transaction();
 
+      // Prevent race conditions.
+      $query = "
+        SELECT invoice_number
+        FROM civicrm_contribution
+        WHERE contribution_status_id = 1
+        AND invoice_number IS NOT NULL
+        ORDER BY CAST(SUBSTRING_INDEX(invoice_number, '/', -1) AS UNSIGNED) DESC
+        ORDER BY id DESC
+        FOR UPDATE
+      ";
+
+      $dao = \CRM_Core_DAO::executeQuery($query);
       $invoiceNumber = NULL;
-      // Loop through contributions to find the first non-empty invoice_number.
-      foreach ($contributions as $contribution) {
-        if (!empty($contribution['invoice_number'])) {
-          $invoiceNumber = $contribution['invoice_number'];
-          // Stop after finding the first valid invoice number.
+
+      // Iterate through contributions to find the first valid invoice number.
+      while ($dao->fetch()) {
+        $currentInvoiceNumber = $dao->invoice_number;
+        if (preg_match('/(\d+)$/', $currentInvoiceNumber, $matches)) {
+          $invoiceNumber = $currentInvoiceNumber;
           break;
         }
+        \Civi::log()->debug("generateInvoiceNumber: Skipping invalid invoice number format: $currentInvoiceNumber");
       }
 
+      $increaseNumber = 1;
       if (!$invoiceNumber) {
         return;
       }
@@ -1717,8 +1725,9 @@ class CollectionCampService extends AutoSubscriber {
       // Extract number from invoice number.
       preg_match('/(\d+)$/', $invoiceNumber, $matches);
       $numberOnly = $matches[1] ?? NULL;
-
       if ($numberOnly === NULL) {
+        \Civi::log()->debug("generateInvoiceNumber: Invalid invoice number format: $invoiceNumber");
+        $transaction->rollback();
         return;
       }
 
@@ -1726,20 +1735,26 @@ class CollectionCampService extends AutoSubscriber {
       $increaseNumber = (int) $numberOnly + 1;
       $invoicePrefix = 'GNJCRM/25-26/';
       $newInvoiceNumber = $invoicePrefix . $increaseNumber;
-
+      \Civi::log()->debug("generateInvoiceNumber: Generated new invoice number: $newInvoiceNumber for contribution ID $contributionId");
       // Update contribution with new invoice number.
       Contribution::update(FALSE)
         ->addValue('invoice_number', $newInvoiceNumber)
         ->addWhere('id', '=', $contributionId)
         ->execute();
-
+      // Commit the transaction.
+      $transaction->commit();
+      \Civi::log()->debug("generateInvoiceNumber: Successfully updated contribution ID $contributionId with invoice number $newInvoiceNumber");
     }
     catch (\Exception $e) {
-      \Civi::log()->error("Exception occurred in generateInvoiceNumber.", [
+      \Civi::log()->error("Exception occurred in generateInvoiceNumber for contribution ID $contributionId.", [
         'message' => $e->getMessage(),
         'trace' => $e->getTraceAsString(),
       ]);
+      if (isset($transaction)) {
+        $transaction->rollback();
+      }
     }
+
   }
 
 }
