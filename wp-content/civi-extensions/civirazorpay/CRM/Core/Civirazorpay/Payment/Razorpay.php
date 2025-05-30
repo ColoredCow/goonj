@@ -527,9 +527,9 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
 
       $receiptDate = $contributionDate['receipt_date'];
 
-      // if (!$receiptDate) {
-      //   $this->sendReceipt($contributionToUpdate['id']);
-      // }
+      if (!$receiptDate) {
+        $this->sendReceipt($contributionToUpdate['id']);
+      }
 
       \Civi::log()->info("Recurring payment processed: {$paymentId} for subscription: {$subscriptionId}");
     }
@@ -543,19 +543,19 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
   /**
    *
    */
-  // private function sendReceipt($contributionId) {
-  //   try {
-  //     civicrm_api3('Contribution', 'sendconfirmation', [
-  //       'id' => $contributionId,
-  //     ]);
-  //     \Civi::log()->info("Receipt sent for contribution ID: {$contributionId}");
-  //   }
-  //   catch (Exception $e) {
-  //     \Civi::log()->error("Failed to send receipt for contribution ID: {$contributionId}", [
-  //       'error' => $e->getMessage(),
-  //     ]);
-  //   }
-  // }
+  private function sendReceipt($contributionId) {
+    try {
+      civicrm_api3('Contribution', 'sendconfirmation', [
+        'id' => $contributionId,
+      ]);
+      \Civi::log()->info("Receipt sent for contribution ID: {$contributionId}");
+    }
+    catch (Exception $e) {
+      \Civi::log()->error("Failed to send receipt for contribution ID: {$contributionId}", [
+        'error' => $e->getMessage(),
+      ]);
+    }
+  }
 
   /**
    *
