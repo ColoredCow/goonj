@@ -55,7 +55,7 @@ class CollectionCampService extends AutoSubscriber {
       ['reGenerateCollectionCampQr'],
       ['updateCampStatusOnOutcomeFilled'],
       ['assignChapterGroupToIndividualForContribution'],
-      // ['updateCampaignForCollectionSourceContribution'],
+      ['updateCampaignForCollectionSourceContribution'],
       ['generateInvoiceIdForContribution'],
       ['generateInvoiceNumber'],
       ],
@@ -1357,7 +1357,7 @@ class CollectionCampService extends AutoSubscriber {
       // Extract donor name or use a default value.
       $donorName = !empty($params['tplParams']['displayName']) ? $params['tplParams']['displayName'] : 'Valued Supporter';
       $contributionID = !empty($params['tplParams']['contributionID']) ? $params['tplParams']['contributionID'] : NULL;
-      // $params['cc'] = 'priyanka@goonj.org, accounts@goonj.org';
+      $params['cc'] = 'priyanka@goonj.org, accounts@goonj.org';
       $contribution = Contribution::get(FALSE)
         ->addSelect('invoice_number')
         ->addWhere('id', '=', $contributionID)
@@ -1394,13 +1394,13 @@ class CollectionCampService extends AutoSubscriber {
       }
 
       // === DISABLE SENDING EMAIL ===
-      $params['text'] = '';
-      $params['html'] = '';
-      $params['cc'] = '';
-      $params['bcc'] = '';
-      $params['toEmail'] = '';
-      $params['from'] = '';
-      $params['subject'] = '';
+      // $params['text'] = '';
+      // $params['html'] = '';
+      // $params['cc'] = '';
+      // $params['bcc'] = '';
+      // $params['toEmail'] = '';
+      // $params['from'] = '';
+      // $params['subject'] = '';
     }
   }
 
@@ -1412,7 +1412,7 @@ class CollectionCampService extends AutoSubscriber {
       // Extract donor name or use a default value.
       $donorName = !empty($params['toName']) ? $params['toName'] : 'Valued Supporter';
       $contributionID = !empty($params['contributionId']) ? $params['contributionId'] : NULL;
-      // $params['cc'] = 'priyanka@goonj.org, accounts@goonj.org';
+      $params['cc'] = 'priyanka@goonj.org, accounts@goonj.org';
       $contribution = Contribution::get(FALSE)
         ->addSelect('invoice_number', 'contribution_page_id:label')
         ->addWhere('id', '=', $contributionID)
@@ -1449,13 +1449,13 @@ class CollectionCampService extends AutoSubscriber {
           ";
       }
       // === DISABLE SENDING EMAIL ===
-      $params['text'] = '';
-      $params['html'] = '';
-      $params['cc'] = '';
-      $params['bcc'] = '';
-      $params['toEmail'] = '';
-      $params['from'] = '';
-      $params['subject'] = '';
+      // $params['text'] = '';
+      // $params['html'] = '';
+      // $params['cc'] = '';
+      // $params['bcc'] = '';
+      // $params['toEmail'] = '';
+      // $params['from'] = '';
+      // $params['subject'] = '';
     }
   }
 
@@ -1669,6 +1669,8 @@ class CollectionCampService extends AutoSubscriber {
       return;
     }
 
+    $transaction = NULL;
+
     try {
       $contributionId = $objectRef->id;
 
@@ -1696,77 +1698,75 @@ class CollectionCampService extends AutoSubscriber {
 
       $transaction = new \CRM_Core_Transaction();
 
-      // Batch fetch recent contributions to find last 5 valid invoice numbers.
+      // Your custom query to get top 5 recent contributions with valid invoice numbers and lock them FOR UPDATE.
+      $sql = "
+        SELECT c.id, c.invoice_number
+        FROM civicrm_contribution c
+        JOIN (
+            SELECT id
+            FROM civicrm_contribution
+            WHERE invoice_number IS NOT NULL
+              AND invoice_number <> ''
+              AND contribution_status_id = 1
+            ORDER BY id DESC
+            LIMIT 5
+        ) AS recent_non_null ON c.id = recent_non_null.id
+        FOR UPDATE;
+      ";
+
+      $dao = \CRM_Core_DAO::executeQuery($sql);
+
       $validInvoiceNumbers = [];
-      $offset = 0;
-      $batchSize = 50;
 
-      while (count($validInvoiceNumbers) < 5) {
-        $query = "
-          SELECT invoice_number
-          FROM civicrm_contribution
-          WHERE contribution_status_id = 1
-          ORDER BY id DESC
-          LIMIT {$batchSize} OFFSET {$offset}
-        ";
+      while ($dao->fetch()) {
+        $invoice = $dao->invoice_number;
 
-        $dao = \CRM_Core_DAO::executeQuery($query);
-        $found = FALSE;
-
-        while ($dao->fetch()) {
-          $found = TRUE;
-          $invoice = $dao->invoice_number;
-
-          if (empty($invoice)) {
-            continue;
-          }
-
-          if (preg_match('/(\d+)$/', $invoice, $matches)) {
-            $validInvoiceNumbers[] = [
-              'full' => $invoice,
-              'number' => (int) $matches[1],
-            ];
-          }
-          else {
-            \Civi::log()->debug("generateInvoiceNumber: Skipping invalid invoice format: $invoice");
-          }
-
-          if (count($validInvoiceNumbers) >= 5) {
-            // Break both loops.
-            break 2;
-          }
+        if (empty($invoice)) {
+          continue;
         }
 
-        if (!$found) {
-          // No more rows to fetch.
-          break;
+        if (preg_match('/(\d+)$/', $invoice, $matches)) {
+          $validInvoiceNumbers[] = [
+            'full' => $invoice,
+            'number' => (int) $matches[1],
+          ];
+          error_log('$validInvoiceNumbers; ' . print_r($validInvoiceNumbers, TRUE));
         }
-
-        $offset += $batchSize;
+        else {
+          \Civi::log()->debug("generateInvoiceNumber: Skipping invalid invoice format: $invoice");
+        }
       }
+      $dao->free();
 
       if (empty($validInvoiceNumbers)) {
-        \Civi::log()->debug("generateInvoiceNumber: No valid invoice numbers found.");
+        \Civi::log()->debug("generateInvoiceNumber: No valid invoice numbers found in top 5.");
         $transaction->rollback();
+        // Release transaction object.
+        $transaction = NULL;
         return;
       }
 
-      // Sort and pick the highest numeric value.
+      // Sort descending by number.
       usort($validInvoiceNumbers, fn($a, $b) => $b['number'] <=> $a['number']);
       $lastNumber = $validInvoiceNumbers[0]['number'] ?? 0;
 
+      error_log('$lastNumber; ' . print_r($lastNumber, TRUE));
+
+      // Build new invoice number.
       $invoicePrefix = 'GNJCRM/25-26/';
       $newInvoiceNumber = $invoicePrefix . ($lastNumber + 1);
+      error_log('$newInvoiceNumber; ' . print_r($newInvoiceNumber, TRUE));
 
       \Civi::log()->debug("generateInvoiceNumber: Generated new invoice number: $newInvoiceNumber for contribution ID $contributionId");
 
-      // Update contribution with new invoice number.
+      // Update the contribution with the new invoice number.
       Contribution::update(FALSE)
         ->addValue('invoice_number', $newInvoiceNumber)
         ->addWhere('id', '=', $contributionId)
         ->execute();
-      // Commit the transaction.
+
       $transaction->commit();
+
       \Civi::log()->debug("generateInvoiceNumber: Successfully updated contribution ID $contributionId with invoice number $newInvoiceNumber");
     }
     catch (\Exception $e) {
@@ -1776,6 +1776,8 @@ class CollectionCampService extends AutoSubscriber {
       ]);
       if (isset($transaction)) {
         $transaction->rollback();
+        // Release transaction object.
+        $transaction = NULL;
       }
     }
   }
