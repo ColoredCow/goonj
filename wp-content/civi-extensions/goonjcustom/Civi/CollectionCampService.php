@@ -1794,7 +1794,9 @@ class CollectionCampService extends AutoSubscriber {
       }
 
       // Find the maximum existing invoice number.
-      $sql = "SELECT MAX(SUBSTRING_INDEX(invoice_number, '/', -1)) FROM civicrm_contribution WHERE invoice_number LIKE 'GNJCRM/25-26/%'";
+      $sql = "SELECT MAX(CAST(SUBSTRING_INDEX(invoice_number, '/', -1) AS UNSIGNED)) AS max_invoice_number
+            FROM civicrm_contribution
+            WHERE invoice_number LIKE 'GNJCRM/25-26/%'";
       $maxNumber = \CRM_Core_DAO::singleValueQuery($sql);
       error_log('$maxNumber; ' . print_r($maxNumber, TRUE));
 
