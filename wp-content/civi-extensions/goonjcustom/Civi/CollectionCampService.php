@@ -1688,20 +1688,21 @@ class CollectionCampService extends AutoSubscriber {
         return;
       }
 
+      $invoiceSeqName = 'GNJCRM_25_26';
+
       \CRM_Core_DAO::executeQuery('START TRANSACTION');
 
-      // 🔐 Lock option_value row for this prefix
       $dao = \CRM_Core_DAO::executeQuery("
         SELECT ov.id, ov.value, ov.label
         FROM civicrm_option_value ov
         JOIN civicrm_option_group og ON ov.option_group_id = og.id
         WHERE og.name = 'invoice_sequence'
-          AND ov.name = 'GNJCRM_25_26'
+          AND ov.name = $invoiceSeqName
         FOR UPDATE
       ");
 
       if (!$dao->fetch()) {
-        throw new \Exception("Invoice sequence not initialized for prefix GNJCRM_25_26");
+        throw new \Exception("Invoice sequence not initialized for prefix $invoiceSeqName");
       }
 
       $last = (int) $dao->value;
