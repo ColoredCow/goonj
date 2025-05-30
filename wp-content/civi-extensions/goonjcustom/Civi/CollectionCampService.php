@@ -1697,7 +1697,7 @@ class CollectionCampService extends AutoSubscriber {
         FROM civicrm_option_value ov
         JOIN civicrm_option_group og ON ov.option_group_id = og.id
         WHERE og.name = 'invoice_sequence'
-          AND ov.name = $invoiceSeqName
+          AND ov.name = '$invoiceSeqName'
         FOR UPDATE
       ");
 
