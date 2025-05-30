@@ -1669,11 +1669,14 @@ class CollectionCampService extends AutoSubscriber {
       return;
     }
 
+    $lock = \Civi::lockManager()->acquire('invoice_number_generation');
+    if (!$lock->isAcquired()) {
+      \Civi::log()->warning('Could not acquire lock for invoice number generation. Skipping for contribution ID: ' . $objectRef->id);
+      return;
+    }
+
     try {
       $contributionId = $objectRef->id;
-      if (!$contributionId) {
-        return;
-      }
 
       $contribution = Contribution::get(FALSE)
         ->addSelect('contribution_status_id:name', 'invoice_number')
@@ -1691,36 +1694,40 @@ class CollectionCampService extends AutoSubscriber {
         return;
       }
 
-      $sql = "
-        SELECT CAST(SUBSTRING_INDEX(invoice_number, '/', -1) AS UNSIGNED) AS number_part
-        FROM civicrm_contribution
-        WHERE contribution_status_id = 1
-        AND invoice_number LIKE %1
-        ORDER BY number_part DESC
-        LIMIT 1
-      ";
-
       $invoicePrefix = 'GNJCRM/25-26/';
+
+      $sql = "
+      SELECT CAST(SUBSTRING_INDEX(invoice_number, '/', -1) AS UNSIGNED) AS number_part
+      FROM civicrm_contribution
+      WHERE contribution_status_id = 1
+      AND invoice_number LIKE %1
+      ORDER BY number_part DESC
+      LIMIT 1
+    ";
 
       $params = [
         1 => [$invoicePrefix . '%', 'String'],
       ];
 
       $dao = \CRM_Core_DAO::executeQuery($sql, $params);
-      $invoiceNumber = 0;
+      $lastUsedNumber = 0;
 
       if ($dao->fetch()) {
-        $invoiceNumber = (int) $dao->number_part;
+        $lastUsedNumber = (int) $dao->number_part;
       }
 
-      if (!$invoiceNumber) {
-        \Civi::log()->info("No invoice number to assign for contribution ID: {$contributionId}");
-        return;
-      }
+      $nextNumber = $lastUsedNumber + 1;
+      $newInvoiceNumber = $invoicePrefix . $nextNumber;
 
-      // Increment the number.
-      $increaseNumber = (int) $invoiceNumber + 1;
-      $newInvoiceNumber = $invoicePrefix . $increaseNumber;
+      // Double check that this invoice number does not already exist (extra safety)
+      $duplicate = Contribution::get(FALSE)
+        ->addWhere('invoice_number', '=', $newInvoiceNumber)
+        ->execute()
+        ->first();
+
+      if ($duplicate) {
+        throw new \Exception("Invoice number conflict: $newInvoiceNumber already exists.");
+      }
 
       // Update contribution with new invoice number.
       Contribution::update(FALSE)
@@ -1728,12 +1735,16 @@ class CollectionCampService extends AutoSubscriber {
         ->addWhere('id', '=', $contributionId)
         ->execute();
 
+      \Civi::log()->info("Assigned invoice number {$newInvoiceNumber} to contribution ID: {$contributionId}");
     }
     catch (\Exception $e) {
       \Civi::log()->error("Exception occurred in generateInvoiceNumber.", [
         'message' => $e->getMessage(),
         'trace' => $e->getTraceAsString(),
       ]);
+    }
+    finally {
+      $lock->release();
     }
   }
 
