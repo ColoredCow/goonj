@@ -1358,7 +1358,6 @@ class CollectionCampService extends AutoSubscriber {
       $donorName = !empty($params['tplParams']['displayName']) ? $params['tplParams']['displayName'] : 'Valued Supporter';
       $contributionID = !empty($params['tplParams']['contributionID']) ? $params['tplParams']['contributionID'] : NULL;
       // $params['cc'] = 'priyanka@goonj.org, accounts@goonj.org';
-
       $contribution = Contribution::get(FALSE)
         ->addSelect('invoice_number')
         ->addWhere('id', '=', $contributionID)
@@ -1414,7 +1413,6 @@ class CollectionCampService extends AutoSubscriber {
       $donorName = !empty($params['toName']) ? $params['toName'] : 'Valued Supporter';
       $contributionID = !empty($params['contributionId']) ? $params['contributionId'] : NULL;
       // $params['cc'] = 'priyanka@goonj.org, accounts@goonj.org';
-
       $contribution = Contribution::get(FALSE)
         ->addSelect('invoice_number', 'contribution_page_id:label')
         ->addWhere('id', '=', $contributionID)
@@ -1693,37 +1691,33 @@ class CollectionCampService extends AutoSubscriber {
         return;
       }
 
-      $contributions = Contribution::get(FALSE)
-        ->addSelect('invoice_number')
-        ->addClause('OR', ['is_test', '=', TRUE], ['is_test', '=', FALSE])
-        ->addWhere('contribution_status_id:label', '=', 'Completed')
-        ->addOrderBy('id', 'DESC')
-        ->execute();
+      $sql = "
+        SELECT CAST(SUBSTRING_INDEX(invoice_number, '/', -1) AS UNSIGNED) AS number_part
+        FROM civicrm_contribution
+        WHERE contribution_status_id = 1
+        AND invoice_number LIKE %1
+        ORDER BY number_part DESC
+        LIMIT 1
+      ";
 
-      $invoiceNumber = NULL;
-      // Loop through contributions to find the first non-empty invoice_number.
-      foreach ($contributions as $contribution) {
-        if (!empty($contribution['invoice_number'])) {
-          $invoiceNumber = $contribution['invoice_number'];
-          // Stop after finding the first valid invoice number.
-          break;
-        }
+      $params = [
+        1 => [$invoicePrefix . '%', 'String'],
+      ];
+
+      $dao = \CRM_Core_DAO::executeQuery($sql, $params);
+      $invoiceNumber = 0;
+
+      if ($dao->fetch()) {
+        $invoiceNumber = (int) $dao->number_part;
       }
 
       if (!$invoiceNumber) {
-        return;
-      }
-
-      // Extract number from invoice number.
-      preg_match('/(\d+)$/', $invoiceNumber, $matches);
-      $numberOnly = $matches[1] ?? NULL;
-
-      if ($numberOnly === NULL) {
+        \Civi::log()->info("No invoice number to assign for contribution ID: {$contributionId}");
         return;
       }
 
       // Increment the number.
-      $increaseNumber = (int) $numberOnly + 1;
+      $increaseNumber = (int) $invoiceNumber + 1;
       $invoicePrefix = 'GNJCRM/25-26/';
       $newInvoiceNumber = $invoicePrefix . $increaseNumber;
 
