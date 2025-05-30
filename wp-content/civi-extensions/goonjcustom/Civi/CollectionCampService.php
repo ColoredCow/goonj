@@ -1358,7 +1358,6 @@ class CollectionCampService extends AutoSubscriber {
       $donorName = !empty($params['tplParams']['displayName']) ? $params['tplParams']['displayName'] : 'Valued Supporter';
       $contributionID = !empty($params['tplParams']['contributionID']) ? $params['tplParams']['contributionID'] : NULL;
       // $params['cc'] = 'priyanka@goonj.org, accounts@goonj.org';
-
       $contribution = Contribution::get(FALSE)
         ->addSelect('invoice_number')
         ->addWhere('id', '=', $contributionID)
@@ -1414,7 +1413,6 @@ class CollectionCampService extends AutoSubscriber {
       $donorName = !empty($params['toName']) ? $params['toName'] : 'Valued Supporter';
       $contributionID = !empty($params['contributionId']) ? $params['contributionId'] : NULL;
       // $params['cc'] = 'priyanka@goonj.org, accounts@goonj.org';
-
       $contribution = Contribution::get(FALSE)
         ->addSelect('invoice_number', 'contribution_page_id:label')
         ->addWhere('id', '=', $contributionID)
@@ -1538,7 +1536,14 @@ class CollectionCampService extends AutoSubscriber {
       }
 
       $sourceID = $contribution['Contribution_Details.Source'];
+      if (!$sourceID) {
+        return;
+      }
+
       $contributionCampaignId = $contribution['campaign_id'];
+      if (!$contributionCampaignId) {
+        return;
+      }
 
       $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
         ->addSelect('Collection_Camp_Intent_Details.Campaign')
@@ -1673,69 +1678,59 @@ class CollectionCampService extends AutoSubscriber {
 
     try {
       $contributionId = $objectRef->id;
-      if (!$contributionId) {
-        return;
-      }
 
       $contribution = Contribution::get(FALSE)
         ->addSelect('contribution_status_id:name', 'invoice_number')
         ->addWhere('id', '=', $contributionId)
         ->execute()->first();
 
-      if (!$contribution) {
+      if (!$contribution || $contribution['contribution_status_id:name'] !== 'Completed' || !empty($contribution['invoice_number'])) {
         return;
       }
 
-      $contributionStatus = $contribution['contribution_status_id:name'];
-      $existingInvoiceNumber = $contribution['invoice_number'];
+      $invoiceSeqName = 'GNJCRM_25_26';
 
-      if ($contributionStatus !== 'Completed' || !empty($existingInvoiceNumber)) {
-        return;
+      \CRM_Core_DAO::executeQuery('START TRANSACTION');
+
+      $dao = \CRM_Core_DAO::executeQuery("
+        SELECT ov.id, ov.value, ov.label
+        FROM civicrm_option_value ov
+        JOIN civicrm_option_group og ON ov.option_group_id = og.id
+        WHERE og.name = 'invoice_sequence'
+          AND ov.name = '$invoiceSeqName'
+        FOR UPDATE
+      ");
+
+      if (!$dao->fetch()) {
+        throw new \Exception("Invoice sequence not initialized for prefix $invoiceSeqName");
       }
 
-      $contributions = Contribution::get(FALSE)
-        ->addSelect('invoice_number')
-        ->addClause('OR', ['is_test', '=', TRUE], ['is_test', '=', FALSE])
-        ->addWhere('contribution_status_id:label', '=', 'Completed')
-        ->addOrderBy('id', 'DESC')
-        ->execute();
+      $last = (int) $dao->value;
+      $prefix = $dao->label;
+      $next = $last + 1;
+      $newInvoice = $prefix . $next;
 
-      $invoiceNumber = NULL;
-      // Loop through contributions to find the first non-empty invoice_number.
-      foreach ($contributions as $contribution) {
-        if (!empty($contribution['invoice_number'])) {
-          $invoiceNumber = $contribution['invoice_number'];
-          // Stop after finding the first valid invoice number.
-          break;
-        }
-      }
+      \CRM_Core_DAO::executeQuery("
+        UPDATE civicrm_option_value
+        SET value = %1
+        WHERE id = %2
+      ", [
+        1 => [$next, 'Integer'],
+        2 => [$dao->id, 'Integer'],
+      ]);
 
-      if (!$invoiceNumber) {
-        return;
-      }
-
-      // Extract number from invoice number.
-      preg_match('/(\d+)$/', $invoiceNumber, $matches);
-      $numberOnly = $matches[1] ?? NULL;
-
-      if ($numberOnly === NULL) {
-        return;
-      }
-
-      // Increment the number.
-      $increaseNumber = (int) $numberOnly + 1;
-      $invoicePrefix = 'GNJCRM/25-26/';
-      $newInvoiceNumber = $invoicePrefix . $increaseNumber;
-
-      // Update contribution with new invoice number.
       Contribution::update(FALSE)
-        ->addValue('invoice_number', $newInvoiceNumber)
+        ->addValue('invoice_number', $newInvoice)
         ->addWhere('id', '=', $contributionId)
         ->execute();
 
+      \CRM_Core_DAO::executeQuery('COMMIT');
+
+      \Civi::log()->info("Assigned invoice number {$newInvoice} to contribution ID: {$contributionId}");
     }
     catch (\Exception $e) {
-      \Civi::log()->error("Exception occurred in generateInvoiceNumber.", [
+      \CRM_Core_DAO::executeQuery('ROLLBACK');
+      \Civi::log()->error("Invoice number generation failed.", [
         'message' => $e->getMessage(),
         'trace' => $e->getTraceAsString(),
       ]);
