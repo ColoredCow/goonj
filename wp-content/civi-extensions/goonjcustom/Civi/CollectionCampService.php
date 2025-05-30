@@ -1669,7 +1669,7 @@ class CollectionCampService extends AutoSubscriber {
       return;
     }
 
-    $lock = \Civi::lockManager()->acquire('invoice_number_generation');
+    $lock = \Civi::lockManager()->acquire('worker.custom.invoice_number');
     if (!$lock->isAcquired()) {
       \Civi::log()->warning('Could not acquire lock for invoice number generation. Skipping for contribution ID: ' . $objectRef->id);
       return;
