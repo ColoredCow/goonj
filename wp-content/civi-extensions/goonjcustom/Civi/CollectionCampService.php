@@ -1700,23 +1700,17 @@ class CollectionCampService extends AutoSubscriber {
         LIMIT 1
       ";
 
+      $invoicePrefix = 'GNJCRM/25-26/';
+
       $params = [
         1 => [$invoicePrefix . '%', 'String'],
       ];
-
-      \Civi::log()->info("Executing SQL query for invoice number generation.", [
-        'sql' => $sql,
-        'params' => $params,
-      ]);
 
       $dao = \CRM_Core_DAO::executeQuery($sql, $params);
       $invoiceNumber = 0;
 
       if ($dao->fetch()) {
         $invoiceNumber = (int) $dao->number_part;
-        \Civi::log()->info("Fetched invoiceNumber.", [
-          'invoiceNumber' => $invoiceNumber
-        ]);
       }
 
       if (!$invoiceNumber) {
@@ -1726,10 +1720,6 @@ class CollectionCampService extends AutoSubscriber {
 
       // Increment the number.
       $increaseNumber = (int) $invoiceNumber + 1;
-      \Civi::log()->info("Increasing number log .", [
-        'increaseNumber' => $increaseNumber
-      ]);
-      $invoicePrefix = 'GNJCRM/25-26/';
       $newInvoiceNumber = $invoicePrefix . $increaseNumber;
 
       // Update contribution with new invoice number.
