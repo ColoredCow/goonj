@@ -55,7 +55,7 @@ class CollectionCampService extends AutoSubscriber {
       ['reGenerateCollectionCampQr'],
       ['updateCampStatusOnOutcomeFilled'],
       ['assignChapterGroupToIndividualForContribution'],
-      ['updateCampaignForCollectionSourceContribution'],
+      // ['updateCampaignForCollectionSourceContribution'],
       ['generateInvoiceIdForContribution'],
       ['generateInvoiceNumber'],
       ],
@@ -1357,8 +1357,7 @@ class CollectionCampService extends AutoSubscriber {
       // Extract donor name or use a default value.
       $donorName = !empty($params['tplParams']['displayName']) ? $params['tplParams']['displayName'] : 'Valued Supporter';
       $contributionID = !empty($params['tplParams']['contributionID']) ? $params['tplParams']['contributionID'] : NULL;
-      // $params['cc'] = 'priyanka@goonj.org, accounts@goonj.org';
-
+      $params['cc'] = 'priyanka@goonj.org, accounts@goonj.org';
       $contribution = Contribution::get(FALSE)
         ->addSelect('invoice_number')
         ->addWhere('id', '=', $contributionID)
@@ -1395,13 +1394,13 @@ class CollectionCampService extends AutoSubscriber {
       }
 
       // === DISABLE SENDING EMAIL ===
-      $params['text'] = '';
-      $params['html'] = '';
-      $params['cc'] = '';
-      $params['bcc'] = '';
-      $params['toEmail'] = '';
-      $params['from'] = '';
-      $params['subject'] = '';
+      // $params['text'] = '';
+      // $params['html'] = '';
+      // $params['cc'] = '';
+      // $params['bcc'] = '';
+      // $params['toEmail'] = '';
+      // $params['from'] = '';
+      // $params['subject'] = '';
     }
   }
 
@@ -1413,8 +1412,7 @@ class CollectionCampService extends AutoSubscriber {
       // Extract donor name or use a default value.
       $donorName = !empty($params['toName']) ? $params['toName'] : 'Valued Supporter';
       $contributionID = !empty($params['contributionId']) ? $params['contributionId'] : NULL;
-      // $params['cc'] = 'priyanka@goonj.org, accounts@goonj.org';
-
+      $params['cc'] = 'priyanka@goonj.org, accounts@goonj.org';
       $contribution = Contribution::get(FALSE)
         ->addSelect('invoice_number', 'contribution_page_id:label')
         ->addWhere('id', '=', $contributionID)
@@ -1451,13 +1449,13 @@ class CollectionCampService extends AutoSubscriber {
           ";
       }
       // === DISABLE SENDING EMAIL ===
-      $params['text'] = '';
-      $params['html'] = '';
-      $params['cc'] = '';
-      $params['bcc'] = '';
-      $params['toEmail'] = '';
-      $params['from'] = '';
-      $params['subject'] = '';
+      // $params['text'] = '';
+      // $params['html'] = '';
+      // $params['cc'] = '';
+      // $params['bcc'] = '';
+      // $params['toEmail'] = '';
+      // $params['from'] = '';
+      // $params['subject'] = '';
     }
   }
 
@@ -1666,79 +1664,192 @@ class CollectionCampService extends AutoSubscriber {
   /**
    *
    */
+  // Public static function generateInvoiceNumber(string $op, string $objectName, int $objectId, &$objectRef) {
+  //   if ($objectName !== 'Contribution' || !$objectRef->id) {
+  //     return;
+  //   }.
+  // $transaction = NULL;
+  // try {
+  //     $contributionId = $objectRef->id;.
+  // if (!$contributionId) {
+  //       \Civi::log()->debug("generateInvoiceNumber: No contribution ID $contributionId found.");
+  //       return;
+  //     }.
+  // $contribution = Contribution::get(FALSE)
+  //       ->addSelect('contribution_status_id:name', 'invoice_number')
+  //       ->addWhere('id', '=', $contributionId)
+  //       ->execute()->first();
+  // if (!$contribution) {
+  //       \Civi::log()->debug("generateInvoiceNumber: Contribution ID $contributionId not found.");
+  //       return;
+  //     }.
+  // $contributionStatus = $contribution['contribution_status_id:name'];
+  //     $existingInvoiceNumber = $contribution['invoice_number'];
+  // if ($contributionStatus !== 'Completed' || !empty($existingInvoiceNumber)) {
+  //       return;
+  //     }.
+  // $transaction = new \CRM_Core_Transaction();
+  // // Your custom query to get top 5 recent contributions with valid invoice numbers and lock them FOR UPDATE.
+  //     $sql = "
+  //       SELECT c.id, c.invoice_number
+  //       FROM civicrm_contribution c
+  //       JOIN (
+  //           SELECT id
+  //           FROM civicrm_contribution
+  //           WHERE invoice_number IS NOT NULL
+  //             AND invoice_number <> ''
+  //             AND contribution_status_id = 1
+  //           ORDER BY id DESC
+  //           LIMIT 5
+  //       ) AS recent_non_null ON c.id = recent_non_null.id
+  //       FOR UPDATE;
+  //     ";
+  // $dao = \CRM_Core_DAO::executeQuery($sql);
+  // $validInvoiceNumbers = [];
+  // while ($dao->fetch()) {
+  //       $invoice = $dao->invoice_number;.
+  // if (empty($invoice)) {
+  //         continue;
+  //       }.
+  // if (preg_match('/(\d+)$/', $invoice, $matches)) {
+  //         $validInvoiceNumbers[] = [
+  //           'full' => $invoice,
+  //           'number' => (int) $matches[1],
+  //         ];
+  //         error_log('$validInvoiceNumbers; ' . print_r($validInvoiceNumbers, TRUE));
+  //       }
+  //       else {
+  //         \Civi::log()->debug("generateInvoiceNumber: Skipping invalid invoice format: $invoice");
+  //       }
+  //     }
+  //     $dao->free();
+  // if (empty($validInvoiceNumbers)) {
+  //       \Civi::log()->debug("generateInvoiceNumber: No valid invoice numbers found in top 5.");
+  //       $transaction->rollback();
+  //       // Release transaction object.
+  //       $transaction = NULL;
+  //       return;
+  //     }.
+  // // Sort descending by number.
+  //     usort($validInvoiceNumbers, fn($a, $b) => $b['number'] <=> $a['number']);
+  //     $lastNumber = $validInvoiceNumbers[0]['number'] ?? 0;
+  // error_log('$lastNumber; ' . print_r($lastNumber, TRUE));
+  // // Build new invoice number.
+  //     $invoicePrefix = 'GNJCRM/25-26/';
+  //     $newInvoiceNumber = $invoicePrefix . ($lastNumber + 1);
+  //     error_log('$newInvoiceNumber; ' . print_r($newInvoiceNumber, TRUE));
+  // \Civi::log()->debug("generateInvoiceNumber: Generated new invoice number: $newInvoiceNumber for contribution ID $contributionId");
+  // // Update the contribution with the new invoice number.
+  //     Contribution::update(FALSE)
+  //       ->addValue('invoice_number', $newInvoiceNumber)
+  //       ->addWhere('id', '=', $contributionId)
+  //       ->execute();
+  // $transaction->commit();
+  // \Civi::log()->debug("generateInvoiceNumber: Successfully updated contribution ID $contributionId with invoice number $newInvoiceNumber");
+  //   }
+  //   catch (\Exception $e) {
+  //     \Civi::log()->error("Exception occurred in generateInvoiceNumber for contribution ID $contributionId.", [
+  //       'message' => $e->getMessage(),
+  //       'trace' => $e->getTraceAsString(),
+  //     ]);
+  //     if (isset($transaction)) {
+  //       $transaction->rollback();
+  //       // Release transaction object.
+  //       $transaction = NULL;
+  //     }
+  //   }.
+
+  /**
+   * }
+   */
   public static function generateInvoiceNumber(string $op, string $objectName, int $objectId, &$objectRef) {
     if ($objectName !== 'Contribution' || !$objectRef->id) {
       return;
     }
 
-    try {
-      $contributionId = $objectRef->id;
-      if (!$contributionId) {
-        return;
-      }
+    $contributionId = $objectRef->id;
 
+    // Start transaction.
+    $transaction = new \CRM_Core_Transaction();
+
+    try {
+      // Get the contribution details.
       $contribution = Contribution::get(FALSE)
         ->addSelect('contribution_status_id:name', 'invoice_number')
         ->addWhere('id', '=', $contributionId)
         ->execute()->first();
 
-      if (!$contribution) {
+      if (!$contribution || $contribution['contribution_status_id:name'] !== 'Completed' || !empty($contribution['invoice_number'])) {
         return;
       }
 
-      $contributionStatus = $contribution['contribution_status_id:name'];
-      $existingInvoiceNumber = $contribution['invoice_number'];
+      // Acquire lock.
+      $lockAcquired = \CRM_Core_DAO::singleValueQuery("SELECT GET_LOCK('generate_invoice_number', 10)");
+      error_log('$lockAcquired; ' . print_r($lockAcquired, TRUE));
 
-      if ($contributionStatus !== 'Completed' || !empty($existingInvoiceNumber)) {
+      if ($lockAcquired != 1) {
+        \Civi::log()->error("Failed to acquire lock for generateInvoiceNumber");
+        $transaction->rollback();
         return;
       }
 
-      $contributions = Contribution::get(FALSE)
-        ->addSelect('invoice_number')
-        ->addClause('OR', ['is_test', '=', TRUE], ['is_test', '=', FALSE])
-        ->addWhere('contribution_status_id:label', '=', 'Completed')
-        ->addOrderBy('id', 'DESC')
-        ->execute();
+      // Find the maximum existing invoice number.
+      $sql = "SELECT MAX(CAST(SUBSTRING_INDEX(invoice_number, '/', -1) AS UNSIGNED)) AS max_invoice_number
+            FROM civicrm_contribution
+            WHERE invoice_number LIKE 'GNJCRM/25-26/%'";
+      $maxNumber = \CRM_Core_DAO::singleValueQuery($sql);
+      error_log('$maxNumber; ' . print_r($maxNumber, TRUE));
 
-      $invoiceNumber = NULL;
-      // Loop through contributions to find the first non-empty invoice_number.
-      foreach ($contributions as $contribution) {
-        if (!empty($contribution['invoice_number'])) {
-          $invoiceNumber = $contribution['invoice_number'];
-          // Stop after finding the first valid invoice number.
-          break;
-        }
+      $newNumber = $maxNumber ? $maxNumber + 1 : 1;
+      $newInvoiceNumber = 'GNJCRM/25-26/' . $newNumber;
+      error_log('$newInvoiceNumber; ' . print_r($newInvoiceNumber, TRUE));
+
+      $newInvoiceNumber = trim($newInvoiceNumber);
+
+      // Check if the new invoice number already exists.
+      $existsSql = "SELECT COUNT(*) FROM civicrm_contribution WHERE invoice_number = %1";
+      error_log("existsSql: $existsSql");
+
+      $existsParams = [1 => [$newInvoiceNumber, 'String']];
+
+      $finalQuery = \CRM_Core_DAO::composeQuery($existsSql, $existsParams, TRUE);
+      error_log("Final query: $finalQuery");
+
+      $existsCount = \CRM_Core_DAO::singleValueQuery($existsSql, $existsParams);
+      error_log('Exists count: ' . print_r($existsCount, TRUE));
+
+      while ($existsCount > 0) {
+        // If it exists, increment and check again.
+        $newNumber++;
+        $newInvoiceNumber = 'GNJCRM/25-26/' . $newNumber;
+        $existsCount = \CRM_Core_DAO::singleValueQuery($existsSql, [1 => [$newInvoiceNumber, 'String']]);
+        error_log('$newInvoiceNumber; ' . print_r($newInvoiceNumber, TRUE));
+        error_log('$existsCount; ' . print_r($existsCount, TRUE));
       }
 
-      if (!$invoiceNumber) {
-        return;
-      }
-
-      // Extract number from invoice number.
-      preg_match('/(\d+)$/', $invoiceNumber, $matches);
-      $numberOnly = $matches[1] ?? NULL;
-
-      if ($numberOnly === NULL) {
-        return;
-      }
-
-      // Increment the number.
-      $increaseNumber = (int) $numberOnly + 1;
-      $invoicePrefix = 'GNJCRM/25-26/';
-      $newInvoiceNumber = $invoicePrefix . $increaseNumber;
-
-      // Update contribution with new invoice number.
+      // Update the contribution.
       Contribution::update(FALSE)
         ->addValue('invoice_number', $newInvoiceNumber)
         ->addWhere('id', '=', $contributionId)
         ->execute();
 
+      // Commit transaction.
+      $transaction->commit();
+      // Release lock after commit.
+      \CRM_Core_DAO::executeQuery("SELECT RELEASE_LOCK('generate_invoice_number')");
+
+      \Civi::log()->debug("generateInvoiceNumber: Successfully updated contribution ID $contributionId with invoice number $newInvoiceNumber");
     }
     catch (\Exception $e) {
-      \Civi::log()->error("Exception occurred in generateInvoiceNumber.", [
+      \Civi::log()->error("Exception occurred in generateInvoiceNumber for contribution ID $contributionId.", [
         'message' => $e->getMessage(),
         'trace' => $e->getTraceAsString(),
       ]);
+      if (isset($transaction)) {
+        $transaction->rollback();
+      }
+      // Release lock if acquired.
+      \CRM_Core_DAO::executeQuery("SELECT RELEASE_LOCK('generate_invoice_number')");
     }
   }
 
