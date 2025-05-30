@@ -1711,16 +1711,13 @@ class CollectionCampService extends AutoSubscriber {
         $invoiceNumber = (int) $dao->number_part;
       }
 
-      // Extract number from invoice number.
-      preg_match('/(\d+)$/', $invoiceNumber, $matches);
-      $numberOnly = $matches[1] ?? NULL;
-
-      if ($numberOnly === NULL) {
+      if (!$invoiceNumber) {
+        \Civi::log()->info("No invoice number to assign for contribution ID: {$contributionId}");
         return;
       }
 
       // Increment the number.
-      $increaseNumber = (int) $numberOnly + 1;
+      $increaseNumber = (int) $invoiceNumber + 1;
       $invoicePrefix = 'GNJCRM/25-26/';
       $newInvoiceNumber = $invoicePrefix . $increaseNumber;
 
