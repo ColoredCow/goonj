@@ -94,6 +94,10 @@
         return selectExpr.split(' AS ').slice(-1)[0];
       }
 
+      this.getMainEntity = function() {
+        return searchMeta.getEntity(this.savedSearch.api_entity);
+      };
+
       this.addCol = function(type) {
         var col = _.cloneDeep(this.colTypes[type].defaults);
         col.type = type;
@@ -147,7 +151,7 @@
 
       this.getFieldLabel = function(key) {
         var expr = ctrl.getExprFromSelect(selectToKey(key));
-        return searchMeta.getDefaultLabel(expr);
+        return searchMeta.getDefaultLabel(expr, ctrl.savedSearch);
       };
 
       this.getColLabel = function(col) {
@@ -255,7 +259,7 @@
       // Must be a real sql expression (not a pseudo-field like `result_row_num`)
       this.canBeSortable = function(col) {
         // Column-header sorting is incompatible with draggable sorting
-        if (ctrl.display.settings.draggable) {
+        if (!col.key || ctrl.display.settings.draggable) {
           return false;
         }
         var expr = ctrl.getExprFromSelect(col.key),
@@ -272,7 +276,7 @@
         return !info.fn || info.fn.category !== 'aggregate' || info.fn.name === 'GROUP_CONCAT';
       }
 
-      var linkProps = ['path', 'entity', 'action', 'join', 'target'];
+      const LINK_PROPS = ['path', 'entity', 'action', 'join', 'target', 'task'];
 
       this.toggleLink = function(column) {
         if (column.link) {
@@ -286,8 +290,8 @@
 
       this.onChangeLink = function(column, afterLink) {
         column.link = column.link || {};
-        var beforeLink = column.link.action && _.findWhere(ctrl.getLinks(column.key), {action: column.link.action});
-        if (!afterLink.action && !afterLink.path) {
+        const beforeLink = column.link.action && _.findWhere(ctrl.getLinks(column.key), {action: column.link.action});
+        if (!afterLink.action && !afterLink.path && !afterLink.task) {
           if (beforeLink && beforeLink.text === column.title) {
             delete column.title;
           }
@@ -299,7 +303,7 @@
         } else if (!afterLink.text && (beforeLink && beforeLink.text === column.title)) {
           delete column.title;
         }
-        _.each(linkProps, function(prop) {
+        LINK_PROPS.forEach((prop) => {
           column.link[prop] = afterLink[prop] || '';
         });
       };
@@ -383,10 +387,9 @@
       };
 
       this.getDefaultSort = function() {
-        var apiEntity = ctrl.savedSearch.api_entity,
-          sort = [];
-        if (searchMeta.getEntity(apiEntity).order_by) {
-          sort.push([searchMeta.getEntity(apiEntity).order_by, 'ASC']);
+        const sort = [];
+        if (this.getMainEntity().order_by) {
+          sort.push([this.getMainEntity().order_by, 'ASC']);
         }
         return sort;
       };
@@ -411,10 +414,19 @@
         };
       };
 
+      this.toggleDraggable = function() {
+        if (this.display.settings.draggable) {
+          this.display.settings.draggable = false;
+        } else {
+          this.display.settings.sort = [];
+          this.display.settings.draggable = this.getMainEntity().order_by;
+        }
+      };
+
       // Generic function to add to a setting array if the item is not already there
       this.pushSetting = function(name, value) {
         ctrl.display.settings[name] = ctrl.display.settings[name] || [];
-        if (_.findIndex(ctrl.display.settings[name], value) < 0) {
+        if (!ctrl.display.settings[name].includes(value)) {
           ctrl.display.settings[name].push(value);
         }
       };

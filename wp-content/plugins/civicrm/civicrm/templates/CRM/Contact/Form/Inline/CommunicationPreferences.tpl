@@ -29,7 +29,7 @@
       {if $key eq 'privacy'}
       <div class="crm-summary-row">
         <div class="crm-label">&nbsp;</div>
-        <div class="crm-content">{$form.is_opt_out.html} {$form.is_opt_out.label} {help id="id-optOut" file="CRM/Contact/Form/Contact.hlp"}
+        <div class="crm-content">{$form.is_opt_out.html} {$form.is_opt_out.label} {help id="id-optOut" title=$form.is_opt_out.label file="CRM/Contact/Form/Contact.hlp"}
         </div>
       </div>
       {/if}
@@ -62,7 +62,7 @@
             {$form.email_greeting_id.html|crmAddClass:big}
           </span>
           {if !empty($email_greeting_display)}
-            <div data-id="email_greeting" class="replace-plain big" title="{ts}Click to edit{/ts}">
+            <div data-id="email_greeting" class="replace-plain big" title="{ts escape='htmlattribute'}Click to edit{/ts}">
               {$email_greeting_display}
             </div>
           {/if}
@@ -84,7 +84,7 @@
             {$form.postal_greeting_id.html|crmAddClass:big}
           </span>
           {if !empty($postal_greeting_display)}
-            <div data-id="postal_greeting" class="replace-plain big" title="{ts}Click to edit{/ts}">
+            <div data-id="postal_greeting" class="replace-plain big" title="{ts escape='htmlattribute'}Click to edit{/ts}">
               {$postal_greeting_display}
             </div>
           {/if}
@@ -105,7 +105,7 @@
             {$form.addressee_id.html|crmAddClass:big}
           </span>
           {if !empty($addressee_display)}
-            <div data-id="addressee" class="replace-plain big" title="{ts}Click to edit{/ts}">
+            <div data-id="addressee" class="replace-plain big" title="{ts escape='htmlattribute'}Click to edit{/ts}">
               {$addressee_display}
             </div>
           {/if}
