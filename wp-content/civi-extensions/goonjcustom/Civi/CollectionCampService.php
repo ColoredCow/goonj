@@ -1680,9 +1680,13 @@ class CollectionCampService extends AutoSubscriber {
       $contributionId = $objectRef->id;
 
       $contribution = Contribution::get(FALSE)
-        ->addSelect('contribution_status_id:name', 'invoice_number')
+        ->addSelect('contribution_status_id:name', 'invoice_number', 'source')
         ->addWhere('id', '=', $contributionId)
         ->execute()->first();
+
+      if($contribution['source'] == 'Imported from Razorpay') {
+        return;
+      }
 
       if (!$contribution || $contribution['contribution_status_id:name'] !== 'Completed' || !empty($contribution['invoice_number'])) {
         return;
