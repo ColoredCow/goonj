@@ -2,10 +2,10 @@
 
 /**
  * @file
- * CLI Script to Import Razorpay Subscriptions into CiviCRM.
+ * CLI Script to Import Razorpay Subscriptions into CiviCRM using CSV data.
  *
  * Usage:
- *   php import-from-razorpay.php.
+ *   php import-from-razorpay.php /path/to/csv/file.csv.
  */
 
 use Civi\Api4\Contribution;
@@ -25,8 +25,12 @@ if (php_sapi_name() != 'cli') {
   exit("This script can only be run from the command line.\n");
 }
 
+if (empty($argv[1])) {
+  exit("Please provide the path to the CSV file as an argument.\n");
+}
+
 /**
- *
+ * Class to handle Razorpay subscription import into CiviCRM.
  */
 class RazorpaySubscriptionImporter {
 
@@ -37,8 +41,9 @@ class RazorpaySubscriptionImporter {
   private $isTest;
   private $processor;
   private $processorID;
+  private $csvData = [];
 
-  public function __construct() {
+  public function __construct($csvFilePath) {
     civicrm_initialize();
 
     $this->isTest = FALSE;
@@ -51,6 +56,44 @@ class RazorpaySubscriptionImporter {
     $this->processor = System::singleton()->getByProcessor($processorConfig);
     $this->processorID = $this->processor->getID();
     $this->api = $this->processor->initializeApi();
+
+    // Load CSV data.
+    $this->loadCsvData($csvFilePath);
+  }
+
+  /**
+   * Load and parse the CSV file containing subscription_id, email, and phone.
+   */
+  private function loadCsvData($csvFilePath): void {
+    if (!file_exists($csvFilePath)) {
+      exit("CSV file not found: $csvFilePath\n");
+    }
+
+    $file = fopen($csvFilePath, 'r');
+    // Read header row.
+    $header = fgetcsv($file);
+
+    // Validate CSV headers.
+    if ($header !== ['subscription_id', 'email', 'phone']) {
+      fclose($file);
+      exit("Invalid CSV format. Expected headers: subscription_id,email,phone\n");
+    }
+
+    while (($row = fgetcsv($file)) !== FALSE) {
+      if (count($row) >= 3) {
+        $this->csvData[$row[0]] = [
+          'email' => trim($row[1]),
+          'phone' => trim($row[2]),
+        ];
+      }
+    }
+    fclose($file);
+
+    if (empty($this->csvData)) {
+      exit("No valid data found in CSV file.\n");
+    }
+
+    echo "Loaded " . count($this->csvData) . " records from CSV file.\n";
   }
 
   /**
@@ -116,7 +159,6 @@ class RazorpaySubscriptionImporter {
     if (!in_array($subscription['status'], ['active', 'completed', 'cancelled', 'paused', 'halted', 'pending'])) {
       return;
     }
-    
 
     try {
       $contactID = $this->handleCustomerData($subscription);
@@ -133,39 +175,29 @@ class RazorpaySubscriptionImporter {
   }
 
   /**
-   * Handle customer data associated with the subscription.
+   * Handle customer data associated with the subscription using CSV data.
    *
    * @param array $subscription
+   *
+   * @return int|null
    */
   private function handleCustomerData(array $subscription) {
-    $customerId = $subscription['customer_id'] ?? NULL;
-    $notes = $subscription['notes'] ?? NULL;
-    $mobile = $notes['mobile'] ?? NULL;
-    $email = $notes['email'] ?? NULL;
-    $name = $notes['name'] ?? NULL;
+    $subscriptionId = $subscription['id'] ?? NULL;
 
-    $findContactArgs = [];
-
-    if ($name || $mobile) {
-      $findContactArgs = [
-        'name' => $name ?? 'Unknown Customer',
-        'email' => $email ?? NULL,
-        'phone' => $mobile ?? NULL,
-      ];
-    }
-    elseif ($customerId) {
-      $customer = $this->api->customer->fetch($customerId);
-      $findContactArgs = [
-        'name' => $customer->name ?? 'Unknown Customer',
-        'email' => $customer->email ?? NULL,
-        'phone' => $customer->contact ?? NULL,
-      ];
-    }
-
-    if (empty($findContactArgs)) {
-      echo "No customer data available for subscription {$subscription['id']}\n";
+    if (!$subscriptionId || !isset($this->csvData[$subscriptionId])) {
+      echo "No CSV data found for subscription {$subscriptionId}\n";
       return NULL;
     }
+
+    $csvRecord = $this->csvData[$subscriptionId];
+    $email = $csvRecord['email'] ?? NULL;
+    $phone = $csvRecord['phone'] ?? NULL;
+
+    $findContactArgs = [
+      'name' => $name,
+      'email' => $email,
+      'phone' => $phone,
+    ];
 
     $contactID = $this->findContact($findContactArgs);
 
@@ -173,8 +205,8 @@ class RazorpaySubscriptionImporter {
       echo "Contact found/created successfully. Contact ID: $contactID\n";
       return $contactID;
     }
-    echo "Could not identify a unique contact. Logged for manual intervention.\n";
 
+    echo "Could not identify a unique contact for subscription {$subscriptionId}. Logged for manual intervention.\n";
     return NULL;
   }
 
@@ -270,8 +302,8 @@ class RazorpaySubscriptionImporter {
       ->addWhere('phone', '=', $phone)
       ->execute();
 
-      $emailContactIDs = array_unique(array_column($emailResults->jsonSerialize(), 'contact_id'));
-      $phoneContactIDs = array_unique(array_column($phoneResults->jsonSerialize(), 'contact_id'));
+    $emailContactIDs = array_unique(array_column($emailResults->jsonSerialize(), 'contact_id'));
+    $phoneContactIDs = array_unique(array_column($phoneResults->jsonSerialize(), 'contact_id'));
 
     // Find intersection of email and phone results.
     $commonContactIDs = array_intersect($emailContactIDs, $phoneContactIDs);
@@ -610,9 +642,8 @@ class RazorpaySubscriptionImporter {
 
 }
 
-
 try {
-  $importer = new RazorpaySubscriptionImporter();
+  $importer = new RazorpaySubscriptionImporter($argv[1]);
   $importer->run(RP_IMPORT_SUBSCRIPTIONS_LIMIT);
 }
 catch (\Exception $e) {
