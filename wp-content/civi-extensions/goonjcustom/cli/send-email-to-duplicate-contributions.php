@@ -2,19 +2,22 @@
 
 /**
  * @file
- * Minimal script to read contribution IDs from CSV and send confirmation emails via CiviCRM API.
+ * Script to read contribution IDs, old and new invoice numbers from CSV and send confirmation emails via CiviCRM API.
+ * Passes invoice numbers to alterReceiptMail hook for customized email content.
  * Run via `cv scr` for CiviCRM environment setup.
  */
 
 // Enable error reporting.
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
+// Increase memory limit to handle large email payloads.
+ini_set('memory_limit', '256M');
 
 /**
  * Process CSV file and send confirmation emails for each contribution ID.
  *
  * @param string $csvFilePath
- *   Path to the CSV file containing contribution IDs.
+ *   Path to the CSV file containing contribution IDs, old_invoice_number, and new_invoice_number.
  *
  * @return void
  */
@@ -31,9 +34,9 @@ function sendEmailsFromCsv($csvFilePath) {
   }
 
   $headers = fgetcsv($file);
-  if (!$headers || !in_array('id', $headers)) {
+  if (!$headers || !in_array('id', $headers) || !in_array('old_invoice_number', $headers) || !in_array('new_invoice_number', $headers)) {
     fclose($file);
-    die("CSV must contain 'id' column\n");
+    die("CSV must contain 'id', 'old_invoice_number', and 'new_invoice_number' columns\n");
   }
 
   $results = [];
@@ -44,14 +47,24 @@ function sendEmailsFromCsv($csvFilePath) {
     $rowCount++;
     $data = array_combine($headers, $row);
     $id = $data['id'];
-    echo "Processing row $rowCount: ID $id\n";
+    $oldInvoiceNumber = $data['old_invoice_number'];
+    $newInvoiceNumber = $data['new_invoice_number'];
+    echo "Processing row $rowCount: ID $id, Old Invoice $oldInvoiceNumber, New Invoice $newInvoiceNumber\n";
+    echo "Memory usage: " . (memory_get_usage() / 1024 / 1024) . " MB\n";
 
     try {
+      // Store dynamic data for alterReceiptMail.
+      $GLOBALS['duplicate'] = [
+        'old_invoice_number' => $oldInvoiceNumber,
+        'new_invoice_number' => $newInvoiceNumber,
+        'contribution_id' => $id,
+      ];
+
       $result = civicrm_api3('Contribution', 'sendconfirmation', [
         'id' => $id,
-        'receipt_text' => 'Backend',
+        'receipt_text' => 'email',
       ]);
-      $results[] = "Email sent for ID $id";
+      $results[] = "Email sent for ID $id (Old Invoice: $oldInvoiceNumber, New Invoice: $newInvoiceNumber)";
     }
     catch (Exception $e) {
       $errors[] = "Error for ID $id: " . $e->getMessage();
