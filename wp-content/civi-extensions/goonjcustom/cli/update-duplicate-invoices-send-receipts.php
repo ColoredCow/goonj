@@ -107,8 +107,6 @@ function processDuplicateContributions() {
         echo "Assigned new invoice number {$newInvoice} to contribution ID: {$dupId}\n";
         \Civi::log()->info("Assigned invoice number {$newInvoice} to contribution ID: {$dupId}");
 
-        // Send email receipt for the updated contribution.
-        sendContributionReceipt($dupId);
       }
       catch (\Exception $e) {
         \CRM_Core_DAO::executeQuery('ROLLBACK');
@@ -122,32 +120,6 @@ function processDuplicateContributions() {
   }
 
   echo "\nDuplicate contributions processing complete.\n";
-}
-
-/**
- * Send email receipt for a contribution.
- *
- * @param int $contributionId
- *   Contribution ID.
- */
-function sendContributionReceipt($contributionId) {
-  echo "Checking: {$contributionId}\n";
-
-  sleep(10); 
-
-  try {
-    civicrm_api3('Contribution', 'sendconfirmation', [
-      'id' => $contributionId,
-    ]);
-    echo "Receipt sent for contribution ID: {$contributionId}\n";
-    \Civi::log()->info("Receipt sent for contribution ID: {$contributionId}");
-  }
-  catch (\Exception $e) {
-    echo "Failed to send receipt for contribution ID: {$contributionId}. Error: " . $e->getMessage() . "\n";
-    \Civi::log()->error("Failed to send receipt for contribution ID: {$contributionId}", [
-      'error' => $e->getMessage(),
-    ]);
-  }
 }
 
 processDuplicateContributions();
