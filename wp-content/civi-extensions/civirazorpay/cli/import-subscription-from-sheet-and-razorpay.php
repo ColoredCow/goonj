@@ -8,6 +8,9 @@
  *   php import-from-razorpay.php /path/to/csv/file.csv.
  */
 
+// To run the command use this cli command
+// cv scr ../civi-extensions/civirazorpay/cli/import-subscription-from-sheet-and-razorpay.php /path-to-csv-file.csv | tee save-data.txt
+
 use Civi\Api4\Contribution;
 use Civi\Api4\ContributionRecur;
 use Civi\Api4\Individual;
