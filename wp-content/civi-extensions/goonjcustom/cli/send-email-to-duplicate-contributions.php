@@ -7,8 +7,8 @@
  * Run via `cv scr` for CiviCRM environment setup.
  */
 
-// Enable error reporting.
-error_reporting(E_ALL);
+// Enable error reporting, suppress deprecation warnings temporarily.
+error_reporting(E_ALL & ~E_DEPRECATED);
 ini_set('display_errors', 1);
 // Increase memory limit to handle large email payloads.
 ini_set('memory_limit', '256M');
@@ -29,7 +29,7 @@ function sendEmailsFromCsv($csvFilePath) {
   }
 
   $file = fopen($csvFilePath, 'r');
-  if ($file === FALSE) {
+  if (!$file) {
     die("Unable to open CSV file\n");
   }
 
@@ -49,7 +49,7 @@ function sendEmailsFromCsv($csvFilePath) {
     $id = $data['id'];
     $oldInvoiceNumber = $data['old_invoice_number'];
     $newInvoiceNumber = $data['new_invoice_number'];
-    echo "Processing row $rowCount: ID $id, Old Invoice $oldInvoiceNumber, New Invoice $newInvoiceNumber\n";
+    echo "Processing row $rowCount: ID $id, Old Invoice: $oldInvoiceNumber, New Invoice: $newInvoiceNumber\n";
     echo "Memory usage: " . (memory_get_usage() / 1024 / 1024) . " MB\n";
 
     try {
