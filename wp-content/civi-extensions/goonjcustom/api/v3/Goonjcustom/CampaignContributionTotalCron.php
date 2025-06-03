@@ -60,14 +60,14 @@ function civicrm_api3_goonjcustom_campaign_contribution_total_cron($params) {
  * @throws \CRM_Core_Exception
  */
 function goonjcustom_get_total_contributions_by_campaign($campaignId) {
-  $contributionsResults = Contribution::get(FALSE)
+  $contributions = Contribution::get(FALSE)
     ->addSelect('total_amount')
     ->addWhere('campaign_id', '=', $campaignId)
     ->execute();
 
   $totalAmount = 0;
 
-  foreach ($contributionsResults as $contribution) {
+  foreach ($contributions as $contribution) {
     $totalAmount += $contribution['total_amount'];
   }
 
