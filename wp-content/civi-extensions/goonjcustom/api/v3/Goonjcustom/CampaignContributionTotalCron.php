@@ -23,7 +23,7 @@ function _civicrm_api3_goonjcustom_campaign_contribution_total_cron_spec(&$spec)
  * @throws \CRM_Core_Exception
  */
 function civicrm_api3_goonjcustom_campaign_contribution_total_cron($params) {
-  $messages = [];
+  $returnValues = [];
 
   $campaigns = Campaign::get(FALSE)
     ->addSelect('id')
@@ -40,16 +40,14 @@ function civicrm_api3_goonjcustom_campaign_contribution_total_cron($params) {
         ->addValue('Additional_Details.Total_Contribution_Amount', $totalAmount)
         ->execute();
 
-      $messages[] = "Campaign $campaignId updated with total contribution amount ₹$totalAmount";
     }
     catch (\Exception $e) {
-      $messages[] = "Failed to update campaign $campaignId: " . $e->getMessage();
+      // Do nothing.
     }
   }
 
-  return civicrm_api3_create_success([
-    'messages' => $messages,
-  ], $params, 'Goonjcustom', 'campaign_contribution_total_cron');
+  return civicrm_api3_create_success($returnValues, $params, 'Goonjcustom', 'campaign_contribution_total_cron');
+
 }
 
 /**
@@ -62,12 +60,16 @@ function civicrm_api3_goonjcustom_campaign_contribution_total_cron($params) {
  * @throws \CRM_Core_Exception
  */
 function goonjcustom_get_total_contributions_by_campaign($campaignId) {
-  $contributionsResult = Contribution::get(FALSE)
+  $contributionsResults = Contribution::get(FALSE)
     ->addSelect('total_amount')
     ->addWhere('campaign_id', '=', $campaignId)
     ->execute();
 
-  $contributions = $contributionsResult->getArrayCopy();
+  $totalAmount = 0;
 
-  return array_sum(array_column($contributions, 'total_amount'));
+  foreach ($contributionsResults as $contribution) {
+    $totalAmount += $contribution['total_amount'];
+  }
+
+  return $totalAmount;
 }
