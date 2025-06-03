@@ -65,7 +65,7 @@ function sendEmailsFromCsv($csvFilePath) {
 
       $result = civicrm_api3('Contribution', 'sendconfirmation', [
         'id' => $id,
-        'receipt_text' => 'email',
+        'receipt_text' => 'duplicate',
       ]);
       $results[] = "Email sent for ID $id (Old Invoice: $oldInvoiceNumber, New Invoice: $newInvoiceNumber)";
     }

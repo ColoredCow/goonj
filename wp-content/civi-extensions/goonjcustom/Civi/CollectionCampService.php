@@ -1352,7 +1352,7 @@ class CollectionCampService extends AutoSubscriber {
    *
    */
   public static function alterReceiptMail(&$params, $context) {
-    if (!empty($params['tplParams']['userTextPlain']) && $params['tplParams']['userTextPlain'] === 'email') {
+    if (!empty($params['tplParams']['userTextPlain']) && $params['tplParams']['userTextPlain'] === 'duplicate') {
       $params['cc'] = 'priyanka@goonj.org, accounts@goonj.org';
 
       // Get dynamic data from global.
