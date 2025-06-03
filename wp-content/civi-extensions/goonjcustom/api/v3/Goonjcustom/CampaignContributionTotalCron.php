@@ -33,11 +33,14 @@ function civicrm_api3_goonjcustom_campaign_contribution_total_cron($params) {
     $campaignId = $campaign['id'];
 
     try {
-      $totalAmount = goonjcustom_get_total_contributions_by_campaign($campaignId);
+      $data = goonjcustom_get_total_contributions_by_campaign($campaignId);
+      $totalAmount = $data['totalAmount'];
+      $contributorCount = $data['contributorCount'];
 
       Campaign::update(FALSE)
         ->addWhere('id', '=', $campaignId)
         ->addValue('Contribution_Data.Total_Contribution_Amount', $totalAmount)
+        ->addValue('Contribution_Data.Total_Number_of_Contributors', $contributorCount)
         ->execute();
 
     }
@@ -65,11 +68,18 @@ function goonjcustom_get_total_contributions_by_campaign($campaignId) {
     ->addWhere('campaign_id', '=', $campaignId)
     ->execute();
 
+  if (empty($contributions)) {
+    return;
+  }
+
   $totalAmount = 0;
 
   foreach ($contributions as $contribution) {
     $totalAmount += $contribution['total_amount'];
   }
 
-  return $totalAmount;
+  return [
+    'totalAmount' => $totalAmount,
+    'contributorCount' => count($contributions),
+  ];
 }
