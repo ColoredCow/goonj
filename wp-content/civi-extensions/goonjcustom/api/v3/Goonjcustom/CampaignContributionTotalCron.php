@@ -37,7 +37,7 @@ function civicrm_api3_goonjcustom_campaign_contribution_total_cron($params) {
 
       Campaign::update(FALSE)
         ->addWhere('id', '=', $campaignId)
-        ->addValue('Additional_Details.Total_Contribution_Amount', $totalAmount)
+        ->addValue('Contribution_Data.Total_Contribution_Amount', $totalAmount)
         ->execute();
 
     }
