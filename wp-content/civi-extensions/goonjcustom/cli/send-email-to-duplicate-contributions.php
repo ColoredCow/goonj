@@ -94,7 +94,7 @@ function sendEmailsFromCsv($csvFilePath) {
  * Main execution function.
  */
 function main() {
-  $csvFilePath = '/Users/tarunjoshi/Downloads/testing1.csv';
+  $csvFilePath = '/Users/tarunjoshi/Downloads/testingEmail.csv';
   try {
     sendEmailsFromCsv($csvFilePath);
   }
