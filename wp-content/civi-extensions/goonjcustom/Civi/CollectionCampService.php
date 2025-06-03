@@ -1354,6 +1354,7 @@ class CollectionCampService extends AutoSubscriber {
   public static function alterReceiptMail(&$params, $context) {
     if (!empty($params['tplParams']['userTextPlain']) && $params['tplParams']['userTextPlain'] === 'duplicate') {
       $params['cc'] = 'priyanka@goonj.org, accounts@goonj.org';
+      $params['from'] = 'Goonj <accounts@goonj.org>';
 
       // Get dynamic data from global.
       $oldInvoiceNumber = !empty($GLOBALS['duplicate']['old_invoice_number']) ? $GLOBALS['duplicate']['old_invoice_number'] : 'Unknown';
