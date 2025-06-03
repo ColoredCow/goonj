@@ -1352,30 +1352,6 @@ class CollectionCampService extends AutoSubscriber {
    *
    */
   public static function alterReceiptMail(&$params, $context) {
-    if (!empty($params['tplParams']['userTextPlain']) && $params['tplParams']['userTextPlain'] === 'email') {
-      $params['cc'] = 'priyanka@goonj.org, accounts@goonj.org';
-
-      // Get dynamic data from global.
-      $oldInvoiceNumber = !empty($GLOBALS['duplicate']['old_invoice_number']) ? $GLOBALS['duplicate']['old_invoice_number'] : 'Unknown';
-      $newInvoiceNumber = !empty($GLOBALS['duplicate']['new_invoice_number']) ? $GLOBALS['duplicate']['new_invoice_number'] : 'Unknown';
-      $donorName = !empty($params['tplParams']['displayName']) ? $params['tplParams']['displayName'] : 'Valued Supporter';
-
-      $params['text'] = "Dear $donorName,\n\nThis is in reference to your contribution to Goonj. Due to some technical issues we have updated the receipt number and the previously sent receipt is no longer valid.\n1. Receipt no. $newInvoiceNumber which is valid (enclosed in this email)\n2. Receipt no. $oldInvoiceNumber is invalid.\nAs a process, we have to cancel the invalid receipt. We are marking the same in our accounting system and are not valid anymore now.\n\nThanks for trusting Goonj..\n\nThanks\nTeam Goonj";
-
-      $params['html'] = "
-        <p>Dear <strong>$donorName</strong>,</p>
-        <p>This is in reference to your contribution to Goonj. Due to some technical issues we have updated the receipt number and the previously sent receipt is no longer valid.</p>
-        <ol>
-          <li>Receipt no. <strong>$newInvoiceNumber</strong> which is valid (enclosed in this email)</li>
-          <li>Receipt no. <strong>$oldInvoiceNumber</strong> is invalid.</li>
-        </ol>
-        <p>As a process, we have to cancel the invalid receipt. We are marking the same in our accounting system and are not valid anymore now.</p>
-        <p>Thanks for trusting Goonj..</p>
-        <p>Thanks<br>Team Goonj</p>
-      ";
-      return;
-    }
-
     // Handle contribution_online_receipt workflow.
     if (!empty($params['workflow']) && $params['workflow'] === 'contribution_online_receipt') {
       // Extract donor name or use a default value.
@@ -1408,7 +1384,7 @@ class CollectionCampService extends AutoSubscriber {
         $params['text'] = "Dear $donorName,\n\nThank you for your contribution.\n\nThese contributions go a long way in sustaining our operations and implementing series of initiatives all across.\nThe receipt No. ($receiptNumber) for the same is enclosed with the details of 80G exemptions and our PAN No.\n\nFor updates on our activities and new campaigns, please visit our website www.goonj.org and our FB page https://www.facebook.com/goonj.org, which are regularly updated.\n\nThank you once again for joining the journey.\n\nWith best regards,\nTeam Goonj";
 
         $params['html'] = "
-              <p>Dear  heleadsjnnjafnjsfnjdnfjsdnfjkndaskfnsnfsdn2222222  <strong>$donorName</strong>,</p>
+              <p>Dear  <strong>$donorName</strong>,</p>
               <p>Thank you for your contribution.</p>
               <p>These contributions go a long way in sustaining our operations and implementing series of initiatives all across.</p>
               <p>The receipt No. (<strong>$receiptNumber</strong>) for the same is enclosed with the details of 80G exemptions and our PAN No.</p>
@@ -1464,7 +1440,7 @@ class CollectionCampService extends AutoSubscriber {
         $params['text'] = "Dear $donorName,\n\nThank you for your contribution.\n\nThese contributions go a long way in sustaining our operations and implementing series of initiatives all across.\nThe receipt No. ($receiptNumber) for the same is enclosed with the details of 80G exemptions and our PAN No.\n\nFor updates on our activities and new campaigns, please visit our website www.goonj.org and our FB page https://www.facebook.com/goonj.org, which are regularly updated.\n\nThank you once again for joining the journey.\n\nWith best regards,\nTeam Goonj";
 
         $params['html'] = "
-              <p>Dear heleadsjnnjafnjsfnjdnfjsdnfjkndaskfnsnfsdn 111111 <strong>$donorName</strong>,</p>
+              <p>Dear <strong>$donorName</strong>,</p>
               <p>Thank you for your contribution.</p>
               <p>These contributions go a long way in sustaining our operations and implementing series of initiatives all across.</p>
               <p>The receipt No. (<strong>$receiptNumber</strong>) for the same is enclosed with the details of 80G exemptions and our PAN No.</p>
