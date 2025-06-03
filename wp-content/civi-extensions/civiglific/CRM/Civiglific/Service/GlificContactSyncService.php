@@ -340,7 +340,7 @@ class GlificContactSyncService {
 
           // Update name if changed.
           if ($glificName !== $name) {
-            $updatedId = $this->glific->updateContact($glificId, $name, NULL);
+            $updatedId = $this->glific->updateContact($glificId, $name);
           }
         }
         else {
