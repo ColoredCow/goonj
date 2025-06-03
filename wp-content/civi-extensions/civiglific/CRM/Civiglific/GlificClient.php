@@ -3,6 +3,7 @@
 namespace CRM\Civiglific;
 
 use GuzzleHttp\Client;
+use CRM\Civiglific\GlificHelper;
 
 /**
  * GlificClient
