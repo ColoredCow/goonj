@@ -7,6 +7,9 @@
  * Run via `cv scr` for CiviCRM environment setup.
  */
 
+// Below is the cv script that need to be run on terminal
+// cv scr ..//civi-extensions/goonjcustom/cli/send-email-to-duplicate-contributions.php | tee send-email-to-duplicates.txt
+
 // Enable error reporting, suppress deprecation warnings temporarily.
 error_reporting(E_ALL & ~E_DEPRECATED);
 ini_set('display_errors', 1);

@@ -7,7 +7,7 @@
  */
 
 // Below is the cv script that need to be run on terminal
-// cv scr ..//civi-extensions/goonjcustom/cli/assign-new-invoice-number-to-duplicate-invoice.php
+// cv scr ..//civi-extensions/goonjcustom/cli/assign-new-invoice-number-to-duplicate-invoice.php | tee assign-new-invoice-number.txt
 
 use Civi\Api4\Contribution;
 
