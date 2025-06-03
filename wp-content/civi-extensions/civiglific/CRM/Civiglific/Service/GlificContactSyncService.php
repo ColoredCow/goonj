@@ -115,27 +115,42 @@ class GlificContactSyncService {
       $batch = array_slice($contacts, $offset, $this->batchSize);
       foreach ($batch as $contact) {
         $phone = $contact['phone'];
+        $name = $contact['name'];
+        $civiContactId = $contact['contact_id'] ?? NULL;
         try {
           if (!in_array($phone, $glificPhones)) {
-            $glificId = $this->glific->createContact($contact['name'], $phone);
+            $glificId = $this->glific->getContactIdByPhone($phone);
             if ($glificId) {
-              $this->glific->optinContact($phone, $contact['name']);
+              // Contact exists in Glific, add to group.
               $this->glific->addToGroup($glificId, $glificGroupId);
               $glificPhones[] = $phone;
             }
             else {
-              \Civi::log()->error("Failed to create Glific contact for {$phone}");
+              // Create new contact.
+              $glificId = $this->glific->createContact($name, $phone);
+              if ($glificId) {
+                $this->glific->optinContact($phone, $name);
+                $this->glific->addToGroup($glificId, $glificGroupId);
+                $glificPhones[] = $phone;
+              }
+              else {
+                \Civi::log()->error("Failed to create Glific contact for {$phone}", [
+                  'civiContactId' => $civiContactId,
+                  'name' => $name,
+                ]);
+              }
             }
           }
         }
         catch (\Exception $e) {
-          \Civi::log()->error('Error syncing', [
-            'phone' => $contact['phone'],
+          \Civi::log()->error('Error syncing contact to Glific', [
+            'civiContactId' => $civiContactId,
+            'phone' => $phone,
+            'name' => $name,
             'exception_message' => $e->getMessage(),
           ]);
         }
       }
-
       sleep($this->sleepSeconds);
     }
   }
