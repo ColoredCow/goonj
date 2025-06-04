@@ -1352,6 +1352,32 @@ class CollectionCampService extends AutoSubscriber {
    *
    */
   public static function alterReceiptMail(&$params, $context) {
+    if (!empty($params['tplParams']['userTextPlain']) && $params['tplParams']['userTextPlain'] === 'duplicate') {
+
+      $params['cc'] = 'priyanka@goonj.org, accounts@goonj.org';
+      $params['from'] = 'Goonj <accounts@goonj.org>';
+
+      // Get dynamic data from global.
+      $oldInvoiceNumber = !empty($GLOBALS['goonj_duplicate']['old_invoice_number']) ? $GLOBALS['goonj_duplicate']['old_invoice_number'] : 'Unknown';
+      $newInvoiceNumber = !empty($GLOBALS['goonj_duplicate']['new_invoice_number']) ? $GLOBALS['goonj_duplicate']['new_invoice_number'] : 'Unknown';
+
+      $donorName = !empty($params['tplParams']['displayName']) ? $params['tplParams']['displayName'] : 'Valued Supporter';
+
+      $params['text'] = "Dear $donorName,\n\nThis is in reference to your contribution to Goonj. Due to some technical issues we have updated the receipt number and the previously sent receipt is no longer valid.\n1. Receipt no. $newInvoiceNumber which is valid (enclosed in this email)\n2. Receipt no. $oldInvoiceNumber is invalid.\nAs a process, we have to cancel this invalid receipt. We are marking the earlier receipt as invalid in our accounting system.\n\nThanks for trusting Goonj..\n\nThanks\nTeam Goonj";
+
+      $params['html'] = "
+        <p>Dear <strong>$donorName</strong>,</p>
+        <p>This is in reference to your contribution to Goonj. Due to some technical issues we have updated the receipt number and the previously sent receipt is no longer valid.</p>
+        <ol>
+          <li>Receipt no. <strong>$newInvoiceNumber</strong> which is valid (enclosed in this email)</li>
+          <li>Receipt no. <strong>$oldInvoiceNumber</strong> is invalid.</li>
+        </ol>
+        <p>As a process, we have to cancel this invalid receipt. We are marking the earlier receipt as invalid in our accounting system.</p>
+        <p>Thanks for trusting Goonj..</p>
+        <p>Thanks<br>Team Goonj</p>
+      ";
+      return;
+    }
     // Handle contribution_online_receipt workflow.
     if (!empty($params['workflow']) && $params['workflow'] === 'contribution_online_receipt') {
       // Extract donor name or use a default value.
