@@ -107,7 +107,7 @@ function main() {
     exit(1);
   }
 
-  $csvFilePath = \CRM_Goonjcustom_ExtensionUtil::path('temp_data/') . $argv[1];
+  $csvFilePath = \CRM_Goonjcustom_ExtensionUtil::path('temp_data/') . $argv[3];
 
   try {
     sendEmailsFromCsv($csvFilePath);
