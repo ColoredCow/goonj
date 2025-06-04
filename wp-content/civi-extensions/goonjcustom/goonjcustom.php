@@ -72,7 +72,8 @@ function goonjcustom_civicrm_apiWrappers(&$wrappers, $apiRequest) {
   if ($apiUserId != 19900) {
    return ;
   }
-  if ($apiRequest['entity'] == 'Contribution' && $apiRequest['action'] == 'get') {
+  
+  if ($apiRequest['entity'] == 'Campaign' && $apiRequest['action'] == 'get') {
     $wrappers[] = new \CRM_Goonjcustom_APIWrappers_ContributionFilter();
   }
 }
