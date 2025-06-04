@@ -8,7 +8,11 @@
  */
 
 // Below is the cv script that need to be run on terminal
-// cv scr ..//civi-extensions/goonjcustom/cli/send-email-to-duplicate-contributions.php | tee send-email-to-duplicates.txt.
+// 1. cv scr ../civi-extensions/goonjcustom/cli/send-email-to-duplicate-contributions.php send_first_email.csv  | tee send-first-email-to-duplicates.txt
+
+// 2. cv scr ../civi-extensions/goonjcustom/cli/send-email-to-duplicate-contributions.php send_second_email.csv  | tee send-second-email-to-duplicates.txt
+
+
 // Enable error reporting, suppress deprecation warnings.
 error_reporting(E_ALL & ~E_DEPRECATED);
 ini_set('display_errors', 1);
