@@ -7,7 +7,7 @@
  */
 
 // Below is the cv script that need to be run on terminal
-// cv scr ..//civi-extensions/goonjcustom/cli/assign-new-invoice-number-to-duplicate-invoice.php | tee assign-new-invoice-number.txt
+// cv scr ../civi-extensions/goonjcustom/cli/assign-new-invoice-number-to-duplicate-invoice.php | tee assign-new-invoice-number.txt
 
 use Civi\Api4\Contribution;
 
@@ -86,7 +86,7 @@ function updateContributionInvoices($csvFilePath) {
  * Main execution function.
  */
 function main() {
-  $csvFilePath = \CRM_Goonjcustom_ExtensionUtil::path('temp_data/') . $argv[1];
+  $csvFilePath = \CRM_Goonjcustom_ExtensionUtil::path('temp_data/new_invoice_numbers.csv');
   try {
     updateContributionInvoices($csvFilePath);
   }
