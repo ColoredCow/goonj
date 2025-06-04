@@ -57,15 +57,20 @@ function sendEmailsFromCsv($csvFilePath) {
 
     try {
       // Store dynamic data for alterReceiptMail.
-      $GLOBALS['duplicate'] = [
-        'old_invoice_number' => $oldInvoiceNumber,
-        'new_invoice_number' => $newInvoiceNumber,
-        'contribution_id' => $id,
-      ];
+      // $GLOBALS['duplicate'] = [
+        // 'old_invoice_number' => $oldInvoiceNumber,
+        // 'new_invoice_number' => $newInvoiceNumber,
+        // 'contribution_id' => $id,
+      // ];
 
       $result = civicrm_api3('Contribution', 'sendconfirmation', [
         'id' => $id,
-        'receipt_text' => 'duplicate',
+        'receipt_text' => [
+          'type' => 'duplicate',
+          'old_invoice_number' => $oldInvoiceNumber,
+          'new_invoice_number' => $newInvoiceNumber,
+          'contribution_id' => $id,
+        ]
       ]);
       $results[] = "Email sent for ID $id (Old Invoice: $oldInvoiceNumber, New Invoice: $newInvoiceNumber)";
     }
@@ -94,7 +99,16 @@ function sendEmailsFromCsv($csvFilePath) {
  * Main execution function.
  */
 function main() {
-  $csvFilePath = '/Users/tarunjoshi/Downloads/Final2.csv';
+  global $argv;
+
+  if (empty($argv[1])) {
+    echo "Error: Missing required CSV file path argument.\n";
+    echo "Usage: cv scr path/to/script.php /path/to/file.csv\n";
+    exit(1);
+  }
+
+  $csvFilePath = \CRM_Goonjcustom_ExtensionUtil::path('temp_data/') . $argv[1];
+
   try {
     sendEmailsFromCsv($csvFilePath);
   }
