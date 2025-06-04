@@ -13,6 +13,7 @@ use Civi\Token\Event\TokenRegisterEvent;
 use Civi\Token\Event\TokenValueEvent;
 use Symfony\Component\Config\Resource\FileResource;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+require_once 'api/v3/ContributionFilter.php';
 
 /**
  * Implements hook_civicrm_config().
@@ -64,6 +65,16 @@ function goonjcustom_civicrm_container(ContainerBuilder $container) {
         'addListener',
         ['civi.token.eval', 'goonjcustom_evaluate_tokens']
   )->setPublic(TRUE);
+}
+
+function goonjcustom_civicrm_apiWrappers(&$wrappers, $apiRequest) {
+  $apiUserId = \CRM_Core_Session::getLoggedInContactID();
+  if ($apiUserId != 19900) {
+   return ;
+  }
+  if ($apiRequest['entity'] == 'Contribution' && $apiRequest['action'] == 'get') {
+    $wrappers[] = new \CRM_Goonjcustom_APIWrappers_ContributionFilter();
+  }
 }
 
 /**
