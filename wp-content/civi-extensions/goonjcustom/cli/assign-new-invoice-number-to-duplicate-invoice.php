@@ -50,11 +50,13 @@ function updateContributionInvoices($csvFilePath) {
     $data = array_combine($headers, $row);
     $id = $data['id'];
     $newInvoiceNumber = $data['new_invoice_number'];
+    $currentDateTime = date('Y-m-d H:i:s');
     echo "Processing row $rowCount: ID $id, New Invoice $newInvoiceNumber\n";
 
     try {
       $result = Contribution::update(FALSE)
         ->addValue('invoice_number', $newInvoiceNumber)
+        ->addValue('receipt_date', $currentDateTime)
         ->addWhere('id', '=', $id)
         ->execute();
       $results[] = "Updated invoice number for ID $id to $newInvoiceNumber";
@@ -84,7 +86,7 @@ function updateContributionInvoices($csvFilePath) {
  * Main execution function.
  */
 function main() {
-  $csvFilePath = '/Users/tarunjoshi/Downloads/testing1.csv';
+  $csvFilePath = '/Users/tarunjoshi/Downloads/Final1.csv';
   try {
     updateContributionInvoices($csvFilePath);
   }
