@@ -86,7 +86,7 @@ function updateContributionInvoices($csvFilePath) {
  * Main execution function.
  */
 function main() {
-  $csvFilePath = \CRM_Goonjcustom_ExtensionUtil::path('temp_data/new_invoice_numbers.csv');
+  $csvFilePath = \CRM_Goonjcustom_ExtensionUtil::path('temp_data/') . $argv[1];
   try {
     updateContributionInvoices($csvFilePath);
   }
