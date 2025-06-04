@@ -8,8 +8,7 @@
  */
 
 // Below is the cv script that need to be run on terminal
-// cv scr ..//civi-extensions/goonjcustom/cli/send-email-to-duplicate-contributions.php | tee send-email-to-duplicates.txt
-
+// cv scr ..//civi-extensions/goonjcustom/cli/send-email-to-duplicate-contributions.php | tee send-email-to-duplicates.txt.
 // Enable error reporting, suppress deprecation warnings.
 error_reporting(E_ALL & ~E_DEPRECATED);
 ini_set('display_errors', 1);
@@ -57,20 +56,15 @@ function sendEmailsFromCsv($csvFilePath) {
 
     try {
       // Store dynamic data for alterReceiptMail.
-      // $GLOBALS['duplicate'] = [
-        // 'old_invoice_number' => $oldInvoiceNumber,
-        // 'new_invoice_number' => $newInvoiceNumber,
-        // 'contribution_id' => $id,
-      // ];
+      $GLOBALS['goonj_duplicate'] = [
+        'old_invoice_number' => $oldInvoiceNumber,
+        'new_invoice_number' => $newInvoiceNumber,
+        'contribution_id' => $id,
+      ];
 
       $result = civicrm_api3('Contribution', 'sendconfirmation', [
         'id' => $id,
-        'receipt_text' => [
-          'type' => 'duplicate',
-          'old_invoice_number' => $oldInvoiceNumber,
-          'new_invoice_number' => $newInvoiceNumber,
-          'contribution_id' => $id,
-        ]
+        'receipt_text' => 'duplicate',
       ]);
       $results[] = "Email sent for ID $id (Old Invoice: $oldInvoiceNumber, New Invoice: $newInvoiceNumber)";
     }

@@ -1352,15 +1352,14 @@ class CollectionCampService extends AutoSubscriber {
    *
    */
   public static function alterReceiptMail(&$params, $context) {
-    if (!empty($params['tplParams']['userTextPlain']['type']) && $params['tplParams']['userTextPlain']['type'] === 'duplicate') {
-
-
-      $duplicateDetails = $params['tplParams']['userTextPlain'];
-      $oldInvoiceNumber = $duplicateDetails['old_invoice_number'];
-      $newInvoiceNumber = $duplicateDetails['new_invoice_number'];
+    if (!empty($params['tplParams']['userTextPlain']) && $params['tplParams']['userTextPlain'] === 'duplicate') {
 
       $params['cc'] = 'priyanka@goonj.org, accounts@goonj.org';
       $params['from'] = 'Goonj <accounts@goonj.org>';
+
+      // Get dynamic data from global.
+      $oldInvoiceNumber = !empty($GLOBALS['goonj_duplicate']['old_invoice_number']) ? $GLOBALS['goonj_duplicate']['old_invoice_number'] : 'Unknown';
+      $newInvoiceNumber = !empty($GLOBALS['goonj_duplicate']['new_invoice_number']) ? $GLOBALS['goonj_duplicate']['new_invoice_number'] : 'Unknown';
 
       $donorName = !empty($params['tplParams']['displayName']) ? $params['tplParams']['displayName'] : 'Valued Supporter';
 
