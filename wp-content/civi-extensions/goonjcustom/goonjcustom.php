@@ -70,49 +70,16 @@ function goonjcustom_civicrm_container(ContainerBuilder $container) {
 }
 
 function goonjcustom_civicrm_apiWrappers(&$wrappers, $apiRequest) {
-  // Skip IP restriction if running from CLI
-  if (PHP_SAPI !== 'cli') {
     $allowedIPs = unserialize(CIVICRM_ALLOWED_IPS);
-    $testIp = $_SERVER['SERVER_ADDR'];
-    $clientIP = get_client_ip();
-
-    // Log the detected IP
-    Civi::log()->debug('GoonjCustom: Detected Client IP - ' . $testIp);
+    $clientIP = $_SERVER['SERVER_ADDR'] ?? '';
 
     if (!in_array($clientIP, $allowedIPs, TRUE)) {
-      Civi::log()->warning('GoonjCustom: Unauthorized IP access attempt - ' . $clientIP);
-      throw new \Civi\API\Exception\UnauthorizedException('Access denied. You do not have permission to perform this action.');
+      throw new UnauthorizedException('Access denied. You do not have permission to perform this action.');
     }
-  }
-
-  // Apply wrapper only for specific API calls
-  if ($apiRequest['entity'] === 'Campaign' && $apiRequest['action'] === 'get') {
+  if ($apiRequest['entity'] == 'Campaign' && $apiRequest['action'] == 'get') {
     $wrappers[] = new \CRM_Goonjcustom_APIWrappers_ContributionFilter();
   }
 }
-
-function get_client_ip() {
-  $headers = [
-    'HTTP_CLIENT_IP',
-    'HTTP_X_FORWARDED_FOR',
-    'HTTP_X_FORWARDED',
-    'HTTP_FORWARDED_FOR',
-    'HTTP_FORWARDED',
-    'REMOTE_ADDR'
-  ];
-
-  foreach ($headers as $key) {
-    if (!empty($_SERVER[$key])) {
-      $ipList = explode(',', $_SERVER[$key]);
-      return trim($ipList[0]); // Return first IP in list (in case of multiple)
-    }
-  }
-
-  return 'UNKNOWN';
-}
-
-
-
 
 /**
  *
