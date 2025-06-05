@@ -15,8 +15,29 @@ class NavigationPermissionService extends AutoSubscriber {
   public static function getSubscribedEvents() {
     return [
       '&hook_civicrm_navigationMenu' => ['hideNavForRoles'],
-      '&hook_civicrm_pageRun' => 'hideButtonsForMMT',
+      '&hook_civicrm_pageRun' => [
+        ['hideButtonsForMMT'],
+        ['hideAPIKeyTab'],
+      ],
     ];
+  }
+
+  /**
+   *
+   */
+  public function hideAPIKeyTab(&$page) {
+    if ($page->getVar('_name') === 'CRM_Contact_Page_View_Summary') {
+      if (!\CRM_Core_Permission::check('admin')) {
+        \CRM_Core_Resources::singleton()->addScript("
+          document.addEventListener('DOMContentLoaded', function() {
+            const apiTab = document.querySelector('#tab_apiKey');
+            if (apiTab) {
+              apiTab.style.display = 'none';
+            }
+          });
+        ");
+      }
+    }
   }
 
   /**
@@ -27,11 +48,9 @@ class NavigationPermissionService extends AutoSubscriber {
       if (\CRM_Core_Permission::check('mmt') && !\CRM_Core_Permission::check('admin')) {
         \CRM_Core_Resources::singleton()->addScript("
                 document.addEventListener('DOMContentLoaded', function() {
-                    document.querySelectorAll('.crm-actions-ribbon').forEach(el => el.style.display = 'none');
-                    
-                    document.querySelectorAll('afsearch-induction-details-of-contact').forEach(el => el.style.display = 'none');
-                    
-                    document.querySelectorAll('.crm-collapsible').forEach(function(el) {
+                    document.querySelectorAll('.crm-actions-ribbon').forEach(el => el.style.display = 'none');.
+  document.querySelectorAll('afsearch-induction-details-of-contact').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.crm-collapsible').forEach(function(el) {
                         const title = el.querySelector('.collapsible-title');
                         if (title && title.textContent.trim() === 'Volunteer Details') {
                             el.style.display = 'none';  // Hides the entire collapsible section
@@ -41,7 +60,7 @@ class NavigationPermissionService extends AutoSubscriber {
             ");
       }
     }
-  }
+  } .
 
   /**
    *
@@ -76,16 +95,16 @@ class NavigationPermissionService extends AutoSubscriber {
         'hide_child_menus' => [
           'Material Contributions',
           'hide_child_menus' => [
-          'Dashboard',
-          'Contribution Reports',
-          'Import Contributions',
-          'Batch Data Entry',
-          'Accounting Batches',
-          'Manage Contribution Pages',
-          'Personal Campaign Pages',
-          'Premiums',
-          'Manage Price Sets',
-        ],
+            'Dashboard',
+            'Contribution Reports',
+            'Import Contributions',
+            'Batch Data Entry',
+            'Accounting Batches',
+            'Manage Contribution Pages',
+            'Personal Campaign Pages',
+            'Premiums',
+            'Manage Price Sets',
+          ],
         ],
       ],
       'mmt' => [
@@ -167,7 +186,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Institution Collection Camps',
           'Dropping Center',
           'Institution Goonj Activities',
-        ],    
+        ],
       ],
       'sanjha_team' => [
         'hide_menus' => [
@@ -335,4 +354,5 @@ class NavigationPermissionService extends AutoSubscriber {
       }
     }
   }
+
 }
