@@ -73,10 +73,11 @@ function goonjcustom_civicrm_apiWrappers(&$wrappers, $apiRequest) {
   // Skip IP restriction if running from CLI
   if (PHP_SAPI !== 'cli') {
     $allowedIPs = unserialize(CIVICRM_ALLOWED_IPS);
+    $testIp = $_SERVER['SERVER_ADDR'];
     $clientIP = get_client_ip();
 
     // Log the detected IP
-    Civi::log()->debug('GoonjCustom: Detected Client IP - ' . $clientIP);
+    Civi::log()->debug('GoonjCustom: Detected Client IP - ' . $testIp);
 
     if (!in_array($clientIP, $allowedIPs, TRUE)) {
       Civi::log()->warning('GoonjCustom: Unauthorized IP access attempt - ' . $clientIP);
