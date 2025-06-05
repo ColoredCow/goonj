@@ -14,6 +14,8 @@ use Civi\Token\Event\TokenValueEvent;
 use Symfony\Component\Config\Resource\FileResource;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 require_once __DIR__ . '/api/v3/ContributionFilter.php';
+use Civi\API\Exception\UnauthorizedException;
+
 
 /**
  * Implements hook_civicrm_config().
@@ -69,9 +71,11 @@ function goonjcustom_civicrm_container(ContainerBuilder $container) {
 
 function goonjcustom_civicrm_apiWrappers(&$wrappers, $apiRequest) {
   $apiUserId = \CRM_Core_Session::getLoggedInContactID();
-  if ($apiUserId != 356791) {
-   return ;
+
+  if ($apiUserId != CIVICRM_ALLOWED_API_USER_ID) {
+    throw new UnauthorizedException('Access denied. You do not have permission to perform this action.');
   }
+
   if ($apiRequest['entity'] == 'Campaign' && $apiRequest['action'] == 'get') {
     $wrappers[] = new \CRM_Goonjcustom_APIWrappers_ContributionFilter();
   }
