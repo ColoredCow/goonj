@@ -69,10 +69,9 @@ function goonjcustom_civicrm_container(ContainerBuilder $container) {
 
 function goonjcustom_civicrm_apiWrappers(&$wrappers, $apiRequest) {
   $apiUserId = \CRM_Core_Session::getLoggedInContactID();
-  if ($apiUserId != 19900) {
+  if ($apiUserId != 356791) {
    return ;
   }
-  
   if ($apiRequest['entity'] == 'Campaign' && $apiRequest['action'] == 'get') {
     $wrappers[] = new \CRM_Goonjcustom_APIWrappers_ContributionFilter();
   }
