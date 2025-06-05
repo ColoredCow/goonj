@@ -70,42 +70,46 @@ function goonjcustom_civicrm_container(ContainerBuilder $container) {
 }
 
 function goonjcustom_civicrm_apiWrappers(&$wrappers, $apiRequest) {
-  $allowedIPs = unserialize(CIVICRM_ALLOWED_IPS);
-  $clientIP = get_client_ip();
+  // Skip IP restriction if running from CLI
+  if (PHP_SAPI !== 'cli') {
+    $allowedIPs = unserialize(CIVICRM_ALLOWED_IPS);
+    $clientIP = get_client_ip();
 
-  // Log the client IP for debugging
-  Civi::log()->debug('GoonjCustom: Detected Client IP - ' . $clientIP);
+    // Log the detected IP
+    Civi::log()->debug('GoonjCustom: Detected Client IP - ' . $clientIP);
 
-  if (!in_array($clientIP, $allowedIPs, TRUE)) {
-    Civi::log()->warning('GoonjCustom: Unauthorized IP access attempt - ' . $clientIP);
-    throw new UnauthorizedException('Access denied. You do not have permission to perform this action.');
+    if (!in_array($clientIP, $allowedIPs, TRUE)) {
+      Civi::log()->warning('GoonjCustom: Unauthorized IP access attempt - ' . $clientIP);
+      throw new \Civi\API\Exception\UnauthorizedException('Access denied. You do not have permission to perform this action.');
+    }
   }
 
-  if ($apiRequest['entity'] == 'Campaign' && $apiRequest['action'] == 'get') {
+  // Apply wrapper only for specific API calls
+  if ($apiRequest['entity'] === 'Campaign' && $apiRequest['action'] === 'get') {
     $wrappers[] = new \CRM_Goonjcustom_APIWrappers_ContributionFilter();
   }
 }
 
 function get_client_ip() {
-  $ipaddress = '';
-  if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
-    $ipaddress = $_SERVER['HTTP_CLIENT_IP'];
-  } else if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-    $ipaddress = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0];
-  } else if (!empty($_SERVER['HTTP_X_FORWARDED'])) {
-    $ipaddress = $_SERVER['HTTP_X_FORWARDED'];
-  } else if (!empty($_SERVER['HTTP_FORWARDED_FOR'])) {
-    $ipaddress = $_SERVER['HTTP_FORWARDED_FOR'];
-  } else if (!empty($_SERVER['HTTP_FORWARDED'])) {
-    $ipaddress = $_SERVER['HTTP_FORWARDED'];
-  } else if (!empty($_SERVER['REMOTE_ADDR'])) {
-    $ipaddress = $_SERVER['REMOTE_ADDR'];
-  } else {
-    $ipaddress = 'UNKNOWN';
+  $headers = [
+    'HTTP_CLIENT_IP',
+    'HTTP_X_FORWARDED_FOR',
+    'HTTP_X_FORWARDED',
+    'HTTP_FORWARDED_FOR',
+    'HTTP_FORWARDED',
+    'REMOTE_ADDR'
+  ];
+
+  foreach ($headers as $key) {
+    if (!empty($_SERVER[$key])) {
+      $ipList = explode(',', $_SERVER[$key]);
+      return trim($ipList[0]); // Return first IP in list (in case of multiple)
+    }
   }
 
-  return trim($ipaddress);
+  return 'UNKNOWN';
 }
+
 
 
 
