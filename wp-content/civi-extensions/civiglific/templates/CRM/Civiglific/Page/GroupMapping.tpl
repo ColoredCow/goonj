@@ -21,8 +21,8 @@
       <td>
         <select name="civicrm_group_id" id="civicrm_group_id" class="select2" required>
           <option value="">-- Select CiviCRM Group --</option>
-          {foreach from=$civicrmGroups key=group_id item=group_title}
-            <option value="{$group_id}">{$group_title|escape}</option>
+          {foreach from=$civicrmGroups key=group_id item=group}
+            <option value="{$group_id}">{$group.title|escape} ({$group.contact_count} contacts)</option>
           {/foreach}
         </select>
       </td>
