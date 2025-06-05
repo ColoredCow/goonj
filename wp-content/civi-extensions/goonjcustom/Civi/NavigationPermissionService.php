@@ -15,26 +15,8 @@ class NavigationPermissionService extends AutoSubscriber {
   public static function getSubscribedEvents() {
     return [
       '&hook_civicrm_navigationMenu' => ['hideNavForRoles'],
-      '&hook_civicrm_pageRun' => [
-        ['hideButtonsForMMT'],
-        ['hideAPIKeyTab'],
-      ],
+      '&hook_civicrm_pageRun' => 'hideButtonsForMMT',
     ];
-  }
-
-  public function hideAPIKeyTab(&$page) {
-    if ($page->getVar('_name') === 'CRM_Contact_Page_View_Summary') {
-      if (!\CRM_Core_Permission::check('admin')) {
-        \CRM_Core_Resources::singleton()->addScript("
-          document.addEventListener('DOMContentLoaded', function() {
-            const apiTab = document.querySelector('#tab_apiKey');
-            if (apiTab) {
-              apiTab.style.display = 'none';
-            }
-          });
-        ");
-      }
-    }
   }
 
   /**
