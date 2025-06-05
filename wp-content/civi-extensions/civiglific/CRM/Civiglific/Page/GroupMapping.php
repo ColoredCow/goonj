@@ -1,5 +1,6 @@
 <?php
 
+use Civi\Api4\GroupContact;
 use GuzzleHttp\Client;
 use Civi\Api4\GlificGroupMap;
 use Civi\Api4\Group;
@@ -83,7 +84,19 @@ class CRM_Civiglific_Page_GroupMapping extends CRM_Core_Page {
 
     $groups = [];
     foreach ($rawGroups as $group) {
-      $groups[$group['id']] = $group['title'];
+      // Fetch contact count for the group.
+      $contactCount = GroupContact::get(TRUE)
+        ->addSelect('COUNT(*) AS contact_count')
+        ->addWhere('group_id', '=', $group['id'])
+      // Count only active group members.
+        ->addWhere('status', '=', 'Added')
+        ->execute()
+        ->first()['contact_count'] ?? 0;
+
+      $groups[$group['id']] = [
+        'title' => $group['title'],
+        'contact_count' => $contactCount,
+      ];
     }
 
     return $groups;
@@ -132,7 +145,7 @@ class CRM_Civiglific_Page_GroupMapping extends CRM_Core_Page {
     $mappings = [];
     foreach ($glificGroupMaps as $map) {
       $groupId = $map['group_id'];
-      $groupTitle = $civicrmGroups[$groupId] ?? 'Unknown';
+      $groupTitle = $civicrmGroups[$groupId]['title'] ?? 'Unknown';
       $glificGroupName = $glificGroupLookup[$map['collection_id']] ?? 'Unknown';
 
       $mappings[] = [
