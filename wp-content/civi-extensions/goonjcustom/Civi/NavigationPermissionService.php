@@ -16,8 +16,26 @@ class NavigationPermissionService extends AutoSubscriber {
     return [
       '&hook_civicrm_navigationMenu' => ['hideNavForRoles'],
       '&hook_civicrm_pageRun' => 'hideButtonsForMMT',
+      '&hook_civicrm_tabset' => 'test',
     ];
   }
+
+  /**
+ * Implements hook_civicrm_tabset().
+ */
+function test($tabsetName, &$tabs, $context) {
+  if ($tabsetName === 'civicrm/contact/view') {
+
+    foreach ($tabs as $index => $tab) {
+      if (!empty($tab['id']) && $tab['title'] === 'API Key') {
+        unset($tabs[$index]);
+      }
+    }
+    // Re-index tabs array to avoid issues
+    $tabs = array_values($tabs);
+  }
+}
+
 
   /**
    *
@@ -47,6 +65,7 @@ class NavigationPermissionService extends AutoSubscriber {
    *
    */
   public function hideNavForRoles(&$params) {
+
     $isAdmin = \CRM_Core_Permission::check('admin');
     if ($isAdmin) {
       return;
