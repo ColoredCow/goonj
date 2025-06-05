@@ -4,6 +4,7 @@ require_once 'api/Wrapper.php';
 
 use Civi\Api4\Campaign;
 use Civi\Api4\Generic\AbstractAction;
+use Civi\API\Exception\UnauthorizedException;
 
 /**
  *
@@ -26,8 +27,7 @@ class CRM_Goonjcustom_APIWrappers_ContributionFilter implements API_Wrapper {
     $clientIP = $_SERVER['REMOTE_ADDR'] ?? '';
 
     if (!in_array($clientIP, $allowedIPs, TRUE)) {
-      echo 'Access denied: Unauthorized IP address.';
-      exit;
+      throw new UnauthorizedException('Access denied. You do not have permission to perform this action.');
     }
 
     $id = NULL;
