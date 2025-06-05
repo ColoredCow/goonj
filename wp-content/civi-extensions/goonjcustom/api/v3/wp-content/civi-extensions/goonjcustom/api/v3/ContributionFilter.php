@@ -23,13 +23,13 @@ class CRM_Goonjcustom_APIWrappers_ContributionFilter implements API_Wrapper {
     $params = $apiRequest->getParams();
     $clientIP = $_SERVER['REMOTE_ADDR'] ?? '';
 
-    $allowedIPs = ['20.235.42.26'];
-    $clientIP = $_SERVER['REMOTE_ADDR'] ?? '';
+    // $allowedIPs = ['20.235.42.26'];
+    // $clientIP = $_SERVER['REMOTE_ADDR'] ?? '';
 
-    if (!in_array($clientIP, $allowedIPs)) {
-      echo 'Access denied: Unauthorized IP address.';
-      exit;
-    }
+    // if (!in_array($clientIP, $allowedIPs)) {
+    //   echo 'Access denied: Unauthorized IP address.';
+    //   exit;
+    // }
 
     $id = NULL;
     if (isset($params['where']) && is_array($params['where'])) {
