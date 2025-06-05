@@ -189,4 +189,71 @@ class GlificClient {
     return $response['data']['contacts'][0]['id'] ?? NULL;
   }
 
+  /**
+   * Updates a contact's name in Glific.
+   *
+   * @param string $contactId
+   *   The Glific contact ID.
+   * @param string $name
+   *   The new name for the contact.
+   *
+   * @return string|null The updated contact ID on success, or null on failure.
+   */
+  public function updateContact($contactId, $name) {
+    $query = '
+      mutation($id: ID!, $input: ContactInput!) {
+        updateContact(id: $id, input: $input) {
+          contact {
+            id
+            name
+            phone
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    ';
+    $variables = [
+      'id' => $contactId,
+      'input' => [
+        'name' => $name,
+      ],
+    ];
+    $response = $this->query($query, $variables);
+
+    return $response['data']['updateContact']['contact']['id'];
+  }
+
+  /**
+   * Gets a contact by ID from Glific.
+   *
+   * @param string $contactId
+   *   The Glific contact ID.
+   *
+   * @return array The contact data (id, name, phone) or an empty array on failure.
+   */
+  public function getContactById($contactId) {
+    $query = <<<'GQL'
+      query GetContact($id: ID!) {
+        contact(id: $id) {
+          contact {
+            id
+            name
+            phone
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    GQL;
+    $variables = ['id' => $contactId];
+    $response = $this->query($query, $variables);
+
+    return $response['data']['contact']['contact'] ?? [];
+  }
+
 }

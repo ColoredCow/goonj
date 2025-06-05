@@ -55,8 +55,15 @@ class GlificContactSyncService {
 
     $contactsToRemove = $this->getRemovedContacts($civiGroupId, $lastSyncDate);
 
+    // Handle contacts to update.
+    $contactsToUpdate = $this->getUpdatedContacts($civiGroupId, $lastSyncDate);
+
     if (!empty($contactsToRemove)) {
       $this->removeContactsFromGlific($contactsToRemove, $glificGroupId);
+    }
+
+    if (!empty($contactsToUpdate)) {
+      $this->updateContactsInGlific($contactsToUpdate, $glificGroupId);
     }
 
     $this->addContactsToGlific($contactsToAdd, $glificGroupId);
@@ -108,27 +115,42 @@ class GlificContactSyncService {
       $batch = array_slice($contacts, $offset, $this->batchSize);
       foreach ($batch as $contact) {
         $phone = $contact['phone'];
+        $name = $contact['name'];
+        $civiContactId = $contact['contact_id'] ?? NULL;
         try {
           if (!in_array($phone, $glificPhones)) {
-            $glificId = $this->glific->createContact($contact['name'], $phone);
+            $glificId = $this->glific->getContactIdByPhone($phone);
             if ($glificId) {
-              $this->glific->optinContact($phone, $contact['name']);
+              // Contact exists in Glific, add to group.
               $this->glific->addToGroup($glificId, $glificGroupId);
               $glificPhones[] = $phone;
             }
             else {
-              \Civi::log()->error("Failed to create Glific contact for {$phone}");
+              // Create new contact.
+              $glificId = $this->glific->createContact($name, $phone);
+              if ($glificId) {
+                $this->glific->optinContact($phone, $name);
+                $this->glific->addToGroup($glificId, $glificGroupId);
+                $glificPhones[] = $phone;
+              }
+              else {
+                \Civi::log()->error("Failed to create Glific contact for {$phone}", [
+                  'civiContactId' => $civiContactId,
+                  'name' => $name,
+                ]);
+              }
             }
           }
         }
         catch (\Exception $e) {
-          \Civi::log()->error('Error syncing', [
-            'phone' => $contact['phone'],
+          \Civi::log()->error('Error syncing contact to Glific', [
+            'civiContactId' => $civiContactId,
+            'phone' => $phone,
+            'name' => $name,
             'exception_message' => $e->getMessage(),
           ]);
         }
       }
-
       sleep($this->sleepSeconds);
     }
   }
@@ -254,6 +276,90 @@ class GlificContactSyncService {
     }
 
     return NULL;
+  }
+
+  /**
+   *
+   */
+  private function getUpdatedContacts($groupId, $lastSyncDate) {
+    $result = [];
+    $contacts = GroupContact::get(TRUE)
+      ->addSelect('contact_id')
+      ->addWhere('group_id', '=', $groupId)
+      ->addWhere('status', '=', 'Added')
+      ->execute();
+
+    foreach ($contacts as $row) {
+      $contactId = $row['contact_id'];
+      $contact = Contact::get(FALSE)
+        ->addSelect('modified_date')
+        ->addWhere('id', '=', $contactId)
+        ->addWhere('modified_date', '>=', $lastSyncDate)
+        ->execute()
+        ->first();
+
+      if (!empty($contact)) {
+        $email = Email::get(FALSE)
+          ->addSelect('email')
+          ->addWhere('contact_id', '=', $contactId)
+          ->addWhere('is_primary', '=', 1)
+          ->execute()
+          ->first();
+
+        if (empty($email['email'])) {
+          $contactData = $this->buildContact($contactId);
+          if ($contactData) {
+            $contactData['contact_id'] = $contactId;
+            \Civi::log()->debug('Fetched contact for update', [
+              'civiContactId' => $contactId,
+              'phone' => $contactData['phone'],
+              'name' => $contactData['name'],
+            ]);
+            $result[] = $contactData;
+          }
+        }
+      }
+    }
+    return array_filter($result);
+  }
+
+  /**
+   * Updates contacts in a Glific group.
+   */
+  private function updateContactsInGlific($contacts, $glificGroupId) {
+    foreach ($contacts as $contact) {
+      try {
+        $phone = $contact['phone'];
+        $name = $contact['name'];
+        $civiContactId = $contact['contact_id'] ?? NULL;
+        $glificId = $this->glific->getContactIdByPhone($phone);
+
+        if ($glificId) {
+          $glificContact = $this->glific->getContactById($glificId);
+          $glificName = $glificContact['name'] ?? '';
+
+          // Update name if changed.
+          if ($glificName !== $name) {
+            $updatedId = $this->glific->updateContact($glificId, $name);
+          }
+        }
+        else {
+          \Civi::log()->warning("Contact with phone {$phone} not found in Glific; treating as new contact.", [
+            'civiContactId' => $civiContactId,
+            'phone' => $phone,
+            'name' => $name,
+          ]);
+          $this->addContactsToGlific([$contact], $glificGroupId);
+        }
+      }
+      catch (\Exception $e) {
+        \Civi::log()->error('Error updating contact in Glific', [
+          'civiContactId' => $civiContactId,
+          'phone' => $contact['phone'],
+          'exception_message' => $e->getMessage(),
+        ]);
+      }
+    }
   }
 
 }
