@@ -16,26 +16,8 @@ class NavigationPermissionService extends AutoSubscriber {
     return [
       '&hook_civicrm_navigationMenu' => ['hideNavForRoles'],
       '&hook_civicrm_pageRun' => 'hideButtonsForMMT',
-      '&hook_civicrm_tabset' => 'test',
     ];
   }
-
-  /**
- * Implements hook_civicrm_tabset().
- */
-function test($tabsetName, &$tabs, $context) {
-  if ($tabsetName === 'civicrm/contact/view') {
-
-    foreach ($tabs as $index => $tab) {
-      if (!empty($tab['id']) && $tab['title'] === 'API Key') {
-        unset($tabs[$index]);
-      }
-    }
-    // Re-index tabs array to avoid issues
-    $tabs = array_values($tabs);
-  }
-}
-
 
   /**
    *
@@ -65,7 +47,6 @@ function test($tabsetName, &$tabs, $context) {
    *
    */
   public function hideNavForRoles(&$params) {
-
     $isAdmin = \CRM_Core_Permission::check('admin');
     if ($isAdmin) {
       return;
@@ -95,16 +76,16 @@ function test($tabsetName, &$tabs, $context) {
         'hide_child_menus' => [
           'Material Contributions',
           'hide_child_menus' => [
-            'Dashboard',
-            'Contribution Reports',
-            'Import Contributions',
-            'Batch Data Entry',
-            'Accounting Batches',
-            'Manage Contribution Pages',
-            'Personal Campaign Pages',
-            'Premiums',
-            'Manage Price Sets',
-          ],
+          'Dashboard',
+          'Contribution Reports',
+          'Import Contributions',
+          'Batch Data Entry',
+          'Accounting Batches',
+          'Manage Contribution Pages',
+          'Personal Campaign Pages',
+          'Premiums',
+          'Manage Price Sets',
+        ],
         ],
       ],
       'mmt' => [
@@ -186,7 +167,7 @@ function test($tabsetName, &$tabs, $context) {
           'Institution Collection Camps',
           'Dropping Center',
           'Institution Goonj Activities',
-        ],
+        ],    
       ],
       'sanjha_team' => [
         'hide_menus' => [
