@@ -90,6 +90,8 @@ class CRM_Civiglific_Page_GroupMapping extends CRM_Core_Page {
         ->addWhere('group_id', '=', $group['id'])
       // Count only active group members.
         ->addWhere('status', '=', 'Added')
+        ->addJoin('Contact AS contact', 'INNER', ['contact_id', '=', 'contact.id'])
+        ->addWhere('contact.is_deleted', '=', 0)
         ->execute()
         ->first()['contact_count'] ?? 0;
 
