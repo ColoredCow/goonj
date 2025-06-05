@@ -20,7 +20,7 @@ use Civi\Api4\Utils\CoreUtil;
 /**
  * Class CRM_Core_BAO_CustomField
  */
-class CRM_Core_BAO_CustomField extends CRM_Core_DAO_CustomField {
+class CRM_Core_BAO_CustomField extends CRM_Core_DAO_CustomField implements \Civi\Core\HookInterface {
 
   /**
    * Build and retrieve the list of data types and descriptions.
@@ -419,6 +419,7 @@ class CRM_Core_BAO_CustomField extends CRM_Core_DAO_CustomField {
     // maximum backward-compatibility.
     // (for forward-compatibility... don't use this function)
     foreach ($customGroups as $customGroup) {
+      $extendsSubtypes = in_array($customGroup['extends'], CRM_Contact_BAO_ContactType::subTypes());
       foreach ($customGroup['fields'] as $customField) {
         $id = (string) $customField['id'];
         $fields[$id]['id'] = $id;
@@ -453,7 +454,7 @@ class CRM_Core_BAO_CustomField extends CRM_Core_DAO_CustomField {
         $fields[$id]['where'] = $customGroup['table_name'] . '.' . $customField['column_name'];
         // Probably we should use a different fn to get the extends tables but this is a refactor so not changing that now.
         $fields[$id]['extends_table'] = array_key_exists($customGroup['extends'], CRM_Core_BAO_CustomQuery::$extendsMap) ? CRM_Core_BAO_CustomQuery::$extendsMap[$customGroup['extends']] : '';
-        if (in_array($customGroup['extends'], CRM_Contact_BAO_ContactType::subTypes())) {
+        if ($extendsSubtypes) {
           // if $extends is a subtype, refer contact table
           $fields[$id]['extends_table'] = 'civicrm_contact';
         }
@@ -601,6 +602,7 @@ class CRM_Core_BAO_CustomField extends CRM_Core_DAO_CustomField {
    */
   public static function getLongNameFromShortName(string $shortName): ?string {
     [, $id] = explode('_', $shortName);
+    $id = (int) $id;
     foreach (CRM_Core_BAO_CustomGroup::getAll() as $customGroup) {
       if (isset($customGroup['fields'][$id])) {
         return $customGroup['name'] . '.' . $customGroup['fields'][$id]['name'];
@@ -614,12 +616,14 @@ class CRM_Core_BAO_CustomField extends CRM_Core_DAO_CustomField {
    */
   public static function getShortNameFromLongName(string $longName): ?string {
     [$groupName, $fieldName] = explode('.', $longName);
-    foreach (CRM_Core_BAO_CustomGroup::getAll() as $customGroup) {
-      if ($customGroup['name'] === $groupName) {
-        foreach ($customGroup['fields'] as $id => $field) {
-          if ($field['name'] === $fieldName) {
-            return "custom_$id";
-          }
+    if (empty($groupName) || empty($fieldName)) {
+      return NULL;
+    }
+    $customGroup = CRM_Core_BAO_CustomGroup::getGroup(['name' => $groupName]);
+    if ($customGroup) {
+      foreach ($customGroup['fields'] as $id => $field) {
+        if ($field['name'] === $fieldName) {
+          return "custom_$id";
         }
       }
     }
@@ -768,11 +772,16 @@ class CRM_Core_BAO_CustomField extends CRM_Core_DAO_CustomField {
           $qf->add('text', $elementName . '_to', ts('To'), $fieldAttributes);
         }
         else {
+          $separator = NULL;
           $fieldAttributes = array_merge($fieldAttributes, $customFieldAttributes);
           if ($search || empty($useRequired)) {
             $fieldAttributes['allowClear'] = TRUE;
           }
-          $qf->addRadio($elementName, $label, $options, $fieldAttributes, NULL, $useRequired);
+          if ($field->options_per_line) {
+            $fieldAttributes['options_per_line'] = $field->options_per_line;
+            $separator = '';
+          }
+          $qf->addRadio($elementName, $label, $options, $fieldAttributes, $separator, $useRequired);
         }
         break;
 
@@ -804,10 +813,18 @@ class CRM_Core_BAO_CustomField extends CRM_Core_DAO_CustomField {
           // TODO: I'm not sure if this is supposed to exclude whatever might be
           // in $field->attributes (available in array format as
           // $fieldAttributes).  Leaving as-is for now.
-          $check[] = &$qf->addElement('advcheckbox', $v, NULL, $l, $customFieldAttributes);
+          if ($field->options_per_line) {
+            $customFieldAttributes['options_per_line'] = $field->options_per_line;
+          }
+          $check[] = &$qf->addElement('advcheckbox_with_div', $v, NULL, $l, $customFieldAttributes);
         }
-
-        $group = $element = $qf->addGroup($check, $elementName, $label);
+        if ($field->options_per_line) {
+          $group = $element = $qf->addElement('group_with_div', $elementName, $label, $check, '', TRUE);
+          $group->setAttribute('options_per_line', $field->options_per_line);
+        }
+        else {
+          $group = $element = $qf->addGroup($check, $elementName, $label);
+        }
         $optionEditKey = 'data-option-edit-path';
         if (isset($customFieldAttributes[$optionEditKey])) {
           $group->setAttribute($optionEditKey, $customFieldAttributes[$optionEditKey]);
@@ -967,26 +984,48 @@ class CRM_Core_BAO_CustomField extends CRM_Core_DAO_CustomField {
    * Delete the Custom Field.
    *
    * @param object $field
-   *   The field object.
+   * @deprecated
    */
   public static function deleteField($field) {
-    CRM_Utils_System::flushCache();
+    self::deleteRecord(['id' => $field->id]);
+  }
 
-    // first delete the custom option group and values associated with this field
-    if ($field->option_group_id) {
-      //check if option group is related to any other field, if
-      //not delete the option group and related option values
-      self::checkOptionGroup($field->option_group_id);
+  /**
+   * Callback for hook_civicrm_pre().
+   * @param \Civi\Core\Event\PreEvent $event
+   */
+  public static function on_hook_civicrm_pre(\Civi\Core\Event\PreEvent $event) {
+    // When deleting a custom group, delete all orphaned fields
+    if ($event->entity === 'CustomGroup' && $event->action === 'delete') {
+      $sql = "SELECT id FROM civicrm_custom_field WHERE custom_group_id = %1";
+      $orphanedFields = CRM_Core_DAO::executeQuery($sql, [1 => [$event->id, 'Positive']])
+        ->fetchAll();
+      if ($orphanedFields) {
+        self::deleteRecords($orphanedFields);
+      }
     }
-    // next drop the column from the custom value table
-    self::createField($field, 'delete');
+  }
 
-    $field->delete();
-    CRM_Core_BAO_UFField::delUFField($field->id);
-    CRM_Core_BAO_Mapping::removeFieldFromMapping('custom_' . $field->id);
-    CRM_Utils_Weight::correctDuplicateWeights('CRM_Core_DAO_CustomField');
+  /**
+   * Callback for hook_civicrm_post().
+   * @param \Civi\Core\Event\PostEvent $event
+   */
+  public static function self_hook_civicrm_post(\Civi\Core\Event\PostEvent $event) {
+    if ($event->action === 'delete') {
+      CRM_Utils_System::flushCache();
 
-    CRM_Utils_Hook::post('delete', 'CustomField', $field->id, $field);
+      // first delete the custom option group and values associated with this field
+      if (!empty($event->object->option_group_id)) {
+        // Check if option group is related to any other field.
+        // If not, delete the option group and related option values.
+        self::checkOptionGroup($event->object->option_group_id, 0);
+      }
+      // next drop the column from the custom value table
+      self::createField($event->object, 'delete');
+
+      CRM_Utils_Weight::correctDuplicateWeights('CRM_Core_DAO_CustomField');
+      Civi::cache('metadata')->clear();
+    }
   }
 
   /**
@@ -1087,7 +1126,7 @@ class CRM_Core_BAO_CustomField extends CRM_Core_DAO_CustomField {
           // In such cases we could just get intval($value) and fetch matching
           // option again, but this would not work if key is float like 5.6.
           // So we need to truncate trailing zeros to make it work as expected.
-          if ($display === '' && is_numeric($value) && strpos(($value ?? ''), '.') !== FALSE) {
+          if ($display === '' && is_numeric($value) && str_contains(($value ?? ''), '.')) {
             // Use round() to truncate trailing zeros, e.g:
             // 10.00 -> 10, 10.60 -> 10.6, 10.69 -> 10.69.
             $value = (string) round($value, 5);
@@ -2287,8 +2326,10 @@ INNER JOIN  civicrm_custom_field f ON ( g.id = f.option_group_id )
    *
    * @param int $optionGroupId
    *   Option group id.
+   * @param int $max
+   *   Set to 1 if the field still exists, 0 otherwise
    */
-  public static function checkOptionGroup($optionGroupId) {
+  public static function checkOptionGroup($optionGroupId, int $max = 1) {
     $query = "
 SELECT count(*)
 FROM   civicrm_custom_field
@@ -2296,7 +2337,7 @@ WHERE  option_group_id = {$optionGroupId}";
 
     $count = CRM_Core_DAO::singleValueQuery($query);
 
-    if ($count < 2) {
+    if ($count <= $max) {
       //delete the option group
       CRM_Core_BAO_OptionGroup::deleteRecord(['id' => $optionGroupId]);
     }
@@ -2580,7 +2621,7 @@ WHERE      f.id IN ($ids)";
     if (in_array($field['data_type'], ['EntityReference', 'ContactReference', 'Date'])) {
       return FALSE;
     }
-    if (strpos($field['html_type'], 'Select') !== FALSE) {
+    if (str_contains($field['html_type'], 'Select')) {
       return TRUE;
     }
     return !empty($field['option_group_id']);
@@ -2598,11 +2639,19 @@ WHERE      f.id IN ($ids)";
     $html_type = is_object($field) ? $field->html_type : $field['html_type'];
     // APIv3 has a "legacy" mode where it returns old-style html_type of "Multi-Select"
     // If anyone is using this function in conjunction with legacy api output, we'll accomodate:
-    if ($html_type === 'CheckBox' || strpos($html_type, 'Multi') !== FALSE) {
+    if ($html_type === 'CheckBox' || str_contains($html_type, 'Multi')) {
       return TRUE;
     }
     // Otherwise this is the new standard as of 5.27
     return is_object($field) ? !empty($field->serialize) : !empty($field['serialize']);
+  }
+
+  public static function getFkEntity(array $field): ?string {
+    $dataTypeToFK = [
+      'ContactReference' => 'Contact',
+      'File' => 'File',
+    ];
+    return $field['fk_entity'] ?? $dataTypeToFK[$field['data_type']] ?? NULL;
   }
 
   public static function getFkEntityOnDeleteOptions(): array {
@@ -2695,7 +2744,7 @@ WHERE      f.id IN ($ids)";
         $field->text_length
       ),
       'required' => $field->is_required,
-      'searchable' => $field->is_searchable,
+      'searchable' => $field->is_searchable && $field->is_active,
     ];
 
     // For adding/dropping FK constraints
