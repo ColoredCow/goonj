@@ -112,19 +112,39 @@ class InductionService extends AutoSubscriber {
     }
 
     $placeholderActivityDate = self::getPlaceholderActivityDate();
-
+    \Civi::log()->info('Generating placeholder activity date', [
+      'placeholderActivityDate' => $placeholderActivityDate,
+    ]);
+    
     // Fetch induction activities for the target contact.
     $contactInductionExists = Activity::get(FALSE)
       ->addWhere('activity_type_id:name', '=', 'Induction')
       ->addWhere('target_contact_id', '=', $targetContactId)
       ->execute();
-
+    
+    \Civi::log()->info('Fetched existing induction activities', [
+      'targetContactId' => $targetContactId,
+      'inductionCount' => $contactInductionExists->count(),
+    ]);
+    
     // Check if an induction activity already exists.
     if ($contactInductionExists->count() > 0) {
+      \Civi::log()->info('Induction activity already exists. Skipping creation.', [
+        'targetContactId' => $targetContactId,
+      ]);
       return;
     }
-
-    Activity::create(FALSE)
+    
+    // Log the creation attempt
+    \Civi::log()->info('Creating new induction activity', [
+      'sourceContactId' => $sourceContactId,
+      'targetContactId' => $targetContactId,
+      'coordinatorId' => $coordinatorId,
+      'officeId' => $office['id'],
+      'activityDateTime' => $placeholderActivityDate,
+    ]);
+    
+    $createdActivity = Activity::create(FALSE)
       ->addValue('activity_type_id:name', self::INDUCTION_ACTIVITY_TYPE_NAME)
       ->addValue('status_id:name', self::INDUCTION_DEFAULT_STATUS_NAME)
       ->addValue('source_contact_id', $sourceContactId)
@@ -133,22 +153,25 @@ class InductionService extends AutoSubscriber {
       ->addValue('activity_date_time', $placeholderActivityDate)
       ->addValue('Induction_Fields.Goonj_Office', $office['id'])
       ->execute();
-
+      
+      \Civi::log()->info('IcreatedActivity', [
+        'createdActivity' => $createdActivity,
+      ]);
+    
     return TRUE;
-  }
-
+  }    
   /**
    * Handles induction creation for a volunteer.
    */
   public static function createInductionForVolunteer(string $op, string $objectName, int $objectId, &$objectRef) {
-    \Civi::log()->info('Checking conditions for volunteer induction', [
-      'op' => $op,
-      'objectName' => $objectName,
-      'objectRef' => $objectRef,
-      'volunteerId' => self::$volunteerId,
-      'contact_id' => $objectRef->contact_id ?? null,
-      'is_primary' => $objectRef->is_primary ?? null,
-    ]);
+    // \Civi::log()->info('Checking conditions for volunteer induction', [
+    //   'op' => $op,
+    //   'objectName' => $objectName,
+    //   'objectRef' => $objectRef,
+    //   'volunteerId' => self::$volunteerId,
+    //   'contact_id' => $objectRef->contact_id ?? null,
+    //   'is_primary' => $objectRef->is_primary ?? null,
+    // ]);
     
     if ($op !== 'create' || $objectName !== 'Address' || self::$volunteerId !== $objectRef->contact_id || !$objectRef->is_primary) {
       return FALSE;
