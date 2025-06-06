@@ -23,13 +23,6 @@ class CRM_Goonjcustom_APIWrappers_ContributionFilter implements API_Wrapper {
 
     $params = $apiRequest->getParams();
 
-    // $allowedIPs = unserialize(CIVICRM_ALLOWED_IPS);
-    // $clientIP = $_SERVER['REMOTE_ADDR'] ?? '';
-
-    // if (!in_array($clientIP, $allowedIPs, TRUE)) {
-    //   throw new UnauthorizedException('Access denied. You do not have permission to perform this action.');
-    // }
-
     $id = NULL;
     if (isset($params['where']) && is_array($params['where'])) {
       foreach ($params['where'] as $whereClause) {
