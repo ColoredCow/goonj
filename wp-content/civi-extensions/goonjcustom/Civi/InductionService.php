@@ -141,6 +141,15 @@ class InductionService extends AutoSubscriber {
    * Handles induction creation for a volunteer.
    */
   public static function createInductionForVolunteer(string $op, string $objectName, int $objectId, &$objectRef) {
+    \Civi::log()->info('Checking conditions for volunteer induction', [
+      'op' => $op,
+      'objectName' => $objectName,
+      'objectRef' => $objectRef,
+      'volunteerId' => self::$volunteerId,
+      'contact_id' => $objectRef->contact_id ?? null,
+      'is_primary' => $objectRef->is_primary ?? null,
+    ]);
+    
     if ($op !== 'create' || $objectName !== 'Address' || self::$volunteerId !== $objectRef->contact_id || !$objectRef->is_primary) {
       return FALSE;
     }
