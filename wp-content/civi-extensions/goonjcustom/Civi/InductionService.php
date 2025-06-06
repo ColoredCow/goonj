@@ -215,7 +215,8 @@ class InductionService extends AutoSubscriber {
       ->addSelect('address.state_province_id')
       ->addJoin('Address AS address', 'LEFT')
       ->addWhere('id', '=', $volunteerId)
-      ->execute()->single();
+      ->execute()->first();
+    \Civi::log()->info('Contact fetched', ['contact' => $contact]);
   
     $stateId = $contact['address.state_province_id'];
     if (!$stateId) {
