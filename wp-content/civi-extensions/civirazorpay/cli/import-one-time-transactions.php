@@ -332,7 +332,7 @@ class RazorpayPaymentImporter {
   private function createContact(array $params): ?int {
     // Create an Individual contact.
     $contact = Individual::create(FALSE)
-      ->addValue('source', 'Monetary Contribution')
+      ->addValue('source', 'Imported from Razorpay')
       ->addValue('first_name', 'Unknown')
       ->addValue('last_name', 'Customer')
       ->execute()
@@ -405,7 +405,7 @@ class RazorpayPaymentImporter {
         ->addValue('trxn_id', $transactionId)
         ->addValue('invoice_id', $invoiceId)
         ->addValue('contribution_status_id:name', 'Completed')
-        ->addValue('source', 'Import One Time Contribution')
+        ->addValue('source', 'Imported from Razorpay')
         ->addValue('payment_processor_id', $this->processorID)
         ->execute();
 
