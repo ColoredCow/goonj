@@ -69,17 +69,17 @@ function goonjcustom_civicrm_container(ContainerBuilder $container) {
   )->setPublic(TRUE);
 }
 
-function goonjcustom_civicrm_apiWrappers(&$wrappers, $apiRequest) {
-  // $apiUserId = \CRM_Core_Session::getLoggedInContactID();
+// function goonjcustom_civicrm_apiWrappers(&$wrappers, $apiRequest) {
+//   // $apiUserId = \CRM_Core_Session::getLoggedInContactID();
 
-  // if ($apiUserId != CIVICRM_ALLOWED_API_USER_ID) {
-  //   throw new UnauthorizedException('Access denied. You do not have permission to perform this action.');
-  // }
+//   // if ($apiUserId != CIVICRM_ALLOWED_API_USER_ID) {
+//   //   throw new UnauthorizedException('Access denied. You do not have permission to perform this action.');
+//   // }
 
-  if ($apiRequest['entity'] == 'Campaign' && $apiRequest['action'] == 'get') {
-    $wrappers[] = new \CRM_Goonjcustom_APIWrappers_ContributionFilter();
-  }
-}
+//   if ($apiRequest['entity'] == 'Campaign' && $apiRequest['action'] == 'get') {
+//     $wrappers[] = new \CRM_Goonjcustom_APIWrappers_ContributionFilter();
+//   }
+// }
 
 /**
  *
