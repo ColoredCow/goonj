@@ -14,7 +14,6 @@ use Civi\Token\Event\TokenValueEvent;
 use Symfony\Component\Config\Resource\FileResource;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 require_once __DIR__ . '/api/v3/ContributionFilter.php';
-use Civi\API\Exception\UnauthorizedException;
 
 
 /**
