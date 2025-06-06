@@ -70,14 +70,12 @@ function goonjcustom_civicrm_container(ContainerBuilder $container) {
 }
 
 function goonjcustom_civicrm_apiWrappers(&$wrappers, $apiRequest) {
-  if (PHP_SAPI !== 'cli') {  
-  $allowedIPs = unserialize(CIVICRM_ALLOWED_IPS);
-    $clientIP = $_SERVER['SERVER_ADDR'] ?? '';
+  $apiUserId = \CRM_Core_Session::getLoggedInContactID();
 
-    if (!in_array($clientIP, $allowedIPs, TRUE)) {
-      throw new UnauthorizedException('Access denied. You do not have permission to perform this action.');
-    }
-    }
+  if ($apiUserId !== CIVICRM_ALLOWED_API_USER_ID) {
+    return;
+  }
+
   if ($apiRequest['entity'] == 'Campaign' && $apiRequest['action'] == 'get') {
     $wrappers[] = new \CRM_Goonjcustom_APIWrappers_ContributionFilter();
   }
