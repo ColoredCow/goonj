@@ -212,13 +212,13 @@ class InductionService extends AutoSubscriber {
     }
   
     $contact = Contact::get(FALSE)
-      ->addSelect('address.state_province_id')
-      ->addJoin('Address AS address', 'LEFT')
-      ->addWhere('id', '=', $volunteerId)
-      ->execute()->first();
+    ->addSelect('address_primary.state_province_id')
+    ->addWhere('id', '=', $volunteerId)
+    ->execute()->first();
+    
     \Civi::log()->info('Contact fetched', ['contact' => $contact]);
   
-    $stateId = $contact['address.state_province_id'];
+    $stateId = $contact['address_primary.state_province_id'];
     if (!$stateId) {
       \Civi::log()->info('State not found', ['contactId' => $contact['id'], 'StateId' => $stateId]);
       return FALSE;
