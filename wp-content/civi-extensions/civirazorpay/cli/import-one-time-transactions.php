@@ -12,10 +12,8 @@
  */
 
 // To run the script use this cli command
-// cv scr import-one-time-transactions.php /path-to-csv-file.csv | tee save-data.txt
-
-// cv scr ../civi-extensions/civirazorpay/cli/import-one-time-transactions.php /var/www/html/crm.goonj.org/wp-content/civi-extensions/civirazorpay/temp_file/April_MisMatched_Data.csv | tee one-time-contribution-save-data.txt
-
+// cv scr import-one-time-transactions.php /path-to-csv-file.csv | tee save-data.txt.
+// Cv scr ../civi-extensions/civirazorpay/cli/import-one-time-transactions.php /var/www/html/crm.goonj.org/wp-content/civi-extensions/civirazorpay/temp_file/April_MisMatched_Data.csv | tee one-time-contribution-save-data.txt
 use Civi\Payment\System;
 use Civi\Api4\Contribution;
 use Civi\Api4\Individual;
