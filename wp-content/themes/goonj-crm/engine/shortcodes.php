@@ -112,7 +112,7 @@ function goonj_generate_monetary_button($individualId, $collectionCampId) {
     return;
   }
 
-  $contact = \Civi\Api4\Contact::get(FALSE)
+  $contact = Contact::get(FALSE)
     ->addSelect('contact_sub_type')
     ->addWhere('id', '=', $collectionCampId)
     ->execute()
@@ -122,29 +122,9 @@ function goonj_generate_monetary_button($individualId, $collectionCampId) {
 
   if (in_array('Goonj_Processing_Center', $subtypes)) {
     $sourceFieldId = goonj_get_contribution_source_field_id_for_processing_unit();
-  } else {
-    $collectionCamp = \Civi\Api4\EckEntity::get('Collection_Camp', TRUE)
-      ->addSelect('subtype:name')
-      ->addWhere('id', '=', $collectionCampId)
-      ->execute()
-      ->first();
-
-    $campSubtype = $collectionCamp['subtype:name'] ?? '';
-
-    $defaultSubtypes = [
-      'Collection_Camp',
-      'Institution_Collection_Camp',
-      'Dropping_Center',
-      'Institution_Dropping_Center',
-      'Goonj_Activitties',
-      'Instiution_Goonj_Activities',
-    ];
-
-    if (in_array($campSubtype, $defaultSubtypes)) {
-      $sourceFieldId = goonj_get_contribution_source_field_id();
-    } else {
-      $sourceFieldId = goonj_get_contribution_source_field_id_for_events();
-    }
+  }
+  else {
+    $sourceFieldId = goonj_get_contribution_source_field_id();
   }
 
   if (empty($sourceFieldId)) {
@@ -157,7 +137,6 @@ function goonj_generate_monetary_button($individualId, $collectionCampId) {
 
   return goonj_generate_button_html($monetaryUrl, $buttonText);
 }
-
 
 /**
  *
@@ -286,7 +265,28 @@ function goonj_event_monetary_contribution_button() {
     return;
   }
 
-  return goonj_generate_monetary_button($individualId, $eventId);
+  return goonj_generate_event_monetary_button($individualId, $eventId);
+}
+
+/**
+ *
+ */
+function goonj_generate_event_monetary_button($individualId, $eventId) {
+  if (empty($eventId)) {
+    return;
+  }
+
+  $sourceFieldId = goonj_get_contribution_source_field_id_for_events();
+
+  if (empty($sourceFieldId)) {
+    return;
+  }
+
+  $checksum = goonj_generate_checksum($individualId);
+  $monetaryUrl = "/contribute/?$sourceFieldId=$eventId&cid=$individualId&cs=$checksum";
+  $buttonText = __('Monetary Contribution', 'goonj-crm');
+
+  return goonj_generate_button_html($monetaryUrl, $buttonText);
 }
 
 /**
@@ -422,7 +422,6 @@ function goonj_contribution_volunteer_signup_button() {
       ->addWhere('id', '=', $activity_id)
       ->addWhere('activity_type_id:label', '=', 'Material Contribution')
       ->execute();
-
 
     if ($activities->count() === 0) {
       return;
