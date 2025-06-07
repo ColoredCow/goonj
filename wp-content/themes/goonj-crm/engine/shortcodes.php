@@ -112,28 +112,52 @@ function goonj_generate_monetary_button($individualId, $collectionCampId) {
     return;
   }
 
-  $requestUri = $_SERVER['REQUEST_URI'];
+  $contact = \Civi\Api4\Contact::get(FALSE)
+    ->addSelect('contact_sub_type')
+    ->addWhere('id', '=', $collectionCampId)
+    ->execute()
+    ->first();
 
-  if (strpos($requestUri, '/processing-center/') !== FALSE) {
+  $subtypes = $contact['contact_sub_type'] ?? [];
+
+  if (in_array('Goonj_Processing_Center', $subtypes)) {
     $sourceFieldId = goonj_get_contribution_source_field_id_for_processing_unit();
+  } else {
+    $collectionCamp = \Civi\Api4\EckEntity::get('Collection_Camp', TRUE)
+      ->addSelect('subtype:name')
+      ->addWhere('id', '=', $collectionCampId)
+      ->execute()
+      ->first();
+
+    $campSubtype = $collectionCamp['subtype:name'] ?? '';
+
+    $defaultSubtypes = [
+      'Collection_Camp',
+      'Institution_Collection_Camp',
+      'Dropping_Center',
+      'Institution_Dropping_Center',
+      'Goonj_Activitties',
+      'Instiution_Goonj_Activities',
+    ];
+
+    if (in_array($campSubtype, $defaultSubtypes)) {
+      $sourceFieldId = goonj_get_contribution_source_field_id();
+    } else {
+      $sourceFieldId = goonj_get_contribution_source_field_id_for_events();
+    }
   }
-  elseif (strpos($requestUri, '/events/') !== FALSE) {
-    $sourceFieldId = goonj_get_contribution_source_field_id_for_events();
-  }
-  else {
-    $sourceFieldId = goonj_get_contribution_source_field_id();
-  }
+
   if (empty($sourceFieldId)) {
     return;
   }
 
   $checksum = goonj_generate_checksum($individualId);
-
   $monetaryUrl = "/contribute/?$sourceFieldId=$collectionCampId&cid=$individualId&cs=$checksum";
   $buttonText = __('Monetary Contribution', 'goonj-crm');
 
   return goonj_generate_button_html($monetaryUrl, $buttonText);
 }
+
 
 /**
  *
