@@ -109,7 +109,7 @@ function goonj_generate_checksum($individualId) {
  */
 function goonj_generate_monetary_button($individualId, $collectionCampId) {
   if (empty($collectionCampId)) {
-    return '';
+    return;
   }
 
   $requestUri = $_SERVER['REQUEST_URI'];
