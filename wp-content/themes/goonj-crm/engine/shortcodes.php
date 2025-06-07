@@ -66,6 +66,36 @@ function goonj_get_contribution_source_field_id() {
 /**
  *
  */
+function goonj_get_contribution_source_field_id_for_processing_unit() {
+  $sourceField = CustomField::get(FALSE)
+    ->addSelect('id')
+    ->addWhere('custom_group_id:name', '=', 'Contribution_Details')
+    ->addWhere('name', '=', 'PU_Source')
+    ->execute()->single();
+
+  if ($sourceField) {
+    return 'custom_' . $sourceField['id'];
+  }
+}
+
+/**
+ *
+ */
+function goonj_get_contribution_source_field_id_for_events() {
+  $sourceField = CustomField::get(FALSE)
+    ->addSelect('id')
+    ->addWhere('custom_group_id:name', '=', 'Contribution_Details')
+    ->addWhere('name', '=', 'Events')
+    ->execute()->single();
+
+  if ($sourceField) {
+    return 'custom_' . $sourceField['id'];
+  }
+}
+
+/**
+ *
+ */
 function goonj_generate_checksum($individualId) {
   return Contact::getChecksum(FALSE)
     ->setContactId($individualId)
@@ -79,10 +109,24 @@ function goonj_generate_checksum($individualId) {
  */
 function goonj_generate_monetary_button($individualId, $collectionCampId) {
   if (empty($collectionCampId)) {
+    return '';
+  }
+
+  $requestUri = $_SERVER['REQUEST_URI'];
+
+  if (strpos($requestUri, '/processing-center/') !== FALSE) {
+    $sourceFieldId = goonj_get_contribution_source_field_id_for_processing_unit();
+  }
+  elseif (strpos($requestUri, '/events/') !== FALSE) {
+    $sourceFieldId = goonj_get_contribution_source_field_id_for_events();
+  }
+  else {
+    $sourceFieldId = goonj_get_contribution_source_field_id();
+  }
+  if (empty($sourceFieldId)) {
     return;
   }
 
-  $sourceFieldId = goonj_get_contribution_source_field_id();
   $checksum = goonj_generate_checksum($individualId);
 
   $monetaryUrl = "/contribute/?$sourceFieldId=$collectionCampId&cid=$individualId&cs=$checksum";
@@ -157,7 +201,7 @@ function getIndividualIdFromActivity($activityId) {
 }
 
 /**
- *f
+ * F.
  */
 function getCollectionCampIdFromActivity($activityId) {
   $activities = Activity::get(FALSE)
@@ -167,7 +211,7 @@ function getCollectionCampIdFromActivity($activityId) {
             'Material_Contribution.Dropping_Center',
             'Material_Contribution.Institution_Dropping_Center',
             'Material_Contribution.Goonj_Office',
-			'Office_Visit.Goonj_Processing_Center',
+            'Office_Visit.Goonj_Processing_Center',
             'Material_Contribution.Event'
         )
     ->addWhere('id', '=', $activityId)
@@ -209,14 +253,12 @@ function goonj_event_monetary_contribution_button() {
 
   $contactData = getContactSource($individualId);
   if (empty($contactData['source'])) {
-    \Civi::log()->info("No source title found for contact ID: $individualId");
     return;
   }
 
   $title = $contactData['source'];
   $eventId = getEventIdByTitle($title);
   if (empty($eventId)) {
-    \Civi::log()->info("No event found for source title: $title");
     return;
   }
 
@@ -238,13 +280,11 @@ function goonj_monetary_contribution_button() {
     if (!empty($individualId)) {
       $contactData = getContactSource($individualId);
       if (empty($contactData['source'])) {
-        \Civi::log()->info("No source title found for contact ID: $individualId");
         return;
       }
       $title = $contactData['source'];
       $collectionCampId = getCollectionCampIdByTitle($title);
       if (empty($collectionCampId)) {
-        \Civi::log()->info("No collection camp id found for title: $title");
         return;
       }
       return goonj_generate_monetary_button($individualId, $collectionCampId);
@@ -253,12 +293,10 @@ function goonj_monetary_contribution_button() {
     if (!empty($activityId)) {
       $individualId = getIndividualIdFromActivity($activityId);
       if (empty($individualId)) {
-        \Civi::log()->info("No source_contact_id found for activity ID: $activityId");
         return;
       }
       $collectionCampId = getCollectionCampIdFromActivity($activityId);
       if (empty($collectionCampId)) {
-        \Civi::log()->info("No collection camp id found for activity ID: $activityId");
         return;
       }
       return goonj_generate_monetary_button($individualId, $collectionCampId);
@@ -348,7 +386,7 @@ function goonj_material_contribution_button() {
  */
 function goonj_contribution_volunteer_signup_button() {
   $activity_id = isset($_GET['activityId']) ? intval($_GET['activityId']) : 0;
-
+  \Civi::log()->info('activity_id:', ['activity_id' => $activity_id]);
   if (empty($activity_id)) {
     \Civi::log()->warning('Activity ID is missing');
     return;
@@ -362,8 +400,8 @@ function goonj_contribution_volunteer_signup_button() {
       ->addWhere('activity_type_id:label', '=', 'Material Contribution')
       ->execute();
 
+
     if ($activities->count() === 0) {
-      \Civi::log()->info('No activities found for Activity ID:', ['activityId' => $activity_id]);
       return;
     }
 
@@ -382,7 +420,6 @@ function goonj_contribution_volunteer_signup_button() {
     }
 
     $contactSubTypes = $contact['contact_sub_type'] ?? [];
-
     // If the individual is already a volunteer, don't show the button.
     if (in_array('Volunteer', $contactSubTypes)) {
       return;
@@ -396,7 +433,6 @@ function goonj_contribution_volunteer_signup_button() {
     ]
     );
     $buttonText = __('Wish to Volunteer?', 'goonj-crm');
-
     return goonj_generate_button_html($redirectPathWithParams, $buttonText);
   }
   catch (\Exception $e) {
