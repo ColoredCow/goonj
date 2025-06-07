@@ -4,7 +4,6 @@ require_once 'api/Wrapper.php';
 
 use Civi\Api4\Campaign;
 use Civi\Api4\Generic\AbstractAction;
-use Civi\API\Exception\UnauthorizedException;
 
 /**
  *
