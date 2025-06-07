@@ -112,19 +112,24 @@ function goonj_generate_monetary_button($individualId, $collectionCampId) {
     return;
   }
 
-  $contact = Contact::get(FALSE)
-    ->addSelect('contact_sub_type')
-    ->addWhere('id', '=', $collectionCampId)
-    ->execute()
-    ->first();
+  $requestUri = $_SERVER['REQUEST_URI'];
 
-  $subtypes = $contact['contact_sub_type'] ?? [];
+  if (strpos($requestUri, '/events/') !== FALSE) {
+    $sourceFieldId = goonj_get_contribution_source_field_id_for_events();
+  } else {
+    $contact = Contact::get(FALSE)
+      ->addSelect('contact_sub_type')
+      ->addWhere('id', '=', $collectionCampId)
+      ->execute()
+      ->first();
 
-  if (in_array('Goonj_Processing_Center', $subtypes)) {
-    $sourceFieldId = goonj_get_contribution_source_field_id_for_processing_unit();
-  }
-  else {
-    $sourceFieldId = goonj_get_contribution_source_field_id();
+    $subtypes = $contact['contact_sub_type'] ?? [];
+
+    if (in_array('Goonj_Processing_Center', $subtypes)) {
+      $sourceFieldId = goonj_get_contribution_source_field_id_for_processing_unit();
+    } else {
+      $sourceFieldId = goonj_get_contribution_source_field_id();
+    }
   }
 
   if (empty($sourceFieldId)) {
@@ -137,6 +142,7 @@ function goonj_generate_monetary_button($individualId, $collectionCampId) {
 
   return goonj_generate_button_html($monetaryUrl, $buttonText);
 }
+
 
 /**
  *
