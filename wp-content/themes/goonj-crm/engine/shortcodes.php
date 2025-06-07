@@ -386,7 +386,6 @@ function goonj_material_contribution_button() {
  */
 function goonj_contribution_volunteer_signup_button() {
   $activity_id = isset($_GET['activityId']) ? intval($_GET['activityId']) : 0;
-  \Civi::log()->info('activity_id:', ['activity_id' => $activity_id]);
   if (empty($activity_id)) {
     \Civi::log()->warning('Activity ID is missing');
     return;
