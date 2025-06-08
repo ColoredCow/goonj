@@ -33,7 +33,7 @@ function goonj_generate_activity_button( $activity, $office_id, $individual_id )
 	// Define the mapping for each activity to the corresponding button and redirect info
 	$activityMap = array(
 		'Office visit' => array(
-			'redirectPath' => '/processing-center/office-visit/details2/',
+			'redirectPath' => '/processing-center/office-visit/details/',
 			'buttonText' => __( 'Learning Journey', 'goonj-crm' ),
 			'queryParam' => 'Office_Visit.Goonj_Processing_Center',
 			'additionalParams' => array(
