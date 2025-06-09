@@ -290,8 +290,8 @@ class CRM_Core_Resources implements CRM_Core_Resources_CollectionAdderInterface 
     // TODO consider caching results
     $base = $this->paths->hasVariable($ext)
       ? $this->paths->getVariable($ext, 'url')
-      : ($this->extMapper->keyToUrl($ext) . '/');
-    return $base . $file;
+      : $this->extMapper->keyToUrl($ext);
+    return rtrim($base, '/') . "/$file";
   }
 
   /**
@@ -604,7 +604,7 @@ class CRM_Core_Resources implements CRM_Core_Resources_CollectionAdderInterface 
    *   system policy, the minified version will be returned. Otherwise, the original.
    */
   public function filterMinify($ext, $file) {
-    if (CRM_Core_Config::singleton()->debug && strpos($file, '.min.') !== FALSE) {
+    if (CRM_Core_Config::singleton()->debug && str_contains($file, '.min.')) {
       $nonMiniFile = str_replace('.min.', '.', $file);
       if ($this->getPath($ext, $nonMiniFile)) {
         $file = $nonMiniFile;
@@ -618,7 +618,7 @@ class CRM_Core_Resources implements CRM_Core_Resources_CollectionAdderInterface 
    * @return string
    */
   public function addCacheCode($url) {
-    $hasQuery = strpos($url, '?') !== FALSE;
+    $hasQuery = str_contains($url, '?');
     $operator = $hasQuery ? '&' : '?';
 
     return $url . $operator . 'r=' . $this->getCacheCode();
