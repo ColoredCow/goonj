@@ -34,7 +34,7 @@ function goonj_generate_activity_button( $activity, $office_id, $individual_id )
 	$activityMap = array(
 		'Office visit' => array(
 			'redirectPath' => '/processing-center/office-visit/details/',
-			'buttonText' => __( 'Proceed to Processing Center Tour', 'goonj-crm' ),
+			'buttonText' => __( 'Learning Journey', 'goonj-crm' ),
 			'queryParam' => 'Office_Visit.Goonj_Processing_Center',
 			'additionalParams' => array(
 				'Office_Visit.Entity_Type' => $activity['Material_Contribution.Entity_Type'],

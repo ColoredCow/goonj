@@ -701,7 +701,7 @@ function goonj_redirect_after_individual_creation() {
 		
 				if ( ! empty( $institutionDroppingCenter['id'] ) ) {
 					$redirectPath = sprintf(
-						'/institution-dropping-center/material-contribution/#?Material_Contribution.Institution_Dropping_Center=%s&source_contact_id=%s',
+						'/institution-dropping-center/dropping-center-material-contribution/#?Material_Contribution.Institution_Dropping_Center=%s&source_contact_id=%s',
 						$institutionDroppingCenter['id'],
 						$individual['id']
 					);
