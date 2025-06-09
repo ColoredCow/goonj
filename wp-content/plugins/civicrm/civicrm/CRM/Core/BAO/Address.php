@@ -16,6 +16,7 @@
  */
 
 use Civi\Api4\Address;
+use Civi\Token\TokenProcessor;
 
 /**
  * This is class to handle address related functions.
@@ -994,7 +995,7 @@ SELECT is_primary,
     }
 
     while ($downstreamDao->fetch()) {
-      // call the function to update the relationship
+      $params['master_id'] = $addressId;
       if ($masterId) {
         // If we have a master_id AND we have downstream addresses, this is
         // untenable. Ensure we overwrite the downstream addresses so they have
@@ -1002,6 +1003,7 @@ SELECT is_primary,
         $params['master_id'] = $masterId;
       }
       elseif ($createRelationship) {
+        // call the function to update the relationship
         self::processSharedAddressRelationship($addressId, $downstreamDao->contact_id);
       }
 
@@ -1045,13 +1047,11 @@ SELECT is_primary,
       }
 
       // CRM-15120
-      $formatted = [
-        'first_name' => $rows[$rowID]['first_name'],
-        'individual_prefix' => $rows[$rowID]['individual_prefix'],
-      ];
-      $format = Civi::settings()->get('display_name_format');
-      $firstNameWithPrefix = CRM_Utils_Address::format($formatted, $format, FALSE, FALSE);
-      $firstNameWithPrefix = trim($firstNameWithPrefix);
+      $tokenProcessor = new TokenProcessor(\Civi::dispatcher(), ['schema' => ['contactId'], 'smarty' => FALSE]);
+      $tokenProcessor->addMessage('name', Civi::settings()->get('display_name_format'), 'text/plain');
+      $tokenProcessor->addRow(['contact' => ['id' => $rowID] + $rows[$rowID]]);
+      $tokenProcessor->evaluate();
+      $firstNameWithPrefix = trim($tokenProcessor->getRow(0)->render('name'));
 
       // fill uniqueAddress array with last/first name tree
       if (isset($uniqueAddress[$address])) {

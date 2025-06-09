@@ -94,12 +94,6 @@ abstract class AbstractProcessor extends \Civi\Api4\Generic\AbstractAction {
    * Load all entities
    */
   protected function loadEntities() {
-    // if submission id is passed then we should display the submission data
-    if ($this->fillMode === 'form' && !empty($this->args['sid'])) {
-      $this->prePopulateSubmissionData();
-      return;
-    }
-
     // When loading a single join for an entity, only that entity needs to be processed
     if ($this->fillMode === 'join') {
       $entityNames = array_keys(array_intersect_key($this->args, $this->_formDataModel->getEntities()));
@@ -145,27 +139,6 @@ abstract class AbstractProcessor extends \Civi\Api4\Generic\AbstractAction {
       }
       $event = new AfformPrefillEvent($this->_afform, $this->_formDataModel, $this, $entity['type'], $entityName, $this->_entityIds);
       \Civi::dispatcher()->dispatch('civi.afform.prefill', $event);
-    }
-  }
-
-  /**
-   * Load the data from submission table
-   */
-  protected function prePopulateSubmissionData() {
-    // if submission id is passed then get the data from submission
-    $afformSubmissionData = \Civi\Api4\AfformSubmission::get(TRUE)
-      ->addSelect('data')
-      ->addWhere('id', '=', $this->args['sid'])
-      ->addWhere('afform_name', '=', $this->name)
-      ->execute()->first();
-
-    $this->_entityValues = $this->_formDataModel->getEntities();
-    foreach ($this->_entityValues as $entity => &$values) {
-      foreach ($afformSubmissionData['data'] as $e => $submission) {
-        if ($entity === $e) {
-          $values = $submission ?? [];
-        }
-      }
     }
   }
 
@@ -241,7 +214,10 @@ abstract class AbstractProcessor extends \Civi\Api4\Generic\AbstractAction {
       if (!empty($result[$key])) {
         $data = ['fields' => $result[$key]];
         foreach ($entity['joins'] ?? [] as $joinEntity => $join) {
-          $data['joins'][$joinEntity] = $this->loadJoins($joinEntity, $join, $entity, $entityId, $index);
+          $joinAllowedAction = self::getJoinAllowedAction($entity, $joinEntity);
+          if ($joinAllowedAction['update']) {
+            $data['joins'][$joinEntity] = $this->loadJoins($joinEntity, $entity, $entityId, $index);
+          }
         }
         $this->_entityValues[$entity['name']][$index] = $data;
       }
@@ -251,8 +227,9 @@ abstract class AbstractProcessor extends \Civi\Api4\Generic\AbstractAction {
   /**
    * Finds all joins after loading an entity.
    */
-  public function loadJoins($joinEntity, $join, $afEntity, $entityId, $index): array {
+  public function loadJoins(string $joinEntity, array $afEntity, $entityId, $index): array {
     $joinIdField = CoreUtil::getIdFieldName($joinEntity);
+    $join = $afEntity['joins'][$joinEntity];
     $multipleLocationBlocks = is_array($join['data']['location_type_id'] ?? NULL);
     $limit = 1;
     // Repeating blocks - set limit according to `max`, if set, otherwise 0 for unlimited
@@ -275,7 +252,7 @@ abstract class AbstractProcessor extends \Civi\Api4\Generic\AbstractAction {
       $items = array_column($joinResult, NULL, 'location_type_id');
       $joinResult = [];
       foreach ($join['data']['location_type_id'] as $locationType) {
-        $joinResult[] = $items[$locationType] ?? [];
+        $joinResult[] = $items[$locationType] ?? NULL;
       }
     }
     $this->_entityIds[$afEntity['name']][$index]['joins'][$joinEntity] = \CRM_Utils_Array::filterColumns($joinResult, [$joinIdField]);
@@ -323,7 +300,7 @@ abstract class AbstractProcessor extends \Civi\Api4\Generic\AbstractAction {
   }
 
   /**
-   * Delegated by loadEntity to call API.get and fill in additioal info
+   * Delegated by loadEntity to call API.get and fill in additional info
    *
    * @param string $afEntityName
    *   e.g. Individual1
@@ -343,10 +320,14 @@ abstract class AbstractProcessor extends \Civi\Api4\Generic\AbstractAction {
     // Fill additional info about file fields
     $fileFields = $this->getFileFields($apiEntityName, $entityFields);
     foreach ($fileFields as $fieldName => $fieldDefn) {
+      $select = ['file_name', 'icon'];
+      if ($this->canViewFileAttachments($afEntityName)) {
+        $select[] = 'url';
+      }
       foreach ($result as &$item) {
         if (!empty($item[$fieldName])) {
           $fileInfo = File::get(FALSE)
-            ->addSelect('file_name', 'icon')
+            ->setSelect($select)
             ->addWhere('id', '=', $item[$fieldName])
             ->execute()->first();
           $item[$fieldName] = $fileInfo;
@@ -354,6 +335,11 @@ abstract class AbstractProcessor extends \Civi\Api4\Generic\AbstractAction {
       }
     }
     return $result;
+  }
+
+  private function canViewFileAttachments(string $afEntityName): bool {
+    $afEntity = $this->_formDataModel->getEntity($afEntityName);
+    return ($afEntity['security'] === 'FBAC' || \CRM_Core_Permission::check('access uploaded files'));
   }
 
   protected static function getFileFields($entityName, $entityFields): array {
@@ -453,9 +439,13 @@ abstract class AbstractProcessor extends \Civi\Api4\Generic\AbstractAction {
   }
 
   protected static function getFkField($mainEntity, $otherEntity): ?array {
+    $fkEntities = [$otherEntity];
+    if ($otherEntity !== 'Contact' && CoreUtil::isContact($otherEntity)) {
+      $fkEntities[] = 'Contact';
+    }
     foreach (self::getEntityFields($mainEntity) as $field) {
       if ($field['type'] === 'Field' && empty($field['custom_field_id']) &&
-        ($field['fk_entity'] === $otherEntity || in_array($otherEntity, $field['dfk_entities'] ?? [], TRUE))
+        (in_array($field['fk_entity'], $fkEntities, TRUE) || array_intersect($fkEntities, $field['dfk_entities'] ?? []))
       ) {
         return $field;
       }
@@ -593,11 +583,13 @@ abstract class AbstractProcessor extends \Civi\Api4\Generic\AbstractAction {
     $entityValues = [];
     foreach ($this->_formDataModel->getEntities() as $entityName => $entity) {
       $entityValues[$entityName] = [];
-      $fileFields = $this->getFileFields($entity['type'], $entity['fields']);
       // Gather submitted field values from $values['fields'] and sub-entities from $values['joins']
+      $submittableFields = $this->getSubmittableFields($entity['fields']);
+      $fileFields = $this->getFileFields($entity['type'], $submittableFields);
       foreach ($submittedValues[$entityName] ?? [] as $values) {
-        // Only accept values from fields on the form
-        $values['fields'] = array_intersect_key($values['fields'] ?? [], $entity['fields']);
+        // Use default values from DisplayOnly fields + submittable fields on the form
+        $values['fields'] = $this->getForcedDefaultValues($entity['fields']) +
+          array_intersect_key($values['fields'] ?? [], $submittableFields);
         // Unset prefilled file fields
         foreach ($fileFields as $fileFieldName) {
           if (isset($values['fields'][$fileFieldName]) && is_array($values['fields'][$fileFieldName])) {
@@ -616,13 +608,21 @@ abstract class AbstractProcessor extends \Civi\Api4\Generic\AbstractAction {
         foreach ($values['joins'] as $joinEntity => &$joinValues) {
           // Only accept values from join fields on the form
           $idField = CoreUtil::getIdFieldName($joinEntity);
-          $allowedFields = $entity['joins'][$joinEntity]['fields'] ?? [];
+          $allowedFields = $this->getSubmittableFields($entity['joins'][$joinEntity]['fields'] ?? []);
           $allowedFields[$idField] = TRUE;
           $fileFields = $this->getFileFields($joinEntity, $allowedFields);
           // Enforce the limit set by join[max]
           $joinValues = array_slice($joinValues, 0, $entity['joins'][$joinEntity]['max'] ?? NULL);
           foreach ($joinValues as $index => $vals) {
-            $joinValues[$index] = array_intersect_key($vals, $allowedFields);
+            // $vals could be NULL when a join is in a repeating group.
+            // Then $joinValues[0] = null and $joinValues[1] = array
+            if ($vals === NULL) {
+              unset($joinValues[$index]);
+              continue;
+            }
+            // As with the main entity, use default values from DisplayOnly fields + values from submittable fields
+            $joinValues[$index] = $this->getForcedDefaultValues($entity['joins'][$joinEntity]['fields'] ?? []);
+            $joinValues[$index] += array_intersect_key($vals, $allowedFields);
             // Unset prefilled file fields
             foreach ($fileFields as $fileFieldName) {
               if (isset($joinValues[$index][$fileFieldName]) && is_array($joinValues[$index][$fileFieldName])) {
@@ -642,7 +642,15 @@ abstract class AbstractProcessor extends \Civi\Api4\Generic\AbstractAction {
             }
 
             // Merge in pre-set data
-            $joinValues[$index] = array_merge($joinValues[$index], $entity['joins'][$joinEntity]['data'] ?? []);
+            foreach ($entity['joins'][$joinEntity]['data'] ?? [] as $dataKey => $dataVal) {
+              // For multiple location blocks, values will be in an array (see FormDataModel::parseFields)
+              if (is_array($dataVal) && array_key_exists($index, $dataVal)) {
+                $joinValues[$index][$dataKey] = $dataVal[$index];
+              }
+              else {
+                $joinValues[$index][$dataKey] = $dataVal;
+              }
+            }
           }
         }
         $entityValues[$entityName][] = $values;
@@ -660,6 +668,38 @@ abstract class AbstractProcessor extends \Civi\Api4\Generic\AbstractAction {
     }
 
     return $entityValues;
+  }
+
+  /**
+   * Return names of submittable fields (not DisplayOnly)
+   *
+   * TODO: Should filter out conditionally hidden fields too.
+   *
+   * @param array $fields
+   * @return array
+   */
+  protected function getSubmittableFields(array $fields): array {
+    return array_filter($fields, function ($field) {
+      $inputType = $field['defn']['input_type'] ?? NULL;
+      return $inputType !== 'DisplayOnly';
+    });
+  }
+
+  /**
+   * Get default values from DisplayOnly fields
+   *
+   * @param array $fields
+   * @return array
+   */
+  protected function getForcedDefaultValues(array $fields): array {
+    $values = [];
+    foreach ($fields as $field) {
+      $inputType = $field['defn']['input_type'] ?? NULL;
+      if ($inputType === 'DisplayOnly' && isset($field['defn']['afform_default'])) {
+        $values[$field['name']] = $field['defn']['afform_default'];
+      }
+    }
+    return $values;
   }
 
   /**
@@ -685,6 +725,23 @@ abstract class AbstractProcessor extends \Civi\Api4\Generic\AbstractAction {
   protected static function getNestedKey(array $values) {
     $firstValue = \CRM_Utils_Array::first(array_filter($values));
     return is_array($firstValue) && $firstValue ? array_keys($firstValue)[0] : NULL;
+  }
+
+  /**
+   * Function to get allowed action of a join entity
+   *
+   * @param array $mainEntity
+   * @param string $joinEntityName
+   *
+   * @return array{update: bool, delete: bool}
+   */
+  public static function getJoinAllowedAction(array $mainEntity, string $joinEntityName) {
+    $actions = ["update" => TRUE, "delete" => TRUE];
+    if (array_key_exists('actions', $mainEntity['joins'][$joinEntityName])) {
+      $actions = array_merge($actions, $mainEntity['joins'][$joinEntityName]['actions']);
+    }
+
+    return $actions;
   }
 
 }

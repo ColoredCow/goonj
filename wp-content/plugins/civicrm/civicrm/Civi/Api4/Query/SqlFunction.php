@@ -224,10 +224,12 @@ abstract class SqlFunction extends SqlExpression {
         'flag_after' => [],
         'optional' => FALSE,
         'must_be' => ['SqlField', 'SqlFunction', 'SqlString', 'SqlNumber', 'SqlNull'],
+        'can_be_empty' => FALSE,
         'api_default' => NULL,
       ];
       if (!$param['max_expr']) {
         $param['must_be'] = [];
+        $param['min_expr'] = 0;
       }
       $params[] = $param;
     }
@@ -272,6 +274,28 @@ abstract class SqlFunction extends SqlExpression {
    */
   public function getType(): string {
     return 'SqlFunction';
+  }
+
+  /**
+   * Returns the dataType of rendered output, based on the fields passed into the function
+   *
+   * @param array $fieldSpecs
+   *   List of available fields, e.g. Api4Query::$apiFieldSpec
+   * @return string|null
+   */
+  public function getRenderedDataType(array $fieldSpecs): ?string {
+    $dataType = $this::getDataType();
+    if ($dataType) {
+      return $dataType;
+    }
+    if ($this->getSerialize()) {
+      return 'Array';
+    }
+    $fields = $this->getFields();
+    if (!empty($fields[0])) {
+      return $fieldSpecs[$fields[0]]['data_type'] ?? NULL;
+    }
+    return NULL;
   }
 
   /**

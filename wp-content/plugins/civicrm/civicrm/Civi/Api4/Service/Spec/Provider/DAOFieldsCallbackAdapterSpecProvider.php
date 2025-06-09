@@ -14,6 +14,7 @@ namespace Civi\Api4\Service\Spec\Provider;
 
 use Civi\Api4\Service\Spec\FieldSpec;
 use Civi\Api4\Service\Spec\RequestSpec;
+use Civi\Api4\Service\Spec\SpecFormatter;
 use Civi\Api4\Utils\CoreUtil;
 use Civi\Api4\Utils\FormattingUtil;
 use Civi\Test\Invasive;
@@ -47,7 +48,7 @@ class DAOFieldsCallbackAdapterSpecProvider extends \Civi\Core\Service\AutoServic
       if (isset($unmodifiedFields[$fieldName]) && $fieldDefinition == $unmodifiedFields[$fieldName]) {
         continue;
       }
-      $newFieldSpec = self::legacyArrayToField($fieldDefinition, $spec->getEntity());
+      $newFieldSpec = self::legacyArrayToField($fieldDefinition, $spec->getEntity(), $spec);
       $oldFieldSpec = $spec->getFieldByName($fieldName);
       if (!$oldFieldSpec) {
         $spec->addFieldSpec($newFieldSpec);
@@ -79,7 +80,7 @@ class DAOFieldsCallbackAdapterSpecProvider extends \Civi\Core\Service\AutoServic
   /**
    * Legacy function to convert array from DAO::fields() to a FieldSpec
    */
-  private static function legacyArrayToField(array $data, string $entityName): FieldSpec {
+  private static function legacyArrayToField(array $data, string $entityName, RequestSpec $spec): FieldSpec {
     $dataTypeName = self::getDataType($data);
 
     $hasDefault = isset($data['default']) && $data['default'] !== '';
@@ -89,7 +90,10 @@ class DAOFieldsCallbackAdapterSpecProvider extends \Civi\Core\Service\AutoServic
     $field->setType('Field');
     $field->setColumnName($name);
     $field->setNullable(empty($data['required']));
-    $field->setRequired(!empty($data['required']) && !$hasDefault && $name !== 'id');
+    // Api4 only expects field to be 'required' if the action is create.
+    if ($spec->getAction() === 'create') {
+      $field->setRequired(!empty($data['required']) && !$hasDefault && $name !== 'id');
+    }
     $field->setTitle($data['title'] ?? NULL);
     $field->setLabel($data['html']['label'] ?? NULL);
     $field->setLocalizable($data['localizable'] ?? FALSE);
@@ -163,8 +167,8 @@ class DAOFieldsCallbackAdapterSpecProvider extends \Civi\Core\Service\AutoServic
     if (in_array($inputType, ['Select', 'EntityRef'], TRUE) && !empty($data['serialize'])) {
       $inputAttrs['multiple'] = TRUE;
     }
-    if ($inputType == 'Date' && !empty($inputAttrs['formatType'])) {
-      self::setLegacyDateFormat($inputAttrs);
+    if ($inputType == 'Date' && !empty($inputAttrs['format_type'])) {
+      SpecFormatter::setLegacyDateFormat($inputAttrs);
     }
     // Number input for numeric fields
     if ($inputType === 'Text' && in_array($dataTypeName, ['Integer', 'Float'], TRUE)) {
@@ -195,23 +199,6 @@ class DAOFieldsCallbackAdapterSpecProvider extends \Civi\Core\Service\AutoServic
     $fieldSpec
       ->setInputType($inputType)
       ->setInputAttrs($inputAttrs);
-  }
-
-  /**
-   * @param array $inputAttrs
-   */
-  private static function setLegacyDateFormat(&$inputAttrs) {
-    if (empty(\Civi::$statics['legacyDatePrefs'][$inputAttrs['formatType']])) {
-      \Civi::$statics['legacyDatePrefs'][$inputAttrs['formatType']] = [];
-      $params = ['name' => $inputAttrs['formatType']];
-      \CRM_Core_DAO::commonRetrieve('CRM_Core_DAO_PreferencesDate', $params, \Civi::$statics['legacyDatePrefs'][$inputAttrs['formatType']]);
-    }
-    $dateFormat = \Civi::$statics['legacyDatePrefs'][$inputAttrs['formatType']];
-    unset($inputAttrs['formatType']);
-    $inputAttrs['time'] = !empty($dateFormat['time_format']);
-    $inputAttrs['date'] = TRUE;
-    $inputAttrs['start_date_years'] = (int) $dateFormat['start'];
-    $inputAttrs['end_date_years'] = (int) $dateFormat['end'];
   }
 
   /**
