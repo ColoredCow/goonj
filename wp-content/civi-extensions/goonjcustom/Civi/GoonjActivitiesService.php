@@ -355,66 +355,61 @@ class GoonjActivitiesService extends AutoSubscriber {
 
     $hasRestrictedRole = !$isAdmin && \CRM_Core_Permission::checkAnyPerm($restrictedRoles);
 
+    foreach ($tabs as $key => &$tab) {
+      if (!isset($tab['url']) && isset($tab['link'])) {
+        $tab['url'] = $tab['link'];
+      }
+    }
+
     if ($hasRestrictedRole) {
       unset($tabs['view']);
       unset($tabs['edit']);
     }
 
     $tabConfigs = [
+      'edit' => [
+        'title' => ts('Edit'),
+        'template' => 'CRM/Goonjcustom/Tabs/GoonjActivities/Edit.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+      ],
       'activities' => [
         'title' => ts('Activities'),
-        'module' => 'afsearchGoonjAllActivity',
-        'directive' => 'afsearch-goonj-all-activity',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'template' => 'CRM/Goonjcustom/Tabs/GoonjActivities/Activities.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
       ],
       'logistics' => [
         'title' => ts('Logistics'),
-        'module' => 'afsearchGoonjActivitiesLogistics',
-        'directive' => 'afsearch-goonj-activities-logistics',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'template' => 'CRM/Goonjcustom/Tabs/GoonjActivities/Logistics.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
       ],
       'eventVolunteers' => [
         'title' => ts('Event Volunteers'),
-        'module' => 'afsearchEventVolunteer',
-        'directive' => 'afsearch-event-volunteer',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'template' => 'CRM/Goonjcustom/Tabs/GoonjActivities/EventVolunteers.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
       ],
       'campOutcome' => [
         'title' => ts('Outcome'),
-        'module' => 'afsearchGoonjActivitiesOutcomeView',
-        'directive' => 'afsearch-goonj-activities-outcome-view',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'template' => 'CRM/Goonjcustom/Tabs/GoonjActivities/Outcome.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
       ],
       'campFeedback' => [
         'title' => ts('Volunteer Feedback'),
-        'module' => 'afsearchGoonjActivityVolunteerFeedback',
-        'directive' => 'afsearch-goonj-activity-volunteer-feedback',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'template' => 'CRM/Goonjcustom/Tabs/GoonjActivities/Feedback.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
       ],
       'attendeeFeedback' => [
         'title' => ts('Attendee Feedback'),
-        'module' => 'afsearchGoonjActivityAttendeeFeedbacksDetails',
-        'directive' => 'afsearch-goonj-activity-attendee-feedbacks-details',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'template' => 'CRM/Goonjcustom/Tabs/GoonjActivities/AttendeeFeedback.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
       ],
       'monetaryContribution' => [
         'title' => ts('Monetary Contribution'),
-        'module' => 'afsearchMonetaryContribution',
-        'directive' => 'afsearch-monetary-contribution',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'template' => 'CRM/Goonjcustom/Tabs/GoonjActivities/MonetaryContribution.tpl',
         'permissions' => ['account_team', 'ho_account'],
       ],
       // 'monetaryContributionForUrbanOps' => [
       //   'title' => ts('Monetary Contribution'),
-      //   'module' => 'afsearchMonetaryContributionForUrbanOps',
-      //   'directive' => 'afsearch-monetary-contribution-for-urban-ops',
-      //   'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+      //   'template' => 'CRM/Goonjcustom/Tabs/GoonjActivities/MonetaryContributionForUrbanOps.tpl',
       //   'permissions' => ['goonj_chapter_admin', 'urbanops'],
       // ],
     ];
