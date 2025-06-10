@@ -444,33 +444,39 @@ class UrbanPlannedVisitService extends AutoSubscriber {
       return;
     }
 
+    foreach ($tabs as $key => &$tab) {
+      if (!isset($tab['url']) && isset($tab['link'])) {
+        $tab['url'] = $tab['link'];
+      }
+    }
+
     $tabConfigs = [
       'edit' => [
         'title' => ts('Edit'),
         'module' => 'afformUrbanPlannedVisitIntentReviewForm',
         'directive' => 'afform-Urban-Planned-Visit-Intent-Review-Form',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCampEdit.tpl',
+        'template' => 'CRM/Goonjcustom/Tabs/UrbanPlannedVisit/Edit.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt', 'sanjha_team', 'project_team_ho', 'project_team_chapter', 'njpc_ho_team', 's2s_ho_team', 'communications_team'],
       ],
       'visitOutcome' => [
         'title' => ts('Visit Outcome'),
         'module' => 'afsearchVisitUrbanOutcomeDetails',
         'directive' => 'afsearch-visit-urban-outcome-details',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'template' => 'CRM/Goonjcustom/Tabs/UrbanPlannedVisit/Outcome.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt', 'sanjha_team', 'project_team_ho', 'project_team_chapter', 'njpc_ho_team', 's2s_ho_team', 'communications_team'],
       ],
       'visitContact' => [
         'title' => ts('Visit Contact'),
         'module' => 'afsearchVisitContactPerson',
         'directive' => 'afsearch-visit-contact-person',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'template' => 'CRM/Goonjcustom/Tabs/UrbanPlannedVisit/Contact.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt', 'sanjha_team', 'project_team_ho', 'project_team_chapter', 'njpc_ho_team', 's2s_ho_team', 'communications_team'],
       ],
       'visitFeedback' => [
         'title' => ts('Visit Feedback'),
         'module' => 'afsearchVisitFeedbackDetails',
         'directive' => 'afsearch-visit-feedback-details',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'template' => 'CRM/Goonjcustom/Tabs/UrbanPlannedVisit/Feedback.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt', 'sanjha_team', 'project_team_ho', 'project_team_chapter', 'njpc_ho_team', 's2s_ho_team', 'communications_team'],
       ],
     ];
