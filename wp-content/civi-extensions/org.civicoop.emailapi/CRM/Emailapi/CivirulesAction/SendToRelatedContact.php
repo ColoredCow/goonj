@@ -12,7 +12,6 @@ class CRM_Emailapi_CivirulesAction_SendToRelatedContact extends CRM_Civirules_Ac
    * Process the action
    *
    * @param CRM_Civirules_TriggerData_TriggerData $triggerData
-   * @access public
    */
   public function processAction(CRM_Civirules_TriggerData_TriggerData $triggerData) {
     $actionParams = $this->getActionParameters();
@@ -36,7 +35,7 @@ class CRM_Emailapi_CivirulesAction_SendToRelatedContact extends CRM_Civirules_Ac
       $params['extra_data'] = array_change_key_case($extra_data["\0CRM_Civirules_TriggerData_TriggerData\0entity_data"], CASE_LOWER);
       foreach ($params['extra_data'] as $entity => $values) {
         if (isset($values['id']) && $entity !== 'contact') {
-          $params["${entity}_id"] = $values['id'];
+          $params["{$entity}_id"] = $values['id'];
         }
       }
       //execute the action
@@ -44,6 +43,14 @@ class CRM_Emailapi_CivirulesAction_SendToRelatedContact extends CRM_Civirules_Ac
     }
   }
 
+    /**
+     * @param $contact_id
+     * @param $relationship_type
+     * @param $relationship_option
+     *
+     * @return array
+     * @throws \Civi\Core\Exception\DBQueryException
+     */
   protected function getRelatedContacts($contact_id, $relationship_type, $relationship_option) {
     $dir = 'b';
     $inverse_dir = 'a';
@@ -107,6 +114,9 @@ class CRM_Emailapi_CivirulesAction_SendToRelatedContact extends CRM_Civirules_Ac
     return $contacts;
   }
 
+  /**
+   * @return array
+   */
   public static function getRelationshipOptions() {
     return [
       'all_active' => ts('All active related contacts'),
@@ -115,7 +125,13 @@ class CRM_Emailapi_CivirulesAction_SendToRelatedContact extends CRM_Civirules_Ac
     ];
   }
 
-  public static function getRelationshipTypes($dir='both') {
+  /**
+   * @param string $dir
+   *
+   * @return array
+   * @throws CRM_Core_Exception
+   */
+  public static function getRelationshipTypes($dir = 'both') {
     $return = [];
     $relationshipTypes = civicrm_api3('RelationshipType', 'Get', ['is_active' => 1, 'options' => ['limit' => 0]]);
     foreach ($relationshipTypes['values'] as $relationshipType) {
@@ -142,11 +158,11 @@ class CRM_Emailapi_CivirulesAction_SendToRelatedContact extends CRM_Civirules_Ac
    * Return false if you do not need extra data input
    *
    * @param int $ruleActionId
+   *
    * @return bool|string
-   * $access public
    */
   public function getExtraDataInputUrl($ruleActionId) {
-    return CRM_Utils_System::url('civicrm/civirules/actions/emailapi_relatedcontact', 'rule_action_id='.$ruleActionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirules/actions/emailapi_relatedcontact', $ruleActionId);
   }
 
   /**
@@ -154,7 +170,6 @@ class CRM_Emailapi_CivirulesAction_SendToRelatedContact extends CRM_Civirules_Ac
    * e.g. 'Older than 65'
    *
    * @return string
-   * @access public
    */
   public function userFriendlyConditionParams() {
     $template = 'unknown template';
@@ -207,5 +222,43 @@ class CRM_Emailapi_CivirulesAction_SendToRelatedContact extends CRM_Civirules_Ac
       6 => $cc,
       7 => $bcc
     ]);
+  }
+
+  /**
+   * Get various types of help text for the action:
+   *   - actionDescription: When choosing from a list of actions, explains what the action does.
+   *   - actionDescriptionWithParams: When a action has been configured for a rule provides a
+   *       user friendly description of the action and params (see $this->userFriendlyConditionParams())
+   *   - actionParamsHelp (default): If the action has configurable params, show this help text when configuring
+   * @param string $context
+   *
+   * @return string
+   */
+  public function getHelpText(string $context): string {
+    switch ($context) {
+      case 'actionDescriptionWithParams':
+        return $this->userFriendlyConditionParams();
+
+      case 'actionDescription':
+        return E::ts('Send an email to related contact');
+
+      case 'actionParamsHelp':
+        return E::ts('<p>This is the form where you can set what is going to happen with the email.</p>
+    <p>The first few fields are relatively straightforward: the <strong>From Name</strong> is the name the email will be sent from and the <strong>From Email</strong> is the email address the email will be sent from. Leave these blank to use the configured defaults.</p>
+    <p>The <strong>Message Template</strong> is where you select which CiviCRM message template will be used to compose the mail. You can create and edit them in <strong>Administer>Communications>Message Templates</strong></p>
+    <p>The next section allows you to manipulate where the email will be sent to.<br/>
+    By <strong>default</strong> the email will be sent to the <strong>primary email address of the related contact</strong> in question.<br/>
+    You can select which related contacts should receive the email:
+    <ul>
+      <li><strong>All active related contacts</strong>,</li>
+      <li><strong>The most recent active related contact</strong>, this will select the contact with the newest start date of the relationship,</li>
+      <li>or <strong>The most recent inactive related contact</strong>, this will select the contact with the latest end date of the relationship</li>
+    </ul>
+    </p>
+      <p>Finally you can specify an email address for the <strong>CC to</strong> (a copy of the email will be sent to this email address and the email address will be visible to the recipient of the email too) or the <strong>BCC to</strong> (a copy of the email will be sent to this email address and the email address will NOT be visible to the recipient of the email too).</p>
+      <p>The sending of the email will also lead to an activity (type <em>Email</em>) being recorded for the contact in question, whatever email address will be used.</p>');
+    }
+
+    return $helpText ?? '';
   }
 }

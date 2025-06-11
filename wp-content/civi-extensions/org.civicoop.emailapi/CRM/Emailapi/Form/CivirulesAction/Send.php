@@ -6,19 +6,9 @@ use CRM_Emailapi_ExtensionUtil as E;
  *
  * @see http://wiki.civicrm.org/confluence/display/CRMDOC43/QuickForm+Reference
  */
-class CRM_Emailapi_Form_CivirulesAction_Send extends CRM_Core_Form {
+class CRM_Emailapi_Form_CivirulesAction_Send extends CRM_CivirulesActions_Form_Form {
 
-  protected $ruleActionId = false;
-
-  protected $ruleAction;
-
-  protected $rule;
-
-  protected $action;
-
-  protected $triggerClass;
-
-  protected $hasCase = false;
+  protected bool $hasCase;
 
   /**
    * Overridden parent method to do pre-form building processing
@@ -27,33 +17,10 @@ class CRM_Emailapi_Form_CivirulesAction_Send extends CRM_Core_Form {
    * @access public
    */
   public function preProcess() {
-    $this->ruleActionId = CRM_Utils_Request::retrieve('rule_action_id', 'Integer');
-    $this->ruleAction = new CRM_Civirules_BAO_RuleAction();
-    $this->action = new CRM_Civirules_BAO_Action();
-    $this->rule = new CRM_Civirules_BAO_Rule();
-    $this->ruleAction->id = $this->ruleActionId;
-    if ($this->ruleAction->find(TRUE)) {
-      $this->action->id = $this->ruleAction->action_id;
-      if (!$this->action->find(TRUE)) {
-        throw new Exception('CiviRules Could not find action with id '.$this->ruleAction->action_id);
-      }
-    } else {
-      throw new Exception('CiviRules Could not find rule action with id '.$this->ruleActionId);
-    }
-
-    $this->rule->id = $this->ruleAction->rule_id;
-    if (!$this->rule->find(TRUE)) {
-      throw new Exception('Civirules could not find rule');
-    }
-
-    $this->triggerClass = CRM_Civirules_BAO_Trigger::getTriggerObjectByTriggerId($this->rule->trigger_id, TRUE);
-    $this->triggerClass->setTriggerId($this->rule->trigger_id);
-    $providedEntities = $this->triggerClass->getProvidedEntities();
-    if (isset($providedEntities['Case'])) {
-      $this->hasCase = TRUE;
-    }
-
     parent::preProcess();
+
+    $providedEntities = $this->triggerClass->getProvidedEntities();
+    $this->hasCase = isset($providedEntities['Case']);
   }
 
   /**
@@ -147,12 +114,9 @@ class CRM_Emailapi_Form_CivirulesAction_Send extends CRM_Core_Form {
    * @access public
    */
   public function setDefaultValues() {
-    $data = [];
     $defaultValues = [];
     $defaultValues['rule_action_id'] = $this->ruleActionId;
-    if (!empty($this->ruleAction->action_params)) {
-      $data = unserialize($this->ruleAction->action_params);
-    }
+    $data = $this->unserializeParams();
     if (!empty($data['from_name'])) {
       $defaultValues['from_name'] = $data['from_name'];
     }
@@ -229,22 +193,28 @@ class CRM_Emailapi_Form_CivirulesAction_Send extends CRM_Core_Form {
     $ruleAction->action_params = serialize($data);
     $ruleAction->save();
 
-    $session = CRM_Core_Session::singleton();
-    $session->setStatus('Action '.$this->action->label.' parameters updated to CiviRule '.CRM_Civirules_BAO_Rule::getRuleLabelWithId($this->ruleAction->rule_id),
-      'Action parameters updated', 'success');
+    parent::postProcess();
 
     $redirectUrl = CRM_Utils_System::url('civicrm/civirule/form/rule', 'action=update&id='.$this->ruleAction->rule_id, TRUE);
-    CRM_Utils_System::redirect($redirectUrl);
+    CRM_Core_Session::singleton()->pushUserContext($redirectUrl);
   }
 
   /**
-   * Method to set the form title
+   * CRM_Civirules_BAO_CiviRulesRuleAction::unserializeParams() does not exist in CiviRules < 3.17
    *
-   * @access protected
+   * @return array
    */
-  protected function setFormTitle() {
-    $title = 'CiviRules Edit Action parameters';
-    $this->assign('ruleActionHeader', 'Edit action '.$this->action->label.' of CiviRule '.CRM_Civirules_BAO_Rule::getRuleLabelWithId($this->ruleAction->rule_id));
-    CRM_Utils_System::setTitle($title);
+  protected function unserializeParams(): array {
+    if (method_exists($this->ruleAction, 'unserializeParams')) {
+      return $this->ruleAction->unserializeParams();
+    }
+    else {
+      // Our version of the same function if it doesn't exist
+      if (!empty($this->ruleAction->action_params) && !is_array($this->ruleAction->action_params)) {
+        return unserialize($this->ruleAction->action_params);
+      }
+      return [];
+    }
   }
+
 }

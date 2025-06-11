@@ -27,9 +27,7 @@ class CRM_Emailapi_Form_CivirulesAction_SendToRelatedContact extends CRM_Emailap
 
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    if (!empty($this->ruleAction->action_params)) {
-      $data = unserialize($this->ruleAction->action_params);
-    }
+    $data = $this->unserializeParams();
     if (!empty($data['relationship_type'])) {
       $defaultValues['relationship_type'] = $data['relationship_type'];
     }
