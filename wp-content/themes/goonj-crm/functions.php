@@ -810,27 +810,6 @@ function goonj_remove_logo_href( $html, $blog_id ) {
 add_shortcode('goonj_user_rating', 'goonj_user_rating_shortcode');
 function goonj_user_rating_shortcode() {
     ob_start();
-	$activity_id = isset($_GET['activityId']) ? intval($_GET['activityId']) : 0;
-	if (empty($activity_id)) {
-	  \Civi::log()->warning('Activity ID is missing');
-	  return;
-	}
-	error_log('Activity ID: ' . $activity_id);
-
-	$activities = \Civi\Api4\Activity::get(FALSE)
-    ->addSelect(
-            'Material_Contribution.Collection_Camp',
-            'Material_Contribution.Institution_Collection_Camp',
-            'Material_Contribution.Dropping_Center',
-            'Material_Contribution.Institution_Dropping_Center',
-            'Material_Contribution.Goonj_Office',
-            'Office_Visit.Goonj_Processing_Center',
-            'Material_Contribution.Event'
-        )
-    ->addWhere('id', '=', $activity_id)
-    ->execute()
-    ->first();
-error_log('Activities: ' . print_r($activities, true));
     include(get_template_directory() . '/templates/user-rating.php');
     return ob_get_clean();
 }

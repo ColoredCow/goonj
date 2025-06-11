@@ -5,8 +5,69 @@
  * Template: user-rating.php.
  */
 
+use Civi\Api4\Activity;
+
 // Description: Content for user rating dropdown, used by [goonj_user_rating] shortcode.
-?>
+// Fetch activity ID from URL query parameter.
+$activity_id = isset($_GET['activityId']) ? intval($_GET['activityId']) : 0;
+$entity_id = 0;
+
+if (empty($activity_id)) {
+  \Civi::log()->warning('Activity ID is missing');
+  echo '<p style="color: red;">Error: Activity ID is missing.</p>';
+}
+else {
+  try {
+    // Fetch activity details.
+    $activities = Activity::get(FALSE)
+      ->addSelect(
+              'Material_Contribution.Collection_Camp',
+              'Material_Contribution.Institution_Collection_Camp',
+              'Material_Contribution.Dropping_Center',
+              'Material_Contribution.Institution_Dropping_Center',
+              'Material_Contribution.Goonj_Office',
+              'Office_Visit.Goonj_Processing_Center',
+              'Material_Contribution.Event'
+          )
+      ->addWhere('id', '=', $activity_id)
+      ->execute()
+      ->first();
+
+    error_log('Activities: ' . print_r($activities, TRUE));
+
+    // Check for non-null camp ID.
+    $fields = [
+      'Material_Contribution.Collection_Camp',
+      'Material_Contribution.Institution_Collection_Camp',
+      'Material_Contribution.Dropping_Center',
+      'Material_Contribution.Institution_Dropping_Center',
+      'Material_Contribution.Goonj_Office',
+      'Office_Visit.Goonj_Processing_Center',
+      'Material_Contribution.Event',
+    ];
+
+    foreach ($fields as $field) {
+      if (!empty($activities[$field])) {
+        $entity_id = intval($activities[$field]);
+        break;
+      }
+    }
+
+    if (empty($entity_id)) {
+      \Civi::log()->warning('No valid camp ID found for Activity ID: ' . $activity_id);
+      echo '<p style="color: red;">Error: No valid camp ID found.</p>';
+    }
+  }
+  catch (Exception $e) {
+    \Civi::log()->warning('Error fetching activity: ' . $e->getMessage());
+    echo '<p style="color: red;">Error: Failed to fetch activity details.</p>';
+  }
+}
+error_log('Entity ID: ' . $entity_id);
+
+// Only display the dropdown if a valid entity_id is found.
+if ($entity_id > 0) :
+  ?>
 
 <div id="user-rating-container">
     <h2>Provide Your Rating</h2>
@@ -29,7 +90,7 @@ document.getElementById('user_rating').addEventListener('change', function() {
     var data = {
         action: 'update_user_rating',
         rating: rating,
-        entity_id: 7323 // Hardcoded ID as per requirement
+        entity_id: <?php echo $entity_id; ?> // Dynamically set from activity
     };
 
     // AJAX request to call the API
@@ -50,3 +111,5 @@ document.getElementById('user_rating').addEventListener('change', function() {
     });
 });
 </script>
+
+<?php endif;
