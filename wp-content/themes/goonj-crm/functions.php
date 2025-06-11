@@ -806,3 +806,64 @@ function goonj_remove_logo_href( $html, $blog_id ) {
     $html = preg_replace( '/<a([^>]*?) href="[^"]*"/', '<a\1', $html );
     return $html;
 }
+
+add_shortcode('goonj_user_rating', 'goonj_user_rating_shortcode');
+function goonj_user_rating_shortcode() {
+    ob_start();
+	$activity_id = isset($_GET['activityId']) ? intval($_GET['activityId']) : 0;
+	if (empty($activity_id)) {
+	  \Civi::log()->warning('Activity ID is missing');
+	  return;
+	}
+	error_log('Activity ID: ' . $activity_id);
+
+	$activities = \Civi\Api4\Activity::get(FALSE)
+    ->addSelect(
+            'Material_Contribution.Collection_Camp',
+            'Material_Contribution.Institution_Collection_Camp',
+            'Material_Contribution.Dropping_Center',
+            'Material_Contribution.Institution_Dropping_Center',
+            'Material_Contribution.Goonj_Office',
+            'Office_Visit.Goonj_Processing_Center',
+            'Material_Contribution.Event'
+        )
+    ->addWhere('id', '=', $activity_id)
+    ->execute()
+    ->first();
+error_log('Activities: ' . print_r($activities, true));
+    include(get_template_directory() . '/templates/user-rating.php');
+    return ob_get_clean();
+}
+
+add_action('wp_ajax_update_user_rating', 'update_user_rating_callback');
+add_action('wp_ajax_nopriv_update_user_rating', 'update_user_rating_callback');
+
+function update_user_rating_callback() {
+    if (!isset($_POST['rating']) || !isset($_POST['entity_id'])) {
+        wp_send_json_error(['message' => 'Invalid input']);
+        wp_die();
+    }
+
+    $rating = intval($_POST['rating']);
+    $entity_id = intval($_POST['entity_id']);
+
+    // Validate rating (1 to 10)
+    if ($rating < 1 || $rating > 10) {
+        wp_send_json_error(['message' => 'Rating must be between 1 and 10']);
+        wp_die();
+    }
+
+    try {
+        // Call CiviCRM API4 to update the rating
+        $results = \Civi\Api4\EckEntity::update('Collection_Camp', TRUE)
+            ->addValue('Collection_Camp_Intent_Details.User_Rating', $rating)
+            ->addWhere('id', '=', $entity_id)
+            ->execute();
+
+        wp_send_json_success(['message' => 'Rating updated']);
+    } catch (Exception $e) {
+        wp_send_json_error(['message' => 'Failed to update rating: ' . $e->getMessage()]);
+    }
+
+    wp_die();
+}
