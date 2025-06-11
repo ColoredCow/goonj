@@ -34,6 +34,7 @@ class CRM_Emailapi_Utils_Tokens {
     // Add the entities we want rendered into the schema, and record their primary keys.
     $schema['contactId'] = 'contactId';
     $context['contactId'] = $contactId;
+    $contactData = CRM_Emailapi_Utils_ContributionData::enhanceWithContributionData($contactData);
     foreach ($contactData['extra_data'] ?? [] as $entity => $entityData) {
       $schema["{$entity}Id"] = "{$entity}Id";
       $context["{$entity}Id"] = $contactData["{$entity}_id"];
