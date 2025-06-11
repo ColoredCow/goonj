@@ -13,7 +13,6 @@ class CRM_Emailapi_CivirulesAction_SendToCaseContactsOnCase extends CRM_Civirule
    * Process the action
    *
    * @param CRM_Civirules_TriggerData_TriggerData $triggerData
-   * @access public
    */
   public function processAction(CRM_Civirules_TriggerData_TriggerData $triggerData) {
     $actionParams = $this->getActionParameters();
@@ -38,7 +37,7 @@ class CRM_Emailapi_CivirulesAction_SendToCaseContactsOnCase extends CRM_Civirule
       $params['extra_data'] = array_change_key_case($extra_data["\0CRM_Civirules_TriggerData_TriggerData\0entity_data"], CASE_LOWER);
       foreach ($params['extra_data'] as $entity => $values) {
         if (isset($values['id']) && $entity !== 'contact') {
-          $params["${entity}_id"] = $values['id'];
+          $params["{$entity}_id"] = $values['id'];
         }
       }
       //execute the action
@@ -83,11 +82,11 @@ class CRM_Emailapi_CivirulesAction_SendToCaseContactsOnCase extends CRM_Civirule
    * Return false if you do not need extra data input
    *
    * @param int $ruleActionId
+   *
    * @return bool|string
-   * $access public
    */
   public function getExtraDataInputUrl($ruleActionId) {
-    return CRM_Utils_System::url('civicrm/civirules/actions/emailapi_rolesoncase', 'rule_action_id='.$ruleActionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirules/actions/emailapi_rolesoncase', $ruleActionId);
   }
 
   /**
@@ -95,7 +94,6 @@ class CRM_Emailapi_CivirulesAction_SendToCaseContactsOnCase extends CRM_Civirule
    * e.g. 'Older than 65'
    *
    * @return string
-   * @access public
    */
   public function userFriendlyConditionParams() {
     $template = 'unknown template';
@@ -153,6 +151,7 @@ class CRM_Emailapi_CivirulesAction_SendToCaseContactsOnCase extends CRM_Civirule
    *
    * @param CRM_Civirules_Trigger $trigger
    * @param CRM_Civirules_BAO_Rule $rule
+   *
    * @return bool
    */
   public function doesWorkWithTrigger(CRM_Civirules_Trigger $trigger, CRM_Civirules_BAO_Rule $rule) {

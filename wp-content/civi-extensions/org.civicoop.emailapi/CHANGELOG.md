@@ -1,5 +1,35 @@
 # CHANGELOG
 
+## Version 2.22.0 (2024-04-30)
+
+* [!70](https://lab.civicrm.org/extensions/emailapi/-/merge_requests/70) Pass additional params to the message template so that its available in hook.
+* Use actions.json for actions.
+* Use URL formatter function to make sure URLs are not escaped in WordPress.
+
+## Version 2.21.0 (2025-04-04)
+**Requires CiviRules 3.18.0 or higher.**
+
+* Extract helpText and use updated civirules classes where possible.
+
+## Version 2.20.0 (2025-03-21)
+
+* Revert https://lab.civicrm.org/extensions/emailapi/-/commit/88ed67eec0586fc99b66a380aef44cadbe958c64 which requires unreleased CiviRules.
+
+## Version 2.19.0 (2025-03-17)
+
+* PHP syntax fix.
+* Civix upgrade.
+
+## Version 2.18.0 (2025-02-04)
+
+* Add function to safely handle unserialize of rule action_params (prevents crash on create action in some situations).
+* Switch some internal functions to API4.
+* Extra, clearer logging.
+
+## Version 2.17.0 (2025-01-14)
+
+* Extract extra data when the contribution is present in the token (such as the related participant and the related membership).
+
 ## Version 2.16.0 (2024-11-08)
 
 * Replace legacy exceptions.
