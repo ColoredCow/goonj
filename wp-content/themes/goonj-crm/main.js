@@ -179,3 +179,78 @@ document.addEventListener("DOMContentLoaded", function() {
 	  }
 	});
 });
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM fully loaded, script running...');
+
+    // Get the radio buttons, recurring section, is_recur checkbox, and installments field
+    var radioButtons = document.querySelectorAll('input[name="custom_759"]');
+    var recurringSection = document.querySelector('#crm-container #crm-main-content-wrapper form .crm-contribution-main-form-block .crm-public-form-item.crm-section.is_recur-section');
+    var isRecurCheckbox = document.getElementById('is_recur');
+    var installmentsField = document.getElementById('installments');
+
+    // Debug: Check if elements are found
+    console.log('Radio buttons found:', radioButtons.length);
+    console.log('Recurring section found:', recurringSection);
+    console.log('is_recur checkbox found:', isRecurCheckbox);
+    console.log('Installments field found:', installmentsField);
+
+    // Function to toggle the recurring section and handle the checkbox
+    function toggleRecurringSection() {
+        console.log('toggleRecurringSection called');
+        var selectedRadio = document.querySelector('input[name="custom_759"]:checked');
+        if (!selectedRadio) {
+            console.log('No radio button selected, hiding recurring section by default');
+            recurringSection.style.setProperty('display', 'none', 'important');
+            if (isRecurCheckbox) {
+                isRecurCheckbox.checked = false;
+                console.log('is_recur checkbox unchecked (no radio selected)');
+                // Dispatch change event to ensure CiviCRM updates the form
+                var changeEvent = new Event('change');
+                isRecurCheckbox.dispatchEvent(changeEvent);
+                console.log('Change event dispatched for is_recur (no radio selected)');
+            }
+            return;
+        }
+
+        var selectedValue = selectedRadio.value;
+        console.log('Selected value:', selectedValue);
+
+        if (selectedValue === '2') { // "Donate Monthly" is selected
+            console.log('Showing recurring section');
+            recurringSection.style.setProperty('display', 'block', 'important');
+            if (isRecurCheckbox) {
+                isRecurCheckbox.checked = true;
+                console.log('is_recur checkbox checked (Donate Monthly selected)');
+                // Dispatch change event to ensure CiviCRM updates the form
+                var changeEvent = new Event('change');
+                isRecurCheckbox.dispatchEvent(changeEvent);
+                console.log('Change event dispatched for is_recur (Donate Monthly selected)');
+            }
+        } else {
+            console.log('Hiding recurring section');
+            recurringSection.style.setProperty('display', 'none', 'important');
+            if (isRecurCheckbox) {
+                isRecurCheckbox.checked = false;
+                console.log('is_recur checkbox unchecked (Donate Once selected)');
+                // Dispatch change event to ensure CiviCRM updates the form
+                var changeEvent = new Event('change');
+                isRecurCheckbox.dispatchEvent(changeEvent);
+                console.log('Change event dispatched for is_recur (Donate Once selected)');
+            }
+        }
+    }
+
+    // Bind the change event to the radio buttons
+    radioButtons.forEach(function(radio) {
+        radio.addEventListener('change', function() {
+            console.log('Radio button changed:', radio.value);
+            toggleRecurringSection();
+        });
+    });
+
+    // Run on page load to set initial state
+    console.log('Running initial toggle');
+    toggleRecurringSection();
+});
+
