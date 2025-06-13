@@ -882,14 +882,14 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
         'title' => ts('Monetary Contribution'),
         'module' => 'afsearchMonetaryContribution',
         'directive' => 'afsearch-monetary-contribution',
-        'template' => 'CRM/Goonjcustom/Tabs/InstitutionDroppingCenter/MonetaryContribution.tpl',
+        'template' => 'CRM/Goonjcustom/Tabs/MonetaryContribution.tpl',
         'permissions' => ['mmt_and_accounts_chapter_team', 'urban_ops_and_accounts_chapter_team', 'account_team'],
       ],
       // 'monetaryContributionForUrbanOps' => [
       //   'title' => ts('Monetary Contribution'),
       //   'module' => 'afsearchMonetaryContributionForUrbanOps',
       //   'directive' => 'afsearch-monetary-contribution-for-urban-ops',
-      //   'template' => 'CRM/Goonjcustom/Tabs/InstitutionDroppingCenter/MonetaryContributionForUrbanOps.tpl',
+      //   'template' => 'CRM/Goonjcustom/Tabs/MonetaryContributionForUrbanOps.tpl',
       //   'permissions' => ['mmt_and_accounts_chapter_team', 'urban_ops_and_accounts_chapter_team'],
       // ],
     ];
