@@ -81,23 +81,10 @@ class CRM_CivirulesCronTrigger_Form_MembershipEndDate extends CRM_CivirulesTrigg
    * Overridden parent method to process form data after submission
    */
   public function postProcess() {
-    $data['membership_type_id'] = $this->_submitValues['membership_type_id'];
-    $data['interval_unit'] = $this->_submitValues['interval_unit'];
-    $data['interval'] = $this->_submitValues['interval'];
-    $this->rule->trigger_params = serialize($data);
-    $this->rule->save();
-
+    $this->triggerParams['membership_type_id'] = $this->getSubmittedValue('membership_type_id');
+    $this->triggerParams['interval_unit'] = $this->getSubmittedValue('interval_unit');
+    $this->triggerParams['interval'] = $this->getSubmittedValue('interval');
     parent::postProcess();
-  }
-
-  /**
-   * Returns a help text for this trigger.
-   * The help text is shown to the administrator who is configuring the condition.
-   *
-   * @return string
-   */
-  protected function getHelpText() {
-    return E::ts('The rule will be triggered for memberships of selected membership types when the end date is X days/weeks/months before or after.');
   }
 
 }

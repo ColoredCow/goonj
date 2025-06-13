@@ -189,8 +189,6 @@ function _civicrm_api3_civi_rules_trigger_cleanup_spec(&$spec) {
  * @throws \CRM_Core_Exception
  */
 function civicrm_api3_civi_rules_trigger_cleanup($params) {
-  \Civi::log()->debug('params: ' . print_r($params,TRUE));
-
   // Get all the civirule triggers
   $civiruletriggers = civicrm_api3('CiviRuleTrigger', 'get', [
     'options' => ['limit' => 0, 'sort' => 'id ASC'],
@@ -201,22 +199,24 @@ function civicrm_api3_civi_rules_trigger_cleanup($params) {
       $listOfTriggersByName[$triggerDetail['name']] = $triggerDetail;
     }
     else {
-      $listOfTriggersByName[$triggerDetail['name']]['duplicateID'] = $triggerID;
+      $listOfTriggersByName[$triggerDetail['name']]['duplicateIDs'][] = $triggerID;
     }
   }
   $listToMerge = [];
   foreach ($listOfTriggersByName as $name => $detail) {
-    if (!isset($detail['duplicateID'])) {
+    if (!isset($detail['duplicateIDs'])) {
       continue;
     }
-    $listToMerge[$detail['id']] = $detail['duplicateID'];
+    $listToMerge[$detail['id']] = $detail['duplicateIDs'];
   }
-  foreach ($listToMerge as $originalID => $duplicateID) {
+  foreach ($listToMerge as $originalID => $duplicateIDs) {
     if (!$params['dry_run']) {
-      $query = 'UPDATE civirule_rule SET trigger_id = %1 WHERE trigger_id = %2';
-      CRM_Core_DAO::executeQuery($query, [1 => [$originalID, 'Positive'], 2 => [$duplicateID, 'Positive']]);
-      $deleteQuery = 'DELETE FROM civirule_trigger WHERE id = %1';
-      CRM_Core_DAO::executeQuery($deleteQuery, [1 => [$duplicateID, 'Positive']]);
+      foreach ($duplicateIDs as $duplicateID) {
+        $query = 'UPDATE civirule_rule SET trigger_id = %1 WHERE trigger_id = %2';
+        CRM_Core_DAO::executeQuery($query, [1 => [$originalID, 'Positive'], 2 => [$duplicateID, 'Positive']]);
+        $deleteQuery = 'DELETE FROM civirule_trigger WHERE id = %1';
+        CRM_Core_DAO::executeQuery($deleteQuery, [1 => [$duplicateID, 'Positive']]);
+      }
     }
   }
 

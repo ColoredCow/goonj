@@ -5,7 +5,7 @@ return [
   [
     'name' => 'SavedSearch_CiviRules',
     'entity' => 'SavedSearch',
-    'cleanup' => 'always',
+    'cleanup' => 'unused',
     'update' => 'unmodified',
     'params' => [
       'version' => 4,
@@ -29,9 +29,7 @@ return [
           ],
           'orderBy' => [],
           'where' => [],
-          'groupBy' => [
-            'id',
-          ],
+          'groupBy' => ['id'],
           'join' => [
             [
               'CiviRulesTrigger AS CiviRulesRule_CiviRulesTrigger_trigger_id_01',
@@ -64,15 +62,13 @@ return [
           'having' => [],
         ],
       ],
-      'match' => [
-        'name',
-      ],
+      'match' => ['name'],
     ],
   ],
   [
     'name' => 'SavedSearch_CiviRules_SearchDisplay_CiviRules_Table_1',
     'entity' => 'SearchDisplay',
-    'cleanup' => 'always',
+    'cleanup' => 'unused',
     'update' => 'unmodified',
     'params' => [
       'version' => 4,
@@ -82,15 +78,16 @@ return [
         'saved_search_id.name' => 'CiviRules',
         'type' => 'table',
         'settings' => [
-          'description' => NULL,
+          'description' => E::ts(NULL),
           'sort' => [
-            [
-              'label',
-              'ASC',
-            ],
+            ['label', 'ASC'],
           ],
-          'limit' => 50,
-          'pager' => [],
+          'limit' => 20,
+          'pager' => [
+            'show_count' => TRUE,
+            'expose_limit' => TRUE,
+            'hide_single' => TRUE,
+          ],
           'placeholder' => 5,
           'columns' => [
             [
@@ -106,6 +103,7 @@ return [
               'dataType' => 'String',
               'label' => E::ts('Label'),
               'sortable' => TRUE,
+              'editable' => TRUE,
             ],
             [
               'type' => 'field',
@@ -120,6 +118,7 @@ return [
               'dataType' => 'Integer',
               'label' => E::ts('Tags'),
               'sortable' => TRUE,
+              'editable' => TRUE,
             ],
             [
               'type' => 'field',
@@ -127,6 +126,7 @@ return [
               'dataType' => 'String',
               'label' => E::ts('Description'),
               'sortable' => TRUE,
+              'editable' => TRUE,
             ],
             [
               'type' => 'field',
@@ -134,6 +134,7 @@ return [
               'dataType' => 'Boolean',
               'label' => E::ts('Enabled'),
               'sortable' => TRUE,
+              'editable' => TRUE,
             ],
             [
               'type' => 'field',
@@ -169,7 +170,7 @@ return [
               'links' => [
                 [
                   'path' => 'civicrm/civirule/form/rule?reset=1&action=update&id=[id]',
-                  'icon' => 'fa-external-link',
+                  'icon' => 'fa-pencil',
                   'text' => E::ts('Edit'),
                   'style' => 'default',
                   'condition' => [],
@@ -189,11 +190,7 @@ return [
                   'style' => 'default',
                   'path' => '',
                   'action' => '',
-                  'condition' => [
-                    'is_active',
-                    '=',
-                    TRUE,
-                  ],
+                  'condition' => ['is_active', '=', TRUE],
                 ],
                 [
                   'task' => 'enable',
@@ -205,11 +202,7 @@ return [
                   'style' => 'default',
                   'path' => '',
                   'action' => '',
-                  'condition' => [
-                    'is_active',
-                    '=',
-                    FALSE,
-                  ],
+                  'condition' => ['is_active', '=', FALSE],
                 ],
                 [
                   'task' => 'delete',
@@ -229,10 +222,7 @@ return [
             ],
           ],
           'actions' => TRUE,
-          'classes' => [
-            'table',
-            'table-striped',
-          ],
+          'classes' => ['table', 'table-striped'],
           'headerCount' => TRUE,
           'toolbar' => [
             [
@@ -249,19 +239,15 @@ return [
             ],
           ],
           'cssRules' => [
-            [
-              'disabled',
-              'is_active',
-              '=',
-              FALSE,
-            ],
+            ['disabled', 'is_active', '=', FALSE],
           ],
+          'actions_display_mode' => 'menu',
         ],
       ],
       'match' => [
+        'saved_search_id',
         'name',
       ],
     ],
   ],
 ];
-

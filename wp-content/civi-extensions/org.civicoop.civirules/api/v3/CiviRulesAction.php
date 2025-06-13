@@ -130,22 +130,24 @@ function civicrm_api3_civi_rules_action_cleanup($params) {
       $listOfActionsByName[$actionDetail['name']] = $actionDetail;
     }
     else {
-      $listOfActionsByName[$actionDetail['name']]['duplicateID'] = $actionID;
+      $listOfActionsByName[$actionDetail['name']]['duplicateIDs'][] = $actionID;
     }
   }
   $listToMerge = [];
   foreach ($listOfActionsByName as $name => $detail) {
-    if (!isset($detail['duplicateID'])) {
+    if (!isset($detail['duplicateIDs'])) {
       continue;
     }
-    $listToMerge[$detail['id']] = $detail['duplicateID'];
+    $listToMerge[$detail['id']] = $detail['duplicateIDs'];
   }
-  foreach ($listToMerge as $originalID => $duplicateID) {
+  foreach ($listToMerge as $originalID => $duplicateIDs) {
     if (!$params['dry_run']) {
-      $query = 'UPDATE civirule_rule_action SET action_id = %1 WHERE action_id = %2';
-      CRM_Core_DAO::executeQuery($query, [1 => [$originalID, 'Positive'], 2 => [$duplicateID, 'Positive']]);
-      $deleteQuery = 'DELETE FROM civirule_action WHERE id = %1';
-      CRM_Core_DAO::executeQuery($deleteQuery, [1 => [$duplicateID, 'Positive']]);
+      foreach ($duplicateIDs as $duplicateID) {
+        $query = 'UPDATE civirule_rule_action SET action_id = %1 WHERE action_id = %2';
+        CRM_Core_DAO::executeQuery($query, [1 => [$originalID, 'Positive'], 2 => [$duplicateID, 'Positive']]);
+        $deleteQuery = 'DELETE FROM civirule_action WHERE id = %1';
+        CRM_Core_DAO::executeQuery($deleteQuery, [1 => [$duplicateID, 'Positive']]);
+      }
     }
   }
 

@@ -31,7 +31,7 @@ return [
     'label' => [
       'title' => E::ts('Label'),
       'sql_type' => 'varchar(128)',
-      'input_type' => 'Select',
+      'input_type' => 'Text',
       'readonly' => TRUE,
       'default' => NULL,
       'input_attrs' => [
@@ -70,40 +70,6 @@ return [
       'default' => TRUE,
       'input_attrs' => [
         'label' => E::ts('Enabled'),
-      ],
-    ],
-    'created_date' => [
-      'title' => E::ts('Created Date'),
-      'sql_type' => 'date',
-      'input_type' => 'Select Date',
-      'default' => NULL,
-    ],
-    'created_user_id' => [
-      'title' => E::ts('Created User ID'),
-      'sql_type' => 'int unsigned',
-      'input_type' => 'EntityRef',
-      'readonly' => TRUE,
-      'description' => E::ts('FK to Contact ID'),
-      'default' => NULL,
-      'input_attrs' => [
-        'label' => E::ts('Created By'),
-      ],
-    ],
-    'modified_date' => [
-      'title' => E::ts('Modified Date'),
-      'sql_type' => 'date',
-      'input_type' => 'Select Date',
-      'default' => NULL,
-    ],
-    'modified_user_id' => [
-      'title' => E::ts('Modified User ID'),
-      'sql_type' => 'int unsigned',
-      'input_type' => 'EntityRef',
-      'readonly' => TRUE,
-      'description' => E::ts('FK to Contact ID'),
-      'default' => NULL,
-      'input_attrs' => [
-        'label' => E::ts('Modified By'),
       ],
     ],
   ],

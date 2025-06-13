@@ -91,7 +91,7 @@ class CRM_CivirulesActions_Participant_UpdateStatus extends CRM_CivirulesActions
    * @access public
    */
   public function getExtraDataInputUrl($ruleActionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/action/participant_update_status', 'rule_action_id='.$ruleActionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/action/participant_update_status', $ruleActionId);
   }
 
   /**

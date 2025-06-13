@@ -28,7 +28,7 @@ class CRM_CivirulesActions_Participant_Form_UpdateStatus extends CRM_CivirulesAc
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = !empty($this->ruleAction->action_params) ? unserialize($this->ruleAction->action_params) : [];
+    $data = $this->ruleAction->unserializeParams();
     if (!empty($data['status_id'])) {
       $defaultValues['status_id'] = $data['status_id'];
     }

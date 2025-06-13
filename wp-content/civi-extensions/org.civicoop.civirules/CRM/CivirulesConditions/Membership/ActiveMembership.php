@@ -49,7 +49,7 @@ class CRM_CivirulesConditions_Membership_ActiveMembership extends CRM_Civirules_
    * @return bool|string
    */
   public function getExtraDataInputUrl($ruleConditionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/condition/activemembershiptype', 'rule_condition_id=' . $ruleConditionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/condition/activemembershiptype', $ruleConditionId);
   }
 
   /**

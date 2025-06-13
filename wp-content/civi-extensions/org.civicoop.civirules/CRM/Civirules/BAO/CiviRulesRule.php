@@ -115,32 +115,40 @@ class CRM_Civirules_BAO_CiviRulesRule extends CRM_Civirules_DAO_Rule {
    * @return array
    */
   public static function findRulesByObjectNameAndOp($objectName, $op) {
-    $triggers = [];
-    $sql = "SELECT r.id AS rule_id, t.id AS trigger_id, t.class_name, r.trigger_params
+    if (empty(\Civi::$statics[__CLASS__]['findRulesByObjectNameAndOp'][$objectName][$op])) {
+      $triggers = [];
+      $sql = "SELECT r.id AS rule_id, t.id AS trigger_id, t.class_name, r.trigger_params
             FROM `civirule_rule` r
             INNER JOIN `civirule_trigger` t ON r.trigger_id = t.id AND t.is_active = 1";
-    // If $objectName is a Contact Type, also search for "Contact".
-    if ($objectName == 'Individual' || $objectName == 'Organization' || $objectName == 'Household') {
-      $sqlWhere = " WHERE r.`is_active` = 1 AND t.cron = 0 AND (t.object_name = %1 OR t.object_name = 'Contact') AND t.op = %2";
-    }
-    else {
-      $sqlWhere = " WHERE r.`is_active` = 1 AND t.cron = 0 AND t.object_name = %1 AND t.op = %2";
-    }
-    $sql .= $sqlWhere;
-    $params[1] = [$objectName, 'String'];
-    $params[2] = [$op, 'String'];
-
-    $dao = CRM_Core_DAO::executeQuery($sql, $params);
-    while ($dao->fetch()) {
-      $triggerObject = CRM_Civirules_BAO_Trigger::getPostTriggerObjectByClassName($dao->class_name, FALSE);
-      if ($triggerObject !== FALSE) {
-        $triggerObject->setTriggerId($dao->trigger_id);
-        $triggerObject->setRuleId($dao->rule_id);
-        $triggerObject->setTriggerParams($dao->trigger_params ?? '');
-        $triggers[] = $triggerObject;
+      // If $objectName is a Contact Type, also search for "Contact".
+      if ($objectName == 'Individual' || $objectName == 'Organization' || $objectName == 'Household') {
+        $sqlWhere = " WHERE r.`is_active` = 1 AND t.cron = 0 AND (t.object_name = %1 OR t.object_name = 'Contact') AND t.op LIKE %2";
+      } else {
+        $sqlWhere = " WHERE r.`is_active` = 1 AND t.cron = 0 AND t.object_name = %1 AND t.op LIKE %2";
       }
+      $sql .= $sqlWhere;
+      $params[1] = [$objectName, 'String'];
+      $params[2] = ["%$op%", 'String'];
+
+      $dao = CRM_Core_DAO::executeQuery($sql, $params);
+      while ($dao->fetch()) {
+        $triggerObject = CRM_Civirules_BAO_Trigger::getPostTriggerObjectByClassName($dao->class_name, FALSE);
+        if ($triggerObject !== FALSE) {
+          $triggerObject->setTriggerId($dao->trigger_id);
+          $triggerObject->setRuleId($dao->rule_id);
+          $triggerObject->setTriggerParams($dao->trigger_params ?? '');
+          $triggers[] = $triggerObject;
+        }
+      }
+      \Civi::$statics[__CLASS__]['findRulesByObjectNameAndOp'][$objectName][$op] = $triggers;
     }
-    return $triggers;
+
+    // This function is called for multiple triggers and the cached triggers are returned
+    // But downstream code modifies the triggers to add triggerData etc. that is specific to the instance of the rule
+    // Eg. If we trigger on Activity Create and then create an Activity as an action we will trigger the same rule again
+    //   but with different triggerData. So we need to return the clean triggerObject *without* any modifications.
+    $clonedTriggerObjects = array_map(function ($object) { return clone $object; }, \Civi::$statics[__CLASS__]['findRulesByObjectNameAndOp'][$objectName][$op]);
+    return $clonedTriggerObjects;
   }
 
   /**
@@ -195,46 +203,6 @@ class CRM_Civirules_BAO_CiviRulesRule extends CRM_Civirules_DAO_Rule {
   }
 
   /**
-   * Function to get latest rule id
-   *
-   * @return int $ruleId
-   */
-  public static function getLatestRuleId() {
-    $rule = new CRM_Civirules_BAO_Rule();
-    $query = 'SELECT MAX(id) AS maxId FROM '.$rule->tableName();
-    $dao = CRM_Core_DAO::executeQuery($query);
-    if ($dao->fetch()) {
-      return $dao->maxId;
-    }
-  }
-
-  /**
-   * Method to get all active rules with a specific trigger id
-   *
-   * @param int $triggerId
-   *
-   * @return array $ruleIds
-   * @throws Exception when triggerId not integer
-   */
-  public static function getRuleIdsByTriggerId($triggerId) {
-    if (!is_numeric($triggerId)) {
-      throw new Exception(ts('You are passing a trigger id as a parameter into ') . __METHOD__
-        . ts(' which does not pass the PHP is_numeric test. An integer is required (only numbers allowed)! Contact your system administrator'));
-    }
-    $ruleIds = [];
-    $sql = 'SELECT id FROM civirule_rule WHERE trigger_id = %1 AND is_active = %2';
-    $params = [
-      1 => [$triggerId, 'Integer'],
-      2 => [1, 'Integer']
-    ];
-    $dao = CRM_Core_DAO::executeQuery($sql, $params);
-    while ($dao->fetch()) {
-      $ruleIds[] = $dao->id;
-    }
-    return $ruleIds;
-  }
-
-  /**
    * Method to determine if a rule is active on the civicrm queue
    *
    * @param $ruleId
@@ -259,4 +227,17 @@ class CRM_Civirules_BAO_CiviRulesRule extends CRM_Civirules_DAO_Rule {
     }
     return FALSE;
   }
+
+  /**
+   * Function to unserialize the CiviRulesRule trigger_params
+   *
+   * @return array
+   */
+  public function unserializeParams(): array {
+    if (!empty($this->trigger_params) && !is_array($this->trigger_params)) {
+      return unserialize($this->trigger_params);
+    }
+    return [];
+  }
+
 }

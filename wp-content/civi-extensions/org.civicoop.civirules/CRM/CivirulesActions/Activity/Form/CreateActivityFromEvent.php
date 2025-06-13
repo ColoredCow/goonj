@@ -73,7 +73,7 @@ class CRM_CivirulesActions_Activity_Form_CreateActivityFromEvent extends CRM_Civ
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleAction->action_params);
+    $data = $this->ruleAction->unserializeParams();
     if (!empty($data['activity_type_id'])) {
       $defaultValues['activity_type_id'] = $data['activity_type_id'];
     }

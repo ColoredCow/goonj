@@ -48,13 +48,9 @@ class CRM_CivirulesCronTrigger_Form_GroupMembership extends CRM_CivirulesTrigger
    * Overridden parent method to process form data after submission
    *
    * @throws Exception when rule condition not found
-   * @access public
    */
   public function postProcess() {
-    $data['group_id'] = $this->_submitValues['group_id'];
-    $this->rule->trigger_params = serialize($data);
-    $this->rule->save();
-
+    $this->triggerParams['group_id'] = $this->getSubmittedValue('group_id');
     parent::postProcess();
   }
 }

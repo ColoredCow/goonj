@@ -39,7 +39,7 @@ class CRM_CivirulesConditions_Form_EntityTag_HasTag extends CRM_CivirulesConditi
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleCondition->condition_params);
+    $data = $this->ruleCondition->unserializeParams();
     if (!empty($data['tag_ids'])) {
       $defaultValues['tag_ids'] = $data['tag_ids'];
     }

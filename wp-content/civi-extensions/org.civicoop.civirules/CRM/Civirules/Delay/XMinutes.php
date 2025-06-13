@@ -34,12 +34,12 @@ class CRM_Civirules_Delay_XMinutes extends CRM_Civirules_Delay_Delay {
   /**
    * @param \CRM_Core_Form $form
    * @param $prefix
-   * @param \CRM_Civirules_BAO_Rule $rule
+   * @param \CRM_Civirules_BAO_CiviRulesRule $rule
    *
    * @return mixed|void
    * @throws \CRM_Core_Exception
    */
-  public function addElements(CRM_Core_Form &$form, $prefix, CRM_Civirules_BAO_Rule $rule) {
+  public function addElements(CRM_Core_Form &$form, $prefix, CRM_Civirules_BAO_CiviRulesRule $rule) {
     $form->add('text', $prefix . 'xminutes_minuteOffset', E::ts('Minutes'));
   }
 
@@ -47,11 +47,11 @@ class CRM_Civirules_Delay_XMinutes extends CRM_Civirules_Delay_Delay {
    * @param $values
    * @param $errors
    * @param $prefix
-   * @param \CRM_Civirules_BAO_Rule $rule
+   * @param \CRM_Civirules_BAO_CiviRulesRule $rule
    *
    * @return void
    */
-  public function validate($values, &$errors, $prefix, CRM_Civirules_BAO_Rule $rule) {
+  public function validate($values, &$errors, $prefix, CRM_Civirules_BAO_CiviRulesRule $rule) {
     if (empty($values[$prefix . 'xminutes_minuteOffset']) || !is_numeric($values[$prefix.'xminutes_minuteOffset'])) {
       $errors[$prefix . 'xminutes_minuteOffset'] = E::ts('You need to provide a number of minutes');
     }
@@ -60,21 +60,21 @@ class CRM_Civirules_Delay_XMinutes extends CRM_Civirules_Delay_Delay {
   /**
    * @param $values
    * @param $prefix
-   * @param \CRM_Civirules_BAO_Rule $rule
+   * @param \CRM_Civirules_BAO_CiviRulesRule $rule
    *
    * @return void
    */
-  public function setValues($values, $prefix, CRM_Civirules_BAO_Rule $rule) {
+  public function setValues($values, $prefix, CRM_Civirules_BAO_CiviRulesRule $rule) {
     $this->minuteOffset = $values[$prefix . 'xminutes_minuteOffset'];
   }
 
   /**
    * @param $prefix
-   * @param \CRM_Civirules_BAO_Rule $rule
+   * @param \CRM_Civirules_BAO_CiviRulesRule $rule
    *
    * @return array
    */
-  public function getValues($prefix, CRM_Civirules_BAO_Rule $rule) {
+  public function getValues($prefix, CRM_Civirules_BAO_CiviRulesRule $rule) {
     $values = [];
     $values[$prefix . 'xminutes_minuteOffset'] = $this->minuteOffset;
     return $values;

@@ -43,7 +43,7 @@ class CRM_CivirulesConditions_Form_GroupContact_GroupId extends CRM_CivirulesCon
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleCondition->condition_params);
+    $data = $this->ruleCondition->unserializeParams();
     if (!empty($data['group_id'])) {
       $defaultValues['group_id'] = $data['group_id'];
     }

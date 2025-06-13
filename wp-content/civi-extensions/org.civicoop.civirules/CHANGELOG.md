@@ -1,5 +1,122 @@
 # CHANGELOG
 
+## Version 3.22.0 (2025-05-28)
+
+* Changed action Add Case role to add the triggering contact as a role on the case.
+
+## Version 3.21.0 (2025-05-19)
+
+* [!300](https://lab.civicrm.org/extensions/civirules/-/merge_requests/300) Fix undefined method when trigger does not define getHelpText().
+* Move insert triggers/conditions/actions to install/upgrade because it causes performance issues when called via managed.
+* Execute conditions by weight (now we fixed the issue - see https://lab.civicrm.org/extensions/civirules/-/commit/d25d13353313e109e5989c3738dccc9b06fd3037)
+* Add 'invalid condition link' to condition logging - if there is a misconfiguration it will be logged.
+* Use pseudoconstant for Condition Link Operator so it can be used with 'edit in place' in SearchKit etc.
+* Formatting and add Conditions links provider so we can generate condition-specific links in SearchKit.
+* Improve filters for Manage Rules display.
+* Hide top buttons when adding a new rule.
+* Use getFormattedExtraDataInputUrl function for conditions to make sure we generate a correctly formatted URL.
+
+## Version 3.20.0 (2025-05-08)
+
+* [!298](https://lab.civicrm.org/extensions/civirules/-/merge_requests/298) Refactor condition checking so we stop checking conditions when all conditions will evaluate to false and improve logging.
+* When adding a condition set the weight correctly so they are added in the right order.
+* Disable some debug logging for MembershipActivity trigger.
+* [!297](https://lab.civicrm.org/extensions/civirules/-/merge_requests/297) Condition shouldn't be valid for delayed action when entity has been deleted in the meantime.
+
+## Version 3.19.0 (2025-04-24)
+
+* [!296](https://lab.civicrm.org/extensions/civirules/-/merge_requests/296) Wrap all the execution steps for a rule in try/catch with Throwable so a broken rule should never kill the whole process.
+* [!295](https://lab.civicrm.org/extensions/civirules/-/merge_requests/295) Fix financial type comparison when no financial types selected.
+
+## Version 3.18.2 (2025-04-11)
+
+* Fix [#258](https://lab.civicrm.org/extensions/civirules/-/issues/258) - Multiple conditions always evaluate to false.
+
+## Version 3.18.1 (2025-04-08)
+
+* Fix caching bug that caused some rules to go into infinite loop when triggered (eg. if an activity create trigger creates an activity of a different type).
+* Fix saving tags on rule.
+
+## Version 3.18.0 (2025-04-04)
+**Warning: This release contains significant changes. Please test well before upgrading.**
+
+**This release contains database changes which cannot easily be rolled back!**
+
+### Major changes
+* Schema changes: created/modified dates. Add weight to RuleAction and RuleCondition tables.
+* Edit Rule: Convert actions list and trigger history to searchkit. You can now disable and change the order of actions.
+
+### Other changes
+* Wrap alterTriggerData() in throwable as it can trigger exceptions. If the rule crashes let the rest of the process complete.
+* Add in Contact entity to 'Daily trigger for case activities' as case client - allows to use eg. 'Send Email' action.
+* Add 'Log' action to write a log entry to CiviCRM logs containing the available entity data.
+* Add unserializeParams() function for trigger params (prevents crashes/warnings if params are empty/invalid).
+* Add specProvider to render a friendly description for action delay params.
+* Refactor getHelpText() for Triggers and Actions. You can now specify 3 different types of help text.
+* Improve display of Trigger info when viewing rule.
+* When selecting from list of Triggers/Actions you'll see a brief description if available (see getHelpText() actionDescription)
+* Duplicate cleanup APIs now cleanup multiple duplicates.
+* CiviCRM 5.82 is required for drag and drop sorting to work on Actions.
+* Translation improvements.
+* Added 'Has Valid Email' condition. The use case is for creating external accounts (on NextCloud, or Drupal) that need an email.
+
+## Version 3.17.1 (2025-03-06)
+
+* [!287](https://lab.civicrm.org/extensions/civirules/-/merge_requests/284) Fix crash: Initialize triggerData for activities.
+
+## Version 3.17.0 (2025-03-06)
+
+### Install fixes
+*Fixes errors on new install of CiviRules.*
+
+* Remove NULL default from name on CiviRulesAction which causes error on install
+* Inserting triggers/conditions/actions happens during managed reconciliation not during initial install or we get errors
+
+### Performance
+
+* [!284](https://lab.civicrm.org/extensions/civirules/-/merge_requests/284) Cache trigger data.
+* [!283](https://lab.civicrm.org/extensions/civirules/-/merge_requests/283) Reduce API calls when evaluating contributions.
+* [!282](https://lab.civicrm.org/extensions/civirules/-/merge_requests/282) Cache isDate fields.
+
+### Bug fixes
+
+* [!281](https://lab.civicrm.org/extensions/civirules/-/merge_requests/281) Fix for status conditions that were saved with old keys.
+
+## Version 3.16.0 (2025-02-26)
+
+### Features
+* New action participant_update_role
+* Fix action "Remove Contact Sub Types" should be NULL when last sub type is removed.
+* Add Rules Trigger History search display / report
+
+### Internal changes / Bug fixes etc.
+* Small cleanup on action labels
+* Change description on recurring next scheduled contribution date trigger.
+* Add RuleCondition Spec provider
+* Add SpecProvider for formatted description of trigger params and Add links provider for CiviRules actions.
+* Enable scan-classes (this allows for auto-loading of listeners/hooks etc. when defined in classes).
+* Add function to unserialize Rule Condition params
+* Add function to unserialize Rule Action params
+* Rename classes to real (non-alias) names
+* Remove old quickforms that are replaced by formbuilder
+* Simplify upgrader functions and remove old/unused functions
+* Simplify some api3 internals
+* Drop unused CiviRulesRule functions
+* When installing, schema version is empty. This was causing the upgrader steps to be run in some situations.
+* Add function getFormattedExtraDataURL() to help CiviRules actions return a well-formatted URL for all CMSs
+* Switch to API4 to get OptionValue for userfriendlyconditionparams
+* Fix PHP warning on delay unserialize when not set
+* Array syntax and PHP warning fixes
+* REF - use str_starts_with instead of strpos
+* Update to EntityFrameworkV2.
+* Database schema improvements - improve metadata.
+* Remove unnecessary steps from upgrader (triggers/conditions/actions are automatically checked/added on cache refresh from json)
+* Get entity name from table, not class
+
+## Version 3.15
+
+* Fixed issue with the Add Contribution Trigger and retrieving Participant Data when it is a participant payment.
+
 ## Version 3.14.0 (2024-11-07)
 
 * Fixed issue with delayed actions. See !269

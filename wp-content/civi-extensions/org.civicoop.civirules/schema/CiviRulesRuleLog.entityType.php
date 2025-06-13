@@ -81,7 +81,8 @@ return [
       'title' => E::ts('Log Date'),
       'sql_type' => 'datetime',
       'input_type' => 'Select Date',
-      'default' => NULL,
+      'readonly' => TRUE,
+      'default' => 'CURRENT_TIMESTAMP',
     ],
   ],
 ];

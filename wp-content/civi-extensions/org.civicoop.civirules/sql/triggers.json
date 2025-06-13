@@ -105,5 +105,6 @@
   {"name": "changed_actionlog", "label": "Scheduled Reminder log is changed", "object_name": "ActionLog", "op": "edit", "class_name":"CRM_CivirulesPostTrigger_ActionLog", "cron": "0"},
   {"name": "relationship_activated", "label": "Relationship start date reached", "object_name": "Relationship", "op": "edit", "class_name": "CRM_CivirulesCronTrigger_RelationshipStartDate", "cron": "1"},
   {"name": "relationship_deactivated", "label": "Relationship end date reached", "object_name": "Relationship", "op": "edit", "class_name": "CRM_CivirulesCronTrigger_RelationshipEndDate", "cron": "1"},
-  {"name": "next_scheduled_contribution", "label": "Daily trigger on Next Scheduled (Recurring) Contribution", "object_name": null, "op": null, "class_name": "CRM_CivirulesCronTrigger_NextContributionDate", "cron": "1"}
+  {"name": "next_scheduled_contribution", "label": "Daily trigger on Next Scheduled (Recurring) Contribution", "object_name": null, "op": null, "class_name": "CRM_CivirulesCronTrigger_NextContributionDate", "cron": "1"},
+  {"name":"membership_activity","label":"Membership Activity","object_name":"Activity","op":"create|edit","class_name":"CRM_CivirulesPostTrigger_MembershipActivity","cron":"0"}
 ]

@@ -35,7 +35,7 @@ class CiviRulesRuleConditionGetSpecProvider extends \Civi\Core\Service\AutoServi
       ->setDescription(ts('Human-readable description of condition parameters'))
       ->setType('Extra')
       ->setReadonly(TRUE)
-      ->addOutputFormatter([__CLASS__, 'description']);
+      ->addOutputFormatter([__CLASS__, 'conditionParamsDisplay']);
     $spec->addFieldSpec($field);
   }
 
@@ -49,7 +49,7 @@ class CiviRulesRuleConditionGetSpecProvider extends \Civi\Core\Service\AutoServi
     return $entity === 'CiviRulesRuleCondition' && in_array($action, ['get', 'create']);
   }
 
-  public static function description(&$value, $row) {
+  public static function conditionParamsDisplay(&$value, $row) {
     if (!empty($row['condition_id'])) {
       $conditionClass = \CRM_Civirules_BAO_CiviRulesCondition::getConditionObjectById($row['condition_id']);
       if ($conditionClass) {

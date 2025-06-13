@@ -1,5 +1,6 @@
 <h3>{$ruleActionHeader}</h3>
 <div class="crm-block crm-form-block crm-civirule-rule_action-block-contact_privacy_options">
+  <div class="help">{$ruleActionHelp}</div>
   <h4>Privacy:</h4>
   <div class="crm-section">
     <div class="label">{$form.on_or_off.label}</div>

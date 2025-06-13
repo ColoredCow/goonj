@@ -45,7 +45,7 @@ class CRM_CivirulesConditions_Form_Contact_CustomFieldChanged extends CRM_Civiru
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleCondition->condition_params);
+    $data = $this->ruleCondition->unserializeParams();
     if (!empty($data['custom_field_id'])) {
       $defaultValues['custom_field_id'] = $data['custom_field_id'];
     }

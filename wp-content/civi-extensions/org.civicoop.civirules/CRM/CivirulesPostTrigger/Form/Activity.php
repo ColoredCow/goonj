@@ -11,7 +11,6 @@ class CRM_CivirulesPostTrigger_Form_Activity extends CRM_CivirulesTrigger_Form_F
   /**
    * Overridden parent method to build form
    *
-   * @access public
    */
   public function buildQuickForm() {
     $this->add('hidden', 'rule_id');
@@ -23,7 +22,7 @@ class CRM_CivirulesPostTrigger_Form_Activity extends CRM_CivirulesTrigger_Form_F
       $options[$val] = $opt;
     }
 
-    $this->add('select', 'record_type', E::ts('Trigger for'),$options, true, ['class' => 'crm-select2 huge']);
+    $this->add('select', 'record_type', E::ts('Trigger for'), $options, true, ['class' => 'crm-select2 huge']);
 
     $this->addButtons([
       ['type' => 'next', 'name' => ts('Save'), 'isDefault' => TRUE,],
@@ -35,7 +34,6 @@ class CRM_CivirulesPostTrigger_Form_Activity extends CRM_CivirulesTrigger_Form_F
    * Overridden parent method to set default values
    *
    * @return array $defaultValues
-   * @access public
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
@@ -52,28 +50,10 @@ class CRM_CivirulesPostTrigger_Form_Activity extends CRM_CivirulesTrigger_Form_F
    * Overridden parent method to process form data after submission
    *
    * @throws Exception when rule condition not found
-   * @access public
    */
   public function postProcess() {
-    $data['record_type'] = $this->_submitValues['record_type'];
-    $this->rule->trigger_params = serialize($data);
-    $this->rule->save();
-
+    $this->triggerParams['record_type'] = $this->getSubmittedValue('record_type');
     parent::postProcess();
-  }
-
-  /**
-   * Returns a help text for this trigger.
-   * The help text is shown to the administrator who is configuring the condition.
-   *
-   * @return string
-   */
-  protected function getHelpText() {
-    return E::ts('When all contacts is selected then the trigger will be fired for every contact. Meaning that trigger might run more than once.')
-      . '<br/>'
-      . E::ts('When you don\'t want that select the record type for which you want to fire the trigger.')
-      . '<br/>'
-      . E::ts('The select record type also defines which contact is available in the conditions and actions.');
   }
 
 }

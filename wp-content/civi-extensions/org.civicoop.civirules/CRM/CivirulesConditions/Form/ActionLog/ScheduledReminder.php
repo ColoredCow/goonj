@@ -38,7 +38,7 @@ class CRM_CivirulesConditions_Form_ActionLog_ScheduledReminder extends CRM_Civir
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleCondition->condition_params);
+    $data = $this->ruleCondition->unserializeParams();
     if (!empty($data['scheduledreminder_ids'])) {
       $defaultValues['scheduledreminder_ids'] = $data['scheduledreminder_ids'];
     }

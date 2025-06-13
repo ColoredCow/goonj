@@ -127,7 +127,7 @@ class CRM_CivirulesActions_Activity_AddToCase extends CRM_CivirulesActions_Activ
    * @access public
    */
   public function getExtraDataInputUrl($ruleActionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/action/activity/add_to_case', 'rule_action_id='.$ruleActionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/action/activity/add_to_case', $ruleActionId);
   }
 
   /**

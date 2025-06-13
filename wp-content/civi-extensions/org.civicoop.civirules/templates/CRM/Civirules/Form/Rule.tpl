@@ -1,55 +1,34 @@
 {crmScope extensionKey='org.civicoop.civirules'}
+  {if $action ne 1}
   <div class="crm-submit-buttons">
     {include file="CRM/common/formButtons.tpl" location="top"}
   </div>
-
-{if $action eq 8}
-  {* Are you sure to delete form *}
-  <h3>{ts}Delete rule{/ts}</h3>
-  <div class="crm-block crm-form-block crm-civirule-rule_label-block">
-    <div class="crm-section">{ts 1=$rule->label}Are you sure to delete rule '%1'?{/ts}</div>
-  </div>
-{else}
+  {/if}
   {include file="CRM/Civirules/Form/RuleBlocks/RuleBlock.tpl"}
   {include file="CRM/Civirules/Form/RuleBlocks/TriggerBlock.tpl"}
   {if $action ne 1}
-    {include file="CRM/Civirules/Form/RuleBlocks/ConditionBlock.tpl"}
-    {include file="CRM/Civirules/Form/RuleBlocks/ActionBlock.tpl"}
-  {/if}
-{/if}
-
-{if $action ne 1}
-  <div class="crm-accordion-wrapper collapsed">
-    <div class="crm-accordion-header" id="civirule-trigger-history">
-      {ts}Last 20 triggers for this rule{/ts}
-    </div>
-    <div class="crm-accordion-body">
-      <div class="crm-section">
-        <div id="civirule_wrapper" class="dataTables_wrapper">
-          <table id="civirule-table" class="display">
-            <thead>
-            <tr>
-              <th id="sortable">{ts}Last triggered{/ts}</th>
-              <th id="sortable">{ts}Triggered for{/ts}</th>
-            </tr>
-            </thead>
-            <tbody>
-
-            {assign var="rowClass" value="odd_row"}
-            {assign var="rowNumber" value=1}
-            {foreach from=$ruleTriggerHistory item=row}
-              <tr class="{cycle values="odd-row,even-row"} trigger-history-row">
-                <td>{$row.last_trigger_date}</td>
-                <td>{$row.last_trigger_contact_link}</td>
-              </tr>
-            {/foreach}
-            </tbody>
-          </table>
-        </div>
+    <h3>{ts}Linked Condition(s){/ts}</h3>
+    <crm-angular-js modules="afsearchRuleConditions">
+      <div id='bootstrap-theme'>
+        <afsearch-rule-conditions options="{ldelim}rule_id: {$rule->id}{rdelim}">
+        </afsearch-rule-conditions>
       </div>
-    </div>
-  </div>
-{/if}
+    </crm-angular-js>
+    <h3>{ts}Linked Action(s){/ts}</h3>
+    <crm-angular-js modules="afsearchRuleActions">
+      <div id='bootstrap-theme'>
+        <afsearch-rule-actions options="{ldelim}rule_id: {$rule->id}{rdelim}">
+        </afsearch-rule-actions>
+      </div>
+    </crm-angular-js>
+    <h3>{ts}Trigger History{/ts}</h3>
+    <crm-angular-js modules="afsearchRuleTriggerHistory">
+      <div id='bootstrap-theme'>
+        <afsearch-rule-trigger-history options="{ldelim}rule_id: {$rule->id}{rdelim}">
+        </afsearch-rule-trigger-history>
+      </div>
+    </crm-angular-js>
+  {/if}
 
   <div class="crm-submit-buttons">
     {include file="CRM/common/formButtons.tpl" location="bottom"}

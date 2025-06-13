@@ -58,7 +58,7 @@ class CRM_CivirulesConditions_Form_Contact_HasSubtype extends CRM_CivirulesCondi
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleCondition->condition_params);
+    $data = $this->ruleCondition->unserializeParams();
     if (!empty($data['subtype_names'])) {
       $defaultValues['subtype_names'] = $data['subtype_names'];
     }

@@ -31,7 +31,7 @@ class CRM_CivirulesActions_Generic_Form_CopyCustomField extends CRM_CivirulesAct
       TRUE);
 
     // set defaults
-    $this->setDefaults(unserialize($this->ruleAction->action_params));
+    $this->setDefaults($this->ruleAction->unserializeParams());
 
     $this->addButtons([
       ['type' => 'next',   'name' => E::ts('Save'), 'isDefault' => TRUE],
@@ -97,16 +97,6 @@ class CRM_CivirulesActions_Generic_Form_CopyCustomField extends CRM_CivirulesAct
       }
     }
     return $field_list;
-  }
-
-  /**
-   * Returns help text for this action.
-   * The help text is shown to the administrator who is configuring the action.
-   *
-   * @return string
-   */
-  protected function getHelpText() {
-    return E::ts('This action copies the value of a custom field from any entity in the rule to another custom field.');
   }
 
 }

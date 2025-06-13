@@ -1,12 +1,15 @@
 <div af-fieldset="">
-  <div class="af-container af-layout-inline">
-    <af-field name="label" />
-    <af-field name="trigger_id" defn="{input_attrs: {multiple: true}}" />
-    <af-field name="description" defn="{input_type: 'TextArea', input_attrs: {}}" />
-  </div>
-  <div class="af-container af-layout-inline">
-    <af-field name="is_active" defn="{input_type: 'Radio', afform_default: '1'}" />
-    <af-field name="CiviRulesRule_CiviRulesRuleTag_rule_id_01.rule_tag_id" defn="{input_attrs: {multiple: true}, label: 'Tags'}" />
-  </div>
+  <details class="af-container af-container-style-pane" af-title="Filters" open="">
+    <fieldset class="af-container af-layout-cols" af-title="Find Rule by">
+      <af-field name="is_active" defn="{input_type: 'Radio', afform_default: true, input_attrs: {}}" />
+      <af-field name="id" defn="{label: 'ID or Label', input_attrs: {multiple: true}}" />
+      <af-field name="trigger_id" defn="{input_attrs: {multiple: true}}" />
+      <af-field name="CiviRulesRule_CiviRulesRuleTag_rule_id_01.rule_tag_id" defn="{input_attrs: {multiple: true}}" />
+    </fieldset>
+    <fieldset class="af-container af-layout-inline" af-title="Filter by">
+      <af-field name="label" defn="{required: false, input_attrs: {}}" />
+      <af-field name="description" defn="{input_type: 'TextArea', input_attrs: {}}" />
+    </fieldset>
+  </details>
   <crm-search-display-table search-name="CiviRules" display-name="CiviRules_Table_1"></crm-search-display-table>
 </div>

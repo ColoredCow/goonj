@@ -11,6 +11,9 @@ return [
     'description' => E::ts('CiviRules Rule Conditions'),
     'log' => TRUE,
   ],
+  'getPaths' => fn() => [
+    'update' => 'civicrm/civirule/form/rule_condition?reset=1&action=update&rid=[id]',
+  ],
   'getFields' => fn() => [
     'id' => [
       'title' => E::ts('ID'),
@@ -34,8 +37,11 @@ return [
     'condition_link' => [
       'title' => E::ts('Condition Link'),
       'sql_type' => 'varchar(3)',
-      'input_type' => 'Text',
+      'input_type' => 'Select',
       'default' => NULL,
+      'pseudoconstant' => [
+        'callback' => ['CRM_Civirules_BAO_CiviRulesRuleCondition', 'getConditionLinkOptions'],
+      ],
     ],
     'condition_id' => [
       'title' => E::ts('Condition ID'),
@@ -62,6 +68,31 @@ return [
       'input_attrs' => [
         'label' => E::ts('Enabled'),
       ],
+    ],
+    'weight' => [
+      'title' => ts('Order'),
+      'sql_type' => 'int',
+      'input_type' => 'Number',
+      'description' => ts('Ordering of the RuleConditions'),
+      'default' => 0,
+      'required' => TRUE,
+    ],
+    'created_date' => [
+      'title' => ts('Created Date'),
+      'sql_type' => 'timestamp',
+      'input_type' => NULL,
+      'required' => TRUE,
+      'description' => ts('RuleCondition Created Date'),
+      'default' => 'CURRENT_TIMESTAMP',
+    ],
+    'modified_date' => [
+      'title' => ts('Modified Date'),
+      'sql_type' => 'timestamp',
+      'input_type' => NULL,
+      'required' => TRUE,
+      'readonly' => TRUE,
+      'description' => ts('RuleCondition Modified Date'),
+      'default' => 'CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
     ],
   ],
 ];

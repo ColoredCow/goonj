@@ -56,7 +56,7 @@ class CRM_CivirulesConditions_ContributionRecur_EndDate extends CRM_Civirules_Co
    * @abstract
    */
   public function getExtraDataInputUrl($ruleConditionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/condition/contribution_recur_enddate/', 'rule_condition_id='.$ruleConditionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/condition/contribution_recur_enddate', $ruleConditionId);
   }
 
   /**

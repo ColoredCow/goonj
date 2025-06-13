@@ -35,7 +35,7 @@ class CRM_CivirulesConditions_Form_Contact_HasBeenInGroup extends CRM_CivirulesC
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleCondition->condition_params);
+    $data = $this->ruleCondition->unserializeParams();
     if (isset($data['operator'])) {
       $defaultValues['operator'] = $data['operator'];
     }

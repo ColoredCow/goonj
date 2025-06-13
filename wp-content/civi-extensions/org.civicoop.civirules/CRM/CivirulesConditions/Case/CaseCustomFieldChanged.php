@@ -128,8 +128,7 @@ class CRM_CivirulesConditions_Case_CaseCustomFieldChanged extends CRM_Civirules_
    * @abstract
    */
   public function getExtraDataInputUrl($ruleConditionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/condition/casecustomfield', 'rule_condition_id='
-      . $ruleConditionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/condition/casecustomfield', $ruleConditionId);
   }
 
   /**

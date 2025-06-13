@@ -31,7 +31,7 @@ class CRM_CivirulesConditions_Form_Group_GroupType extends CRM_CivirulesConditio
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleCondition->condition_params);
+    $data = $this->ruleCondition->unserializeParams();
     if (!empty($data['group_type_id'])) {
       $defaultValues['group_type_id'] = $data['group_type_id'];
     }

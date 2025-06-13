@@ -168,7 +168,7 @@ class CRM_CivirulesConditions_Membership_ContactHasMembership extends CRM_Civiru
    * @return bool|string
    */
   public function getExtraDataInputUrl($ruleConditionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/condition/contacthasmembership', 'rule_condition_id=' . $ruleConditionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/condition/contacthasmembership', $ruleConditionId);
   }
 
   /**

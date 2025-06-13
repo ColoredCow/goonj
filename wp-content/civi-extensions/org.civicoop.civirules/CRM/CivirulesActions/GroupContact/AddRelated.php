@@ -35,7 +35,7 @@ class CRM_CivirulesActions_GroupContact_AddRelated extends CRM_CivirulesActions_
         $params['relationship_type_id'] = substr($rel_type_id, 4);
         $params['is_active'] = '1';
         $params['options']['limit'] = '0';
-        if (strpos($rel_type_id, 'a_b_') === 0) {
+        if (str_starts_with($rel_type_id, 'a_b_')) {
           $params['contact_id_a'] = $triggerData->getContactId();
           $return_field = 'contact_id_b';
         }
@@ -93,7 +93,7 @@ class CRM_CivirulesActions_GroupContact_AddRelated extends CRM_CivirulesActions_
    * @return bool|string
    */
   public function getExtraDataInputUrl($ruleActionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/action/groupcontact/addrelated', 'rule_action_id=' . $ruleActionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/action/groupcontact/addrelated', $ruleActionId);
   }
 
   /**
@@ -191,6 +191,33 @@ class CRM_CivirulesActions_GroupContact_AddRelated extends CRM_CivirulesActions_
       }
     }
     return parent::importActionParameters($action_params);
+  }
+
+  /**
+   * Get various types of help text for the action:
+   *   - actionDescription: When choosing from a list of actions, explains what the action does.
+   *   - actionDescriptionWithParams: When a action has been configured for a rule provides a
+   *       user friendly description of the action and params (see $this->userFriendlyConditionParams())
+   *   - actionParamsHelp (default): If the action has configurable params, show this help text when configuring
+   * @param string $context
+   *
+   * @return string
+   */
+  public function getHelpText(string $context): string {
+    switch ($context) {
+      case 'actionDescriptionWithParams':
+        return $this->userFriendlyConditionParams();
+
+      case 'actionDescription':
+        return E::ts('All related contacts of the selected relationship types will be added to the selected group.');
+
+      case 'actionParamsHelp':
+        return E::ts('All related contacts of the selected relationship types will be added to the selected group.')
+          . '<br /><strong>' . E::ts('Relationship type') . ':</strong><br />'
+          . E::ts('The relationship type to find target contacts.');
+    }
+
+    return $helpText ?? '';
   }
 
 }

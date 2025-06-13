@@ -29,7 +29,7 @@ class CRM_CivirulesConditions_Form_Contribution_TotalContributedAmount extends C
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
 
-    $data = unserialize($this->ruleCondition->condition_params);
+    $data = $this->ruleCondition->unserializeParams();
     $defaultValues = CRM_CivirulesConditions_Utils_Period::setDefaultValues($defaultValues, $data);
 
     // Backwards compatibility: if contribution status is not set, assume it is the completed status.
@@ -64,7 +64,7 @@ class CRM_CivirulesConditions_Form_Contribution_TotalContributedAmount extends C
    */
   public function postProcess()
   {
-    $data = unserialize($this->ruleCondition->condition_params);
+    $data = $this->ruleCondition->unserializeParams();
     $data = CRM_CivirulesConditions_Utils_Period::getConditionParams($this->_submitValues, $data);
     $data['financial_type_id'] = $this->_submitValues['financial_type_id'];
     if (!is_array($data['financial_type_id'])) {

@@ -47,7 +47,7 @@ class CRM_CivirulesConditions_Form_Case_CaseCustomFieldChanged extends CRM_Civir
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleCondition->condition_params);
+    $data = $this->ruleCondition->unserializeParams();
     if (!empty($data['case_custom_field_id'])) {
       $defaultValues['case_custom_field_id'] = $data['case_custom_field_id'];
     }

@@ -57,7 +57,7 @@ return [
         'saved_search_id.name' => 'Civi_Rules_Rule_Log_Search',
         'type' => 'table',
         'settings' => [
-          'description' => E::ts(NULL),
+          'description' => NULL,
           'sort' => [
             ['log_date', 'DESC'],
           ],

@@ -82,7 +82,7 @@ class CRM_CivirulesConditions_ContributionRecur_xthContribution extends CRM_Civi
    * @access public
    */
   public function getExtraDataInputUrl($ruleConditionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/condition/contribution_recur_xth_contribution/', 'rule_condition_id='.$ruleConditionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/condition/contribution_recur_xth_contribution', $ruleConditionId);
   }
 
   /**

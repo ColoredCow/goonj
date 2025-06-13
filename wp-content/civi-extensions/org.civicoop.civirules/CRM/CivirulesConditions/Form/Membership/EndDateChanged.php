@@ -30,7 +30,7 @@ class CRM_CivirulesConditions_Form_Membership_EndDateChanged extends CRM_Civirul
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleCondition->condition_params);
+    $data = $this->ruleCondition->unserializeParams();
     if (!empty($data['end_date_after_old_end_date'])) {
       $defaultValues['end_date_after_old_end_date'] = $data['end_date_after_old_end_date'];
     }

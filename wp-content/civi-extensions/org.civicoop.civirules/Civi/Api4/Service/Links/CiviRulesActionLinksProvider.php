@@ -14,7 +14,6 @@ namespace Civi\Api4\Service\Links;
 
 use Civi\API\Event\RespondEvent;
 use Civi\Api4\CiviRulesAction;
-use Civi\Api4\OptionValue;
 
 /**
  * @service
@@ -45,9 +44,6 @@ class CiviRulesActionLinksProvider extends \Civi\Core\Service\AutoSubscriber {
         }
       }
       if ($isEditLink && isset($editLinkIndex)) {
-        // Expanding the "add" link requires a value for target_contact.
-        // This might come back from SearchKit in a couple different ways,
-        // either an implicit join on 'target_contact_id' or as an explicit join.
         $ruleID = $request->getValue('rule_id');
         $ruleActionID = $request->getValue('id');
         $actionID = $request->getValue('action_id');

@@ -31,7 +31,7 @@ class CRM_CivirulesConditions_Form_Case_CaseActivity extends CRM_CivirulesCondit
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleCondition->condition_params);
+    $data = $this->ruleCondition->unserializeParams();
     if (!empty($data['days_inactive'])) {
       $defaultValues['days_inactive'] = $data['days_inactive'];
     }

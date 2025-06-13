@@ -35,7 +35,18 @@ class CiviRulesRuleActionGetSpecProvider extends \Civi\Core\Service\AutoService 
       ->setDescription(ts('Human-readable description of action parameters'))
       ->setType('Extra')
       ->setReadonly(TRUE)
-      ->addOutputFormatter([__CLASS__, 'description']);
+      ->addOutputFormatter([__CLASS__, 'actionParamsDisplay']);
+    $spec->addFieldSpec($field);
+
+    // Calculated field gets action parameter description
+    $field = new FieldSpec('action_delay_display', 'CiviRulesRuleAction', 'String');
+    $field->setLabel(ts('Action Delay Description'))
+      ->setTitle(ts('Action Delay Description'))
+      ->setColumnName('delay')
+      ->setDescription(ts('Human-readable description of action delay params'))
+      ->setType('Extra')
+      ->setReadonly(TRUE)
+      ->addOutputFormatter([__CLASS__, 'actionDelayDisplay']);
     $spec->addFieldSpec($field);
   }
 
@@ -49,7 +60,15 @@ class CiviRulesRuleActionGetSpecProvider extends \Civi\Core\Service\AutoService 
     return $entity === 'CiviRulesRuleAction' && in_array($action, ['get', 'create']);
   }
 
-  public static function description(&$value, $row) {
+  /**
+   * Format the action params for display
+   *
+   * @param $value
+   * @param $row
+   * @return void
+   * @throws \Exception
+   */
+  public static function actionParamsDisplay(&$value, $row) {
     if (!empty($row['action_id'])) {
       $actionClass = \CRM_Civirules_BAO_CiviRulesAction::getActionObjectById($row['action_id']);
       if ($actionClass) {
@@ -59,6 +78,26 @@ class CiviRulesRuleActionGetSpecProvider extends \Civi\Core\Service\AutoService 
     }
     else {
       $value = '';
+    }
+  }
+
+  /**
+   * Format the delay params for display
+   *
+   * @param $value
+   * @param $row
+   * @return void
+   */
+  public static function actionDelayDisplay(&$value, $row) {
+    if (!empty($row['action_id'])) {
+      if (!empty($value)) {
+        try {
+          $delayClass = unserialize($value);
+          $value = $delayClass->getDelayExplanation();
+        } catch (\Throwable $e) {
+          $value = '';
+        }
+      }
     }
   }
 

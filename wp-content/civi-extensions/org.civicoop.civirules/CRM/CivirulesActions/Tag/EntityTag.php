@@ -43,7 +43,7 @@ class CRM_CivirulesActions_Tag_EntityTag {
         }
       }
     }
-    catch (CiviCRM_API3_Exception $ex) {
+    catch (CRM_Core_Exception $ex) {
       Civi::log()->error(E::ts("Error from API3 Tag get in ") . __METHOD__
         . E::ts("with message: ") . $ex->getMessage());
     }
@@ -69,7 +69,7 @@ class CRM_CivirulesActions_Tag_EntityTag {
         'tag_id' => $tagId,
       ]);
     }
-    catch (CiviCRM_API3_Exception $ex) {
+    catch (CRM_Core_Exception $ex) {
       Civi::log()->error(E::ts("Error from API3 EntityTag create in ") . __METHOD__ . E::ts(" with message: ") . $ex->getMessage());
     }
   }
@@ -138,7 +138,7 @@ class CRM_CivirulesActions_Tag_EntityTag {
         'tag_id' => $tagId,
       ]);
     }
-    catch (CiviCRM_API3_Exception $ex) {
+    catch (CRM_Core_Exception $ex) {
       Civi::log()->error(E::ts("Error from API3 EntityTag delete in ") . __METHOD__ . E::ts(" with message: ") . $ex->getMessage());
     }
   }

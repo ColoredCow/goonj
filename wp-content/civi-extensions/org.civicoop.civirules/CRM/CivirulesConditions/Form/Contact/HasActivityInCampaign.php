@@ -33,7 +33,7 @@ class CRM_CivirulesConditions_Form_Contact_HasActivityInCampaign extends CRM_Civ
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleCondition->condition_params);
+    $data = $this->ruleCondition->unserializeParams();
     if (!empty($data['activity_type_id'])) {
       $defaultValues['activity_type_id'] = $data['activity_type_id'];
     }

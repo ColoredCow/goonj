@@ -26,6 +26,7 @@ class CRM_CivirulesCronTrigger_HasTag extends CRM_Civirules_Trigger_Cron {
       $data = array();
       CRM_Core_DAO::storeValues($this->dao, $data);
       $triggerData = new CRM_Civirules_TriggerData_Cron($this->dao->contact_id, 'EntityTag', $data);
+      $triggerData->setTrigger($this);
       return $triggerData;
     }
     return false;

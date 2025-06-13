@@ -32,7 +32,10 @@ return [
       'title' => E::ts('Label'),
       'sql_type' => 'varchar(128)',
       'input_type' => 'Text',
-      'default' => NULL,
+      'required' => TRUE,
+      'input_attrs' => [
+        'maxlength' => 128,
+      ],
     ],
     'trigger_id' => [
       'title' => E::ts('Trigger ID'),
@@ -90,10 +93,10 @@ return [
     'created_date' => [
       'title' => E::ts('Created Date'),
       'sql_type' => 'timestamp',
-      'input_type' => 'Select Date',
-      'readonly' => TRUE,
+      'input_type' => NULL,
+      'required' => TRUE,
       'description' => E::ts('When was this item created'),
-      'default' => NULL,
+      'default' => 'CURRENT_TIMESTAMP',
     ],
     'created_user_id' => [
       'title' => E::ts('Created User ID'),
