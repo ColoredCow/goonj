@@ -31,7 +31,7 @@ class CRM_CivirulesActions_Case_Form_SetCustomField extends CRM_CivirulesActions
         FALSE);
 
     // set defaults
-    $this->setDefaults(unserialize($this->ruleAction->action_params));
+    $this->setDefaults($this->ruleAction->unserializeParams());
 
     $this->addButtons(array(
       array('type' => 'next',   'name' => E::ts('Save'), 'isDefault' => TRUE,),

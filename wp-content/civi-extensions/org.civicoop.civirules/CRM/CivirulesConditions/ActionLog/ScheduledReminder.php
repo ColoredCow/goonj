@@ -16,8 +16,7 @@ class CRM_CivirulesConditions_ActionLog_ScheduledReminder extends CRM_Civirules_
    * return FALSE if none needed
    */
   public function getExtraDataInputUrl($ruleConditionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/condition/scheduledreminder',
-     'rule_condition_id='.$ruleConditionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/condition/scheduledreminder', $ruleConditionId);
   }
 
   /**

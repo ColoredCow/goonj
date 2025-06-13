@@ -108,7 +108,7 @@ FROM civicrm_contribution WHERE contact_id = %1 AND civicrm_contribution.contrib
    * @abstract
    */
   public function getExtraDataInputUrl($ruleConditionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/condition/contribution_distinctcontributingday/', 'rule_condition_id='.$ruleConditionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/condition/contribution_distinctcontributingday', $ruleConditionId);
   }
 
   /**

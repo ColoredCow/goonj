@@ -14,7 +14,7 @@ class CRM_CivirulesActions_Case_Form_AddRole extends CRM_CivirulesActions_Form_F
     $this->add('hidden', 'rule_action_id');
 
     $this->add('select', 'role', E::ts('Case role'), CRM_CivirulesActions_Case_AddRole::getCaseRoles(), true, array('class' => 'crm-select2 huge'));
-    $this->addEntityRef('cid', E::ts('Contact'), [], true);
+    $this->addEntityRef('cid', E::ts('Contact'), [], false);
 
     $this->addButtons(array(
       array(
@@ -35,7 +35,7 @@ class CRM_CivirulesActions_Case_Form_AddRole extends CRM_CivirulesActions_Form_F
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleAction->action_params);
+    $data = $this->ruleAction->unserializeParams();
     $defaultValues['role'] = empty($data['role']) ? '' : $data['role'];
     $defaultValues['cid'] = empty($data['cid']) ? '' : $data['cid'];
     return $defaultValues;

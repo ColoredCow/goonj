@@ -96,7 +96,7 @@ WHERE contact_id = %1 AND civicrm_contribution.contribution_recur_id > %2 AND co
    * @abstract
    */
   public function getExtraDataInputUrl($ruleConditionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/condition/contribution_recur_count/', 'rule_condition_id='.$ruleConditionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/condition/contribution_recur_count', $ruleConditionId);
   }
 
   /**

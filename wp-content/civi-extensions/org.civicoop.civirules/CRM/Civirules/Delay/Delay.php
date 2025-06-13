@@ -16,10 +16,10 @@ abstract class CRM_Civirules_Delay_Delay {
    *
    * @param \CRM_Core_Form $form
    * @param prefix - The prefix for the form field name
-   * @oaram CRM_Civirules_BAO_Rule $rule
+   * @oaram CRM_Civirules_BAO_CiviRulesRule $rule
    * @return mixed
    */
-  abstract public function addElements(CRM_Core_Form &$form, $prefix, CRM_Civirules_BAO_Rule $rule);
+  abstract public function addElements(CRM_Core_Form &$form, $prefix, CRM_Civirules_BAO_CiviRulesRule $rule);
 
   /**
    * Validate the values and set error message in $errors
@@ -27,29 +27,29 @@ abstract class CRM_Civirules_Delay_Delay {
    * @param array $values
    * @param array $errors
    * @param prefix - The prefix for the form field name
-   * @param CRM_Civirules_BAO_Rule $rule
+   * @param CRM_Civirules_BAO_CiviRulesRule $rule
    * @return void
    */
-  abstract public function validate($values, &$errors, $prefix, CRM_Civirules_BAO_Rule $rule);
+  abstract public function validate($values, &$errors, $prefix, CRM_Civirules_BAO_CiviRulesRule $rule);
 
   /**
    * Set the values
    *
    * @param array $values
    * @param prefix - The prefix for the form field name
-   * @param CRM_Civirules_BAO_Rule $rule
+   * @param CRM_Civirules_BAO_CiviRulesRule $rule
    * @return void
    */
-  abstract public function setValues($values, $prefix, CRM_Civirules_BAO_Rule $rule);
+  abstract public function setValues($values, $prefix, CRM_Civirules_BAO_CiviRulesRule $rule);
 
   /**
    * Get the values
    *
    * @param prefix - The prefix for the form field name
-   * @param CRM_Civirules_BAO_Rule $rule
+   * @param CRM_Civirules_BAO_CiviRulesRule $rule
    * @return array
    */
-  abstract public function getValues($prefix, CRM_Civirules_BAO_Rule $rule);
+  abstract public function getValues($prefix, CRM_Civirules_BAO_CiviRulesRule $rule);
 
   /**
    * Returns an description of the delay
@@ -72,9 +72,9 @@ abstract class CRM_Civirules_Delay_Delay {
    *
    * @param $values
    * @param prefix - The prefix for the form field name
-   * @param CRM_Civirules_BAO_Rule $rule
+   * @param CRM_Civirules_BAO_CiviRulesRule $rule
    */
-  public function setDefaultValues(&$values, $prefix, CRM_Civirules_BAO_Rule $rule) {
+  public function setDefaultValues(&$values, $prefix, CRM_Civirules_BAO_CiviRulesRule $rule) {
 
   }
 

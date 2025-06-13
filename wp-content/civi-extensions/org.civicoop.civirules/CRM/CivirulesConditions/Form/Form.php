@@ -1,5 +1,6 @@
 <?php
 
+use Civi\Api4\CiviRulesRuleCondition;
 use CRM_Civirules_ExtensionUtil as E;
 
 class CRM_CivirulesConditions_Form_Form extends CRM_Core_Form
@@ -13,13 +14,13 @@ class CRM_CivirulesConditions_Form_Form extends CRM_Core_Form
    */
   protected $ruleConditionName = '';
 
-  protected $ruleCondition;
+  protected CRM_Civirules_BAO_CiviRulesRuleCondition $ruleCondition;
 
-  protected $condition;
+  protected CRM_Civirules_BAO_CiviRulesCondition $condition;
 
-  protected $rule;
+  protected CRM_Civirules_BAO_CiviRulesRule $rule;
 
-  protected $trigger;
+  protected CRM_Civirules_BAO_CiviRulesTrigger $trigger;
 
   /**
    * @var CRM_Civirules_Trigger
@@ -40,7 +41,7 @@ class CRM_CivirulesConditions_Form_Form extends CRM_Core_Form
     $this->ruleConditionId = CRM_Utils_Request::retrieve('rule_condition_id', 'Integer');
     $this->ruleConditionName = CRM_Utils_Request::retrieve('condition_name', 'String');
 
-    $this->ruleCondition = new CRM_Civirules_BAO_RuleCondition();
+    $this->ruleCondition = new CRM_Civirules_BAO_CiviRulesRuleCondition();
     $this->ruleCondition->id = $this->ruleConditionId;
     if (!$this->ruleCondition->find(true)) {
       throw new Exception('Civirules could not find ruleCondition');
@@ -48,9 +49,9 @@ class CRM_CivirulesConditions_Form_Form extends CRM_Core_Form
     $ruleConditionData = array();
     CRM_Core_DAO::storeValues($this->ruleCondition, $ruleConditionData);
 
-    $this->condition = new CRM_Civirules_BAO_Condition();
-    $this->rule = new CRM_Civirules_BAO_Rule();
-    $this->trigger = new CRM_Civirules_BAO_Trigger();
+    $this->condition = new CRM_Civirules_BAO_CiviRulesCondition();
+    $this->rule = new CRM_Civirules_BAO_CiviRulesRule();
+    $this->trigger = new CRM_Civirules_BAO_CiviRulesTrigger();
 
     $this->condition->id = $this->ruleCondition->condition_id;
     if (!$this->condition->find(true)) {
@@ -67,12 +68,12 @@ class CRM_CivirulesConditions_Form_Form extends CRM_Core_Form
       throw new Exception('Civirules could not find trigger');
     }
 
-    $this->conditionClass = CRM_Civirules_BAO_Condition::getConditionObjectById($this->condition->id, false);
+    $this->conditionClass = CRM_Civirules_BAO_CiviRulesCondition::getConditionObjectById($this->condition->id, false);
     if ($this->conditionClass) {
       $this->conditionClass->setRuleConditionData($ruleConditionData);
     }
 
-    $this->triggerClass = CRM_Civirules_BAO_Trigger::getTriggerObjectByTriggerId($this->trigger->id, true);
+    $this->triggerClass = CRM_Civirules_BAO_CiviRulesTrigger::getTriggerObjectByTriggerId($this->trigger->id, true);
     $this->triggerClass->setTriggerId($this->trigger->id);
     $this->triggerClass->setTriggerParams($this->rule->trigger_params ?? '');
 
@@ -89,8 +90,10 @@ class CRM_CivirulesConditions_Form_Form extends CRM_Core_Form
   }
 
   function cancelAction() {
-    if (isset($this->_submitValues['rule_condition_id']) && $this->_action == CRM_Core_Action::ADD) {
-      CRM_Civirules_BAO_RuleCondition::deleteWithId($this->_submitValues['rule_condition_id']);
+    if (!empty($this->getSubmittedValue('rule_condition_id')) && $this->_action == CRM_Core_Action::ADD) {
+      CiviRulesRuleCondition::delete(FALSE)
+        ->addWhere('id', '=', $this->getSubmittedValue('rule_condition_id'))
+        ->execute();
     }
   }
 
@@ -111,7 +114,7 @@ class CRM_CivirulesConditions_Form_Form extends CRM_Core_Form
     $session->setStatus(E::ts("Condition '%1' parameters updated for CiviRule '%2'", [1 => $this->condition->label, 2 => $this->rule->label]), 'Condition parameters updated', 'success');
 
     $redirectUrl = CRM_Utils_System::url('civicrm/civirule/form/rule', 'action=update&id='.$this->rule->id, TRUE);
-    CRM_Utils_System::redirect($redirectUrl);
+    $session->pushUserContext($redirectUrl);
   }
 
   /**
@@ -131,7 +134,7 @@ class CRM_CivirulesConditions_Form_Form extends CRM_Core_Form
    *
    * @return string
    */
-  protected function getHelpText() {
+  public function getHelpText() {
     return '';
   }
 

@@ -222,7 +222,7 @@ class CRM_CivirulesConditions_Contribution_TotalContributedAmount extends CRM_Ci
    * @abstract
    */
   public function getExtraDataInputUrl($ruleConditionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/condition/contribution_totalcontributedamount/', 'rule_condition_id='.$ruleConditionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/condition/contribution_totalcontributedamount', $ruleConditionId);
   }
 
   /**

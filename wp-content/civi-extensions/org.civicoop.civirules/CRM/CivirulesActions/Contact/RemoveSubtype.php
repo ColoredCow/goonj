@@ -6,28 +6,26 @@ class CRM_CivirulesActions_Contact_RemoveSubtype extends CRM_Civirules_Action {
    * Method processAction to execute the action
    *
    * @param CRM_Civirules_TriggerData_TriggerData $triggerData
-   * @access public
    */
   public function processAction(CRM_Civirules_TriggerData_TriggerData $triggerData) {
     $contactId = $triggerData->getContactId();
-
     $subTypes = CRM_Contact_BAO_Contact::getContactSubType($contactId);
-    $contactType = CRM_Contact_BAO_Contact::getContactType($contactId);
     $typesToRemove = [];
-    $changed = false;
+    $changed = FALSE;
     $actionParams = $this->getActionParameters();
     foreach($actionParams['sub_type'] as $subType) {
       if (in_array($subType, $subTypes )) {
         $typesToRemove[] = $subType;
-        $changed = true;
+        $changed = TRUE;
       }
     }
     if ($changed) {
-      $params['id'] = $contactId;
-      $params['contact_id'] = $contactId;
-      $params['contact_type'] = $contactType;
-      $params['contact_sub_type'] = array_diff($subTypes, $typesToRemove);
-      CRM_Contact_BAO_Contact::writeRecord($params);
+      $updatedContactSubTypes = array_diff($subTypes, $typesToRemove);
+      $updatedContactSubTypes = empty($updatedContactSubTypes) ? NULL : $updatedContactSubTypes;
+      \Civi\Api4\Contact::update(FALSE)
+        ->addValue('contact_sub_type', $updatedContactSubTypes)
+        ->addWhere('id', '=', $contactId)
+        ->execute();
     }
   }
 
@@ -36,11 +34,11 @@ class CRM_CivirulesActions_Contact_RemoveSubtype extends CRM_Civirules_Action {
    * and return false if none is needed
    *
    * @param int $ruleActionId
+   *
    * @return bool
-   * @access public
    */
   public function getExtraDataInputUrl($ruleActionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/action/contact/subtype/remove', 'rule_action_id='.$ruleActionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/action/contact/subtype/remove', $ruleActionId);
   }
 
   /**
@@ -48,7 +46,6 @@ class CRM_CivirulesActions_Contact_RemoveSubtype extends CRM_Civirules_Action {
    * e.g. 'Older than 65'
    *
    * @return string
-   * @access public
    */
   public function userFriendlyConditionParams() {
     $params = $this->getActionParameters();
@@ -76,7 +73,7 @@ class CRM_CivirulesActions_Contact_RemoveSubtype extends CRM_Civirules_Action {
           'return' => 'name',
           'id' => $j,
         ]);
-      } catch (CiviCRM_API3_Exception $e) {
+      } catch (CRM_Core_Exception $e) {
       }
     }
     return $action_params;
@@ -95,7 +92,7 @@ class CRM_CivirulesActions_Contact_RemoveSubtype extends CRM_Civirules_Action {
           'return' => 'id',
           'name' => $j,
         ]);
-      } catch (CiviCRM_API3_Exception $e) {
+      } catch (CRM_Core_Exception $e) {
       }
     }
     return parent::importActionParameters($action_params);

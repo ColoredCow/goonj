@@ -1,0 +1,10 @@
+<div af-fieldset="">
+  <div class="af-container af-layout-inline">
+    <af-field name="rule_id" />
+    <af-field name="contact_id" />
+    <af-field name="log_date" defn="{input_type: 'Select', search_range: true, input_attrs: {}, label: 'Date'}" />
+    <af-field name="entity_id" defn="{label: 'Entity ID', input_attrs: {}}" />
+    <af-field name="entity_table" defn="{label: 'Entity Table', input_attrs: {}}" />
+  </div>
+  <crm-search-display-table search-name="Civi_Rules_Rule_Log_Search" display-name="Civi_Rules_Rule_Log_Search"></crm-search-display-table>
+</div>

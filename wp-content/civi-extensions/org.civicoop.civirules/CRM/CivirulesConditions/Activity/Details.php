@@ -10,8 +10,7 @@ class CRM_CivirulesConditions_Activity_Details extends CRM_Civirules_Condition {
   private $conditionParams = array();
 
   public function getExtraDataInputUrl($ruleConditionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/condition/activity_details/',
-      'rule_condition_id='.$ruleConditionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/condition/activity_details', $ruleConditionId);
   }
 
   /**

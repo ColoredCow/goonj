@@ -71,7 +71,7 @@ class CRM_CivirulesConditions_Case_CaseActivity extends CRM_Civirules_Condition 
    * @return bool|string
    */
   public function getExtraDataInputUrl($ruleConditionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/condition/case/caseactivity', 'rule_condition_id=' . $ruleConditionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/condition/case/caseactivity', $ruleConditionId);
   }
 
   /**

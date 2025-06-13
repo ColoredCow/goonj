@@ -7,21 +7,23 @@ abstract class CRM_Civirules_Trigger {
    *
    * @var int
    */
-  protected $ruleId;
+  protected int $ruleId;
 
   /**
    * The Rule Trigger ID
    *
    * @var int
    */
-  protected $triggerId;
+  protected int $triggerId;
+
+  protected string $triggerName;
 
   /**
    * The Trigger Params
    *
    * @var array
    */
-  protected $triggerParams;
+  protected array $triggerParams;
 
   /**
    * @var \CRM_Civirules_TriggerData_TriggerData
@@ -31,12 +33,12 @@ abstract class CRM_Civirules_Trigger {
   /**
    * @var string
    */
-  protected $ruleTitle;
+  protected string $ruleTitle;
 
   /**
    * @var bool
    */
-  protected $ruleDebugEnabled;
+  protected bool $ruleDebugEnabled;
 
   /**
    * The Rule Conditions
@@ -44,7 +46,14 @@ abstract class CRM_Civirules_Trigger {
    *
    * @var array
    */
-  protected $ruleConditions;
+  protected array $ruleConditions;
+
+  public function __construct($trigger = NULL) {
+    if (isset($trigger)) {
+      $this->triggerId = $trigger['id'] ?? NULL;
+      $this->triggerName = $trigger['name'] ?? NULL;
+    }
+  }
 
   /**
    * @param int $ruleId
@@ -63,14 +72,23 @@ abstract class CRM_Civirules_Trigger {
    * @return void
    */
   public function setTriggerParams(string $triggerParams) {
-    // Initialise as empty array in case we fail to unserialize (so we don't crash when trying to access uninitialised data).
-    $this->triggerParams = [];
     try {
-      $this->triggerParams = unserialize($triggerParams);
+      $triggerParams = unserialize($triggerParams);
+      // If unserialize fails, FALSE is returned. We need an array
+      $this->triggerParams = $triggerParams ?: [];
     }
     catch (TypeError $e) {
       \Civi::log()->error('CiviRules setTriggerParams: Could not unserialize trigger params.');
+      // Something went wrong, set to empty array
+      $this->triggerParams = [];
     }
+  }
+
+  /**
+   * @return array
+   */
+  public function getTriggerParams(): array {
+    return $this->triggerParams;
   }
 
   /**
@@ -157,7 +175,12 @@ abstract class CRM_Civirules_Trigger {
    */
   public function getRuleConditions(): array {
     if (!isset($this->ruleConditions) && !empty($this->ruleId)) {
-      $this->ruleConditions = CRM_Civirules_BAO_RuleCondition::getValues(['rule_id' => $this->ruleId]);
+      $this->ruleConditions = \Civi\Api4\CiviRulesRuleCondition::get(FALSE)
+        ->addWhere('rule_id', '=', $this->ruleId)
+        ->addOrderBy('weight', 'ASC')
+        ->addOrderBy('id', 'ASC')
+        ->execute()
+        ->getArrayCopy();
     }
     return $this->ruleConditions ?? [];
   }
@@ -180,17 +203,22 @@ abstract class CRM_Civirules_Trigger {
     return 'CRM_Civirules_TriggerData_TriggerData';
   }
 
+  /**
+   * @return array of CRM_Civirules_TriggerData_EntityDefinition
+   */
+  public function getProvidedEntities(): array {
+    if (empty(\Civi::$statics[__CLASS__]['getProvidedEntities'])) {
+      $additionalEntities = $this->getAdditionalEntities();
+      foreach ($additionalEntities as $entity) {
+        $entities[$entity->key] = $entity;
+      }
 
-  public function getProvidedEntities() {
-    $additionalEntities = $this->getAdditionalEntities();
-    foreach($additionalEntities as $entity) {
+      $entity = $this->reactOnEntity();
       $entities[$entity->key] = $entity;
+      \Civi::$statics[__CLASS__]['getProvidedEntities'] = $entities;
     }
 
-    $entity = $this->reactOnEntity();
-    $entities[$entity->key] = $entity;
-
-    return $entities;
+    return \Civi::$statics[__CLASS__]['getProvidedEntities'];
   }
 
   /**
@@ -208,13 +236,7 @@ abstract class CRM_Civirules_Trigger {
    * @return bool
    */
   public function doesProvideEntity(string $entity): bool {
-    $availableEntities = $this->getProvidedEntities();
-    foreach($availableEntities as $providedEntity) {
-      if (strtolower($providedEntity->entity) == strtolower($entity)) {
-        return TRUE;
-      }
-    }
-    return FALSE;
+    return $this->doesProvideEntities([$entity]);
   }
 
   /**
@@ -224,7 +246,7 @@ abstract class CRM_Civirules_Trigger {
    *
    * @return bool
    */
-  public function doesProvideEntities($entities): bool {
+  public function doesProvideEntities(array $entities): bool {
     $availableEntities = $this->getProvidedEntities();
     foreach($entities as $entity) {
       $entityPresent = FALSE;
@@ -268,11 +290,16 @@ abstract class CRM_Civirules_Trigger {
   }
 
   /**
-   * Returns a description of this trigger
+   * Returns a calculated description of this trigger
+   * If the trigger has parameters this this function should provide a user-friendly description of those parameters
+   * See also: getHelpText()
+   * You could return the contents of getHelpText('triggerDescriptionWithParams') if you want a generic description and the trigger has no configurable
+   * parameters.
    *
    * @return string
    */
   public function getTriggerDescription() {
+    // If you implement getHelpText('triggerDescriptionWithParams') then you don't need to implement this function!
     return '';
   }
 
@@ -303,9 +330,50 @@ abstract class CRM_Civirules_Trigger {
     try {
       CRM_Civirules_Engine::triggerRule($this, $this->getTriggerData());
     }
-    catch (Exception $e) {
+    catch (Throwable $e) {
       \Civi::log()->error('Failed to trigger rule: ' . $e->getMessage());
     }
+  }
+
+  /**
+   * Get various types of help text for the trigger:
+   *   - triggerDescription: When choosing from a list of triggers, explains what the trigger does.
+   *   - triggerDescriptionWithParams: When a trigger has been configured for a rule provides a
+   *       user friendly description of the trigger and params (see $this->getTriggerDescription())
+   *   - triggerParamsHelp (default): If the trigger has configurable params, show this help text when configuring
+   * @param string $context
+   *
+   * @return string
+   */
+  public function getHelpText(string $context): string {
+    // Child classes should override this function
+
+    switch ($context) {
+      case 'triggerDescriptionWithParams':
+        return $this->getTriggerDescription();
+
+      case 'triggerDescription':
+      case 'triggerParamsHelp':
+      default:
+        // Historically getHelpText() was on the form class.
+        // But we have no way to get the form class - only the path via getExtraDataInputUrl()
+        // The Form *does* have access to the trigger class via $this->triggerClass so if getHelpText()
+        //   is on the triggerClass we can just do $this->triggerClass->getHelpText().
+
+        // getHelpText() doesn't exist on trigger class.
+        // Try to get Form class for trigger and see if getHelpText() exists there
+        $classBits = explode('_', get_class($this));
+
+        $formClass = $classBits[0] . '_' . $classBits[1] . '_Form';
+        for ($i = 2; $i < count($classBits); $i++) {
+          $formClass .= '_' . $classBits[$i];
+        }
+        if (class_exists($formClass) && method_exists($formClass, 'getHelpText')) {
+          $helpText = (new $formClass())->getHelpText();
+        }
+    }
+
+    return $helpText ?? '';
   }
 
 }

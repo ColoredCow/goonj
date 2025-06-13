@@ -108,7 +108,7 @@ class CRM_Civirules_Delay_DelayBasedOnDateField extends CRM_Civirules_Delay_Dela
     return ts('%1 of %2.%3', array(1 => $this->getModifyString(), 2=>$this->entity,3=>$field));
   }
 
-  public function addElements(CRM_Core_Form &$form, $prefix, CRM_Civirules_BAO_Rule $rule) {
+  public function addElements(CRM_Core_Form &$form, $prefix, CRM_Civirules_BAO_CiviRulesRule $rule) {
     $form->add('select', $prefix.'modifier', ts('Modifier'), array('-' => ts('Before'), '+' => ts('After')));
     $form->add('text', $prefix.'amount', ts('Amount'));
     $form->add('select', $prefix.'unit', ts('Unit'), array(
@@ -117,7 +117,7 @@ class CRM_Civirules_Delay_DelayBasedOnDateField extends CRM_Civirules_Delay_Dela
       'weeks' => ts('Week(s)'),
     ));
 
-    $triggerClass = CRM_Civirules_BAO_Trigger::getTriggerObjectByTriggerId($rule->trigger_id, true);
+    $triggerClass = CRM_Civirules_BAO_CiviRulesTrigger::getTriggerObjectByTriggerId($rule->trigger_id, true);
     $triggerClass->setTriggerId($rule->trigger_id);
     $triggerClass->setTriggerParams($rule->trigger_params ?? '');
 
@@ -132,10 +132,10 @@ class CRM_Civirules_Delay_DelayBasedOnDateField extends CRM_Civirules_Delay_Dela
    * @param array $values
    * @param array $errors
    * @param prefix - The prefix for the form field name
-   * @param CRM_Civirules_BAO_Rule $rule
+   * @param CRM_Civirules_BAO_CiviRulesRule $rule
    * @return void
    */
-  public function validate($values, &$errors, $prefix, CRM_Civirules_BAO_Rule $rule) {
+  public function validate($values, &$errors, $prefix, CRM_Civirules_BAO_CiviRulesRule $rule) {
     if (empty($values[$prefix.'modifier'])) {
       $errors[$prefix.'modifier'] = ts('You need to select before or after');
     }
@@ -158,10 +158,10 @@ class CRM_Civirules_Delay_DelayBasedOnDateField extends CRM_Civirules_Delay_Dela
    *
    * @param array $values
    * @param prefix - The prefix for the form field name
-   * @param CRM_Civirules_BAO_Rule $rule
+   * @param CRM_Civirules_BAO_CiviRulesRule $rule
    * @return void
    */
-  public function setValues($values, $prefix, CRM_Civirules_BAO_Rule $rule) {
+  public function setValues($values, $prefix, CRM_Civirules_BAO_CiviRulesRule $rule) {
     $this->modifier = $values[$prefix.'modifier'];
     $this->amount = $values[$prefix.'amount'];
     $this->unit = $values[$prefix.'unit'];
@@ -176,7 +176,7 @@ class CRM_Civirules_Delay_DelayBasedOnDateField extends CRM_Civirules_Delay_Dela
    * @param CRM_Civirules_BAO_Rule $rule
    * @return array
    */
-  public function getValues($prefix, CRM_Civirules_BAO_Rule $rule) {
+  public function getValues($prefix, CRM_Civirules_BAO_CiviRulesRule $rule) {
     $values = array();
     $values[$prefix.'modifier'] = $this->modifier;
     $values[$prefix.'amount'] = $this->amount;

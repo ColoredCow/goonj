@@ -63,4 +63,30 @@ class CRM_CivirulesPostTrigger_Event extends CRM_Civirules_Trigger_Post {
     }
   }
 
+  /**
+   * Get various types of help text for the trigger:
+   *   - triggerDescription: When choosing from a list of triggers, explains what the trigger does.
+   *   - triggerDescriptionWithParams: When a trigger has been configured for a rule provides a
+   *       user friendly description of the trigger and params (see $this->getTriggerDescription())
+   *   - triggerParamsHelp (default): If the trigger has configurable params, show this help text when configuring
+   * @param string $context
+   *
+   * @return string
+   */
+  public function getHelpText(string $context = 'triggerParamsHelp'): string {
+    switch ($context) {
+      case 'triggerDescription':
+        return E::ts('Trigger on Event');
+
+      case 'triggerDescriptionWithParams':
+        return $this->getTriggerDescription();
+
+      case 'triggerParamsHelp':
+        return E::ts('An event does not have related contacts. So you can trigger without any contact are use the logged in contact (recommended).');
+
+      default:
+        return parent::getHelpText($context);
+    }
+  }
+
 }

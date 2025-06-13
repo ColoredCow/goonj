@@ -179,4 +179,32 @@ class CRM_CivirulesCronTrigger_ActivityScheduledDate extends CRM_CivirulesCronTr
     ]);
   }
 
+  /**
+   * Get various types of help text for the trigger:
+   *   - triggerDescription: When choosing from a list of triggers, explains what the trigger does.
+   *   - triggerDescriptionWithParams: When a trigger has been configured for a rule provides a
+   *       user friendly description of the trigger and params (see $this->getTriggerDescription())
+   *   - triggerParamsHelp (default): If the trigger has configurable params, show this help text when configuring
+   * @param string $context
+   *
+   * @return string
+   */
+  public function getHelpText(string $context = 'triggerParamsHelp'): string {
+    switch ($context) {
+      case 'triggerDescription':
+        return E::ts('Trigger for activities of selected types when the scheduled date is X days/weeks/months before or after.');
+
+      case 'triggerDescriptionWithParams':
+        return $this->getTriggerDescription();
+
+      case 'triggerParamsHelp':
+        return E::ts('Trigger for activities of selected types when the scheduled date is X days/weeks/months before or after.')
+          . '<br/>'
+          . E::ts('If "Trigger for case activities" is "Yes" then this will only trigger for case activities. If it is "No" then it will only trigger for activities that are not linked to a case.');
+
+      default:
+        return parent::getHelpText($context);
+    }
+  }
+
 }

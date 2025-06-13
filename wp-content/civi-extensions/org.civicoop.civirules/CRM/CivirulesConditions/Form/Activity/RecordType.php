@@ -36,7 +36,7 @@ class CRM_CivirulesConditions_Form_Activity_RecordType extends CRM_CivirulesCond
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleCondition->condition_params);
+    $data = $this->ruleCondition->unserializeParams();
     if (!empty($data['record_type_id'])) {
       $defaultValues['record_type_id'] = $data['record_type_id'];
     }

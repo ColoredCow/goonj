@@ -37,7 +37,7 @@ class CRM_CivirulesConditions_Form_Contribution_xthContribution extends CRM_Civi
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleCondition->condition_params);
+    $data = $this->ruleCondition->unserializeParams();
     if (!empty($data['number_contributions'])) {
       $defaultValues['number_contributions'] = $data['number_contributions'];
     }

@@ -90,7 +90,7 @@ class CRM_CivirulesActions_Relationship_End extends CRM_Civirules_Action {
    * @return bool|string
    */
   public function getExtraDataInputUrl($ruleActionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/action/relationship/end', 'rule_action_id=' . $ruleActionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/action/relationship/end', $ruleActionId);
   }
 
   /**
@@ -171,6 +171,37 @@ class CRM_CivirulesActions_Relationship_End extends CRM_Civirules_Action {
       ->execute();
     $label = $relationshipType->first();
     return $label['label_a_b'];
+  }
+
+  /**
+   * Get various types of help text for the action:
+   *   - actionDescription: When choosing from a list of actions, explains what the action does.
+   *   - actionDescriptionWithParams: When a action has been configured for a rule provides a
+   *       user friendly description of the action and params (see $this->userFriendlyConditionParams())
+   *   - actionParamsHelp (default): If the action has configurable params, show this help text when configuring
+   * @param string $context
+   *
+   * @return string
+   */
+  public function getHelpText(string $context): string {
+    switch ($context) {
+      case 'actionDescriptionWithParams':
+        return $this->userFriendlyConditionParams();
+
+      case 'actionDescription':
+        return E::ts('This action will disable or delete relationship(s) of  the selected type.');
+
+      case 'actionParamsHelp':
+        return E::ts('This action will disable or delete relationship(s) of  the selected type where it is <strong>assumed</strong> that the contact in question is <strong>contact A</strong>. <br />
+  As you know a relationship in CiviCRM is between 2 contacts, for example the employee of employer is relationship where the employee is contact A and the employer is contact B.
+  <br /><br />
+    It is relationship(s) because a contact can have more than 1 relationship of a certain type, <strong>all</strong> of those will be disabled or deleted.
+  <br /><br />
+  You can select the relationship type and if the relationship should be disabled (and show up as a former relationship) or deleted (completely removed from the database).
+  If you select to disable the relationship, you can also select the end date of the relationship. The default will be the date the action is executed.');
+    }
+
+    return $helpText ?? '';
   }
 
 }

@@ -1,5 +1,7 @@
 <?php
 
+use Civi\Api4\CiviRulesRuleCondition;
+
 abstract class CRM_CivirulesConditions_Generic_Status extends CRM_Civirules_Condition {
 
   protected $conditionParams = [];
@@ -60,21 +62,31 @@ abstract class CRM_CivirulesConditions_Generic_Status extends CRM_Civirules_Cond
    *
    * @param array $ruleCondition
    */
-  public function setRuleConditionData($ruleCondition) {
+  public function setRuleConditionData(array $ruleCondition) {
     parent::setRuleConditionData($ruleCondition);
     $this->conditionParams = [];
     if (!empty($this->ruleCondition['condition_params'])) {
       $this->conditionParams = unserialize($this->ruleCondition['condition_params']);
-      if (isset($this->conditionParams[$this->getEntityStatusFieldName()])) {
+      $oldFieldName = strtolower($this->getEntity()) . '_status_id';
+      if (isset($this->conditionParams[$oldFieldName]) && !isset($this->conditionParams['status_id'])) {
         // Some old conditions saved using the entity specific name (eg. membership_status_id)
-        //   instead of the generic 'status_id'
-        $this->conditionParams['status_id'] = $this->conditionParams[$this->getEntityStatusFieldName()];
-        if (!is_array($this->conditionParams['status_id'])) {
-          // Some old conditions did not support selecting multiple statuses so were saved as an integer.
-          //   We convert to an array before use.
-          $this->conditionParams['status_id'] = [$this->conditionParams['status_id']];
-        }
+        $this->conditionParams['status_id'] = $this->conditionParams[$oldFieldName];
+        unset($this->conditionParams[$oldFieldName]);
+        $paramsUpdated = TRUE;
       }
+      if (!is_array($this->conditionParams['status_id'])) {
+        // Some old conditions did not support selecting multiple statuses so were saved as an integer.
+        $this->conditionParams['status_id'] = [$this->conditionParams['status_id']];
+        $paramsUpdated = TRUE;
+      }
+      if (isset($paramsUpdated)) {
+        // Save the updated condition params
+        CiviRulesRuleCondition::update(FALSE)
+          ->addValue('condition_params', serialize($this->conditionParams))
+          ->addWhere('id', '=', $this->ruleCondition['id'])
+          ->execute();
+      }
+
       if (!isset($this->conditionParams['operator'])) {
         // Contribution Status did not have "operator" so we set to 0 if not set.
         $this->conditionParams['operator'] = 0;
@@ -123,7 +135,9 @@ abstract class CRM_CivirulesConditions_Generic_Status extends CRM_Civirules_Cond
    */
   public function getExtraDataInputUrl($ruleConditionId) {
     return CRM_Utils_System::url('civicrm/civirule/form/condition/status',
-      "rule_condition_id={$ruleConditionId}&entity={$this->getEntity()}");
+      "rule_condition_id={$ruleConditionId}&entity={$this->getEntity()}",
+      FALSE, NULL, FALSE, FALSE, TRUE
+    );
   }
 
   /**

@@ -67,7 +67,7 @@ class CRM_CivirulesConditions_Form_Contribution_PaidBy extends CRM_CivirulesCond
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleCondition->condition_params);
+    $data = $this->ruleCondition->unserializeParams();
     if (!empty($data['payment_instrument_id'])) {
       $defaultValues['payment_instrument_id'] = $data['payment_instrument_id'];
     }

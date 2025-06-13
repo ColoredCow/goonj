@@ -36,7 +36,7 @@ class CRM_CivirulesConditions_Form_Campaign_Status extends CRM_CivirulesConditio
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleCondition->condition_params);
+    $data = $this->ruleCondition->unserializeParams();
     if (!empty($data['campaign_status_id'])) {
       $defaultValues['campaign_status_id'] = $data['campaign_status_id'];
     }

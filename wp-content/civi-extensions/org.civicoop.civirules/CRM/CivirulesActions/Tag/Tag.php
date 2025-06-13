@@ -81,7 +81,7 @@ abstract class CRM_CivirulesActions_Tag_Tag extends CRM_CivirulesActions_Generic
           continue;
         }
       }
-      catch (CiviCRM_API3_Exception $e) {
+      catch (CRM_Core_Exception $e) {
         if (strtolower($action) == 'delete') {
           continue;
         }
@@ -100,7 +100,7 @@ abstract class CRM_CivirulesActions_Tag_Tag extends CRM_CivirulesActions_Generic
    * @return bool|string
    */
   public function getExtraDataInputUrl($ruleActionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/action/tag', 'rule_action_id=' . $ruleActionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/action/tag', $ruleActionId);
   }
 
   /**
@@ -142,7 +142,7 @@ abstract class CRM_CivirulesActions_Tag_Tag extends CRM_CivirulesActions_Generic
           'return' => 'name',
           'id' => $action_params['tag_id'],
         ]);
-      } catch (CiviCRM_API3_Exception $e) {
+      } catch (CRM_Core_Exception $e) {
       }
     } elseif (!empty($params['tag_ids']) && is_array($params['tag_ids'])) {
       foreach ($action_params['tag_ids'] as $i => $j) {
@@ -151,7 +151,7 @@ abstract class CRM_CivirulesActions_Tag_Tag extends CRM_CivirulesActions_Generic
             'return' => 'name',
             'id' => $j,
           ]);
-        } catch (CiviCRM_API3_Exception $e) {
+        } catch (CRM_Core_Exception $e) {
         }
       }
     }
@@ -171,7 +171,7 @@ abstract class CRM_CivirulesActions_Tag_Tag extends CRM_CivirulesActions_Generic
           'return' => 'id',
           'name' => $action_params['tag_id'],
         ]);
-      } catch (CiviCRM_API3_Exception $e) {
+      } catch (CRM_Core_Exception $e) {
       }
     } elseif (!empty($params['tag_ids']) && is_array($params['tag_ids'])) {
       foreach ($action_params['tag_ids'] as $i => $j) {
@@ -180,7 +180,7 @@ abstract class CRM_CivirulesActions_Tag_Tag extends CRM_CivirulesActions_Generic
             'return' => 'id',
             'name' => $j,
           ]);
-        } catch (CiviCRM_API3_Exception $e) {
+        } catch (CRM_Core_Exception $e) {
         }
       }
     }

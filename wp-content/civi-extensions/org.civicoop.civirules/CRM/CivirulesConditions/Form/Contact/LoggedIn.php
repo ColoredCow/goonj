@@ -41,7 +41,7 @@ class CRM_CivirulesConditions_Form_Contact_LoggedIn extends CRM_CivirulesConditi
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleCondition->condition_params);
+    $data = $this->ruleCondition->unserializeParams();
     if (!empty($data['operator'])) {
       $defaultValues['operator'] = $data['operator'];
     }

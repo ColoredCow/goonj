@@ -63,7 +63,7 @@ class CRM_CivirulesActions_Tag_Form_EntityTag extends CRM_CivirulesActions_Form_
     if ($this->ruleActionId) {
       $defaultValues['rule_action_id'] = $this->ruleActionId;
     }
-    $data = unserialize($this->ruleAction->action_params);
+    $data = $this->ruleAction->unserializeParams();
     if (!empty($data['tag_id'])) {
       $defaultValues['tag_id'] = $data['tag_id'];
     }

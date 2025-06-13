@@ -37,7 +37,7 @@ class CRM_CivirulesActions_Relationship_Form_End extends CRM_CivirulesActions_Fo
    */
   public function setDefaultValues() {
     $defaultValues =  parent::setDefaultValues();
-    $data = unserialize($this->ruleAction->action_params);
+    $data = $this->ruleAction->unserializeParams();
     if (!empty($data['relationship_type_id'])){
       $defaultValues['relationship_type_id'] = $data['relationship_type_id'];
     }

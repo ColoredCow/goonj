@@ -8,8 +8,10 @@ namespace Civi\Api4;
  * Provided by the civirules extension.
  *
  * @searchable secondary
+ * @orderBy weight
  * @package Civi\Api4
  */
 class CiviRulesRuleCondition extends Generic\DAOEntity {
+  use Generic\Traits\SortableEntity;
 
 }

@@ -35,6 +35,7 @@ class CRM_CivirulesCronTrigger_Birthday extends CRM_Civirules_Trigger_Cron {
       $data = array();
       CRM_Core_DAO::storeValues($this->dao, $data);
       $triggerData = new CRM_Civirules_TriggerData_Cron($this->dao->id, 'contact', $data);
+      $triggerData->setTrigger($this);
       return $triggerData;
     }
     return false;

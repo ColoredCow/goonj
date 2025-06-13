@@ -1,5 +1,6 @@
 <h3>{$ruleActionHeader}</h3>
 <div class="crm-block crm-form-block crm-civirule-rule_action-block-activity">
+  <div class="help">{$ruleActionHelp}</div>
     <div class="crm-section">
         <div class="label">{$form.use_contact_trigger.label}</div>
         <div class="content">{$form.use_contact_trigger.html}</div>

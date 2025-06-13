@@ -78,7 +78,7 @@ class CRM_CivirulesActions_Membership_UpdateStatus extends CRM_CivirulesActions_
    * @access public
    */
   public function getExtraDataInputUrl($ruleActionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/action/membership/update_status', 'rule_action_id='.$ruleActionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/action/membership/update_status', $ruleActionId);
   }
 
   /**

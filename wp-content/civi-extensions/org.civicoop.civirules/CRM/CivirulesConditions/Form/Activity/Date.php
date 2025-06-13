@@ -105,7 +105,7 @@ class CRM_CivirulesConditions_Form_Activity_Date extends CRM_CivirulesConditions
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleCondition->condition_params);
+    $data = $this->ruleCondition->unserializeParams();
     if (!empty($data['operator'])) {
       $defaultValues['operator'] = $data['operator'];
     }
@@ -130,7 +130,7 @@ class CRM_CivirulesConditions_Form_Activity_Date extends CRM_CivirulesConditions
     else {
       $defaultValues['use_action_date'] = 0;
     }
-    if ($data['operator'] == 6) {
+    if (isset($data['operator']) && $data['operator'] == 6) {
       $this->assign('between', 1);
     }
     else {

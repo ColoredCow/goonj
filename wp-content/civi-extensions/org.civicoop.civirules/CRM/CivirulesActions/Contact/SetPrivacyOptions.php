@@ -7,6 +7,8 @@
  * @license http://www.gnu.org/licenses/agpl-3.0.html
  */
 
+use CRM_Civirules_ExtensionUtil as E;
+
 class CRM_CivirulesActions_Contact_SetPrivacyOptions extends CRM_Civirules_Action {
 
   /**
@@ -41,7 +43,7 @@ class CRM_CivirulesActions_Contact_SetPrivacyOptions extends CRM_Civirules_Actio
         1 => array($triggerData->getContactId(), 'Positive')
       ));
     }
-    catch (CiviCRM_API3_Exception $ex) {
+    catch (CRM_Core_Exception $ex) {
       throw new Exception('Could not update contact with privacy options in '.__METHOD__
         .', contact your system administrator. Error from API Contact create: '.$ex->getMessage());
     }
@@ -54,7 +56,7 @@ class CRM_CivirulesActions_Contact_SetPrivacyOptions extends CRM_Civirules_Actio
    * @return string
    */
   public function getExtraDataInputUrl($ruleActionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/action/contact/privacyoptions', 'rule_action_id='.$ruleActionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/action/contact/privacyoptions', $ruleActionId);
   }
 
   /**
@@ -65,26 +67,23 @@ class CRM_CivirulesActions_Contact_SetPrivacyOptions extends CRM_Civirules_Actio
    * @access public
    */
   public function userFriendlyConditionParams() {
-    $privacyOptions = array(
-      'phone' => 'Do not phone',
-      'email' => 'Do not email',
-      'mail' => 'Do not mail',
-      'sms' => 'Do not SMS',
-      'trade' => 'Do not trade',
-      'opt_out' => 'Is Opt-Out',
-    );
-    $actionLabels = array();
+    $privacyOptions = [
+      'phone' => E::ts('Do not phone'),
+      'email' => E::ts('Do not email'),
+      'mail' => E::ts('Do not mail'),
+      'sms' => E::ts('Do not SMS'),
+      'trade' => E::ts('Do not trade'),
+      'opt_out' => E::ts('Is Opt-Out'),
+    ];
+    $actionLabels = [];
     $actionParams = $this->getActionParameters();
     foreach ($actionParams['privacy_options'] as $actionParam) {
-      $actionLabels[] = ts($privacyOptions[$actionParam]);
+      $actionLabels[] = $privacyOptions[$actionParam];
     }
-    $label = ts('Privacy option(s) ').implode(', ', $actionLabels).' '.ts('switched').' ';
     if ($actionParams['on_or_off'] == 1) {
-      $label .= ts('ON');
-    } else {
-      $label .= 'OFF';
+      return E::ts('Privacy option(s) %1 switched ON', [1 => implode(', ', $actionLabels)]);
     }
-    return $label;
+    return E::ts('Privacy option(s) %1 switched OFF', [1 => implode(', ', $actionLabels)]);
   }
 
 }

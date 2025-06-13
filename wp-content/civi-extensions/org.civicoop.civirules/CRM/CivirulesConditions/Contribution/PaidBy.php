@@ -2,17 +2,16 @@
 
 class CRM_CivirulesConditions_Contribution_PaidBy extends CRM_Civirules_Condition {
 
-  private $_conditionParams = array();
+  private $_conditionParams = [];
 
   /**
    * Method to set the Rule Condition data
    *
    * @param array $ruleCondition
-   * @access public
    */
   public function setRuleConditionData($ruleCondition) {
     parent::setRuleConditionData($ruleCondition);
-    $this->_conditionParams = array();
+    $this->_conditionParams = [];
     if (!empty($this->ruleCondition['condition_params'])) {
       $this->_conditionParams = unserialize($this->ruleCondition['condition_params']);
     }
@@ -22,9 +21,9 @@ class CRM_CivirulesConditions_Contribution_PaidBy extends CRM_Civirules_Conditio
    * Method to determine if the condition is valid
    *
    * @param CRM_Civirules_TriggerData_TriggerData $triggerData
+   *
    * @return bool
    */
-
   public function isConditionValid(CRM_Civirules_TriggerData_TriggerData $triggerData) {
     $isConditionValid = FALSE;
     $contribution = $triggerData->getEntityData('Contribution');
@@ -50,12 +49,11 @@ class CRM_CivirulesConditions_Contribution_PaidBy extends CRM_Civirules_Conditio
    * Return false if you do not need extra data input
    *
    * @param int $ruleConditionId
+   *
    * @return bool|string
-   * @access public
-   * @abstract
    */
   public function getExtraDataInputUrl($ruleConditionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/condition/contribution_paidby/', 'rule_condition_id='.$ruleConditionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/condition/contribution_paidby', $ruleConditionId);
   }
 
   /**
@@ -74,7 +72,7 @@ class CRM_CivirulesConditions_Contribution_PaidBy extends CRM_Civirules_Conditio
             'id' => $gid,
             'option_group_id' => 'payment_instrument'
           ]);
-        } catch (CiviCRM_API3_Exception $e) {
+        } catch (CRM_Core_Exception $e) {
         }
       }
     }
@@ -96,7 +94,7 @@ class CRM_CivirulesConditions_Contribution_PaidBy extends CRM_Civirules_Conditio
             'name' => $gid,
             'option_group_id' => 'payment_instrument'
           ]);
-        } catch (CiviCRM_API3_Exception $e) {
+        } catch (CRM_Core_Exception $e) {
         }
       }
     }
@@ -108,7 +106,6 @@ class CRM_CivirulesConditions_Contribution_PaidBy extends CRM_Civirules_Conditio
    * e.g. 'Older than 65'
    *
    * @return string
-   * @access public
    */
   public function userFriendlyConditionParams() {
     $operator = null;
@@ -134,7 +131,7 @@ class CRM_CivirulesConditions_Contribution_PaidBy extends CRM_Civirules_Conditio
         $paymentNames[] = $paymentInstrument['label'];
       }
     }
-    catch (CiviCRM_API3_Exception $ex) {
+    catch (CRM_Core_Exception $ex) {
       $logMessage = ts('Could not find payment_instruments in ') . __METHOD__
         . ts(', error from API OptionValue get: ') . $ex->getMessage();
       Civi::log()->debug($logMessage);
@@ -156,6 +153,7 @@ class CRM_CivirulesConditions_Contribution_PaidBy extends CRM_Civirules_Conditio
    *
    * @param CRM_Civirules_Trigger $trigger
    * @param CRM_Civirules_BAO_Rule $rule
+   *
    * @return bool
    */
   public function doesWorkWithTrigger(CRM_Civirules_Trigger $trigger, CRM_Civirules_BAO_Rule $rule) {

@@ -42,7 +42,7 @@ class CRM_CivirulesActions_Activity_Form_AssignToContact extends CRM_CivirulesAc
     public function setDefaultValues()
     {
         $defaultValues = parent::setDefaultValues();
-        $data = unserialize($this->ruleAction->action_params);
+        $data = $this->ruleAction->unserializeParams();
 
         $defaultValues['use_contact_trigger'] = '0';
         if (!empty($data['use_contact_trigger'])) {

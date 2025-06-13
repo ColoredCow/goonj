@@ -65,21 +65,8 @@ class CRM_CivirulesPostTrigger_Form_Event extends CRM_CivirulesTrigger_Form_Form
    * @access public
    */
   public function postProcess() {
-    $data['contact_id'] = $this->_submitValues['contact_id'];
-    $this->rule->trigger_params = serialize($data);
-    $this->rule->save();
-
+    $this->triggerParams['contact_id'] = $this->getSubmittedValue('contact_id');
     parent::postProcess();
-  }
-
-  /**
-   * Returns a help text for this trigger.
-   * The help text is shown to the administrator who is configuring the condition.
-   *
-   * @return string
-   */
-  protected function getHelpText() {
-    return E::ts('An event does not have related contacts. So you can trigger without any contact are use the logged in contact (recommended).');
   }
 
 }

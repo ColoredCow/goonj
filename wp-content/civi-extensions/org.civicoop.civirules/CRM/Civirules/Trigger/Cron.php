@@ -31,11 +31,11 @@ abstract class CRM_Civirules_Trigger_Cron extends CRM_Civirules_Trigger {
     }
 
     while($triggerData = $this->getNextEntityTriggerData()) {
-      $this->alterTriggerData($triggerData);
       try {
+        $this->alterTriggerData($triggerData);
         $isValid = CRM_Civirules_Engine::triggerRule($this, $triggerData);
       }
-      catch (Exception $e) {
+      catch (Throwable $e) {
         \Civi::log()->error('Failed to trigger rule: ' . $e->getMessage());
         $result['is_error_count']++;
         continue;

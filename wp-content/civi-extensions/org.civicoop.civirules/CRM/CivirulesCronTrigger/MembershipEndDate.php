@@ -35,24 +35,14 @@ class CRM_CivirulesCronTrigger_MembershipEndDate extends CRM_Civirules_Trigger_C
   protected function getNextEntityTriggerData() {
     if (!$this->dao) {
       if (!$this->queryForTriggerEntities()) {
-        return false;
+        return FALSE;
       }
     }
     if ($this->dao->fetch()) {
       $data = [];
       CRM_Core_DAO::storeValues($this->dao, $data);
       $triggerData = new CRM_Civirules_TriggerData_Cron($this->dao->contact_id, 'Membership', $data);
-
-      if ($this->dao->contribution_recur_id) {
-        $contributionRecur = new CRM_Contribute_BAO_ContributionRecur();
-        $contributionRecur->id = $this->dao->contribution_recur_id;
-        if ($contributionRecur->find(TRUE)) {
-          $data = array();
-          CRM_Core_DAO::storeValues($contributionRecur, $data);
-          $triggerData->setEntityData('ContributionRecur', $data);
-        }
-      }
-
+      $triggerData->setTrigger($this);
       return $triggerData;
     }
     return FALSE;
@@ -171,6 +161,30 @@ class CRM_CivirulesCronTrigger_MembershipEndDate extends CRM_Civirules_Trigger_C
       2 => $this->triggerParams['interval'],
       3 => $intervalUnitLabel,
     ]);
+  }
+
+  /**
+   * Get various types of help text for the trigger:
+   *   - triggerDescription: When choosing from a list of triggers, explains what the trigger does.
+   *   - triggerDescriptionWithParams: When a trigger has been configured for a rule provides a
+   *       user friendly description of the trigger and params (see $this->getTriggerDescription())
+   *   - triggerParamsHelp (default): If the trigger has configurable params, show this help text when configuring
+   * @param string $context
+   *
+   * @return string
+   */
+  public function getHelpText(string $context = 'triggerParamsHelp'): string {
+    switch ($context) {
+      case 'triggerDescriptionWithParams':
+        return $this->getTriggerDescription();
+
+      case 'triggerDescription':
+      case 'triggerParamsHelp':
+        return E::ts('Trigger for memberships of selected membership types when the end date is X days/weeks/months before or after.');
+
+      default:
+        return parent::getHelpText($context);
+    }
   }
 
 }

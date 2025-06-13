@@ -103,7 +103,7 @@ class CRM_CivirulesActions_GroupContact_Subscribe extends CRM_Civirules_Action {
    * @access public
    */
   public function getExtraDataInputUrl($ruleActionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/action/groupcontact', 'rule_action_id='.$ruleActionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/action/groupcontact', $ruleActionId);
   }
 
   /**

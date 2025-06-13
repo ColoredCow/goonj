@@ -43,22 +43,9 @@ class CRM_CivirulesCronTrigger_Form_NextContributionDate extends CRM_CivirulesTr
    * Overridden parent method to process form data after submission
    */
   public function postProcess() {
-    $data['interval_unit'] = $this->_submitValues['interval_unit'];
-    $data['interval'] = $this->_submitValues['interval'];
-    $this->rule->trigger_params = serialize($data);
-    $this->rule->save();
-
+    $this->triggerParams['interval_unit'] = $this->getSubmittedValue('interval_unit');
+    $this->triggerParams['interval'] = $this->getSubmittedValue('interval');
     parent::postProcess();
-  }
-
-  /**
-   * Returns a help text for this trigger.
-   * The help text is shown to the administrator who is configuring the condition.
-   *
-   * @return string
-   */
-  protected function getHelpText() {
-    return E::ts('The rule will be triggered for recurring contributions when the next scheduled contribution date is X days/weeks/months before or after.');
   }
 
 }

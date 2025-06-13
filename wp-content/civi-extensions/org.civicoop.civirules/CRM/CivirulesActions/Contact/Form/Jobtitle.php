@@ -30,7 +30,7 @@ class CRM_CivirulesActions_Contact_Form_Jobtitle extends CRM_CivirulesActions_Fo
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleAction->action_params);
+    $data = $this->ruleAction->unserializeParams();
     if (isset($data['job_title'])) {
       $defaultValues['job_title'] = $data['job_title'];
     }

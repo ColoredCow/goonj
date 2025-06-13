@@ -62,7 +62,7 @@ class CRM_CivirulesConditions_FieldValueComparison extends CRM_CivirulesConditio
    * @param string $value
    *
    * @return array|string
-   * @throws \CiviCRM_API3_Exception
+   * @throws \CRM_Core_Exception
    */
   protected function convertMultiselectCustomfieldToArray($custom_field_id, $value) {
     if (CRM_Civirules_Utils_CustomField::isCustomFieldMultiselect($custom_field_id) && !is_array($value)) {
@@ -76,7 +76,7 @@ class CRM_CivirulesConditions_FieldValueComparison extends CRM_CivirulesConditio
    * Returns the value for the data comparison
    *
    * @return mixed|null
-   * @throws \CiviCRM_API3_Exception
+   * @throws \CRM_Core_Exception
    */
   protected function getComparisonValue() {
     $value = parent::getComparisonValue();
@@ -118,7 +118,7 @@ class CRM_CivirulesConditions_FieldValueComparison extends CRM_CivirulesConditio
    * @return bool|string
    */
   public function getExtraDataInputUrl($ruleConditionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/condition/fieldvaluecomparison/', 'rule_condition_id='.$ruleConditionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/condition/fieldvaluecomparison', $ruleConditionId);
   }
 
   /**
@@ -126,7 +126,7 @@ class CRM_CivirulesConditions_FieldValueComparison extends CRM_CivirulesConditio
    * e.g. 'Older than 65'
    *
    * @return string
-   * @throws \CiviCRM_API3_Exception
+   * @throws \CRM_Core_Exception
    */
   public function userFriendlyConditionParams() {
     $value = $this->getComparisonValue();
@@ -168,7 +168,7 @@ class CRM_CivirulesConditions_FieldValueComparison extends CRM_CivirulesConditio
         unset($params['field']);
         $params['custom_field'] = $customGroup['name'];
         $params['custom_group'] = $customField['name'];
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -193,7 +193,7 @@ class CRM_CivirulesConditions_FieldValueComparison extends CRM_CivirulesConditio
         $condition_params['field'] = 'custom_'.$customField['id'];
         unset($condition_params['custom_field']);
         unset($condition_params['custom_group']);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }

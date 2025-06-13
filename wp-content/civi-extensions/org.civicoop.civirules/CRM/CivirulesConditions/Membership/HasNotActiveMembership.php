@@ -76,7 +76,7 @@ class CRM_CivirulesConditions_Membership_HasNotActiveMembership extends CRM_Civi
    * @abstract
    */
   public function getExtraDataInputUrl($ruleConditionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/condition/hasnotactivemembershiptype', 'rule_condition_id=' .$ruleConditionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/condition/hasnotactivemembershiptype', $ruleConditionId);
   }
 
   /**

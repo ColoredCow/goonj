@@ -54,7 +54,7 @@ class CRM_CivirulesConditions_ContributionRecur_Frequency extends CRM_Civirules_
    * @abstract
    */
   public function getExtraDataInputUrl($ruleConditionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/condition/recurfrequency/', 'rule_condition_id='.$ruleConditionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/condition/recurfrequency', $ruleConditionId);
   }
 
   /**

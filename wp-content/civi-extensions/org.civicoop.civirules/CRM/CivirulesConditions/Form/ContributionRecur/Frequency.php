@@ -36,7 +36,7 @@ class CRM_CivirulesConditions_Form_ContributionRecur_Frequency extends CRM_Civir
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleCondition->condition_params);
+    $data = $this->ruleCondition->unserializeParams();
     if (!empty($data['frequency_unit'])) {
       $defaultValues['frequency_unit'] = $data['frequency_unit'];
     }

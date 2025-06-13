@@ -147,7 +147,7 @@ class ExportForm implements ConfigurationForm, ConfigurationFormCountable, Tab {
       $config[$group] = [];
     }
     foreach($submittedValues as $key => $val) {
-      if (strpos($key, $entityName . '_') === 0 &&!empty($val)) {
+      if (str_starts_with($key, $entityName . '_') && !empty($val)) {
         $entity = substr($key, strlen($entityName . '_'));
         $config[$val][] = $entity;
       }

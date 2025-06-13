@@ -252,7 +252,7 @@ class CRM_CivirulesActions_Generic_UpdateDateValue extends CRM_Civirules_Action 
    * @access public
    */
   public function getExtraDataInputUrl($ruleActionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/action/generic/updatedatevalue', 'rule_action_id='.$ruleActionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/action/generic/updatedatevalue', $ruleActionId);
   }
 
   /**
@@ -261,7 +261,7 @@ class CRM_CivirulesActions_Generic_UpdateDateValue extends CRM_Civirules_Action 
    *
    * @return string
    * @access public
-   * @throws \CiviCRM_API3_Exception
+   * @throws \CRM_Core_Exception
    */
   public function userFriendlyConditionParams() {
 
@@ -405,6 +405,31 @@ class CRM_CivirulesActions_Generic_UpdateDateValue extends CRM_Civirules_Action 
       }
     }
     return parent::importActionParameters($action_params);
+  }
+
+  /**
+   * Get various types of help text for the action:
+   *   - actionDescription: When choosing from a list of actions, explains what the action does.
+   *   - actionDescriptionWithParams: When a action has been configured for a rule provides a
+   *       user friendly description of the action and params (see $this->userFriendlyConditionParams())
+   *   - actionParamsHelp (default): If the action has configurable params, show this help text when configuring
+   * @param string $context
+   *
+   * @return string
+   */
+  public function getHelpText(string $context): string {
+    switch ($context) {
+      case 'actionDescriptionWithParams':
+        return $this->userFriendlyConditionParams();
+
+      case 'actionDescription':
+        return E::ts("For a 'Set' 'Operation', this action sets the value of the 'Target Field' to the value specified in the 'Operand'.");
+
+      case 'actionParamsHelp':
+        return E::ts("For a 'Set' 'Operation', this action sets the value of the 'Target Field' to the value specified in the 'Operand'. The 'Operand' in this case can be any valid value that can be passed to the <a href=\"https://www.php.net/manual/en/datetime.construct.php\">DateTime::__construct</a> method.<br /><br />For all other 'Operations', this action takes the value from the 'Source Field', applies the 'Operation' and the 'Operand', and stores the result in the 'Target Field'. 'Operands' can be any valid input to the <a href=\"https://www.php.net/manual/en/datetime.modify.php\">DateTime::modify</a> method.{/ts}<br /><br />'Set to (global) maximum with modification' and 'Set to (global) minimum with modification' are only supported on Contact fields.");
+    }
+
+    return $helpText ?? '';
   }
 
 }

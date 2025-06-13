@@ -57,7 +57,7 @@ class CRM_CivirulesActions_Contact_SetCommPref extends CRM_Civirules_Action {
       }
       civicrm_api3('Contact', 'create', $params);
     }
-    catch (CiviCRM_API3_Exception $ex) {
+    catch (CRM_Core_Exception $ex) {
       throw new Exception('Could not update contact with communication preferences in '.__METHOD__
         .', contact your system administrator. Error from API Contact create: '.$ex->getMessage());
     }
@@ -71,7 +71,7 @@ class CRM_CivirulesActions_Contact_SetCommPref extends CRM_Civirules_Action {
    * @return string
    */
   public function getExtraDataInputUrl($ruleActionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/action/contact/commpref', 'rule_action_id='.$ruleActionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/action/contact/commpref', $ruleActionId);
   }
 
   /**
@@ -122,7 +122,7 @@ class CRM_CivirulesActions_Contact_SetCommPref extends CRM_Civirules_Action {
           'value' => $j,
           'option_group_id' => 'preferred_communication_method',
         ]);
-      } catch (CiviCRM_API3_Exception $e) {
+      } catch (CRM_Core_Exception $e) {
       }
     }
     return $action_params;
@@ -142,7 +142,7 @@ class CRM_CivirulesActions_Contact_SetCommPref extends CRM_Civirules_Action {
           'name' => $j,
           'option_group_id' => 'preferred_communication_method',
         ]);
-      } catch (CiviCRM_API3_Exception $e) {
+      } catch (CRM_Core_Exception $e) {
       }
     }
     return parent::importActionParameters($action_params);
