@@ -23,7 +23,7 @@ class GoonjActivitiesService extends AutoSubscriber {
 
   const ENTITY_NAME = 'Collection_Camp';
   const ENTITY_SUBTYPE_NAME = 'Goonj_Activities';
-  const GOONJ_ACTIVITIES_INTENT_FB_NAME = ['afformGoonjActivitiesIndividualIntentForm','afformGoonjActivitiesIndividualIntentFormCRM'];
+  const GOONJ_ACTIVITIES_INTENT_FB_NAME = ['afformGoonjActivitiesIndividualIntentForm', 'afformGoonjActivitiesIndividualIntentFormCRM'];
   const RELATIONSHIP_TYPE_NAME = 'Goonj Activities Coordinator of';
   private static $goonjActivitiesAddress = NULL;
   const FALLBACK_OFFICE_NAME = 'Delhi';
@@ -430,7 +430,7 @@ class GoonjActivitiesService extends AutoSubscriber {
       //   'template' => 'CRM/Goonjcustom/Tabs/MonetaryContributionForUrbanOps.tpl',
       //   'permissions' => ['goonj_chapter_admin', 'urbanops'],
       // ],
-    ]; 
+    ];
 
     foreach ($tabConfigs as $key => $config) {
       $isAdmin = \CRM_Core_Permission::check('admin');
@@ -456,7 +456,7 @@ class GoonjActivitiesService extends AutoSubscriber {
     }
   }
 
-    /**
+  /**
    *
    */
   public static function linkGoonjActivitiesToContact(string $op, string $objectName, $objectId, &$objectRef) {
@@ -512,7 +512,7 @@ class GoonjActivitiesService extends AutoSubscriber {
     }
   }
 
-    /**
+  /**
    *
    */
   private static function createActivity($contactId, $collectionCampTitle, $collectionCampId) {
@@ -528,6 +528,7 @@ class GoonjActivitiesService extends AutoSubscriber {
 
     \Civi::log()->info("Activity created for contact {$contactId} for Institution Collection Camp {$collectionCampTitle}");
   }
+
   /**
    *
    */
