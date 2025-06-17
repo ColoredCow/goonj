@@ -202,6 +202,42 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Donate Once radio button selected by default');
     }
 
+    // Replace installments text input with a dropdown
+    if (installmentsField) {
+        // Create the new select dropdown
+        var select = document.createElement('select');
+        select.id = 'installments';
+        select.name = 'installments';
+        select.className = 'crm-form-text valid';
+
+        // Define dropdown options (months)
+        var options = [
+            { label: '6 months', value: 6 },
+            { label: '9 months', value: 9 },
+            { label: '12 months', value: 12 },
+            { label: '15 months', value: 15 },
+            { label: '18 months', value: 18 },
+            { label: '21 months', value: 21 },
+            { label: '24 months', value: 24 }
+        ];
+
+        // Populate dropdown with options
+        options.forEach(function(opt) {
+            var option = document.createElement('option');
+            option.value = opt.value;
+            option.textContent = opt.label;
+            select.appendChild(option);
+        });
+
+        // Set default value to 12 months (or any preferred default)
+        select.value = "12";
+        console.log('Installments dropdown created with default value:', select.value);
+
+        // Replace the text input with the dropdown
+        installmentsField.parentNode.replaceChild(select, installmentsField);
+        console.log('Installments text input replaced with dropdown');
+    }
+
     // Function to toggle the recurring section and handle the checkbox
     function toggleRecurringSection() {
         console.log('toggleRecurringSection called');
