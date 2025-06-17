@@ -188,6 +188,13 @@ document.addEventListener('DOMContentLoaded', function() {
     var recurringSection = document.querySelector('#crm-container #crm-main-content-wrapper form .crm-contribution-main-form-block .crm-public-form-item.crm-section.is_recur-section');
     var isRecurCheckbox = document.getElementById('is_recur');
     var installmentsField = document.getElementById('installments');
+    var isRecurCheckbox = document.getElementById('is_recur');
+
+	// Check and lock the checkbox
+	isRecurCheckbox.checked = true;
+	isRecurCheckbox.addEventListener('click', function (event) {
+		event.preventDefault();
+	});
 
     // Debug: Check if elements are found
     console.log('Radio buttons found:', radioButtons.length);
