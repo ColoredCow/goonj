@@ -750,7 +750,7 @@ class CRM_Contribute_Form_Contribution_Main extends CRM_Contribute_Form_Contribu
     //$frequencyUnit->freeze( );
     //}
 
-    $form->add('text', 'installments', ts('installments'),
+    $form->add('text', 'installments', ts(''),
       $attributes['installments'] + ['class' => 'two']
     );
     $form->addRule('installments', ts('Number of installments must be a whole number.'), 'integer');
@@ -766,7 +766,7 @@ class CRM_Contribute_Form_Contribution_Main extends CRM_Contribute_Form_Contribu
         $form->assign('frequency_unit', $unit);
       }
       else {
-        $is_recur_label = ts('I want to contribute this amount every %1',
+        $is_recur_label = ts('Select Number of %1s you wish to contribute',
           [1 => $frequencyUnits[$unitVals[0]]]
         );
         $form->assign('all_text_recur', TRUE);

@@ -195,6 +195,13 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('is_recur checkbox found:', isRecurCheckbox);
     console.log('Installments field found:', installmentsField);
 
+    // Set "Donate Once" as default on page load
+    var donateOnceRadio = document.querySelector('input[name="custom_759"][value="1"]');
+    if (donateOnceRadio) {
+        donateOnceRadio.checked = true;
+        console.log('Donate Once radio button selected by default');
+    }
+
     // Function to toggle the recurring section and handle the checkbox
     function toggleRecurringSection() {
         console.log('toggleRecurringSection called');
@@ -253,4 +260,3 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Running initial toggle');
     toggleRecurringSection();
 });
-
