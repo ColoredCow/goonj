@@ -55,7 +55,7 @@ class CRM_CivirulesConditions_Event_EventType extends CRM_Civirules_Condition {
    * @abstract
    */
   public function getExtraDataInputUrl($ruleConditionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/condition/event_type', 'rule_condition_id='.$ruleConditionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/condition/event_type', $ruleConditionId);
   }
 
   /**

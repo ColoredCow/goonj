@@ -148,7 +148,7 @@ class CRM_CivirulesConditions_Form_FieldValueComparison extends CRM_CivirulesCon
   public function setDefaultValues() {
     $data = array();
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleCondition->condition_params);
+    $data = $this->ruleCondition->unserializeParams();
     if (!empty($data['entity'])) {
       $defaultValues['entity'] = $data['entity'];
     }

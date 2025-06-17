@@ -1,5 +1,6 @@
 <h3>{$ruleActionHeader}</h3>
 <div class="crm-block crm-form-block crm-civirule-rule_action-block-contact_subtype">
+  <div class="help">{$ruleActionHelp}</div>
   <div class="crm-section">
     <div class="label">{$form.type.label}</div>
     <div class="content">{$form.type.html}</div>

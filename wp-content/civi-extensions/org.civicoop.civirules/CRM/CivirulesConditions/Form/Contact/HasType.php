@@ -28,7 +28,7 @@ class CRM_CivirulesConditions_Form_Contact_HasType extends CRM_CivirulesConditio
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleCondition->condition_params);
+    $data = $this->ruleCondition->unserializeParams();
     if (!empty($data['type_names'])) {
       $defaultValues['type_names'] = $data['type_names'];
     }

@@ -161,7 +161,7 @@ class CRM_CivirulesActions_Contact_UpdateDateValue extends CRM_Civirules_Action 
    * @access public
    */
   public function getExtraDataInputUrl($ruleActionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/action/contact/updatedatevalue', 'rule_action_id='.$ruleActionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/action/contact/updatedatevalue', $ruleActionId);
   }
 
   /**
@@ -170,7 +170,7 @@ class CRM_CivirulesActions_Contact_UpdateDateValue extends CRM_Civirules_Action 
    *
    * @return string
    * @access public
-   * @throws \CiviCRM_API3_Exception
+   * @throws \CRM_Core_Exception
    */
   public function userFriendlyConditionParams() {
 
@@ -226,7 +226,7 @@ class CRM_CivirulesActions_Contact_UpdateDateValue extends CRM_Civirules_Action 
         unset($action_params['target_field_id']);
         $action_params['target_custom_group'] = $customGroup['name'];
         $action_params['target_custom_field'] = $customField['name'];
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -241,7 +241,7 @@ class CRM_CivirulesActions_Contact_UpdateDateValue extends CRM_Civirules_Action 
         unset($action_params['source_field_id']);
         $action_params['source_custom_group'] = $customGroup['name'];
         $action_params['source_custom_field'] = $customField['name'];
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -264,7 +264,7 @@ class CRM_CivirulesActions_Contact_UpdateDateValue extends CRM_Civirules_Action 
         $action_params['target_field_id'] = $customField['id'];
         unset($action_params['target_custom_group']);
         unset($action_params['target_custom_field']);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -305,4 +305,30 @@ class CRM_CivirulesActions_Contact_UpdateDateValue extends CRM_Civirules_Action 
     // Built in Fields
     return ucwords(str_replace('_', ' ', $field_identifier));
   }
+
+  /**
+   * Get various types of help text for the action:
+   *   - actionDescription: When choosing from a list of actions, explains what the action does.
+   *   - actionDescriptionWithParams: When a action has been configured for a rule provides a
+   *       user friendly description of the action and params (see $this->userFriendlyConditionParams())
+   *   - actionParamsHelp (default): If the action has configurable params, show this help text when configuring
+   * @param string $context
+   *
+   * @return string
+   */
+  public function getHelpText(string $context): string {
+    switch ($context) {
+      case 'actionDescriptionWithParams':
+        return $this->userFriendlyConditionParams();
+
+      case 'actionDescription':
+        return E::ts("'This action takes the value from the contact field specified in 'Source', applies the operator and the operand, and stores the result in the field specified in 'Target'");
+
+      case 'actionParamsHelp':
+        return E::ts("This action takes the value from the contact field specified in 'Source', applies the operator and the operand, and stores the result in the field specified in 'Target'. Only date fields will be considered. For 'Set', the 'Operand' will be passed to <a href=\"https://www.php.net/manual/en/datetime.construct.php\">DateTime::__construct</a> is a valid entry.  For 'Modify', the 'Operand' will be passed to <a href=\"https://www.php.net/manual/en/datetime.modify.php\">DateTime::modify</a> is a valid entry.");
+    }
+
+    return $helpText ?? '';
+  }
+
 }

@@ -49,7 +49,7 @@ class CRM_CivirulesConditions_Contact_LoggedIn extends CRM_Civirules_Condition {
    * @abstract
    */
   public function getExtraDataInputUrl($ruleConditionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/condition/contact_loggedin/', 'rule_condition_id=' . $ruleConditionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/condition/contact_loggedin', $ruleConditionId);
   }
 
   /**

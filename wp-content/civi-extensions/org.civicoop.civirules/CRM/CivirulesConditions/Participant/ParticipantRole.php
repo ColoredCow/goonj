@@ -116,7 +116,7 @@ class CRM_CivirulesConditions_Participant_ParticipantRole extends CRM_Civirules_
    * @abstract
    */
   public function getExtraDataInputUrl($ruleConditionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/condition/participant_role', 'rule_condition_id='.$ruleConditionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/condition/participant_role', $ruleConditionId);
   }
 
   /**

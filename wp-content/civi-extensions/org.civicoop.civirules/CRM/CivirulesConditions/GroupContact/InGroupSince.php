@@ -152,8 +152,7 @@ class CRM_CivirulesConditions_GroupContact_InGroupSince extends CRM_Civirules_Co
    * @abstract
    */
   public function getExtraDataInputUrl($ruleConditionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/condition/groupcontact/ingroupsince', 'rule_condition_id='
-      . $ruleConditionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/condition/groupcontact/ingroupsince', $ruleConditionId);
   }
 
   /**

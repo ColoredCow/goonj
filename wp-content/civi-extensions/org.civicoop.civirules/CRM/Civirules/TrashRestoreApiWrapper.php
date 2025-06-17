@@ -5,6 +5,8 @@
  * @license AGPL-3.0
  */
 
+require_once 'api/Wrapper.php';
+
 class CRM_Civirules_TrashRestoreApiWrapper implements API_Wrapper {
 
   private function isDeleted($contactId){

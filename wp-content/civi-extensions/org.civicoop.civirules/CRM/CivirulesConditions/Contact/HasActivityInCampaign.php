@@ -90,7 +90,7 @@ class CRM_CivirulesConditions_Contact_HasActivityInCampaign extends CRM_Civirule
    * @abstract
    */
   public function getExtraDataInputUrl($ruleConditionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/condition/contact/hasactivityincampaign/', 'rule_condition_id='.$ruleConditionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/condition/contact/hasactivityincampaign', $ruleConditionId);
   }
 
   /**

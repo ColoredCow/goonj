@@ -12,14 +12,37 @@ class CRM_CivirulesActions_Case_AddRole extends CRM_Civirules_Action {
   public function processAction(CRM_Civirules_TriggerData_TriggerData $triggerData) {
     $case = $triggerData->getEntityData("Case");
     $params = $this->getActionParameters();
-    $api_params['contact_id_a'] = $triggerData->getContactId();
-    $api_params['contact_id_b'] = $params['cid'];
-    $api_params['relationship_type_id'] = $params['role'];
-    $api_params['case_id'] = $case['id'];
-    try {
-      civicrm_api3('Relationship', 'create', $api_params);
-    } catch(\Exception $ex) {
-      // Do nothing
+    $contact_ids_a = [];
+    $contact_ids_b = [];
+    if (!empty($params['cid'])) {
+      $contact_ids_a[] = $triggerData->getContactId();
+      $contact_ids_b[] = $params['cid'];
+    } else {
+      $contact_ids_b[] = $triggerData->getContactId();
+      try {
+        $caseContacts = \Civi\Api4\CaseContact::get(TRUE)
+          ->addWhere('case_id', '=', $case['id'])
+          ->setLimit(0)
+          ->execute();
+        foreach ($caseContacts as $caseContact) {
+          $contact_ids_a[] = $caseContact['contact_id'];
+        }
+      } catch (\Civi\API\Exception\UnauthorizedException|CRM_Core_Exception $e) {
+
+      }
+    }
+    foreach ($contact_ids_a as $contact_id_a) {
+      foreach ($contact_ids_b as $contact_id_b) {
+        $api_params['contact_id_a'] = $contact_id_a;
+        $api_params['contact_id_b'] = $contact_id_b;
+        $api_params['relationship_type_id'] = $params['role'];
+        $api_params['case_id'] = $case['id'];
+        try {
+          civicrm_api3('Relationship', 'create', $api_params);
+        } catch (\Exception $ex) {
+          // Do nothing
+        }
+      }
     }
   }
 
@@ -36,7 +59,7 @@ class CRM_CivirulesActions_Case_AddRole extends CRM_Civirules_Action {
         'return' => 'name_a_b',
         'id' => $action_params['role'],
       ]);
-    } catch (CiviCRM_API3_Exception $e) {
+    } catch (CRM_Core_Exception $e) {
     }
     return $action_params;
   }
@@ -53,7 +76,7 @@ class CRM_CivirulesActions_Case_AddRole extends CRM_Civirules_Action {
         'return' => 'id',
         'name_a_b' => $action_params['role'],
       ]);
-    } catch (CiviCRM_API3_Exception $e) {
+    } catch (CRM_Core_Exception $e) {
     }
     return parent::importActionParameters($action_params);
   }
@@ -66,7 +89,7 @@ class CRM_CivirulesActions_Case_AddRole extends CRM_Civirules_Action {
    * @access public
    */
   public function getExtraDataInputUrl($ruleActionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/action/case/addrole', 'rule_action_id='.$ruleActionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/action/case/addrole', $ruleActionId);
   }
 
 
@@ -79,11 +102,15 @@ class CRM_CivirulesActions_Case_AddRole extends CRM_Civirules_Action {
   public function userFriendlyConditionParams() {
     $params = $this->getActionParameters();
     $roles = self::getCaseRoles();
-    $contactDisplayName = \Civi\Api4\Contact::get(FALSE)
-      ->addWhere('id', '=', $params['cid'])
-      ->execute()
-      ->first()['display_name'] ?? '';
-    return E::ts('Add %2 to the case with role <em>%1</em>', [1 => $roles[$params['role']], 2 => $contactDisplayName]);
+    if (!empty($params['cid'])) {
+      $contactDisplayName = \Civi\Api4\Contact::get(FALSE)
+        ->addWhere('id', '=', $params['cid'])
+        ->execute()
+        ->first()['display_name'] ?? '';
+      return E::ts('Add %2 to the case with role <em>%1</em>', [1 => $roles[$params['role']], 2 => $contactDisplayName]);
+    } else {
+      return E::ts('Add the triggering contact to the case with role <em>%1</em>', [1 => $roles[$params['role']]]);
+    }
   }
 
   /**
@@ -102,7 +129,7 @@ class CRM_CivirulesActions_Case_AddRole extends CRM_Civirules_Action {
    * Returns a list of possible case roles
    *
    * @return array
-   * @throws \CiviCRM_API3_Exception
+   * @throws \CRM_Core_Exception
    */
   public static function getCaseRoles() {
     $relationshipTypesApi = civicrm_api3('RelationshipType', 'get', ['options' => ['limit' => 0]]);

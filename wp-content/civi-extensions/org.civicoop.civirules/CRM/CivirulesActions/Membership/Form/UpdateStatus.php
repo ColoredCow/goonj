@@ -47,7 +47,7 @@ class CRM_CivirulesActions_Membership_Form_UpdateStatus extends CRM_CivirulesAct
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleAction->action_params);
+    $data = $this->ruleAction->unserializeParams();
     if (!empty($data['membership_status_id'])) {
       $defaultValues['membership_status_id'] = $data['membership_status_id'];
     }

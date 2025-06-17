@@ -62,7 +62,7 @@ class CRM_CivirulesActions_Tag_Sync extends CRM_Civirules_Action {
         $params['relationship_type_id'] = substr($rel_type_id, 4);
         $params['is_active'] = '1';
         $params['options']['limit'] = '0';
-        if (strpos($rel_type_id, 'a_b_') === 0) {
+        if (str_starts_with($rel_type_id, 'a_b_')) {
           $params['contact_id_a'] = $triggerData->getContactId();
           $return_field = 'contact_id_b';
         }
@@ -93,7 +93,7 @@ class CRM_CivirulesActions_Tag_Sync extends CRM_Civirules_Action {
    * $access public
    */
   public function getExtraDataInputUrl($ruleActionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/action/sync_tag', 'rule_action_id=' . $ruleActionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/action/sync_tag', $ruleActionId);
   }
 
   /**
@@ -149,7 +149,7 @@ class CRM_CivirulesActions_Tag_Sync extends CRM_Civirules_Action {
           'return' => 'name',
           'id' => $j,
         ]);
-      } catch (CiviCRM_API3_Exception $e) {
+      } catch (CRM_Core_Exception $e) {
       }
     }
     foreach($action_params['rel_type_ids'] as $i=>$j) {
@@ -160,7 +160,7 @@ class CRM_CivirulesActions_Tag_Sync extends CRM_Civirules_Action {
           'return' => 'name_a_b',
           'id' => $rel_type,
         ]);
-      } catch (CiviCRM_API3_Exception $e) {
+      } catch (CRM_Core_Exception $e) {
       }
     }
     return $action_params;
@@ -179,7 +179,7 @@ class CRM_CivirulesActions_Tag_Sync extends CRM_Civirules_Action {
           'return' => 'id',
           'name' => $j,
         ]);
-      } catch (CiviCRM_API3_Exception $e) {
+      } catch (CRM_Core_Exception $e) {
       }
     }
     foreach($action_params['rel_type_ids'] as $i=>$j) {
@@ -190,11 +190,45 @@ class CRM_CivirulesActions_Tag_Sync extends CRM_Civirules_Action {
             'return' => 'id',
             'name_a_b' => $rel_type,
           ]);
-      } catch (CiviCRM_API3_Exception $e) {
+      } catch (CRM_Core_Exception $e) {
       }
     }
     return parent::importActionParameters($action_params);
   }
 
+  /**
+   * Get various types of help text for the action:
+   *   - actionDescription: When choosing from a list of actions, explains what the action does.
+   *   - actionDescriptionWithParams: When a action has been configured for a rule provides a
+   *       user friendly description of the action and params (see $this->userFriendlyConditionParams())
+   *   - actionParamsHelp (default): If the action has configurable params, show this help text when configuring
+   * @param string $context
+   *
+   * @return string
+   */
+  public function getHelpText(string $context): string {
+    // Child classes should override this function
+
+    switch ($context) {
+      case 'actionDescriptionWithParams':
+        return $this->userFriendlyConditionParams();
+
+      case 'actionDescription':
+        return E::ts('Sync tags to related contacts.');
+
+      case 'actionParamsHelp':
+        return E::ts('      <strong>Type:</strong><br />
+      <ul>
+        <li><strong>Copy</strong> means that tags who are present in <em>source</em> but not in the <em>target</em> will be <em>added</em>.</li>
+        <li><strong>Synchronize</strong> means that tags who are present in <em>target</em> but not in the <em>source</em> will be removed. And that tags who are present in <em>source</em> but not in the <em>target</em> will be <em>added</em>.</li>
+      </ul>
+      <strong>Tags:</strong><br />
+      The selected tags to check.<br />
+      <strong>Relationship type:</strong><br />
+      The relationship type to find target contacts.<br />');
+    }
+
+    return $helpText ?? '';
+  }
 
 }

@@ -108,7 +108,7 @@ class CRM_CivirulesConditions_Contact_InGroup extends CRM_Civirules_Condition {
   protected function contactIsNotMemberOfGroup($contact_id, $group_ids) {
     $isValid = TRUE;
     foreach($group_ids as $gid) {
-      if (CRM_CivirulesConditions_Utils_GroupContact::isContactInGroup($contact_id, $gid)) {
+      if (CRM_CivirulesConditions_Utils_GroupContact::isContactInGroup($contact_id, $gid, $this->getStatuses())) {
         $isValid = FALSE;
         break;
       }
@@ -119,7 +119,7 @@ class CRM_CivirulesConditions_Contact_InGroup extends CRM_Civirules_Condition {
   protected function contactIsMemberOfOneGroup($contact_id, $group_ids) {
     $isValid = FALSE;
     foreach($group_ids as $gid) {
-      if (CRM_CivirulesConditions_Utils_GroupContact::isContactInGroup($contact_id, $gid)) {
+      if (CRM_CivirulesConditions_Utils_GroupContact::isContactInGroup($contact_id, $gid, $this->getStatuses())) {
         $isValid = TRUE;
         break;
       }
@@ -130,7 +130,7 @@ class CRM_CivirulesConditions_Contact_InGroup extends CRM_Civirules_Condition {
   protected function contactIsMemberOfAllGroups($contact_id, $group_ids) {
     $isValid = 0;
     foreach($group_ids as $gid) {
-      if (CRM_CivirulesConditions_Utils_GroupContact::isContactInGroup($contact_id, $gid)) {
+      if (CRM_CivirulesConditions_Utils_GroupContact::isContactInGroup($contact_id, $gid, $this->getStatuses())) {
         $isValid++;
       }
     }
@@ -151,7 +151,7 @@ class CRM_CivirulesConditions_Contact_InGroup extends CRM_Civirules_Condition {
    * @abstract
    */
   public function getExtraDataInputUrl($ruleConditionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/condition/contact_ingroup/', 'rule_condition_id='.$ruleConditionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/condition/contact_ingroup', $ruleConditionId);
   }
 
   /**
@@ -183,7 +183,7 @@ class CRM_CivirulesConditions_Contact_InGroup extends CRM_Civirules_Condition {
         // Do nothing.
       }
     }
-    $friendlyTxt = $operatorLabel . ' groups (' . $groups . ')';
+    $friendlyTxt = $operatorLabel . ' groups (' . $groups . '), with statuses (' . implode(', ', $this->getStatuses()) . ')';
     if ($this->conditionParams['check_group_tree']) {
       $friendlyTxt .= ' (also checking child group membership)';
     }
@@ -202,6 +202,16 @@ class CRM_CivirulesConditions_Contact_InGroup extends CRM_Civirules_Condition {
       'in all of' => ts('In all selected'),
       'not in' => ts('Not in selected'),
     ];
+  }
+
+  /**
+   * Method to get statuses in groups
+   * Return array default Added for backward compatibility
+   *
+   * @return array
+   */
+  public function getStatuses(): array {
+    return (!empty($this->conditionParams['statuses']) ? $this->conditionParams['statuses']: ['Added']);
   }
 
 }

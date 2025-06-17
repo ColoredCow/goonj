@@ -47,7 +47,7 @@ class CRM_CivirulesConditions_Form_ContributionRecur_PaymentProcessor extends CR
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleCondition->condition_params);
+    $data = $this->ruleCondition->unserializeParams();
     if (!empty($data['payment_processor_id'])) {
       $defaultValues['payment_processor_id'] = $data['payment_processor_id'];
     }
@@ -77,7 +77,7 @@ class CRM_CivirulesConditions_Form_ContributionRecur_PaymentProcessor extends CR
    *
    * @return string
    */
-  protected function getHelpText() {
+  public function getHelpText() {
     $help = E::ts('This condition works with Membership (checks the linked recur), Contribution (checks the linked recur) and Recurring Contribution triggers.');
     $help .= '<ul><li>' . E::ts('IS ONE OF will match a Membership/Contribution/Recurring Contribution that has a payment processor in the list.');
     $help .= '</li><li>' . E::ts('IS NOT ONE OF will match a Membership/Contribution that does not have a linked recurring contribution OR a Membership/Contribution/Recurring Contribution that: Has a recurring contribution with no payment processor; Has a recurring contribution that has a payment processor not in the list.');

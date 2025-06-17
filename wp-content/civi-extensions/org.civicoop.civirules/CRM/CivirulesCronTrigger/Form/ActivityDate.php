@@ -24,7 +24,7 @@ class CRM_CivirulesCronTrigger_Form_ActivityDate extends CRM_CivirulesCronTrigge
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->rule->trigger_params);
+    $data = $this->rule->unserializeParams();
     if (!empty($data['activity_type_id'])) {
       $defaultValues['activity_type_id'] = $data['activity_type_id'];
     }
@@ -49,26 +49,11 @@ class CRM_CivirulesCronTrigger_Form_ActivityDate extends CRM_CivirulesCronTrigge
    * @throws Exception when rule condition not found
    */
   public function postProcess() {
-    $data['activity_type_id'] = $this->_submitValues['activity_type_id'];
-    $data['activity_status_id'] = $this->_submitValues['activity_status_id'];
-    $data['record_type'] = $this->_submitValues['record_type'];
-    $data['case_activity'] = $this->_submitValues['case_activity'];
-    $this->rule->trigger_params = serialize($data);
-    $this->rule->save();
-
+    $this->triggerParams['activity_type_id'] = $this->getSubmittedValue('activity_type_id');
+    $this->triggerParams['activity_status_id'] = $this->getSubmittedValue('activity_status_id');
+    $this->triggerParams['record_type'] = $this->getSubmittedValue('record_type');
+    $this->triggerParams['case_activity'] = $this->getSubmittedValue('case_activity');
     parent::postProcess();
-  }
-
-  /**
-   * Returns a help text for this trigger.
-   * The help text is shown to the administrator who is configuring the condition.
-   *
-   * @return string
-   */
-  protected function getHelpText() {
-    return E::ts('Trigger rule when scheduled date for activity with status and type is reached.')
-      . '<br/>'
-      . E::ts('If "Trigger for case activities" is "Yes" then this will only trigger for case activities. If it is "No" then it will only trigger for activities that are not linked to a case.');
   }
 
 }

@@ -6,6 +6,8 @@
  * @license AGPL-3.0
  */
 
+use CRM_Civirules_ExtensionUtil as E;
+
 class CRM_CivirulesActions_User_Form_DisplayMessage extends CRM_CivirulesActions_Form_Form {
 
   /**
@@ -15,13 +17,14 @@ class CRM_CivirulesActions_User_Form_DisplayMessage extends CRM_CivirulesActions
    */
   public function buildQuickForm() {
     $this->add('hidden', 'rule_action_id');
-    $messageTypes = array('alert' => 'Alert', 'info' => 'Info', 'success' => 'Success', 'error' => 'Error',);
-    $this->add('text', 'title', ts('Message title: '));
-    $this->add('text', 'message', ts('Message: '));
-    $this->addRadio('type', ts('Type of message: '), $messageTypes);
-    $this->addButtons(array(
-      array('type' => 'next', 'name' => ts('Save'), 'isDefault' => TRUE,),
-      array('type' => 'cancel', 'name' => ts('Cancel'))));
+    $messageTypes = ['alert' => 'Alert', 'info' => 'Info', 'success' => 'Success', 'error' => 'Error'];
+    $this->add('text', 'title', E::ts('Message title:'));
+    $this->add('text', 'message', E::ts('Message:'));
+    $this->addRadio('type', E::ts('Type of message:'), $messageTypes);
+    $this->addButtons([
+      ['type' => 'next', 'name' => E::ts('Save'), 'isDefault' => TRUE],
+      ['type' => 'cancel', 'name' => E::ts('Cancel')],
+    ]);
   }
 
   /**
@@ -33,9 +36,7 @@ class CRM_CivirulesActions_User_Form_DisplayMessage extends CRM_CivirulesActions
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
     $defaultValues['rule_action_id'] = $this->ruleActionId;
-    if (!empty($this->ruleAction->action_params)) {
-      $data = unserialize($this->ruleAction->action_params);
-    }
+    $data = $this->ruleAction->unserializeParams();
     if (!empty($data['title'])) {
       $defaultValues['title'] = $data['title'];
     }

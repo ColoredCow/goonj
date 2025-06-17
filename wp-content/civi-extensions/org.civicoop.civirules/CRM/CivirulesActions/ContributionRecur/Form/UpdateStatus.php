@@ -34,7 +34,7 @@ class CRM_CivirulesActions_ContributionRecur_Form_UpdateStatus extends CRM_Civir
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleAction->action_params);
+    $data = $this->ruleAction->unserializeParams();
     if (!empty($data['status_id'])) {
       $defaultValues['status_id'] = $data['status_id'];
     }

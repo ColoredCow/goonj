@@ -6,6 +6,7 @@
  * @license AGPL-3.0
  */
 
+use Civi\Api4\CiviRulesRuleAction;
 use CRM_Civirules_ExtensionUtil as E;
 
 class CRM_Civirules_Engine {
@@ -38,24 +39,34 @@ class CRM_Civirules_Engine {
           $triggerData->setContactId($triggerData->getEntityId());
         }
       }
+    } catch (Throwable $e) {
+      // Catch *any* error when loading the triggerData and log it.
+      \Civi::log('civirules')->error('CiviRules: Failed loading triggerData for ruleID: ' . $trigger->getRuleId() . ' with error: ' . $e->getMessage());
+      return FALSE;
+    }
 
-      // Check if the conditions are valid
+    // Check if the conditions are valid
+    try {
       $isRuleValid = self::areConditionsValid($triggerData);
+    } catch (Throwable $e) {
+      // Catch *any* error when executing the conditions and log it.
+      \Civi::log('civirules')->error('CiviRules: One or more conditions is crashing for ruleID: ' . $trigger->getRuleId() . ' with error: ' . $e->getMessage());
+      return FALSE;
+    }
 
+    try {
       if ($isRuleValid) {
         // Log and execute the actions for the rule
         self::logRule($triggerData);
         self::executeActions($triggerData);
         return TRUE;
       }
-    } catch (Exception $e) {
-      $message = "Error on {file} (Line {line})\r\n\r\n{exception_message}";
-      $context = [];
-      $context['line'] = $e->getLine();
-      $context['file'] = $e->getFile();
-      $context['exception_message'] = $e->getMessage();
-      CRM_Civirules_Utils_LoggerFactory::logError('Failed to execute rule',  $message, $triggerData, $context);
+    } catch (Throwable $e) {
+      // Catch *any* error when executing the actions and log it.
+      \Civi::log('civirules')->error('CiviRules: Failed executing actions for ruleID: ' . $trigger->getRuleId() . ' with error: ' . $e->getMessage());
+      return FALSE;
     }
+
     return FALSE;
   }
 
@@ -63,12 +74,16 @@ class CRM_Civirules_Engine {
    * Method to execute the actions
    *
    * @param CRM_Civirules_TriggerData_TriggerData $triggerData
+   *
+   * @return void
    */
-  protected static function executeActions(CRM_Civirules_TriggerData_TriggerData $triggerData) {
-    $actionParams = [
-      'rule_id' => $triggerData->getTrigger()->getRuleId(),
-    ];
-    $ruleActions = CRM_Civirules_BAO_RuleAction::getValues($actionParams);
+  protected static function executeActions(CRM_Civirules_TriggerData_TriggerData $triggerData): void {
+    $ruleActions = CiviRulesRuleAction::get(FALSE)
+      ->addWhere('rule_id', '=', $triggerData->getTrigger()->getRuleId())
+      ->addWhere('is_active', '=', 1)
+      ->addOrderBy('weight', 'ASC')
+      ->addOrderBy('id', 'ASC')
+      ->execute();
     foreach ($ruleActions as $ruleAction) {
       self::executeAction($triggerData, $ruleAction);
     }
@@ -79,8 +94,10 @@ class CRM_Civirules_Engine {
    *
    * @param CRM_Civirules_TriggerData_TriggerData $triggerData
    * @param array $ruleAction
+   *
+   * @return void
    */
-  public static function executeAction(CRM_Civirules_TriggerData_TriggerData &$triggerData, $ruleAction) {
+  public static function executeAction(CRM_Civirules_TriggerData_TriggerData &$triggerData, array $ruleAction): void {
     $actionEngine = CRM_Civirules_ActionEngine_Factory::getEngine($ruleAction, $triggerData);
 
     //determine if the action should be executed with a delay
@@ -95,8 +112,8 @@ class CRM_Civirules_Engine {
       try {
         $actionEngine->execute();
       }
-      catch (Exception $e) {
-        CRM_Civirules_Utils_LoggerFactory::logError("Failed to execute action",  $e->getMessage(), $triggerData);
+      catch (Throwable $e) {
+        CRM_Civirules_Utils_LoggerFactory::logError('Failed to execute action for Rule ID: ' . $triggerData->getTrigger()->getRuleId(),  $e->getMessage(), $triggerData, $actionEngine->getRuleAction());
       }
     }
   }
@@ -154,9 +171,22 @@ class CRM_Civirules_Engine {
         $entity = $triggerData->getEntity();
         if ($entity) {
           try {
-            $entityData = civicrm_api3($entity, 'getsingle', ['id' => $triggerData->getEntityId()]);
-            $entityData = self::useCanonicalFieldNames($entity, $entityData);
-            $triggerData->setEntityData($entity, $entityData);
+            $entityData = civicrm_api3($entity, 'get', ['id' => $triggerData->getEntityId(), 'sequential' => 1]);
+            if ($entityData['count'] === 0) {
+              // Since this is a delayed action, it's possible the entity has
+              // been deleted by now, so don't compare against the original.
+              $triggerData->setEntityData($entity, []);
+            }
+            elseif ($entityData['count'] > 1) {
+              // Unlikely because we're getting via entity id, but just in case.
+              // Since probably will never see this, don't bother with ts().
+              throw new \CRM_Core_Exception('Expected one ' . $entity . ' but found ' . $entityData['count']);
+            }
+            else {
+              $entityData = $entityData['values'][0];
+              $entityData = self::useCanonicalFieldNames($entity, $entityData);
+              $triggerData->setEntityData($entity, $entityData);
+            }
           }
           catch (Exception $e) {
             // leave $triggerData as is
@@ -167,8 +197,8 @@ class CRM_Civirules_Engine {
       if ($processAction) {
         $actionEngine->execute();
       }
-    } catch (Exception $e) {
-      CRM_Civirules_Utils_LoggerFactory::logError('Failed to execute delayed action',  $e->getMessage(), $triggerData);
+    } catch (Throwable $e) {
+      CRM_Civirules_Utils_LoggerFactory::logError('Failed to execute delayed action for Rule ID: ' . $triggerData->getTrigger()->getRuleId(),  $e->getMessage(), $triggerData, $actionEngine->getRuleAction());
     }
     return TRUE;
   }
@@ -197,8 +227,10 @@ class CRM_Civirules_Engine {
    *
    * @param \DateTime $delayTo
    * @param CRM_Civirules_ActionEngine_AbstractActionEngine $actionEngine
+   *
+   * @return void
    */
-  public static function delayAction(DateTime $delayTo, CRM_Civirules_ActionEngine_AbstractActionEngine $actionEngine) {
+  public static function delayAction(DateTime $delayTo, CRM_Civirules_ActionEngine_AbstractActionEngine $actionEngine): void {
     $queue = CRM_Queue_Service::singleton()->create([
       'type' => 'Civirules',
       'name' => self::QUEUE_NAME,
@@ -264,24 +296,48 @@ class CRM_Civirules_Engine {
   public static function areConditionsValid(CRM_Civirules_TriggerData_TriggerData $triggerData): bool {
     $isValid = TRUE;
     $firstCondition = TRUE;
+    $previousConditionLink = '';
 
     $ruleConditions = $triggerData->getTrigger()->getRuleConditions();
     foreach ($ruleConditions as $ruleConditionId => $ruleCondition) {
       if ($firstCondition) {
+        // Always check the first condition
         $isValid = self::checkCondition($ruleCondition, $triggerData);
+        $conditionsValid[$ruleConditionId] = $ruleConditionId . '=' . ($isValid ? 'true' : 'false');
         $firstCondition = FALSE;
-      } elseif ($ruleCondition['condition_link'] == 'AND') {
-        if ($isValid) {
-          $isValid = self::checkCondition($ruleCondition, $triggerData);
-        }
-      } elseif ($ruleCondition['condition_link'] == 'OR') {
-        if (!$isValid) {
-          $isValid = self::checkCondition($ruleCondition, $triggerData);
-        }
-      } else {
-        $isValid = FALSE; // we should never reach this statement
+        // We always check the next condition because it might have condition_link=OR.
+        continue;
       }
-      $conditionsValid[$ruleConditionId] = "$ruleConditionId=" . ($isValid ? 'true' : 'false');
+      switch ($ruleCondition['condition_link']) {
+        case 'AND':
+          // If the previous condition evaluated to TRUE then we need this condition to be TRUE as well
+          if (!$isValid) {
+            // Previous condition was not valid so conditions are not met.
+            // Don't check any more conditions
+            break 2;
+          }
+          $isValid = self::checkCondition($ruleCondition, $triggerData);
+          $conditionsValid[$ruleConditionId] = $ruleCondition['condition_link'] . $ruleConditionId . '=' . ($isValid ? 'true' : 'false');
+          break;
+
+        case 'OR':
+          if ($isValid) {
+            // Previous condition was valid so conditions are met.
+            $conditionsValid[$ruleConditionId] = $ruleCondition['condition_link'] . $ruleConditionId . '=' . ('notchecked');
+            break;
+          }
+          $isValid = self::checkCondition($ruleCondition, $triggerData);
+          $conditionsValid[$ruleConditionId] = $ruleCondition['condition_link'] . $ruleConditionId . '=' . ($isValid ? 'true' : 'false');
+          break;
+
+        default:
+          \Civi::log('civirules')->error(
+            'CiviRules: RuleID: ' . $triggerData->getTrigger()->getRuleId() . ', ConditionID: ' . $ruleConditionId
+            . ' has invalid condition_link operator: ' . $ruleCondition['condition_link']);
+          $conditionsValid[$ruleConditionId] = $ruleCondition['condition_link'] . $ruleConditionId . '=invalid condition_link operator';
+          $isValid = FALSE;
+          break 2;
+      }
     }
 
     if ($triggerData->getTrigger()->getRuleDebugEnabled()) {
@@ -289,7 +345,7 @@ class CRM_Civirules_Engine {
       if (!empty($ruleConditions)) {
         $context = [];
         $context['rule_id'] = $triggerData->getTrigger()->getRuleId();
-        $context['conditions_valid'] = implode(';', $conditionsValid);
+        $context['conditions_valid'] = ($isValid ? 'true' : 'false') . '; Detail: ' . implode(';', $conditionsValid ?? []);
         $context['contact_id'] = $triggerData->getContactId();
         $context['entity_id'] = $triggerData->getEntityId();
         CRM_Civirules_Utils_LoggerFactory::log("Rule {$context['rule_id']}: Conditions: {$context['conditions_valid']}",
@@ -323,7 +379,6 @@ class CRM_Civirules_Engine {
    * This function writes a record to the log table to indicate that this rule for this trigger is triggered
    *
    * The data this function stores is required by the cron type events.
-   * @todo: think of a better handling for cron type events
    *
    * @param CRM_Civirules_TriggerData_TriggerData $triggerData
    */
@@ -331,38 +386,22 @@ class CRM_Civirules_Engine {
     $trigger = $triggerData->getTrigger();
     $reactOnEntity = $trigger->getReactOnEntity();
     $daoClass = $reactOnEntity->daoClass;
-    if($daoClass) {
+    if(!empty($daoClass)) {
       $table = $daoClass::getTableName();
     }
-    $ruleId = $trigger->getRuleId();
-    $contactId = $triggerData->getContactId();
 
-    $params = [];
-    if ($triggerData->getEntityId() && $table && $contactId) {
-      $sql = "INSERT INTO `civirule_rule_log` (`rule_id`, `contact_id`, `entity_table`, `entity_id`, `log_date`) VALUES (%1, %2, %3, %4, NOW())";
-      $params[1] = [$ruleId, 'Integer'];
-      $params[2] = [$contactId, 'Integer'];
-      $params[3] = [$table, 'String'];
-      $params[4] = [$triggerData->getEntityId(), 'Integer'];
-    } elseif ($triggerData->getEntityId() && $table) {
-      $sql = "INSERT INTO `civirule_rule_log` (`rule_id`, `entity_table`, `entity_id`, `log_date`) VALUES (%1, %2, %3, NOW())";
-      $params[1] = [$ruleId, 'Integer'];
-      $params[2] = [$table, 'String'];
-      $params[3] = [$triggerData->getEntityId(), 'Integer'];
-    } elseif ($contactId) {
-      $sql = "INSERT INTO `civirule_rule_log` (`rule_id`, `contact_id`, `log_date`) VALUES (%1, %2, NOW())";
-      $params[1] = [$ruleId, 'Integer'];
-      $params[2] = [$contactId, 'Integer'];
-    } else {
-      $sql = "INSERT INTO `civirule_rule_log` (`rule_id`, `log_date`) VALUES (%1, NOW())";
-      $params[1] = [$ruleId, 'Integer'];
+    $ruleLog = \Civi\Api4\CiviRulesRuleLog::create(FALSE)
+      ->addValue('rule_id', $trigger->getRuleId());
+    if ($triggerData->getContactId()) {
+      $ruleLog->addValue('contact_id', $triggerData->getContactId());
     }
-
-    if (empty($ruleId)) {
-      CRM_Civirules_Utils_LoggerFactory::logError("Failed log rule", "RuleId not set", $triggerData);
-    } elseif ($sql) {
-      CRM_Core_DAO::executeQuery($sql, $params);
+    if (!empty($table)) {
+      $ruleLog->addValue('entity_table', $table);
     }
+    if ($triggerData->getEntityId()) {
+      $ruleLog->addValue('entity_id', $triggerData->getEntityId());
+    }
+    $ruleLog->execute();
   }
 
 }

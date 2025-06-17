@@ -42,8 +42,7 @@ function civicrm_api3_civi_rules_rule_action_create($params) {
  * @see civicrm_api3_create_success
  */
 function civicrm_api3_civi_rules_rule_action_get($params) {
-  $returnValues = CRM_Civirules_BAO_CiviRulesRuleAction::getValues($params);
-  return civicrm_api3_create_success($returnValues, $params, 'CiviRulesRule', 'Get');
+  return _civicrm_api3_basic_get(_civicrm_api3_get_BAO(__FUNCTION__), $params);
 }
 
 /**
@@ -69,9 +68,7 @@ function _civicrm_api3_civi_rules_rule_action_delete_spec(&$spec) {
  * @see civicrm_api3_create_success
  */
 function civicrm_api3_civi_rules_rule_action_delete($params) {
-  $id = $params['id'];
-  CRM_Civirules_BAO_CiviRulesRuleAction::deleteWithId($id);
-  return civicrm_api3_create_success(1, $params, 'CiviRulesRuleAction', 'delete');
+  return _civicrm_api3_basic_delete(_civicrm_api3_get_BAO(__FUNCTION__), $params);
 }
 
 

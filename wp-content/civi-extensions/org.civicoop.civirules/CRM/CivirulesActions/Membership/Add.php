@@ -71,7 +71,7 @@ class CRM_CivirulesActions_Membership_Add extends CRM_CivirulesActions_Generic_A
    * @return bool|string
    */
   public function getExtraDataInputUrl($ruleActionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/action/membership/add', 'rule_action_id=' . $ruleActionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/action/membership/add', $ruleActionId);
   }
 
   /**

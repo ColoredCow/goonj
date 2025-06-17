@@ -1,5 +1,7 @@
 <?php
 
+use CRM_Civirules_ExtensionUtil as E;
+
 class CRM_CivirulesConditions_Contribution_IsPayLater extends CRM_Civirules_Condition {
 
   private $conditionParams = array();
@@ -46,7 +48,7 @@ class CRM_CivirulesConditions_Contribution_IsPayLater extends CRM_Civirules_Cond
    * @abstract
    */
   public function getExtraDataInputUrl($ruleConditionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/condition/contribution_is_pay_later', 'rule_condition_id='.$ruleConditionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/condition/contribution_is_pay_later', $ruleConditionId);
   }
 
   /**
@@ -56,7 +58,7 @@ class CRM_CivirulesConditions_Contribution_IsPayLater extends CRM_Civirules_Cond
    * @access public
    */
   public function userFriendlyConditionParams() {
-    return ts('Contribution ' . $this->conditionParams['test']);
+    return E::ts('Contribution %1', [1 => $this->conditionParams['test']]);
   }
 
   /**

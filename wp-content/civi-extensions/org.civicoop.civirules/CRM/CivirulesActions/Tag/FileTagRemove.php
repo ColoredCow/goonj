@@ -36,7 +36,7 @@ class CRM_CivirulesActions_Tag_FileTagRemove extends CRM_Civirules_Action {
    */
   public function getExtraDataInputUrl($ruleActionId) {
     return CRM_Utils_System::url('civicrm/civirule/form/action/tag/entitytag', 'tn=civicrm_file&rule_action_id='
-      . $ruleActionId);
+      . $ruleActionId, FALSE, NULL, FALSE, FALSE, TRUE);
   }
 
   /**
@@ -94,7 +94,7 @@ class CRM_CivirulesActions_Tag_FileTagRemove extends CRM_Civirules_Action {
           'return' => 'name',
           'id' => $j,
         ]);
-      } catch (CiviCRM_API3_Exception $e) {
+      } catch (CRM_Core_Exception $e) {
       }
     }
     return $action_params;
@@ -113,7 +113,7 @@ class CRM_CivirulesActions_Tag_FileTagRemove extends CRM_Civirules_Action {
           'return' => 'id',
           'name' => $j,
         ]);
-      } catch (CiviCRM_API3_Exception $e) {
+      } catch (CRM_Core_Exception $e) {
       }
     }
     return parent::importActionParameters($action_params);

@@ -24,9 +24,14 @@ class CRM_CivirulesConditions_Contribution_FinancialType extends CRM_Civirules_C
    * @param CRM_Civirules_TriggerData_TriggerData $triggerData
    * @return bool
    */
-
   public function isConditionValid(CRM_Civirules_TriggerData_TriggerData $triggerData) {
     $isConditionValid = FALSE;
+    // It's possible to save a rule without a financial type.
+    if (empty($this->conditionParams['financial_type_id'])) {
+      $message = "Civirules financial type comparison has no types selected.";
+      \Civi::log()->error($message);
+      throw new CRM_Core_Exception($message);
+    }
     $contribution = $triggerData->getEntityData('Contribution');
     if (!isset($contribution['financial_type_id'])) {
       // The financial type could be empty because of an online payment.
@@ -38,12 +43,14 @@ class CRM_CivirulesConditions_Contribution_FinancialType extends CRM_Civirules_C
         if (in_array($contribution['financial_type_id'], $this->conditionParams['financial_type_id'])) {
           $isConditionValid = TRUE;
         }
-      break;
+        break;
+
       case 1:
         if (!in_array($contribution['financial_type_id'], $this->conditionParams['financial_type_id'])) {
           $isConditionValid = TRUE;
         }
-      break;
+        break;
+
     }
     return $isConditionValid;
   }
@@ -59,7 +66,7 @@ class CRM_CivirulesConditions_Contribution_FinancialType extends CRM_Civirules_C
    * @abstract
    */
   public function getExtraDataInputUrl($ruleConditionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/condition/contribution_financialtype/', 'rule_condition_id='.$ruleConditionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/condition/contribution_financialtype', $ruleConditionId);
   }
 
   /**

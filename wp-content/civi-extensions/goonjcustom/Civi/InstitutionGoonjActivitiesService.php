@@ -529,6 +529,12 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
 
     $hasRestrictedRole = !$isAdmin && \CRM_Core_Permission::checkAnyPerm($restrictedRoles);
 
+    foreach ($tabs as $key => &$tab) {
+      if (!isset($tab['url']) && isset($tab['link'])) {
+        $tab['url'] = $tab['link'];
+      }
+    }
+
     if ($hasRestrictedRole) {
       unset($tabs['view']);
       unset($tabs['edit']);
@@ -539,63 +545,63 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
         'title' => ts('Activities'),
         'module' => 'afsearchGoonjAllInstitutionActivity',
         'directive' => 'afsearch-goonj-all-institution-activity',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'template' => 'CRM/Goonjcustom/Tabs/InstitutionGoonjActivities/Activities.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter', 'njpc_ho_team', 'sanjha_team'],
       ],
       'edit' => [
         'title' => ts('Edit'),
         'module' => 'afformInstitutionGoonjActivitiesIntentReviewEdit',
         'directive' => 'afform-institution-goonj-activities-intent-review-edit',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCampEdit.tpl',
+        'template' => 'CRM/Goonjcustom/Tabs/InstitutionGoonjActivities/Edit.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter', 'njpc_ho_team', 'sanjha_team'],
       ],
       'logistics' => [
         'title' => ts('Logistics'),
         'module' => 'afsearchInstitutionGoonjActivitiesLogistics',
         'directive' => 'afsearch-institution-goonj-activities-logistics',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'template' => 'CRM/Goonjcustom/Tabs/InstitutionGoonjActivities/Logistics.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter', 'njpc_ho_team', 'sanjha_team'],
       ],
       'eventVolunteers' => [
         'title' => ts('Activity Coordinators'),
         'module' => 'afsearchInstitutionGoonjActivitiesEventVolunteer',
         'directive' => 'afsearch-institution-goonj-activities-event-volunteer',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'template' => 'CRM/Goonjcustom/Tabs/InstitutionGoonjActivities/EventVolunteers.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter', 'njpc_ho_team', 'sanjha_team'],
       ],
       'campOutcome' => [
         'title' => ts('Outcome'),
         'module' => 'afsearchInstitutionGoonjActivitiesOutcomeView',
         'directive' => 'afsearch-institution-goonj-activities-outcome-view',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'template' => 'CRM/Goonjcustom/Tabs/InstitutionGoonjActivities/Outcome.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter', 'njpc_ho_team', 'sanjha_team'],
       ],
       'campFeedback' => [
         'title' => ts('Coordinator Feedback'),
         'module' => 'afsearchInstitutionGoonjActivityVolunteerFeedback',
         'directive' => 'afsearch-institution-goonj-activity-volunteer-feedback',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'template' => 'CRM/Goonjcustom/Tabs/InstitutionGoonjActivities/Feedback.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter', 'njpc_ho_team', 'sanjha_team'],
       ],
       'attendeeFeedback' => [
         'title' => ts('Attendee Feedback'),
         'module' => 'afsearchInstitutionGoonjActivitiesAttendeeFeedback',
         'directive' => 'afsearch-institution-goonj-activities-attendee-feedback',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'template' => 'CRM/Goonjcustom/Tabs/InstitutionGoonjActivities/AttendeeFeedback.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter', 'njpc_ho_team', 'sanjha_team'],
       ],
       'monetaryContribution' => [
         'title' => ts('Monetary Contribution'),
         'module' => 'afsearchMonetaryContribution',
         'directive' => 'afsearch-monetary-contribution',
-        'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+        'template' => 'CRM/Goonjcustom/Tabs/MonetaryContribution.tpl',
         'permissions' => ['mmt_and_accounts_chapter_team', 'urban_ops_and_accounts_chapter_team', 'account_team'],
       ],
       // 'monetaryContributionForUrbanOps' => [
       //   'title' => ts('Monetary Contribution'),
       //   'module' => 'afsearchMonetaryContributionForUrbanOps',
       //   'directive' => 'afsearch-monetary-contribution-for-urban-ops',
-      //   'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp.tpl',
+       //   'template' => 'CRM/Goonjcustom/Tabs/MonetaryContributionForUrbanOps.tpl',
       //   'permissions' => ['goonj_chapter_admin', 'urbanops'],
       // ],
     ];

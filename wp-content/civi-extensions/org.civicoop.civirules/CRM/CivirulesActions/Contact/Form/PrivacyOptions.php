@@ -41,7 +41,7 @@ class CRM_CivirulesActions_Contact_Form_PrivacyOptions extends CRM_CivirulesActi
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleAction->action_params);
+    $data = $this->ruleAction->unserializeParams();
     if (isset($data['on_or_off'])) {
       if ($data['on_or_off'] == 1) {
         $defaultValues['on_or_off'] = 0;

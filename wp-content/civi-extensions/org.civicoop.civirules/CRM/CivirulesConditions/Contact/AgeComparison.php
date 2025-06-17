@@ -6,6 +6,8 @@
  * @license AGPL-3.0
  */
 
+use CRM_Civirules_ExtensionUtil as E;
+
 class CRM_CivirulesConditions_Contact_AgeComparison extends CRM_CivirulesConditions_Generic_ValueComparison {
 
   /**
@@ -34,28 +36,20 @@ class CRM_CivirulesConditions_Contact_AgeComparison extends CRM_CivirulesConditi
   public function userFriendlyConditionParams() {
     switch ($this->getOperator()) {
       case '=':
-        $label =  'Age is %1';
-        break;
+        return E::ts('Age is %1', [1 => $this->getComparisonValue()]);
       case '>':
-        $label =  'Age is older than %1';
-        break;
+        return E::ts('Age is older than %1', [1 => $this->getComparisonValue()]);
       case '<':
-        $label =  'Age is younger than %1';
-        break;
+        return E::ts('Age is younger than %1', [1 => $this->getComparisonValue()]);
       case '>=':
-        $label =  'Age is %1 or older than %1';
-        break;
+        return E::ts('Age is %1 or older than %1', [1 => $this->getComparisonValue()]);
       case '<=':
-        $label =  'Age is %1 or younger than %1';
+        return E::ts('Age is %1 or younger than %1', [1 => $this->getComparisonValue()]);
         break;
       case '!=':
-        $label =  'Age is not %1';
-        break;
-      default:
-        return '';
-        break;
+        return E::ts('Age is not %1', [1 => $this->getComparisonValue()]);
     }
-    return ts($label, array(1 => $this->getComparisonValue()));
+    return '';
   }
 
   /**

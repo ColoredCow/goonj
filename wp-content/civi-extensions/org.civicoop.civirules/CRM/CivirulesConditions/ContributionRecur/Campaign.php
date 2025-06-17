@@ -102,7 +102,7 @@ class CRM_CivirulesConditions_ContributionRecur_Campaign extends CRM_Civirules_C
    * @abstract
    */
   public function getExtraDataInputUrl($ruleConditionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/condition/contribution_recur_campaign/', 'rule_condition_id='.$ruleConditionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/condition/contribution_recur_campaign', $ruleConditionId);
   }
 
   /**

@@ -15,21 +15,21 @@ class CRM_CivirulesActions_Activity_Form_Activity extends CRM_CivirulesActions_F
    */
   public function buildQuickForm() {
     $this->add('hidden', 'rule_action_id');
-    $this->add('select', 'activity_type_id', ts('Activity type'), array('' => ts('-- please select --')) + CRM_Core_OptionGroup::values('activity_type'), true);
-    $this->add('select', 'status_id', ts('Status'), array('' => ts('-- please select --')) + CRM_Core_OptionGroup::values('activity_status'), true);
+    $this->add('select', 'activity_type_id', ts('Activity type'), ['' => ts('-- please select --')] + CRM_Core_OptionGroup::values('activity_type'), true);
+    $this->add('select', 'status_id', ts('Status'), ['' => ts('-- please select --')] + CRM_Core_OptionGroup::values('activity_status'), true);
     $this->add('text', 'subject', ts('Subject'));
     $this->add('wysiwyg', 'details', ts('Details'));
 
-    $attributes = array(
+    $attributes = [
       'multiple' => TRUE,
       'create' => TRUE,
-      'api' => array('params' => array('is_deceased' => 0))
-    );
+      'api' => ['params' => ['is_deceased' => 0]]
+    ];
     $this->addEntityRef('assignee_contact_id', ts('Assigned to'), $attributes, false);
 
     $this->addYesNo('send_email', 'Send Email to Assigned Contacts', false, true);
 
-    $delayList = array('' => ts(' - Use system date (default) - ')) + CRM_Civirules_Delay_Factory::getOptionList();
+    $delayList = ['' => ts(' - Use system date (default) - ')] + CRM_Civirules_Delay_Factory::getOptionList();
     $this->add('select', 'activity_date_time', ts('Set activity date'), $delayList);
     foreach(CRM_Civirules_Delay_Factory::getAllDelayClasses() as $delay_class) {
       $delay_class->addElements($this, 'activity_date_time', $this->rule);
@@ -52,9 +52,10 @@ class CRM_CivirulesActions_Activity_Form_Activity extends CRM_CivirulesActions_F
       ], FALSE);
     }
 
-    $this->addButtons(array(
-      array('type' => 'next', 'name' => ts('Save'), 'isDefault' => TRUE,),
-      array('type' => 'cancel', 'name' => ts('Cancel'))));
+    $this->addButtons([
+      ['type' => 'next', 'name' => ts('Save'), 'isDefault' => TRUE,],
+      ['type' => 'cancel', 'name' => ts('Cancel')]
+    ]);
   }
 
   /**
@@ -65,7 +66,7 @@ class CRM_CivirulesActions_Activity_Form_Activity extends CRM_CivirulesActions_F
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleAction->action_params);
+    $data = $this->ruleAction->unserializeParams();
     if (!empty($data['activity_type_id'])) {
       $defaultValues['activity_type_id'] = $data['activity_type_id'];
     }
@@ -94,7 +95,7 @@ class CRM_CivirulesActions_Activity_Form_Activity extends CRM_CivirulesActions_F
     foreach(CRM_Civirules_Delay_Factory::getAllDelayClasses() as $delay_class) {
       $delay_class->setDefaultValues($defaultValues, 'activity_date_time', $this->rule);
     }
-    if ($data['activity_date_time'] != 'null') {
+    if (!empty($data['activity_date_time']) && $data['activity_date_time'] != 'null') {
       $activityDateClass = unserialize($data['activity_date_time']);
       if ($activityDateClass) {
         $defaultValues['activity_date_time'] = get_class($activityDateClass);
@@ -113,10 +114,10 @@ class CRM_CivirulesActions_Activity_Form_Activity extends CRM_CivirulesActions_F
    */
   public function addRules() {
     parent::addRules();
-    $this->addFormRule(array(
+    $this->addFormRule([
       'CRM_CivirulesActions_Activity_Form_Activity',
       'validateActivityDateTime'
-    ));
+    ]);
   }
 
   /**
@@ -128,7 +129,7 @@ class CRM_CivirulesActions_Activity_Form_Activity extends CRM_CivirulesActions_F
    * @static
    */
   static function validateActivityDateTime($fields) {
-    $errors = array();
+    $errors = [];
     if (!empty($fields['activity_date_time'])) {
       $ruleActionId = CRM_Utils_Request::retrieve('rule_action_id', 'Integer');
       $ruleAction = new CRM_Civirules_BAO_RuleAction();

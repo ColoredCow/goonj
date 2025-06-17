@@ -91,7 +91,7 @@ LEFT JOIN civicrm_contribution_recur ccr ON ccr.id = cm.contribution_recur_id WH
    * @abstract
    */
   public function getExtraDataInputUrl($ruleConditionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/condition/recurringpaymentprocessor', 'rule_condition_id=' .$ruleConditionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/condition/recurringpaymentprocessor', $ruleConditionId);
   }
 
   /**

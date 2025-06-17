@@ -108,7 +108,7 @@ class CRM_CivirulesActions_GroupContact_RebuildSmartGroup extends CRM_Civirules_
    * @return bool|string
    */
   public function getExtraDataInputUrl($ruleActionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/action/groupcontact', 'rule_action_id='.$ruleActionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/action/groupcontact', $ruleActionId);
   }
 
   /**

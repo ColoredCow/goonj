@@ -57,7 +57,7 @@ class CRM_CivirulesActions_Tag_Form_Sync extends CRM_CivirulesActions_Form_Form 
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleAction->action_params);
+    $data = $this->ruleAction->unserializeParams();
     if (!empty($data['type'])) {
       $defaultValues['type'] = $data['type'];
     }

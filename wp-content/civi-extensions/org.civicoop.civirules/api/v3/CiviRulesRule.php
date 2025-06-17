@@ -1,5 +1,10 @@
 <?php
 
+use Civi\Api4\CiviRulesCondition;
+use Civi\Api4\CiviRulesRule;
+use Civi\Api4\CiviRulesRuleAction;
+use Civi\Api4\CiviRulesRuleCondition;
+use Civi\Api4\CiviRulesRuleTag;
 use CRM_Civirules_ExtensionUtil as E;
 
 /**
@@ -122,9 +127,11 @@ function _civicrm_api3_civi_rules_rule_clone_spec(&$spec) {
  * @see civicrm_api3_create_success
  */
 function civicrm_api3_civi_rules_rule_clone($params) {
-  $Id = $params['id'];
-  $rule = civicrm_api3('CiviRulesRule', 'getsingle', ['id' => $Id]);
-  $userId = CRM_Core_Session::singleton()->getLoggedInContactID();
+  $ruleID = $params['id'];
+  $rule = CiviRulesRule::get(FALSE)
+    ->addWhere('id', '=', $ruleID)
+    ->execute()
+    ->first();
   $cloneRule = CRM_Civirules_BAO_CiviRulesRule::writeRecord([
     'name' => substr('clone_of_' . $rule['name'], 0, 80),
     'label' => substr('Clone of ' . $rule['label'], 0, 128),
@@ -134,12 +141,15 @@ function civicrm_api3_civi_rules_rule_clone($params) {
     'is_active' => 0,
     'description' => $rule['description'],
     'help_text' => $rule['help_text'],
-    'created_date' => date('Ymd'),
-    'created_user_id' => $userId
+    'created_user_id' => CRM_Core_Session::singleton()->getLoggedInContactID(),
   ]);
   $cloneId = $cloneRule->id;
 
-  $ruleConditions = CRM_Civirules_BAO_CiviRulesRuleCondition::getValues(['rule_id' => $Id]);
+  $ruleConditions = CiviRulesRuleCondition::get(FALSE)
+    ->addWhere('rule_id', '=', $ruleID)
+    ->addOrderBy('weight', 'ASC')
+    ->addOrderBy('id', 'ASC')
+    ->execute();
   foreach ($ruleConditions as $ruleCondition) {
     $newCondition = [];
     $newCondition['rule_id'] = $cloneId;
@@ -151,10 +161,19 @@ function civicrm_api3_civi_rules_rule_clone($params) {
     if (isset($ruleCondition['condition_params'])) {
       $newCondition['condition_params'] = $ruleCondition['condition_params'];
     }
-    CRM_Civirules_BAO_CiviRulesRuleCondition::writeRecord($newCondition);
+    $newConditions[] = $newCondition;
+  }
+  if (!empty($newConditions)) {
+    CiviRulesRuleCondition::save(FALSE)
+      ->setRecords($newConditions)
+      ->execute();
   }
 
-  $ruleActions = CRM_Civirules_BAO_CiviRulesRuleAction::getValues(['rule_id' => $Id]);
+  $ruleActions = CiviRulesRuleAction::get(FALSE)
+    ->addWhere('rule_id', '=', $ruleID)
+    ->addOrderBy('weight', 'ASC')
+    ->addOrderBy('id', 'ASC')
+    ->execute();
   foreach ($ruleActions as $ruleAction) {
     $newAction = [];
     $newAction['rule_id'] = $cloneId;
@@ -167,19 +186,32 @@ function civicrm_api3_civi_rules_rule_clone($params) {
     if (isset($ruleAction['delay'])) {
       $newAction['delay'] = $ruleAction['delay'];
     }
-    CRM_Civirules_BAO_CiviRulesRuleAction::writeRecord($newAction);
+    $newActions[] = $newAction;
+  }
+  if (!empty($newActions)) {
+    CiviRulesRuleAction::save(FALSE)
+      ->setRecords($newActions)
+      ->execute();
   }
 
-  $ruleTags = CRM_Civirules_BAO_CiviRulesRuleTag::getValues(['rule_id' => $Id]);
+  $ruleTags = \Civi\Api4\CiviRulesRuleTag::get(FALSE)
+    ->addWhere('rule_id', '=', $ruleID)
+    ->execute();
   foreach ($ruleTags as $ruleTag) {
-    CRM_Civirules_BAO_CiviRulesRuleTag::writeRecord([
+    $newTag = [
       'rule_id' => $cloneId,
       'rule_tag_id' => $ruleTag['rule_tag_id'],
-    ]);
+    ];
+    $newTags[] = $newTag;
+  }
+  if (!empty($newTags)) {
+    CiviRulesRuleTag::save(FALSE)
+      ->setRecords($newTags)
+      ->execute();
   }
 
   $resultValues = [
-    'id' => $Id,
+    'id' => $ruleID,
     'clone_id' => $cloneId,
   ];
   return civicrm_api3_create_success($resultValues, $params, 'CiviRulesRule', 'clone');

@@ -45,7 +45,7 @@ class CRM_CivirulesActions_Membership_Form_CancelLatestMembership extends CRM_Ci
     if ($this->ruleActionId) {
       $defaultValues['rule_action_id'] = $this->ruleActionId;
     }
-    $data = unserialize($this->ruleAction->action_params);
+    $data = $this->ruleAction->unserializeParams();
     if (isset($data['membership_status_id'])) {
       $defaultValues['membership_status_id'] = $data['membership_status_id'];
     }

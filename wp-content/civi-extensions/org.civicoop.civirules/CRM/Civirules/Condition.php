@@ -43,6 +43,16 @@ abstract class CRM_Civirules_Condition {
   abstract public function getExtraDataInputUrl($ruleConditionId);
 
   /**
+   * @param string $url
+   * @param int $ruleConditionID
+   *
+   * @return string
+   */
+  public function getFormattedExtraDataInputUrl(string $url, int $ruleConditionID): string {
+    return CRM_Utils_System::url($url, 'rule_condition_id=' . $ruleConditionID, FALSE, NULL, FALSE, FALSE, TRUE);
+  }
+
+  /**
    * Returns a user friendly text explaining the condition params
    * e.g. 'Older than 65'
    *
@@ -76,18 +86,6 @@ abstract class CRM_Civirules_Condition {
       return serialize($condition_params);
     }
     return '';
-  }
-
-  /**
-   * Returns an array with required entity names
-   *
-   * When returning false we assume the doesWorkWithTrigger does the validation.
-   *
-   * @deprecated
-   * @return array|false
-   */
-  public function requiredEntities() {
-    return FALSE;
   }
 
   /**

@@ -1,5 +1,6 @@
 <h3>{$ruleActionHeader}</h3>
 <div class="crm-block crm-form-block crm-civirule-rule_action-block-activity">
+  <div class="help">{$ruleActionHelp}</div>
     <div class="crm-section">
         <div class="label">{$form.activity_type_id.label}</div>
         <div class="content">{$form.activity_type_id.html}</div>
@@ -21,7 +22,7 @@
         <div class="clear"></div>
     </div>
 
-    {if $form.relationship_contact}
+    {if isset($form.relationship_contact)}
         <div class="crm-section">
             <div class="label">{$form.relationship_contact.label}</div>
             <div class="content">{$form.relationship_contact.html}</div>
@@ -45,7 +46,7 @@
         </div>
     {/if}
 
-    {if $form.relationship_contact_assignee}
+    {if isset($form.relationship_contact_assignee)}
         <div class="crm-section">
             <div class="label">{$form.relationship_contact_assignee.label}</div>
             <div class="content">{$form.relationship_contact_assignee.html}</div>

@@ -1,0 +1,8 @@
+[
+  {"name":"emailapi_send","label":"Send Email","class_name":"CRM_Emailapi_CivirulesAction_Send"},
+  {"name":"emailapi_send_relationship","label":"Send Email to a related contact","class_name":"CRM_Emailapi_CivirulesAction_SendToRelatedContact"},
+  {"name":"emailapi_send_rolesoncase","label":"Send Email to contacts on a case","class_name":"CRM_Emailapi_CivirulesAction_SendToRolesOnCase"},
+  {"name":"emailapi_send_contactreference","label":"Send E-mail to a contact reference","class_name":"CRM_Emailapi_CivirulesAction_SendToContactReference"},
+  {"name":"emailapi_send_customfieldvalue","label":"Send Email to a custom field value","class_name":"CRM_Emailapi_CivirulesAction_SendToCustomFieldValue"},
+  {"name":"emailapi_send_casecontactsoncase","label":"Send Email to case contacts on a case","class_name":"CRM_Emailapi_CivirulesAction_SendToCaseContactsOnCase"}
+]

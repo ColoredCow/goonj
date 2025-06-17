@@ -91,16 +91,6 @@ class CRM_Core_BAO_CustomValueTable {
                 $value = 'null';
                 break;
               }
-
-              // need to add/update civicrm_entity_file
-              $entityFileDAO = new CRM_Core_DAO_EntityFile();
-              $entityFileDAO->file_id = $field['file_id'];
-              $entityFileDAO->find(TRUE);
-
-              $entityFileDAO->entity_table = $field['table_name'];
-              $entityFileDAO->entity_id = $field['entity_id'];
-              $entityFileDAO->file_id = $field['file_id'];
-              $entityFileDAO->save();
               $value = $field['file_id'];
               $type = 'String';
               break;
@@ -134,7 +124,8 @@ class CRM_Core_BAO_CustomValueTable {
               else {
                 $type = 'Integer';
               }
-              if ($value == NULL || $value === '') {
+              // An empty value should be stored as NULL
+              if (!$value) {
                 $type = 'Timestamp';
                 $value = NULL;
               }
@@ -142,7 +133,8 @@ class CRM_Core_BAO_CustomValueTable {
 
             case 'EntityReference':
               $type = 'Integer';
-              if ($value == NULL || $value === '') {
+              // An empty value should be stored as NULL
+              if (!$value) {
                 $type = 'Timestamp';
                 $value = NULL;
               }
@@ -233,22 +225,21 @@ class CRM_Core_BAO_CustomValueTable {
    * Given a field return the mysql data type associated with it.
    *
    * @param string $type
-   * @param int $maxLength
+   * @param int|null $maxLength
    *
    * @return string
    *   the mysql data store placeholder
    */
-  public static function fieldToSQLType($type, $maxLength = 255) {
-    if (!isset($maxLength) ||
-      !is_numeric($maxLength) ||
-      $maxLength <= 0
-    ) {
-      $maxLength = 255;
-    }
-
+  public static function fieldToSQLType(string $type, $maxLength = NULL) {
     switch ($type) {
       case 'String':
+        $maxLength = $maxLength ?: 255;
+        return "varchar($maxLength)";
+
       case 'Link':
+        // URLs can be up to 2047 characters
+        // according to https://www.sitemaps.org/protocol.html#locdef
+        $maxLength = $maxLength ?: 2047;
         return "varchar($maxLength)";
 
       case 'Boolean':

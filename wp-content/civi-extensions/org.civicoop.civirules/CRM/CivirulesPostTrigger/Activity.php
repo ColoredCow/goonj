@@ -32,12 +32,20 @@ class CRM_CivirulesPostTrigger_Activity extends CRM_Civirules_Trigger_Post {
    * @param string $eventID
    */
   public function triggerTrigger($op, $objectName, $objectId, $objectRef, $eventID) {
-    $triggerData = $this->getTriggerDataFromPost($op, $objectName, $objectId, $objectRef, $eventID);
+    if (!$this->hasTriggerData()) {
+      // Many classes inherit from CRM_Civirules_Trigger_Post and already set the triggerData
+      // Only set it here if not already set by child class
+      $triggerData = $this->getTriggerDataFromPost($op, $objectName, $objectId, $objectRef, $eventID);
+    }
+    else {
+      $triggerData = $this->getTriggerData();
+    }
+
     if (empty($triggerData->getEntityId())) {
       $triggerData->setEntityId($objectId);
     }
     //trigger for activity trigger for every source_contact_id, target_contact_id and assignee_contact_id
-    $activityContacts = array();
+    $activityContacts = [];
     if ($op == 'delete') {
       $preData = CRM_Civirules_Utils_PreData::getPreData($objectName, $objectId, $eventID);
       if (isset($preData['activity_contacts'])) {
@@ -113,10 +121,9 @@ class CRM_CivirulesPostTrigger_Activity extends CRM_Civirules_Trigger_Post {
    *
    * Return false if you do not need extra data input
    *
-   * @param int $ruleId
+   * @param $ruleId
+   *
    * @return bool|string
-   * @access public
-   * @abstract
    */
   public function getExtraDataInputUrl($ruleId) {
     return CRM_Utils_System::url('civicrm/civirule/form/trigger/activity', 'rule_id='.$ruleId);
@@ -131,11 +138,49 @@ class CRM_CivirulesPostTrigger_Activity extends CRM_Civirules_Trigger_Post {
     $result = civicrm_api3('ActivityContact', 'getoptions', [
       'field' => "record_type_id",
     ]);
-    $options[0] = E::ts('For all contacts');
+    $options[0] = E::ts('All contacts');
     foreach($result['values'] as $val => $opt) {
       $options[$val] = $opt;
     }
-    return E::ts('Trigger for %1', array(1=>$options[$this->triggerParams['record_type']]));
+    return E::ts('Trigger for %1', [1=>$options[$this->triggerParams['record_type'] ?? 0]]);
+  }
+
+  /**
+   * Get various types of help text for the trigger:
+   *   - triggerDescription: When choosing from a list of triggers, explains what the trigger does.
+   *   - triggerDescriptionWithParams: When a trigger has been configured for a rule provides a
+   *       user friendly description of the trigger and params (see $this->getTriggerDescription())
+   *   - triggerParamsHelp (default): If the trigger has configurable params, show this help text when configuring
+   * @param string $context
+   *
+   * @return string
+   */
+  public function getHelpText(string $context = 'triggerParamsHelp'): string {
+    switch ($context) {
+      case 'triggerDescription':
+        return E::ts('Trigger on Activities');
+
+      case 'triggerDescriptionWithParams':
+        return $this->getTriggerDescription();
+
+      case 'triggerParamsHelp':
+        if (get_class($this) === 'CRM_CivirulesPostTrigger_Activity') {
+          switch ($this->getOp()) {
+            case 'create':
+            case 'edit':
+              return E::ts('Select a record type to run the trigger only once.')
+                . ' ' . E::ts('When all contacts is selected then the trigger will be fired for every contact. Meaning that trigger might run more than once.')
+                . '<br/>'
+                . E::ts('The selected record type also defines which contact is available in the conditions and actions.');
+
+            case 'delete':
+            default:
+              return '';
+          }
+        }
+      default:
+        return parent::getHelpText($context);
+    }
   }
 
 }
