@@ -834,10 +834,15 @@ function update_user_rating_callback() {
 
     try {
         // Call CiviCRM API4 to update the rating
-        $results = \Civi\Api4\EckEntity::update('Collection_Camp', TRUE)
-            ->addValue('Collection_Camp_Intent_Details.User_Rating', $rating)
-            ->addWhere('id', '=', $entity_id)
-            ->execute();
+        // $results = \Civi\Api4\EckEntity::update('Collection_Camp', TRUE)
+        //     ->addValue('Collection_Camp_Intent_Details.User_Rating', $rating)
+        //     ->addWhere('id', '=', $entity_id)
+        //     ->execute();
+
+		$results = \Civi\Api4\Activity::update(FALSE)
+			->addValue('Material_Contribution.User_Rating_Star', $rating)
+			->addWhere('id', '=', $entity_id)
+			->execute();
 
         wp_send_json_success(['message' => 'Rating updated']);
     } catch (Exception $e) {

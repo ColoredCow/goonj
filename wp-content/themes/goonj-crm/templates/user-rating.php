@@ -113,7 +113,7 @@ document.querySelectorAll('.star').forEach(star => {
         const data = {
             action: 'update_user_rating',
             rating: rating,
-            entity_id: <?php echo $entity_id; ?> // Dynamically set from activity
+            entity_id: <?php echo $activity_id; ?> // Dynamically set from activity
         };
 
         // AJAX request to call the API
