@@ -35,7 +35,7 @@ class CRM_CivirulesActions_Case_Form_SetStatus extends CRM_CivirulesActions_Form
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleAction->action_params);
+    $data = $this->ruleAction->unserializeParams();
     $defaultValues['status_id'] = empty($data['status_id']) ? '' : $data['status_id'];
     return $defaultValues;
   }

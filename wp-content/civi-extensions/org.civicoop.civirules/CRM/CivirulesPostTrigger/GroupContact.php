@@ -62,9 +62,7 @@ class CRM_CivirulesPostTrigger_GroupContact extends CRM_Civirules_Trigger_Post {
       $dao = CRM_Core_DAO::executeQuery($sql, $params, TRUE, 'CRM_Contact_DAO_GroupContact');
       $group = civicrm_api3('Group', 'getsingle', ['id' => $objectId]);
       while ($dao->fetch()) {
-        $data = [];
-        CRM_Core_DAO::storeValues($dao, $data);
-        $triggerData = $this->getTriggerDataFromPost($op, $objectName, $objectId, $data, $eventID);
+        $triggerData = $this->getTriggerDataFromPost($op, $objectName, $dao->id, $dao, $eventID);
         $triggerData->setEntityData('Group', $group);
         CRM_Civirules_Engine::triggerRule($this, $triggerData);
       }

@@ -124,7 +124,7 @@ class CRM_CivirulesConditions_Form_Generic_Date extends CRM_CivirulesConditions_
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleCondition->condition_params);
+    $data = $this->ruleCondition->unserializeParams();
 
     if (!empty($data['date_select']))
       $defaultValues['date_select'] = $data['date_select'];

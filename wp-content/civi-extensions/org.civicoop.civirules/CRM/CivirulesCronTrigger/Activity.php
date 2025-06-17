@@ -31,6 +31,7 @@ abstract class CRM_CivirulesCronTrigger_Activity extends CRM_Civirules_Trigger_C
       unset($data['contact_id']);
       unset($data['record_type_id']);
       $triggerData = new CRM_Civirules_TriggerData_Cron($this->activityDAO->contact_id, 'Activity', $data);
+      $triggerData->setTrigger($this);
       $activityContact = [];
       $activityContact['id'] = $this->activityDAO->activity_contact_id;
       $activityContact['activity_id'] = $this->activityDAO->id;

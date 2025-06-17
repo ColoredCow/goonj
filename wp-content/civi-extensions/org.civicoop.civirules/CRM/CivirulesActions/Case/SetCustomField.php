@@ -57,7 +57,7 @@ class CRM_CivirulesActions_Case_SetCustomField extends CRM_Civirules_Action {
         unset($action_params['field_id']);
         $action_params['custom_group'] = $customGroup['name'];
         $action_params['custom_field'] = $customField['name'];
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -80,7 +80,7 @@ class CRM_CivirulesActions_Case_SetCustomField extends CRM_Civirules_Action {
         $action_params['field_id'] = $customField['id'];
         unset($action_params['custom_group']);
         unset($action_params['custom_field']);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -96,7 +96,7 @@ class CRM_CivirulesActions_Case_SetCustomField extends CRM_Civirules_Action {
    * @access public
    */
   public function getExtraDataInputUrl($ruleActionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/action/case/setcustomvalue', 'rule_action_id='.$ruleActionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/action/case/setcustomvalue', $ruleActionId);
   }
 
   /**
@@ -114,5 +114,30 @@ class CRM_CivirulesActions_Case_SetCustomField extends CRM_Civirules_Action {
       return TRUE;
     }
     return FALSE;
+  }
+
+  /**
+   * Get various types of help text for the action:
+   *   - actionDescription: When choosing from a list of actions, explains what the action does.
+   *   - actionDescriptionWithParams: When a action has been configured for a rule provides a
+   *       user friendly description of the action and params (see $this->userFriendlyConditionParams())
+   *   - actionParamsHelp (default): If the action has configurable params, show this help text when configuring
+   * @param string $context
+   *
+   * @return string
+   */
+  public function getHelpText(string $context): string {
+    switch ($context) {
+      case 'actionDescriptionWithParams':
+        return $this->userFriendlyConditionParams();
+
+      case 'actionDescription':
+        return E::ts('This action will set the custom field to the provided value');
+
+      case 'actionParamsHelp':
+        return E::ts('This action will set the custom field to the provided value. In case of option groups, you need to provide the <code>value</code> instead of the label. You can find this in the "Option Groups" overview in the system administration menu. Complex values can be set using JSON expressions.');
+    }
+
+    return $helpText ?? '';
   }
 }

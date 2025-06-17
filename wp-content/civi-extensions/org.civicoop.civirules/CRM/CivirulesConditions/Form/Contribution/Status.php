@@ -35,7 +35,7 @@ class CRM_CivirulesConditions_Form_Contribution_Status extends CRM_CivirulesCond
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleCondition->condition_params);
+    $data = $this->ruleCondition->unserializeParams();
     if (!empty($data['contribution_status_id'])) {
       $defaultValues['contribution_status_id'] = $data['contribution_status_id'];
     }

@@ -1,5 +1,7 @@
 <?php
 
+use CRM_Civirules_ExtensionUtil as E;
+
 abstract class CRM_CivirulesConditions_Generic_FieldValueChangeComparison extends CRM_CivirulesConditions_Generic_ValueComparison {
 
   /**
@@ -221,7 +223,7 @@ abstract class CRM_CivirulesConditions_Generic_FieldValueChangeComparison extend
   }
 
   public function getExtraDataInputUrl($ruleConditionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/condition/datachangedcomparison/', 'rule_condition_id='.$ruleConditionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/condition/datachangedcomparison', $ruleConditionId);
   }
 
   /**
@@ -265,10 +267,10 @@ abstract class CRM_CivirulesConditions_Generic_FieldValueChangeComparison extend
       $comparisonValue = implode(", ", $comparisonValue);
     }
     return
-      ts('Old value  ').
-      htmlentities(($this->getOriginalOperator())).' '.htmlentities($originalComparisonValue).'&nbsp'.
-      ts ('and new value ').
-      htmlentities(($this->getOperator())).' '.htmlentities($comparisonValue);
+      E::ts('Old value  ')
+      . htmlentities(($this->getOriginalOperator())).' '.htmlentities($originalComparisonValue)
+      . E::ts (' and new value ')
+      . htmlentities(($this->getOperator())) . ' ' . htmlentities($comparisonValue);
   }
 
   /**

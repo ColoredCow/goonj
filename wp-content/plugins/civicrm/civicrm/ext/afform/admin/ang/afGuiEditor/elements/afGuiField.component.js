@@ -21,8 +21,8 @@
         rangeElements = ['', '2'],
         dateRangeElements = ['1', '2'],
         yesNo = [
-          {id: '1', label: ts('Yes')},
-          {id: '0', label: ts('No')}
+          {id: true, label: ts('Yes')},
+          {id: false, label: ts('No')}
         ];
       $scope.editingOptions = false;
 
@@ -172,6 +172,16 @@
 
       function inputTypeCanBe(type) {
         var defn = ctrl.getDefn();
+        if (defn.readonly) {
+          switch (type) {
+            case 'DisplayOnly':
+            case 'Hidden':
+              return true;
+
+            default:
+              return false;
+          }
+        }
         if (defn.input_type === type) {
           return true;
         }
@@ -280,7 +290,16 @@
           ctrl.hasDefaultValue = false;
         } else {
           ctrl.hasDefaultValue = true;
+          // Boolean default value should be set right away, as there are no options
+          if (ctrl.getDefn().data_type === 'Boolean') {
+            getSet('afform_default', true);
+          }
         }
+      };
+
+      // Return `true` if field has a default value and it's not a boolean or relative date
+      this.hasDefaultValueInput = function() {
+        return ctrl.hasDefaultValue && ctrl.getDefn().data_type !== 'Boolean' && ctrl.defaultDateType() === 'fixed';
       };
 
       this.defaultDateType = function(newValue) {
@@ -330,13 +349,11 @@
       };
 
       $scope.defaultValueContains = function(val) {
-        val = '' + val;
         var defaultVal = getSet('afform_default');
         return defaultVal === val || (_.isArray(defaultVal) && _.includes(defaultVal, val));
       };
 
       $scope.toggleDefaultValueItem = function(val) {
-        val = '' + val;
         if (defaultValueShouldBeArray()) {
           if (!_.isArray(getSet('afform_default'))) {
             ctrl.node.defn = ctrl.node.defn || {};
@@ -426,7 +443,7 @@
           }
           return val;
         }
-        return $scope.getProp(propName);
+        return $scope.getProp(propName) || '';
       }
       this.getSet = getSet;
 

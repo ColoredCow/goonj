@@ -34,7 +34,7 @@ class CRM_CivirulesConditions_Form_ContributionSoft_SoftCreditType extends CRM_C
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleCondition->condition_params);
+    $data = $this->ruleCondition->unserializeParams();
     if (!empty($data['soft_credit_type_id'])) {
       $defaultValues['soft_credit_type_id'] = $data['soft_credit_type_id'];
     }

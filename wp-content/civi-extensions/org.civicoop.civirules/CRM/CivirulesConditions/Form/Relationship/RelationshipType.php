@@ -35,7 +35,7 @@ class CRM_CivirulesConditions_Form_Relationship_RelationshipType extends CRM_Civ
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleCondition->condition_params);
+    $data = $this->ruleCondition->unserializeParams();
     if (!empty($data['relationship_type_id'])) {
       $defaultValues['relationship_type_id'] = $data['relationship_type_id'];
     }

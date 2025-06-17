@@ -57,7 +57,7 @@ class CRM_CivirulesConditions_Form_Membership_ContactHasMembership extends CRM_C
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleCondition->condition_params);
+    $data = $this->ruleCondition->unserializeParams();
     if (!empty($data['inclusion_operator'])) {
       $defaultValues['inclusion_operator'] = $data['inclusion_operator'];
     }

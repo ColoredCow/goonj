@@ -92,7 +92,8 @@ class CRM_CivirulesConditions_ContributionRecur_DonorIsRecurring extends CRM_Civ
       [
         'rule_condition_id' => $ruleConditionId,
         'condition_name' => $this->getConditionName(),
-      ]
+      ],
+      FALSE, NULL, FALSE, FALSE, TRUE
     );
   }
 

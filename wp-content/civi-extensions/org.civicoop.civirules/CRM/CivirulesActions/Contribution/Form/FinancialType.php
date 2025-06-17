@@ -28,9 +28,7 @@ class CRM_CivirulesActions_Contribution_Form_FinancialType extends CRM_Civirules
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
     $defaultValues['rule_action_id'] = $this->ruleActionId;
-    if (!empty($this->ruleAction->action_params)) {
-      $data = unserialize($this->ruleAction->action_params);
-    }
+    $data = $this->ruleAction->unserializeParams();
     if (!empty($data['financial_type_id'])) {
       $defaultValues['financial_type_id'] = $data['financial_type_id'];
     }

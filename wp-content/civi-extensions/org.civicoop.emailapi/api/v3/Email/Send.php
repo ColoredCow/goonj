@@ -128,16 +128,13 @@ function civicrm_api3_email_send($params) {
     $from = '"' . $params['from_name'] . '" <' . $params['from_email'] . '>';
   }
   elseif (!empty($params['from_email_option'])) {
-    $result = civicrm_api3('OptionValue', 'get', [
-      'sequential' => 1,
-      'option_group_id' => "from_email_address",
-      'value' => $params['from_email_option'],
-    ]);
-
-    if ($result['count'] > 0) {
-      $from = $result['values'][0]['label'];
-    }
-    else {
+    $from = \Civi\Api4\OptionValue::get(FALSE)
+      ->addSelect('label')
+      ->addWhere('option_group_id:name', '=', 'from_email_address')
+      ->addWhere('value', '=', $params['from_email_option'])
+      ->execute()
+      ->first()['label'] ?? NULL;
+    if (!$from) {
       throw new CRM_Core_Exception('Cannot find from_email_option');
     }
   }
@@ -153,7 +150,11 @@ function civicrm_api3_email_send($params) {
   $returnValues = [];
   for ($i = 0; $i < count($params['contact_id']); $i++) {
     $contactId = $params['contact_id'][$i];
-    $contact = civicrm_api3('Contact', 'getsingle', ['id' => $contactId]);
+    $contact = \Civi\Api4\Contact::get(FALSE)
+      ->addSelect('do_not_email', 'email_primary.email', 'is_deceased', 'is_deleted', 'email_primary.on_hold', 'display_name')
+      ->addWhere('id', '=', $contactId)
+      ->execute()
+      ->first();
     if ($alternativeEmailAddress) {
       /*
        * If an alternative recipient address is given
@@ -163,32 +164,33 @@ function civicrm_api3_email_send($params) {
       $toName = '';
       $toEmail = $alternativeEmailAddress;
     }
-    elseif ($contact['do_not_email'] || empty($contact['email']) || ($contact['is_deceased'] ?? NULL) || $contact['on_hold'] || ($contact['is_deleted'] ?? NULL)) {
+    elseif ($contact['do_not_email'] || empty($contact['email_primary.email']) || !empty($contact['is_deceased']) || $contact['email_primary.on_hold'] || !empty($contact['is_deleted'])) {
       /*
        * Contact is deceased or has opted out from mailings so do not send the email
        */
+      \Civi::log()->debug("EmailAPI: Contact {$contactId} has no email address, is deceased or has opted out from mailings so do not send the email");
       continue;
     }
     else {
       $toName = $contact['display_name'];
-      $toEmail = $contact['email'];
+      $toEmail = $contact['email_primary.email'];
     }
     if ($locationTypeId) {
-      try {
-        $locationAddress = civicrm_api3('Email', 'getvalue', [
-          'return' => 'email',
-          'contact_id' => $contactId,
-          'location_type_id' => $locationTypeId,
-          'options' => ['limit' => 1, 'sort' => 'id DESC'],
-        ]);
-        $toEmail = $locationAddress;
+      $locationAddress = \Civi\Api4\Email::get(FALSE)
+        ->addSelect('email')
+        ->addWhere('location_type_id', '=', $locationTypeId)
+        ->addWhere('contact_id', '=', $contactId)
+        ->addOrderBy('id', 'DESC')
+        ->execute()
+        ->first()['email'] ?? NULL;
+      if (!$locationAddress) {
+        \Civi::log()->debug("EmailAPI: Contact {$contactId} no email address for location {$locationTypeId}. Falling back to {$toEmail}");
       }
-      catch (CRM_Core_Exception $ex) {
-      }
+      $toEmail = $locationAddress;
     }
 
     $message['messageSubject'] = (empty($params['subject']) ? $messageTemplates->msg_subject : $params['subject']);
-    $message['text'] = $messageTemplates->msg_text ? $messageTemplates->msg_text : CRM_Utils_String::htmlToText($messageTemplates->msg_html);
+    $message['text'] = $messageTemplates->msg_text ?: CRM_Utils_String::htmlToText($messageTemplates->msg_html);
     $message['html'] = $messageTemplates->msg_html;
     $message_params = $params;
     $message_params['contact_id'] = $contactId;
@@ -203,6 +205,7 @@ function civicrm_api3_email_send($params) {
       'subject' => $messageSubject,
       'messageTemplateID' => $messageTemplates->id,
       'contactId' => $contactId,
+      'api_params' => $params,
     ];
 
     // render the &amp; entities in text mode, so that the links work
@@ -228,12 +231,12 @@ function civicrm_api3_email_send($params) {
             $details = "-ALTERNATIVE ITEM 0-\n$html\n-ALTERNATIVE ITEM 1-\n$text\n-ALTERNATIVE END-\n";
           }
           else {
-            $details = $html ? $html : $text;
+            $details = $html ?: $text;
           }
           break;
 
         case 'html':
-          $details = $html ? $html : $text;
+          $details = $html ?: $text;
           break;
 
         case 'text':
@@ -250,34 +253,40 @@ function civicrm_api3_email_send($params) {
         'activity_type_id' => $activityTypeID,
         'activity_date_time' => date('YmdHis'),
         'subject' => $messageSubject,
-        'details' => $details,
+        'details' => $details ?? '',
         'status_id' => CRM_Core_PseudoConstant::getKey('CRM_Activity_BAO_Activity', 'activity_status_id', 'Cancelled'),
       ];
-      $activity = civicrm_api3('Activity', 'create', $activityParams);
 
-      $activityContacts = CRM_Core_OptionGroup::values('activity_contacts', FALSE, FALSE, FALSE, NULL, 'name');
-      $targetID = CRM_Utils_Array::key('Activity Targets', $activityContacts);
+      try {
+        $activity = civicrm_api3('Activity', 'create', $activityParams);
 
-      $activityTargetParams = [
-        'activity_id' => $activity['id'],
-        'contact_id' => $contactId,
-        'record_type_id' => $targetID,
-      ];
-      CRM_Activity_BAO_ActivityContact::create($activityTargetParams);
+        $activityContacts = CRM_Core_OptionGroup::values('activity_contacts', FALSE, FALSE, FALSE, NULL, 'name');
+        $targetID = CRM_Utils_Array::key('Activity Targets', $activityContacts);
 
-      $caseId = NULL;
-      if (!empty($case_id)) {
-        $caseId = $case_id;
-      }
-      if (!empty($params['case_id'])) {
-        $caseId = $params['case_id'];
-      }
-      if ($caseId) {
-        $caseActivity = [
+        $activityTargetParams = [
           'activity_id' => $activity['id'],
-          'case_id' => $caseId,
+          'contact_id' => $contactId,
+          'record_type_id' => $targetID,
         ];
-        CRM_Case_BAO_Case::processCaseActivity($caseActivity);
+        CRM_Activity_BAO_ActivityContact::create($activityTargetParams);
+
+        $caseId = NULL;
+        if (!empty($case_id)) {
+          $caseId = $case_id;
+        }
+        if (!empty($params['case_id'])) {
+          $caseId = $params['case_id'];
+        }
+        if ($caseId) {
+          $caseActivity = [
+            'activity_id' => $activity['id'],
+            'case_id' => $caseId,
+          ];
+          CRM_Case_BAO_Case::processCaseActivity($caseActivity);
+        }
+      }
+      catch (Exception $e) {
+        \Civi::log()->error("EmailAPI: Failed to create email activity for contactID: {$contactId}" . $e->getMessage());
       }
     }
 
@@ -287,7 +296,7 @@ function civicrm_api3_email_send($params) {
     // Try to send the email.
     $result = CRM_Utils_Mail::send($mailParams);
     if (!$result) {
-      throw new CRM_Core_Exception('Error sending email to ' . $contact['display_name'] . ' <' . $toEmail . '> ');
+      throw new CRM_Core_Exception('Error sending email to ' . $contact['display_name'] . ' <' . $mailParams['toEmail'] . '> ');
     }
 
     if ($params['create_activity']) {
@@ -297,13 +306,18 @@ function civicrm_api3_email_send($params) {
         'status_id' => CRM_Core_PseudoConstant::getKey('CRM_Activity_BAO_Activity', 'activity_status_id', 'Completed'),
         'return' => 'id',
       ];
-      civicrm_api3('Activity', 'create', $activityParams);
+      try {
+        civicrm_api3('Activity', 'create', $activityParams);
+      }
+      catch (Exception $e) {
+        \Civi::log()->error("EmailAPI: Failed to update email activity to Completed for contactID: {$contactId}" . $e->getMessage());
+      }
     }
 
     $returnValues[$contactId] = [
       'contact_id' => $contactId,
       'send' => 1,
-      'status_msg' => "Successfully sent email to {$toEmail}",
+      'status_msg' => "Successfully sent email to {$mailParams['toEmail']}",
     ];
   }
 

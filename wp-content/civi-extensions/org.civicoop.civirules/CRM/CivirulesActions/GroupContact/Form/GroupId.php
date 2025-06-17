@@ -72,7 +72,7 @@ class CRM_CivirulesActions_GroupContact_Form_GroupId extends CRM_CivirulesAction
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleAction->action_params);
+    $data = $this->ruleAction->unserializeParams();
     if (!empty($data['group_id'])) {
       $defaultValues['group_id'] = $data['group_id'];
     }

@@ -4,10 +4,8 @@
   <div class="help">{$ruleTriggerHelp}</div>
     <div class="crm-section">
         <div class="label">{$form.contact_id.label}</div>
-        <div class="content">{$form.contact_id.html}
-        </div>
-        <div class="clear">
-        </div>
+        <div class="content">{$form.contact_id.html}</div>
+        <div class="clear"></div>
     </div>
 </div>
 <div class="crm-submit-buttons">

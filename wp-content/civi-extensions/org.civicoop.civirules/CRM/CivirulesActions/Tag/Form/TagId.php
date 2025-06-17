@@ -126,7 +126,7 @@ class CRM_CivirulesActions_Tag_Form_TagId extends CRM_CivirulesActions_Form_Form
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleAction->action_params);
+    $data = $this->ruleAction->unserializeParams();
     if (!empty($data['tag_id'])) {
       $defaultValues['tag_id'] = $data['tag_id'];
     }

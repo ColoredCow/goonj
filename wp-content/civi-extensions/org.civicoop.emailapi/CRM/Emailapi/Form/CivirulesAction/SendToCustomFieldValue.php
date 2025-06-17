@@ -25,9 +25,7 @@ class CRM_Emailapi_Form_CivirulesAction_SendToCustomFieldValue extends CRM_Email
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    if (!empty($this->ruleAction->action_params)) {
-      $data = unserialize($this->ruleAction->action_params);
-    }
+    $data = $this->unserializeParams();
     if (!empty($data['entity'])) {
       $defaultValues['entity'] = $data['entity'];
     }

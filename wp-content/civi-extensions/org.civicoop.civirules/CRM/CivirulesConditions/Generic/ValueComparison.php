@@ -127,39 +127,38 @@ abstract class CRM_CivirulesConditions_Generic_ValueComparison extends CRM_Civir
    * @throws \CiviCRM_API3_Exception
    */
   protected function isDateField($entity, $fieldname) {
-    $isDate = false;
-
     $dateType = CRM_Utils_Type::T_DATE;
     $timeType = CRM_Utils_Type::T_TIME;
     $dateTimeType = $dateType + $timeType;
     $timestampType = CRM_Utils_Type::T_TIMESTAMP;
+    $dateFields = \Civi::cache()->get("isDateFieldList_$entity") ?? [];
+    if (!$dateFields) {
+      $fields = civicrm_api3(
+        $entity,
+        'getfields',
+        [
+          'sequential' => 1,
+          'api_action' => 'get',
+        ]
+      );
 
-    $fields = civicrm_api3(
-      $entity,
-      'getfields',
-      [
-        'sequential' => 1,
-        'api_action' => 'get',
-      ]
-    );
-
-    foreach( $fields['values'] as $field ) {
-      if (!isset($field['name'])) {
-        continue;
-      }
-      if ( $field['name'] == $fieldname ) {
-        switch( $field['type'] ) {
+      foreach( $fields['values'] as $field ) {
+        if (!isset($field['name'])) {
+          continue;
+        }
+        // Certain fields don't have types (eg. Contact group/tag).
+        switch($field['type'] ?? '') {
           case $dateType:
           case $timeType:
           case $dateTimeType:
           case $timestampType:
-            $isDate = true;
-            return $isDate;
+            $dateFields[] = $field['name'];
         }
       }
+      \Civi::cache()->set("isDateFieldList_$entity", $dateFields);
     }
 
-    return $isDate;
+    return in_array($fieldname, $dateFields);
   }
 
   /**
@@ -419,7 +418,7 @@ abstract class CRM_CivirulesConditions_Generic_ValueComparison extends CRM_Civir
    * @return bool|string
    */
   public function getExtraDataInputUrl($ruleConditionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/condition/datacomparison/', 'rule_condition_id='.$ruleConditionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/condition/datacomparison', $ruleConditionId);
   }
 
   /**

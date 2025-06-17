@@ -64,8 +64,10 @@ class CRM_CivirulesConditions_Activity_HasTag extends CRM_Civirules_Condition {
    * @return bool|string
    */
   public function getExtraDataInputUrl($ruleConditionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/condition/entity_hastag/', 'rule_condition_id=' . $ruleConditionId
-      . '&tn=civicrm_activity');
+    return CRM_Utils_System::url('civicrm/civirule/form/condition/entity_hastag/',
+      'rule_condition_id=' . $ruleConditionId . '&tn=civicrm_activity',
+      FALSE, NULL, FALSE, FALSE, TRUE
+    );
   }
 
   /**
@@ -103,7 +105,7 @@ class CRM_CivirulesConditions_Activity_HasTag extends CRM_Civirules_Condition {
    * @return bool
    */
   public function doesWorkWithTrigger(CRM_Civirules_Trigger $trigger, CRM_Civirules_BAO_Rule $rule) {
-    return $trigger->doesProvideEntities(array('Activity'));
+    return $trigger->doesProvideEntity('Activity');
   }
 
 }

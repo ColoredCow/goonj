@@ -5,122 +5,27 @@
  * @author Erik Hommel (CiviCooP) <erik.hommel@civicoop.org>
  * @license http://www.gnu.org/licenses/agpl-3.0.html
  */
-class CRM_Civirules_BAO_CiviRulesRuleAction extends CRM_Civirules_DAO_RuleAction {
+class CRM_Civirules_BAO_CiviRulesRuleAction extends CRM_Civirules_DAO_CiviRulesRuleAction implements \Civi\Core\HookInterface {
 
   /**
-   * Function to get values
+   * Function to unserialize the CiviRulesRuleAction action_params
    *
-   * @return array $result found rows with data
-   * @access public
-   * @static
+   * @return array
    */
-  public static function getValues($params) {
-    $result = array();
-    $ruleAction = new CRM_Civirules_BAO_RuleAction();
-    if (!empty($params)) {
-      $fields = self::fields();
-      foreach ($params as $key => $value) {
-        if (isset($fields[$key])) {
-          $ruleAction->$key = $value;
-        }
-      }
+  public function unserializeParams(): array {
+    if (!empty($this->action_params) && !is_array($this->action_params)) {
+      return unserialize($this->action_params);
     }
-    $ruleAction->find();
-    while ($ruleAction->fetch()) {
-      $row = array();
-      self::storeValues($ruleAction, $row);
-      if (!empty($row['action_id'])) {
-        $result[$row['id']] = $row;
-      } else {
-        //invalid ruleAction because no there is no linked action
-        CRM_Civirules_BAO_RuleAction::deleteWithId($row['id']);
-      }
-    }
-    return $result;
+    return [];
   }
 
   /**
-   * Deprecated function to add or update rule action
-   *
-   * @param array $params
-   *
-   * @return \CRM_Civirules_DAO_CiviRulesRuleAction
-   * @throws Exception when params is empty
-   *
-   * @deprecated
+   * Callback for hook_civicrm_post().
+   * @param \Civi\Core\Event\PostEvent $event
    */
-  public static function add($params) {
-    CRM_Core_Error::deprecatedFunctionWarning('writeRecord');
-    return self::writeRecord($params);
-  }
-
-  /**
-   * Function to delete a rule action with id
-   *
-   * @param int $ruleActionId
-   * @throws Exception when ruleActionId is empty
-   * @access public
-   * @static
-   */
-  public static function deleteWithId($ruleActionId) {
-    if (empty($ruleActionId)) {
-      throw new Exception('rule action id can not be empty when attempting to delete a civirule rule action');
-    }
-    $ruleAction = new CRM_Civirules_BAO_RuleAction();
-    $ruleAction->id = $ruleActionId;
-    $ruleAction->delete();
-    return;
-  }
-
-  /**
-   * Function to disable a rule action
-   *
-   * @param int $ruleActionId
-   * @throws Exception when ruleActionId is empty
-   * @access public
-   * @static
-   */
-  public static function disable($ruleActionId) {
-    if (empty($ruleActionId)) {
-      throw new Exception('rule action id can not be empty when attempting to disable a civirule rule action');
-    }
-    $ruleAction = new CRM_Civirules_BAO_RuleAction();
-    $ruleAction->id = $ruleActionId;
-    $ruleAction->find(true);
-    self::writeRecord(['id' => $ruleAction->id, 'is_active' => 0]);
-  }
-
-  /**
-   * Function to enable a rule action
-   *
-   * @param int $ruleActionId
-   * @throws Exception when ruleActionId is empty
-   * @access public
-   * @static
-   */
-  public static function enable($ruleActionId) {
-    if (empty($ruleActionId)) {
-      throw new Exception('rule action id can not be empty when attempting to enable a civirule rule action');
-    }
-    $ruleAction = new CRM_Civirules_BAO_RuleAction();
-    $ruleAction->id = $ruleActionId;
-    $ruleAction->find(true);
-    self::writeRecord(['id' => $ruleAction->id, 'is_active' => 1]);
-  }
-
-  /**
-   * Function to delete all rule actions with rule id
-   *
-   * @param int $ruleId
-   * @access public
-   * @static
-   */
-  public static function deleteWithRuleId($ruleId) {
-    $ruleAction = new CRM_Civirules_BAO_RuleAction();
-    $ruleAction->rule_id = $ruleId;
-    $ruleAction->find(false);
-    while ($ruleAction->fetch()) {
-      $ruleAction->delete();
+  public static function self_hook_civicrm_post(\Civi\Core\Event\PostEvent $event) {
+    if (in_array($event->action, ['create' , 'edit'])) {
+      CRM_Utils_Weight::correctDuplicateWeights('CRM_Civirules_DAO_CiviRulesRuleAction');
     }
   }
 

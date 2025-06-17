@@ -62,7 +62,7 @@ class CRM_CivirulesActions_Participant_Form_Register extends CRM_CivirulesAction
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleAction->action_params);
+    $data = $this->ruleAction->unserializeParams();
     $actionParameters = $this->getActionParameters();
     foreach ($actionParameters as $actionParameter) {
       if (isset($data[$actionParameter]) && !empty($data[$actionParameter])) {

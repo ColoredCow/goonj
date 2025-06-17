@@ -1,7 +1,7 @@
 <?php
 
 class CRM_Civirules_Delay_DayOfMonthBasedOnContribution extends CRM_Civirules_Delay_Delay {
-  
+
   protected $day_of_month;
 
   /**
@@ -35,23 +35,23 @@ class CRM_Civirules_Delay_DayOfMonthBasedOnContribution extends CRM_Civirules_De
     return ts('Delay by the %1 day of the month of the contribution', array(1 => $this->day_of_month));
   }
 
-  public function addElements(CRM_Core_Form &$form, $prefix, CRM_Civirules_BAO_Rule $rule) {
+  public function addElements(CRM_Core_Form &$form, $prefix, CRM_Civirules_BAO_CiviRulesRule $rule) {
     $form->add('text', $prefix.'day_of_month', ts('Day of month (1-31)'));
   }
 
-  public function validate($values, &$errors, $prefix, CRM_Civirules_BAO_Rule $rule) {
+  public function validate($values, &$errors, $prefix, CRM_Civirules_BAO_CiviRulesRule $rule) {
     if (empty($values[$prefix.'day_of_month']) || !is_numeric($values[$prefix.'day_of_month']) || $values[$prefix.'day_of_month'] < 0 || $values[$prefix.'day_of_month'] > 31) {
       $errors[$prefix.'day_of_month'] = ts('You need to provide a day of the month (between 1 and 31)');
     }
 
-    $rule = new CRM_Civirules_BAO_Rule();
+    $rule = new CRM_Civirules_BAO_CiviRulesRule();
     $rule->id = $values['rule_id'];
     $rule->find(TRUE);
-    $trigger = new CRM_Civirules_BAO_Trigger();
+    $trigger = new CRM_Civirules_BAO_CiviRulesTrigger();
     $trigger->id = $rule->trigger_id;
     $trigger->find(TRUE);
 
-    $triggerObject = CRM_Civirules_BAO_Trigger::getPostTriggerObjectByClassName($trigger->class_name, TRUE);
+    $triggerObject = CRM_Civirules_BAO_CiviRulesTrigger::getPostTriggerObjectByClassName($trigger->class_name, TRUE);
     $triggerObject->setTriggerId($trigger->id);
 
     $availableEntities = $triggerObject->getProvidedEntities();
@@ -60,14 +60,14 @@ class CRM_Civirules_Delay_DayOfMonthBasedOnContribution extends CRM_Civirules_De
     }
   }
 
-  public function setValues($values, $prefix, CRM_Civirules_BAO_Rule $rule) {
+  public function setValues($values, $prefix, CRM_Civirules_BAO_CiviRulesRule $rule) {
     $this->day_of_month = $values[$prefix.'day_of_month'];
   }
 
-  public function getValues($prefix, CRM_Civirules_BAO_Rule $rule) {
+  public function getValues($prefix, CRM_Civirules_BAO_CiviRulesRule $rule) {
     $values = array();
     $values[$prefix.'day_of_month'] = $this->day_of_month;
     return $values;
   }
-  
+
 }

@@ -39,7 +39,7 @@ class CRM_CivirulesConditions_Form_Membership_ActiveMembership extends CRM_Civir
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleCondition->condition_params);
+    $data = $this->ruleCondition->unserializeParams();
     if (!empty($data['membership_type_id'])) {
       $defaultValues['membership_type_id'] = $data['membership_type_id'];
     }
@@ -56,8 +56,8 @@ class CRM_CivirulesConditions_Form_Membership_ActiveMembership extends CRM_Civir
    * @access public
    */
   public function postProcess() {
-    $data['membership_type_id'] = $this->_submitValues['membership_type_id'];
-    $data['negate'] = $this->_submitValues['negate'];
+    $data['membership_type_id'] = $this->getSubmittedValue('membership_type_id');
+    $data['negate'] = $this->getSubmittedValue('negate');
     $this->ruleCondition->condition_params = serialize($data);
     $this->ruleCondition->save();
     parent::postProcess();

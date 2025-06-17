@@ -1,14 +1,6 @@
 <h3>{$ruleActionHeader}</h3>
 <div class="crm-block crm-form-block crm-civirule-rule_action-block-email-send">
-  <div class="help-block" id="help">
-    {ts}<p>This is the form where you can set what is going to happen with the email.</p>
-    <p>The first few fields are relatively straightforward: the <strong>From Name</strong> is the name the email will be sent from and the <strong>From Email</strong> is the email address the email will be sent from.</p>
-    <p>The <strong>Message Template</strong> is where you select which CiviCRM message template will be used to compose the mail. You can create and edit them in <strong>Administer>Communications>Message Templates</strong></p>
-    <p>The next section allows you to manipulate where the email will be sent to.<br/>
-    <p>Finally you can specify an emailaddress for the <strong>CC to</strong> (a copy of the email will be sent to this email address and the email address will be visible to the recipient of the email too) or the <strong>BCC to</strong> (a copy of the email will be sent to this email address and the email address will NOT be visible to the recipient of the email too).</p>
-    <p>The sending of the email will also lead to an activity (type <em>Email</em>) being recorded for the contact in question, whatever email address will be used.</p>
-    {/ts}
-  </div>
+  <div class="help">{$ruleActionHelp}</div>
   <div class="crm-section">
     <div class="label">{$form.from_name.label}</div>
     <div class="content">{$form.from_name.html}</div>

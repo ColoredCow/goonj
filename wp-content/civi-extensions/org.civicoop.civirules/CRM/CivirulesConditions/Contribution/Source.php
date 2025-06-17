@@ -53,7 +53,7 @@ class CRM_CivirulesConditions_Contribution_Source extends CRM_Civirules_Conditio
    * @abstract
    */
   public function getExtraDataInputUrl($ruleConditionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/condition/contribution_source', 'rule_condition_id='.$ruleConditionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/condition/contribution_source', $ruleConditionId);
   }
 
   /**

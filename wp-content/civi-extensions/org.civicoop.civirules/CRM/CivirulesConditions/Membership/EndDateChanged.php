@@ -134,7 +134,7 @@ class CRM_CivirulesConditions_Membership_EndDateChanged extends CRM_CivirulesCon
   }
 
   public function getExtraDataInputUrl($ruleConditionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/condition/membershipenddatechanged/', 'rule_condition_id='.$ruleConditionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/condition/membershipenddatechanged', $ruleConditionId);
   }
 
   /**

@@ -1,5 +1,6 @@
 <h3>{$ruleActionHeader}</h3>
 <div class="crm-block crm-form-block crm-civirule-rule_action-block-contribution-thank-you-date">
+  <div class="help">{$ruleActionHelp}</div>
   <div id="thank-you-radio-block" class="crm-section">
     <div class="label">{$form.thank_you_date_radio.label}</div>
     <div class="content">{$form.thank_you_date_radio.html}</div>

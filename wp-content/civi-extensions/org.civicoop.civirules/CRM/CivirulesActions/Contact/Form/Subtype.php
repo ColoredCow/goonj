@@ -89,7 +89,7 @@ class CRM_CivirulesActions_Contact_Form_Subtype extends CRM_CivirulesActions_For
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleAction->action_params);
+    $data = $this->ruleAction->unserializeParams();
     if (!empty($data['sub_type'])) {
       $defaultValues['sub_type'] = reset($data['sub_type']);
       $defaultValues['sub_types'] = $data['sub_type'];

@@ -11,9 +11,10 @@ class CRM_CivirulesConditions_Utils_GroupContact {
    *
    * @param $contact_id
    * @param $group_id
+   * @param array $statuses
    * @return bool
    */
-  public static function isContactInGroup($contact_id, $group_id) {
+  public static function isContactInGroup($contact_id, $group_id, array $statuses = ['Added']) {
     if (!CRM_Utils_Rule::positiveInteger($contact_id) ||
       !CRM_Utils_Rule::positiveInteger($group_id)
     ) {
@@ -42,10 +43,17 @@ class CRM_CivirulesConditions_Utils_GroupContact {
       }
     }
     try {
-      $groupContactCount = civicrm_api3('GroupContact', 'getcount', [
-        'group_id' => $group_id,
-        'contact_id' => $contact_id,
-      ]);
+      $groupContactCount = civicrm_api4('GroupContact', 'get', [
+        'select' => [
+          'row_count',
+        ],
+        'where' => [
+          ['contact_id', '=', $contact_id],
+          ['group_id', '=', $group_id],
+          ['status', 'IN', $statuses],
+        ],
+        'checkPermissions' => FALSE,
+      ])->count();
     }
     catch (CiviCRM_API3_Exception $ex) {
       return FALSE;

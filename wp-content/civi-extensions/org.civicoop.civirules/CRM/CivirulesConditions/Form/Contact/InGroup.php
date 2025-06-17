@@ -5,7 +5,7 @@
  * @author Jaap Jansma (CiviCooP) <jaap.jansma@civicoop.org>
  * @license AGPL-3.0
  */
-
+use CRM_Civirules_ExtensionUtil as E;
 class CRM_CivirulesConditions_Form_Contact_InGroup extends CRM_CivirulesConditions_Form_Form {
 
   /**
@@ -27,6 +27,12 @@ class CRM_CivirulesConditions_Form_Contact_InGroup extends CRM_CivirulesConditio
     $group->setMultiple(TRUE);
     $this->add('select', 'operator', ts('Operator'), $this->getOperators(), TRUE);
     $this->addYesNo('check_group_tree', ts('Check Group Tree?'), FALSE, TRUE);
+    $status = $this->add('select', 'statuses', E::ts('Status'), [
+      'Added' => E::ts('Added'),
+      'Pending' => E::ts('Pending'),
+      'Removed' => E::ts('Removed'),
+    ], TRUE);
+    $status->setMultiple(TRUE);
 
     $this->addButtons([
       ['type' => 'next', 'name' => ts('Save'), 'isDefault' => TRUE],
@@ -41,12 +47,15 @@ class CRM_CivirulesConditions_Form_Contact_InGroup extends CRM_CivirulesConditio
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleCondition->condition_params);
+    $data = $this->ruleCondition->unserializeParams();
     if (!empty($data['group_ids'])) {
       $defaultValues['group_ids'] = $data['group_ids'];
     }
     if (!empty($data['operator'])) {
       $defaultValues['operator'] = $data['operator'];
+    }
+    if (!empty($data['statuses'])) {
+      $defaultValues['statuses'] = $data['statuses'];
     }
     if (isset($data['check_group_tree'])) {
       $defaultValues['check_group_tree'] = $data['check_group_tree'];
@@ -63,6 +72,7 @@ class CRM_CivirulesConditions_Form_Contact_InGroup extends CRM_CivirulesConditio
     $data['group_ids'] = $this->_submitValues['group_ids'];
     $data['operator'] = $this->_submitValues['operator'];
     $data['check_group_tree'] = $this->_submitValues['check_group_tree'];
+    $data['statuses'] = $this->getSubmittedValue('statuses');
     $this->ruleCondition->condition_params = serialize($data);
     $this->ruleCondition->save();
 

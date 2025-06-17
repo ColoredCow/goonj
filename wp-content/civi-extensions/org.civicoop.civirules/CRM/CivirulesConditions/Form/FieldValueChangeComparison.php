@@ -123,7 +123,7 @@ class CRM_CivirulesConditions_Form_FieldValueChangeComparison extends CRM_Civiru
     $ruleCondition = new CRM_Civirules_BAO_RuleCondition();
     $ruleCondition->id = $this->ruleConditionId;
     if ($ruleCondition->find(true)) {
-      $data = unserialize($ruleCondition->condition_params);
+      $data = $ruleCondition->unserializeParams();
     }
     if (!empty($data['operator'])) {
       $defaultValues['operator'] = $data['operator'];
@@ -155,7 +155,7 @@ class CRM_CivirulesConditions_Form_FieldValueChangeComparison extends CRM_Civiru
    * @access public
    */
   public function postProcess() {
-    $data = unserialize($this->ruleCondition->condition_params);
+    $data = $this->ruleCondition->unserializeParams();
     $data['original_operator'] = $this->_submitValues['original_operator'];
     $data['original_value'] = $this->_submitValues['original_value'];
     if (isset($this->_submitValues['original_multi_value'])) {
@@ -186,7 +186,7 @@ class CRM_CivirulesConditions_Form_FieldValueChangeComparison extends CRM_Civiru
    *
    * @return string
    */
-  protected function getHelpText() {
+  public function getHelpText() {
     return E::ts('This condition checks the before and after value of a field. It also works with delayed actions that
       re-check conditions because the original values are saved when it is triggered.');
   }

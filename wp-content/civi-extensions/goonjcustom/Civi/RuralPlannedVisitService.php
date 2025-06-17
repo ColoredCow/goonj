@@ -74,9 +74,9 @@ class RuralPlannedVisitService extends AutoSubscriber {
         'active' => 1,
         'module' => 'afsearchRuralLogisticsDetails',
         'directive' => 'afsearch-rural-logistics-details',
-        'template' => 'CRM/Goonjcustom/Tabs/Events.tpl',
+        'template' => 'CRM/Goonjcustom/Tabs/RuralPlannedVisit/Logistics.tpl',
         'entity' => ['id' => $eventID],
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt_and_accounts_chapter_team'],
       ],
       'report' => [
         'id' => 'outcome report',
@@ -84,9 +84,9 @@ class RuralPlannedVisitService extends AutoSubscriber {
         'active' => 1,
         'module' => 'afsearchRuralPlannedVisitsOutcomeReportsDetails',
         'directive' => 'afsearch-rural-planned-visits-outcome-reports-details',
-        'template' => 'CRM/Goonjcustom/Tabs/Events.tpl',
+        'template' => 'CRM/Goonjcustom/Tabs/RuralPlannedVisit/Report.tpl',
         'entity' => ['id' => $eventID],
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt_and_accounts_chapter_team'],
       ],
       'outcome' => [
         'id' => 'outcome',
@@ -94,9 +94,9 @@ class RuralPlannedVisitService extends AutoSubscriber {
         'active' => 1,
         'module' => 'afsearchRuralPlannedVisitOutcomeDetails',
         'directive' => 'afsearch-rural-planned-visit-outcome-details',
-        'template' => 'CRM/Goonjcustom/Tabs/Events.tpl',
+        'template' => 'CRM/Goonjcustom/Tabs/RuralPlannedVisit/Outcome.tpl',
         'entity' => ['id' => $eventID],
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt_and_accounts_chapter_team'],
       ],
       'feedback' => [
         'id' => 'feedback',
@@ -104,9 +104,9 @@ class RuralPlannedVisitService extends AutoSubscriber {
         'active' => 1,
         'module' => 'afsearchRuralPlannedVisitFeedbacksDetails',
         'directive' => 'afsearch-rural-planned-visit-feedbacks-details',
-        'template' => 'CRM/Goonjcustom/Tabs/Events.tpl',
+        'template' => 'CRM/Goonjcustom/Tabs/RuralPlannedVisit/Feedback.tpl',
         'entity' => ['id' => $eventID],
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt_and_accounts_chapter_team'],
       ],
     ];
 

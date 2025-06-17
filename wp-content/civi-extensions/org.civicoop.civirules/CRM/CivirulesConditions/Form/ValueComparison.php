@@ -89,7 +89,7 @@ class CRM_CivirulesConditions_Form_ValueComparison extends CRM_CivirulesConditio
     $ruleCondition = new CRM_Civirules_BAO_RuleCondition();
     $ruleCondition->id = $this->ruleConditionId;
     if ($ruleCondition->find(true)) {
-      $data = unserialize($ruleCondition->condition_params);
+      $data = $ruleCondition->unserializeParams();
     }
     if (!empty($data['operator'])) {
       $defaultValues['operator'] = $data['operator'];
@@ -109,7 +109,7 @@ class CRM_CivirulesConditions_Form_ValueComparison extends CRM_CivirulesConditio
    * @throws Exception when rule condition not found
    */
   public function postProcess() {
-    $data = unserialize($this->ruleCondition->condition_params);
+    $data = $this->ruleCondition->unserializeParams();
     $data['operator'] = $this->_submitValues['operator'];
     $data['value'] = $this->_submitValues['value'];
     if (isset($this->_submitValues['multi_value'])) {

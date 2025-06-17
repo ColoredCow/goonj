@@ -84,21 +84,17 @@ class CRM_CivirulesCronTrigger_Form_EventDate extends CRM_CivirulesTrigger_Form_
    * @throws Exception when rule condition not found
    */
   public function postProcess() {
-    $data['event_type_id'] = $this->_submitValues['event_type_id'];
-    $data['date_field'] = $this->_submitValues['date_field'];
-    if ($this->_submitValues['enable_offset']) {
-      $data['offset_unit'] = $this->_submitValues['offset_unit'];
-      $data['offset_type'] = $this->_submitValues['offset_type'];
-      $data['offset'] = $this->_submitValues['offset'];
+    $this->triggerParams['event_type_id'] = $this->getSubmittedValue('event_type_id');
+    $this->triggerParams['date_field'] = $this->getSubmittedValue('date_field');
+    if ($this->getSubmittedValue('enable_offset')) {
+      $this->triggerParams['offset_unit'] = $this->getSubmittedValue('offset_unit');
+      $this->triggerParams['offset_type'] = $this->getSubmittedValue('offset_type');
+      $this->triggerParams['offset'] = $this->getSubmittedValue('offset');
     } else {
-      $data['offset_unit'] = $this->_submitValues['offset_unit'];
-      $data['offset_type'] = $this->_submitValues['offset_type'];
-      $data['offset'] = '';
+      $this->triggerParams['offset_unit'] = $this->getSubmittedValue('offset_unit');
+      $this->triggerParams['offset_type'] = $this->getSubmittedValue('offset_type');
+      $this->triggerParams['offset'] = '';
     }
-
-    $this->rule->trigger_params = serialize($data);
-    $this->rule->save();
-
     parent::postProcess();
   }
 

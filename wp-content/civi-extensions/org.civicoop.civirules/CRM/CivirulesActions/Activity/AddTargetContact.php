@@ -64,7 +64,7 @@ class CRM_CivirulesActions_Activity_AddTargetContact extends CRM_Civirules_Actio
         $params['relationship_type_id'] = substr($actionParams['rel_type_id'], 4);
         $params['is_active'] = '1';
         $params['options']['limit'] = '0';
-        if (strpos($actionParams['rel_type_id'], 'a_b_') === 0) {
+        if (str_starts_with($actionParams['rel_type_id'], 'a_b_')) {
           $params['contact_id_a'] = $triggerData->getContactId();
           $return_field = 'contact_id_b';
         }
@@ -140,7 +140,7 @@ class CRM_CivirulesActions_Activity_AddTargetContact extends CRM_Civirules_Actio
    * $access public
    */
   public function getExtraDataInputUrl($ruleActionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/action/activity_add_target_contact', 'rule_action_id=' . $ruleActionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/action/activity_add_target_contact', $ruleActionId);
   }
 
 
@@ -156,7 +156,7 @@ class CRM_CivirulesActions_Activity_AddTargetContact extends CRM_Civirules_Actio
       $actionParams = $this->getActionParameters();
       if (isset($actionParams['rel_type_id'])) {
         $params['id'] = substr($actionParams['rel_type_id'], 4);
-        if (strpos($actionParams['rel_type_id'], 'a_b_') === 0) {
+        if (str_starts_with($actionParams['rel_type_id'], 'a_b_')) {
           $params['return'] = 'label_a_b';
         }
         else {

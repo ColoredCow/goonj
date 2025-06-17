@@ -42,35 +42,21 @@ function emailapi_civicrm_enable() {
 }
 
 /**
- * Implementation of hook_civicrm_managed
+ * Implements hook_civicrm_managed().
  *
  * Generate a list of entities to create/deactivate/delete when this module
  * is installed, disabled, uninstalled.
  *
- * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_managed
+ * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_managed
  */
-function emailapi_civicrm_managed(&$entities) {
-
-  if (_emailapi_is_civirules_installed()) {
-    $select = "SELECT COUNT(*) FROM civirule_action WHERE `name` = 'emailapi_send'";
-    $count = CRM_Core_DAO::singleValueQuery($select);
-    if ($count == 0) {
-      CRM_Core_DAO::executeQuery("INSERT INTO civirule_action (name, label, class_name, is_active) VALUES('emailapi_send', 'Send Email', 'CRM_Emailapi_CivirulesAction_Send', 1);");
+function emailapi_civicrm_managed(&$entities)
+{
+    // Load the triggers when civirules is installed.
+    if (!empty(\Civi\Api4\Extension::get(FALSE)
+        ->addWhere('file', '=', 'civirules')
+        ->addWhere('status:name', '=', 'installed')
+        ->execute()
+        ->first())) {
+        CRM_Civirules_Utils_Upgrader::insertActionsFromJson(E::path('civirules/actions.json'));
     }
-
-    $select = "SELECT COUNT(*) FROM civirule_action WHERE `name` = 'emailapi_send_relationship'";
-    $count = CRM_Core_DAO::singleValueQuery($select);
-    if ($count == 0) {
-      CRM_Core_DAO::executeQuery("INSERT INTO civirule_action (name, label, class_name, is_active) VALUES('emailapi_send_relationship', 'Send Email to a related contact', 'CRM_Emailapi_CivirulesAction_SendToRelatedContact', 1);");
-    }
-  }
-}
-
-function _emailapi_is_civirules_installed() {
-  if (civicrm_api3('Extension', 'get', ['key' => 'civirules', 'status' => 'installed'])['count']) {
-    return true;
-  } elseif (civicrm_api3('Extension', 'get', ['key' => 'org.civicoop.civirules', 'status' => 'installed'])['count']) {
-    return true;
-  }
-  return false;
 }

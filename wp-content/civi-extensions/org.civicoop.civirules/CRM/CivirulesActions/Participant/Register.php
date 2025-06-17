@@ -52,7 +52,7 @@ class CRM_CivirulesActions_Participant_Register extends CRM_CivirulesActions_Gen
    * @access public
    */
   public function getExtraDataInputUrl($ruleActionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/action/register', 'rule_action_id='.$ruleActionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/action/register', $ruleActionId);
   }
 
   /**

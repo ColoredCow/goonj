@@ -15,7 +15,7 @@ class CRM_Civirules_BAO_CiviRulesTrigger extends CRM_Civirules_DAO_Trigger {
    * @static
    */
   public static function getValues($params) {
-    $result = array();
+    $result = [];
     $trigger = new CRM_Civirules_BAO_Trigger();
     if (!empty($params)) {
       $fields = self::fields();
@@ -27,7 +27,7 @@ class CRM_Civirules_BAO_CiviRulesTrigger extends CRM_Civirules_DAO_Trigger {
     }
     $trigger->find();
     while ($trigger->fetch()) {
-      $row = array();
+      $row = [];
       self::storeValues($trigger, $row);
       $result[$row['id']] = $row;
     }
@@ -54,8 +54,6 @@ class CRM_Civirules_BAO_CiviRulesTrigger extends CRM_Civirules_DAO_Trigger {
    *
    * @param int $triggerId
    * @throws Exception when triggerId is empty
-   * @access public
-   * @static
    */
   public static function deleteWithId($triggerId) {
     if (empty($triggerId)) {
@@ -64,7 +62,6 @@ class CRM_Civirules_BAO_CiviRulesTrigger extends CRM_Civirules_DAO_Trigger {
     $trigger = new CRM_Civirules_BAO_Trigger();
     $trigger->id = $triggerId;
     $trigger->delete();
-    return;
   }
 
   /**
@@ -72,8 +69,6 @@ class CRM_Civirules_BAO_CiviRulesTrigger extends CRM_Civirules_DAO_Trigger {
    *
    * @param int $triggerId
    * @throws Exception when triggerId is empty
-   * @access public
-   * @static
    */
   public static function disable($triggerId) {
     if (empty($triggerId)) {
@@ -90,8 +85,6 @@ class CRM_Civirules_BAO_CiviRulesTrigger extends CRM_Civirules_DAO_Trigger {
    *
    * @param int $triggerId
    * @throws Exception when triggerId is empty
-   * @access public
-   * @static
    */
   public static function enable($triggerId) {
     if (empty($triggerId)) {
@@ -108,8 +101,6 @@ class CRM_Civirules_BAO_CiviRulesTrigger extends CRM_Civirules_DAO_Trigger {
    *
    * @param int $triggerId
    * @return string $trigger->label
-   * @access public
-   * @static
    */
   public static function getTriggerLabelWithId($triggerId) {
     if (empty($triggerId)) {
@@ -126,10 +117,11 @@ class CRM_Civirules_BAO_CiviRulesTrigger extends CRM_Civirules_DAO_Trigger {
    *
    * @param $className
    * @param bool $abort
-   * @return CRM_Civirules_Trigger
-   * @throws Exception if abort is set to true and class does not exist or is not valid
+   *
+   * @return \CRM_Civirules_Trigger|false
+   * @throws \Exception if abort is set to true and class does not exist or is not valid
    */
-  public static function getPostTriggerObjectByClassName($className, $abort=true) {
+  public static function getPostTriggerObjectByClassName($className, bool $abort=TRUE) {
     if (empty($className)) {
       $className = 'CRM_Civirules_Trigger_Post';
     }
@@ -141,17 +133,17 @@ class CRM_Civirules_BAO_CiviRulesTrigger extends CRM_Civirules_DAO_Trigger {
    *
    * @param $className
    * @param bool $abort if true this function will throw an exception if class could not be instantiated
-   * @return CRM_Civirules_Trigger
-   * @throws Exception if abort is set to true and class does not exist or is not valid
+   *
+   * @return \CRM_Civirules_Trigger|false
+   * @throws \Exception if abort is set to true and class does not exist or is not valid
    */
-  public static function getTriggerObjectByClassName($className, $abort=true)
-  {
+  public static function getTriggerObjectByClassName($className, bool $abort=TRUE) {
     if (!class_exists($className)) {
       if ($abort) {
 
         throw new Exception('CiviRule trigger class "' . $className . '" does not exist');
       }
-      return false;
+      return FALSE;
     }
 
     $object = new $className();
@@ -159,17 +151,24 @@ class CRM_Civirules_BAO_CiviRulesTrigger extends CRM_Civirules_DAO_Trigger {
       if ($abort) {
         throw new Exception('CiviRule trigger class "' . $className . '" is not a subclass of CRM_Civirules_Trigger');
       }
-      return false;
+      return FALSE;
     }
     return $object;
   }
 
-  public static function getTriggerObjectByTriggerId($triggerId, $abort=true) {
+  /**
+   * @param int $triggerId
+   * @param bool $abort
+   *
+   * @return \CRM_Civirules_Trigger|false
+   * @throws \Civi\Core\Exception\DBQueryException
+   */
+  public static function getTriggerObjectByTriggerId($triggerId, bool $abort=TRUE) {
     $sql = "SELECT t.*
             FROM `civirule_trigger` t
             WHERE t.`is_active` = 1 AND t.id = %1";
 
-    $params[1] = array($triggerId, 'Integer');
+    $params[1] = [$triggerId, 'Integer'];
     $dao = CRM_Core_DAO::executeQuery($sql, $params);
     if ($dao->fetch()) {
       if (!empty($dao->object_name) && !empty($dao->op) && empty($dao->cron)) {
@@ -182,15 +181,15 @@ class CRM_Civirules_BAO_CiviRulesTrigger extends CRM_Civirules_DAO_Trigger {
     if ($abort) {
       throw new Exception('Could not find trigger with ID: '.$triggerId);
     }
+    return FALSE;
   }
 
   /**
    * Method to check if a trigger exists with class_name or object_name/op
    *
    * @param array $params
+   *
    * @return bool
-   * @access public
-   * @static
    */
   public static function triggerExists($params) {
     if (isset($params['class_name']) && !empty($params['class_name'])) {

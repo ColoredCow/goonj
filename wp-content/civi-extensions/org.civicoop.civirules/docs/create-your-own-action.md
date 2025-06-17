@@ -217,7 +217,7 @@ Method `getExtraDataInputUrl` can be used if you have additional forms for your 
  * @access public
  */
 public function getExtraDataInputUrl($ruleActionId) {
-  return CRM_Utils_System::url('civicrm/civirule/form/action/contact/subtype', 'rule_action_id='.$ruleActionId);
+  return $this->getFormattedDataInputUrl('civicrm/civirule/form/action/contact/subtype', $ruleActionId);
 }
 ```
 Method `processAction` is called in the CiviRules engine to execute whatever your action needs to do. It needs to receive a parameter `triggerData` that will be passed in with the object of the class `CRM_Civirules_TriggerData_TriggerData`. Now you can do all sorts of complictated stuff in your `processAction`, or a simple basic API action. In this example we are setting the contact subtype(s) for a contact, and using the `CRM_Contact_BAO_Contact::add` method to do so. (We could also have used the API but that is no fun for this example).
@@ -425,7 +425,7 @@ class CRM_CivirulesActions_Contact_Form_Subtype extends CRM_CivirulesActions_For
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleAction->action_params);
+    $data = $this->ruleAction->unserializeParams();
     if (!empty($data['sub_type'])) {
       $defaultValues['sub_type'] = reset($data['sub_type']);
       $defaultValues['sub_types'] = $data['sub_type'];

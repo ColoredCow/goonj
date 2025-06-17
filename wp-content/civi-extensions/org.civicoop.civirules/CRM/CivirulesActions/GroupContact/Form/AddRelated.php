@@ -29,7 +29,7 @@ class CRM_CivirulesActions_GroupContact_Form_AddRelated extends CRM_CivirulesAct
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleAction->action_params);
+    $data = $this->ruleAction->unserializeParams();
     if (!empty($data['rel_type_ids'])) {
       $defaultValues['rel_type_ids'] = $data['rel_type_ids'];
     }

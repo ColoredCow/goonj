@@ -50,7 +50,7 @@ class CRM_CivirulesConditions_Form_ContributionRecur_Membership
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleCondition->condition_params);
+    $data = $this->ruleCondition->unserializeParams();
     if (!empty($data['membership_type_id'])) {
       $defaultValues['membership_type_id'] = $data['membership_type_id'];
     }
@@ -100,7 +100,7 @@ class CRM_CivirulesConditions_Form_ContributionRecur_Membership
    *
    * @return string
    */
-  protected function getHelpText() {
+  public function getHelpText() {
     return E::ts('This condition checks if the recurring contribution pays for a membership, optionally of certain type(s) and statuses.');
   }
 }

@@ -30,7 +30,7 @@ class CRM_CivirulesActions_Activity_Form_AddTargetContact extends CRM_CivirulesA
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleAction->action_params);
+    $data = $this->ruleAction->unserializeParams();
     if (!empty($data['rel_type_id'])) {
       $defaultValues['rel_type_id'] = $data['rel_type_id'];
     }

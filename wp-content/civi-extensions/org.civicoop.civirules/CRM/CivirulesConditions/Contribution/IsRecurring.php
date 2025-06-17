@@ -52,7 +52,7 @@ class CRM_CivirulesConditions_Contribution_IsRecurring extends CRM_Civirules_Con
    * @abstract
    */
   public function getExtraDataInputUrl($ruleConditionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/condition/contribution/is_recurring', 'rule_condition_id='.$ruleConditionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/condition/contribution/is_recurring', $ruleConditionId);
   }
 
   /**

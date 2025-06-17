@@ -1,4 +1,7 @@
 <?php
+
+use Civi\Api4\OptionValue;
+
 /**
  * @author Jaap Jansma (CiviCooP) <jaap.jansma@civicoop.org>
  * @license http://www.gnu.org/licenses/agpl-3.0.html
@@ -89,7 +92,7 @@ class CRM_CivirulesActions_Activity_UpdateStatus extends CRM_CivirulesActions_Ge
    * @access public
    */
   public function getExtraDataInputUrl($ruleActionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/action/activity_update_status', 'rule_action_id='.$ruleActionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/action/activity_update_status', $ruleActionId);
   }
 
   /**
@@ -97,18 +100,19 @@ class CRM_CivirulesActions_Activity_UpdateStatus extends CRM_CivirulesActions_Ge
    * e.g. 'Older than 65'
    *
    * @return string
-   * @access public
-   * @throws \CiviCRM_API3_Exception
    */
   public function userFriendlyConditionParams() {
-    $return = '';
     $params = $this->getActionParameters();
-    $status = civicrm_api3('OptionValue', 'getvalue', array(
-      'return' => 'label',
-      'option_group_id' => 'activity_status',
-      'value' => $params['status_id']));
-    $return .= ts("Status: %1", array(1 => $status));
-    return $return;
+    if (!empty($params['status_id'])) {
+      $status = OptionValue::get(FALSE)
+        ->addSelect('label')
+        ->addWhere('value', '=', $params['status_id'])
+        ->addWhere('option_group_id:name', '=', 'activity_status')
+        ->execute()
+        ->first()['label'];
+      return ts("Status: %1", [1 => $status]);
+    }
+    return '';
   }
 
   /**

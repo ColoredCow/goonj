@@ -36,9 +36,7 @@ class CRM_CivirulesActions_Contribution_Form_ThankYouDate extends CRM_CivirulesA
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
     $defaultValues['rule_action_id'] = $this->ruleActionId;
-    if (!empty($this->ruleAction->action_params)) {
-      $data = unserialize($this->ruleAction->action_params);
-    }
+    $data = $this->ruleAction->unserializeParams();
     if (!empty($data['number_of_days'])) {
       $defaultValues['number_of_days'] = $data['number_of_days'];
     }

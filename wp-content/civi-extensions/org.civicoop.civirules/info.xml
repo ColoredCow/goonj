@@ -14,15 +14,15 @@
     <author>CiviCooP</author>
     <email>helpdesk@civicoop.org</email>
   </maintainer>
-  <releaseDate>2024-11-07</releaseDate>
-  <version>3.14.0</version>
+  <releaseDate>2025-05-28</releaseDate>
+  <version>3.22.0</version>
   <develStage>stable</develStage>
   <compatibility>
-    <ver>5.68</ver>
+    <ver>5.82</ver>
   </compatibility>
   <civix>
     <namespace>CRM/Civirules</namespace>
-    <format>23.02.1</format>
+    <format>25.01.1</format>
   </civix>
   <classloader>
     <psr0 prefix="CRM_" path="."/>
@@ -31,8 +31,8 @@
   <mixins>
     <mixin>menu-xml@1.0.0</mixin>
     <mixin>mgd-php@1.0.0</mixin>
-    <mixin>smarty-v2@1.0.1</mixin>
-    <mixin>entity-types-php@1.0.0</mixin>
+    <mixin>entity-types-php@2.0.0</mixin>
+    <mixin>smarty@1.0.3</mixin>
   </mixins>
-  <upgrader>CRM_Civirules_Upgrader</upgrader>
+  <upgrader>CiviMix\Schema\Civirules\AutomaticUpgrader</upgrader>
 </extension>

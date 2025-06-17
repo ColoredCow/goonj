@@ -524,12 +524,6 @@
     <access_arguments>administer CiviCRM; administer CiviRules</access_arguments>
   </item>
   <item>
-    <path>civicrm/civirule/form/ruledelete</path>
-    <page_callback>CRM_Civirules_Form_RuleDelete</page_callback>
-    <title>RuleDelete</title>
-    <access_arguments>administer CiviCRM; administer CiviRules</access_arguments>
-  </item>
-  <item>
     <path>civicrm/civirule/form/condition/event_type</path>
     <page_callback>CRM_CivirulesConditions_Form_Event_EventType</page_callback>
     <title>Event type</title>
@@ -542,27 +536,22 @@
     <access_arguments>administer CiviCRM; administer CiviRules</access_arguments>
   </item>
   <item>
-    <path>civicrm/civirules/form/rulesview</path>
-    <page_callback>CRM_Civirules_Form_RuleView</page_callback>
-    <title>RuleView</title>
-    <access_arguments>administer CiviCRM; administer CiviRules</access_arguments>
-  </item>
-  <item>
     <path>civicrm/civirule/form/trigger/eventdate</path>
     <page_callback>CRM_CivirulesCronTrigger_Form_EventDate</page_callback>
     <title>Event date reached</title>
     <access_arguments>administer CiviCRM; administer CiviRules</access_arguments>
   </item>
   <item>
-    <path>civicrm/civirule/form/ruleenable</path>
-    <page_callback>CRM_Civirules_Form_RuleEnable</page_callback>
-    <title>RuleEnable</title>
-    <access_arguments>administer CiviCRM; administer CiviRules</access_arguments>
-  </item>
-  <item>
     <path>civicrm/civirule/form/trigger/activity</path>
     <page_callback>CRM_CivirulesPostTrigger_Form_Activity</page_callback>
     <title>Activity</title>
+    <access_arguments>administer CiviCRM; administer CiviRules</access_arguments>
+  </item>
+  <item>
+    <path>civicrm/civirule/form/action/participant_update_role</path>
+    <!-- <page_callback>CRM_Civirules_Form_UpdateRole</page_callback> -->
+    <page_callback>CRM_CivirulesActions_Participant_Form_UpdateRole</page_callback>
+    <title>Update participant role</title>
     <access_arguments>administer CiviCRM; administer CiviRules</access_arguments>
   </item>
   <item>

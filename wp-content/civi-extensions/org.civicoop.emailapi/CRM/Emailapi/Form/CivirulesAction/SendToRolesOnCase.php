@@ -27,9 +27,7 @@ class CRM_Emailapi_Form_CivirulesAction_SendToRolesOnCase extends CRM_Emailapi_F
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    if (!empty($this->ruleAction->action_params)) {
-      $data = unserialize($this->ruleAction->action_params);
-    }
+    $data = $this->unserializeParams();
     if (!empty($data['relationship_type'])) {
       $defaultValues['relationship_type'] = $data['relationship_type'];
     }

@@ -59,7 +59,7 @@ class CRM_CivirulesConditions_ContributionSoft_SoftCreditType extends CRM_Civiru
    * @abstract
    */
   public function getExtraDataInputUrl($ruleConditionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/condition/contribution_soft_type', 'rule_condition_id=' . $ruleConditionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/condition/contribution_soft_type', $ruleConditionId);
   }
 
   /**

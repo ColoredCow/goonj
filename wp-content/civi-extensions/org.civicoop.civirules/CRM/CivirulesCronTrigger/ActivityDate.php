@@ -34,7 +34,7 @@ class CRM_CivirulesCronTrigger_ActivityDate extends CRM_CivirulesCronTrigger_Act
             FROM `civicrm_activity` `a`
             INNER JOIN `civicrm_activity_contact` ac ON a.id = ac.activity_id
             LEFT JOIN `civicrm_case_activity` ca ON a.id = ca.activity_id
-            LEFT JOIN `civirule_rule_log` `rule_log` ON `rule_log`.entity_table = 'civicrm_activity' AND `rule_log`.entity_id = a.id AND `rule_log`.`contact_id` = `ac`.`contact_id` AND DATE(`rule_log`.`log_date`) = DATE(NOW())  AND `rule_log`.`rule_id` = %3
+            LEFT JOIN `civirule_rule_log` `rule_log` ON `rule_log`.entity_table = 'civicrm_activity' AND `rule_log`.entity_id = a.id AND `rule_log`.`contact_id` = `ac`.`contact_id` AND `rule_log`.`rule_id` = %3
             WHERE `a`.`activity_type_id` = %1 AND a.status_id = %2 AND a.activity_date_time <= NOW()
             AND `a`.`is_deleted` = 0
             AND `rule_log`.`id` IS NULL
@@ -43,7 +43,7 @@ class CRM_CivirulesCronTrigger_ActivityDate extends CRM_CivirulesCronTrigger_Act
             AND `ac`.`contact_id` NOT IN (
               SELECT `rule_log2`.`contact_id`
               FROM `civirule_rule_log` `rule_log2`
-              WHERE `rule_log2`.`rule_id` = %3 AND DATE(`rule_log2`.`log_date`) = DATE(NOW()) and `rule_log2`.`entity_table` IS NULL AND `rule_log2`.`entity_id` IS NULL
+              WHERE `rule_log2`.`rule_id` = %3 and `rule_log2`.`entity_table` IS NULL AND `rule_log2`.`entity_id` IS NULL
             )";
     $params[1] = array($this->triggerParams['activity_type_id'], 'Integer');
     $params[2] = array($this->triggerParams['activity_status_id'], 'Integer');
@@ -92,6 +92,34 @@ class CRM_CivirulesCronTrigger_ActivityDate extends CRM_CivirulesCronTrigger_Act
       3 => $options[$this->triggerParams['record_type']],
       4 => $caseActivity,
     ]);
+  }
+
+  /**
+   * Get various types of help text for the trigger:
+   *   - triggerDescription: When choosing from a list of triggers, explains what the trigger does.
+   *   - triggerDescriptionWithParams: When a trigger has been configured for a rule provides a
+   *       user friendly description of the trigger and params (see $this->getTriggerDescription())
+   *   - triggerParamsHelp (default): If the trigger has configurable params, show this help text when configuring
+   * @param string $context
+   *
+   * @return string
+   */
+  public function getHelpText(string $context = 'triggerParamsHelp'): string {
+    switch ($context) {
+      case 'triggerDescription':
+        return E::ts('Trigger rule when scheduled date for activity with status and type is reached.');
+
+      case 'triggerDescriptionWithParams':
+        return $this->getTriggerDescription();
+
+      case 'triggerParamsHelp':
+        return E::ts('Trigger rule when scheduled date for activity with status and type is reached.')
+          . '<br/>'
+          . E::ts('If "Trigger for case activities" is "Yes" then this will only trigger for case activities. If it is "No" then it will only trigger for activities that are not linked to a case.');
+
+      default:
+        return parent::getHelpText($context);
+    }
   }
 
 }

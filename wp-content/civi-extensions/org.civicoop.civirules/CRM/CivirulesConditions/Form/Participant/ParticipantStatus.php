@@ -44,7 +44,7 @@ class CRM_CivirulesConditions_Form_Participant_ParticipantStatus extends CRM_Civ
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleCondition->condition_params);
+    $data = $this->ruleCondition->unserializeParams();
     if (!empty($data['participant_status_id'])) {
       $defaultValues['participant_status_id'] = $data['participant_status_id'];
     }

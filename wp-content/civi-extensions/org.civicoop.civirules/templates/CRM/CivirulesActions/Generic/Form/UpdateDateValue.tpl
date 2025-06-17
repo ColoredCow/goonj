@@ -1,6 +1,6 @@
 <h3>{$ruleActionHeader}</h3>
 <div class="crm-block crm-form-block crm-civirule-rule_action-block-generic_updatedate">
-    <div id="help">{ts domain="org.civicoop.civirules"}For a 'Set' 'Operation', this action sets the value of the 'Target Field' to the value specified in the 'Operand'. The 'Operand' in this case can be any valid value that can be passed to the <a href="https://www.php.net/manual/en/datetime.construct.php">DateTime::__construct</a> method.<br /><br />For all other 'Operations', this action takes the value from the 'Source Field', applies the 'Operation' and the 'Operand', and stores the result in the 'Target Field'. 'Operands' can be any valid input to the <a href="https://www.php.net/manual/en/datetime.modify.php">DateTime::modify</a> method.{/ts}<br /><br />'Set to (global) maximum with modification' and 'Set to (global) minimum with modification' are only supported on Contact fields.</div>
+  <div class="help">{$ruleActionHelp}</div>
     {if $triggerObject eq 'Activity'}
     {/if}
     <div class="crm-section source_field_id-section">

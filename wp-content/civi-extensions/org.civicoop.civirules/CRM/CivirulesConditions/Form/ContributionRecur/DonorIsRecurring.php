@@ -15,7 +15,7 @@ class CRM_CivirulesConditions_Form_ContributionRecur_DonorIsRecurring extends CR
    *
    * @return string
    */
-  protected function getHelpText() {
+  public function getHelpText() {
     return E::ts('This condition checks if the contact has any recurring contributions with no end-date or and end-date later than today. It does NOT check the status of a recurring contribution and does not work with test entities.');
   }
 
@@ -39,7 +39,7 @@ class CRM_CivirulesConditions_Form_ContributionRecur_DonorIsRecurring extends CR
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleCondition->condition_params);
+    $data = $this->ruleCondition->unserializeParams();
     if (!empty($data['has_recurring'])) {
       $defaultValues['has_recurring'] = $data['has_recurring'];
     }

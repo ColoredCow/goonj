@@ -18,7 +18,7 @@ class CRM_Civirules_Utils_CustomField {
      * Returns whether a custom field is multi select field.
      * @param $customfield_id
      * @return bool
-     * @throws CiviCRM_API3_Exception
+     * @throws CRM_Core_Exception
      */
     public static function isCustomFieldMultiselect($customfield_id) {
         //var_dump($customfield_id); exit();

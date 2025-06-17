@@ -35,7 +35,7 @@ class CRM_CivirulesConditions_Form_Contribution_FinancialType extends CRM_Civiru
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleCondition->condition_params);
+    $data = $this->ruleCondition->unserializeParams();
     if (!empty($data['financial_type_id'])) {
       $defaultValues['financial_type_id'] = $data['financial_type_id'];
     }

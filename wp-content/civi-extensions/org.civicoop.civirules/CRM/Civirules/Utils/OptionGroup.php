@@ -34,7 +34,7 @@ class CRM_Civirules_Utils_OptionGroup {
         'is_reserved' => 1);
       try {
         $optionGroup = civicrm_api3('OptionGroup', 'create', $params);
-      } catch (CiviCRM_API3_Exception $ex) {
+      } catch (CRM_Core_Exception $ex) {
         return FALSE;
       }
       return $optionGroup;
@@ -68,7 +68,7 @@ class CRM_Civirules_Utils_OptionGroup {
     }
     try {
       return civicrm_api3('OptionGroup', 'getsingle', array('name' => $name));
-    } catch (CiviCRM_API3_Exception $ex) {
+    } catch (CRM_Core_Exception $ex) {
       return array();
     }
   }
@@ -86,7 +86,7 @@ class CRM_Civirules_Utils_OptionGroup {
         foreach ($optionValues['values'] as $optionValue) {
           $result[$optionValue['value']] = $optionValue['label'];
         }
-      } catch (CiviCRM_API3_Exception $ex) {}
+      } catch (CRM_Core_Exception $ex) {}
       return $result;
     }
 }

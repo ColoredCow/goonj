@@ -65,7 +65,7 @@ class CRM_CivirulesActions_Generic_CopyCustomField extends CRM_Civirules_Action 
     try {
       $new_value = civicrm_api3($from_entity, 'getvalue', ['id' => $fromEntityId, 'return' => 'custom_' . $copy_from_field_id]);
     }
-    catch (\CiviCRM_API3_Exception $ex) {
+    catch (\CRM_Core_Exception $ex) {
       // Do nothing.
     }
 
@@ -103,7 +103,7 @@ class CRM_CivirulesActions_Generic_CopyCustomField extends CRM_Civirules_Action 
         unset($action_params['field_id']);
         $action_params['custom_group'] = $customGroup['name'];
         $action_params['custom_field'] = $customField['name'];
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -118,7 +118,7 @@ class CRM_CivirulesActions_Generic_CopyCustomField extends CRM_Civirules_Action 
         unset($action_params['copy_from_field_id']);
         $action_params['copy_from_custom_group'] = $customGroup['name'];
         $action_params['copy_from_custom_field'] = $customField['name'];
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -141,7 +141,7 @@ class CRM_CivirulesActions_Generic_CopyCustomField extends CRM_Civirules_Action 
         $action_params['field_id'] = $customField['id'];
         unset($action_params['custom_group']);
         unset($action_params['custom_field']);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -170,7 +170,7 @@ class CRM_CivirulesActions_Generic_CopyCustomField extends CRM_Civirules_Action 
    * @access public
    */
   public function getExtraDataInputUrl($ruleActionId) {
-    return CRM_Utils_System::url('civicrm/civirule/form/action/generic/copycustomvalue', 'rule_action_id=' . $ruleActionId);
+    return $this->getFormattedExtraDataInputUrl('civicrm/civirule/form/action/generic/copycustomvalue', $ruleActionId);
   }
 
   /**
@@ -186,4 +186,29 @@ class CRM_CivirulesActions_Generic_CopyCustomField extends CRM_Civirules_Action 
   public function doesWorkWithTrigger(CRM_Civirules_Trigger $trigger, CRM_Civirules_BAO_Rule $rule) {
     return TRUE;
   }
+
+  /**
+   * Get various types of help text for the action:
+   *   - actionDescription: When choosing from a list of actions, explains what the action does.
+   *   - actionDescriptionWithParams: When a action has been configured for a rule provides a
+   *       user friendly description of the action and params (see $this->userFriendlyConditionParams())
+   *   - actionParamsHelp (default): If the action has configurable params, show this help text when configuring
+   * @param string $context
+   *
+   * @return string
+   */
+  public function getHelpText(string $context): string {
+    // Child classes should override this function
+
+    switch ($context) {
+      case 'actionDescriptionWithParams':
+        return $this->userFriendlyConditionParams();
+
+      case 'actionDescription':
+      case 'actionParamsHelp':
+      default:
+        return E::ts('This action copies the value of a custom field from any entity in the rule to another custom field.');
+    }
+  }
+
 }

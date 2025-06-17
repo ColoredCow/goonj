@@ -1,23 +1,30 @@
 <?php
 
+use Civi\Api4\CiviRulesAction;
+use Civi\Api4\CiviRulesRuleAction;
 use CRM_Civirules_ExtensionUtil as E;
 
 class CRM_CivirulesActions_Form_Form extends CRM_Core_Form {
 
-  protected $ruleActionId = false;
+  protected $ruleActionId = FALSE;
 
-  protected $ruleAction;
+  protected CRM_Civirules_BAO_CiviRulesRuleAction $ruleAction;
 
-  protected $action;
+  protected CRM_Civirules_BAO_CiviRulesAction $action;
 
-  protected $rule;
+  protected CRM_Civirules_BAO_CiviRulesRule $rule;
 
-  protected $trigger;
+  protected CRM_Civirules_BAO_CiviRulesTrigger $trigger;
 
   /**
    * @var CRM_Civirules_Trigger
    */
-  protected $triggerClass;
+  protected CRM_Civirules_Trigger $triggerClass;
+
+  /**
+   * @var CRM_Civirules_Action
+   */
+  protected CRM_Civirules_Action $actionClass;
 
   /**
    * Overridden parent method to perform processing before form is build
@@ -25,12 +32,12 @@ class CRM_CivirulesActions_Form_Form extends CRM_Core_Form {
   public function preProcess() {
     $this->ruleActionId = CRM_Utils_Request::retrieve('rule_action_id', 'Integer');
 
-    $this->ruleAction = new CRM_Civirules_BAO_RuleAction();
+    $this->ruleAction = new CRM_Civirules_BAO_CiviRulesRuleAction();
     $this->ruleAction->id = $this->ruleActionId;
 
-    $this->action = new CRM_Civirules_BAO_Action();
-    $this->rule = new CRM_Civirules_BAO_Rule();
-    $this->trigger = new CRM_Civirules_BAO_Trigger();
+    $this->action = new CRM_Civirules_BAO_CiviRulesAction();
+    $this->rule = new CRM_Civirules_BAO_CiviRulesRule();
+    $this->trigger = new CRM_Civirules_BAO_CiviRulesTrigger();
 
     if (!$this->ruleAction->find(true)) {
       throw new Exception('Civirules could not find ruleAction (Form)');
@@ -39,6 +46,16 @@ class CRM_CivirulesActions_Form_Form extends CRM_Core_Form {
     $this->action->id = $this->ruleAction->action_id;
     if (!$this->action->find(true)) {
       throw new Exception('Civirules could not find action');
+    }
+
+    // Instantiate the action class
+    $action = CiviRulesAction::get(FALSE)
+      ->addSelect('id', 'class_name')
+      ->addWhere('id', '=', $this->action->id)
+      ->execute()
+      ->first();
+    if (class_exists($action['class_name'])) {
+      $this->actionClass = new $action['class_name'];
     }
 
     $this->rule->id = $this->ruleAction->rule_id;
@@ -51,7 +68,7 @@ class CRM_CivirulesActions_Form_Form extends CRM_Core_Form {
       throw new Exception('Civirules could not find trigger');
     }
 
-    $this->triggerClass = CRM_Civirules_BAO_Trigger::getPostTriggerObjectByClassName($this->trigger->class_name, true);
+    $this->triggerClass = CRM_Civirules_BAO_CiviRulesTrigger::getPostTriggerObjectByClassName($this->trigger->class_name);
     $this->triggerClass->setTriggerId($this->trigger->id);
 
     //set user context
@@ -59,15 +76,24 @@ class CRM_CivirulesActions_Form_Form extends CRM_Core_Form {
     $editUrl = CRM_Utils_System::url('civicrm/civirule/form/rule', 'action=update&id='.$this->rule->id, TRUE);
     $session->pushUserContext($editUrl);
 
-    parent::preProcess();
-
     $this->setFormTitle();
-    $this->assign('ruleActionHelp', $this->getHelpText());
+
+    if (method_exists($this, 'getHelpText')) {
+      // Old location, should be moved to main trigger class
+      $helpText = $this->getHelpText();
+    }
+    elseif (method_exists($this->actionClass, 'getHelpText')) {
+      // This is the correct location for getHelpText();
+      $helpText = $this->actionClass->getHelpText('actionParamsHelp');
+    }
+    $this->assign('ruleActionHelp', $helpText ?? '');
   }
 
   function cancelAction() {
-    if (isset($this->_submitValues['rule_action_id']) && $this->_action == CRM_Core_Action::ADD) {
-      CRM_Civirules_BAO_RuleAction::deleteWithId($this->_submitValues['rule_action_id']);
+    if (!empty($this->getSubmittedValue('rule_action_id')) && $this->_action == CRM_Core_Action::ADD) {
+      CiviRulesRuleAction::delete(FALSE)
+        ->addWhere('id', '=', $this->getSubmittedValue('rule_action_id'))
+        ->execute();
     }
   }
 
@@ -77,20 +103,16 @@ class CRM_CivirulesActions_Form_Form extends CRM_Core_Form {
    * @return array $defaultValues
    */
   public function setDefaultValues() {
-    $defaultValues = array();
+    $defaultValues = [];
     $defaultValues['rule_action_id'] = $this->ruleActionId;
     return $defaultValues;
   }
 
   public function postProcess() {
-    $session = CRM_Core_Session::singleton();
-    $session->setStatus(E::ts("Action '%1' parameters updated for CiviRule '%2'", [ 1 => $this->action->label, 2 => $this->rule->label]),
+    CRM_Core_Session::setStatus(E::ts("Action '%1' parameters updated for CiviRule '%2'", [ 1 => $this->action->label, 2 => $this->rule->label]),
       E::ts('Action parameters updated'),
       'success'
     );
-
-    $redirectUrl = CRM_Utils_System::url('civicrm/civirule/form/rule', 'action=update&id='.$this->rule->id, TRUE);
-    CRM_Utils_System::redirect($redirectUrl);
   }
 
   /**
@@ -108,13 +130,4 @@ class CRM_CivirulesActions_Form_Form extends CRM_Core_Form {
     CRM_Utils_System::setTitle($title);
   }
 
-  /**
-   * Returns help text for this action.
-   * The help text is shown to the administrator who is configuring the action.
-   *
-   * @return string
-   */
-  protected function getHelpText() {
-    return '';
-  }
 }

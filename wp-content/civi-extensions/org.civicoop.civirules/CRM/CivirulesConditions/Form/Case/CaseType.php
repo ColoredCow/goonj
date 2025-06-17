@@ -35,7 +35,7 @@ class CRM_CivirulesConditions_Form_Case_CaseType extends CRM_CivirulesConditions
    */
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
-    $data = unserialize($this->ruleCondition->condition_params);
+    $data = $this->ruleCondition->unserializeParams();
     if (!empty($data['case_type_id'])) {
       $defaultValues['case_type_id'] = $data['case_type_id'];
     }
