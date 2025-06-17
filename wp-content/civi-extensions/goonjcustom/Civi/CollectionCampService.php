@@ -109,7 +109,6 @@ class CollectionCampService extends AutoSubscriber {
       }
     }
 
-
     if ($hasRestrictedRole) {
       unset($tabs['view']);
       unset($tabs['edit']);
@@ -186,7 +185,7 @@ class CollectionCampService extends AutoSubscriber {
         'template' => 'CRM/Goonjcustom/Tabs/MonetaryContributionForUrbanOps.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
-    ];    
+    ];
 
     foreach ($tabConfigs as $key => $config) {
       $isAdmin = \CRM_Core_Permission::check('admin');

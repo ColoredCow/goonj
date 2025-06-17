@@ -2,16 +2,16 @@
 
 namespace Civi;
 
-use Civi\Api4\Organization;
 use Civi\Api4\Contact;
+use Civi\Api4\EckEntity;
 use Civi\Api4\Group;
 use Civi\Api4\GroupContact;
-use Civi\Core\Service\AutoSubscriber;
-use Civi\Api4\EckEntity;
 use Civi\Api4\OptionValue;
-use Civi\Api4\StateProvince;
-use Civi\Traits\CollectionSource;
+use Civi\Api4\Organization;
 use Civi\Api4\Relationship;
+use Civi\Api4\StateProvince;
+use Civi\Core\Service\AutoSubscriber;
+use Civi\Traits\CollectionSource;
 
 /**
  *

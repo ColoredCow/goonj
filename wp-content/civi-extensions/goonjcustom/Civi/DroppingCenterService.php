@@ -688,7 +688,6 @@ class DroppingCenterService extends AutoSubscriber {
         'permissions' => ['goonj_chapter_admin', 'urbanops'],
       ],
     ];
-    
 
     foreach ($tabConfigs as $key => $config) {
       $isAdmin = \CRM_Core_Permission::check('admin');

@@ -788,7 +788,6 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
 
     $hasRestrictedRole = !$isAdmin && \CRM_Core_Permission::checkAnyPerm($restrictedRoles);
 
-
     foreach ($tabs as $key => &$tab) {
       if (!isset($tab['url']) && isset($tab['link'])) {
         $tab['url'] = $tab['link'];
@@ -834,7 +833,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
         'module' => 'afsearchInstitutionDroppingCenterDonation',
         'directive' => 'afsearch-institution-dropping-center-donation',
         'template' => 'CRM/Goonjcustom/Tabs/InstitutionDroppingCenter/DonationBox.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter','urban_ops_and_accounts_chapter_team'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter', 'urban_ops_and_accounts_chapter_team'],
       ],
       'status' => [
         'title' => ts('Status'),
