@@ -174,6 +174,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Volunteers',
           'Events',
           'Offices',
+          'Individuals',
           'MMT - Individuals',
           'MMT - Institutes',
           'MMT - Offices',
@@ -192,6 +193,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Induction',
           'Inductions',
           'Volunteers',
+          'Individuals',
           'Offices',
           'MMT - Individuals',
           'MMT - Institutes',
@@ -219,7 +221,6 @@ class NavigationPermissionService extends AutoSubscriber {
       ],
       'project_team_ho' => [
         'hide_menus' => [
-          'Campaigns',
           'Inductions',
           'Volunteers',
           'Individuals',
@@ -245,7 +246,6 @@ class NavigationPermissionService extends AutoSubscriber {
           'Inductions',
           'Volunteers',
           'Campaigns',
-          'Individuals',
           'MMT - Individuals',
           'MMT - Institutes',
           'MMT - Offices',
