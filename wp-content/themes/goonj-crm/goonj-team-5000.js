@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var isRecurCheckbox = document.getElementById('is_recur');
     var installmentsField = document.getElementById('installments');
     var recurHelp = document.getElementById('recurHelp');
+    var radioSection = document.getElementById('editrow-custom_759');
 
     if (!isRecurCheckbox || !installmentsField || !recurHelp) return;
 
@@ -16,6 +17,12 @@ document.addEventListener('DOMContentLoaded', function () {
     isRecurCheckbox.addEventListener('click', function (event) {
         event.preventDefault();
     });
+
+    // Hide the radio button section
+    if (radioSection) {
+        radioSection.style.display = 'none';
+        console.log('Radio button section (editrow-custom_759) hidden');
+    }
 
     // Show help section
     recurHelp.style.display = 'block';
@@ -50,5 +57,16 @@ document.addEventListener('DOMContentLoaded', function () {
     var labelForInstallments = document.querySelector('label[for="installments"]');
     if (labelForInstallments) {
         labelForInstallments.remove();
+    }
+
+    // Set "Donate Monthly" as default on page load
+    var donateMonthlyRadio = document.querySelector('input[name="custom_759"][value="2"]');
+    if (donateMonthlyRadio) {
+        donateMonthlyRadio.checked = true;
+        console.log('Donate Monthly radio button selected by default');
+        // Dispatch change event to trigger toggleRecurringSection
+        var changeEvent = new Event('change');
+        donateMonthlyRadio.dispatchEvent(changeEvent);
+        console.log('Change event dispatched for Donate Monthly radio button');
     }
 });
