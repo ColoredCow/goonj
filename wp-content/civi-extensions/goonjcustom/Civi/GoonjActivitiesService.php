@@ -23,7 +23,7 @@ class GoonjActivitiesService extends AutoSubscriber {
 
   const ENTITY_NAME = 'Collection_Camp';
   const ENTITY_SUBTYPE_NAME = 'Goonj_Activities';
-  const GOONJ_ACTIVITIES_INTENT_FB_NAME = ['afformGoonjActivitiesIndividualIntentForm','afformGoonjActivitiesIndividualIntentFormCRM'];
+  const GOONJ_ACTIVITIES_INTENT_FB_NAME = ['afformGoonjActivitiesIndividualIntentForm', 'afformGoonjActivitiesIndividualIntentFormCRM'];
   const RELATIONSHIP_TYPE_NAME = 'Goonj Activities Coordinator of';
   private static $goonjActivitiesAddress = NULL;
   const FALLBACK_OFFICE_NAME = 'Delhi';
@@ -379,49 +379,49 @@ class GoonjActivitiesService extends AutoSubscriber {
         'module' => 'afsearchGoonjAllActivity',
         'directive' => 'afsearch-goonj-all-activity',
         'template' => 'CRM/Goonjcustom/Tabs/GoonjActivities/Activities.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team'],
       ],
       'logistics' => [
         'title' => ts('Logistics'),
         'module' => 'afsearchGoonjActivitiesLogistics',
         'directive' => 'afsearch-goonj-activities-logistics',
         'template' => 'CRM/Goonjcustom/Tabs/GoonjActivities/Logistics.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team'],
       ],
       'eventVolunteers' => [
         'title' => ts('Event Volunteers'),
         'module' => 'afsearchEventVolunteer',
         'directive' => 'afsearch-event-volunteer',
         'template' => 'CRM/Goonjcustom/Tabs/GoonjActivities/EventVolunteers.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team'],
       ],
       'campOutcome' => [
         'title' => ts('Outcome'),
         'module' => 'afsearchGoonjActivitiesOutcomeView',
         'directive' => 'afsearch-goonj-activities-outcome-view',
         'template' => 'CRM/Goonjcustom/Tabs/GoonjActivities/Outcome.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team'],
       ],
       'campFeedback' => [
         'title' => ts('Volunteer Feedback'),
         'module' => 'afsearchGoonjActivityVolunteerFeedback',
         'directive' => 'afsearch-goonj-activity-volunteer-feedback',
         'template' => 'CRM/Goonjcustom/Tabs/GoonjActivities/Feedback.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team'],
       ],
       'attendeeFeedback' => [
         'title' => ts('Attendee Feedback'),
         'module' => 'afsearchGoonjActivityAttendeeFeedbacksDetails',
         'directive' => 'afsearch-goonj-activity-attendee-feedbacks-details',
         'template' => 'CRM/Goonjcustom/Tabs/GoonjActivities/AttendeeFeedback.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team'],
       ],
       'monetaryContribution' => [
         'title' => ts('Monetary Contribution'),
         'module' => 'afsearchMonetaryContribution',
         'directive' => 'afsearch-monetary-contribution',
         'template' => 'CRM/Goonjcustom/Tabs/MonetaryContribution.tpl',
-        'permissions' => ['account_team', 'ho_account'],
+        'permissions' => ['account_team', 'ho_account', 'mmt_and_accounts_chapter_team', 'urban_ops_and_accounts_chapter_team'],
       ],
       // 'monetaryContributionForUrbanOps' => [
       //   'title' => ts('Monetary Contribution'),
@@ -456,7 +456,7 @@ class GoonjActivitiesService extends AutoSubscriber {
     }
   }
 
-    /**
+  /**
    *
    */
   public static function linkGoonjActivitiesToContact(string $op, string $objectName, $objectId, &$objectRef) {
@@ -512,7 +512,7 @@ class GoonjActivitiesService extends AutoSubscriber {
     }
   }
 
-    /**
+  /**
    *
    */
   private static function createActivity($contactId, $collectionCampTitle, $collectionCampId) {
@@ -528,6 +528,7 @@ class GoonjActivitiesService extends AutoSubscriber {
 
     \Civi::log()->info("Activity created for contact {$contactId} for Institution Collection Camp {$collectionCampTitle}");
   }
+
   /**
    *
    */
