@@ -805,7 +805,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
         'module' => 'afformInstitutionDroppingCenterIntentReviewEditForm',
         'directive' => 'afform-institution-dropping-center-intent-review-edit-form',
         'template' => 'CRM/Goonjcustom/Tabs/InstitutionDroppingCenter/Edit.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter', 'urban_ops_and_accounts_chapter_team'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter', 'urban_ops_and_accounts_chapter_team', 'mmt_and_accounts_chapter_team'],
       ],
       'eventCoordinators' => [
         'title' => ts('Center Coordinators'),
