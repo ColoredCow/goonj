@@ -372,7 +372,7 @@ class GoonjActivitiesService extends AutoSubscriber {
         'module' => 'afformGoonjActivitiesIntentEdit',
         'directive' => 'afform-goonj-activities-intent-edit',
         'template' => 'CRM/Goonjcustom/Tabs/GoonjActivities/Edit.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team', 'mmt_and_accounts_chapter_team'],
       ],
       'activities' => [
         'title' => ts('Activities'),
