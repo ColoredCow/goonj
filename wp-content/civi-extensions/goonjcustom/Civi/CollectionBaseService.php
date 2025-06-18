@@ -2,6 +2,7 @@
 
 namespace Civi;
 
+use Civi\Api4\Contribution;
 use Civi\Api4\CustomField;
 use Civi\Api4\EckEntity;
 use Civi\Api4\Email;
@@ -40,9 +41,75 @@ class CollectionBaseService extends AutoSubscriber {
       '&hook_civicrm_post' => [
         ['maybeGeneratePoster', 20],
         ['handleAuthorizationEmailsPost', 10],
+        ['updateMonetaryContributionTotalAmount'],
       ],
       '&hook_civicrm_fieldOptions' => 'setIndianStateOptions',
     ];
+  }
+
+  /**
+   *
+   */
+  public static function updateMonetaryContributionTotalAmount(string $op, string $objectName, $objectId, &$objectRef) {
+    error_log("Triggered hook for objectName: " . print_r($objectName, TRUE));
+    static $processed = [];
+
+    if ($objectName !== 'Contribution' || empty($objectRef->id)) {
+      return;
+    }
+
+    $contributionId = $objectRef->id;
+    if (isset($processed[$contributionId])) {
+      return;
+    }
+    $processed[$contributionId] = TRUE;
+
+    $contribution = Contribution::get(FALSE)
+      ->addSelect(
+        'contribution_status_id:name',
+        'total_amount',
+        'Contribution_Details.Source.id',
+        'payment_instrument_id:name'
+      )
+      ->addWhere('id', '=', $contributionId)
+      ->addWhere('contribution_status_id:name', '=', 'Completed')
+      ->execute()
+      ->first();
+
+    if (!$contribution || empty($contribution['Contribution_Details.Source.id'])) {
+      return;
+    }
+
+    $campId = $contribution['Contribution_Details.Source.id'];
+    $totalAmount = (float) $contribution['total_amount'];
+    $paymentMethod = $contribution['payment_instrument_id:name'];
+
+    $existing = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect(
+        'Camp_Outcome.Online_Monetary_Contribution',
+        'Camp_Outcome.Cash_Contribution'
+      )
+      ->addWhere('id', '=', $campId)
+      ->execute()
+      ->first();
+
+    $onlineCurrent = (float) ($existing['Camp_Outcome.Online_Monetary_Contribution'] ?? 0);
+    $cashCurrent = (float) ($existing['Camp_Outcome.Cash_Contribution'] ?? 0);
+
+    $update = EckEntity::update('Collection_Camp', FALSE)
+      ->addWhere('id', '=', $campId);
+
+    if ($paymentMethod === 'Credit Card') {
+      $onlineNew = $onlineCurrent + $totalAmount;
+      $update->addValue('Camp_Outcome.Online_Monetary_Contribution', $onlineNew);
+    }
+
+    if (in_array($paymentMethod, ['Cash', 'Check'], TRUE)) {
+      $cashNew = $cashCurrent + $totalAmount;
+      $update->addValue('Camp_Outcome.Cash_Contribution', $cashNew);
+    }
+
+    $update->execute();
   }
 
   /**
