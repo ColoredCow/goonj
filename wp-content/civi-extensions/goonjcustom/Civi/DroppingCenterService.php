@@ -601,7 +601,7 @@ class DroppingCenterService extends AutoSubscriber {
         'module' => 'afformDroppingCenterIntentEdit',
         'directive' => 'afform-dropping-center-intent-edit',
         'template' => 'CRM/Goonjcustom/Tabs/DroppingCenter/Edit.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt_and_accounts_chapter_team', 'urban_ops_and_accounts_chapter_team'],
       ],
       'logistics' => [
         'title' => ts('Logistics'),

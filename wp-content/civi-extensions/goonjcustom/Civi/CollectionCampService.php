@@ -120,7 +120,7 @@ class CollectionCampService extends AutoSubscriber {
         'module' => 'afformCollectionCampIntentEdit',
         'directive' => 'afform-collection-camp-intent-edit',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp/Edit.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt_and_accounts_chapter_team', 'urban_ops_and_accounts_chapter_team'],
       ],
       'logistics' => [
         'title' => ts('Logistics'),
