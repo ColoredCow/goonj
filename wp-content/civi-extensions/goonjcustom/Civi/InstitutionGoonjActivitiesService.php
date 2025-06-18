@@ -546,7 +546,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
         'module' => 'afsearchGoonjAllInstitutionActivity',
         'directive' => 'afsearch-goonj-all-institution-activity',
         'template' => 'CRM/Goonjcustom/Tabs/InstitutionGoonjActivities/Activities.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter', 'njpc_ho_team', 'sanjha_team', 'urban_ops_and_accounts_chapter_team'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter', 'njpc_ho_team', 'sanjha_team', 'urban_ops_and_accounts_chapter_team', 'mmt_and_accounts_chapter_team'],
       ],
       'edit' => [
         'title' => ts('Edit'),

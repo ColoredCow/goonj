@@ -1158,7 +1158,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
         'module' => 'afformInstitutionCollectionCampIntentReviewEditForm',
         'directive' => 'afform-institution-collection-camp-intent-review-edit-form',
         'template' => 'CRM/Goonjcustom/Tabs/InstitutionCollectionCamp/Edit.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter', 'urban_ops_and_accounts_chapter_team'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter', 'urban_ops_and_accounts_chapter_team', 'mmt_and_accounts_chapter_team'],
       ],
       'logistics' => [
         'title' => ts('Logistics'),

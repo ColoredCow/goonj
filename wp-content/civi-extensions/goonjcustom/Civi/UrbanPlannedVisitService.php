@@ -456,7 +456,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         'module' => 'afformUrbanPlannedVisitIntentReviewForm',
         'directive' => 'afform-Urban-Planned-Visit-Intent-Review-Form',
         'template' => 'CRM/Goonjcustom/Tabs/UrbanPlannedVisit/Edit.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt', 'sanjha_team', 'project_team_ho', 'project_team_chapter', 'njpc_ho_team', 's2s_ho_team', 'communications_team', 'urban_ops_and_accounts_chapter_team', 'account_team'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt', 'sanjha_team', 'project_team_ho', 'project_team_chapter', 'njpc_ho_team', 's2s_ho_team', 'communications_team', 'urban_ops_and_accounts_chapter_team', 'account_team', 'mmt_and_accounts_chapter_team'],
       ],
       'visitOutcome' => [
         'title' => ts('Visit Outcome'),
