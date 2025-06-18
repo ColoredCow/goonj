@@ -303,3 +303,53 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Running initial toggle');
     toggleRecurringSection();
 });
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Script initialized: DOM fully loaded');
+
+    // Get the checkbox and PAN field container
+    const checkbox = document.getElementById('custom_763_1');
+    const panFieldContainer = document.getElementById('editrow-custom_278');
+    const panInput = document.getElementById('custom_278');
+
+    // Verify elements exist
+    if (!checkbox) {
+        console.error('Checkbox #custom_763_1 not found');
+        return;
+    }
+    if (!panFieldContainer) {
+        console.error('PAN field container #editrow-custom_278 not found');
+        return;
+    }
+    if (!panInput) {
+        console.error('PAN input #custom_278 not found');
+    }
+
+    // Function to toggle PAN field visibility
+    function togglePanField() {
+        const isChecked = checkbox.checked;
+        console.log('Checkbox state:', isChecked);
+        if (isChecked) {
+            console.log('Showing PAN field');
+            panFieldContainer.style.display = 'block';
+        } else {
+            console.log('Hiding PAN field and clearing input');
+            panFieldContainer.style.display = 'none';
+            if (panInput) {
+                panInput.value = '';
+            }
+        }
+    }
+
+    // Set initial state
+    console.log('Initial checkbox state:', checkbox.checked);
+    togglePanField();
+
+    // Add event listener for checkbox changes
+    checkbox.addEventListener('change', function() {
+        console.log('Checkbox changed');
+        togglePanField();
+    });
+
+    console.log('Script setup complete');
+});

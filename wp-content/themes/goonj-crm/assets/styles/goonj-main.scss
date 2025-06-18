@@ -291,6 +291,9 @@
           fieldset > div:nth-last-child(4) {
             display: none !important;
           }
+          fieldset > div:nth-last-child(6) .label {
+            display: none !important;
+          }
         }
       }
     }
