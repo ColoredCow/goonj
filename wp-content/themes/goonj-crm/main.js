@@ -181,10 +181,7 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM fully loaded, script running...');
-
-    // Get the radio buttons, recurring section, is_recur checkbox, and installments field
-    var radioButtons = document.querySelectorAll('input[name="custom_759"]');
+    var radioButtons = document.querySelectorAll('.crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options .crm-option-label-pair input.crm-form-radio');
     var recurringSection = document.querySelector('#crm-container #crm-main-content-wrapper form .crm-contribution-main-form-block .crm-public-form-item.crm-section.is_recur-section');
     var isRecurCheckbox = document.getElementById('is_recur');
     var installmentsField = document.getElementById('installments');
@@ -196,22 +193,14 @@ document.addEventListener('DOMContentLoaded', function() {
 		event.preventDefault();
 	});
 
-    // Debug: Check if elements are found
-    console.log('Radio buttons found:', radioButtons.length);
-    console.log('Recurring section found:', recurringSection);
-    console.log('is_recur checkbox found:', isRecurCheckbox);
-    console.log('Installments field found:', installmentsField);
-
     // Set "Donate Once" as default on page load
-    var donateOnceRadio = document.querySelector('input[name="custom_759"][value="1"]');
+    var donateOnceRadio = document.querySelector('.crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options .crm-option-label-pair input.crm-form-radio[value="1"]');
     if (donateOnceRadio) {
         donateOnceRadio.checked = true;
-        console.log('Donate Once radio button selected by default');
     }
 
     // Replace installments text input with a dropdown
     if (installmentsField) {
-        // Create the new select dropdown
         var select = document.createElement('select');
         select.id = 'installments';
         select.name = 'installments';
@@ -236,57 +225,44 @@ document.addEventListener('DOMContentLoaded', function() {
             select.appendChild(option);
         });
 
-        // Set default value to 12 months (or any preferred default)
+        // Set default value to 12 months
         select.value = "12";
-        console.log('Installments dropdown created with default value:', select.value);
 
         // Replace the text input with the dropdown
         installmentsField.parentNode.replaceChild(select, installmentsField);
-        console.log('Installments text input replaced with dropdown');
     }
 
     // Function to toggle the recurring section and handle the checkbox
     function toggleRecurringSection() {
-        console.log('toggleRecurringSection called');
-        var selectedRadio = document.querySelector('input[name="custom_759"]:checked');
+        var selectedRadio = document.querySelector('.crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options .crm-option-label-pair input.crm-form-radio:checked');
         if (!selectedRadio) {
-            console.log('No radio button selected, hiding recurring section by default');
             recurringSection.style.setProperty('display', 'none', 'important');
             if (isRecurCheckbox) {
                 isRecurCheckbox.checked = false;
-                console.log('is_recur checkbox unchecked (no radio selected)');
                 // Dispatch change event to ensure CiviCRM updates the form
                 var changeEvent = new Event('change');
                 isRecurCheckbox.dispatchEvent(changeEvent);
-                console.log('Change event dispatched for is_recur (no radio selected)');
             }
             return;
         }
 
         var selectedValue = selectedRadio.value;
-        console.log('Selected value:', selectedValue);
 
         if (selectedValue === '2') { // "Donate Monthly" is selected
-            console.log('Showing recurring section');
             recurringSection.style.setProperty('display', 'block', 'important');
             if (isRecurCheckbox) {
                 isRecurCheckbox.checked = true;
-                console.log('is_recur checkbox checked (Donate Monthly selected)');
                 // Dispatch change event to ensure CiviCRM updates the form
                 var changeEvent = new Event('change');
                 isRecurCheckbox.dispatchEvent(changeEvent);
-                console.log('Change event dispatched for is_recur (Donate Monthly selected)');
             }
         } else {
-            console.log('Hiding recurring section');
             recurringSection.style.setProperty('display', 'none', 'important');
             if (isRecurCheckbox) {
                 isRecurCheckbox.checked = false;
-                console.log('is_recur checkbox unchecked (Donate Once selected)');
                 // Dispatch change event to ensure CiviCRM updates the form
                 var changeEvent = new Event('change');
                 isRecurCheckbox.dispatchEvent(changeEvent);
-                console.log('Change event dispatched for is_recur (Donate Once selected)');
             }
         }
     }
@@ -294,46 +270,25 @@ document.addEventListener('DOMContentLoaded', function() {
     // Bind the change event to the radio buttons
     radioButtons.forEach(function(radio) {
         radio.addEventListener('change', function() {
-            console.log('Radio button changed:', radio.value);
             toggleRecurringSection();
         });
     });
 
     // Run on page load to set initial state
-    console.log('Running initial toggle');
     toggleRecurringSection();
 });
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Script initialized: DOM fully loaded');
-
-    // Get the checkbox and PAN field container
-    const checkbox = document.getElementById('custom_763_1');
-    const panFieldContainer = document.getElementById('editrow-custom_278');
-    const panInput = document.getElementById('custom_278');
-
-    // Verify elements exist
-    if (!checkbox) {
-        console.error('Checkbox #custom_763_1 not found');
-        return;
-    }
-    if (!panFieldContainer) {
-        console.error('PAN field container #editrow-custom_278 not found');
-        return;
-    }
-    if (!panInput) {
-        console.error('PAN input #custom_278 not found');
-    }
+    const checkbox = document.querySelector('.crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options .crm-option-label-pair input.crm-form-checkbox');
+    const panFieldContainer = document.querySelector('.crm-contribution-main-form-block .custom_pre_profile-group fieldset > div:nth-last-child(5)');
+    const panInput = document.querySelector('.crm-contribution-main-form-block .custom_pre_profile-group fieldset > div:nth-last-child(5) .content input');
 
     // Function to toggle PAN field visibility
     function togglePanField() {
         const isChecked = checkbox.checked;
-        console.log('Checkbox state:', isChecked);
         if (isChecked) {
-            console.log('Showing PAN field');
             panFieldContainer.style.display = 'block';
         } else {
-            console.log('Hiding PAN field and clearing input');
             panFieldContainer.style.display = 'none';
             if (panInput) {
                 panInput.value = '';
@@ -341,15 +296,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Set initial state
-    console.log('Initial checkbox state:', checkbox.checked);
     togglePanField();
 
     // Add event listener for checkbox changes
     checkbox.addEventListener('change', function() {
-        console.log('Checkbox changed');
         togglePanField();
     });
 
-    console.log('Script setup complete');
 });
