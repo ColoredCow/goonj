@@ -2,14 +2,14 @@
 
 namespace Civi;
 
-use Civi\Api4\Contact;
-use Civi\Core\Service\AutoSubscriber;
-use Civi\Api4\Event;
 use Civi\Api4\Address;
-use Civi\Traits\QrCodeable;
+use Civi\Api4\Contact;
+use Civi\Api4\Contribution;
+use Civi\Api4\Event;
 use Civi\Api4\Group;
 use Civi\Api4\GroupContact;
-use Civi\Api4\Contribution;
+use Civi\Core\Service\AutoSubscriber;
+use Civi\Traits\QrCodeable;
 
 /**
  *
@@ -24,12 +24,78 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
     return [
       '&hook_civicrm_pre' => 'generateGoonjEventsQr',
       '&hook_civicrm_tabset' => 'goonjEventsTabset',
-      '&hook_civicrm_post' => 'assignChapterGroupToIndividual',
+      '&hook_civicrm_post' => [
+        ['assignChapterGroupToIndividual'],
+        ['updateEventMonetaryContributionTotalAmount'],
+      ],
       '&hook_civicrm_alterMailParams' => [
         ['alterReceiptMail'],
         ['handleOfflineReceipt'],
       ],
     ];
+  }
+
+  /**
+   *
+   */
+  public static function updateEventMonetaryContributionTotalAmount(string $op, string $objectName, $objectId, &$objectRef) {
+    static $processed = [];
+
+    if ($objectName !== 'Contribution' || empty($objectRef->id)) {
+      return;
+    }
+
+    $contributionId = $objectRef->id;
+    if (isset($processed[$contributionId])) {
+      return;
+    }
+    $processed[$contributionId] = TRUE;
+
+    $contribution = Contribution::get(FALSE)
+      ->addSelect(
+        'contribution_status_id:name',
+        'total_amount',
+        'Contribution_Details.Events.id',
+        'payment_instrument_id:name'
+      )
+      ->addWhere('id', '=', $contributionId)
+      ->addWhere('contribution_status_id:name', '=', 'Completed')
+      ->execute()
+      ->first();
+
+    if (!$contribution || empty($contribution['Contribution_Details.Events.id'])) {
+      return;
+    }
+
+    $eventId = $contribution['Contribution_Details.Events.id'];
+    $totalAmount = (float) $contribution['total_amount'];
+    $paymentMethod = $contribution['payment_instrument_id:name'];
+
+    $existing = Event::get(FALSE)
+      ->addSelect(
+        'Goonj_Events_Outcome.Online_Monetary_Contribution',
+        'Goonj_Events_Outcome.Cash_Contribution'
+      )
+      ->addWhere('id', '=', $eventId)
+      ->execute()
+      ->first();
+
+    $onlineCurrent = (float) ($existing['Goonj_Events_Outcome.Online_Monetary_Contribution'] ?? 0);
+    $cashCurrent = (float) ($existing['Goonj_Events_Outcome.Cash_Contribution'] ?? 0);
+    $update = Event::update(FALSE)
+      ->addWhere('id', '=', $eventId);
+
+    if ($paymentMethod === 'Credit Card') {
+      $onlineNew = $onlineCurrent + $totalAmount;
+      $update->addValue('Goonj_Events_Outcome.Online_Monetary_Contribution', $onlineNew);
+    }
+
+    if (in_array($paymentMethod, ['Cash', 'Check'], TRUE)) {
+      $cashNew = $cashCurrent + $totalAmount;
+      $update->addValue('Goonj_Events_Outcome.Cash_Contribution', $cashNew);
+    }
+
+    $update->execute();
   }
 
   /**
