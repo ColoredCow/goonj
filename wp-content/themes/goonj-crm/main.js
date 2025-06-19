@@ -282,16 +282,38 @@ document.addEventListener('DOMContentLoaded', function() {
     const checkbox = document.querySelector('.crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options .crm-option-label-pair input.crm-form-checkbox');
     const panFieldContainer = document.querySelector('.crm-contribution-main-form-block .custom_pre_profile-group fieldset > div:nth-last-child(5)');
     const panInput = document.querySelector('.crm-contribution-main-form-block .custom_pre_profile-group fieldset > div:nth-last-child(5) .content input');
+    const form = document.querySelector('.crm-contribution-main-form-block');
+    let errorElement = panFieldContainer.querySelector('.error-message');
+
+    // Create error message element if it doesn't exist
+    if (!errorElement) {
+        errorElement = document.createElement('div');
+        errorElement.className = 'error-message';
+        errorElement.style.color = 'red';
+        errorElement.style.display = 'none';
+        panFieldContainer.appendChild(errorElement);
+    }
+
+    // Function to show/hide error message
+    function showError(message) {
+        errorElement.textContent = message;
+        errorElement.style.display = message ? 'block' : 'none';
+    }
 
     // Function to toggle PAN field visibility
     function togglePanField() {
         const isChecked = checkbox.checked;
         if (isChecked) {
             panFieldContainer.style.display = 'block';
+            if (panInput) {
+                panInput.required = true;
+            }
         } else {
             panFieldContainer.style.display = 'none';
             if (panInput) {
                 panInput.value = '';
+                panInput.required = false;
+                showError('');
             }
         }
     }
@@ -303,4 +325,11 @@ document.addEventListener('DOMContentLoaded', function() {
         togglePanField();
     });
 
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const label = document.querySelector('label[for="is_recur"]');
+    if (label) {
+        label.textContent = 'Select Number of months you wish to contribute';
+    }
 });

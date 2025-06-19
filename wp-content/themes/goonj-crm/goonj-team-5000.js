@@ -67,3 +67,10 @@ document.addEventListener('DOMContentLoaded', function () {
         donateMonthlyRadio.dispatchEvent(changeEvent);
     }
 });
+
+document.addEventListener('DOMContentLoaded', function() {
+    const label = document.querySelector('label[for="is_recur"]');
+    if (label) {
+        label.textContent = 'I want to contribute this amount every month';
+    }
+});
