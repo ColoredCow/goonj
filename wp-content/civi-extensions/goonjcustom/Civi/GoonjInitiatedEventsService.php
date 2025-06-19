@@ -27,12 +27,63 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
       '&hook_civicrm_post' => [
         ['assignChapterGroupToIndividual'],
         ['updateEventMonetaryContributionTotalAmount'],
+        ['updateEventMonetaryContributorsCount'],
       ],
       '&hook_civicrm_alterMailParams' => [
         ['alterReceiptMail'],
         ['handleOfflineReceipt'],
       ],
     ];
+  }
+
+  /**
+   *
+   */
+  public static function updateEventMonetaryContributorsCount(string $op, string $objectName, $objectId, &$objectRef) {
+    static $processed = [];
+
+    if ($objectName !== 'Contribution' || empty($objectRef->id)) {
+      return;
+    }
+
+    $contributionId = $objectRef->id;
+    if (isset($processed[$contributionId])) {
+      return;
+    }
+    $processed[$contributionId] = TRUE;
+
+    $contribution = Contribution::get(FALSE)
+      ->addSelect('contact_id', 'Contribution_Details.Events.id')
+      ->addWhere('id', '=', $contributionId)
+      ->addWhere('contribution_status_id:name', '=', 'Completed')
+      ->execute()
+      ->first();
+
+    if (!$contribution || empty($contribution['Contribution_Details.Events.id'])) {
+      return;
+    }
+
+    $eventId = $contribution['Contribution_Details.Events.id'];
+
+    $allContributions = Contribution::get(FALSE)
+      ->addSelect('contact_id')
+      ->addWhere('Contribution_Details.Events.id', '=', $eventId)
+      ->addWhere('contribution_status_id:name', '=', 'Completed')
+      ->execute();
+
+    if (!$allContributions) {
+      return;
+    }
+
+    $contactIds = array_column(iterator_to_array($allContributions), 'contact_id');
+    $uniqueContactIds = array_unique($contactIds);
+    $newCount = count($uniqueContactIds);
+
+    Event::update(FALSE)
+      ->addValue('Goonj_Events_Outcome.Number_of_Monetary_Contributors', $newCount)
+      ->addWhere('id', '=', $eventId)
+      ->execute();
+
   }
 
   /**
