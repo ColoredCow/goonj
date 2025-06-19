@@ -328,8 +328,15 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 document.addEventListener('DOMContentLoaded', function() {
-    const label = document.querySelector('label[for="is_recur"]');
-    if (label) {
-        label.textContent = 'Select Number of months you wish to contribute';
+    // Update the checkbox label text
+    const checkboxLabel = document.querySelector('label[for="is_recur"]');
+    if (checkboxLabel) {
+        checkboxLabel.textContent = 'Select Number of months you wish to contribute';
+    }
+
+    // Hide the installments label
+    const installmentsLabel = document.querySelector('label[for="installments"]');
+    if (installmentsLabel) {
+        installmentsLabel.style.display = 'none';
     }
 });
