@@ -46,7 +46,8 @@
           display: grid !important;
 
           &.is_recur-section .content {
-            justify-self: flex-start;
+            width: 100%;
+            align-content: start;
             display: block;
             margin-top: -15px;
           }
@@ -238,6 +239,15 @@
   }
 }
 
+.crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options {
+  display: contents;
+}
+
+.crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options div label {
+  bottom: 10px;
+  position: relative;
+}
+
 #crm-main-content-wrapper {
   form {
     &.CRM_Event_Form_Registration_Register {
@@ -273,6 +283,9 @@
           }
 
           fieldset > div:nth-last-child(4) {
+            display: none !important;
+          }
+          fieldset > div:nth-last-child(6) .label {
             display: none !important;
           }
         }

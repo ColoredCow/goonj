@@ -762,7 +762,7 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
     switch ($context) {
       case 'contributionPageRecurringHelp':
         if ($params['is_recur_installments']) {
-          return ts('Please specify the number of times you want your recurring contribution to renew. You can choose to cancel at any time.');
+          return ts('');
         }
     }
     return $text;
