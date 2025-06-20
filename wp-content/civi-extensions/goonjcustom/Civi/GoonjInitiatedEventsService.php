@@ -2,6 +2,7 @@
 
 namespace Civi;
 
+use Civi\Api4\Activity;
 use Civi\Api4\Address;
 use Civi\Api4\Contact;
 use Civi\Api4\Contribution;
@@ -28,12 +29,128 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
         ['assignChapterGroupToIndividual'],
         ['updateEventMonetaryContributionTotalAmount'],
         ['updateEventMonetaryContributorsCount'],
+        ['updateEventMatrialContributorsCount'],
       ],
       '&hook_civicrm_alterMailParams' => [
         ['alterReceiptMail'],
         ['handleOfflineReceipt'],
       ],
     ];
+  }
+
+  /**
+   *
+   */
+  public static function updateUniqueContributorsCount(int $eventId) {
+    // Step 1: Get unique Material contributors.
+    $materialActivities = Activity::get(FALSE)
+      ->addSelect('source_contact_id')
+      ->addWhere('Material_Contribution.Event', '=', $eventId)
+      ->execute();
+
+    $materialContactIds = [];
+    foreach ($materialActivities as $activity) {
+      if (!empty($activity['source_contact_id'])) {
+        $materialContactIds[] = $activity['source_contact_id'];
+      }
+    }
+
+    // Step 2: Get unique Monetary contributors.
+    $monetaryContributions = Contribution::get(FALSE)
+      ->addSelect('contact_id')
+      ->addWhere('Contribution_Details.Events.id', '=', $eventId)
+      ->addWhere('contribution_status_id:name', '=', 'Completed')
+      ->execute();
+
+    $monetaryContactIds = [];
+    foreach ($monetaryContributions as $contribution) {
+      if (!empty($contribution['contact_id'])) {
+        $monetaryContactIds[] = $contribution['contact_id'];
+      }
+    }
+
+    // Step 3: Merge and get unique contributors.
+    $allContactIds = array_unique(array_merge($materialContactIds, $monetaryContactIds));
+    $uniqueCount = count($allContactIds);
+
+    // Step 4: Update event's custom field.
+    try {
+      Event::update()
+        ->addValue('Goonj_Events_Outcome.Number_of_Contributors', $uniqueCount)
+        ->addWhere('id', '=', $eventId)
+        ->execute();
+
+      error_log("Updated Number_of_Unique_Contributors = $uniqueCount for event ID $eventId");
+    }
+    catch (\Exception $e) {
+      error_log("Failed to update unique contributors count: " . $e->getMessage());
+    }
+  }
+
+  /**
+   *
+   */
+  public static function updateEventMatrialContributorsCount(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($op !== 'create' || $objectName !== 'AfformSubmission') {
+      return;
+    }
+
+    error_log("objectRef: " . print_r($objectRef, TRUE));
+
+    $dataRaw = $objectRef->data ?? NULL;
+
+    if (!$dataRaw) {
+      return;
+    }
+
+    $dataDecoded = json_decode($dataRaw, TRUE);
+
+    if (!is_array($dataDecoded)) {
+      error_log("Failed to decode data JSON");
+      return;
+    }
+
+    $activityFields = $dataDecoded['Activity1'][0]['fields'] ?? [];
+    $eventId = $activityFields['Material_Contribution.Event'] ?? NULL;
+
+    if (!$eventId) {
+      error_log("No event ID found");
+      return;
+    }
+
+    // Step 1: Get all activities with the same event.
+    $activities = Activity::get(FALSE)
+      ->addSelect('source_contact_id')
+      ->addWhere('Material_Contribution.Event', '=', $eventId)
+      ->execute();
+
+    $uniqueContactIds = [];
+
+    foreach ($activities as $activity) {
+      if (!empty($activity['source_contact_id'])) {
+        // Using associative keys ensures uniqueness.
+        $uniqueContactIds[$activity['source_contact_id']] = TRUE;
+      }
+    }
+
+    $uniqueCount = count($uniqueContactIds);
+
+    self::updateUniqueContributorsCount($eventId);
+
+    error_log("Unique contributors count: $uniqueCount");
+
+    // Step 2: Update event's custom field (assuming it's named `material_contributors_count`)
+    try {
+      Event::update()
+        ->addValue('Goonj_Events_Outcome.Number_of_Material_Contributors', $uniqueCount)
+        ->addWhere('id', '=', $eventId)
+        ->execute();
+
+      error_log("Updated event ID $eventId with material_contributors_count = $uniqueCount");
+    }
+    catch (Exception $e) {
+      error_log("Failed to update event: " . $e->getMessage());
+    }
   }
 
   /**
@@ -64,6 +181,8 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
     }
 
     $eventId = $contribution['Contribution_Details.Events.id'];
+
+    self::updateUniqueContributorsCount($eventId);
 
     $allContributions = Contribution::get(FALSE)
       ->addSelect('contact_id')
