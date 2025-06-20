@@ -30,8 +30,8 @@ class InstitutionCollectionCampService extends AutoSubscriber {
   const FALLBACK_OFFICE_NAME = 'Delhi';
   const MATERIAL_RELATIONSHIP_TYPE_NAME = 'Material Management Team of';
   const INSTITUTION_COLLECTION_CAMP_INTENT_FB_NAMES = [
-    'afformInstitutionCollectionCampIntent',
-    'afformInstitutionCollectionCampIntentBackend',
+    'afformInstitutionCollectionCampIntent1',
+    'afformInstitutionCollectionCampIntentBackend1',
   ];
 
   private static $collectionCampAddress = NULL;
