@@ -2,6 +2,7 @@
 
 namespace Civi;
 
+use Civi\Api4\Activity;
 use Civi\Api4\Contribution;
 use Civi\Api4\CustomField;
 use Civi\Api4\EckEntity;
@@ -37,11 +38,14 @@ class CollectionBaseService extends AutoSubscriber {
         ['handleAuthorizationEmails'],
         ['checkIfPosterNeedsToBeGenerated'],
         ['generateCollectionSourceCode'],
+
       ],
       '&hook_civicrm_post' => [
         ['maybeGeneratePoster', 20],
         ['handleAuthorizationEmailsPost', 10],
         ['updateMonetaryContributionTotalAmount'],
+        ['updateMatrialContributorsCount'],
+        ['updateMonetaryContributorsCount'],
       ],
       '&hook_civicrm_fieldOptions' => 'setIndianStateOptions',
     ];
@@ -50,8 +54,205 @@ class CollectionBaseService extends AutoSubscriber {
   /**
    *
    */
+  public static function updateUniqueContributorsCount(int $eventId, string $activeFieldName, int $currentContactId) {
+    $materialActivities = Activity::get(FALSE)
+      ->addSelect('source_contact_id')
+      ->addWhere($activeFieldName, '=', $eventId)
+      ->execute();
+
+    $materialContactIds = [];
+    foreach ($materialActivities as $activity) {
+      if (!empty($activity['source_contact_id'])) {
+        $materialContactIds[] = (int) $activity['source_contact_id'];
+      }
+    }
+
+    $monetaryContributions = Contribution::get(FALSE)
+      ->addSelect('contact_id')
+      ->addWhere('Contribution_Details.Source.id', '=', $eventId)
+      ->addWhere('contribution_status_id:name', '=', 'Completed')
+      ->execute();
+
+    $monetaryContactIds = [];
+    foreach ($monetaryContributions as $contribution) {
+      if (!empty($contribution['contact_id'])) {
+        $monetaryContactIds[] = (int) $contribution['contact_id'];
+      }
+    }
+
+    $allContactIds = array_unique(array_merge($materialContactIds, $monetaryContactIds));
+    $uniqueCount = count($allContactIds);
+
+    $inMaterial = in_array($currentContactId, $materialContactIds, TRUE);
+    $inMoney    = in_array($currentContactId, $monetaryContactIds, TRUE);
+
+    if (!$inMaterial && !$inMoney) {
+      $uniqueCount++;
+    }
+
+    try {
+      EckEntity::update('Collection_Camp', TRUE)
+        ->addValue('Camp_Outcome.Number_of_Contributors', $uniqueCount)
+        ->addWhere('id', '=', $eventId)
+        ->execute();
+    }
+    catch (\Exception $e) {
+      // Don nothinh.
+    }
+  }
+
+  /**
+   *
+   */
+  public static function updateMatrialContributorsCount(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($op !== 'create' || $objectName !== 'AfformSubmission') {
+      return;
+    }
+
+    $dataRaw = $objectRef->data ?? NULL;
+    if (!$dataRaw) {
+      return;
+    }
+
+    $dataDecoded = json_decode($dataRaw, TRUE);
+
+    if (!is_array($dataDecoded)) {
+      return;
+    }
+    $fields = $dataDecoded['Activity1'][0]['fields'] ?? [];
+    if (!$fields) {
+      return;
+    }
+
+    $fieldMapping = [
+      'Material_Contribution.Collection_Camp' => 'Collection_Camp',
+      'Material_Contribution.Institution_Collection_Camp' => 'Institution_Collection_Camp',
+      'Material_Contribution.Dropping_Centre' => 'Dropping_Centre',
+      'Material_Contribution.Institution_Dropping_Center' => 'Institution_Dropping_Center',
+      'Material_Contribution.Goonj_Activities' => 'Goonj_Activities',
+      'Material_Contribution.Institution_Goonj_Activities' => 'Institution_Goonj_Activities',
+    ];
+
+    $activeFieldName = NULL;
+    $activeEntityId = NULL;
+    $currentContactId = $fields['source_contact_id'] ?? NULL;
+
+    foreach ($fieldMapping as $fieldKey => $entityType) {
+      if (!empty($fields[$fieldKey])) {
+        $activeFieldName = $fieldKey;
+        $activeEntityId = $fields[$fieldKey];
+        break;
+      }
+    }
+
+    self::updateUniqueContributorsCount($activeEntityId, $activeFieldName, $currentContactId);
+
+    if (!$activeFieldName || !$activeEntityId || !$currentContactId) {
+      return;
+    }
+
+    $activities = Activity::get(FALSE)
+      ->addSelect('source_contact_id')
+      ->addWhere($activeFieldName, '=', $activeEntityId)
+      ->execute();
+
+    $uniqueContactIds = [];
+    foreach ($activities as $activity) {
+      if (!empty($activity['source_contact_id'])) {
+        $uniqueContactIds[$activity['source_contact_id']] = TRUE;
+      }
+    }
+
+    if (isset($uniqueContactIds[$currentContactId])) {
+      return;
+    }
+
+    $uniqueContactIds[$currentContactId] = TRUE;
+    $uniqueCount = count($uniqueContactIds);
+
+    $entityType = $fieldMapping[$activeFieldName] ?? NULL;
+    if (!$entityType) {
+      return;
+    }
+
+    try {
+      EckEntity::update($entityType, TRUE)
+        ->addValue('Camp_Outcome.Book_Sale', $uniqueCount)
+        ->addWhere('id', '=', $activeEntityId)
+        ->execute();
+    }
+    catch (Exception $e) {
+      error_log("Failed to update entity: " . $e->getMessage());
+    }
+  }
+
+  /**
+   *
+   */
+  public static function updateMonetaryContributorsCount(string $op, string $objectName, $objectId, &$objectRef) {
+    static $processed = [];
+
+    if ($objectName !== 'Contribution' || empty($objectRef->id)) {
+      return;
+    }
+
+    $contributionId = $objectRef->id;
+    if (isset($processed[$contributionId])) {
+      return;
+    }
+    $processed[$contributionId] = TRUE;
+
+    $contribution = Contribution::get(FALSE)
+      ->addSelect('contact_id', 'Contribution_Details.Source.id')
+      ->addWhere('id', '=', $contributionId)
+      ->addWhere('contribution_status_id:name', '=', 'Completed')
+      ->execute()
+      ->first();
+
+    if (!$contribution || empty($contribution['Contribution_Details.Source.id'])) {
+      return;
+    }
+
+    $eventId = $contribution['Contribution_Details.Source.id'];
+
+    $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
+      ->addSelect('subtype:name')
+      ->addWhere('id', '=', $eventId)
+      ->execute()
+      ->first();
+
+    $subtype = $collectionCamps['subtype:name'] ?? NULL;
+
+    if ($subtype) {
+      $fieldName = "Material_Contribution.$subtype";
+      self::updateUniqueContributorsCount($eventId, $fieldName, $contribution['contact_id']);
+    }
+
+    $allContributions = Contribution::get(FALSE)
+      ->addSelect('contact_id')
+      ->addWhere('Contribution_Details.Source.id', '=', $eventId)
+      ->addWhere('contribution_status_id:name', '=', 'Completed')
+      ->execute();
+
+    if (!$allContributions) {
+      return;
+    }
+
+    $contactIds = array_column(iterator_to_array($allContributions), 'contact_id');
+    $uniqueContactIds = array_unique($contactIds);
+    $newCount = count($uniqueContactIds);
+
+    EckEntity::update('Collection_Camp', TRUE)
+      ->addValue('Contributions_Details.Number_of_Monetary_Contributors', $newCount)
+      ->addWhere('id', '=', $eventId)
+      ->execute();
+
+  }
+
+  /**
+   *
+   */
   public static function updateMonetaryContributionTotalAmount(string $op, string $objectName, $objectId, &$objectRef) {
-    error_log("Triggered hook for objectName: " . print_r($objectName, TRUE));
     static $processed = [];
 
     if ($objectName !== 'Contribution' || empty($objectRef->id)) {
