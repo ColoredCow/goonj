@@ -33,7 +33,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
   const MATERIAL_RELATIONSHIP_TYPE_NAME = 'Material Management Team of';
   const INSTITUTION_DROPPING_CENTER_INTENT_FB_NAMES = [
     'afformInstitutionDroppingCenterIntent1',
-    'afformAdminInstitutionDroppingCenterIntent',
+    'afformInstitutionDroppingCenterIntent',
   ];
 
   private static $droppingCenterAddress = NULL;
