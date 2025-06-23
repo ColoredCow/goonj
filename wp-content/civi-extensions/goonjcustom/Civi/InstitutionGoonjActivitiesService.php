@@ -52,7 +52,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
       ],
       'civi.afform.submit' => [
         ['setInstitutionGoonjActivitiesAddress', 9],
-        ['setInstitutionEventVolunteersAddress', 8],
+        // ['setInstitutionEventVolunteersAddress', 8],
       ],
       '&hook_civicrm_custom' => [
         ['setOfficeDetails'],
@@ -149,31 +149,31 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
   /**
    *
    */
-  public static function setInstitutionEventVolunteersAddress(AfformSubmitEvent $event) {
-    $afform = $event->getAfform();
-    $formName = $afform['name'];
+  // public static function setInstitutionEventVolunteersAddress(AfformSubmitEvent $event) {
+  //   $afform = $event->getAfform();
+  //   $formName = $afform['name'];
 
-    if (!in_array($formName, self::INSTITUTION_GOONJ_ACTIVITIES_INTENT_FB_NAMES, TRUE)) {
-      return;
-    }
+  //   if (!in_array($formName, self::INSTITUTION_GOONJ_ACTIVITIES_INTENT_FB_NAMES, TRUE)) {
+  //     return;
+  //   }
 
-    $entityType = $event->getEntityType();
+  //   $entityType = $event->getEntityType();
 
-    if (!CoreUtil::isContact($entityType)) {
-      return;
-    }
+  //   if (!CoreUtil::isContact($entityType)) {
+  //     return;
+  //   }
 
-    foreach ($event->records as $index => $contact) {
-      if (empty($contact['fields'])) {
-        continue;
-      }
-      if (self::$goonjActivitiesAddress === NULL) {
-        continue;
-      }
-      $event->records[$index]['joins']['Address'][] = self::$goonjActivitiesAddress;
-    }
+  //   foreach ($event->records as $index => $contact) {
+  //     if (empty($contact['fields'])) {
+  //       continue;
+  //     }
+  //     if (self::$goonjActivitiesAddress === NULL) {
+  //       continue;
+  //     }
+  //     $event->records[$index]['joins']['Address'][] = self::$goonjActivitiesAddress;
+  //   }
 
-  }
+  // }
 
   /**
    *
