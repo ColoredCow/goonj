@@ -179,7 +179,7 @@ class CollectionBaseService extends AutoSubscriber {
     }
 
     try {
-      EckEntity::update($entityType, TRUE)
+      EckEntity::update($entityType, FALSE)
         ->addValue('Core_Contribution_Details.Number_of_unique_material_contributors', $uniqueCount)
         ->addWhere('id', '=', $activeEntityId)
         ->execute();
@@ -218,7 +218,7 @@ class CollectionBaseService extends AutoSubscriber {
 
     $eventId = $contribution['Contribution_Details.Source.id'];
 
-    $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
+    $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
       ->addSelect('subtype:name')
       ->addWhere('id', '=', $eventId)
       ->execute()
@@ -245,7 +245,7 @@ class CollectionBaseService extends AutoSubscriber {
     $uniqueContactIds = array_unique($contactIds);
     $newCount = count($uniqueContactIds);
 
-    EckEntity::update('Collection_Camp', TRUE)
+    EckEntity::update('Collection_Camp', FALSE)
       ->addValue('Core_Contribution_Details.Number_of_unique_monetary_contributors', $newCount)
       ->addWhere('id', '=', $eventId)
       ->execute();
