@@ -2,14 +2,15 @@
 
 namespace Civi;
 
-use Civi\Api4\Contact;
-use Civi\Core\Service\AutoSubscriber;
-use Civi\Api4\Event;
+use Civi\Api4\Activity;
 use Civi\Api4\Address;
-use Civi\Traits\QrCodeable;
+use Civi\Api4\Contact;
+use Civi\Api4\Contribution;
+use Civi\Api4\Event;
 use Civi\Api4\Group;
 use Civi\Api4\GroupContact;
-use Civi\Api4\Contribution;
+use Civi\Core\Service\AutoSubscriber;
+use Civi\Traits\QrCodeable;
 
 /**
  *
@@ -24,12 +25,237 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
     return [
       '&hook_civicrm_pre' => 'generateGoonjEventsQr',
       '&hook_civicrm_tabset' => 'goonjEventsTabset',
-      '&hook_civicrm_post' => 'assignChapterGroupToIndividual',
+      '&hook_civicrm_post' => [
+        ['assignChapterGroupToIndividual'],
+        ['updateEventMonetaryContributionTotalAmount'],
+        ['updateEventMonetaryContributorsCount'],
+        ['updateEventMatrialContributorsCount'],
+      ],
       '&hook_civicrm_alterMailParams' => [
         ['alterReceiptMail'],
         ['handleOfflineReceipt'],
       ],
     ];
+  }
+
+  /**
+   *
+   */
+  public static function updateUniqueContributorsCount(int $eventId) {
+    // Step 1: Get unique Material contributors.
+    $materialActivities = Activity::get(FALSE)
+      ->addSelect('source_contact_id')
+      ->addWhere('Material_Contribution.Event', '=', $eventId)
+      ->execute();
+
+    $materialContactIds = [];
+    foreach ($materialActivities as $activity) {
+      if (!empty($activity['source_contact_id'])) {
+        $materialContactIds[] = $activity['source_contact_id'];
+      }
+    }
+
+    // Step 2: Get unique Monetary contributors.
+    $monetaryContributions = Contribution::get(FALSE)
+      ->addSelect('contact_id')
+      ->addWhere('Contribution_Details.Events.id', '=', $eventId)
+      ->addWhere('contribution_status_id:name', '=', 'Completed')
+      ->execute();
+
+    $monetaryContactIds = [];
+    foreach ($monetaryContributions as $contribution) {
+      if (!empty($contribution['contact_id'])) {
+        $monetaryContactIds[] = $contribution['contact_id'];
+      }
+    }
+
+    // Step 3: Merge and get unique contributors.
+    $allContactIds = array_unique(array_merge($materialContactIds, $monetaryContactIds));
+    $uniqueCount = count($allContactIds);
+
+    // Step 4: Update event's custom field.
+    try {
+      Event::update()
+        ->addValue('Goonj_Events_Outcome.Number_of_Contributors', $uniqueCount)
+        ->addWhere('id', '=', $eventId)
+        ->execute();
+
+      error_log("Updated Number_of_Unique_Contributors = $uniqueCount for event ID $eventId");
+    }
+    catch (\Exception $e) {
+      error_log("Failed to update unique contributors count: " . $e->getMessage());
+    }
+  }
+
+  /**
+   *
+   */
+  public static function updateEventMatrialContributorsCount(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($op !== 'create' || $objectName !== 'AfformSubmission') {
+      return;
+    }
+
+    error_log("objectRef: " . print_r($objectRef, TRUE));
+
+    $dataRaw = $objectRef->data ?? NULL;
+
+    if (!$dataRaw) {
+      return;
+    }
+
+    $dataDecoded = json_decode($dataRaw, TRUE);
+
+    if (!is_array($dataDecoded)) {
+      return;
+    }
+
+    $activityFields = $dataDecoded['Activity1'][0]['fields'] ?? [];
+    $eventId = $activityFields['Material_Contribution.Event'] ?? NULL;
+
+    if (!$eventId) {
+      return;
+    }
+
+    $activities = Activity::get(FALSE)
+      ->addSelect('source_contact_id')
+      ->addWhere('Material_Contribution.Event', '=', $eventId)
+      ->execute();
+
+    $uniqueContactIds = [];
+
+    foreach ($activities as $activity) {
+      if (!empty($activity['source_contact_id'])) {
+        $uniqueContactIds[$activity['source_contact_id']] = TRUE;
+      }
+    }
+
+    $uniqueCount = count($uniqueContactIds);
+
+    self::updateUniqueContributorsCount($eventId);
+
+    try {
+      Event::update()
+        ->addValue('Goonj_Events_Outcome.Number_of_unique_material_contributors', $uniqueCount)
+        ->addWhere('id', '=', $eventId)
+        ->execute();
+    }
+    catch (Exception $e) {
+    }
+  }
+
+  /**
+   *
+   */
+  public static function updateEventMonetaryContributorsCount(string $op, string $objectName, $objectId, &$objectRef) {
+    static $processed = [];
+
+    if ($objectName !== 'Contribution' || empty($objectRef->id)) {
+      return;
+    }
+
+    $contributionId = $objectRef->id;
+    if (isset($processed[$contributionId])) {
+      return;
+    }
+    $processed[$contributionId] = TRUE;
+
+    $contribution = Contribution::get(FALSE)
+      ->addSelect('contact_id', 'Contribution_Details.Events.id')
+      ->addWhere('id', '=', $contributionId)
+      ->addWhere('contribution_status_id:name', '=', 'Completed')
+      ->execute()
+      ->first();
+
+    if (!$contribution || empty($contribution['Contribution_Details.Events.id'])) {
+      return;
+    }
+
+    $eventId = $contribution['Contribution_Details.Events.id'];
+
+    self::updateUniqueContributorsCount($eventId);
+
+    $allContributions = Contribution::get(FALSE)
+      ->addSelect('contact_id')
+      ->addWhere('Contribution_Details.Events.id', '=', $eventId)
+      ->addWhere('contribution_status_id:name', '=', 'Completed')
+      ->execute();
+
+    if (!$allContributions) {
+      return;
+    }
+
+    $contactIds = array_column(iterator_to_array($allContributions), 'contact_id');
+    $uniqueContactIds = array_unique($contactIds);
+    $newCount = count($uniqueContactIds);
+
+    Event::update(FALSE)
+      ->addValue('Goonj_Events_Outcome.Number_of_unique_monetary_contributors', $newCount)
+      ->addWhere('id', '=', $eventId)
+      ->execute();
+
+  }
+
+  /**
+   *
+   */
+  public static function updateEventMonetaryContributionTotalAmount(string $op, string $objectName, $objectId, &$objectRef) {
+    static $processed = [];
+
+    if ($objectName !== 'Contribution' || empty($objectRef->id)) {
+      return;
+    }
+
+    $contributionId = $objectRef->id;
+    if (isset($processed[$contributionId])) {
+      return;
+    }
+    $processed[$contributionId] = TRUE;
+
+    $contribution = Contribution::get(FALSE)
+      ->addSelect(
+        'contribution_status_id:name',
+        'total_amount',
+        'Contribution_Details.Events.id',
+        'payment_instrument_id:name'
+      )
+      ->addWhere('id', '=', $contributionId)
+      ->addWhere('contribution_status_id:name', '=', 'Completed')
+      ->execute()
+      ->first();
+
+    if (!$contribution || empty($contribution['Contribution_Details.Events.id'])) {
+      return;
+    }
+
+    $eventId = $contribution['Contribution_Details.Events.id'];
+    $totalAmount = (float) $contribution['total_amount'];
+    $paymentMethod = $contribution['payment_instrument_id:name'];
+
+    $existing = Event::get(FALSE)
+      ->addSelect(
+        'Goonj_Events_Outcome.Online_Monetary_Contribution',
+        'Goonj_Events_Outcome.Cash_Contribution'
+      )
+      ->addWhere('id', '=', $eventId)
+      ->execute()
+      ->first();
+
+    $onlineCurrent = (float) ($existing['Goonj_Events_Outcome.Online_Monetary_Contribution'] ?? 0);
+    $cashCurrent = (float) ($existing['Goonj_Events_Outcome.Cash_Contribution'] ?? 0);
+    $update = Event::update(FALSE)
+      ->addWhere('id', '=', $eventId);
+
+    if ($paymentMethod === 'Credit Card') {
+      $onlineNew = $onlineCurrent + $totalAmount;
+      $update->addValue('Goonj_Events_Outcome.Online_Monetary_Contribution', $onlineNew);
+    }
+
+    if (in_array($paymentMethod, ['Cash', 'Check'], TRUE)) {
+      $cashNew = $cashCurrent + $totalAmount;
+      $update->addValue('Goonj_Events_Outcome.Cash_Contribution', $cashNew);
+    }
+
+    $update->execute();
   }
 
   /**
