@@ -60,7 +60,56 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
         ['updateInstitutionPointOfContact'],
         ['syncInstitutionDroppingCenterStatus'],
       ],
+      '&hook_civicrm_post' => [
+        ['updateInstitutionDispatchDetails'],
+      ],
     ];
+  }
+
+  /**
+   *
+   */
+  public static function updateInstitutionDispatchDetails(string $op, string $objectName, int $objectId, &$objectRef) {
+    if ($op !== 'edit' || $objectName !== 'AfformSubmission') {
+      return;
+    }
+
+    if (empty($objectRef->data)) {
+      return;
+    }
+
+    $data = json_decode($objectRef->data, TRUE);
+
+    if (!empty($data['Eck_Collection_Source_Vehicle_Dispatch1'])) {
+      foreach ($data['Eck_Collection_Source_Vehicle_Dispatch1'] as $entry) {
+        $entryId = $entry['id'] ?? NULL;
+        $fields = $entry['fields'] ?? [];
+
+        if (!$entryId) {
+          continue;
+        }
+
+        $institutionName = $fields['Camp_Institution_Data.Name_of_the_institution'] ?? '';
+        $institutionAddress = $fields['Camp_Institution_Data.Address'] ?? '';
+        $institutionCampId = $fields['Camp_Vehicle_Dispatch.Institution_Dropping_Center'] ?? '';
+
+        if (!$institutionName || !$institutionCampId) {
+          continue;
+        }
+
+        try {
+          EckEntity::update('Collection_Source_Vehicle_Dispatch', TRUE)
+            ->addValue('Camp_Institution_Data.Name_of_the_institution', $institutionName)
+            ->addValue('Camp_Vehicle_Dispatch.Collection_Camp_Address', $institutionAddress)
+            ->addWhere('Camp_Vehicle_Dispatch.Institution_Dropping_Center', '=', $institutionCampId)
+            ->addWhere('id', '=', $entryId)
+            ->execute();
+        }
+        catch (\Exception $e) {
+          continue;
+        }
+      }
+    }
   }
 
   /**
