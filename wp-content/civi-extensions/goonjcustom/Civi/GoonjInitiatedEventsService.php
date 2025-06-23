@@ -135,7 +135,7 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
 
     try {
       Event::update()
-        ->addValue('Goonj_Events_Outcome.Number_of_Material_Contributors', $uniqueCount)
+        ->addValue('Goonj_Events_Outcome.Number_of_unique_material_contributors', $uniqueCount)
         ->addWhere('id', '=', $eventId)
         ->execute();
     }
@@ -189,7 +189,7 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
     $newCount = count($uniqueContactIds);
 
     Event::update(FALSE)
-      ->addValue('Goonj_Events_Outcome.Number_of_Monetary_Contributors', $newCount)
+      ->addValue('Goonj_Events_Outcome.Number_of_unique_monetary_contributors', $newCount)
       ->addWhere('id', '=', $eventId)
       ->execute();
 
