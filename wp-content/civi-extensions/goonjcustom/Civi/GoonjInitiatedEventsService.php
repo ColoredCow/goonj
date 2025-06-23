@@ -106,7 +106,6 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
     $dataDecoded = json_decode($dataRaw, TRUE);
 
     if (!is_array($dataDecoded)) {
-      error_log("Failed to decode data JSON");
       return;
     }
 
@@ -114,11 +113,9 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
     $eventId = $activityFields['Material_Contribution.Event'] ?? NULL;
 
     if (!$eventId) {
-      error_log("No event ID found");
       return;
     }
 
-    // Step 1: Get all activities with the same event.
     $activities = Activity::get(FALSE)
       ->addSelect('source_contact_id')
       ->addWhere('Material_Contribution.Event', '=', $eventId)
@@ -128,7 +125,6 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
 
     foreach ($activities as $activity) {
       if (!empty($activity['source_contact_id'])) {
-        // Using associative keys ensures uniqueness.
         $uniqueContactIds[$activity['source_contact_id']] = TRUE;
       }
     }
@@ -137,19 +133,13 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
 
     self::updateUniqueContributorsCount($eventId);
 
-    error_log("Unique contributors count: $uniqueCount");
-
-    // Step 2: Update event's custom field (assuming it's named `material_contributors_count`)
     try {
       Event::update()
         ->addValue('Goonj_Events_Outcome.Number_of_Material_Contributors', $uniqueCount)
         ->addWhere('id', '=', $eventId)
         ->execute();
-
-      error_log("Updated event ID $eventId with material_contributors_count = $uniqueCount");
     }
     catch (Exception $e) {
-      error_log("Failed to update event: " . $e->getMessage());
     }
   }
 
