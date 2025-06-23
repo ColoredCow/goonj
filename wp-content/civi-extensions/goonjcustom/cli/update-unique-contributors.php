@@ -21,9 +21,7 @@ $subtypeToActivityField = [
   'Collection_Camp' => 'Material_Contribution.Collection_Camp',
   'Dropping_Center' => 'Material_Contribution.Dropping_Center',
   'Institution_Collection_Camp' => 'Material_Contribution.Institution_Collection_Camp',
-  'Goonj_Activities' => 'Material_Contribution.Goonj_Activities',
   'Institution_Dropping_Center' => 'Material_Contribution.Institution_Dropping_Center',
-  'Institution_Goonj_Activities' => 'Material_Contribution.Institution_Goonj_Activities',
 ];
 
 // List of supported subtypes
@@ -31,13 +29,13 @@ $subtypes = array_keys($subtypeToActivityField);
 
 // Step 1: Get all relevant Collection_Camp entities
 $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
-  ->addSelect('id', 'subtype.name')
-  ->addWhere('subtype.name', 'IN', $subtypes)
+  ->addSelect('id', 'subtype:name')
+  ->addWhere('subtype:name', 'IN', $subtypes)
   ->execute();
 
 foreach ($collectionCamps as $camp) {
   $campId = $camp['id'];
-  $subtype = $camp['subtype.name'];
+  $subtype = $camp['subtype:name'];
 
   if (!isset($subtypeToActivityField[$subtype])) {
     error_log("Skipping unknown subtype '$subtype' for camp ID $campId");

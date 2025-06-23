@@ -128,8 +128,6 @@ class CollectionBaseService extends AutoSubscriber {
       'Material_Contribution.Institution_Collection_Camp' => 'Institution_Collection_Camp',
       'Material_Contribution.Dropping_Centre' => 'Dropping_Centre',
       'Material_Contribution.Institution_Dropping_Center' => 'Institution_Dropping_Center',
-      'Material_Contribution.Goonj_Activities' => 'Goonj_Activities',
-      'Material_Contribution.Institution_Goonj_Activities' => 'Institution_Goonj_Activities',
     ];
 
     $activeFieldName = NULL;

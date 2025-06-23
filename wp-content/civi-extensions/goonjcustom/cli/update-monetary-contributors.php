@@ -1,7 +1,7 @@
 <?php
 
 use Civi\Api4\EckEntity;
-use Civi\Api4\contribution;
+use Civi\Api4\Contribution;
 
 // Exit if not run via CLI
 if (php_sapi_name() !== 'cli') {
@@ -13,46 +13,54 @@ require_once CIVICRM_SETTINGS_PATH;
 require_once 'CRM/Core/Config.php';
 CRM_Core_Config::singleton();
 
-
 echo "Starting contributor count update...\n";
 
 // Step 1: Get all Collection_Camp IDs
 $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
   ->addSelect('id')
-  ->addWhere('subtype:name', 'IN', ['Collection_Camp', 'Dropping_Center', 'Institution_Collection_Camp', 'Goonj_Activities', 'Institution_Dropping_Center', 'Institution_Goonj_Activities'])
+  ->addWhere('subtype:name', 'IN', [
+    'Collection_Camp',
+    'Dropping_Center',
+    'Institution_Collection_Camp',
+    'Goonj_Activities',
+    'Institution_Dropping_Center',
+    'Institution_Goonj_Activities'
+  ])
   ->execute();
 
 foreach ($collectionCamps as $camp) {
   $campId = $camp['id'];
-  error_log("campId: " . print_r($campId, TRUE));
-  // Step 2: Get all contributions for this Collection Camp
+  error_log("Processing campId: $campId");
 
-    $contributions = \Civi\Api4\Contribution::get(FALSE)
-  ->addSelect('contact_id')
-  ->addWhere('Contribution_Details.Source.id', '=', $campId)
-  ->addWhere('contribution_status_id:name', '=', 'Completed')
-  ->execute();
+  // Step 2: Get all 'Completed' contributions for this camp based on Source.id
+  $contributions = Contribution::get(FALSE)
+    ->addSelect('id', 'contact_id', 'Contribution_Details.Source.id')
+    ->addWhere('Contribution_Details.Source.id', '=', $campId)
+    ->addWhere('contribution_status_id:name', '=', 'Completed')
+    ->execute();
 
-   
-  // Step 3: Extract unique source_contact_ids
+  error_log("Found " . count($contributions) . " contributions for campId $campId");
+
+  // Step 3: Collect unique contact IDs
   $uniqueContacts = [];
+
   foreach ($contributions as $contribution) {
-    if (!empty($contribution['contact_id'])) {
-      $uniqueContacts[$contribution['contact_id']] = true;
+    $contactId = $contribution['contact_id'] ?? null;
+    if (!empty($contactId)) {
+      $uniqueContacts[$contactId] = true;
     }
   }
-  error_log("uniqueContacts: " . print_r($uniqueContacts, TRUE));
 
   $uniqueCount = count($uniqueContacts);
+  error_log("Unique contributors for campId $campId: $uniqueCount");
 
-  echo "Camp ID $campId: $uniqueCount unique monetary contributors\n";
-
-  // Step 4: Update Collection_Camp entity
+  // Step 4: Update the Collection_Camp entity with the count
   EckEntity::update('Collection_Camp', FALSE)
-    ->addValue('Core_Contribution_Details.Number_of_unique_monetary_contributorsn', $uniqueCount)
+    ->addValue('Core_Contribution_Details.Number_of_unique_monetary_contributors', $uniqueCount)
     ->addWhere('id', '=', $campId)
     ->execute();
+
+  echo "Updated camp ID $campId: $uniqueCount unique contributors.\n";
 }
 
 echo "Update complete.\n";
-
