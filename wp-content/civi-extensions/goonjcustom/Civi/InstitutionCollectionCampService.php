@@ -255,7 +255,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
         try {
           EckEntity::update('Collection_Source_Vehicle_Dispatch', TRUE)
             ->addValue('Camp_Institution_Data.Name_of_the_institution', $institutionName)
-            ->addValue('Camp_Vehicle_Dispatch.Collection_Camp_Address', $institutionAddress)
+            ->addValue('Camp_Institution_Data.Address', $institutionAddress)
             ->addWhere('Camp_Vehicle_Dispatch.Institution_Collection_Camp', '=', $institutionCampId)
             ->addWhere('id', '=', $entryId)
             ->execute();
