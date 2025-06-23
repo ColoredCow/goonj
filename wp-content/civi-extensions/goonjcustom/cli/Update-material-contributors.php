@@ -13,44 +13,61 @@ require_once CIVICRM_SETTINGS_PATH;
 require_once 'CRM/Core/Config.php';
 CRM_Core_Config::singleton();
 
-
 echo "Starting contributor count update...\n";
 
-// Step 1: Get all Collection_Camp IDs
+// Define subtype => activity field map
+$subtypeToActivityField = [
+  'Collection_Camp' => 'Material_Contribution.Collection_Camp',
+  'Dropping_Center' => 'Material_Contribution.Dropping_Center',
+  'Institution_Collection_Camp' => 'Material_Contribution.Institution_Collection_Camp',
+  'Goonj_Activities' => 'Material_Contribution.Goonj_Activities',
+  'Institution_Dropping_Center' => 'Material_Contribution.Institution_Dropping_Center',
+  'Institution_Goonj_Activities' => 'Material_Contribution.Institution_Goonj_Activities',
+];
+
+$subtypes = array_keys($subtypeToActivityField);
+
+// Step 1: Get all relevant camps
 $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
-  ->addSelect('id')
-  ->addWhere('subtype:name', '=', 'Collection_Camp')
+  ->addSelect('id', 'subtype.name')
+  ->addWhere('subtype.name', 'IN', $subtypes)
   ->execute();
 
 foreach ($collectionCamps as $camp) {
   $campId = $camp['id'];
-  error_log("campId: " . print_r($campId, TRUE));
-  // Step 2: Get all Activities for this Collection Camp
+  $subtype = $camp['subtype.name'];
+
+  // Get correct activity field for this subtype
+  if (!isset($subtypeToActivityField[$subtype])) {
+    error_log("Unknown subtype '$subtype' for camp ID $campId. Skipping...");
+    continue;
+  }
+
+  $activityField = $subtypeToActivityField[$subtype];
+  error_log("Processing Camp ID: $campId (Subtype: $subtype, Filter: $activityField)");
+
+  // Step 2: Get activities linked by correct field
   $activities = Activity::get(FALSE)
     ->addSelect('source_contact_id')
-    ->addWhere('Material_Contribution.Collection_Camp', '=', $campId)
+    ->addWhere($activityField, '=', $campId)
     ->execute();
 
-   
-  // Step 3: Extract unique source_contact_ids
+  // Step 3: Unique source_contact_ids
   $uniqueContacts = [];
   foreach ($activities as $activity) {
     if (!empty($activity['source_contact_id'])) {
       $uniqueContacts[$activity['source_contact_id']] = true;
     }
   }
-  error_log("uniqueContacts: " . print_r($uniqueContacts, TRUE));
 
   $uniqueCount = count($uniqueContacts);
+  echo "Camp ID $campId ($subtype): $uniqueCount unique material contributors\n";
 
-  echo "Camp ID $campId: $uniqueCount unique cash contributors\n";
-
-  // Step 4: Update Collection_Camp entity
+  // Step 4: Update contributor count
   EckEntity::update('Collection_Camp', FALSE)
-    ->addValue('Camp_Outcome.Number_of_Material_Contributors', $uniqueCount)
+    ->addValue('Core_Contribution_Details.Number_of_unique_material_contributors', $uniqueCount)
     ->addWhere('id', '=', $campId)
     ->execute();
 }
 
-echo "Update complete.\n";
-
+echo "Contributor count update complete.\n";

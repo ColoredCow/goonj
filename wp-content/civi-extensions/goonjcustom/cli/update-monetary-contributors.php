@@ -19,7 +19,7 @@ echo "Starting contributor count update...\n";
 // Step 1: Get all Collection_Camp IDs
 $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
   ->addSelect('id')
-  ->addWhere('subtype:name', '=', 'Collection_Camp')
+  ->addWhere('subtype:name', 'IN', ['Collection_Camp', 'Dropping_Center', 'Institution_Collection_Camp', 'Goonj_Activities', 'Institution_Dropping_Center', 'Institution_Goonj_Activities'])
   ->execute();
 
 foreach ($collectionCamps as $camp) {
@@ -30,6 +30,7 @@ foreach ($collectionCamps as $camp) {
     $contributions = \Civi\Api4\Contribution::get(FALSE)
   ->addSelect('contact_id')
   ->addWhere('Contribution_Details.Source.id', '=', $campId)
+  ->addWhere('contribution_status_id:name', '=', 'Completed')
   ->execute();
 
    
@@ -48,7 +49,7 @@ foreach ($collectionCamps as $camp) {
 
   // Step 4: Update Collection_Camp entity
   EckEntity::update('Collection_Camp', FALSE)
-    ->addValue('Camp_Outcome.Cash_Contribution', $uniqueCount)
+    ->addValue('Core_Contribution_Details.Number_of_unique_monetary_contributorsn', $uniqueCount)
     ->addWhere('id', '=', $campId)
     ->execute();
 }
