@@ -1,3 +1,4 @@
+// Change div position based on radio button selection
 document.addEventListener('DOMContentLoaded', function() {
     var donateMonthlyRadio = document.querySelector('.crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options .crm-option-label-pair input.crm-form-radio[value="2"]');
     var recurringSection = document.querySelector('.crm-public-form-item.crm-section.is_recur-section');
@@ -15,7 +16,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             if (recurringSection) {
                 recurringSection.style.position = 'relative';
-                recurringSection.style.top = '79px';
+                recurringSection.style.top = '90px';
             }
         } else {
             if (firstDiv) {
