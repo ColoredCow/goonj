@@ -48,8 +48,8 @@ foreach ($collectionCamps as $camp) {
   error_log("Online total: ₹$onlineTotal | Cash total: ₹$cashTotal");
 
   EckEntity::update('Collection_Camp', FALSE)
-    ->addValue('Camp_Outcome.Online_Monetary_Contribution', $onlineTotal)
-    ->addValue('Camp_Outcome.Cash_Contribution', $cashTotal)
+    ->addValue('Core_Contribution_Details.Total_online_monetary_contributions', $onlineTotal)
+    ->addValue('Core_Contribution_Details.Total_cash_cheque_monetary_contributions', $cashTotal)
     ->addWhere('id', '=', $campId)
     ->execute();
 
