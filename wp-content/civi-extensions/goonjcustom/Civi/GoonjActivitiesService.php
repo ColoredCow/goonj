@@ -35,7 +35,7 @@ class GoonjActivitiesService extends AutoSubscriber {
     return [
       'civi.afform.submit' => [
         ['setGoonjActivitiesAddress', 9],
-        ['setActivitiesVolunteersAddress', 8],
+        // ['setActivitiesVolunteersAddress', 8],
       ],
       '&hook_civicrm_custom' => [
         ['setOfficeDetails'],
@@ -89,29 +89,29 @@ class GoonjActivitiesService extends AutoSubscriber {
   /**
    *
    */
-  public static function setActivitiesVolunteersAddress(AfformSubmitEvent $event) {
-    $afform = $event->getAfform();
-    $formName = $afform['name'];
+  // public static function setActivitiesVolunteersAddress(AfformSubmitEvent $event) {
+  //   $afform = $event->getAfform();
+  //   $formName = $afform['name'];
 
-    if (!in_array($formName, self::GOONJ_ACTIVITIES_INTENT_FB_NAME)) {
-      return;
-    }
+  //   if (!in_array($formName, self::GOONJ_ACTIVITIES_INTENT_FB_NAME)) {
+  //     return;
+  //   }
 
-    $entityType = $event->getEntityType();
+  //   $entityType = $event->getEntityType();
 
-    if (!CoreUtil::isContact($entityType)) {
-      return;
-    }
+  //   if (!CoreUtil::isContact($entityType)) {
+  //     return;
+  //   }
 
-    foreach ($event->records as $index => $contact) {
-      if (empty($contact['fields'])) {
-        continue;
-      }
+  //   foreach ($event->records as $index => $contact) {
+  //     if (empty($contact['fields'])) {
+  //       continue;
+  //     }
 
-      $event->records[$index]['joins']['Address'][] = self::$goonjActivitiesAddress;
-    }
+  //     $event->records[$index]['joins']['Address'][] = self::$goonjActivitiesAddress;
+  //   }
 
-  }
+  // }
 
   /**
    * This hook is called after the database write on a custom table.
