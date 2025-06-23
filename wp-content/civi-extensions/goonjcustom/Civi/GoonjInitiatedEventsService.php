@@ -42,7 +42,6 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
    *
    */
   public static function updateUniqueContributorsCount(int $eventId) {
-    // Step 1: Get unique Material contributors.
     $materialActivities = Activity::get(FALSE)
       ->addSelect('source_contact_id')
       ->addWhere('Material_Contribution.Event', '=', $eventId)
@@ -55,7 +54,6 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
       }
     }
 
-    // Step 2: Get unique Monetary contributors.
     $monetaryContributions = Contribution::get(FALSE)
       ->addSelect('contact_id')
       ->addWhere('Contribution_Details.Events.id', '=', $eventId)
@@ -69,21 +67,17 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
       }
     }
 
-    // Step 3: Merge and get unique contributors.
     $allContactIds = array_unique(array_merge($materialContactIds, $monetaryContactIds));
     $uniqueCount = count($allContactIds);
 
-    // Step 4: Update event's custom field.
     try {
       Event::update()
         ->addValue('Goonj_Events_Outcome.Number_of_Contributors', $uniqueCount)
         ->addWhere('id', '=', $eventId)
         ->execute();
 
-      error_log("Updated Number_of_Unique_Contributors = $uniqueCount for event ID $eventId");
     }
     catch (\Exception $e) {
-      error_log("Failed to update unique contributors count: " . $e->getMessage());
     }
   }
 
@@ -94,8 +88,6 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
     if ($op !== 'create' || $objectName !== 'AfformSubmission') {
       return;
     }
-
-    error_log("objectRef: " . print_r($objectRef, TRUE));
 
     $dataRaw = $objectRef->data ?? NULL;
 
@@ -112,7 +104,7 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
     $activityFields = $dataDecoded['Activity1'][0]['fields'] ?? [];
     $eventId = $activityFields['Material_Contribution.Event'] ?? NULL;
 
-    if (!$eventId) {
+    if (!$eventId || !$activityFields) {
       return;
     }
 
@@ -171,6 +163,10 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
     }
 
     $eventId = $contribution['Contribution_Details.Events.id'];
+
+    if (!$eventId) {
+      return;
+    }
 
     self::updateUniqueContributorsCount($eventId);
 
