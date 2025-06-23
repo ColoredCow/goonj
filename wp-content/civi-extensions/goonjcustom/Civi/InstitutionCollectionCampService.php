@@ -235,10 +235,6 @@ class InstitutionCollectionCampService extends AutoSubscriber {
 
     $data = json_decode($objectRef->data, TRUE);
 
-    if (json_last_error() !== JSON_ERROR_NONE) {
-      return;
-    }
-
     if (!empty($data['Eck_Collection_Source_Vehicle_Dispatch1'])) {
       foreach ($data['Eck_Collection_Source_Vehicle_Dispatch1'] as $entry) {
         $entryId = $entry['id'] ?? NULL;
