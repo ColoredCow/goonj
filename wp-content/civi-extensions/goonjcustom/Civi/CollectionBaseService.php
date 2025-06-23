@@ -92,12 +92,11 @@ class CollectionBaseService extends AutoSubscriber {
 
     try {
       EckEntity::update('Collection_Camp', TRUE)
-        ->addValue('Camp_Outcome.Number_of_Contributors', $uniqueCount)
+        ->addValue('Core_Contribution_Details.Number_of_unique_contributors', $uniqueCount)
         ->addWhere('id', '=', $eventId)
         ->execute();
     }
     catch (\Exception $e) {
-      // Don nothinh.
     }
   }
 
@@ -145,6 +144,10 @@ class CollectionBaseService extends AutoSubscriber {
       }
     }
 
+    if(!$activeEntityId || !$currentContactId) {
+      return;
+    }
+
     self::updateUniqueContributorsCount($activeEntityId, $activeFieldName, $currentContactId);
 
     if (!$activeFieldName || !$activeEntityId || !$currentContactId) {
@@ -177,7 +180,7 @@ class CollectionBaseService extends AutoSubscriber {
 
     try {
       EckEntity::update($entityType, TRUE)
-        ->addValue('Camp_Outcome.Book_Sale', $uniqueCount)
+        ->addValue('Core_Contribution_Details.Number_of_unique_material_contributors', $uniqueCount)
         ->addWhere('id', '=', $activeEntityId)
         ->execute();
     }
@@ -243,7 +246,7 @@ class CollectionBaseService extends AutoSubscriber {
     $newCount = count($uniqueContactIds);
 
     EckEntity::update('Collection_Camp', TRUE)
-      ->addValue('Contributions_Details.Number_of_Monetary_Contributors', $newCount)
+      ->addValue('Core_Contribution_Details.Number_of_unique_monetary_contributors', $newCount)
       ->addWhere('id', '=', $eventId)
       ->execute();
 
@@ -287,27 +290,27 @@ class CollectionBaseService extends AutoSubscriber {
 
     $existing = EckEntity::get('Collection_Camp', FALSE)
       ->addSelect(
-        'Camp_Outcome.Online_Monetary_Contribution',
-        'Camp_Outcome.Cash_Contribution'
+        'Core_Contribution_Details.Total_online_monetary_contributions',
+        'Core_Contribution_Details.Total_cash_cheque_monetary_contributions'
       )
       ->addWhere('id', '=', $campId)
       ->execute()
       ->first();
 
-    $onlineCurrent = (float) ($existing['Camp_Outcome.Online_Monetary_Contribution'] ?? 0);
-    $cashCurrent = (float) ($existing['Camp_Outcome.Cash_Contribution'] ?? 0);
+    $onlineCurrent = (float) ($existing['Core_Contribution_Details.Total_online_monetary_contributions'] ?? 0);
+    $cashCurrent = (float) ($existing['Core_Contribution_Details.Total_cash_cheque_monetary_contributions'] ?? 0);
 
     $update = EckEntity::update('Collection_Camp', FALSE)
       ->addWhere('id', '=', $campId);
 
     if ($paymentMethod === 'Credit Card') {
       $onlineNew = $onlineCurrent + $totalAmount;
-      $update->addValue('Camp_Outcome.Online_Monetary_Contribution', $onlineNew);
+      $update->addValue('Core_Contribution_Details.Total_online_monetary_contributions', $onlineNew);
     }
 
     if (in_array($paymentMethod, ['Cash', 'Check'], TRUE)) {
       $cashNew = $cashCurrent + $totalAmount;
-      $update->addValue('Camp_Outcome.Cash_Contribution', $cashNew);
+      $update->addValue('Core_Contribution_Details.Total_cash_cheque_monetary_contributions', $cashNew);
     }
 
     $update->execute();
