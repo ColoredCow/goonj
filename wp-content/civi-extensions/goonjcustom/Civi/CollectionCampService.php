@@ -109,7 +109,6 @@ class CollectionCampService extends AutoSubscriber {
       }
     }
 
-
     if ($hasRestrictedRole) {
       unset($tabs['view']);
       unset($tabs['edit']);
@@ -121,63 +120,63 @@ class CollectionCampService extends AutoSubscriber {
         'module' => 'afformCollectionCampIntentEdit',
         'directive' => 'afform-collection-camp-intent-edit',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp/Edit.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt_and_accounts_chapter_team', 'urban_ops_and_accounts_chapter_team'],
       ],
       'logistics' => [
         'title' => ts('Logistics'),
         'module' => 'afsearchCollectionCampLogistics',
         'directive' => 'afsearch-collection-camp-logistics',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp/Logistics.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team'],
       ],
       'eventVolunteers' => [
         'title' => ts('Event Volunteers'),
         'module' => 'afsearchEventVolunteer',
         'directive' => 'afsearch-event-volunteer',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp/EventVolunteers.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team'],
       ],
       'vehicleDispatch' => [
         'title' => ts('Dispatch'),
         'module' => 'afsearchCampVehicleDispatchData',
         'directive' => 'afsearch-camp-vehicle-dispatch-data',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp/VehicleDispatch.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team'],
       ],
       'materialAuthorization' => [
         'title' => ts('Material Authorization'),
         'module' => 'afsearchAcknowledgementForLogisticsData',
         'directive' => 'afsearch-acknowledgement-for-logistics-data',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp/MaterialAuthorization.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team'],
       ],
       'materialContribution' => [
         'title' => ts('Material Contribution'),
         'module' => 'afsearchCollectionCampMaterialContributions',
         'directive' => 'afsearch-collection-camp-material-contributions',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp/MaterialContribution.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'mmt', 'urban_ops_admin', 'data_entry'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'mmt', 'urban_ops_admin', 'data_entry', 'urban_ops_and_accounts_chapter_team'],
       ],
       'campOutcome' => [
         'title' => ts('Camp Outcome'),
         'module' => 'afsearchCampOutcome',
         'directive' => 'afsearch-camp-outcome',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp/Outcome.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team'],
       ],
       'campFeedback' => [
         'title' => ts('Volunteer Feedback'),
         'module' => 'afsearchVolunteerFeedback',
         'directive' => 'afsearch-volunteer-feedback',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp/Feedback.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team'],
       ],
       'monetaryContribution' => [
         'title' => ts('Monetary Contribution'),
         'module' => 'afsearchMonetaryContribution',
         'directive' => 'afsearch-monetary-contribution',
         'template' => 'CRM/Goonjcustom/Tabs/MonetaryContribution.tpl',
-        'permissions' => ['account_team', 'ho_account'],
+        'permissions' => ['account_team', 'ho_account', 'mmt_and_accounts_chapter_team', 'urban_ops_and_accounts_chapter_team'],
       ],
       'monetaryContributionForUrbanOps' => [
         'title' => ts('Monetary Contribution'),
@@ -1114,43 +1113,11 @@ class CollectionCampService extends AutoSubscriber {
   /**
    *
    */
-  public static function updateContributorCount($collectionCamp) {
-    $activities = Activity::get(FALSE)
-      ->addSelect('id')
-      ->addWhere('Material_Contribution.Collection_Camp', '=', $collectionCamp['id'])
-      ->execute();
-
-    $contributorCount = count($activities);
-
-    EckEntity::update('Collection_Camp', FALSE)
-      ->addValue('Camp_Outcome.Number_of_Contributors', $contributorCount)
-      ->addWhere('id', '=', $collectionCamp['id'])
-      ->execute();
-  }
 
   /**
    *
    */
-  public static function updateContributionCount($collectionCamp) {
-    $contributions = Contribution::get(FALSE)
-      ->addSelect('total_amount')
-      ->addWhere('Contribution_Details.Source', '=', $collectionCamp['id'])
-      ->addWhere('is_test', 'IS NOT NULL')
-      ->execute();
 
-    // Initialize sum variable.
-    $totalSum = 0;
-
-    // Iterate through the results and sum the total_amount.
-    foreach ($contributions as $contribution) {
-      $totalSum += $contribution['total_amount'];
-    }
-
-    EckEntity::update('Collection_Camp', FALSE)
-      ->addValue('Camp_Outcome.Monitory_Contribution', $totalSum)
-      ->addWhere('id', '=', $collectionCamp['id'])
-      ->execute();
-  }
 
   /**
    * This hook is called after a db write on entities.
