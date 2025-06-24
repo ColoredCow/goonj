@@ -51,7 +51,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       ],
       'civi.afform.submit' => [
         ['setInstitutionCollectionCampAddress', 9],
-        // ['setInstitutionEventVolunteersAddress', 8],
+        ['setInstitutionEventVolunteersAddress', 8],
       ],
       '&hook_civicrm_post' => [
         ['updateNameOfTheInstitution'],
@@ -194,31 +194,31 @@ class InstitutionCollectionCampService extends AutoSubscriber {
   /**
    *
    */
-  // public static function setInstitutionEventVolunteersAddress(AfformSubmitEvent $event) {
-  //   $afform = $event->getAfform();
-  //   $formName = $afform['name'];
+  public static function setInstitutionEventVolunteersAddress(AfformSubmitEvent $event) {
+    $afform = $event->getAfform();
+    $formName = $afform['name'];
 
-  //   if (!in_array($formName, self::INSTITUTION_COLLECTION_CAMP_INTENT_FB_NAMES, TRUE)) {
-  //     return;
-  //   }
+    if (!in_array($formName, self::INSTITUTION_COLLECTION_CAMP_INTENT_FB_NAMES, TRUE)) {
+      return;
+    }
 
-  //   $entityType = $event->getEntityType();
+    $entityType = $event->getEntityType();
 
-  //   if (!CoreUtil::isContact($entityType)) {
-  //     return;
-  //   }
+    if (!CoreUtil::isContact($entityType)) {
+      return;
+    }
 
-  //   foreach ($event->records as $index => $contact) {
-  //     if (empty($contact['fields'])) {
-  //       continue;
-  //     }
-  //     if (self::$collectionCampAddress === NULL) {
-  //       continue;
-  //     }
-  //     $event->records[$index]['joins']['Address'][] = self::$collectionCampAddress;
-  //   }
+    foreach ($event->records as $index => $contact) {
+      if (empty($contact['fields'])) {
+        continue;
+      }
+      if (self::$collectionCampAddress === NULL) {
+        continue;
+      }
+      $event->records[$index]['joins']['Address'][] = self::$collectionCampAddress;
+    }
 
-  // }
+  }
 
   /**
    *
