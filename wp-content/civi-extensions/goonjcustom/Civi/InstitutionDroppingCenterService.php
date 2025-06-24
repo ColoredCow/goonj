@@ -50,7 +50,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       ],
       'civi.afform.submit' => [
         ['setInstitutionDroppingCenterAddress', 9],
-        // ['setInstitutionEventVolunteersAddress', 8],
+        ['setInstitutionEventVolunteersAddress', 8],
       ],
       '&hook_civicrm_pre' => [
         ['assignChapterGroupToIndividual'],
@@ -161,31 +161,31 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
   /**
    *
    */
-  // public static function setInstitutionEventVolunteersAddress(AfformSubmitEvent $event) {
-  //   $afform = $event->getAfform();
-  //   $formName = $afform['name'];
+  public static function setInstitutionEventVolunteersAddress(AfformSubmitEvent $event) {
+    $afform = $event->getAfform();
+    $formName = $afform['name'];
 
-  //   if (!in_array($formName, self::INSTITUTION_DROPPING_CENTER_INTENT_FB_NAMES, TRUE)) {
-  //     return;
-  //   }
+    if (!in_array($formName, self::INSTITUTION_DROPPING_CENTER_INTENT_FB_NAMES, TRUE)) {
+      return;
+    }
 
-  //   $entityType = $event->getEntityType();
+    $entityType = $event->getEntityType();
 
-  //   if (!CoreUtil::isContact($entityType)) {
-  //     return;
-  //   }
+    if (!CoreUtil::isContact($entityType)) {
+      return;
+    }
 
-  //   foreach ($event->records as $index => $contact) {
-  //     if (empty($contact['fields'])) {
-  //       continue;
-  //     }
-  //     if (self::$droppingCenterAddress === NULL) {
-  //       continue;
-  //     }
-  //     $event->records[$index]['joins']['Address'][] = self::$droppingCenterAddress;
-  //   }
+    foreach ($event->records as $index => $contact) {
+      if (empty($contact['fields'])) {
+        continue;
+      }
+      if (self::$droppingCenterAddress === NULL) {
+        continue;
+      }
+      $event->records[$index]['joins']['Address'][] = self::$droppingCenterAddress;
+    }
 
-  // }
+  }
 
   /**
    *
