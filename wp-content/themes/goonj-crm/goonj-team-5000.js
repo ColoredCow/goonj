@@ -71,6 +71,6 @@ document.addEventListener('DOMContentLoaded', function () {
 document.addEventListener('DOMContentLoaded', function() {
     const label = document.querySelector('label[for="is_recur"]');
     if (label) {
-        label.textContent = 'I want to contribute this amount every month';
+        label.textContent = 'I want to donate this amount every month';
     }
 });
