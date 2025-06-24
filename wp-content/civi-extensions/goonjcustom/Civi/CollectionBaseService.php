@@ -417,6 +417,7 @@ class CollectionBaseService extends AutoSubscriber {
     }
 
     $attachment = $result['values'][$result['id']] ?? NULL;
+    $entityTable = $attachment['entity_table'];
 
     if (empty($attachment['path'])) {
       return;
@@ -427,7 +428,7 @@ class CollectionBaseService extends AutoSubscriber {
 
     $checkQuery = "
       SELECT `$columnName` AS poster_value
-      FROM civicrm_value_status_32
+      FROM `$entityTable`
       WHERE entity_id = %1
     ";
     $dao = \CRM_Core_DAO::executeQuery($checkQuery, [
@@ -438,7 +439,7 @@ class CollectionBaseService extends AutoSubscriber {
       if (empty($dao->poster_value)) {
 
         $updateQuery = "
-          UPDATE civicrm_value_status_32
+          UPDATE `$entityTable`
           SET $columnName = %1
           WHERE entity_id = %2
         ";
