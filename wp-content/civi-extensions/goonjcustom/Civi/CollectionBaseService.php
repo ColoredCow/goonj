@@ -417,7 +417,7 @@ class CollectionBaseService extends AutoSubscriber {
     }
 
     $attachment = $result['values'][$result['id']] ?? NULL;
-    $entityTable = $attachment['entity_table'];
+    $entityTable = $result['entity_table'];
 
     if (empty($attachment['path'])) {
       return;
