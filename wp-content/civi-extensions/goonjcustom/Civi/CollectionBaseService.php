@@ -79,42 +79,36 @@ class CollectionBaseService extends AutoSubscriber {
    *
    */
   public static function maybeGeneratePoster(string $op, string $objectName, int $objectId, &$objectRef) {
+
     if (!self::$generatePosterRequest || $objectName !== 'Eck_Collection_Camp' || $op !== 'edit') {
       return;
     }
 
-    $collectionSourceId = self::$generatePosterRequest['collectionSourceId'];
+    $collectionSourceId = (int) self::$generatePosterRequest['collectionSourceId'];
     $messageTemplateId = self::$generatePosterRequest['messageTemplateId'];
 
     $messageTemplate = MessageTemplate::get(FALSE)
       ->addWhere('id', '=', $messageTemplateId)
-      ->execute()->single();
+      ->execute()
+      ->single();
     $html = $messageTemplate['msg_html'];
-    // Regular expression to find <style>...</style> and replace it with {literal}<style>...</style>{/literal}.
-    $pattern = '/<style\b[^>]*>(.*?)<\/style>/is';
-    $replacement = '{literal}<style>$1</style>{/literal}';
 
-    // Perform the replacement.
-    $modifiedHtml = preg_replace($pattern, $replacement, $html);
+    $html = preg_replace('/<style\b[^>]*>(.*?)<\/style>/is', '{literal}<style>$1</style>{/literal}', $html);
+    $html = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '{literal}<script>$1</script>{/literal}', $html);
 
-    $pattern = '/<script\b[^>]*>(.*?)<\/script>/is';
-    $replacement = '{literal}<script>$1</script>{/literal}';
-
-    $modifiedHtml = preg_replace($pattern, $replacement, $modifiedHtml);
     $rendered = \CRM_Core_TokenSmarty::render(
-    ['html' => $modifiedHtml],
-    [
-      'collectionSourceId' => $collectionSourceId,
-      'collectionSourceCustomData' => self::$generatePosterRequest['customData'],
-    ],
+      ['html' => $html],
+      [
+        'collectionSourceId' => $collectionSourceId,
+        'collectionSourceCustomData' => self::$generatePosterRequest['customData'],
+      ]
     );
-    $baseFileName = self::generateBaseFileName($collectionSourceId);
 
+    $baseFileName = self::generateBaseFileName($collectionSourceId);
     $fileName = \CRM_Utils_File::makeFileName($baseFileName);
     $tempFilePath = \CRM_Utils_File::tempnam($baseFileName);
 
     $posterGenerated = self::html2image($rendered['html'], $tempFilePath);
-
     if (!$posterGenerated) {
       \Civi::log()->info('There was an error generating the poster!');
       return;
@@ -125,7 +119,8 @@ class CollectionBaseService extends AutoSubscriber {
         ->addSelect('id')
         ->addWhere('custom_group_id:name', '=', 'Collection_Camp_Core_Details')
         ->addWhere('name', '=', 'poster')
-        ->execute()->single();
+        ->execute()
+        ->single();
     }
     catch (\Exception $ex) {
       \CRM_Core_Error::debug_log_message('Cannot find field to save poster for collection camp ID ' . $collectionSourceId);
@@ -136,6 +131,7 @@ class CollectionBaseService extends AutoSubscriber {
     // Save the poster image as an attachment linked to the collection camp.
     $params = [
       'entity_id' => $collectionSourceId,
+      'entity_table' => 'civicrm_eck_collection_camp',
       'name' => $baseFileName,
       'mime_type' => 'image/png',
       'field_name' => $posterFieldId,
@@ -143,10 +139,57 @@ class CollectionBaseService extends AutoSubscriber {
         'move-file' => $tempFilePath,
       ],
     ];
+
     $result = civicrm_api3('Attachment', 'create', $params);
+
     if (empty($result['id'])) {
       \CRM_Core_Error::debug_log_message('Failed to upload poster image for collection camp ID ' . $collectionSourceId);
       return FALSE;
+    }
+
+    $attachment = $result['values'][$result['id']] ?? NULL;
+
+    if (empty($attachment['path'])) {
+      return;
+    }
+
+    $columnName = 'poster_' . $posterField['id'];
+    $fileIdToUpdate = NULL;
+
+    $checkQuery = "
+      SELECT `$columnName` AS poster_value
+      FROM civicrm_value_status_32
+      WHERE entity_id = %1
+    ";
+    $dao = \CRM_Core_DAO::executeQuery($checkQuery, [
+      1 => [$collectionSourceId, 'Integer'],
+    ]);
+
+    if ($dao->fetch()) {
+      if (empty($dao->poster_value)) {
+
+        $updateQuery = "
+          UPDATE civicrm_value_status_32
+          SET $columnName = %1
+          WHERE entity_id = %2
+        ";
+        \CRM_Core_DAO::executeQuery($updateQuery, [
+          1 => [$result['id'], 'Integer'],
+          2 => [$collectionSourceId, 'Integer'],
+        ]);
+      }
+      else {
+        $fileIdToUpdate = (int) $dao->poster_value;
+        $attachment1 = $result['values'][$result['id']] ?? NULL;
+        if (!empty($attachment1['path'])) {
+          $fileName1 = basename($attachment1['path']);
+
+          File::update(FALSE)
+            ->addValue('uri', $fileName1)
+            ->addWhere('id', '=', $fileIdToUpdate)
+            ->execute();
+        }
+      }
     }
   }
 
