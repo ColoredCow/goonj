@@ -333,6 +333,9 @@
       }
       fieldset {
         fieldset {
+          > div:nth-of-type(2) {
+            display: none !important;
+          }
           > div:nth-last-child(-n+2) {
             display: none !important;
           }
@@ -340,6 +343,9 @@
             display: none !important;
           }
           > div:nth-last-child(-n+4) {
+            display: none !important;
+          }
+          > div:nth-last-child(6) {
             display: none !important;
           }
           legend {

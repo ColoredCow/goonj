@@ -233,7 +233,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Update the checkbox label text
     const checkboxLabel = document.querySelector('label[for="is_recur"]');
     if (checkboxLabel) {
-        checkboxLabel.textContent = 'Select Number of months you wish to contribute';
+        checkboxLabel.textContent = 'Select Number of months you wish to donate';
     }
 
     // Hide the installments label
