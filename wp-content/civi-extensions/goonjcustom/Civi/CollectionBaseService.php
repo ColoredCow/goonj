@@ -116,7 +116,7 @@ class CollectionBaseService extends AutoSubscriber {
 
     try {
       $posterField = CustomField::get(FALSE)
-        ->addSelect('id')
+        ->addSelect('id', 'custom_group_id.table_name')
         ->addWhere('custom_group_id:name', '=', 'Collection_Camp_Core_Details')
         ->addWhere('name', '=', 'poster')
         ->execute()
@@ -128,6 +128,8 @@ class CollectionBaseService extends AutoSubscriber {
     }
 
     $posterFieldId = 'custom_' . $posterField['id'];
+    $tableName = $posterField['custom_group_id.table_name'];
+
     // Save the poster image as an attachment linked to the collection camp.
     $params = [
       'entity_id' => $collectionSourceId,
@@ -147,49 +149,55 @@ class CollectionBaseService extends AutoSubscriber {
       return FALSE;
     }
 
-    $attachment = $result['values'][$result['id']] ?? NULL;    
+    $attachment = $result['values'][$result['id']] ?? NULL;
 
     if (empty($attachment['path'])) {
       return;
     }
 
     $columnName = 'poster_' . $posterField['id'];
-    $fileIdToUpdate = NULL;
 
-    $checkQuery = "
-      SELECT `$columnName` AS poster_value
-       FROM civicrm_value_collection_ca_17
-      WHERE entity_id = %1
-    ";
-    $dao = \CRM_Core_DAO::executeQuery($checkQuery, [
-      1 => [$collectionSourceId, 'Integer'],
-    ]);
+    if (!$tableName || !$columnName) {
+      return;
+    }
+    try {
+      $checkQuery = "
+        SELECT `$columnName` AS poster_value
+        FROM `$tableName`
+        WHERE entity_id = %1
+      ";
+      $dao = \CRM_Core_DAO::executeQuery($checkQuery, [
+        1 => [$collectionSourceId, 'Integer'],
+      ]);
 
-    if ($dao->fetch()) {
-      if (empty($dao->poster_value)) {
+      if ($dao->fetch()) {
+        $existingPosterFileId = (int) $dao->poster_value;
 
-        $updateQuery = "
-          UPDATE civicrm_value_collection_ca_17
-          SET $columnName = %1
-          WHERE entity_id = %2
-        ";
-        \CRM_Core_DAO::executeQuery($updateQuery, [
-          1 => [$result['id'], 'Integer'],
-          2 => [$collectionSourceId, 'Integer'],
-        ]);
-      }
-      else {
-        $fileIdToUpdate = (int) $dao->poster_value;
-        $attachment1 = $result['values'][$result['id']] ?? NULL;
-        if (!empty($attachment1['path'])) {
-          $fileName1 = basename($attachment1['path']);
+        if (empty($existingPosterFileId)) {
+          $updateQuery = "
+            UPDATE `$tableName`
+            SET `{$columnName}` = %1
+            WHERE entity_id = %2
+          ";
+          \CRM_Core_DAO::executeQuery($updateQuery, [
+            1 => [$result['id'], 'Integer'],
+            2 => [$collectionSourceId, 'Integer'],
+          ]);
+        }
+        else {
+          if (!empty($attachment['path'])) {
+            $newFileName = basename($attachment['path']);
 
-          File::update(FALSE)
-            ->addValue('uri', $fileName1)
-            ->addWhere('id', '=', $fileIdToUpdate)
-            ->execute();
+            File::update(FALSE)
+              ->addValue('uri', $newFileName)
+              ->addWhere('id', '=', $existingPosterFileId)
+              ->execute();
+          }
         }
       }
+    }
+    catch (\Exception $e) {
+      \Civi::log()->error("Error checking/updating poster for collection ID {$collectionSourceId}: " . $e->getMessage());
     }
   }
 
