@@ -171,13 +171,8 @@ class CollectionBaseService extends AutoSubscriber {
     $uniqueContactIds[$currentContactId] = TRUE;
     $uniqueCount = count($uniqueContactIds);
 
-    $entityType = $fieldMapping[$activeFieldName] ?? NULL;
-    if (!$entityType) {
-      return;
-    }
-
     try {
-      EckEntity::update($entityType, FALSE)
+      EckEntity::update('Collection_Camp', FALSE)
         ->addValue('Core_Contribution_Details.Number_of_unique_material_contributors', $uniqueCount)
         ->addWhere('id', '=', $activeEntityId)
         ->execute();
