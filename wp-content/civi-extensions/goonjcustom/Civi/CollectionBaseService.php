@@ -126,7 +126,7 @@ class CollectionBaseService extends AutoSubscriber {
     $fieldMapping = [
       'Material_Contribution.Collection_Camp' => 'Collection_Camp',
       'Material_Contribution.Institution_Collection_Camp' => 'Institution_Collection_Camp',
-      'Material_Contribution.Dropping_Centre' => 'Dropping_Centre',
+      'Material_Contribution.Dropping_Center' => 'Dropping_Center',
       'Material_Contribution.Institution_Dropping_Center' => 'Institution_Dropping_Center',
     ];
 
