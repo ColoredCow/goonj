@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             if (recurringSection) {
                 recurringSection.style.position = 'relative';
-                recurringSection.style.top = '90px';
+                recurringSection.style.top = '104px';
             }
         } else {
             if (firstDiv) {
