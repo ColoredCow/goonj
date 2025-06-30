@@ -36,7 +36,6 @@ class NavigationPermissionService extends AutoSubscriber {
 
         if (hasGoonjActivities) {
           const labelsToHide = [
-            'Total Number of unique contributors',
             'Total Number of unique material contributors'
           ];
 

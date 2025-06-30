@@ -55,15 +55,18 @@ class CollectionBaseService extends AutoSubscriber {
    *
    */
   public static function updateUniqueContributorsCount(int $eventId, string $activeFieldName, int $currentContactId) {
-    $materialActivities = Activity::get(FALSE)
-      ->addSelect('source_contact_id')
-      ->addWhere($activeFieldName, '=', $eventId)
-      ->execute();
-
     $materialContactIds = [];
-    foreach ($materialActivities as $activity) {
-      if (!empty($activity['source_contact_id'])) {
-        $materialContactIds[] = (int) $activity['source_contact_id'];
+
+    if (!in_array($activeFieldName, ['Material_Contribution.Institution_Goonj_Activities', 'Material_Contribution.Goonj_Activities'], TRUE)) {
+      $materialActivities = Activity::get(FALSE)
+        ->addSelect('source_contact_id')
+        ->addWhere($activeFieldName, '=', $eventId)
+        ->execute();
+
+      foreach ($materialActivities as $activity) {
+        if (!empty($activity['source_contact_id'])) {
+          $materialContactIds[] = (int) $activity['source_contact_id'];
+        }
       }
     }
 
@@ -142,7 +145,7 @@ class CollectionBaseService extends AutoSubscriber {
       }
     }
 
-    if(!$activeEntityId || !$currentContactId) {
+    if (!$activeEntityId || !$currentContactId) {
       return;
     }
 
