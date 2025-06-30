@@ -247,6 +247,9 @@
   bottom: 10px;
   position: relative;
 }
+#crm-container #crm-main-content-wrapper form .messages.crm-error ul {
+  display: none !important;
+}
 
 #crm-main-content-wrapper {
   form {
