@@ -867,7 +867,7 @@ class CRM_Contribute_Form_Contribution_Main extends CRM_Contribute_Form_Contribu
             $min = $self->_values['min_amount'] ?? NULL;
             $max = $self->_values['max_amount'] ?? NULL;
             if ($min && $otherAmountVal < $min) {
-              $errors["price_{$priceField->id}"] = ts('Thank you for your consideration, request you to donate a minimum of INR %1',
+              $errors["price_{$priceField->id}"] = ts('Thank you for your consideration, request you to contribute a minimum of INR %1',
                 [1 => $min]
               );
             }
