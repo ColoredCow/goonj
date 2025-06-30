@@ -31,13 +31,13 @@ class NavigationPermissionService extends AutoSubscriber {
       \CRM_Core_Resources::singleton()->addScript("
     (function($) {
       $(document).ready(function() {
-        const hashParams = new URLSearchParams(window.location.hash.substring(2));
-        const hasGoonjActivities = hashParams.has('goonj_activites');
+      const searchParams = new URLSearchParams(window.location.search);
+      const hasGoonjActivities = searchParams.has('goonj_activites');
 
-        if (hasGoonjActivities) {
-          const labelsToHide = [
-            'Total Number of unique material contributors'
-          ];
+      if (hasGoonjActivities) {
+        const labelsToHide = [
+          'Total Number of unique material contributors'
+        ];
 
           $('table.crm-info-panel tr').each(function() {
             const label = $(this).find('td.label').text().trim();
