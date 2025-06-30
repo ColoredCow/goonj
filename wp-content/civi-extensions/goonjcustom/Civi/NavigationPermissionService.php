@@ -36,7 +36,7 @@ class NavigationPermissionService extends AutoSubscriber {
 
       if (hasGoonjActivities) {
         const labelsToHide = [
-          'Number of unique material contributors'
+          'Total Number of unique material contributors'
         ];
 
           $('table.crm-info-panel tr').each(function() {
