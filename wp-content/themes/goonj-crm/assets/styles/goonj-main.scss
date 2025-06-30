@@ -130,6 +130,9 @@
           div {
             width: 100% !important;
           }
+          div.crm-section.editrow_country-Primary-section.form-item {
+            display: none !important;
+          }
           .select2-container {
             font-size: 14px !important;
             font-family: "Proxima Nova", sans-serif !important;
