@@ -95,7 +95,7 @@
 
         fieldset > div:nth-last-child(3) .content .crm-multiple-checkbox-radio-options .crm-option-label-pair label {
           position: relative;
-          top: -10px;
+          top: 0px;
           left: 13px;
           font-size: 14px;
           font-weight: 400;
@@ -129,6 +129,9 @@
 
           div {
             width: 100% !important;
+          }
+          div.crm-section.editrow_country-Primary-section.form-item {
+            display: none !important;
           }
           .select2-container {
             font-size: 14px !important;
@@ -244,8 +247,11 @@
 }
 
 .crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options div label {
-  bottom: 10px;
-  position: relative;
+  transform: translateY(-8px);
+}
+
+#crm-container #crm-main-content-wrapper form .messages.crm-error ul {
+  display: none !important;
 }
 
 #crm-main-content-wrapper {
