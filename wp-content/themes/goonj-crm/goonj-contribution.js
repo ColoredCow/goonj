@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (firstDiv) {
                 firstDiv.style.position = 'relative';
                 firstDiv.style.bottom = '55px';
+                firstDiv.style.marginBottom = '30px';
             } else {
             }
             if (recurringSection) {
