@@ -1,43 +1,84 @@
 // Change div position based on radio button selection
 document.addEventListener('DOMContentLoaded', function() {
-    var donateMonthlyRadio = document.querySelector('.crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options .crm-option-label-pair input.crm-form-radio[value="2"]');
-    var recurringSection = document.querySelector('.crm-public-form-item.crm-section.is_recur-section');
-    var fieldset = document.querySelector('.crm-public-form-item.crm-group.custom_pre_profile-group fieldset');
-    var firstDiv = document.querySelector('.crm-contribution-main-form-block .custom_pre_profile-group fieldset div:first-of-type');
-    var radioButtons = document.querySelectorAll('.crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options .crm-option-label-pair input.crm-form-radio');
+    const donateMonthlyRadio = document.querySelector('.crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options .crm-option-label-pair input.crm-form-radio[value="2"]');
+    const recurringSection = document.querySelector('.crm-public-form-item.crm-section.is_recur-section');
+    const firstDiv = document.querySelector('.crm-contribution-main-form-block .custom_pre_profile-group fieldset div:first-of-type');
+    const radioButtons = document.querySelectorAll('.crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options .crm-option-label-pair input.crm-form-radio');
 
     // Function to apply styles to recurring section and first div
     function applyRecurringStyles() {
-        if (donateMonthlyRadio && donateMonthlyRadio.checked) {
-            if (firstDiv) {
-                firstDiv.style.position = 'relative';
-                firstDiv.style.bottom = '55px';
+        try {
+            // Check if donateMonthlyRadio exists and is checked
+            if (donateMonthlyRadio && donateMonthlyRadio.checked) {
+                if (firstDiv) {
+                    firstDiv.style.position = 'relative';
+                    firstDiv.style.bottom = '55px';
+                    firstDiv.style.marginBottom = '30px';
+                    // Force reflow to ensure styles apply correctly
+                    firstDiv.offsetHeight;
+                }
+                if (recurringSection) {
+                    recurringSection.style.position = 'relative';
+                    recurringSection.style.transform = 'translateY(105px)';
+                    recurringSection.style.marginTop = '-26px';
+                }
             } else {
+                if (firstDiv) {
+                    // Reset styles to prevent lingering effects
+                    firstDiv.style.position = '';
+                    firstDiv.style.bottom = '';
+                    firstDiv.style.marginBottom = '';
+                    // Force reflow to recalculate layout
+                    firstDiv.offsetHeight;
+                }
+                // Only reset recurringSection if it was previously modified
+                if (recurringSection && !donateMonthlyRadio.checked) {
+                    recurringSection.style.position = '';
+                    recurringSection.style.transform = '';
+                    recurringSection.style.marginTop = '';
+                }
             }
-            if (recurringSection) {
-                recurringSection.style.position = 'relative';
-                recurringSection.style.top = '90px';
-            }
-        } else {
-            if (firstDiv) {
-                firstDiv.removeAttribute('style'); // Remove all inline styles
-                firstDiv.offsetHeight; // Force reflow to recalculate layout
-            }
-            // Do not modify recurringSection unless Donate Monthly is selected
+        } catch (error) {
+            console.error('Error in applyRecurringStyles:', error);
         }
     }
 
-    // Initial style check
+    // Initial style check with safety
     if (donateMonthlyRadio) {
         applyRecurringStyles();
     }
 
-    // Add event listener for all radio button changes
-    radioButtons.forEach(function(radio) {
-        radio.addEventListener('change', function() {
-            applyRecurringStyles();
+    // Add event listener for radio button changes with safety
+    if (radioButtons.length > 0) {
+        radioButtons.forEach(function(radio) {
+            radio.addEventListener('change', function() {
+                try {
+                    applyRecurringStyles();
+                } catch (error) {
+                    console.error('Error handling radio button change:', error);
+                }
+            });
+        });
+    } else {
+        console.warn('No radio buttons found for donation form');
+    }
+
+    // Observe DOM changes to handle dynamic content loading
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.addedNodes.length || mutation.removedNodes.length) {
+                applyRecurringStyles();
+            }
         });
     });
+
+    // Observe the form container for dynamic changes
+    const formContainer = document.querySelector('.crm-contribution-main-form-block');
+    if (formContainer) {
+        observer.observe(formContainer, { childList: true, subtree: true });
+    } else {
+        console.warn('Form container not found for mutation observer');
+    }
 });
 
 document.addEventListener('DOMContentLoaded', function() {
