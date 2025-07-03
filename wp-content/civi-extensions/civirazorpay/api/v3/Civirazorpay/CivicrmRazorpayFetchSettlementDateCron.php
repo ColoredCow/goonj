@@ -85,7 +85,7 @@ class RazorpaySettlementFetcher {
     error_log("Starting settlement fetch for {$this->targetDate->format('Y-m-d')}");
 
     try {
-      // Fetch Razorpay transactions for target date and previous day.
+      // Fetch Razorpay transactions for target date.
       $transactions = $this->fetchSettlementTransactions();
       $returnValues['razorpay_transactions_fetched'] = array_sum(array_map('count', $transactions));
       $returnValues['processed'] = $returnValues['razorpay_transactions_fetched'];
@@ -108,17 +108,14 @@ class RazorpaySettlementFetcher {
   }
 
   /**
-   * Fetch settlement transactions from Razorpay for the target date and previous day.
+   * Fetch settlement transactions from Razorpay for the target date only.
    *
    * @return array
    */
   private function fetchSettlementTransactions(): array {
     $transactionsByDay = [];
-    // Check target date and previous day.
+    // Check only the target date.
     $datesToCheck = [
-    // Yesterday.
-      (clone $this->targetDate)->modify('-1 day'),
-    // Target date.
       $this->targetDate,
     ];
 
@@ -255,7 +252,33 @@ class RazorpaySettlementFetcher {
         }
 
         $settlementId = $transaction['settlement_id'];
-        $settlementDate = date('Y-m-d H:i:s', $transaction['settled_at']);
+        // Log raw settled_at for debugging.
+        \Civi::log()->debug('Raw settled_at', ['settled_at' => $transaction['settled_at']]);
+        error_log("Raw settled_at for $paymentId: " . json_encode($transaction['settled_at']));
+
+        // Handle settled_at parsing.
+        $settledAt = $transaction['settled_at'];
+        if (is_numeric($settledAt)) {
+          // Assume Unix timestamp (seconds or milliseconds)
+          $settledAt = strlen($settledAt) > 10 ? $settledAt / 1000 : $settledAt;
+          $settlementDate = date('Y-m-d', $settledAt);
+        }
+        else {
+          // Assume string date.
+          $settlementDate = date('Y-m-d', strtotime($settledAt));
+        }
+
+        // Validate date.
+        if ($settlementDate === FALSE || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $settlementDate)) {
+          \Civi::log()->error('Invalid settlement date format', [
+            'entity_id' => $paymentId,
+            'settled_at' => $settledAt,
+            'parsed_date' => $settlementDate,
+          ]);
+          error_log("Invalid settlement date format for $paymentId: settled_at=$settledAt, parsed=$settlementDate");
+          $returnValues['errors']++;
+          continue;
+        }
 
         \Civi::log()->debug('Processing transaction', [
           'entity_id' => $paymentId,
@@ -264,10 +287,9 @@ class RazorpaySettlementFetcher {
         ]);
         error_log("Processing transaction, entity_id: $paymentId, settlement_id: $settlementId, settlement_date: $settlementDate");
 
-        // Check if contribution exists before updating.
         try {
           $contribution = Contribution::get(FALSE)
-            ->addSelect('id')
+            ->addSelect('id', 'Contribution_Details.Settlement_Id')
             ->addWhere('trxn_id', 'LIKE', '%' . $paymentId)
             ->addWhere('is_test', '=', $this->isTest)
             ->execute()->first();
@@ -276,11 +298,20 @@ class RazorpaySettlementFetcher {
             'contribution' => $contribution,
             'settlementId' => $settlementId,
             'settlementDate' => $settlementDate,
-
           ]);
 
           if (!$contribution) {
+            \Civi::log()->debug('No contribution found', ['trxn_id' => $paymentId]);
+            error_log("No contribution found for trxn_id: $paymentId");
             $returnValues['errors']++;
+            continue;
+          }
+
+          // Skip if already settled.
+          if (!empty($contribution['Contribution_Details.Settlement_Id'])) {
+            \Civi::log()->debug('Skipping already settled contribution', ['trxn_id' => $paymentId]);
+            error_log("Skipping already settled contribution for trxn_id: $paymentId");
+            $returnValues['processed']++;
             continue;
           }
 
@@ -291,23 +322,29 @@ class RazorpaySettlementFetcher {
             ->addValue($settlementDateField, $settlementDate)
             ->execute();
 
-          \Civi::log()->debug('Contribution updateResult', [
-            'updateResult' => $updateResult,
-          ]);
-          if ($updateResult->rowCount == 0) {
-            throw new Exception("No rows updated for trxn_id: $paymentId");
+          \Civi::log()->debug('Contribution updateResult', ['updateResult' => $updateResult]);
+
+          if ($updateResult->rowCount) {
+            $returnValues['updated']++;
           }
-          \Civi::log()->debug('Contribution updated', [
-            'trxn_id' => $paymentId,
-            'settlement_id' => $settlementId,
-            'settlement_date' => $settlementDate,
-          ]);
-          error_log("Updated contribution for trxn_id: $paymentId with Settlement ID: $settlementId, Date: $settlementDate");
-          $returnValues['updated']++;
+          else {
+            \Civi::log()->warning('No rows updated', ['trxn_id' => $paymentId]);
+            error_log("No rows updated for trxn_id: $paymentId");
+            $returnValues['errors']++;
+          }
         }
         catch (Exception $e) {
+          \Civi::log()->error('Contribution update failed', [
+            'trxn_id' => $paymentId,
+            'error' => $e->getMessage(),
+            'settlementIdField' => $settlementIdField,
+            'settlementDateField' => $settlementDateField,
+          ]);
+          error_log("Contribution update failed for trxn_id: $paymentId, error: " . $e->getMessage());
           $returnValues['errors']++;
         }
+
+        $returnValues['processed']++;
       }
     }
   }
