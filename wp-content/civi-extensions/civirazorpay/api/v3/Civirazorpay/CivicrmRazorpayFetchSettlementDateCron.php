@@ -280,7 +280,6 @@ class RazorpaySettlementFetcher {
           ]);
 
           if (!$contribution) {
-            $this->logError($paymentId, "No contribution found for trxn_id: $paymentId");
             $returnValues['errors']++;
             continue;
           }
@@ -295,7 +294,7 @@ class RazorpaySettlementFetcher {
           \Civi::log()->debug('Contribution updateResult', [
             'updateResult' => $updateResult,
           ]);
-          if ($updateResult->rowCount() == 0) {
+          if ($updateResult->rowCount == 0) {
             throw new Exception("No rows updated for trxn_id: $paymentId");
           }
           \Civi::log()->debug('Contribution updated', [
@@ -307,70 +306,9 @@ class RazorpaySettlementFetcher {
           $returnValues['updated']++;
         }
         catch (Exception $e) {
-          $this->logError($paymentId, "Failed to update contribution: " . $e->getMessage());
           $returnValues['errors']++;
         }
       }
-    }
-  }
-
-  /**
-   * Check if a table exists in the database.
-   *
-   * @param string $tableName
-   *
-   * @return bool
-   */
-  private function tableExists(string $tableName): bool {
-    try {
-      $result = CRM_Core_DAO::executeQuery("SHOW TABLES LIKE %1", [1 => [$tableName, 'String']]);
-      return $result->fetch();
-    }
-    catch (Exception $e) {
-      \Civi::log()->error('Failed to check table existence', [
-        'table' => $tableName,
-        'error' => $e->getMessage(),
-      ]);
-      error_log("Failed to check table $tableName: " . $e->getMessage());
-      return FALSE;
-    }
-  }
-
-  /**
-   * Log errors to civicrm_razorpay_error_log or fallback to logs.
-   *
-   * @param string $paymentId
-   * @param string $message
-   */
-  private function logError(string $paymentId, string $message): void {
-    $tableName = 'civicrm_razorpay_error_log';
-    if ($this->tableExists($tableName)) {
-      try {
-        CRM_Core_DAO::executeQuery(
-          "INSERT INTO $tableName (contribution_id, error_message, log_date) VALUES (%1, %2, NOW())",
-          [1 => [$paymentId, 'String'], 2 => [$message, 'String']]
-        );
-        \Civi::log()->debug('Logged error', [
-          'payment_id' => $paymentId,
-          'error_message' => $message,
-        ]);
-        error_log("Logged error for payment_id $paymentId: $message");
-      }
-      catch (Exception $e) {
-        \Civi::log()->error('Failed to log error to civicrm_razorpay_error_log', [
-          'payment_id' => $paymentId,
-          'message' => $message,
-          'error' => $e->getMessage(),
-        ]);
-        error_log("Failed to log error for payment_id $paymentId: " . $e->getMessage());
-      }
-    }
-    else {
-      \Civi::log()->error('Error logging table missing, falling back to logs', [
-        'payment_id' => $paymentId,
-        'error_message' => $message,
-      ]);
-      error_log("Error logging table $tableName missing, logged error for payment_id $paymentId: $message");
     }
   }
 
