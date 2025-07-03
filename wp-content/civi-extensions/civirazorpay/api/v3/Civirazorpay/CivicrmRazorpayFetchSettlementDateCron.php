@@ -35,7 +35,6 @@ class RazorpaySettlementFetcher {
     $this->isTest = $isTest;
     $this->targetDate = new DateTime($date);
 
-    // Initialize Razorpay API credentials.
     try {
       $processorConfig = PaymentProcessor::get(FALSE)
         ->addWhere('payment_processor_type_id:name', '=', 'Razorpay')
@@ -66,7 +65,6 @@ class RazorpaySettlementFetcher {
     ];
 
     try {
-      // Fetch Razorpay transactions for target date.
       $transactions = $this->fetchSettlementTransactions();
       $returnValues['razorpay_transactions_fetched'] = array_sum(array_map('count', $transactions));
       $returnValues['processed'] = $returnValues['razorpay_transactions_fetched'];
@@ -92,7 +90,6 @@ class RazorpaySettlementFetcher {
    */
   private function fetchSettlementTransactions(): array {
     $transactionsByDay = [];
-    // Check only the target date.
     $datesToCheck = [
       $this->targetDate,
     ];
@@ -126,7 +123,6 @@ class RazorpaySettlementFetcher {
 
           $transactions = array_merge($transactions, $responseArray['items']);
 
-          // Handle pagination.
           while ($responseArray['count'] >= $options['count']) {
             $options['skip'] += $options['count'];
             $url = "https://api.razorpay.com/v1/settlements/recon/combined?year=$year&month=$month&day=$day&count=100&skip={$options['skip']}";
@@ -198,11 +194,9 @@ class RazorpaySettlementFetcher {
           $settlementDate = date('Y-m-d', $settledAt);
         }
         else {
-          // Assume string date.
           $settlementDate = date('Y-m-d', strtotime($settledAt));
         }
 
-        // Validate date.
         if ($settlementDate === FALSE || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $settlementDate)) {
           $returnValues['errors']++;
           continue;
