@@ -18,10 +18,44 @@ class NavigationPermissionService extends AutoSubscriber {
       '&hook_civicrm_pageRun' => [
         ['hideButtonsForMMT'],
         ['hideAPIKeyTab'],
+        ['hideContributionFields'],
       ],
     ];
   }
 
+  /**
+   *
+   */
+  public function hideContributionFields(&$page) {
+    if ($page->getVar('_name') === 'CRM_Eck_Page_Entity_View') {
+      \CRM_Core_Resources::singleton()->addScript("
+    (function($) {
+      $(document).ready(function() {
+      const searchParams = new URLSearchParams(window.location.search);
+      const hasGoonjActivities = searchParams.has('goonj_activites');
+
+      if (hasGoonjActivities) {
+        const labelsToHide = [
+        'Total Number of unique contributors',
+        'Total Number of unique material contributors'
+        ];
+
+          $('table.crm-info-panel tr').each(function() {
+            const label = $(this).find('td.label').text().trim();
+            if (labelsToHide.includes(label)) {
+              $(this).hide();
+            }
+          });
+        }
+      });
+    })(CRM.$);
+  ");
+    }
+  }
+
+  /**
+   *
+   */
   public function hideAPIKeyTab(&$page) {
     if ($page->getVar('_name') === 'CRM_Contact_Page_View_Summary') {
       if (!\CRM_Core_Permission::check('admin')) {
@@ -94,16 +128,16 @@ class NavigationPermissionService extends AutoSubscriber {
         'hide_child_menus' => [
           'Material Contributions',
           'hide_child_menus' => [
-          'Dashboard',
-          'Contribution Reports',
-          'Import Contributions',
-          'Batch Data Entry',
-          'Accounting Batches',
-          'Manage Contribution Pages',
-          'Personal Campaign Pages',
-          'Premiums',
-          'Manage Price Sets',
-        ],
+            'Dashboard',
+            'Contribution Reports',
+            'Import Contributions',
+            'Batch Data Entry',
+            'Accounting Batches',
+            'Manage Contribution Pages',
+            'Personal Campaign Pages',
+            'Premiums',
+            'Manage Price Sets',
+          ],
         ],
       ],
       'mmt' => [
@@ -186,7 +220,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Institution Collection Camps',
           'Dropping Center',
           'Institution Goonj Activities',
-        ],    
+        ],
       ],
       'sanjha_team' => [
         'hide_menus' => [
@@ -353,4 +387,5 @@ class NavigationPermissionService extends AutoSubscriber {
       }
     }
   }
+
 }

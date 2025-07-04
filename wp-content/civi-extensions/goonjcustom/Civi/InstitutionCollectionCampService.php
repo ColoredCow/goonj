@@ -270,6 +270,52 @@ class InstitutionCollectionCampService extends AutoSubscriber {
   /**
    *
    */
+  public static function updateInstitutionDispatchDetails(string $op, string $objectName, int $objectId, &$objectRef) {
+    if ($op !== 'edit' || $objectName !== 'AfformSubmission') {
+      return;
+    }
+
+    if (empty($objectRef->data)) {
+      return;
+    }
+
+    $data = json_decode($objectRef->data, TRUE);
+
+    if (!empty($data['Eck_Collection_Source_Vehicle_Dispatch1'])) {
+      foreach ($data['Eck_Collection_Source_Vehicle_Dispatch1'] as $entry) {
+        $entryId = $entry['id'] ?? NULL;
+        $fields = $entry['fields'] ?? [];
+
+        if (!$entryId) {
+          continue;
+        }
+
+        $institutionName = $fields['Camp_Institution_Data.Name_of_the_institution'] ?? '';
+        $institutionAddress = $fields['Camp_Institution_Data.Address'] ?? '';
+        $institutionCampId = $fields['Camp_Vehicle_Dispatch.Institution_Collection_Camp'] ?? '';
+
+        if (!$institutionName || !$institutionCampId) {
+          continue;
+        }
+
+        try {
+          EckEntity::update('Collection_Source_Vehicle_Dispatch', TRUE)
+            ->addValue('Camp_Institution_Data.Name_of_the_institution', $institutionName)
+            ->addValue('Camp_Institution_Data.Address', $institutionAddress)
+            ->addWhere('Camp_Vehicle_Dispatch.Institution_Collection_Camp', '=', $institutionCampId)
+            ->addWhere('id', '=', $entryId)
+            ->execute();
+        }
+        catch (\Exception $e) {
+          continue;
+        }
+      }
+    }
+  }
+
+  /**
+   *
+   */
   public static function updateNameOfTheInstitution(string $op, string $objectName, int $objectId, &$objectRef) {
     if (!empty($objectRef->afform_name) && $objectRef->afform_name == "afformInstitutionCollectionCampIntentVerification") {
 
@@ -1136,43 +1182,11 @@ class InstitutionCollectionCampService extends AutoSubscriber {
   /**
    *
    */
-  public static function updateContributorCount($collectionCamp) {
-    $activities = Activity::get(FALSE)
-      ->addSelect('id')
-      ->addWhere('Material_Contribution.Institution_Collection_Camp', '=', $collectionCamp['id'])
-      ->execute();
 
-    $contributorCount = count($activities);
-
-    EckEntity::update('Collection_Camp', FALSE)
-      ->addValue('Camp_Outcome.Number_of_Contributors', $contributorCount)
-      ->addWhere('id', '=', $collectionCamp['id'])
-      ->execute();
-  }
 
   /**
    *
    */
-  public static function updateContributionCount($collectionCamp) {
-    $contributions = Contribution::get(FALSE)
-      ->addSelect('total_amount')
-      ->addWhere('Contribution_Details.Source', '=', $collectionCamp['id'])
-      ->addWhere('is_test', 'IS NOT NULL')
-      ->execute();
-
-    // Initialize sum variable.
-    $totalSum = 0;
-
-    // Iterate through the results and sum the total_amount.
-    foreach ($contributions as $contribution) {
-      $totalSum += $contribution['total_amount'];
-    }
-
-    EckEntity::update('Collection_Camp', FALSE)
-      ->addValue('Camp_Outcome.Monitory_Contribution', $totalSum)
-      ->addWhere('id', '=', $collectionCamp['id'])
-      ->execute();
-  }
 
   /**
    *

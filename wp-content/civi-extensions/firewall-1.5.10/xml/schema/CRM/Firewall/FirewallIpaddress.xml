@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="iso-8859-1" ?>
+
+<table>
+  <base>CRM/Firewall</base>
+  <class>FirewallIpaddress</class>
+  <name>civicrm_firewall_ipaddress</name>
+  <comment>IP addresses logged by firewall</comment>
+  <log>false</log>
+
+  <field>
+    <name>id</name>
+    <type>int unsigned</type>
+    <required>true</required>
+    <comment>Unique FirewallIpaddress ID</comment>
+  </field>
+  <primaryKey>
+    <name>id</name>
+    <autoincrement>true</autoincrement>
+  </primaryKey>
+
+  <field>
+    <name>ip_address</name>
+    <title>IP Address</title>
+    <type>varchar</type>
+    <length>255</length>
+    <required>true</required>
+    <comment>IP address used</comment>
+  </field>
+  <index>
+    <name>index_ip_address</name>
+    <fieldName>ip_address</fieldName>
+  </index>
+
+  <field>
+    <name>access_date</name>
+    <type>timestamp</type>
+    <default>CURRENT_TIMESTAMP</default>
+    <required>true</required>
+    <comment>When the IP address accessed</comment>
+  </field>
+
+  <field>
+    <name>event_type</name>
+    <title>Event Type</title>
+    <type>varchar</type>
+    <length>64</length>
+    <required>true</required>
+    <comment>The type of event that triggered this log</comment>
+  </field>
+
+  <field>
+    <name>source</name>
+    <title>Source</title>
+    <type>varchar</type>
+    <length>255</length>
+    <comment>Origin of this access request</comment>
+  </field>
+
+</table>
