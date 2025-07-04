@@ -1,5 +1,0 @@
-{
-    "name": "civicrm/firewall",
-    "type": "civicrm-ext",
-    "description": "IP based Firewall to prevent certain types of attack"
-}

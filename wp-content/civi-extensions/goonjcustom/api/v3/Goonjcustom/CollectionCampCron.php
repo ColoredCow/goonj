@@ -71,6 +71,8 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
 
     try {
       CollectionCampService::sendLogisticsEmail($camp);
+      CollectionCampService::updateContributorCount($camp);
+      CollectionCampService::updateContributionCount($camp);
     }
     catch (\Exception $e) {
       \Civi::log()->info('Error processing camp', [

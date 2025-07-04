@@ -661,8 +661,8 @@ class DroppingCenterService extends AutoSubscriber {
       ],
       'outcome' => [
         'title' => ts('Outcome'),
-        'module' => 'afsearchDroppingCenterOutcome',
-        'directive' => 'afsearch-dropping-center-outcome',
+        'module' => 'afformDroppingCenterOutcome',
+        'directive' => 'afform-dropping-center-outcome',
         'template' => 'CRM/Goonjcustom/Tabs/DroppingCenter/Outcome.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team'],
       ],
