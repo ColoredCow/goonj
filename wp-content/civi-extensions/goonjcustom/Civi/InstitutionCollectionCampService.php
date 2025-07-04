@@ -56,7 +56,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       '&hook_civicrm_post' => [
         ['updateNameOfTheInstitution'],
         ['updateCampStatusOnOutcomeFilled'],
-        ['updateInstitutionDispatchDetails'],
+        // ['updateInstitutionDispatchDetails'],
       ],
       '&hook_civicrm_custom' => [
         ['setOfficeDetails'],
@@ -267,9 +267,6 @@ class InstitutionCollectionCampService extends AutoSubscriber {
 
   }
 
-  /**
-   *
-   */
   public static function updateNameOfTheInstitution(string $op, string $objectName, int $objectId, &$objectRef) {
     if (!empty($objectRef->afform_name) && $objectRef->afform_name == "afformInstitutionCollectionCampIntentVerification") {
 
