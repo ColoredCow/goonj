@@ -56,7 +56,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       '&hook_civicrm_post' => [
         ['updateNameOfTheInstitution'],
         ['updateCampStatusOnOutcomeFilled'],
-        // ['updateInstitutionDispatchDetails'],
+        ['updateInstitutionDispatchDetails'],
       ],
       '&hook_civicrm_custom' => [
         ['setOfficeDetails'],
