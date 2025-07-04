@@ -32,7 +32,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
   const FALLBACK_OFFICE_NAME = 'Delhi';
   const MATERIAL_RELATIONSHIP_TYPE_NAME = 'Material Management Team of';
   const INSTITUTION_DROPPING_CENTER_INTENT_FB_NAMES = [
-    'afformInstitutionDroppingCenterIntent1',
+    'afformInstitutionDroppingCenterIntent',
     'afformAdminInstitutionDroppingCenterIntent',
   ];
 
@@ -64,6 +64,37 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
         ['updateInstitutionDispatchDetails'],
       ],
     ];
+  }
+
+  /**
+   *
+   */
+  public static function setInstitutionDroppingCenterAddress(AfformSubmitEvent $event) {
+    $afform = $event->getAfform();
+    $formName = $afform['name'];
+
+    if (!in_array($formName, self::INSTITUTION_DROPPING_CENTER_INTENT_FB_NAMES, TRUE)) {
+      return;
+    }
+
+    $entityType = $event->getEntityType();
+
+    if ($entityType !== 'Eck_Collection_Camp') {
+      return;
+    }
+
+    $records = $event->records;
+
+    foreach ($records as $record) {
+      $fields = $record['fields'];
+
+      self::$droppingCenterAddress = [
+        'state_province_id' => $fields['Institution_Dropping_Center_Intent.State'],
+      // India.
+        'country_id' => 1101,
+        'city' => $fields['Institution_Dropping_Center_Intent.District_City'],
+      ];
+    }
   }
 
   /**
@@ -109,37 +140,6 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
           continue;
         }
       }
-    }
-  }
-
-  /**
-   *
-   */
-  public static function setInstitutionDroppingCenterAddress(AfformSubmitEvent $event) {
-    $afform = $event->getAfform();
-    $formName = $afform['name'];
-
-    if (!in_array($formName, self::INSTITUTION_DROPPING_CENTER_INTENT_FB_NAMES, TRUE)) {
-      return;
-    }
-
-    $entityType = $event->getEntityType();
-
-    if ($entityType !== 'Eck_Collection_Camp') {
-      return;
-    }
-
-    $records = $event->records;
-
-    foreach ($records as $record) {
-      $fields = $record['fields'];
-
-      self::$droppingCenterAddress = [
-        'state_province_id' => $fields['Institution_Dropping_Center_Intent.State'],
-      // India.
-        'country_id' => 1101,
-        'city' => $fields['Institution_Dropping_Center_Intent.District_City'],
-      ];
     }
   }
 

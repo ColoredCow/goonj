@@ -46,8 +46,7 @@
           display: grid !important;
 
           &.is_recur-section .content {
-            width: 100%;
-            align-content: start;
+            justify-self: flex-start;
             display: block;
             margin-top: -15px;
           }
@@ -95,7 +94,7 @@
 
         fieldset > div:nth-last-child(3) .content .crm-multiple-checkbox-radio-options .crm-option-label-pair label {
           position: relative;
-          top: 0px;
+          top: -10px;
           left: 13px;
           font-size: 14px;
           font-weight: 400;
@@ -129,9 +128,6 @@
 
           div {
             width: 100% !important;
-          }
-          div.crm-section.editrow_country-Primary-section.form-item {
-            display: none !important;
           }
           .select2-container {
             font-size: 14px !important;
@@ -242,19 +238,6 @@
   }
 }
 
-.crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options {
-  display: contents;
-}
-
-.crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options div label {
-  align-self: center !important;
-  margin-left: 22px !important;
-}
-
-#crm-container #crm-main-content-wrapper form .messages.crm-error ul {
-  display: none !important;
-}
-
 #crm-main-content-wrapper {
   form {
     &.CRM_Event_Form_Registration_Register {
@@ -290,9 +273,6 @@
           }
 
           fieldset > div:nth-last-child(4) {
-            display: none !important;
-          }
-          fieldset > div:nth-last-child(6) .label {
             display: none !important;
           }
         }
@@ -340,9 +320,6 @@
       }
       fieldset {
         fieldset {
-          > div:nth-of-type(2) {
-            display: none !important;
-          }
           > div:nth-last-child(-n+2) {
             display: none !important;
           }
@@ -350,9 +327,6 @@
             display: none !important;
           }
           > div:nth-last-child(-n+4) {
-            display: none !important;
-          }
-          > div:nth-last-child(6) {
             display: none !important;
           }
           legend {

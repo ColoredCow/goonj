@@ -32,8 +32,8 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
   private static $addressAdded = FALSE;
 
   const INSTITUTION_GOONJ_ACTIVITIES_INTENT_FB_NAMES = [
-    'afformInstitutionGoonjActivitiesIntent',
-    'afformInstitutionGoonjActivitiesIntent1',
+    'afformInstitutionGoonjActivitiesIntentcrm',
+    'afformGoonjActivitiesIndividualIntentForm',
   ];
 
   private static $goonjActivitiesAddress = NULL;

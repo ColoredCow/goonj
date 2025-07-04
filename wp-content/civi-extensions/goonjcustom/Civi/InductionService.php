@@ -112,18 +112,19 @@ class InductionService extends AutoSubscriber {
     }
 
     $placeholderActivityDate = self::getPlaceholderActivityDate();
-
+    
     // Fetch induction activities for the target contact.
     $contactInductionExists = Activity::get(FALSE)
       ->addWhere('activity_type_id:name', '=', 'Induction')
       ->addWhere('target_contact_id', '=', $targetContactId)
       ->execute();
-
+    
+    
     // Check if an induction activity already exists.
     if ($contactInductionExists->count() > 0) {
       return;
     }
-
+    
     Activity::create(FALSE)
       ->addValue('activity_type_id:name', self::INDUCTION_ACTIVITY_TYPE_NAME)
       ->addValue('status_id:name', self::INDUCTION_DEFAULT_STATUS_NAME)
@@ -135,12 +136,12 @@ class InductionService extends AutoSubscriber {
       ->execute();
 
     return TRUE;
-  }
-
+  }    
   /**
    * Handles induction creation for a volunteer.
    */
   public static function createInductionForVolunteer(string $op, string $objectName, int $objectId, &$objectRef) {
+    
     if ($op !== 'create' || $objectName !== 'Address' || self::$volunteerId !== $objectRef->contact_id || !$objectRef->is_primary) {
       return FALSE;
     }
@@ -198,91 +199,108 @@ class InductionService extends AutoSubscriber {
    * Common logic to send an email.
    */
   private static function sendInductionEmail($volunteerId) {
-
+    \Civi::log()->info('Initiating induction email process', ['volunteerId' => $volunteerId]);
+  
     if (self::isEmailAlreadySent($volunteerId)) {
+      \Civi::log()->info('Induction email already sent', ['volunteerId' => $volunteerId]);
       return FALSE;
     }
-
+  
     if (empty($volunteerId)) {
+      \Civi::log()->info('Volunteer ID is empty');
       return;
     }
-
+  
     $contact = Contact::get(FALSE)
-      ->addSelect('address.state_province_id')
-      ->addJoin('Address AS address', 'LEFT')
-      ->addWhere('id', '=', $volunteerId)
-      ->execute()->single();
-
-    $stateId = $contact['address.state_province_id'];
+    ->addSelect('address_primary.state_province_id')
+    ->addWhere('id', '=', $volunteerId)
+    ->execute()->first();
+    
+    \Civi::log()->info('Contact fetched', ['contact' => $contact]);
+  
+    $stateId = $contact['address_primary.state_province_id'];
     if (!$stateId) {
-      \Civi::log()->info(['State not found :', ['contactId' => $contact['id'], 'StateId' => $stateId]]);
+      \Civi::log()->info('State not found', ['contactId' => $contact['id'], 'StateId' => $stateId]);
       return FALSE;
     }
-
+  
+    \Civi::log()->info('Fetched state for volunteer', ['volunteerId' => $volunteerId, 'stateId' => $stateId]);
+  
     $inductionType = self::fetchTypeOfInduction($volunteerId);
-    // Set the template name based on induction type.
+    \Civi::log()->info('Induction type determined', ['volunteerId' => $volunteerId, 'inductionType' => $inductionType]);
+  
     $templateName = ($inductionType === 'Offline')
         ? 'New_Volunteer_Registration%'
         : 'New_Volunteer_Registration_Online%';
-
-    // Retrieve the email template.
+  
     $template = MessageTemplate::get(FALSE)
       ->addWhere('msg_title', 'LIKE', $templateName)
       ->setLimit(1)
       ->execute()->single();
-
+  
     if (!$template) {
+      \Civi::log()->info('No email template found', ['templateName' => $templateName]);
       return FALSE;
     }
-
-    // Prepare email parameters.
+  
+    \Civi::log()->info('Email template found', ['templateId' => $template['id']]);
+  
     $emailParams = [
       'contact_id' => $volunteerId,
       'template_id' => $template['id'],
       'cc' => self::$volunteerInductionAssigneeEmail,
     ];
-
-    // Check if the activity is already created.
+  
     $inductionActivity = Activity::get(FALSE)
       ->addWhere('activity_type_id:name', '=', self::INDUCTION_ACTIVITY_TYPE_NAME)
       ->addWhere('status_id:name', 'IN', ['Scheduled', 'Completed', 'To be scheduled', 'Cancelled'])
       ->addWhere('target_contact_id', '=', $volunteerId)
       ->setLimit(1)
       ->execute();
-
+  
     if ($inductionActivity->count() === 0) {
-      // Create the induction activity if it doesn't exist.
+      \Civi::log()->info('No induction activity found, creating new one');
       self::createInduction($volunteerId, $stateId);
+    } else {
+      \Civi::log()->info('Induction activity already exists');
     }
-
+  
+    \Civi::log()->info('Queuing induction email');
     self::queueInductionEmail($emailParams);
-
+  
+    \Civi::log()->info('Marking email as sent in custom field');
     Contact::update(FALSE)
       ->addValue('Individual_fields.Volunteer_Registration_Email_Sent', 1)
       ->addWhere('id', '=', $volunteerId)
       ->execute();
-
+  
+    \Civi::log()->info('Induction email process completed', ['volunteerId' => $volunteerId]);
     return TRUE;
   }
+  
 
   /**
    * Queue the induction email to be processed later.
    */
   private static function queueInductionEmail($params) {
+    \Civi::log()->info('Preparing to queue induction email', ['contactId' => $params['contact_id']]);
+  
     try {
       $queue = \Civi::queue(\CRM_Goonjcustom_Engine::QUEUE_NAME, [
         'type' => 'Sql',
         'error' => 'abort',
         'runner' => 'task',
       ]);
-
+  
+      \Civi::log()->info('Queue initialized for induction email', ['contactId' => $params['contact_id']]);
+  
       $queue->createItem(new \CRM_Queue_Task(
             [self::class, 'processQueuedInductionEmail'],
             [$params]
         ), [
           'weight' => 1,
         ]);
-
+  
       \Civi::log()->info('Induction email queued for contact', ['contactId' => $params['contact_id']]);
     }
     catch (\CRM_Core_Exception $ex) {
@@ -292,6 +310,7 @@ class InductionService extends AutoSubscriber {
       ]);
     }
   }
+  
 
   /**
    * Process the queued induction email task.
@@ -324,6 +343,7 @@ class InductionService extends AutoSubscriber {
     if ($op !== 'create' || $objectName !== 'Email' || !$objectId || $objectRef->contact_id !== self::$volunteerId) {
       return;
     }
+    \Civi::log()->info('Checking conditions for sending induction email');
 
     self::sendInductionEmail(self::$volunteerId);
   }
