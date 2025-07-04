@@ -18,6 +18,7 @@ class NavigationPermissionService extends AutoSubscriber {
       '&hook_civicrm_pageRun' => [
         ['hideButtonsForMMT'],
         ['hideAPIKeyTab'],
+        ['hideContributionFields'],
       ],
     ];
   }
@@ -127,16 +128,16 @@ class NavigationPermissionService extends AutoSubscriber {
         'hide_child_menus' => [
           'Material Contributions',
           'hide_child_menus' => [
-          'Dashboard',
-          'Contribution Reports',
-          'Import Contributions',
-          'Batch Data Entry',
-          'Accounting Batches',
-          'Manage Contribution Pages',
-          'Personal Campaign Pages',
-          'Premiums',
-          'Manage Price Sets',
-        ],
+            'Dashboard',
+            'Contribution Reports',
+            'Import Contributions',
+            'Batch Data Entry',
+            'Accounting Batches',
+            'Manage Contribution Pages',
+            'Personal Campaign Pages',
+            'Premiums',
+            'Manage Price Sets',
+          ],
         ],
       ],
       'mmt' => [
@@ -219,7 +220,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Institution Collection Camps',
           'Dropping Center',
           'Institution Goonj Activities',
-        ],    
+        ],
       ],
       'sanjha_team' => [
         'hide_menus' => [
@@ -386,4 +387,5 @@ class NavigationPermissionService extends AutoSubscriber {
       }
     }
   }
+
 }

@@ -1133,43 +1133,11 @@ class InstitutionCollectionCampService extends AutoSubscriber {
   /**
    *
    */
-  public static function updateContributorCount($collectionCamp) {
-    $activities = Activity::get(FALSE)
-      ->addSelect('id')
-      ->addWhere('Material_Contribution.Institution_Collection_Camp', '=', $collectionCamp['id'])
-      ->execute();
 
-    $contributorCount = count($activities);
-
-    EckEntity::update('Collection_Camp', FALSE)
-      ->addValue('Camp_Outcome.Number_of_Contributors', $contributorCount)
-      ->addWhere('id', '=', $collectionCamp['id'])
-      ->execute();
-  }
 
   /**
    *
    */
-  public static function updateContributionCount($collectionCamp) {
-    $contributions = Contribution::get(FALSE)
-      ->addSelect('total_amount')
-      ->addWhere('Contribution_Details.Source', '=', $collectionCamp['id'])
-      ->addWhere('is_test', 'IS NOT NULL')
-      ->execute();
-
-    // Initialize sum variable.
-    $totalSum = 0;
-
-    // Iterate through the results and sum the total_amount.
-    foreach ($contributions as $contribution) {
-      $totalSum += $contribution['total_amount'];
-    }
-
-    EckEntity::update('Collection_Camp', FALSE)
-      ->addValue('Camp_Outcome.Monitory_Contribution', $totalSum)
-      ->addWhere('id', '=', $collectionCamp['id'])
-      ->execute();
-  }
 
   /**
    *
