@@ -8,7 +8,6 @@ document.addEventListener('DOMContentLoaded', function () {
     var isRecurCheckbox = document.getElementById('is_recur');
     var installmentsField = document.getElementById('installments');
     var recurHelp = document.getElementById('recurHelp');
-    var radioSection = document.querySelector('.crm-contribution-main-form-block .custom_pre_profile-group fieldset div:first-of-type');
 
     if (!isRecurCheckbox || !installmentsField || !recurHelp) return;
 
@@ -17,11 +16,6 @@ document.addEventListener('DOMContentLoaded', function () {
     isRecurCheckbox.addEventListener('click', function (event) {
         event.preventDefault();
     });
-
-    // Hide the radio button section
-    if (radioSection) {
-        radioSection.style.display = 'none';
-    }
 
     // Show help section
     recurHelp.style.display = 'block';
@@ -56,21 +50,5 @@ document.addEventListener('DOMContentLoaded', function () {
     var labelForInstallments = document.querySelector('label[for="installments"]');
     if (labelForInstallments) {
         labelForInstallments.remove();
-    }
-
-    // Set "Donate Monthly" as default on page load
-    var donateMonthlyRadio = document.querySelector('.crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options .crm-option-label-pair input.crm-form-radio[value="2"]');
-    if (donateMonthlyRadio) {
-        donateMonthlyRadio.checked = true;
-        // Dispatch change event to trigger toggleRecurringSection
-        var changeEvent = new Event('change');
-        donateMonthlyRadio.dispatchEvent(changeEvent);
-    }
-});
-
-document.addEventListener('DOMContentLoaded', function() {
-    const label = document.querySelector('label[for="is_recur"]');
-    if (label) {
-        label.textContent = 'I want to contribute this amount every month';
     }
 });

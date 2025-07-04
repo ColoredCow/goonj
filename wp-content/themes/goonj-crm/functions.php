@@ -33,15 +33,6 @@ function goonj_enqueue_scripts() {
 			true
 		);
 	}
-	if (!is_page('team-5000')) {
-		wp_enqueue_script(
-			'contribution',
-			get_template_directory_uri() . '/goonj-contribution.js',
-			array( 'jquery' ),
-			wp_get_theme()->get( 'Version' ),
-			true
-		);
-	}
 }
 
 add_action( 'admin_enqueue_scripts', 'goonj_enqueue_admin_scripts' );
