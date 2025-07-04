@@ -100,8 +100,6 @@ function civicrm_api3_goonjcustom_goonj_events_outcome_details_update_cron($para
     ]);
     $results = Event::update(TRUE)
       ->addValue('Goonj_Events_Outcome.Footfall', $countUniqueParticipants)
-      ->addValue('Goonj_Events_Outcome.Online_Monetary_Contribution', $totalSum)
-      ->addValue('Goonj_Events_Outcome.Number_of_Contributors', $noOfContributions)
       ->addValue('Goonj_Events_Outcome.Number_of_New_Contacts', $countCreatedDuringEvent)
       ->addWhere('id', '=', $event['id'])
       ->execute();
