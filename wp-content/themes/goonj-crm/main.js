@@ -162,24 +162,253 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 });
 
-// Hide specific form items in the thank you page for events.
-document.addEventListener("DOMContentLoaded", function() {
-	var formItems = document.querySelectorAll('.crm-event-thankyou-form-block .crm-group.participant_info-group fieldset .crm-public-form-item');
-  
-	formItems.forEach(function(item) {
-	  var label = item.querySelector('.label');
-	  
-	  if (label) {
-		var labelText = label.textContent.trim();
-		
-		// Check if the label matches either of the two specific labels
-		if (labelText === "Number of Adults Including You" || labelText === "Number of Children Accompanying You") {
-			item.style.setProperty('display', 'none', 'important');
-		}
-	  }
-	});
-});
 
+// Dummy function to show usage
+function fetchCitiesForState(stateName) {
+  console.log("🔄 Fetching cities for:", stateName);
+  // You can use stateName to do something, or map to ID, etc.
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  const intervalId = setInterval(() => {
+    const stateFieldWrapper = document.querySelector('af-field[name="state_province_id"]');
+    const cityFieldWrapper = document.querySelector('af-field[name="city"]');
+    const cityInput = cityFieldWrapper?.querySelector('input[type="text"]');
+    const chosenSpan = document.getElementById('select2-chosen-1');
+
+    if (!stateFieldWrapper || !cityFieldWrapper || !cityInput || !chosenSpan) {
+      console.log("⏳ Waiting for form fields to load...");
+      return;
+    }
+
+    clearInterval(intervalId);
+    console.log("✅ Form fields found. Initializing city dropdown.");
+
+    cityInput.style.display = 'none';
+
+    const citySelect = document.createElement('select');
+    citySelect.className = 'form-control';
+    citySelect.name = 'city-dropdown';
+    citySelect.innerHTML = `
+      <option value="">Select a city</option>
+      <option value="Other">Other</option>
+    `;
+    cityInput.parentElement.appendChild(citySelect);
+
+    // Initialize Select2 with search bar always visible
+    function applySelect2() {
+      if (window.jQuery && jQuery.fn.select2) {
+        jQuery(citySelect).select2('destroy'); // in case already initialized
+        jQuery(citySelect).select2({
+          placeholder: "Select a city",
+          allowClear: true,
+          width: 'resolve',
+          minimumResultsForSearch: 0 // 🔍 always show search bar
+        });
+
+        jQuery(citySelect).next('.select2-container').css({
+          width: '100%',
+          'max-width': '340px'
+        });
+      }
+    }
+
+    applySelect2();
+
+    citySelect.addEventListener('change', () => {
+      cityInput.value = citySelect.value;
+      cityInput.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+    let lastState = chosenSpan.textContent.trim();
+    const observer = new MutationObserver(() => {
+      const currentState = chosenSpan.textContent.trim();
+
+      if (currentState !== lastState) {
+        console.log("📦 State changed:", lastState, "→", currentState);
+        lastState = currentState;
+
+        fetch('https://goonj.test/wp-admin/admin-ajax.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            action: 'get_cities_by_state',
+            state_name: currentState,
+          }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            citySelect.innerHTML = `<option value="">Select a city</option>`;
+            if (data.success && data.data?.cities?.length) {
+              data.data.cities.forEach((city) => {
+                const opt = document.createElement('option');
+                opt.value = city.name;
+                opt.textContent = city.name;
+                citySelect.appendChild(opt);
+              });
+
+              citySelect.appendChild(new Option("Other", "Other"));
+              applySelect2(); // Re-apply select2 after options update
+              jQuery(citySelect).trigger('change');
+            } else {
+              console.warn("⚠️ No cities found for:", currentState);
+              applySelect2();
+            }
+          })
+          .catch((err) => {
+            console.error("❌ Error loading cities:", err);
+          });
+      }
+    });
+
+    observer.observe(chosenSpan, {
+      characterData: true,
+      childList: true,
+      subtree: true,
+    });
+
+    console.log("👀 Watching for state changes...");
+  }, 500);
+});
+// document.addEventListener('DOMContentLoaded', function () {
+//   setTimeout(() => {
+//     // 1. Find hidden Angular crm-ui-select inputs
+//     const stateInput = document.querySelector('af-field[name="Collection_Camp_Intent_Details.State"] input[crm-ui-select]');
+//     const cityInputHidden = document.querySelector('af-field[name="Collection_Camp_Intent_Details.city_id"] input[crm-ui-select]');
+
+//     if (!stateInput || !cityInputHidden) {
+//       console.warn("❌ Couldn't find state or city input fields.");
+//       return;
+//     }
+
+//     // 2. Replace city hidden input with <select>
+//     const citySelect = document.createElement('select');
+//     citySelect.id = cityInputHidden.id;
+//     citySelect.name = cityInputHidden.name || cityInputHidden.id;
+//     citySelect.className = 'form-control';
+//     citySelect.required = cityInputHidden.required;
+//     citySelect.appendChild(new Option('Select a city', ''));
+
+//     const wrapper = cityInputHidden.parentElement;
+//     wrapper.replaceChild(citySelect, cityInputHidden);
+
+//     // Remove old Select2 container (optional cleanup)
+//     const oldSelect2Div = document.getElementById('s2id_' + citySelect.id);
+//     if (oldSelect2Div) oldSelect2Div.remove();
+
+//     // Reinit select2 on the new <select>
+//     if (window.jQuery && jQuery.fn.select2) {
+//       jQuery(citySelect).select2();
+//       console.log("✅ Select2 reinitialized for city dropdown.");
+//     }
+
+//     // 3. Listen to state change and fetch cities
+//     stateInput.addEventListener('change', function () {
+//       const stateId = this.value;
+//       console.log("📦 State changed to:", stateId);
+
+//       if (!stateId) {
+//         citySelect.innerHTML = '<option value="">Select a city</option>';
+//         jQuery(citySelect).trigger('change');
+//         return;
+//       }
+
+//       fetch(CRM.vars.mymodule.ajaxurl, {
+//         method: 'POST',
+//         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+//         body: new URLSearchParams({
+//           action: 'get_cities_by_state',
+//           state_id: stateId,
+//         }),
+//       })
+//         .then(res => res.json())
+//         .then(data => {
+//           if (data.success && data.data?.cities?.length > 0) {
+//             citySelect.innerHTML = '<option value="">Select a city</option>';
+//             data.data.cities.forEach(city => {
+//               const opt = document.createElement('option');
+//               opt.value = city.id;
+//               opt.textContent = city.name;
+//               citySelect.appendChild(opt);
+//             });
+//             jQuery(citySelect).trigger('change');
+//             console.log("✅ Cities loaded into dropdown.");
+//           } else {
+//             console.warn("⚠️ No cities found for state ID:", stateId);
+//           }
+//         })
+//         .catch(err => {
+//           console.error("❌ Error fetching cities:", err);
+//         });
+//     });
+//   }, 1000); // Allow Angular DOM rendering to finish
+// });
+
+// Hide specific form items in the thank you page for events.
+// document.addEventListener('DOMContentLoaded', function () {
+//   setTimeout(() => {
+//     // 1. Find the city input via label
+//     function findInputByLabel(labelText) {
+//       const labels = Array.from(document.querySelectorAll('label'));
+//       const label = labels.find(l => l.textContent.trim().includes(labelText));
+//       if (!label) return null;
+//       const inputId = label.getAttribute('for');
+//       return inputId ? document.getElementById(inputId) : null;
+//     }
+
+//     const cityInput = findInputByLabel('Intent Details: city id');
+
+//     if (!cityInput) {
+//       console.error("❌ City input not found.");
+//       return;
+//     }
+
+//     // 2. Fetch cities for state ID 1098 (Uttarakhand)
+//     const stateId = 1098;
+
+//     fetch(window.ajaxurl, {
+//       method: 'POST',
+//       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+//       body: new URLSearchParams({
+//         action: 'get_cities_by_state',
+//         state_id: stateId
+//       })
+//     })
+//       .then(res => res.json())
+//       .then(data => {
+//         if (!data.success || !Array.isArray(data.data?.cities)) {
+//           console.warn("⚠️ No cities returned.");
+//           return;
+//         }
+
+//         const cities = data.data.cities;
+
+//         // 3. Populate city input via Angular isolateScope
+//         const angularElement = angular.element(cityInput);
+//         const isolateScope = angularElement.isolateScope();
+
+//         if (!isolateScope) {
+//           console.error("❌ Cannot access Angular isolate scope.");
+//           return;
+//         }
+
+//         isolateScope.select2Options.data = cities.map(city => ({
+//           id: city.id,
+//           text: city.name
+//         }));
+
+//         // 4. Apply Angular changes and trigger change event
+//         isolateScope.$applyAsync(() => {
+//           cityInput.value = '';
+//           angularElement.triggerHandler('change');
+//           console.log("✅ City dropdown updated for state ID 1098.");
+//         });
+//       })
+//       .catch(err => {
+//         console.error("❌ Error fetching cities:", err);
+//       });
+//   }, 1000); // Wait for DOM + Angular to render
+// });
 document.addEventListener('DOMContentLoaded', function() {
     const checkbox = document.querySelector('.crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options .crm-option-label-pair input.crm-form-checkbox');
     const panFieldContainer = document.querySelector('.crm-contribution-main-form-block .custom_pre_profile-group fieldset > div:nth-last-child(5)');
