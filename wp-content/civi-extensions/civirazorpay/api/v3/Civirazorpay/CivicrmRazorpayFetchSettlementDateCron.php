@@ -8,6 +8,8 @@
 use Civi\Api4\Contribution;
 use Civi\Api4\PaymentProcessor;
 
+// cv api Civirazorpay.CivicrmRazorpayFetchSettlementDateCron payment_instrument_id=1 is_test=0 --user=devteam
+
 /**
  * Class to handle fetching and processing Razorpay settlements.
  */
