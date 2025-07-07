@@ -32,7 +32,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
   const FALLBACK_OFFICE_NAME = 'Delhi';
   const MATERIAL_RELATIONSHIP_TYPE_NAME = 'Material Management Team of';
   const INSTITUTION_DROPPING_CENTER_INTENT_FB_NAMES = [
-    'afformInstitutionDroppingCenterIntent1',
+    'afformInstitutionDroppingCenterIntent',
     'afformAdminInstitutionDroppingCenterIntent',
   ];
 

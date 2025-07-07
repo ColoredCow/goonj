@@ -69,6 +69,52 @@ class InstitutionCollectionCampService extends AutoSubscriber {
   /**
    *
    */
+  public static function updateInstitutionDispatchDetails(string $op, string $objectName, int $objectId, &$objectRef) {
+    if ($op !== 'edit' || $objectName !== 'AfformSubmission') {
+      return;
+    }
+
+    if (empty($objectRef->data)) {
+      return;
+    }
+
+    $data = json_decode($objectRef->data, TRUE);
+
+    if (!empty($data['Eck_Collection_Source_Vehicle_Dispatch1'])) {
+      foreach ($data['Eck_Collection_Source_Vehicle_Dispatch1'] as $entry) {
+        $entryId = $entry['id'] ?? NULL;
+        $fields = $entry['fields'] ?? [];
+
+        if (!$entryId) {
+          continue;
+        }
+
+        $institutionName = $fields['Camp_Institution_Data.Name_of_the_institution'] ?? '';
+        $institutionAddress = $fields['Camp_Institution_Data.Address'] ?? '';
+        $institutionCampId = $fields['Camp_Vehicle_Dispatch.Institution_Collection_Camp'] ?? '';
+
+        if (!$institutionName || !$institutionCampId) {
+          continue;
+        }
+
+        try {
+          EckEntity::update('Collection_Source_Vehicle_Dispatch', TRUE)
+            ->addValue('Camp_Institution_Data.Name_of_the_institution', $institutionName)
+            ->addValue('Camp_Institution_Data.Address', $institutionAddress)
+            ->addWhere('Camp_Vehicle_Dispatch.Institution_Collection_Camp', '=', $institutionCampId)
+            ->addWhere('id', '=', $entryId)
+            ->execute();
+        }
+        catch (\Exception $e) {
+          continue;
+        }
+      }
+    }
+  }
+
+  /**
+   *
+   */
   public static function updateCampStatusOnOutcomeFilled(string $op, string $objectName, int $objectId, &$objectRef) {
     if ($objectName !== 'AfformSubmission') {
       return;
@@ -221,55 +267,6 @@ class InstitutionCollectionCampService extends AutoSubscriber {
 
   }
 
-  /**
-   *
-   */
-  public static function updateInstitutionDispatchDetails(string $op, string $objectName, int $objectId, &$objectRef) {
-    if ($op !== 'edit' || $objectName !== 'AfformSubmission') {
-      return;
-    }
-
-    if (empty($objectRef->data)) {
-      return;
-    }
-
-    $data = json_decode($objectRef->data, TRUE);
-
-    if (!empty($data['Eck_Collection_Source_Vehicle_Dispatch1'])) {
-      foreach ($data['Eck_Collection_Source_Vehicle_Dispatch1'] as $entry) {
-        $entryId = $entry['id'] ?? NULL;
-        $fields = $entry['fields'] ?? [];
-
-        if (!$entryId) {
-          continue;
-        }
-
-        $institutionName = $fields['Camp_Institution_Data.Name_of_the_institution'] ?? '';
-        $institutionAddress = $fields['Camp_Institution_Data.Address'] ?? '';
-        $institutionCampId = $fields['Camp_Vehicle_Dispatch.Institution_Collection_Camp'] ?? '';
-
-        if (!$institutionName || !$institutionCampId) {
-          continue;
-        }
-
-        try {
-          EckEntity::update('Collection_Source_Vehicle_Dispatch', TRUE)
-            ->addValue('Camp_Institution_Data.Name_of_the_institution', $institutionName)
-            ->addValue('Camp_Institution_Data.Address', $institutionAddress)
-            ->addWhere('Camp_Vehicle_Dispatch.Institution_Collection_Camp', '=', $institutionCampId)
-            ->addWhere('id', '=', $entryId)
-            ->execute();
-        }
-        catch (\Exception $e) {
-          continue;
-        }
-      }
-    }
-  }
-
-  /**
-   *
-   */
   public static function updateNameOfTheInstitution(string $op, string $objectName, int $objectId, &$objectRef) {
     if (!empty($objectRef->afform_name) && $objectRef->afform_name == "afformInstitutionCollectionCampIntentVerification") {
 
