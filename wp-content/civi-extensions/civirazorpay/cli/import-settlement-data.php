@@ -8,7 +8,7 @@
 use Civi\Api4\Contribution;
 use Civi\Api4\PaymentProcessor;
 
-// Enable error reporting for debugging
+// Enable error reporting for debugging.
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
@@ -33,7 +33,7 @@ class RazorpaySettlementFetcher {
    * @param int $paymentInstrumentId
    * @param string $startDate
    * @param string $endDate
-   * @ sınırlı bool $isTest
+   *   @ sınırlı bool $isTest.
    */
   public function __construct($paymentInstrumentId, $startDate, $endDate, $isTest = TRUE) {
     echo "Initializing CiviCRM...\n";
@@ -119,7 +119,7 @@ class RazorpaySettlementFetcher {
     $currentDate = clone $this->startDate;
     $datesToCheck = [];
 
-    // Generate array of dates from startDate to endDate
+    // Generate array of dates from startDate to endDate.
     while ($currentDate <= $this->endDate) {
       $datesToCheck[] = clone $currentDate;
       $currentDate->modify('+1 day');
@@ -309,34 +309,35 @@ class RazorpaySettlementFetcher {
     sleep(pow(2, $this->retryCount));
     $this->run();
   }
+
 }
 
 /**
  * Main execution function for the script.
  */
 function main($argv = NULL) {
-  // Enable error reporting
+  // Enable error reporting.
   ini_set('display_errors', 1);
   ini_set('display_startup_errors', 1);
   error_reporting(E_ALL);
 
-  // Fallback for undefined $argv
+  // Fallback for undefined $argv.
   if ($argv === NULL) {
     $argv = $_SERVER['argv'] ?? [];
     echo "Warning: \$argv is undefined, using \$_SERVER['argv'] as fallback: " . print_r($argv, TRUE) . "\n";
   }
 
-  // Enhanced debugging
+  // Enhanced debugging.
   echo "Execution context: CLI=" . (php_sapi_name() === 'cli' ? 'Yes' : 'No') . "\n";
   echo "Received arguments: " . print_r($argv, TRUE) . "\n";
 
-  // Hardcode paymentInstrumentId, isTest, and date range
+  // Hardcode paymentInstrumentId, isTest, and date range.
   $paymentInstrumentId = 1;
   $isTest = FALSE;
   $startDate = '2025-04-01';
   $endDate = '2025-04-04';
 
-  // Validate dates
+  // Validate dates.
   try {
     $start = new DateTime($startDate);
     $end = new DateTime($endDate);
@@ -369,6 +370,5 @@ function main($argv = NULL) {
   }
 }
 
-// Execute the script
+// Execute the script.
 main();
-?>
