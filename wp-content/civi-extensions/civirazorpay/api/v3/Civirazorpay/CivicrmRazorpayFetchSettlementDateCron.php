@@ -97,20 +97,16 @@ class RazorpaySettlementFetcher {
    */
   private function fetchSettlementTransactions(): array {
     $transactionsByDay = [];
+
     // Hardcoded dates for testing (e.g., specific dates to fetch transactions)
-    $hardcodedDates = [
-    // Example date 1.
-      new DateTime('2025-07-05'),
+    // $hardcodedDates = [
+    //   new DateTime('2025-07-05'),
+    // ];
+    // $datesToCheck = $hardcodedDates;.
+    $datesToCheck = [
+      $this->targetDate,
     ];
 
-    // For production, you can revert to using $this->targetDate
-    // $datesToCheck = [$this->targetDate];.
-    // Use hardcoded dates for testing.
-    $datesToCheck = $hardcodedDates;
-
-    // $datesToCheck = [
-    //   $this->targetDate,
-    // ];
     foreach ($datesToCheck as $checkDate) {
       $year = $checkDate->format('Y');
       $month = $checkDate->format('m');
