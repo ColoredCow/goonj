@@ -9,19 +9,19 @@ function goonj_enqueue_scripts() {
 		'goonj-style',
 		get_template_directory_uri() . '/style.css',
 		array(),
-		wp_get_theme()->get( 'Version' )
+		filemtime( get_template_directory() . '/style.css' )
 	);
 	wp_enqueue_script(
 		'goonj-script',
 		get_template_directory_uri() . '/main.js',
 		array(),
-		wp_get_theme()->get( 'Version' )
+		filemtime( get_template_directory() . '/main.js' )
 	);
 	wp_enqueue_script(
 		'validation-script',
 		get_template_directory_uri() . '/validation.js',
 		array( 'jquery' ),
-		wp_get_theme()->get( 'Version' ),
+		filemtime( get_template_directory() . '/validation.js' ),
 		true
 	);
 	if (is_page('team-5000')) {
@@ -29,7 +29,7 @@ function goonj_enqueue_scripts() {
 			'team-5000',
 			get_template_directory_uri() . '/goonj-team-5000.js',
 			array( 'jquery' ),
-			wp_get_theme()->get( 'Version' ),
+			filemtime( get_template_directory() . '/goonj-team-5000.js' ),
 			true
 		);
 	}
@@ -38,7 +38,7 @@ function goonj_enqueue_scripts() {
 			'contribution',
 			get_template_directory_uri() . '/goonj-contribution.js',
 			array( 'jquery' ),
-			wp_get_theme()->get( 'Version' ),
+			filemtime( get_template_directory() . '/goonj-contribution.js' ),
 			true
 		);
 	}
