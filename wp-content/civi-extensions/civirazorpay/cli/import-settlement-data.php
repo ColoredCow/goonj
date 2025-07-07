@@ -8,7 +8,7 @@
 use Civi\Api4\Contribution;
 use Civi\Api4\PaymentProcessor;
 
-// cv scr /Users/tarunjoshi/Projects/goonj/wp-content/civi-extensions/civirazorpay/cli/import-settlement-data.php 1 2025-04-01 2025-04-02 0 | tee save-data.txt
+// cv scr /Users/tarunjoshi/Projects/goonj/wp-content/civi-extensions/civirazorpay/cli/import-settlement-data.php 1 2025-04-03 2025-04-03 0 | tee save-data.txt
 // Enable error reporting for debugging.
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
