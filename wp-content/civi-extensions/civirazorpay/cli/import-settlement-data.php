@@ -361,7 +361,6 @@ function main($argv = NULL) {
     echo "Transactions fetched: {$result['razorpay_transactions_fetched']}\n";
     echo "Transactions processed: {$result['processed']}\n";
     echo "Contributions updated: {$result['updated']}\n";
-    echo "Errors encountered: {$result['errors']}\n";
   }
   catch (Exception $e) {
     echo "Error: Failed to process settlements: " . $e->getMessage() . "\n";
