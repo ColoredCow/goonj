@@ -2,12 +2,13 @@
 
 /**
  * @file
- * One-time script to fetch Razorpay settlement details for April 1-4, 2025, and update CiviCRM contributions.
+ * One-time script to fetch Razorpay settlement details for a given date range and update CiviCRM contributions.
  */
 
 use Civi\Api4\Contribution;
 use Civi\Api4\PaymentProcessor;
 
+// cv scr /Users/tarunjoshi/Projects/goonj/wp-content/civi-extensions/civirazorpay/cli/import-settlement-data.php 1 2025-04-01 2025-04-02 0 | tee save-data.txt
 // Enable error reporting for debugging.
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
@@ -33,7 +34,7 @@ class RazorpaySettlementFetcher {
    * @param int $paymentInstrumentId
    * @param string $startDate
    * @param string $endDate
-   *   @ sınırlı bool $isTest.
+   * @param bool $isTest
    */
   public function __construct($paymentInstrumentId, $startDate, $endDate, $isTest = TRUE) {
     echo "Initializing CiviCRM...\n";
@@ -316,7 +317,6 @@ class RazorpaySettlementFetcher {
  * Main execution function for the script.
  */
 function main($argv = NULL) {
-  // Enable error reporting.
   ini_set('display_errors', 1);
   ini_set('display_startup_errors', 1);
   error_reporting(E_ALL);
@@ -331,11 +331,11 @@ function main($argv = NULL) {
   echo "Execution context: CLI=" . (php_sapi_name() === 'cli' ? 'Yes' : 'No') . "\n";
   echo "Received arguments: " . print_r($argv, TRUE) . "\n";
 
-  // Hardcode paymentInstrumentId, isTest, and date range.
-  $paymentInstrumentId = 1;
-  $isTest = FALSE;
-  $startDate = '2025-04-01';
-  $endDate = '2025-04-04';
+  // Extract arguments, adjusting for cv scr.
+  $paymentInstrumentId = (int) $argv[3];
+  $startDate = $argv[4];
+  $endDate = $argv[5];
+  $isTest = filter_var($argv[6], FILTER_VALIDATE_BOOLEAN);
 
   // Validate dates.
   try {
