@@ -129,12 +129,12 @@ class RazorpaySettlementFetcher {
       $year = $checkDate->format('Y');
       $month = $checkDate->format('m');
       $day = $checkDate->format('d');
-      $options = ['year' => $year, 'month' => $month, 'day' => $day, 'count' => 100, 'skip' => 0];
+      $options = ['year' => $year, 'month' => $month, 'day' => $day, 'count' => 50, 'skip' => 0];
       $transactions = [];
 
       for ($retry = 0; $retry < self::MAX_RETRIES; $retry++) {
         try {
-          $url = "https://api.razorpay.com/v1/settlements/recon/combined?year=$year&month=$month&day=$day&count=100&skip={$options['skip']}";
+          $url = "https://api.razorpay.com/v1/settlements/recon/combined?year=$year&month=$month&day=$day&count=50&skip={$options['skip']}";
           echo "Fetching transactions for $year-$month-$day (skip: {$options['skip']})...\n";
           $ch = curl_init($url);
           curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
@@ -159,7 +159,7 @@ class RazorpaySettlementFetcher {
 
           while ($responseArray['count'] >= $options['count']) {
             $options['skip'] += $options['count'];
-            $url = "https://api.razorpay.com/v1/settlements/recon/combined?year=$year&month=$month&day=$day&count=100&skip={$options['skip']}";
+            $url = "https://api.razorpay.com/v1/settlements/recon/combined?year=$year&month=$month&day=$day&count=50&skip={$options['skip']}";
             echo "Fetching more transactions for $year-$month-$day (skip: {$options['skip']})...\n";
             $ch = curl_init($url);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
