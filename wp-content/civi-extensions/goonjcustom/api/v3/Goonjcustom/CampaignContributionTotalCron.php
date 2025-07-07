@@ -67,6 +67,7 @@ function goonjcustom_get_total_contributions_by_campaign($campaignId) {
   $contributions = Contribution::get(FALSE)
     ->addSelect('total_amount')
     ->addWhere('campaign_id', '=', $campaignId)
+    ->addWhere('contribution_status_id:name', '=', 'Completed')
     ->execute();
 
   if (empty($contributions)) {
