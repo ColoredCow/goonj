@@ -285,23 +285,6 @@ class RazorpaySettlementFetcher {
             ->addValue($settlementDateField, $settlementDate)
             ->execute();
 
-          if ($updateResult->rowCount) {
-            $returnValues['updated']++;
-            \Civi::log()->debug('Updated contribution', [
-              'contribution_id' => $contribution['id'],
-              'payment_id' => $paymentId,
-              'settlement_id' => $settlementId,
-              'settlement_date' => $settlementDate,
-            ]);
-          }
-          else {
-            $returnValues['errors']++;
-            \Civi::log()->error('Failed to update contribution', [
-              'contribution_id' => $contribution['id'],
-              'payment_id' => $paymentId,
-              'date' => $date,
-            ]);
-          }
         }
         catch (Exception $e) {
           $returnValues['errors']++;
