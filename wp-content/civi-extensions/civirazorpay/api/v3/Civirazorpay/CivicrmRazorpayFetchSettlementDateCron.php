@@ -7,8 +7,7 @@
 
 use Civi\Api4\Contribution;
 use Civi\Api4\PaymentProcessor;
-
-// cv api Civirazorpay.CivicrmRazorpayFetchSettlementDateCron payment_instrument_id=1 is_test=0 --user=devteam
+// cv api Civirazorpay.CivicrmRazorpayFetchSettlementDateCron --user=devteam
 
 /**
  * Class to handle fetching and processing Razorpay settlements.
@@ -105,12 +104,12 @@ class RazorpaySettlementFetcher {
       $year = $checkDate->format('Y');
       $month = $checkDate->format('m');
       $day = $checkDate->format('d');
-      $options = ['year' => $year, 'month' => $month, 'day' => $day, 'count' => 100, 'skip' => 0];
+      $options = ['year' => $year, 'month' => $month, 'day' => $day, 'count' => 50, 'skip' => 0];
       $transactions = [];
 
       for ($retry = 0; $retry < self::MAX_RETRIES; $retry++) {
         try {
-          $url = "https://api.razorpay.com/v1/settlements/recon/combined?year=$year&month=$month&day=$day&count=100&skip={$options['skip']}";
+          $url = "https://api.razorpay.com/v1/settlements/recon/combined?year=$year&month=$month&day=$day&count=50&skip={$options['skip']}";
           $ch = curl_init($url);
           curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
           curl_setopt($ch, CURLOPT_USERPWD, "{$this->apiKey}:{$this->apiSecret}");
@@ -137,7 +136,7 @@ class RazorpaySettlementFetcher {
 
           while ($responseArray['count'] >= $options['count']) {
             $options['skip'] += $options['count'];
-            $url = "https://api.razorpay.com/v1/settlements/recon/combined?year=$year&month=$month&day=$day&count=100&skip={$options['skip']}";
+            $url = "https://api.razorpay.com/v1/settlements/recon/combined?year=$year&month=$month&day=$day&count=50&skip={$options['skip']}";
             $ch = curl_init($url);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
             curl_setopt($ch, CURLOPT_USERPWD, "{$this->apiKey}:{$this->apiSecret}");
@@ -345,13 +344,13 @@ function _civicrm_api3_civirazorpay_civicrmrazorpayfetchsettlementdatecron_spec(
     'title' => 'Payment Instrument ID',
     'description' => 'ID used to identify Razorpay contributions',
     'type' => CRM_Utils_Type::T_INT,
-    'api.required' => 1,
+    'api.default' => 1,
   ];
   $spec['is_test'] = [
     'title' => 'Test Mode',
-    'description' => 'Process test contributions (1) or live contributions (0). Defaults to 1.',
+    'description' => 'Process test contributions (1) or live contributions (0). Defaults to 0.',
     'type' => CRM_Utils_Type::T_INT,
-    'api.default' => 1,
+    'api.default' => 0,
   ];
 }
 
@@ -367,9 +366,9 @@ function _civicrm_api3_civirazorpay_civicrmrazorpayfetchsettlementdatecron_spec(
 function civicrm_api3_civirazorpay_civicrmrazorpayfetchsettlementdatecron($params) {
   try {
     $fetcher = new RazorpaySettlementFetcher(
-      $params['payment_instrument_id'],
+      $params['payment_instrument_id'] ?? 1,
       $params['date'] ?? date('Y-m-d', strtotime('-1 day')),
-      $params['is_test'] ?? 1
+      $params['is_test'] ?? 0
     );
     $result = $fetcher->run();
     return civicrm_api3_create_success($result, $params, 'Civirazorpay', 'CivicrmRazorpayFetchSettlementDateCron');
