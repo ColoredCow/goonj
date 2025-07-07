@@ -46,9 +46,11 @@ class RazorpaySettlementFetcher {
       $this->apiSecret = $processorConfig['password'];
     }
     catch (Exception $e) {
-      throw new Exception($errorMsg);
+      \Civi::log()->error('Failed to initialize payment processor', [
+        'error_message' => $e->getMessage(),
+      ]);
+      throw new Exception("Failed to initialize payment processor: " . $e->getMessage());
     }
-
   }
 
   /**
@@ -70,7 +72,9 @@ class RazorpaySettlementFetcher {
       $returnValues['processed'] = $returnValues['razorpay_transactions_fetched'];
 
       if (empty($transactions)) {
-        \Civi::log()->debug('No transactions found from Razorpay', ['date' => $this->targetDate->format('Y-m-d')]);
+        \Civi::log()->debug('No transactions found from Razorpay', [
+          'date' => $this->targetDate->format('Y-m-d'),
+        ]);
       }
       else {
         $this->processTransactions($transactions, $returnValues);
@@ -80,6 +84,7 @@ class RazorpaySettlementFetcher {
       $this->handleRetry($e, $returnValues);
     }
 
+    \Civi::log()->info('Razorpay settlement job completed', $returnValues);
     return $returnValues;
   }
 
@@ -113,6 +118,11 @@ class RazorpaySettlementFetcher {
           curl_close($ch);
 
           if ($httpCode != 200) {
+            \Civi::log()->error('Razorpay API request failed', [
+              'url' => $url,
+              'http_code' => $httpCode,
+              'response' => $response ?: 'No response',
+            ]);
             throw new Exception("HTTP $httpCode: " . ($response ?: 'No response'));
           }
 
@@ -135,6 +145,11 @@ class RazorpaySettlementFetcher {
             curl_close($ch);
 
             if ($httpCode != 200) {
+              \Civi::log()->error('Razorpay API request failed', [
+                'url' => $url,
+                'http_code' => $httpCode,
+                'response' => $response ?: 'No response',
+              ]);
               throw new Exception("HTTP $httpCode: " . ($response ?: 'No response'));
             }
 
@@ -145,6 +160,11 @@ class RazorpaySettlementFetcher {
             // Avoid rate limits.
             sleep(1);
           }
+
+          \Civi::log()->debug('Fetched transactions from Razorpay', [
+            'date' => "$year-$month-$day",
+            'transaction_count' => count($transactions),
+          ]);
           break;
         }
         catch (Exception $e) {
@@ -152,6 +172,10 @@ class RazorpaySettlementFetcher {
             sleep(pow(2, $retry));
             continue;
           }
+          \Civi::log()->error('Failed to fetch transactions', [
+            'date' => "$year-$month-$day",
+            'error_message' => $e->getMessage(),
+          ]);
           break;
         }
       }
@@ -176,12 +200,20 @@ class RazorpaySettlementFetcher {
       foreach ($transactions as $transaction) {
         if ($transaction['type'] !== 'payment' || !isset($transaction['entity_id'], $transaction['settlement_id'], $transaction['settled_at'])) {
           $returnValues['errors']++;
+          \Civi::log()->error('Invalid transaction data', [
+            'date' => $date,
+            'transaction' => $transaction,
+          ]);
           continue;
         }
 
         $paymentId = $transaction['entity_id'];
         if (!preg_match('/^pay_/', $paymentId)) {
           $returnValues['errors']++;
+          \Civi::log()->error('Invalid payment ID', [
+            'payment_id' => $paymentId,
+            'date' => $date,
+          ]);
           continue;
         }
 
@@ -199,6 +231,11 @@ class RazorpaySettlementFetcher {
 
         if ($settlementDate === FALSE || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $settlementDate)) {
           $returnValues['errors']++;
+          \Civi::log()->error('Invalid settlement date', [
+            'payment_id' => $paymentId,
+            'settled_at' => $transaction['settled_at'],
+            'date' => $date,
+          ]);
           continue;
         }
 
@@ -211,12 +248,21 @@ class RazorpaySettlementFetcher {
 
           if (!$contribution) {
             $returnValues['errors']++;
+            \Civi::log()->error('Contribution not found', [
+              'payment_id' => $paymentId,
+              'date' => $date,
+            ]);
             continue;
           }
 
           // Skip if already settled.
           if (!empty($contribution['Contribution_Details.Settlement_Id'])) {
             $returnValues['processed']++;
+            \Civi::log()->debug('Contribution already settled', [
+              'contribution_id' => $contribution['id'],
+              'payment_id' => $paymentId,
+              'date' => $date,
+            ]);
             continue;
           }
 
@@ -229,13 +275,29 @@ class RazorpaySettlementFetcher {
 
           if ($updateResult->rowCount) {
             $returnValues['updated']++;
+            \Civi::log()->debug('Updated contribution', [
+              'contribution_id' => $contribution['id'],
+              'payment_id' => $paymentId,
+              'settlement_id' => $settlementId,
+              'settlement_date' => $settlementDate,
+            ]);
           }
           else {
             $returnValues['errors']++;
+            \Civi::log()->error('Failed to update contribution', [
+              'contribution_id' => $contribution['id'],
+              'payment_id' => $paymentId,
+              'date' => $date,
+            ]);
           }
         }
         catch (Exception $e) {
           $returnValues['errors']++;
+          \Civi::log()->error('Failed to process contribution', [
+            'payment_id' => $paymentId,
+            'date' => $date,
+            'error_message' => $e->getMessage(),
+          ]);
         }
 
         $returnValues['processed']++;
@@ -253,7 +315,10 @@ class RazorpaySettlementFetcher {
     $this->retryCount++;
 
     if ($this->retryCount >= self::MAX_RETRIES) {
-      throw new Exception($errorMsg);
+      \Civi::log()->error('Max retries exceeded', [
+        'error_message' => $e->getMessage(),
+      ]);
+      throw new Exception("Max retries exceeded: " . $e->getMessage());
     }
 
     sleep(pow(2, $this->retryCount));
@@ -308,6 +373,10 @@ function civicrm_api3_civirazorpay_civicrmrazorpayfetchsettlementdatecron($param
     return civicrm_api3_create_success($result, $params, 'Civirazorpay', 'CivicrmRazorpayFetchSettlementDateCron');
   }
   catch (Exception $e) {
+    \Civi::log()->error('API execution failed', [
+      'error_message' => $e->getMessage(),
+      'params' => $params,
+    ]);
     return civicrm_api3_create_error("Failed to process settlements: " . $e->getMessage(), [
       'processed' => 0,
       'updated' => 0,
