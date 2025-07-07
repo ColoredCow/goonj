@@ -7,7 +7,8 @@
 
 use Civi\Api4\Contribution;
 use Civi\Api4\PaymentProcessor;
-// cv api Civirazorpay.CivicrmRazorpayFetchSettlementDateCron --user=devteam
+
+// Cv api Civirazorpay.CivicrmRazorpayFetchSettlementDateCron --user=devteam.
 
 /**
  * Class to handle fetching and processing Razorpay settlements.
@@ -96,10 +97,20 @@ class RazorpaySettlementFetcher {
    */
   private function fetchSettlementTransactions(): array {
     $transactionsByDay = [];
-    $datesToCheck = [
-      $this->targetDate,
+    // Hardcoded dates for testing (e.g., specific dates to fetch transactions)
+    $hardcodedDates = [
+    // Example date 1.
+      new DateTime('2025-07-05'),
     ];
 
+    // For production, you can revert to using $this->targetDate
+    // $datesToCheck = [$this->targetDate];.
+    // Use hardcoded dates for testing.
+    $datesToCheck = $hardcodedDates;
+
+    // $datesToCheck = [
+    //   $this->targetDate,
+    // ];
     foreach ($datesToCheck as $checkDate) {
       $year = $checkDate->format('Y');
       $month = $checkDate->format('m');
@@ -294,11 +305,6 @@ class RazorpaySettlementFetcher {
         }
         catch (Exception $e) {
           $returnValues['errors']++;
-          \Civi::log()->error('Failed to process contribution', [
-            'payment_id' => $paymentId,
-            'date' => $date,
-            'error_message' => $e->getMessage(),
-          ]);
         }
 
         $returnValues['processed']++;
@@ -334,24 +340,6 @@ class RazorpaySettlementFetcher {
  * @param array $spec
  */
 function _civicrm_api3_civirazorpay_civicrmrazorpayfetchsettlementdatecron_spec(&$spec) {
-  $spec['date'] = [
-    'title' => 'Contribution Date',
-    'description' => 'Date to fetch settlements for (defaults to yesterday)',
-    'type' => CRM_Utils_Type::T_DATE,
-    'api.default' => date('Y-m-d', strtotime('-1 day')),
-  ];
-  $spec['payment_instrument_id'] = [
-    'title' => 'Payment Instrument ID',
-    'description' => 'ID used to identify Razorpay contributions',
-    'type' => CRM_Utils_Type::T_INT,
-    'api.default' => 1,
-  ];
-  $spec['is_test'] = [
-    'title' => 'Test Mode',
-    'description' => 'Process test contributions (1) or live contributions (0). Defaults to 0.',
-    'type' => CRM_Utils_Type::T_INT,
-    'api.default' => 0,
-  ];
 }
 
 /**
@@ -364,6 +352,7 @@ function _civicrm_api3_civirazorpay_civicrmrazorpayfetchsettlementdatecron_spec(
  * @throws CiviCRM_API3_Exception
  */
 function civicrm_api3_civirazorpay_civicrmrazorpayfetchsettlementdatecron($params) {
+  $returnValues = [];
   try {
     $fetcher = new RazorpaySettlementFetcher(
       $params['payment_instrument_id'] ?? 1,
