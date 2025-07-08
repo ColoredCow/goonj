@@ -417,6 +417,24 @@
   }
 }
 
+.select2-container {
+  touch-action: none; /* Disable touch scrolling on the dropdown */
+}
+
+.select2-container .select2-choice,
+.select2-container .select2-selection {
+  touch-action: manipulation; /* Allow explicit taps/clicks */
+}
+
+.select2-drop-active {
+  pointer-events: none; /* Prevent interaction with dropdown during scroll */
+}
+
+.select2-drop-active:focus,
+.select2-drop-active:active {
+  pointer-events: auto; /* Allow interaction when focused/clicked */
+}
+
 // Media Queries.
 @media (min-width: 340px) and (max-width: 769px) {
   #crm-main-content-wrapper {
