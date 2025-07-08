@@ -274,6 +274,9 @@
           fieldset > div:nth-last-child(4) {
             display: inline !important;
           }   
+          div.crm-section.editrow_country-Primary-section.form-item {
+            display: block !important;
+          }
         }
       }
     }
