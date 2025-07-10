@@ -204,10 +204,11 @@ class RazorpaySettlementFetcher {
     $settlementDateField = 'Contribution_Details.Settlement_Date';
     $feeAmountField = 'Contribution_Details.Razorpay_Fee';
     $taxAmountField = 'Contribution_Details.Razorpay_Tax';
+    $creditAmountField = 'Contribution_Details.Credit_Amount';
 
     foreach ($transactionsByDay as $date => $transactions) {
       foreach ($transactions as $transaction) {
-        if ($transaction['type'] !== 'payment' || !isset($transaction['entity_id'], $transaction['settlement_id'], $transaction['settled_at'], $transaction['fee'], $transaction['tax'])) {
+        if ($transaction['type'] !== 'payment' || !isset($transaction['entity_id'], $transaction['settlement_id'], $transaction['settled_at'], $transaction['fee'], $transaction['tax'], $transaction['credit'])) {
           $returnValues['errors']++;
           \Civi::log()->error('Invalid transaction data', [
             'date' => $date,
@@ -254,10 +255,11 @@ class RazorpaySettlementFetcher {
         // Calculate Razorpay base fee (excluding GST)
         $razorpayFee = $feeAmount - $taxAmount;
 
+        $creditAmount = $transaction['credit'] / 100;
 
         try {
           $contribution = Contribution::get(FALSE)
-            ->addSelect('id', 'Contribution_Details.Settlement_Id', 'Contribution_Details.Razorpay_Fee', 'Contribution_Details.Razorpay_Tax')
+            ->addSelect('id', 'Contribution_Details.Settlement_Id', 'Contribution_Details.Razorpay_Fee', 'Contribution_Details.Razorpay_Tax', 'Contribution_Details.Credit_Amount')
             ->addWhere('trxn_id', 'LIKE', '%' . $paymentId)
             ->addWhere('is_test', '=', $this->isTest)
             ->execute()->first();
@@ -289,6 +291,7 @@ class RazorpaySettlementFetcher {
             ->addValue($settlementDateField, $settlementDate)
             ->addValue($feeAmountField, $razorpayFee)
             ->addValue($taxAmountField, $taxAmount)
+            ->addValue($creditAmountField, $creditAmount)
             ->execute();
 
           $returnValues['updated']++;
