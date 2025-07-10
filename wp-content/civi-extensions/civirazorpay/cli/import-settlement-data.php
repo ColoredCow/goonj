@@ -288,18 +288,16 @@ class RazorpaySettlementFetcher {
             ->addValue($creditAmountField, $creditAmount)
             ->execute();
 
-          if ($updateResult->rowCount) {
-            $returnValues['updated']++;
-            \Civi::log()->debug("Updated contribution for payment $paymentId with settlement $settlementId on $settlementDate");
-          }
-          else {
-            $returnValues['errors']++;
-            \Civi::log()->error("Failed to update contribution for payment $paymentId");
-          }
+          $returnValues['updated']++;
+
         }
         catch (Exception $e) {
           $returnValues['errors']++;
-          \Civi::log()->error("Error processing contribution for payment $paymentId: " . $e->getMessage());
+          \Civi::log()->error('Failed to update contribution', [
+            'payment_id' => $paymentId,
+            'date' => $date,
+            'error_message' => $e->getMessage(),
+          ]);
         }
 
         $returnValues['processed']++;
