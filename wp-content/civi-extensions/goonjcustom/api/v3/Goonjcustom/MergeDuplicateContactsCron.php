@@ -16,7 +16,7 @@
 use Civi\Api4\Contact;
 
 function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
-  $csvPath = ABSPATH . 'wp-content/uploads/2025/07/Merge-Duplciate-Sheet1-6.csv';
+  $csvPath = ABSPATH . 'wp-content/uploads/2025/07/Merge-Duplciate-Sheet1-7.csv';
   \Civi::log()->info("[MergeDuplicatesCron] Using CSV path: $csvPath");
 
   if (!file_exists($csvPath)) {
