@@ -300,7 +300,6 @@ class RazorpaySettlementFetcher {
           ]);
         }
 
-        $returnValues['processed']++;
       }
     }
   }
