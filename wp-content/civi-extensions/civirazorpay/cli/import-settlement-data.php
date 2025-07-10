@@ -250,6 +250,9 @@ class RazorpaySettlementFetcher {
         $feeAmount = $transaction['fee'] / 100;
         $taxAmount = $transaction['tax'] / 100;
 
+        // Calculate Razorpay base fee (excluding GST)
+        $razorpayFee = $feeAmount - $taxAmount;
+
         try {
           $contribution = Contribution::get(FALSE)
             ->addSelect('id', 'Contribution_Details.Settlement_Id', 'Contribution_Details.Razorpay_Fee', 'Contribution_Details.Razorpay_Tax')
@@ -275,7 +278,7 @@ class RazorpaySettlementFetcher {
             ->addWhere('is_test', '=', $this->isTest)
             ->addValue($settlementIdField, $settlementId)
             ->addValue($settlementDateField, $settlementDate)
-            ->addValue($feeAmountField, $feeAmount)
+            ->addValue($feeAmountField, $razorpayFee)
             ->addValue($taxAmountField, $taxAmount)
             ->execute();
 
