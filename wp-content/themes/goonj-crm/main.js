@@ -172,14 +172,17 @@ function fetchCitiesForState(stateName) {
 document.addEventListener('DOMContentLoaded', function () {
   const intervalId = setInterval(() => {
     const stateFieldWrapper = document.querySelector('af-field[name="state_province_id"]');
-    const cityFieldWrapper = document.querySelector('af-field[name="city"]');
+    const cityFieldWrapper = document.querySelector('af-field[name="city"]') || document.getElementById('editrow-city-Primary');
     const cityInput = cityFieldWrapper?.querySelector('input[type="text"]');
     const chosenSpan = document.getElementById('select2-chosen-1');
 
-    if (!stateFieldWrapper || !cityFieldWrapper || !cityInput || !chosenSpan) {
-      console.log("⏳ Waiting for form fields to load...");
-      return;
-    }
+	console.log(cityFieldWrapper,"cityFieldWrapper")
+	console.log(cityInput,"cityInput")
+
+    // if (!stateFieldWrapper || !cityFieldWrapper || !cityInput || !chosenSpan) {
+    //   console.log("⏳ Waiting for form fields to load...");
+    //   return;
+    // }
 
     clearInterval(intervalId);
     console.log("✅ Form fields found. Initializing city dropdown.");
@@ -195,17 +198,16 @@ document.addEventListener('DOMContentLoaded', function () {
     `;
     cityInput.parentElement.appendChild(citySelect);
 
-    // Initialize Select2 with search bar always visible
+    // Initialize Select2
     function applySelect2() {
       if (window.jQuery && jQuery.fn.select2) {
-        jQuery(citySelect).select2('destroy'); // in case already initialized
+        jQuery(citySelect).select2('destroy');
         jQuery(citySelect).select2({
           placeholder: "Select a city",
           allowClear: true,
           width: 'resolve',
-          minimumResultsForSearch: 0 // 🔍 always show search bar
+          minimumResultsForSearch: 0
         });
-
         jQuery(citySelect).next('.select2-container').css({
           width: '100%',
           'max-width': '340px'
@@ -223,7 +225,6 @@ document.addEventListener('DOMContentLoaded', function () {
     let lastState = chosenSpan.textContent.trim();
     const observer = new MutationObserver(() => {
       const currentState = chosenSpan.textContent.trim();
-
       if (currentState !== lastState) {
         console.log("📦 State changed:", lastState, "→", currentState);
         lastState = currentState;
@@ -246,9 +247,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 opt.textContent = city.name;
                 citySelect.appendChild(opt);
               });
-
               citySelect.appendChild(new Option("Other", "Other"));
-              applySelect2(); // Re-apply select2 after options update
+              applySelect2();
               jQuery(citySelect).trigger('change');
             } else {
               console.warn("⚠️ No cities found for:", currentState);
@@ -270,6 +270,7 @@ document.addEventListener('DOMContentLoaded', function () {
     console.log("👀 Watching for state changes...");
   }, 500);
 });
+
 // document.addEventListener('DOMContentLoaded', function () {
 //   setTimeout(() => {
 //     // 1. Find hidden Angular crm-ui-select inputs
