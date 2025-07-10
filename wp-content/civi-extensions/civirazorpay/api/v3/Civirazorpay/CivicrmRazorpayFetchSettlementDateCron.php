@@ -98,7 +98,7 @@ class RazorpaySettlementFetcher {
   private function fetchSettlementTransactions(): array {
     $transactionsByDay = [];
 
-    // Hardcoded dates for testing (e.g., specific dates to fetch transactions)
+    // Hardcoded dates for testing
     $hardcodedDates = [
       new DateTime('2025-07-05'),
     ];
@@ -202,8 +202,8 @@ class RazorpaySettlementFetcher {
   private function processTransactions(array $transactionsByDay, array &$returnValues): void {
     $settlementIdField = 'Contribution_Details.Settlement_Id';
     $settlementDateField = 'Contribution_Details.Settlement_Date';
-    $feeAmountField = 'fee_amount';
-    $taxAmountField = 'tax_amount';
+    $feeAmountField = 'Contribution_Details.Razorpay_Fee';
+    $taxAmountField = 'Contribution_Details.Razorpay_Tax';
 
     foreach ($transactionsByDay as $date => $transactions) {
       foreach ($transactions as $transaction) {
@@ -253,7 +253,7 @@ class RazorpaySettlementFetcher {
 
         try {
           $contribution = Contribution::get(FALSE)
-            ->addSelect('id', 'Contribution_Details.Settlement_Id', 'fee_amount', 'tax_amount')
+            ->addSelect('id', 'Contribution_Details.Settlement_Id', 'Contribution_Details.Razorpay_Fee', 'Contribution_Details.Razorpay_Tax')
             ->addWhere('trxn_id', 'LIKE', '%' . $paymentId)
             ->addWhere('is_test', '=', $this->isTest)
             ->execute()->first();
