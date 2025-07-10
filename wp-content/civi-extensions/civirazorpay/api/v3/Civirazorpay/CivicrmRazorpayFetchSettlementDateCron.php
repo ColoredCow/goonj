@@ -99,13 +99,13 @@ class RazorpaySettlementFetcher {
     $transactionsByDay = [];
 
     // Hardcoded dates for testing (e.g., specific dates to fetch transactions)
-    // $hardcodedDates = [
-    //   new DateTime('2025-07-05'),
-    // ];
-    // $datesToCheck = $hardcodedDates;.
-    $datesToCheck = [
-      $this->targetDate,
+    $hardcodedDates = [
+      new DateTime('2025-07-05'),
     ];
+    $datesToCheck = $hardcodedDates;
+    // $datesToCheck = [
+    //   $this->targetDate,
+    // ];
 
     foreach ($datesToCheck as $checkDate) {
       $year = $checkDate->format('Y');
@@ -165,7 +165,6 @@ class RazorpaySettlementFetcher {
             if (isset($responseArray['items'])) {
               $transactions = array_merge($transactions, $responseArray['items']);
             }
-            // Avoid rate limits.
             sleep(1);
           }
 
@@ -203,10 +202,12 @@ class RazorpaySettlementFetcher {
   private function processTransactions(array $transactionsByDay, array &$returnValues): void {
     $settlementIdField = 'Contribution_Details.Settlement_Id';
     $settlementDateField = 'Contribution_Details.Settlement_Date';
+    $feeAmountField = 'fee_amount';
+    $taxAmountField = 'tax_amount';
 
     foreach ($transactionsByDay as $date => $transactions) {
       foreach ($transactions as $transaction) {
-        if ($transaction['type'] !== 'payment' || !isset($transaction['entity_id'], $transaction['settlement_id'], $transaction['settled_at'])) {
+        if ($transaction['type'] !== 'payment' || !isset($transaction['entity_id'], $transaction['settlement_id'], $transaction['settled_at'], $transaction['fee'], $transaction['tax'])) {
           $returnValues['errors']++;
           \Civi::log()->error('Invalid transaction data', [
             'date' => $date,
@@ -229,7 +230,6 @@ class RazorpaySettlementFetcher {
         // Handle settled_at parsing.
         $settledAt = $transaction['settled_at'];
         if (is_numeric($settledAt)) {
-          // Assume Unix timestamp (seconds or milliseconds)
           $settledAt = strlen($settledAt) > 10 ? $settledAt / 1000 : $settledAt;
           $settlementDate = date('Y-m-d', $settledAt);
         }
@@ -247,9 +247,13 @@ class RazorpaySettlementFetcher {
           continue;
         }
 
+        // Convert fee and tax from paise to rupees.
+        $feeAmount = $transaction['fee'] / 100;
+        $taxAmount = $transaction['tax'] / 100;
+
         try {
           $contribution = Contribution::get(FALSE)
-            ->addSelect('id', 'Contribution_Details.Settlement_Id')
+            ->addSelect('id', 'Contribution_Details.Settlement_Id', 'fee_amount', 'tax_amount')
             ->addWhere('trxn_id', 'LIKE', '%' . $paymentId)
             ->addWhere('is_test', '=', $this->isTest)
             ->execute()->first();
@@ -279,11 +283,19 @@ class RazorpaySettlementFetcher {
             ->addWhere('is_test', '=', $this->isTest)
             ->addValue($settlementIdField, $settlementId)
             ->addValue($settlementDateField, $settlementDate)
+            ->addValue($feeAmountField, $feeAmount)
+            ->addValue($taxAmountField, $taxAmount)
             ->execute();
 
+          $returnValues['updated']++;
         }
         catch (Exception $e) {
           $returnValues['errors']++;
+          \Civi::log()->error('Failed to update contribution', [
+            'payment_id' => $paymentId,
+            'date' => $date,
+            'error_message' => $e->getMessage(),
+          ]);
         }
 
         $returnValues['processed']++;
