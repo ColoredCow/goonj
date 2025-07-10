@@ -13,14 +13,10 @@
  *
  * @return array
  */
-
 use Civi\Api4\Contact;
 
-/**
- *
- */
 function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
-  $csvPath = ABSPATH . 'wp-content/uploads/2025/07/Merge-Duplciate-Sheet1-4.csv';
+  $csvPath = ABSPATH . 'wp-content/uploads/2025/07/Merge-Duplciate-Sheet1-6.csv';
   \Civi::log()->info("[MergeDuplicatesCron] Using CSV path: $csvPath");
 
   if (!file_exists($csvPath)) {
@@ -55,7 +51,8 @@ function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
     $status = trim($contact['Status'] ?? '');
     $contactId = (int) ($contact['contact_id'] ?? 0);
 
-    if (!$email || !$firstName || !$contactId || !in_array($status, ['Real', 'Duplicate'])) {
+    if (!$email || !$firstName || $contactId <= 0 || !in_array($status, ['Real', 'Duplicate'])) {
+      \Civi::log()->warning("❌ Row #$rowIndex skipped due to invalid data.");
       continue;
     }
 
@@ -67,8 +64,7 @@ function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
 
     if ($status === 'Real') {
       $groups[$key]['real'] = $contactId;
-    }
-    else {
+    } else {
       $groups[$key]['duplicates'][] = $contactId;
     }
   }
@@ -78,25 +74,25 @@ function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
   foreach ($groups as $key => $data) {
     $realId = $data['real'];
     $duplicates = $data['duplicates'];
-    $email = $data['email'];
-    $firstName = $data['first_name'];
 
     if (!$realId || empty($duplicates)) {
+      \Civi::log()->warning("⛔ Skipping group '$key': Missing real or no duplicates.");
       continue;
     }
 
     foreach ($duplicates as $dupId) {
       try {
+        \Civi::log()->info("[MergeCron] Attempting merge: real #$realId ← duplicate #$dupId");
+
         Contact::mergeDuplicates(FALSE)
           ->setContactId($realId)
           ->setDuplicateId($dupId)
           ->setMode('aggressive')
           ->execute();
 
-        \Civi::log()->info("Merged duplicate #$dupId into real #$realId for $key");
-      }
-      catch (Exception $e) {
-        // \Civi::log()->error("Merge failed for duplicate #$dupId → real #$realId for $key: " . $e->getMessage());
+        \Civi::log()->info("✅ Merged duplicate #$dupId into real #$realId for $key");
+      } catch (Exception $e) {
+        \Civi::log()->error("❌ Merge failed for #$dupId → #$realId: " . $e->getMessage());
       }
     }
   }
