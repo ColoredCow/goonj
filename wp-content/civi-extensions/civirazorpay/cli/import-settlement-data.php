@@ -215,7 +215,7 @@ class RazorpaySettlementFetcher {
 
     foreach ($transactionsByDay as $date => $transactions) {
       foreach ($transactions as $transaction) {
-        if ($transaction['type'] !== 'payment' || !isset($transaction['entity_id'], $transaction['settlement_id'], $transaction['settled_at'])) {
+        if ($transaction['type'] !== 'payment' || !isset($transaction['entity_id'], $transaction['settlement_id'], $transaction['settled_at'], $transaction['fee'], $transaction['tax'])) {
           $returnValues['errors']++;
           \Civi::log()->error("Invalid transaction for $date: Missing required fields");
           continue;
@@ -246,9 +246,13 @@ class RazorpaySettlementFetcher {
           continue;
         }
 
+        // Convert fee and tax from paise to rupees.
+        $feeAmount = $transaction['fee'] / 100;
+        $taxAmount = $transaction['tax'] / 100;
+
         try {
           $contribution = Contribution::get(FALSE)
-            ->addSelect('id', 'Contribution_Details.Settlement_Id')
+            ->addSelect('id', 'Contribution_Details.Settlement_Id', 'Contribution_Details.Razorpay_Fee', 'Contribution_Details.Razorpay_Tax')
             ->addWhere('trxn_id', 'LIKE', '%' . $paymentId)
             ->addWhere('is_test', '=', $this->isTest)
             ->execute()->first();
@@ -271,6 +275,8 @@ class RazorpaySettlementFetcher {
             ->addWhere('is_test', '=', $this->isTest)
             ->addValue($settlementIdField, $settlementId)
             ->addValue($settlementDateField, $settlementDate)
+            ->addValue($feeAmountField, $feeAmount)
+            ->addValue($taxAmountField, $taxAmount)
             ->execute();
 
           if ($updateResult->rowCount) {
