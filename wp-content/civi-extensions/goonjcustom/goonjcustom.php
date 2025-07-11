@@ -34,55 +34,6 @@ function goonjcustom_civicrm_config(&$config): void {
 }
 
 /**
- * Implements hook_civicrm_merge().
- *
- * This hook is called just before the duplicate contact is deleted.
- */
-function goonjcustom_civicrm_merge($type, &$data, $mainId = NULL, $otherId = NULL, $tables = NULL) {
-  \Civi::log()->info("[MergeHook] ✅ Hook triggered for merging. Main ID: $mainId, Duplicate ID: $otherId");
-
-  if (!is_numeric($mainId) || !is_numeric($otherId)) {
-    \Civi::log()->error("[MergeHook] ❌ Invalid IDs received. Main: " . print_r($mainId, true) . ", Dup: " . print_r($otherId, true));
-    return;
-  }
-
-  // Additional logic for copying city if main address missing it
-  $mainAddr = \Civi\Api4\Address::get(FALSE)
-    ->addWhere('contact_id', '=', $mainId)
-    ->addWhere('is_primary', '=', 1)
-    ->setLimit(1)
-    ->execute()
-    ->first();
-
-  $dupAddr = \Civi\Api4\Address::get(FALSE)
-    ->addWhere('contact_id', '=', $otherId)
-    ->addWhere('is_primary', '=', 1)
-    ->setLimit(1)
-    ->execute()
-    ->first();
-
-  $mainCity = $mainAddr['city'] ?? '';
-  $dupCity = $dupAddr['city'] ?? '';
-
-  \Civi::log()->info("[MergeHook] 📦 Address check", [
-    'mainHasAddress' => $mainAddr ? 1 : 0,
-    'mainCity' => $mainCity,
-    'dupHasAddress' => $dupAddr ? 1 : 0,
-    'dupCity' => $dupCity,
-  ]);
-
-  if ($dupCity) {
-    $update = \Civi\Api4\Address::update(FALSE)
-     ->addValue('city', $dupCity)
-     ->addWhere('contact_id', '=', $mainId)
-      ->execute();
-    \Civi::log()->info("[MergeHook] ✅ City '$dupCity' copied from duplicate #$otherId to main #$mainId");
-  } else {
-    \Civi::log()->info("[MergeHook] 🚫 No city copied – main already has city or duplicate missing it");
-  }
-}
-
-/**
  * Implements hook_civicrm_install().
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_install

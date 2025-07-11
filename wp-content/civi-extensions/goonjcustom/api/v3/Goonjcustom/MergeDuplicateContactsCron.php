@@ -9,7 +9,7 @@
  * @return array
  */
 function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
-  $csvPath = ABSPATH . 'wp-content/uploads/2025/07/Merge-Duplciate-Sheet1-3.csv';
+  $csvPath = ABSPATH . 'wp-content/uploads/2025/07/Merge-Duplciate-Sheet1-1.csv';
   \Civi::log()->info("[MergeDuplicatesCron] 📁 CSV path: $csvPath");
 
   if (!file_exists($csvPath)) {
@@ -75,7 +75,7 @@ function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
         \Civi\Api4\Contact::mergeDuplicates(FALSE)
           ->setContactId($realId)
           ->setDuplicateId($dupId)
-          ->setMode('aggressive')
+          ->setMode('safe')
           ->execute();
 
         \Civi::log()->info("[MergeDuplicatesCron] Merged duplicate #$dupId → real #$realId ($key)");
