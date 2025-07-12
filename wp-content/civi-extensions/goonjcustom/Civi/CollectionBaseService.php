@@ -105,15 +105,23 @@ class CollectionBaseService extends AutoSubscriber {
       $currentContactId = (int) $activity['source_contact_id'];
 
       $materialContactIds = [];
+      $currentContactStillExists = FALSE;
+
       if (!in_array($activeFieldName, ['Material_Contribution.Institution_Goonj_Activities', 'Material_Contribution.Goonj_Activities'], TRUE)) {
         $materialActivities = Activity::get(FALSE)
-          ->addSelect('source_contact_id')
+          ->addSelect('id', 'source_contact_id')
           ->addWhere($activeFieldName, '=', $contributionId)
+          ->addWhere('id', '!=', $objectId)
           ->execute();
 
         foreach ($materialActivities as $item) {
-          if (!empty($item['source_contact_id']) && (int) $item['source_contact_id'] !== $currentContactId) {
-            $materialContactIds[] = (int) $item['source_contact_id'];
+          if (!empty($item['source_contact_id'])) {
+            $contactId = (int) $item['source_contact_id'];
+            $materialContactIds[] = $contactId;
+
+            if ($contactId === $currentContactId) {
+              $currentContactStillExists = TRUE;
+            }
           }
         }
       }
@@ -133,22 +141,25 @@ class CollectionBaseService extends AutoSubscriber {
 
       $allContactIds = array_unique(array_merge($materialContactIds, $monetaryContactIds));
       $uniqueCount = count($allContactIds);
-
       $uniqueMaterialCount = count(array_unique($materialContactIds));
 
       try {
-        EckEntity::update('Collection_Camp', TRUE)
-          ->addValue('Core_Contribution_Details.Number_of_unique_contributors', $uniqueCount)
-          ->addValue('Core_Contribution_Details.Number_of_unique_material_contributors', $uniqueMaterialCount)
+        $update = EckEntity::update('Collection_Camp', TRUE)
           ->addWhere('id', '=', $contributionId)
-          ->execute();
+          ->addValue('Core_Contribution_Details.Number_of_unique_contributors', $uniqueCount);
+
+        // Only reduce material contributor count if no other activity exists for current contact.
+        if (!$currentContactStillExists) {
+          $update->addValue('Core_Contribution_Details.Number_of_unique_material_contributors', $uniqueMaterialCount);
+        }
+
+        $update->execute();
       }
       catch (\Exception $e) {
         \Civi::log()->error("Failed to update contributor counts: " . $e->getMessage());
       }
-
     }
-    catch (Exception $e) {
+    catch (\Exception $e) {
       \Civi::log()->error("Error in pre delete activity hook: " . $e->getMessage());
     }
   }
@@ -380,12 +391,8 @@ class CollectionBaseService extends AutoSubscriber {
         ->execute()
         ->first();
 
-      if (!$contribution) {
-        \Civi::log()->warning("Contribution $objectId not found.");
-        return;
-      }
-
       if (
+        !$contribution ||
         $contribution['contribution_status_id:name'] !== 'Completed' ||
         empty($contribution['Contribution_Details.Source.id']) ||
         empty($contribution['contact_id']) ||
@@ -400,22 +407,33 @@ class CollectionBaseService extends AutoSubscriber {
       $amount = (float) $contribution['total_amount'];
       $paymentMethod = $contribution['payment_instrument_id:name'];
 
-      $monetaryContactIds = [];
-
-      $monetaryContributions = Contribution::get(FALSE)
+      // Determine if contact still has other completed contributions.
+      $otherMonetaryContributions = Contribution::get(FALSE)
         ->addSelect('contact_id')
         ->addWhere('Contribution_Details.Source.id', '=', $contributionId)
         ->addWhere('contribution_status_id:name', '=', 'Completed')
+      // Exclude the one being deleted.
+        ->addWhere('id', '!=', $objectId)
         ->execute();
 
-      foreach ($monetaryContributions as $c) {
-        if (!empty($c['contact_id']) && (int) $c['contact_id'] !== $contactId) {
-          $monetaryContactIds[] = (int) $c['contact_id'];
+      $monetaryContactIds = [];
+      $currentContactStillExists = FALSE;
+
+      foreach ($otherMonetaryContributions as $c) {
+        if (!empty($c['contact_id'])) {
+          $cid = (int) $c['contact_id'];
+          $monetaryContactIds[] = $cid;
+
+          if ($cid === $contactId) {
+            $currentContactStillExists = TRUE;
+          }
         }
       }
 
+      // Unique monetary count after this deletion.
       $uniqueMonetaryCount = count(array_unique($monetaryContactIds));
 
+      // Material contributors.
       $materialContactIds = [];
 
       $materialActivities = Activity::get(FALSE)
@@ -429,9 +447,11 @@ class CollectionBaseService extends AutoSubscriber {
         }
       }
 
+      // Total unique contributors.
       $allContactIds = array_unique(array_merge($materialContactIds, $monetaryContactIds));
       $totalUniqueContributors = count($allContactIds);
 
+      // Adjust monetary amounts.
       $existing = EckEntity::get('Collection_Camp')
         ->addSelect(
         'Core_Contribution_Details.Total_online_monetary_contributions',
@@ -455,14 +475,24 @@ class CollectionBaseService extends AutoSubscriber {
         $cashNew = max(0, $cashCurrent - $amount);
       }
 
-      EckEntity::update('Collection_Camp')
+      // Final update.
+      $update = EckEntity::update('Collection_Camp')
         ->addWhere('id', '=', $contributionId)
-        ->addValue('Core_Contribution_Details.Number_of_unique_monetary_contributors', $uniqueMonetaryCount)
-        ->addValue('Core_Contribution_Details.Number_of_unique_contributors', $totalUniqueContributors)
         ->addValue('Core_Contribution_Details.Total_online_monetary_contributions', $onlineNew)
-        ->addValue('Core_Contribution_Details.Total_cash_cheque_monetary_contributions', $cashNew)
-        ->execute();
+        ->addValue('Core_Contribution_Details.Total_cash_cheque_monetary_contributions', $cashNew);
 
+      // Only update monetary contributor count if the current contact had no other monetary contribution.
+      if (!$currentContactStillExists) {
+        $update->addValue('Core_Contribution_Details.Number_of_unique_monetary_contributors', $uniqueMonetaryCount);
+      }
+
+      // Only reduce total contributor count if current contact not present in materialContactIds either.
+      $isInMaterial = in_array($contactId, $materialContactIds, TRUE);
+      if (!$currentContactStillExists && !$isInMaterial) {
+        $update->addValue('Core_Contribution_Details.Number_of_unique_contributors', $totalUniqueContributors);
+      }
+
+      $update->execute();
     }
     catch (\Exception $e) {
       \Civi::log()->error("Error updating monetary stats on delete for Contribution $objectId: " . $e->getMessage());
