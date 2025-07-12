@@ -83,7 +83,6 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
     $amount = (float) $contribution['total_amount'];
     $paymentMethod = $contribution['payment_instrument_id:name'];
 
-    // Other monetary contributions
     $otherContributions = Contribution::get(FALSE)
       ->addSelect('contact_id')
       ->addWhere('Contribution_Details.Events.id', '=', $eventId)
@@ -121,7 +120,6 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
     $totalUniqueContributors = count($allContactIds);
     $uniqueMonetaryCount = count(array_unique($monetaryContactIds));
 
-    // Monetary total amount update
     $existing = Event::get(FALSE)
       ->addSelect(
         'Goonj_Events_Outcome.Online_Monetary_Contribution',
@@ -156,7 +154,6 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
     $update->execute();
 
   } catch (\Exception $e) {
-    \Civi::log()->error("Failed to update monetary contribution delete stats for event: " . $e->getMessage());
   }
 }
 
@@ -204,7 +201,6 @@ public static function handleEventMaterialContributionDelete(string $op, string 
       }
     }
 
-    // Check if this person has monetary contributions too
     $monetaryContributions = Contribution::get(FALSE)
       ->addSelect('contact_id')
       ->addWhere('Contribution_Details.Events.id', '=', $eventId)
@@ -230,7 +226,6 @@ public static function handleEventMaterialContributionDelete(string $op, string 
     $update->execute();
 
   } catch (\Exception $e) {
-    \Civi::log()->error("Failed to update material contributor stats on delete: " . $e->getMessage());
   }
 }
 
@@ -328,7 +323,7 @@ public static function handleEventMaterialContributionDelete(string $op, string 
         ->addWhere('id', '=', $eventId)
         ->execute();
     }
-    catch (Exception $e) {
+    catch (\Exception $e) {
     }
   }
 
