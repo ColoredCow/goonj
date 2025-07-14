@@ -42,120 +42,120 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
     ];
   }
 
-  public static function handleEventMonetaryContributionDelete(string $op, string $objectName, $objectId, &$params) {
-  if ($op !== 'delete' || $objectName !== 'Contribution') {
-    return;
-  }
+//   public static function handleEventMonetaryContributionDelete(string $op, string $objectName, $objectId, &$params) {
+//   if ($op !== 'delete' || $objectName !== 'Contribution') {
+//     return;
+//   }
 
-  static $processed = [];
+//   static $processed = [];
 
-  if (isset($processed[$objectId])) {
-    return;
-  }
-  $processed[$objectId] = TRUE;
+//   if (isset($processed[$objectId])) {
+//     return;
+//   }
+//   $processed[$objectId] = TRUE;
 
-  try {
-    $contribution = Contribution::get(FALSE)
-      ->addSelect(
-        'id',
-        'contact_id',
-        'Contribution_Details.Events.id',
-        'contribution_status_id:name',
-        'total_amount',
-        'payment_instrument_id:name'
-      )
-      ->addWhere('id', '=', $objectId)
-      ->setLimit(1)
-      ->execute()
-      ->first();
+//   try {
+//     $contribution = Contribution::get(FALSE)
+//       ->addSelect(
+//         'id',
+//         'contact_id',
+//         'Contribution_Details.Events.id',
+//         'contribution_status_id:name',
+//         'total_amount',
+//         'payment_instrument_id:name'
+//       )
+//       ->addWhere('id', '=', $objectId)
+//       ->setLimit(1)
+//       ->execute()
+//       ->first();
 
-    if (
-      !$contribution ||
-      $contribution['contribution_status_id:name'] !== 'Completed' ||
-      empty($contribution['Contribution_Details.Events.id']) ||
-      empty($contribution['contact_id'])
-    ) {
-      return;
-    }
+//     if (
+//       !$contribution ||
+//       $contribution['contribution_status_id:name'] !== 'Completed' ||
+//       empty($contribution['Contribution_Details.Events.id']) ||
+//       empty($contribution['contact_id'])
+//     ) {
+//       return;
+//     }
 
-    $contactId = (int) $contribution['contact_id'];
-    $eventId = $contribution['Contribution_Details.Events.id'];
-    $amount = (float) $contribution['total_amount'];
-    $paymentMethod = $contribution['payment_instrument_id:name'];
+//     $contactId = (int) $contribution['contact_id'];
+//     $eventId = $contribution['Contribution_Details.Events.id'];
+//     $amount = (float) $contribution['total_amount'];
+//     $paymentMethod = $contribution['payment_instrument_id:name'];
 
-    $otherContributions = Contribution::get(FALSE)
-      ->addSelect('contact_id')
-      ->addWhere('Contribution_Details.Events.id', '=', $eventId)
-      ->addWhere('contribution_status_id:name', '=', 'Completed')
-      ->addWhere('id', '!=', $objectId)
-      ->execute();
+//     $otherContributions = Contribution::get(FALSE)
+//       ->addSelect('contact_id')
+//       ->addWhere('Contribution_Details.Events.id', '=', $eventId)
+//       ->addWhere('contribution_status_id:name', '=', 'Completed')
+//       ->addWhere('id', '!=', $objectId)
+//       ->execute();
 
-    $monetaryContactIds = [];
-    $currentContactStillExists = FALSE;
+//     $monetaryContactIds = [];
+//     $currentContactStillExists = FALSE;
 
-    foreach ($otherContributions as $c) {
-      if (!empty($c['contact_id'])) {
-        $cid = (int) $c['contact_id'];
-        $monetaryContactIds[] = $cid;
+//     foreach ($otherContributions as $c) {
+//       if (!empty($c['contact_id'])) {
+//         $cid = (int) $c['contact_id'];
+//         $monetaryContactIds[] = $cid;
 
-        if ($cid === $contactId) {
-          $currentContactStillExists = TRUE;
-        }
-      }
-    }
+//         if ($cid === $contactId) {
+//           $currentContactStillExists = TRUE;
+//         }
+//       }
+//     }
 
-    $materialActivities = Activity::get(FALSE)
-      ->addSelect('source_contact_id')
-      ->addWhere('Material_Contribution.Event', '=', $eventId)
-      ->execute();
+//     $materialActivities = Activity::get(FALSE)
+//       ->addSelect('source_contact_id')
+//       ->addWhere('Material_Contribution.Event', '=', $eventId)
+//       ->execute();
 
-    $materialContactIds = [];
-    foreach ($materialActivities as $a) {
-      if (!empty($a['source_contact_id'])) {
-        $materialContactIds[] = (int) $a['source_contact_id'];
-      }
-    }
+//     $materialContactIds = [];
+//     foreach ($materialActivities as $a) {
+//       if (!empty($a['source_contact_id'])) {
+//         $materialContactIds[] = (int) $a['source_contact_id'];
+//       }
+//     }
 
-    $allContactIds = array_unique(array_merge($monetaryContactIds, $materialContactIds));
-    $totalUniqueContributors = count($allContactIds);
-    $uniqueMonetaryCount = count(array_unique($monetaryContactIds));
+//     $allContactIds = array_unique(array_merge($monetaryContactIds, $materialContactIds));
+//     $totalUniqueContributors = count($allContactIds);
+//     $uniqueMonetaryCount = count(array_unique($monetaryContactIds));
 
-    $existing = Event::get(FALSE)
-      ->addSelect(
-        'Goonj_Events_Outcome.Online_Monetary_Contribution',
-        'Goonj_Events_Outcome.Cash_Contribution'
-      )
-      ->addWhere('id', '=', $eventId)
-      ->execute()
-      ->first();
+//     $existing = Event::get(FALSE)
+//       ->addSelect(
+//         'Goonj_Events_Outcome.Online_Monetary_Contribution',
+//         'Goonj_Events_Outcome.Cash_Contribution'
+//       )
+//       ->addWhere('id', '=', $eventId)
+//       ->execute()
+//       ->first();
 
-    $onlineCurrent = (float) ($existing['Goonj_Events_Outcome.Online_Monetary_Contribution'] ?? 0);
-    $cashCurrent = (float) ($existing['Goonj_Events_Outcome.Cash_Contribution'] ?? 0);
+//     $onlineCurrent = (float) ($existing['Goonj_Events_Outcome.Online_Monetary_Contribution'] ?? 0);
+//     $cashCurrent = (float) ($existing['Goonj_Events_Outcome.Cash_Contribution'] ?? 0);
 
-    $update = Event::update()
-      ->addWhere('id', '=', $eventId);
+//     $update = Event::update()
+//       ->addWhere('id', '=', $eventId);
 
-    if (!$currentContactStillExists) {
-      $update->addValue('Goonj_Events_Outcome.Number_of_unique_monetary_contributors', $uniqueMonetaryCount);
-    }
+//     if (!$currentContactStillExists) {
+//       $update->addValue('Goonj_Events_Outcome.Number_of_unique_monetary_contributors', $uniqueMonetaryCount);
+//     }
 
-    if (!in_array($contactId, $materialContactIds, TRUE) && !$currentContactStillExists) {
-      $update->addValue('Goonj_Events_Outcome.Number_of_Contributors', $totalUniqueContributors);
-    }
+//     if (!in_array($contactId, $materialContactIds, TRUE) && !$currentContactStillExists) {
+//       $update->addValue('Goonj_Events_Outcome.Number_of_Contributors', $totalUniqueContributors);
+//     }
 
-    if ($paymentMethod === 'Credit Card') {
-      $update->addValue('Goonj_Events_Outcome.Online_Monetary_Contribution', max(0, $onlineCurrent - $amount));
-    }
+//     if ($paymentMethod === 'Credit Card') {
+//       $update->addValue('Goonj_Events_Outcome.Online_Monetary_Contribution', max(0, $onlineCurrent - $amount));
+//     }
 
-    if (in_array($paymentMethod, ['Cash', 'Check'], TRUE)) {
-      $update->addValue('Goonj_Events_Outcome.Cash_Contribution', max(0, $cashCurrent - $amount));
-    }
+//     if (in_array($paymentMethod, ['Cash', 'Check'], TRUE)) {
+//       $update->addValue('Goonj_Events_Outcome.Cash_Contribution', max(0, $cashCurrent - $amount));
+//     }
 
-    $update->execute();
+//     $update->execute();
 
-  } catch (\Exception $e) {
-  }
-}
+//   } catch (\Exception $e) {
+//   }
+// }
 
 public static function handleEventMaterialContributionDelete(string $op, string $objectName, $objectId, &$params) {
   if ($op !== 'delete' || $objectName !== 'Activity') {
