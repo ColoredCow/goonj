@@ -157,77 +157,77 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
 //   }
 // }
 
-public static function handleEventMaterialContributionDelete(string $op, string $objectName, $objectId, &$params) {
-  if ($op !== 'delete' || $objectName !== 'Activity') {
-    return;
-  }
+// public static function handleEventMaterialContributionDelete(string $op, string $objectName, $objectId, &$params) {
+//   if ($op !== 'delete' || $objectName !== 'Activity') {
+//     return;
+//   }
 
-  try {
-    $activity = Activity::get(FALSE)
-      ->addSelect('id', 'source_contact_id', 'custom.*')
-      ->addWhere('id', '=', $objectId)
-      ->setLimit(1)
-      ->execute()
-      ->first();
+//   try {
+//     $activity = Activity::get(FALSE)
+//       ->addSelect('id', 'source_contact_id', 'custom.*')
+//       ->addWhere('id', '=', $objectId)
+//       ->setLimit(1)
+//       ->execute()
+//       ->first();
 
-    if (
-      !$activity ||
-      empty($activity['Material_Contribution.Event']) ||
-      empty($activity['source_contact_id'])
-    ) {
-      return;
-    }
+//     if (
+//       !$activity ||
+//       empty($activity['Material_Contribution.Event']) ||
+//       empty($activity['source_contact_id'])
+//     ) {
+//       return;
+//     }
 
-    $eventId = $activity['Material_Contribution.Event'];
-    $contactId = (int) $activity['source_contact_id'];
+//     $eventId = $activity['Material_Contribution.Event'];
+//     $contactId = (int) $activity['source_contact_id'];
 
-    $materialActivities = Activity::get(FALSE)
-      ->addSelect('source_contact_id')
-      ->addWhere('Material_Contribution.Event', '=', $eventId)
-      ->addWhere('id', '!=', $objectId)
-      ->execute();
+//     $materialActivities = Activity::get(FALSE)
+//       ->addSelect('source_contact_id')
+//       ->addWhere('Material_Contribution.Event', '=', $eventId)
+//       ->addWhere('id', '!=', $objectId)
+//       ->execute();
 
-    $materialContactIds = [];
-    $currentContactStillExists = FALSE;
+//     $materialContactIds = [];
+//     $currentContactStillExists = FALSE;
 
-    foreach ($materialActivities as $a) {
-      if (!empty($a['source_contact_id'])) {
-        $cid = (int) $a['source_contact_id'];
-        $materialContactIds[] = $cid;
+//     foreach ($materialActivities as $a) {
+//       if (!empty($a['source_contact_id'])) {
+//         $cid = (int) $a['source_contact_id'];
+//         $materialContactIds[] = $cid;
 
-        if ($cid === $contactId) {
-          $currentContactStillExists = TRUE;
-        }
-      }
-    }
+//         if ($cid === $contactId) {
+//           $currentContactStillExists = TRUE;
+//         }
+//       }
+//     }
 
-    $monetaryContributions = Contribution::get(FALSE)
-      ->addSelect('contact_id')
-      ->addWhere('Contribution_Details.Events.id', '=', $eventId)
-      ->addWhere('contribution_status_id:name', '=', 'Completed')
-      ->execute();
+//     $monetaryContributions = Contribution::get(FALSE)
+//       ->addSelect('contact_id')
+//       ->addWhere('Contribution_Details.Events.id', '=', $eventId)
+//       ->addWhere('contribution_status_id:name', '=', 'Completed')
+//       ->execute();
 
-    $monetaryContactIds = [];
-    foreach ($monetaryContributions as $c) {
-      if (!empty($c['contact_id'])) {
-        $monetaryContactIds[] = (int) $c['contact_id'];
-      }
-    }
+//     $monetaryContactIds = [];
+//     foreach ($monetaryContributions as $c) {
+//       if (!empty($c['contact_id'])) {
+//         $monetaryContactIds[] = (int) $c['contact_id'];
+//       }
+//     }
 
-    $allContactIds = array_unique(array_merge($materialContactIds, $monetaryContactIds));
-    $totalUniqueContributors = count($allContactIds);
-    $uniqueMaterialCount = count(array_unique($materialContactIds));
+//     $allContactIds = array_unique(array_merge($materialContactIds, $monetaryContactIds));
+//     $totalUniqueContributors = count($allContactIds);
+//     $uniqueMaterialCount = count(array_unique($materialContactIds));
 
-    $update = Event::update()
-      ->addWhere('id', '=', $eventId)
-      ->addValue('Goonj_Events_Outcome.Number_of_Material_Contributors', $uniqueMaterialCount)
-      ->addValue('Goonj_Events_Outcome.Number_of_Contributors', $totalUniqueContributors);
+//     $update = Event::update()
+//       ->addWhere('id', '=', $eventId)
+//       ->addValue('Goonj_Events_Outcome.Number_of_Material_Contributors', $uniqueMaterialCount)
+//       ->addValue('Goonj_Events_Outcome.Number_of_Contributors', $totalUniqueContributors);
 
-    $update->execute();
+//     $update->execute();
 
-  } catch (\Exception $e) {
-  }
-}
+//   } catch (\Exception $e) {
+//   }
+// }
 
 
   /**
