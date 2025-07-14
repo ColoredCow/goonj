@@ -54,12 +54,27 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }, 1500);
 const intervalId = setInterval(() => {
-  const stateFieldWrapper = document.querySelector('af-field[name="state_province_id"]');
+   const stateFieldWrapper =
+      document.querySelector('af-field[name="state_province_id"]') ||
+      document.querySelector('af-field[name="Institution_Collection_Camp_Intent.State"]') ||
+      document.querySelector('af-field[name="Institution_Dropping_Center_Intent.State"]') ||
+            document.querySelector('af-field[name="Goonj_Activities.State"]') ||
+      Array.from(document.querySelectorAll("label"))
+        .find((label) => label.textContent.trim() === "State")
+        ?.closest("af-field");
+
   const stateChosenSpan =
     stateFieldWrapper?.querySelector(".select2-chosen") ||
     stateFieldWrapper?.querySelector('span[id^="select2-chosen"]');
 
-  const cityFieldWrapper = document.querySelector('af-field[name="city"]');
+  const cityFieldWrapper =
+      document.querySelector('af-field[name="city"]') ||
+	   document.querySelector('af-field[name="Goonj_Activities.City"]') ||
+      document.getElementById("editrow-city-Primary") ||
+      Array.from(document.querySelectorAll("label"))
+        .find((label) => label.textContent.trim().startsWith("City"))
+        ?.closest("af-field");
+        
   const cityInput = cityFieldWrapper?.querySelector('input[type="text"]');
 
   if (!stateFieldWrapper || !stateChosenSpan || !cityFieldWrapper || !cityInput) {
