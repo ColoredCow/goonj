@@ -164,12 +164,8 @@ document.addEventListener("DOMContentLoaded", function () {
   function waitForFieldsAndInit() {
     const stateFieldWrapper =
       document.querySelector('af-field[name="state_province_id"]') ||
-      document.querySelector(
-        'af-field[name="Institution_Collection_Camp_Intent.State"]'
-      ) ||
-      document.querySelector(
-        'af-field[name="Institution_Dropping_Center_Intent.State"]'
-      ) ||
+      document.querySelector('af-field[name="Institution_Collection_Camp_Intent.State"]') ||
+      document.querySelector('af-field[name="Institution_Dropping_Center_Intent.State"]') ||
       Array.from(document.querySelectorAll("label"))
         .find((label) => label.textContent.trim() === "State")
         ?.closest("af-field");
@@ -192,13 +188,15 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    // ✅ Always create the city dropdown
+    // ✅ Always inject responsive city dropdown
     if (!cityFieldWrapper.querySelector('select[name="city-dropdown"]')) {
       cityInput.style.display = "none";
 
       const citySelect = document.createElement("select");
       citySelect.className = "form-control";
       citySelect.name = "city-dropdown";
+      citySelect.style.width = "100%";
+      citySelect.style.maxWidth = "100%";
       citySelect.innerHTML = `
         <option value="">Select a city</option>
         <option value="Other">Other</option>
@@ -213,10 +211,13 @@ document.addEventListener("DOMContentLoaded", function () {
             allowClear: true,
             width: "resolve",
             minimumResultsForSearch: 0,
+            dropdownAutoWidth: true,
           });
+
+          // ✅ Make Select2 responsive
           jQuery(citySelect).next(".select2-container").css({
             width: "100%",
-            "max-width": "340px",
+            "max-width": "100%",
           });
         }
       }
@@ -229,9 +230,7 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     }
 
-    const citySelect = cityFieldWrapper.querySelector(
-      'select[name="city-dropdown"]'
-    );
+    const citySelect = cityFieldWrapper.querySelector('select[name="city-dropdown"]');
     let lastState = chosenSpan.textContent.trim();
 
     const observer = new MutationObserver(() => {
@@ -252,10 +251,7 @@ document.addEventListener("DOMContentLoaded", function () {
         })
           .then((res) => res.json())
           .then((data) => {
-            citySelect.innerHTML = `
-              <option value="">Select a city</option>
-            `;
-
+            citySelect.innerHTML = `<option value="">Select a city</option>`;
             if (data.success && data.data?.cities?.length) {
               data.data.cities.forEach((city) => {
                 const opt = document.createElement("option");
@@ -267,7 +263,6 @@ document.addEventListener("DOMContentLoaded", function () {
               console.warn("⚠️ No cities found for:", currentState);
             }
 
-            // ✅ Always include "Other"
             citySelect.appendChild(new Option("Other", "Other"));
             applySelect2();
             jQuery(citySelect).trigger("change");
