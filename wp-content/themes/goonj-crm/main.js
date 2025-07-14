@@ -188,7 +188,6 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    // ✅ Always inject responsive city dropdown
     if (!cityFieldWrapper.querySelector('select[name="city-dropdown"]')) {
       cityInput.style.display = "none";
 
@@ -214,7 +213,6 @@ document.addEventListener("DOMContentLoaded", function () {
             dropdownAutoWidth: true,
           });
 
-          // ✅ Make Select2 responsive
           jQuery(citySelect).next(".select2-container").css({
             width: "100%",
             "max-width": "100%",
