@@ -83,7 +83,7 @@ function civicrm_api3_goonjcustom_update_scheduled_time_cron($params) {
     updateJobScheduledTime('urban_feedback_cron', $logisticsTime);
 
     // Update scheduled run time for razorpay settlement.
-    updateJobScheduledTime('CivicrmRazorpayFetchSettlementDateCron', $settlementTime);
+    updateJobScheduledTime('civicrm_razorpay_fetch_settlement_date_cron', $settlementTime);
 
   }
   catch (Exception $e) {
