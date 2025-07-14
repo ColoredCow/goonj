@@ -53,33 +53,6 @@ class CollectionBaseService extends AutoSubscriber {
     ];
   }
 
-  public static function mymodule_civicrm_buildCustomDataView(&$customGroupTree, $entityID, $entityType) {
-  if ($entityType !== 'Camp') {
-    return;
-  }
-
-  foreach ($customGroupTree as &$group) {
-    foreach ($group['fields'] as &$field) {
-      if ($field['name'] === 'created_by_contact_id') {
-        $field['element_value'] = _my_get_contact_display_name($field['element_value']);
-      }
-      if ($field['name'] === 'modified_by_contact_id') {
-        $field['element_value'] = _my_get_contact_display_name($field['element_value']);
-      }
-    }
-  }
-}
-
-function _my_get_contact_display_name($contact_id) {
-  if (!$contact_id) return '';
-  try {
-    $result = civicrm_api3('Contact', 'getsingle', ['id' => $contact_id]);
-    return $result['display_name'] ?? $contact_id;
-  } catch (Exception $e) {
-    return $contact_id;
-  }
-}
-
   /**
    *
    */
