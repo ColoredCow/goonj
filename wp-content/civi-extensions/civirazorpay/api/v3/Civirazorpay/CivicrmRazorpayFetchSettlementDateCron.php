@@ -8,7 +8,7 @@
 use Civi\Api4\Contribution;
 use Civi\Api4\PaymentProcessor;
 
-// Cv api Civirazorpay.CivicrmRazorpayFetchSettlementDateCron --user=devteam.
+// cv api Civirazorpay.CivicrmRazorpayFetchSettlementDateCron --user=devteam
 
 /**
  * Class to handle fetching and processing Razorpay settlements.
@@ -98,11 +98,11 @@ class RazorpaySettlementFetcher {
   private function fetchSettlementTransactions(): array {
     $transactionsByDay = [];
 
-    // Hardcoded dates for testing (e.g., specific dates to fetch transactions)
+    // Hardcoded dates for testing
     // $hardcodedDates = [
     //   new DateTime('2025-07-05'),
     // ];
-    // $datesToCheck = $hardcodedDates;.
+    // $datesToCheck = $hardcodedDates;
     $datesToCheck = [
       $this->targetDate,
     ];
@@ -165,7 +165,6 @@ class RazorpaySettlementFetcher {
             if (isset($responseArray['items'])) {
               $transactions = array_merge($transactions, $responseArray['items']);
             }
-            // Avoid rate limits.
             sleep(1);
           }
 
@@ -203,10 +202,13 @@ class RazorpaySettlementFetcher {
   private function processTransactions(array $transactionsByDay, array &$returnValues): void {
     $settlementIdField = 'Contribution_Details.Settlement_Id';
     $settlementDateField = 'Contribution_Details.Settlement_Date';
+    $feeAmountField = 'Contribution_Details.Razorpay_Fee';
+    $taxAmountField = 'Contribution_Details.Razorpay_Tax';
+    $creditAmountField = 'Contribution_Details.Credit_Amount';
 
     foreach ($transactionsByDay as $date => $transactions) {
       foreach ($transactions as $transaction) {
-        if ($transaction['type'] !== 'payment' || !isset($transaction['entity_id'], $transaction['settlement_id'], $transaction['settled_at'])) {
+        if ($transaction['type'] !== 'payment' || !isset($transaction['entity_id'], $transaction['settlement_id'], $transaction['settled_at'], $transaction['fee'], $transaction['tax'], $transaction['credit'])) {
           $returnValues['errors']++;
           \Civi::log()->error('Invalid transaction data', [
             'date' => $date,
@@ -229,7 +231,6 @@ class RazorpaySettlementFetcher {
         // Handle settled_at parsing.
         $settledAt = $transaction['settled_at'];
         if (is_numeric($settledAt)) {
-          // Assume Unix timestamp (seconds or milliseconds)
           $settledAt = strlen($settledAt) > 10 ? $settledAt / 1000 : $settledAt;
           $settlementDate = date('Y-m-d', $settledAt);
         }
@@ -247,9 +248,18 @@ class RazorpaySettlementFetcher {
           continue;
         }
 
+        // Convert fee and tax from paise to rupees.
+        $feeAmount = $transaction['fee'] / 100;
+        $taxAmount = $transaction['tax'] / 100;
+
+        // Calculate Razorpay base fee (excluding GST)
+        $razorpayFee = $feeAmount - $taxAmount;
+
+        $creditAmount = $transaction['credit'] / 100;
+
         try {
           $contribution = Contribution::get(FALSE)
-            ->addSelect('id', 'Contribution_Details.Settlement_Id')
+            ->addSelect('id', 'Contribution_Details.Settlement_Id', 'Contribution_Details.Razorpay_Fee', 'Contribution_Details.Razorpay_Tax', 'Contribution_Details.Credit_Amount')
             ->addWhere('trxn_id', 'LIKE', '%' . $paymentId)
             ->addWhere('is_test', '=', $this->isTest)
             ->execute()->first();
@@ -279,14 +289,22 @@ class RazorpaySettlementFetcher {
             ->addWhere('is_test', '=', $this->isTest)
             ->addValue($settlementIdField, $settlementId)
             ->addValue($settlementDateField, $settlementDate)
+            ->addValue($feeAmountField, $razorpayFee)
+            ->addValue($taxAmountField, $taxAmount)
+            ->addValue($creditAmountField, $creditAmount)
             ->execute();
 
+          $returnValues['updated']++;
         }
         catch (Exception $e) {
           $returnValues['errors']++;
+          \Civi::log()->error('Failed to update contribution', [
+            'payment_id' => $paymentId,
+            'date' => $date,
+            'error_message' => $e->getMessage(),
+          ]);
         }
 
-        $returnValues['processed']++;
       }
     }
   }
