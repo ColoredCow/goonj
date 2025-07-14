@@ -357,7 +357,7 @@ function civicrm_api3_civirazorpay_civicrmrazorpayfetchsettlementdatecron($param
       $params['is_test'] ?? 0
     );
     $result = $fetcher->run();
-    return civicrm_api3_create_success($result, $params, 'Civirazorpay', 'CivicrmRazorpayFetchSettlementDateCron');
+    return civicrm_api3_create_success($result, $params, 'Civirazorpay', 'civicrmrazorpayfetchsettlementdatecron');
   }
   catch (Exception $e) {
     \Civi::log()->error('API execution failed', [
