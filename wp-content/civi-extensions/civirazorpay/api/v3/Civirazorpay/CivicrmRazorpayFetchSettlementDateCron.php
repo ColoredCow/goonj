@@ -336,7 +336,7 @@ class RazorpaySettlementFetcher {
  *
  * @param array $spec
  */
-function _civicrm_api3_civirazorpay_civicrmrazorpayfetchsettlementdatecron_spec(&$spec) {
+function _civicrm_api3_civirazorpay_civicrm_razorpay_fetch_settlement_date_cron_spec(&$spec) {
 }
 
 /**
@@ -348,7 +348,7 @@ function _civicrm_api3_civirazorpay_civicrmrazorpayfetchsettlementdatecron_spec(
  *
  * @throws CiviCRM_API3_Exception
  */
-function civicrm_api3_civirazorpay_civicrmrazorpayfetchsettlementdatecron($params) {
+function civicrm_api3_civirazorpay_civicrm_razorpay_fetch_settlement_date_cron($params) {
   $returnValues = [];
   try {
     $fetcher = new RazorpaySettlementFetcher(
@@ -357,7 +357,7 @@ function civicrm_api3_civirazorpay_civicrmrazorpayfetchsettlementdatecron($param
       $params['is_test'] ?? 0
     );
     $result = $fetcher->run();
-    return civicrm_api3_create_success($result, $params, 'Civirazorpay', 'CivicrmRazorpayFetchSettlementDateCron');
+    return civicrm_api3_create_success($result, $params, 'Civirazorpay', 'civicrm_razorpay_fetch_settlement_date_cron');
   }
   catch (Exception $e) {
     \Civi::log()->error('API execution failed', [
