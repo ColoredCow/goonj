@@ -99,13 +99,13 @@ class RazorpaySettlementFetcher {
     $transactionsByDay = [];
 
     // Hardcoded dates for testing
-    $hardcodedDates = [
-      new DateTime('2025-07-05'),
-    ];
-    $datesToCheck = $hardcodedDates;
-    // $datesToCheck = [
-    //   $this->targetDate,
+    // $hardcodedDates = [
+    //   new DateTime('2025-07-05'),
     // ];
+    // $datesToCheck = $hardcodedDates;
+    $datesToCheck = [
+      $this->targetDate,
+    ];
 
     foreach ($datesToCheck as $checkDate) {
       $year = $checkDate->format('Y');
