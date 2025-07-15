@@ -3,62 +3,6 @@
 require_once __DIR__ . '/engine/helpers.php';
 require_once __DIR__ . '/engine/shortcodes.php';
 
-/*
-Plugin Name: CiviCRM City AJAX Fetcher
-Description: Provides a custom AJAX endpoint to fetch cities by state_province_id from civicrm_city table.
-Version: 1.0
-Author: Your Name
-*/
-
-// Hook for logged-in users
-add_action('wp_ajax_get_cities_by_state', 'get_cities_by_state');
-// Hook for guests (optional)
-add_action('wp_ajax_nopriv_get_cities_by_state', 'get_cities_by_state');
-function get_cities_by_state() {
-  if (empty($_POST['state_name'])) {
-    wp_send_json_error(['message' => 'Missing state name']);
-  }
-
-  $state_name = trim($_POST['state_name']);
-
-  // Step 1: Get state_province_id from state name
-  $sqlState = "
-    SELECT id
-    FROM civicrm_state_province
-    WHERE name = %1
-    LIMIT 1
-  ";
-
-  $daoState = CRM_Core_DAO::executeQuery($sqlState, [1 => [$state_name, 'String']]);
-
-  if (!$daoState->fetch()) {
-    wp_send_json_error(['message' => 'State not found']);
-  }
-
-  $state_id = (int) $daoState->id;
-
-  // Step 2: Fetch cities using state_province_id
-  $results = [];
-
-  $sqlCities = "
-    SELECT id, name
-    FROM civicrm_city
-    WHERE state_province_id = %1
-    ORDER BY name ASC
-  ";
-
-  $daoCities = CRM_Core_DAO::executeQuery($sqlCities, [1 => [$state_id, 'Integer']]);
-
-  while ($daoCities->fetch()) {
-    $results[] = [
-      'id' => $daoCities->id,
-      'name' => $daoCities->name,
-    ];
-  }
-
-  wp_send_json_success(['cities' => $results]);
-}
-
 add_action( 'wp_enqueue_scripts', 'goonj_enqueue_scripts' );
 function goonj_enqueue_scripts() {
 	wp_enqueue_style(
@@ -193,6 +137,51 @@ function goonj_custom_password_reset_redirection( $errors, $user ) {
 		wp_redirect( add_query_arg( 'password-reset', 'success', home_url() ) );
 		exit;
 	}
+}
+
+add_action('wp_ajax_get_cities_by_state', 'get_cities_by_state');
+add_action('wp_ajax_nopriv_get_cities_by_state', 'get_cities_by_state');
+function get_cities_by_state() {
+  if (empty($_POST['state_name'])) {
+    wp_send_json_error(['message' => 'Missing state name']);
+  }
+
+  $state_name = trim($_POST['state_name']);
+
+  $sqlState = "
+    SELECT id
+    FROM civicrm_state_province
+    WHERE name = %1
+    LIMIT 1
+  ";
+
+  $daoState = CRM_Core_DAO::executeQuery($sqlState, [1 => [$state_name, 'String']]);
+
+  if (!$daoState->fetch()) {
+    wp_send_json_error(['message' => 'State not found']);
+  }
+
+  $state_id = (int) $daoState->id;
+
+  $results = [];
+
+  $sqlCities = "
+    SELECT id, name
+    FROM civicrm_city
+    WHERE state_province_id = %1
+    ORDER BY name ASC
+  ";
+
+  $daoCities = CRM_Core_DAO::executeQuery($sqlCities, [1 => [$state_id, 'Integer']]);
+
+  while ($daoCities->fetch()) {
+    $results[] = [
+      'id' => $daoCities->id,
+      'name' => $daoCities->name,
+    ];
+  }
+
+  wp_send_json_success(['cities' => $results]);
 }
 
 
