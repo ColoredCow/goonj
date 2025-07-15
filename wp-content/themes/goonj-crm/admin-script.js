@@ -74,18 +74,17 @@ const intervalId = setInterval(() => {
       Array.from(document.querySelectorAll("label"))
         .find((label) => label.textContent.trim().startsWith("City"))
         ?.closest("af-field");
-        
+
   const cityInput = cityFieldWrapper?.querySelector('input[type="text"]');
 
   if (!stateFieldWrapper || !stateChosenSpan || !cityFieldWrapper || !cityInput) {
     console.log("⏳ Waiting for required fields...");
-    return; // Keep waiting
+    return;
   }
 
   clearInterval(intervalId);
   console.log("✅ Injecting responsive city dropdown...");
 
-  // Avoid duplicate injection
   if (cityFieldWrapper.querySelector('select[name="city-dropdown"]')) {
     console.warn("⚠️ City dropdown already injected.");
     return;
