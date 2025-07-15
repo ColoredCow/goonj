@@ -54,6 +54,14 @@ function civicrm_api3_goonjcustom_update_scheduled_time_cron($params) {
     }
     $logisticsTime = $tenAmDateTime->format('Y-m-d H:i:s');
 
+    // Set time to 1:00 AM (next day if past 1 AM).
+    $oneAmDateTime = clone $currentDate;
+    $oneAmDateTime->setTime(1, 0, 0);
+    if ($currentTime >= 1) {
+      $oneAmDateTime->modify('+1 day');
+    }
+    $settlementTime = $oneAmDateTime->format('Y-m-d H:i:s');
+
     // Set time to 2:00 PM (next day if past 2 PM).
     $twoPmDateTime = clone $currentDate;
     $twoPmDateTime->setTime(14, 0, 0);
@@ -73,6 +81,9 @@ function civicrm_api3_goonjcustom_update_scheduled_time_cron($params) {
 
     // Update scheduled run time for urban feedback form.
     updateJobScheduledTime('urban_feedback_cron', $logisticsTime);
+
+    // Update scheduled run time for razorpay settlement.
+    updateJobScheduledTime('civicrm_razorpay_fetch_settlement_date_cron', $settlementTime);
 
   }
   catch (Exception $e) {
