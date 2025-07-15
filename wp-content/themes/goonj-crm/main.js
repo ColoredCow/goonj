@@ -242,3 +242,127 @@ document.addEventListener('DOMContentLoaded', function() {
         installmentsLabel.style.display = 'none';
     }
 });
+
+document.addEventListener("DOMContentLoaded", function () {
+  function waitForFieldsAndInit() {
+    const stateFieldWrapper =
+      document.querySelector('af-field[name="state_province_id"]') ||
+      document.querySelector('af-field[name="Institution_Collection_Camp_Intent.State"]') ||
+      document.querySelector('af-field[name="Institution_Dropping_Center_Intent.State"]') ||
+      Array.from(document.querySelectorAll("label"))
+        .find((label) => label.textContent.trim() === "State")
+        ?.closest("af-field");
+
+    const chosenSpan =
+      stateFieldWrapper?.querySelector(".select2-chosen") ||
+      stateFieldWrapper?.querySelector('span[id^="select2-chosen"]');
+
+    const cityFieldWrapper =
+      document.querySelector('af-field[name="city"]') ||
+	   document.querySelector('af-field[name="Goonj_Activities.City"]') ||
+      document.getElementById("editrow-city-Primary") ||
+      Array.from(document.querySelectorAll("label"))
+        .find((label) => label.textContent.trim().startsWith("City"))
+        ?.closest("af-field");
+
+    const cityInput = cityFieldWrapper?.querySelector('input[type="text"]');
+
+    if (!stateFieldWrapper || !chosenSpan || !cityFieldWrapper || !cityInput) {
+      requestAnimationFrame(waitForFieldsAndInit);
+      return;
+    }
+
+    if (!cityFieldWrapper.querySelector('select[name="city-dropdown"]')) {
+      cityInput.style.display = "none";
+
+      const citySelect = document.createElement("select");
+      citySelect.className = "form-control";
+      citySelect.name = "city-dropdown";
+      citySelect.style.width = "100%";
+      citySelect.style.maxWidth = "100%";
+      citySelect.innerHTML = `
+        <option value="">Select a city</option>
+        <option value="Other">Other</option>
+      `;
+      cityInput.parentElement.appendChild(citySelect);
+
+      function applySelect2() {
+        if (window.jQuery && jQuery.fn.select2) {
+          jQuery(citySelect).select2("destroy");
+          jQuery(citySelect).select2({
+            placeholder: "Select a city",
+            allowClear: true,
+            width: "resolve",
+            minimumResultsForSearch: 0,
+            dropdownAutoWidth: true,
+          });
+
+          jQuery(citySelect).next(".select2-container").css({
+            width: "100%",
+            "max-width": "100%",
+          });
+        }
+      }
+
+      applySelect2();
+
+      citySelect.addEventListener("change", () => {
+        cityInput.value = citySelect.value;
+        cityInput.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    }
+
+    const citySelect = cityFieldWrapper.querySelector('select[name="city-dropdown"]');
+    let lastState = chosenSpan.textContent.trim();
+
+    const observer = new MutationObserver(() => {
+      const currentState = chosenSpan.textContent.trim();
+      if (currentState !== lastState && currentState !== "") {
+        console.log("📦 State changed:", lastState, "→", currentState);
+        lastState = currentState;
+
+        const baseUrl = `${window.location.origin}/wp-admin/admin-ajax.php`;
+
+        fetch(baseUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            action: "get_cities_by_state",
+            state_name: currentState,
+          }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            citySelect.innerHTML = `<option value="">Select a city</option>`;
+            if (data.success && data.data?.cities?.length) {
+              data.data.cities.forEach((city) => {
+                const opt = document.createElement("option");
+                opt.value = city.name;
+                opt.textContent = city.name;
+                citySelect.appendChild(opt);
+              });
+            } else {
+              console.warn("⚠️ No cities found for:", currentState);
+            }
+
+            citySelect.appendChild(new Option("Other", "Other"));
+            applySelect2();
+            jQuery(citySelect).trigger("change");
+          })
+          .catch((err) => {
+            console.error("❌ Error loading cities:", err);
+          });
+      }
+    });
+
+    observer.observe(chosenSpan, {
+      characterData: true,
+      childList: true,
+      subtree: true,
+    });
+
+    console.log("👀 Watching for state changes...");
+  }
+
+  requestAnimationFrame(waitForFieldsAndInit);
+});

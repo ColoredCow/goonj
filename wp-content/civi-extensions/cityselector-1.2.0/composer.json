@@ -1,0 +1,12 @@
+{
+    "name": "civicrm/cityselector",
+    "description": "Citiy Selector - Changes default city texbox as an autocomplete selector",
+    "type": "civicrm-ext",
+    "license": "AGPL-3.0-only",
+    "authors": [
+      {
+        "name": "iXiam Global Solutions",
+        "email": "info@ixiam.com"
+      }
+    ]
+  }

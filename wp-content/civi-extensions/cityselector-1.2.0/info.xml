@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<extension key="cityselector" type="module">
+  <file>cityselector</file>
+  <name>City Selector</name>
+  <description>Citiy Selector - Changes default city texbox as an autocomplete selector</description>
+  <license>AGPL-3.0</license>
+  <maintainer>
+    <author>Luciano Spiegel</author>
+    <email>l.spiegel@ixiam.com</email>
+  </maintainer>
+  <urls>
+    <url desc="Main Extension Page">https://lab.civicrm.org/extensions/cityselector</url>
+    <url desc="Support">https://www.ixiam.com</url>
+    <url desc="Licensing">http://www.gnu.org/licenses/agpl-3.0.html</url>
+  </urls>
+  <releaseDate>2024-04-18</releaseDate>
+  <version>1.2.0</version>
+  <develStage>stable</develStage>
+  <compatibility>
+    <ver>5.69</ver>
+  </compatibility>
+  <comments>Replaces city textbox field as autocomplete select2, chained either to State/Province or County</comments>
+  <classloader>
+    <psr4 prefix="Civi\" path="Civi"/>
+    <psr0 prefix="CRM_" path="."/>
+  </classloader>
+  <civix>
+    <namespace>CRM/Cityselector</namespace>
+    <format>23.02.1</format>
+    <angularModule>crmCityselector</angularModule>
+  </civix>
+  <mixins>
+    <mixin>mgd-php@1.0.0</mixin>
+    <mixin>setting-php@1.0.0</mixin>
+    <mixin>menu-xml@1.0.0</mixin>
+    <mixin>smarty-v2@1.0.1</mixin>
+  </mixins>
+  <upgrader>CRM_Cityselector_Upgrader</upgrader>
+</extension>
