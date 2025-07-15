@@ -50,7 +50,9 @@ class CRM_Cityselector_BAO_Location {
     }
 
     try {
-      CRM_Cityselector_Upgrader_Base::instance()->executeSqlFile("sql/{$install_sql}");
+      CRM_Utils_File::sourceSQLFile(
+        CIVICRM_DSN, __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'sql' . DIRECTORY_SEPARATOR . $install_sql
+      );
     }
     catch (Exception $e) {
       CRM_Core_Session::setStatus(E::ts('The cityselector setup has failed. Please contact the SysAdmin'), '', 'error');
