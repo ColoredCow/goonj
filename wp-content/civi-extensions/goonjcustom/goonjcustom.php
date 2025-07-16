@@ -34,6 +34,13 @@ function goonjcustom_civicrm_config(&$config): void {
 }
 
 /**
+ * Implements hook_civicrm_alterAngular().
+ */
+function goonjcustom_civicrm_alterAngular($angular) {
+  CRM_Goonjcustom_AfformFieldPrefillService::preprocess($angular);
+}
+
+/**
  * Implements hook_civicrm_install().
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_install
