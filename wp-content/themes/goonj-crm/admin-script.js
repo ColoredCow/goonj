@@ -1,10 +1,10 @@
-setTimeout(function() {
-    const iframe = document.querySelector('iframe');
-    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+setTimeout(function () {
+  const iframe = document.querySelector("iframe");
+  const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
 
-    // Create a style element
-    const style = iframeDoc.createElement('style');
-    style.textContent = `
+  // Create a style element
+  const style = iframeDoc.createElement("style");
+  style.textContent = `
         @font-face {
             font-family: 'Proxima Nova';
             src: url('/wp-content/themes/goonj-crm/fonts/Proxima Nova Regular.otf') format('opentype');
@@ -34,56 +34,71 @@ setTimeout(function() {
             font-family: 'Proxima Nova', sans-serif !important;
         }
     `;
-    iframeDoc.head.appendChild(style);
+  iframeDoc.head.appendChild(style);
 
-    const fontFamily = 'Proxima Nova'
+  const fontFamily = "Proxima Nova";
 
-    const paragraphs = iframeDoc.querySelectorAll('p');
-    paragraphs.forEach(function(p) {
-        p.style.setProperty('font-family', fontFamily, 'important');
-    });
+  const paragraphs = iframeDoc.querySelectorAll("p");
+  paragraphs.forEach(function (p) {
+    p.style.setProperty("font-family", fontFamily, "important");
+  });
 
-    const spans = iframeDoc.querySelectorAll('span');
-    spans.forEach(function(span) {
-        span.style.setProperty('font-family', fontFamily, 'important');
-    });
+  const spans = iframeDoc.querySelectorAll("span");
+  spans.forEach(function (span) {
+    span.style.setProperty("font-family", fontFamily, "important");
+  });
 
-    const buttons = iframeDoc.querySelectorAll('button');
-    buttons.forEach(function(button) {
-        button.style.setProperty('font-family', fontFamily, 'important');
-    });
+  const buttons = iframeDoc.querySelectorAll("button");
+  buttons.forEach(function (button) {
+    button.style.setProperty("font-family", fontFamily, "important");
+  });
 
-    const anchors = iframeDoc.querySelectorAll('a');
-    anchors.forEach(function(anchor) {
-        anchor.style.setProperty('font-family', fontFamily, 'important');
-    });
+  const anchors = iframeDoc.querySelectorAll("a");
+  anchors.forEach(function (anchor) {
+    anchor.style.setProperty("font-family", fontFamily, "important");
+  });
 }, 1500);
 
 const intervalId = setInterval(() => {
-   const stateFieldWrapper =
-      document.querySelector('af-field[name="state_province_id"]') ||
-      document.querySelector('af-field[name="Institution_Collection_Camp_Intent.State"]') ||
-      document.querySelector('af-field[name="Institution_Dropping_Center_Intent.State"]') ||
-            document.querySelector('af-field[name="Goonj_Activities.State"]') ||
-      Array.from(document.querySelectorAll("label"))
-        .find((label) => label.textContent.trim() === "State")
-        ?.closest("af-field");
+  const stateFieldWrapper =
+    document.querySelector('af-field[name="state_province_id"]') ||
+    document.querySelector(
+      'af-field[name="Institution_Collection_Camp_Intent.State"]'
+    ) ||
+    document.querySelector(
+      'af-field[name="Institution_Dropping_Center_Intent.State"]'
+    ) ||
+    document.querySelector(
+      'af-field[name="Collection_Camp_Intent_Details.State"]'
+    ) ||
+    document.querySelector('af-field[name="Dropping_Centre.State"]') ||
+        document.querySelector('af-field[name="Institution_Goonj_Activities.State"]') ||
+    document.querySelector('af-field[name="Goonj_Activities.State"]') ||
+    document.querySelector('af-field[name="Urban_Planned_Visit.State"]') ||
+    Array.from(document.querySelectorAll("label"))
+      .find((label) => label.textContent.trim() === "State")
+      ?.closest("af-field");
 
   const stateChosenSpan =
     stateFieldWrapper?.querySelector(".select2-chosen") ||
     stateFieldWrapper?.querySelector('span[id^="select2-chosen"]');
 
   const cityFieldWrapper =
-      document.querySelector('af-field[name="city"]') ||
-	   document.querySelector('af-field[name="Goonj_Activities.City"]') ||
-      document.getElementById("editrow-city-Primary") ||
-      Array.from(document.querySelectorAll("label"))
-        .find((label) => label.textContent.trim().startsWith("City"))
-        ?.closest("af-field");
+    document.querySelector('af-field[name="city"]') ||
+    document.querySelector('af-field[name="Goonj_Activities.City"]') ||
+    document.getElementById("editrow-city-Primary") ||
+    Array.from(document.querySelectorAll("label"))
+      .find((label) => label.textContent.trim().startsWith("City"))
+      ?.closest("af-field");
 
   const cityInput = cityFieldWrapper?.querySelector('input[type="text"]');
 
-  if (!stateFieldWrapper || !stateChosenSpan || !cityFieldWrapper || !cityInput) {
+  if (
+    !stateFieldWrapper ||
+    !stateChosenSpan ||
+    !cityFieldWrapper ||
+    !cityInput
+  ) {
     console.log("⏳ Waiting for required fields...");
     return;
   }
@@ -179,4 +194,4 @@ const intervalId = setInterval(() => {
   });
 
   console.log("👀 Watching for state changes...");
-}, 500)
+}, 500);
