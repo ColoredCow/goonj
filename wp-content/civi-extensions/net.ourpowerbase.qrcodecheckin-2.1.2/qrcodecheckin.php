@@ -267,9 +267,16 @@ function qrcodecheckin_civicrm_tokenValues(&$values, $cids, $job = null, $tokens
       }
 
       foreach ($event_ids as $event_id) {
+        error_log('event id: ' . print_r($event_id, TRUE));
+        error_log('contact_id: ' . print_r($contact_id, TRUE));
+
         $participant_id = qrcodecheckin_participant_id_for_contact_id($contact_id, $event_id);
+        error_log('participant_id: ' . print_r($participant_id, TRUE));
+
         if ($participant_id) {
           $code = qrcodecheckin_get_code($participant_id);
+        error_log('code: ' . print_r($code, TRUE));
+
           // First ensure the image file is created.
           qrcodecheckin_create_image($code, $participant_id);
 
@@ -277,6 +284,8 @@ function qrcodecheckin_civicrm_tokenValues(&$values, $cids, $job = null, $tokens
           $query = NULL;
           $absolute = TRUE;
           $link = qrcodecheckin_get_image_url($code);
+        error_log('link: ' . print_r($link, TRUE));
+
 
           $values[$contact_id]['qrcodecheckin.qrcode_url_' . $event_id] = $link;
           $values[$contact_id]['qrcodecheckin.qrcode_html_' . $event_id] = E::ts('<div><img alt="QR Code with link to checkin page" src="%1"></div><div>You should see a QR code above which will be used to quickly check you into the event. If you do not see a code display above, please enable the display of images in your email program or try accessing it <a href="%1">directly</a>. You may want to take a screen grab of your QR Code in case you need to display it when you do not have Internet access.</div>', [
