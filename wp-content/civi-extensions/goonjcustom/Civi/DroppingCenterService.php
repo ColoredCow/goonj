@@ -553,6 +553,7 @@ class DroppingCenterService extends AutoSubscriber {
     'Camp_Vehicle_Dispatch.Goonj_Office_Name' => $goonjOfficeName,
     'Eck_Collection_Camp1' => $droppingCenterId,
     'id' => $droppingCenterId,
+    'Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_' => 'Hardcoded test address for now'
   ];
 
   // Step 2: Convert to JSON and encrypt
@@ -678,13 +679,13 @@ class DroppingCenterService extends AutoSubscriber {
         'template' => 'CRM/Goonjcustom/Tabs/DroppingCenter/DonationBox.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team'],
       ],
-      'outcome' => [
-        'title' => ts('Outcome'),
-        'module' => 'afsearchDroppingCenterOutcome',
-        'directive' => 'afsearch-dropping-center-outcome',
-        'template' => 'CRM/Goonjcustom/Tabs/DroppingCenter/Outcome.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team'],
-      ],
+      // 'outcome' => [
+      //   'title' => ts('Outcome'),
+      //   'module' => 'afsearchDroppingCenterOutcome',
+      //   'directive' => 'afsearch-dropping-center-outcome',
+      //   'template' => 'CRM/Goonjcustom/Tabs/DroppingCenter/Outcome.tpl',
+      //   'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team'],
+      // ],
       'feedback' => [
         'title' => ts('Feedback'),
         'module' => 'afsearchFeedback',
