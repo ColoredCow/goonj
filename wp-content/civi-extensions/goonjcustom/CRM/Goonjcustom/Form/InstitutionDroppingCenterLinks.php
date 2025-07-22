@@ -95,36 +95,47 @@ class CRM_Goonjcustom_Form_InstitutionDroppingCenterLinks extends CRM_Core_Form 
    *
    * @return void
    */
-  public function generateLinks($contactId): void {
-    $organization = $this->_organization;
-    $contact = $this->_contact;
+ public function generateLinks($contactId): void {
+  $organization = $this->_organization;
+  $contact = $this->_contact;
 
-    $nameOfInstitution = $organization['display_name'];
-    $address = $organization['address_primary.street_address'];
-    $pocEmail = $contact['email.email'];
-    $pocContactNumber = $contact['phone.phone'];
+  $nameOfInstitution = $organization['display_name'];
+  $address = $organization['address_primary.street_address'];
+  $pocEmail = $contact['email.email'];
+  $pocContactNumber = $contact['phone.phone'];
 
-    // Generate dropping center links.
-    $links = [
-        [
-          'label' => 'Vehicle Dispatch',
-          'url' => self::createUrl(
-                '/institution-dropping-center-vehicle-dispatch',
-                "Camp_Vehicle_Dispatch.Institution_Dropping_Center={$this->_institutionDroppingCenterId}" .
-                "&Eck_Collection_Camp1={$this->_institutionDroppingCenterId}" .
-                "&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent={$this->_processingCenterId}" .
-                "&Camp_Vehicle_Dispatch.Filled_by={$contactId}" .
-                "&Camp_Institution_Data.Name_of_the_institution={$nameOfInstitution}" .
-                "&Camp_Institution_Data.Address=" . urlencode($address) .
-                "&Camp_Institution_Data.Email={$pocEmail}" .
-                "&Camp_Institution_Data.Contact_Number={$pocContactNumber}",
-                $contactId
-          ),
-        ],
-    ];
+  // Create dispatch data array
+  $dispatchData = [
+    'Camp_Vehicle_Dispatch.Institution_Dropping_Center' => $this->_institutionDroppingCenterId,
+    'Camp_Vehicle_Dispatch.Filled_by' => $contactId,
+    'Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent' => $this->_processingCenterId,
+    'Camp_Vehicle_Dispatch.Goonj_Office_Name' => '', // optional if needed
+    'Eck_Collection_Camp1' => $this->_institutionDroppingCenterId,
+    'id' => $this->_institutionDroppingCenterId,
+    'Camp_Institution_Data.Name_of_the_institution' => $nameOfInstitution,
+    'Camp_Institution_Data.Address' => $address,
+    'Camp_Institution_Data.Email' => $pocEmail,
+    'Camp_Institution_Data.Contact_Number' => $pocContactNumber,
+  ];
 
-    $this->assign('institutionDroppingCenterLinks', $links);
-  }
+  // Encrypt token
+  $json = json_encode($dispatchData);
+  $encryptedToken = \CRM_Utils_Crypt::encrypt($json);
+  $tokenParam = 'token=' . urlencode($encryptedToken);
+
+  // Authenticated token
+  $authUrl = self::createUrl('/institution-dropping-center-vehicle-dispatch', $tokenParam, $contactId);
+
+  // Assign link
+  $links = [
+    [
+      'label' => 'Vehicle Dispatch',
+      'url' => $authUrl,
+    ],
+  ];
+
+  $this->assign('institutionDroppingCenterLinks', $links);
+}
 
   /**
    * Generate an authenticated URL for viewing this form.
@@ -153,7 +164,7 @@ class CRM_Goonjcustom_Form_InstitutionDroppingCenterLinks extends CRM_Core_Form 
     $params = "{$params}&_authx={$bearerToken}&_authxSes=1";
     // $url = \CRM_Utils_System::url($path, $params, TRUE, NULL, FALSE, TRUE);
     $config = CRM_Core_Config::singleton();
-    $url = $config->userFrameworkBaseURL . $path . '#?' . $params;
+    $url = $config->userFrameworkBaseURL . $path . '?' . $params;
 
     return $url;
   }

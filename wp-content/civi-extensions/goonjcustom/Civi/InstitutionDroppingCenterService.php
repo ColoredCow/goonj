@@ -670,24 +670,34 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
   /**
    *
    */
-  public static function sendDispatchEmail($nameOfInstitution, $address, $phone, $email, $initiatorName, $droppingCenterId, $contactId, $goonjOffice, $goonjOfficeName) {
-    $homeUrl = \CRM_Utils_System::baseCMSURL();
+ public static function sendDispatchEmail($nameOfInstitution, $address, $phone, $email, $initiatorName, $droppingCenterId, $contactId, $goonjOffice, $goonjOfficeName) {
+  $homeUrl = \CRM_Utils_System::baseCMSURL();
 
-    $baseUrl = '/institution-dropping-center-vehicle-dispatch/';
+  // Step 1: Gather data
+  $dispatchData = [
+    'Camp_Vehicle_Dispatch.Institution_Dropping_Center' => $droppingCenterId,
+    'Camp_Vehicle_Dispatch.Filled_by' => $contactId,
+    'Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent' => $goonjOffice,
+    'Camp_Vehicle_Dispatch.Goonj_Office_Name' => $goonjOfficeName,
+    'Eck_Collection_Camp1' => $droppingCenterId,
+    'id' => $droppingCenterId,
+    'Camp_Institution_Data.Name_of_the_institution' => $nameOfInstitution,
+    'Camp_Institution_Data.Address' => $address,
+    'Camp_Institution_Data.Email' => $email,
+    'Camp_Institution_Data.Contact_Number' => $phone,
+  ];
 
-    $vehicleDispatchFormUrl = $homeUrl . $baseUrl . '#?Camp_Vehicle_Dispatch.Institution_Dropping_Center=' . $droppingCenterId
-    . '&Camp_Vehicle_Dispatch.Filled_by=' . $contactId
-    . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $goonjOffice
-    . '&Camp_Vehicle_Dispatch.Goonj_Office_Name=' . $goonjOfficeName
-    . '&Eck_Collection_Camp1=' . $droppingCenterId
-    . '&Camp_Institution_Data.Name_of_the_institution=' . $nameOfInstitution
-    . "&Camp_Institution_Data.Address=" . urlencode($address)
-    . "&Camp_Institution_Data.Email=" . $email
-    . "&Camp_Institution_Data.Contact_Number=" . $phone;
+  // Step 2: Convert to JSON and encrypt
+  $json = json_encode($dispatchData);
+  $token = \CRM_Utils_Crypt::encrypt($json);
 
-    $emailHtml = "
-    <html>
-    <body>
+  // Step 3: Generate encrypted URL
+  $vehicleDispatchFormUrl = $homeUrl . '/institution-dropping-center-vehicle-dispatch/?token=' . urlencode($token);
+
+  // Step 4: Compose HTML email
+  $emailHtml = "
+  <html>
+  <body>
     <p>Dear {$initiatorName},</p>
     <p>Thank you so much for your invaluable efforts in running the Goonj Dropping Center. 
     Your dedication plays a crucial role in our work, and we deeply appreciate your continued support.</p>
@@ -695,19 +705,21 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     This will help us to verify and acknowledge the materials as soon as they arrive.</p>
     <p>We truly appreciate your cooperation and continued commitment to our cause.</p>
     <p>Warm Regards,<br>Team Goonj..</p>
-    </body>
-    </html>
-    ";
-    $from = HelperService::getDefaultFromEmail();
-    $mailParams = [
-      'subject' => 'Kindly fill the Dispatch Form for Material Pickup',
-      'from' => $from,
-      'toEmail' => $email,
-      'html' => $emailHtml,
-    ];
+  </body>
+  </html>
+  ";
 
-    \CRM_Utils_Mail::send($mailParams);
-  }
+  // Step 5: Send email
+  $from = HelperService::getDefaultFromEmail();
+  $mailParams = [
+    'subject' => 'Kindly fill the Dispatch Form for Material Pickup',
+    'from' => $from,
+    'toEmail' => $email,
+    'html' => $emailHtml,
+  ];
+
+  \CRM_Utils_Mail::send($mailParams);
+}
 
   /**
    *

@@ -37,8 +37,46 @@ function goonjcustom_civicrm_config(&$config): void {
  * Implements hook_civicrm_alterAngular().
  */
 function goonjcustom_civicrm_alterAngular($angular) {
-  CRM_Goonjcustom_AfformFieldPrefillService::preprocess($angular);
+  Civi::log()->debug('[AfformPrefill] alterAngular hook called');
+
+  $token = \CRM_Utils_Request::retrieve('token', 'String', CRM_Core_DAO::$_nullObject, FALSE, NULL, 'GET');
+  Civi::log()->debug('[AfformPrefill] Token: ' . ($token ? $token : '(none)'));
+  if (!$token) {
+    Civi::log()->debug('[AfformPrefill] No token, skipping prefill.');
+    return;
+  }
+
+  try {
+    $decrypted = \CRM_Utils_Crypt::decrypt($token);
+    Civi::log()->debug('[AfformPrefill] Decrypted: ' . $decrypted);
+    $data = json_decode($decrypted, true);
+    Civi::log()->debug('[AfformPrefill] Parsed array: ' . print_r($data, 1));
+  } catch (\Exception $e) {
+    Civi::log()->error('[AfformPrefill] Token decryption failed: ' . $e->getMessage());
+    return;
+  }
+
+  if (!is_array($data)) {
+    Civi::log()->error('[AfformPrefill] Decrypted data is not an array.');
+    return;
+  }
+
+  $prefillData = json_encode($data, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT);
+   \Civi::resources()->addScriptFile('goonjcustom', 'js/prefill.js', 10, 'html-header');
+
+
+  \Civi::log()->debug('[AfformPrefill] JavaScript prefill payload: ' . $prefillData);
+
+  \Civi::resources()->addScript("
+    (function() {
+      if (window.CRM === undefined) window.CRM = {};
+      window.CRM.afformPrefillData = $prefillData;
+      console.log('[AfformPrefill] Prefill data available on window.CRM.afformPrefillData:', window.CRM.afformPrefillData);
+    })();
+  ", 10, 'html-header');
 }
+
+
 
 /**
  * Implements hook_civicrm_install().
@@ -48,6 +86,11 @@ function goonjcustom_civicrm_alterAngular($angular) {
 function goonjcustom_civicrm_install(): void {
   _goonjcustom_civix_civicrm_install();
 }
+
+
+
+
+
 
 /**
  * Implements hook_civicrm_enable().
