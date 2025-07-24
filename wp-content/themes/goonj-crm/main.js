@@ -257,6 +257,7 @@ document.addEventListener("DOMContentLoaded", function () {
   function waitForFieldsAndInit() {
     const stateFieldWrapper =
       document.querySelector('af-field[name="state_province_id"]') ||
+      document.getElementById("editrow-state_province-Primary") ||
       document.querySelector(
         'af-field[name="Institution_Collection_Camp_Intent.State"]'
       ) ||
