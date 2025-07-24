@@ -343,7 +343,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const observer = new MutationObserver(() => {
       const currentState = chosenSpan.textContent.trim();
       if (currentState !== lastState && currentState !== "") {
-        console.log("📦 State changed:", lastState, "→", currentState);
         lastState = currentState;
 
         const baseUrl = `${window.location.origin}/wp-admin/admin-ajax.php`;
@@ -366,8 +365,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 opt.textContent = city.name;
                 citySelect.appendChild(opt);
               });
-            } else {
-              console.warn("⚠️ No cities found for:", currentState);
             }
 
             citySelect.appendChild(new Option("Other", "Other"));
@@ -375,7 +372,6 @@ document.addEventListener("DOMContentLoaded", function () {
             jQuery(citySelect).trigger("change");
           })
           .catch((err) => {
-            console.error("❌ Error loading cities:", err);
           });
       }
     });
@@ -385,8 +381,6 @@ document.addEventListener("DOMContentLoaded", function () {
       childList: true,
       subtree: true,
     });
-
-    console.log("👀 Watching for state changes...");
   }
 
   requestAnimationFrame(waitForFieldsAndInit);

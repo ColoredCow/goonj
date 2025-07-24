@@ -102,11 +102,8 @@ function injectCityDropdown() {
   }
 
   if (cityFieldWrapper.querySelector('select[name="city-dropdown"]')) {
-    console.warn("⚠️ City dropdown already injected.");
     return true;
   }
-
-  console.log("✅ Injecting responsive city dropdown...");
 
   cityInput.style.display = "none";
 
@@ -156,7 +153,6 @@ function injectCityDropdown() {
   const stateObserver = new MutationObserver(() => {
     const currentState = stateChosenSpan.textContent.trim();
     if (currentState !== lastState && currentState !== "") {
-      console.log("📦 State changed:", lastState, "→", currentState);
       lastState = currentState;
       loadCities(currentState);
     }
@@ -198,11 +194,8 @@ function injectCityDropdown() {
         }
       })
       .catch((err) => {
-        console.error("❌ Error loading cities:", err);
       });
   }
-
-  console.log("👀 Watching for state changes...");
   return true;
 }
 
@@ -211,7 +204,6 @@ injectCityDropdown();
 const bodyObserver = new MutationObserver(() => {
   const cityInput = document.querySelector('#city-Primary') || document.querySelector('input[name*="city"]') || document.querySelector('input[id*="district-city"]');
   if (cityInput && cityInput.style.display !== "none" && !document.querySelector('select[name="city-dropdown"]')) {
-    console.log("🔄 Re-injecting city dropdown after DOM change...");
     injectCityDropdown();
   }
 });
@@ -220,6 +212,5 @@ bodyObserver.observe(document.body, { childList: true, subtree: true });
 setTimeout(() => {
   if (!document.querySelector('select[name="city-dropdown"]')) {
     bodyObserver.disconnect();
-    console.warn("⚠️ Timed out waiting for fields. Ensure elements exist.");
   }
 }, 30000);
