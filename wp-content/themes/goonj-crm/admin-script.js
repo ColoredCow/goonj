@@ -60,7 +60,6 @@ setTimeout(function () {
 }, 1500);
 
 function injectCityDropdown() {
-  // Helper function to clean label text (remove trailing *, trim whitespace)
   function cleanLabelText(text) {
     return text.trim().replace(/\*$/, '').trim();
   }
@@ -74,11 +73,11 @@ function injectCityDropdown() {
     document.querySelector('af-field[name="Institution_Goonj_Activities.State"]') ||
     document.querySelector('af-field[name="Goonj_Activities.State"]') ||
     document.querySelector('af-field[name="Urban_Planned_Visit.State"]') ||
-    document.querySelector('.editrow_state_province-Primary-section') || // For CiviCRM summary
+    document.querySelector('.editrow_state_province-Primary-section') ||
     Array.from(document.querySelectorAll("label"))
       .find((label) => cleanLabelText(label.textContent) === "State")
       ?.closest("af-field") ||
-    document.querySelector('.crm-summary-row[id*="state_province"]'); // Fallback
+    document.querySelector('.crm-summary-row[id*="state_province"]');
 
   const stateChosenSpan =
     stateFieldWrapper?.querySelector(".select2-chosen") ||
@@ -133,7 +132,7 @@ function injectCityDropdown() {
         "max-width": "100%",
       });
     } else {
-      setTimeout(applySelect2, 500); // Retry quietly
+      setTimeout(applySelect2, 500);
     }
   }
 
