@@ -139,6 +139,51 @@ function goonj_custom_password_reset_redirection( $errors, $user ) {
 	}
 }
 
+add_action('wp_ajax_get_cities_by_state', 'get_cities_by_state');
+add_action('wp_ajax_nopriv_get_cities_by_state', 'get_cities_by_state');
+function get_cities_by_state() {
+  if (empty($_POST['state_name'])) {
+    wp_send_json_error(['message' => 'Missing state name']);
+  }
+
+  $state_name = trim($_POST['state_name']);
+
+  $sqlState = "
+    SELECT id
+    FROM civicrm_state_province
+    WHERE name = %1
+    LIMIT 1
+  ";
+
+  $daoState = CRM_Core_DAO::executeQuery($sqlState, [1 => [$state_name, 'String']]);
+
+  if (!$daoState->fetch()) {
+    wp_send_json_error(['message' => 'State not found']);
+  }
+
+  $state_id = (int) $daoState->id;
+
+  $results = [];
+
+  $sqlCities = "
+    SELECT id, name
+    FROM civicrm_city
+    WHERE state_province_id = %1
+    ORDER BY name ASC
+  ";
+
+  $daoCities = CRM_Core_DAO::executeQuery($sqlCities, [1 => [$state_id, 'Integer']]);
+
+  while ($daoCities->fetch()) {
+    $results[] = [
+      'id' => $daoCities->id,
+      'name' => $daoCities->name,
+    ];
+  }
+
+  wp_send_json_success(['cities' => $results]);
+}
+
 
 add_action( 'wp', 'goonj_handle_user_identification_form' );
 function goonj_handle_user_identification_form() {

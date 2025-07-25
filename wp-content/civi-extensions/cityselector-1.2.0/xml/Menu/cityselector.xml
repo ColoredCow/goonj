@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<menu>
+  <item>
+    <path>civicrm/ajax/jqCity</path>
+    <page_callback>CRM_Cityselector_Page_AJAX_Location::jqCity</page_callback>
+    <access_callback>1</access_callback>
+    <is_public>true</is_public>
+  </item>
+  <item>
+    <path>civicrm/admin/setting/cityselector</path>
+    <title>City Selector Settings</title>
+    <page_callback>CRM_Admin_Form_Generic</page_callback>
+    <access_arguments>administer CiviCRM</access_arguments>
+  </item>
+</menu>
