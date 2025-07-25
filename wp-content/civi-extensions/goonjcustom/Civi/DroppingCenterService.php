@@ -543,12 +543,30 @@ class DroppingCenterService extends AutoSubscriber {
    *
    */
   public static function sendDispatchEmail($email, $initiatorName, $droppingCenterId, $contactId, $goonjOffice, $goonjOfficeName) {
-    $homeUrl = \CRM_Utils_System::baseCMSURL();
-    $vehicleDispatchFormUrl = $homeUrl . '/vehicle-dispatch/#?Camp_Vehicle_Dispatch.Dropping_Center=' . $droppingCenterId . '&Camp_Vehicle_Dispatch.Filled_by=' . $contactId . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $goonjOffice . '&Camp_Vehicle_Dispatch.Goonj_Office_Name=' . $goonjOfficeName . '&Eck_Collection_Camp1=' . $droppingCenterId;
+  $homeUrl = \CRM_Utils_System::baseCMSURL();
 
-    $emailHtml = "
-    <html>
-    <body>
+  // Step 1: Gather data
+  $dispatchData = [
+    'Camp_Vehicle_Dispatch.Dropping_Center' => $droppingCenterId,
+    'Camp_Vehicle_Dispatch.Filled_by' => $contactId,
+    'Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent' => $goonjOffice,
+    'Camp_Vehicle_Dispatch.Goonj_Office_Name' => $goonjOfficeName,
+    'Eck_Collection_Camp1' => $droppingCenterId,
+    'id' => $droppingCenterId,
+    'Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_' => 'Hardcoded test address for now'
+  ];
+
+  // Step 2: Convert to JSON and encrypt
+  $json = json_encode($dispatchData);
+  $token = \CRM_Utils_Crypt::encrypt($json);
+
+  // Step 3: Generate encrypted URL
+  $vehicleDispatchFormUrl = $homeUrl . '/vehicle-dispatch/?token=' . urlencode($token);
+
+  // Step 4: Compose HTML email
+  $emailHtml = "
+  <html>
+  <body>
     <p>Dear {$initiatorName},</p>
     <p>Thank you so much for your invaluable efforts in running the Goonj Dropping Center. 
     Your dedication plays a crucial role in our work, and we deeply appreciate your continued support.</p>
@@ -556,19 +574,21 @@ class DroppingCenterService extends AutoSubscriber {
     This will help us to verify and acknowledge the materials as soon as they arrive.</p>
     <p>We truly appreciate your cooperation and continued commitment to our cause.</p>
     <p>Warm Regards,<br>Team Goonj..</p>
-    </body>
-    </html>
-    ";
-    $from = HelperService::getDefaultFromEmail();
-    $mailParams = [
-      'subject' => 'Kindly fill the Dispatch Form for Material Pickup',
-      'from' => $from,
-      'toEmail' => $email,
-      'html' => $emailHtml,
-    ];
+  </body>
+  </html>
+  ";
 
-    \CRM_Utils_Mail::send($mailParams);
-  }
+  // Step 5: Send email
+  $from = HelperService::getDefaultFromEmail();
+  $mailParams = [
+    'subject' => 'Kindly fill the Dispatch Form for Material Pickup',
+    'from' => $from,
+    'toEmail' => $email,
+    'html' => $emailHtml,
+  ];
+
+  \CRM_Utils_Mail::send($mailParams);
+}
 
   /**
    *
@@ -659,13 +679,13 @@ class DroppingCenterService extends AutoSubscriber {
         'template' => 'CRM/Goonjcustom/Tabs/DroppingCenter/DonationBox.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team'],
       ],
-      'outcome' => [
-        'title' => ts('Outcome'),
-        'module' => 'afsearchDroppingCenterOutcome',
-        'directive' => 'afsearch-dropping-center-outcome',
-        'template' => 'CRM/Goonjcustom/Tabs/DroppingCenter/Outcome.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team'],
-      ],
+      // 'outcome' => [
+      //   'title' => ts('Outcome'),
+      //   'module' => 'afsearchDroppingCenterOutcome',
+      //   'directive' => 'afsearch-dropping-center-outcome',
+      //   'template' => 'CRM/Goonjcustom/Tabs/DroppingCenter/Outcome.tpl',
+      //   'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team'],
+      // ],
       'feedback' => [
         'title' => ts('Feedback'),
         'module' => 'afsearchFeedback',
