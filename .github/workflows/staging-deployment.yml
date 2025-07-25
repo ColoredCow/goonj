@@ -25,4 +25,4 @@ jobs:
             git checkout -f dev
             git pull origin dev
             wp theme activate goonj-crm
-            ./wp-content/uploads/cv ext:upgrade-db
+            cv ext:upgrade-db
