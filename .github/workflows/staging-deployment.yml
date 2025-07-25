@@ -1,7 +1,7 @@
 name: staging-deployment
 on:
   push:
-    branches: develop
+    branches: dev
 
 jobs:
   deploy:
@@ -22,7 +22,7 @@ jobs:
           envs: SSH_BUILD_DIRECTORY
           script: |
             cd $SSH_BUILD_DIRECTORY
-            git checkout -f develop
-            git pull origin develop
+            git checkout -f dev
+            git pull origin dev
             wp theme activate goonj-crm
             ./wp-content/uploads/cv ext:upgrade-db
