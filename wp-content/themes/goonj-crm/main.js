@@ -390,7 +390,6 @@ document.addEventListener("DOMContentLoaded", function () {
           }
         })
         .catch((err) => {
-          // Handle error if needed
         });
     }
 
