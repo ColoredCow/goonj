@@ -257,6 +257,7 @@ document.addEventListener("DOMContentLoaded", function () {
   function waitForFieldsAndInit() {
     const stateFieldWrapper =
       document.querySelector('af-field[name="state_province_id"]') ||
+      document.getElementById("editrow-state_province-Primary") ||
       document.querySelector(
         'af-field[name="Institution_Collection_Camp_Intent.State"]'
       ) ||
@@ -340,43 +341,63 @@ document.addEventListener("DOMContentLoaded", function () {
     );
     let lastState = chosenSpan.textContent.trim();
 
+    // Function to fetch and populate cities
+    function fetchAndPopulateCities(stateName, preselectValue = null) {
+      if (!stateName) return;
+
+      const baseUrl = `${window.location.origin}/wp-admin/admin-ajax.php`;
+
+      fetch(baseUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          action: "get_cities_by_state",
+          state_name: stateName,
+        }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          citySelect.innerHTML = `<option value="">Select a city</option>`;
+          if (data.success && data.data?.cities?.length) {
+            data.data.cities.forEach((city) => {
+              const opt = document.createElement("option");
+              opt.value = city.name;
+              opt.textContent = city.name;
+              citySelect.appendChild(opt);
+            });
+          }
+
+          citySelect.appendChild(new Option("Other", "Other"));
+
+          applySelect2();
+
+          // If there's a preselect value (e.g., from initial cityInput.value), set it
+          if (preselectValue) {
+            // Check if the preselectValue exists in the options
+            const optionExists = Array.from(citySelect.options).some(
+              (opt) => opt.value === preselectValue
+            );
+            if (optionExists) {
+              jQuery(citySelect).val(preselectValue).trigger("change");
+            } else {
+              // If not found, select "Other" and set the input value manually
+              jQuery(citySelect).val("Other").trigger("change");
+              cityInput.value = preselectValue;
+              cityInput.dispatchEvent(new Event("input", { bubbles: true }));
+            }
+          } else {
+            jQuery(citySelect).trigger("change");
+          }
+        })
+        .catch((err) => {
+        });
+    }
+
     const observer = new MutationObserver(() => {
       const currentState = chosenSpan.textContent.trim();
       if (currentState !== lastState && currentState !== "") {
-        console.log("📦 State changed:", lastState, "→", currentState);
         lastState = currentState;
-
-        const baseUrl = `${window.location.origin}/wp-admin/admin-ajax.php`;
-
-        fetch(baseUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: new URLSearchParams({
-            action: "get_cities_by_state",
-            state_name: currentState,
-          }),
-        })
-          .then((res) => res.json())
-          .then((data) => {
-            citySelect.innerHTML = `<option value="">Select a city</option>`;
-            if (data.success && data.data?.cities?.length) {
-              data.data.cities.forEach((city) => {
-                const opt = document.createElement("option");
-                opt.value = city.name;
-                opt.textContent = city.name;
-                citySelect.appendChild(opt);
-              });
-            } else {
-              console.warn("⚠️ No cities found for:", currentState);
-            }
-
-            citySelect.appendChild(new Option("Other", "Other"));
-            applySelect2();
-            jQuery(citySelect).trigger("change");
-          })
-          .catch((err) => {
-            console.error("❌ Error loading cities:", err);
-          });
+        fetchAndPopulateCities(currentState);
       }
     });
 
@@ -386,8 +407,15 @@ document.addEventListener("DOMContentLoaded", function () {
       subtree: true,
     });
 
-    console.log("👀 Watching for state changes...");
+    // Initial fetch if state is already selected
+    const initialState = chosenSpan.textContent.trim();
+    const initialCity = cityInput.value.trim();
+    if (initialState !== "") {
+      lastState = initialState;
+      fetchAndPopulateCities(initialState, initialCity);
+    }
   }
 
   requestAnimationFrame(waitForFieldsAndInit);
 });
+
