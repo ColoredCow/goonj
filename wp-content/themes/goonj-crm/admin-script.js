@@ -58,112 +58,128 @@ setTimeout(function () {
     anchor.style.setProperty("font-family", fontFamily, "important");
   });
 }, 1500);
-
 function injectCityDropdown() {
   function cleanLabelText(text) {
     return text.trim().replace(/\*$/, '').trim();
   }
 
-  const stateFieldWrapper =
-    document.querySelector('af-field[name="state_province_id"]') ||
-    document.querySelector('af-field[name="Institution_Collection_Camp_Intent.State"]') ||
-    document.querySelector('af-field[name="Institution_Dropping_Center_Intent.State"]') ||
-    document.querySelector('af-field[name="Collection_Camp_Intent_Details.State"]') ||
-    document.querySelector('af-field[name="Dropping_Centre.State"]') ||
-    document.querySelector('af-field[name="Institution_Goonj_Activities.State"]') ||
-    document.querySelector('af-field[name="Goonj_Activities.State"]') ||
-    document.querySelector('af-field[name="Urban_Planned_Visit.State"]') ||
-    document.querySelector('.editrow_state_province-Primary-section') ||
-    Array.from(document.querySelectorAll("label"))
-      .find((label) => cleanLabelText(label.textContent) === "State")
-      ?.closest("af-field") ||
-    document.querySelector('.crm-summary-row[id*="state_province"]');
-
-  const stateChosenSpan =
-    stateFieldWrapper?.querySelector(".select2-chosen") ||
-    stateFieldWrapper?.querySelector('span[id^="select2-chosen"]');
-
-  const cityFieldWrapper =
-    document.querySelector('af-field[name="city"]') ||
-    document.querySelector('af-field[name="Institution_Dropping_Center_Intent.District_City"]') || // Added for your HTML
-    document.querySelector('af-field[name="Goonj_Activities.City"]') ||
-    document.querySelector('.editrow_city-Primary-section') ||
-    document.getElementById("editrow-city-Primary") ||
-    Array.from(document.querySelectorAll("label"))
-      .find((label) => cleanLabelText(label.textContent) === "City")
-      ?.closest("af-field") ||
-    document.querySelector('.crm-summary-row[id*="city"]');
-
-  const cityInput = cityFieldWrapper?.querySelector('input[type="text"]');
-
-  if (!stateFieldWrapper || !stateChosenSpan || !cityFieldWrapper || !cityInput) {
-    return false;
+  function findStateFieldWrapper() {
+    return (
+      document.querySelector('af-field[name="state_province_id"]') ||
+      document.querySelector('af-field[name="Institution_Collection_Camp_Intent.State"]') ||
+      document.querySelector('af-field[name="Institution_Dropping_Center_Intent.State"]') ||
+      document.querySelector('af-field[name="Collection_Camp_Intent_Details.State"]') ||
+      document.querySelector('af-field[name="Dropping_Centre.State"]') ||
+      document.querySelector('af-field[name="Institution_Goonj_Activities.State"]') ||
+      document.querySelector('af-field[name="Goonj_Activities.State"]') ||
+      document.querySelector('af-field[name="Urban_Planned_Visit.State"]') ||
+      document.querySelector('.editrow_state_province-Primary-section') ||
+      Array.from(document.querySelectorAll("label"))
+        .find((label) => cleanLabelText(label.textContent) === "State")
+        ?.closest("af-field") ||
+      document.querySelector('.crm-summary-row[id*="state_province"]')
+    );
   }
 
-  if (cityFieldWrapper.querySelector('select[name="city-dropdown"]')) {
-    return true;
+  function findCityFieldWrapper() {
+    return (
+      document.querySelector('af-field[name="city"]') ||
+      document.querySelector('af-field[name="Institution_Dropping_Center_Intent.District_City"]') ||
+      document.querySelector('af-field[name="Goonj_Activities.City"]') ||
+      document.querySelector('.editrow_city-Primary-section') ||
+      document.getElementById("editrow-city-Primary") ||
+      Array.from(document.querySelectorAll("label"))
+        .find((label) => cleanLabelText(label.textContent) === "City")
+        ?.closest("af-field") ||
+      document.querySelector('.crm-summary-row[id*="city"]')
+    );
   }
 
-  cityInput.style.display = "none";
+  function waitForElementsAndInject() {
+    const interval = setInterval(() => {
+      const stateFieldWrapper = findStateFieldWrapper();
+      const stateChosenSpan =
+        stateFieldWrapper?.querySelector(".select2-chosen") ||
+        stateFieldWrapper?.querySelector('span[id^="select2-chosen"]');
 
-  const citySelect = document.createElement("select");
-  citySelect.name = "city-dropdown";
-  citySelect.className = "form-control";
-  citySelect.style.width = "100%";
-  citySelect.style.maxWidth = "100%";
-  citySelect.innerHTML = `
-    <option value="">Select a city</option>
-    <option value="Other">Other</option>
-  `;
-  cityInput.parentElement.appendChild(citySelect);
+      const cityFieldWrapper = findCityFieldWrapper();
+      const cityInput = cityFieldWrapper?.querySelector('input[type="text"]');
 
-  function applySelect2() {
-    if (window.jQuery && jQuery.fn.select2) {
-      jQuery(citySelect).select2("destroy");
-      jQuery(citySelect).select2({
-        placeholder: "Select a city",
-        allowClear: true,
-        width: "resolve",
-        dropdownAutoWidth: true,
-        minimumResultsForSearch: 0,
-      });
-      jQuery(citySelect).next(".select2-container").css({
-        width: "100%",
-        "max-width": "100%",
-      });
-    } else {
-      setTimeout(applySelect2, 500);
+      console.log({ stateFieldWrapper, stateChosenSpan, cityFieldWrapper, cityInput });
+
+      if (stateFieldWrapper && stateChosenSpan && cityFieldWrapper && cityInput) {
+        clearInterval(interval);
+        setupDropdown({
+          stateFieldWrapper,
+          stateChosenSpan,
+          cityFieldWrapper,
+          cityInput,
+        });
+      }
+    }, 300);
+
+    setTimeout(() => clearInterval(interval), 30000);
+  }
+
+  function setupDropdown({ stateFieldWrapper, stateChosenSpan, cityFieldWrapper, cityInput }) {
+    if (cityFieldWrapper.querySelector('select[name="city-dropdown"]')) return;
+
+    cityInput.style.display = "none";
+
+    const citySelect = document.createElement("select");
+    citySelect.name = "city-dropdown";
+    citySelect.className = "form-control";
+    citySelect.style.width = "100%";
+    citySelect.style.maxWidth = "100%";
+    cityInput.parentElement.appendChild(citySelect);
+
+    function applySelect2() {
+      if (window.jQuery && jQuery.fn.select2) {
+        jQuery(citySelect).select2("destroy");
+        jQuery(citySelect).select2({
+          placeholder: "Select a city",
+          allowClear: true,
+          width: "resolve",
+          dropdownAutoWidth: true,
+          minimumResultsForSearch: 0,
+        });
+        jQuery(citySelect).next(".select2-container").css({
+          width: "100%",
+          "max-width": "100%",
+        });
+      } else {
+        setTimeout(applySelect2, 500);
+      }
     }
-  }
 
-  applySelect2();
+    applySelect2();
 
-  citySelect.addEventListener("change", () => {
-    cityInput.value = citySelect.value;
-    cityInput.dispatchEvent(new Event("input", { bubbles: true }));
-  });
+    citySelect.addEventListener("change", () => {
+      cityInput.value = citySelect.value;
+      cityInput.dispatchEvent(new Event("input", { bubbles: true }));
+    });
 
-  let lastState = stateChosenSpan.textContent.trim();
-
-  if (lastState !== "") {
-    loadCities(lastState);
-  }
-
-  const stateObserver = new MutationObserver(() => {
-    const currentState = stateChosenSpan.textContent.trim();
-    if (currentState !== lastState && currentState !== "") {
-      lastState = currentState;
-      loadCities(currentState);
+    let lastState = stateChosenSpan.textContent.trim();
+    if (lastState !== "") {
+      loadCities(lastState, citySelect, cityInput, applySelect2);
     }
-  });
 
-  stateObserver.observe(stateChosenSpan, {
-    characterData: true,
-    childList: true,
-    subtree: true,
-  });
+    const stateObserver = new MutationObserver(() => {
+      const currentState = stateChosenSpan.textContent.trim();
+      if (currentState !== lastState && currentState !== "") {
+        lastState = currentState;
+        loadCities(currentState, citySelect, cityInput, applySelect2);
+      }
+    });
 
-  function loadCities(stateName) {
+    stateObserver.observe(stateChosenSpan, {
+      characterData: true,
+      childList: true,
+      subtree: true,
+    });
+  }
+
+  function loadCities(stateName, citySelect, cityInput, applySelect2) {
     const baseUrl = `${window.location.origin}/wp-admin/admin-ajax.php`;
     fetch(baseUrl, {
       method: "POST",
@@ -193,23 +209,19 @@ function injectCityDropdown() {
         }
       })
       .catch((err) => {
+        console.error("City dropdown error:", err);
       });
   }
-  return true;
+
+  waitForElementsAndInject();
 }
 
 injectCityDropdown();
 
 const bodyObserver = new MutationObserver(() => {
-  const cityInput = document.querySelector('#city-Primary') || document.querySelector('input[name*="city"]') || document.querySelector('input[id*="district-city"]');
-  if (cityInput && cityInput.style.display !== "none" && !document.querySelector('select[name="city-dropdown"]')) {
+  if (!document.querySelector('select[name="city-dropdown"]')) {
     injectCityDropdown();
   }
 });
 bodyObserver.observe(document.body, { childList: true, subtree: true });
-
-setTimeout(() => {
-  if (!document.querySelector('select[name="city-dropdown"]')) {
-    bodyObserver.disconnect();
-  }
-}, 30000);
+setTimeout(() => bodyObserver.disconnect(), 30000);
