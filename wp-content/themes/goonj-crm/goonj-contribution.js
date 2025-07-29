@@ -86,6 +86,14 @@ document.addEventListener('DOMContentLoaded', function() {
     var recurringSection = document.querySelector('#crm-container #crm-main-content-wrapper form .crm-contribution-main-form-block .crm-public-form-item.crm-section.is_recur-section');
     var isRecurCheckbox = document.getElementById('is_recur');
     var installmentsField = document.getElementById('installments');
+    var isRecurCheckbox = document.getElementById('is_recur');
+    if (!isRecurCheckbox) {
+        var firstProfileDiv = document.querySelector('fieldset.crm-profile > div:first-of-type');
+        if (firstProfileDiv) {
+            firstProfileDiv.style.display = 'none';
+        }
+    }
+    
 
     // Set "Donate Once" as default on page load
     var donateOnceRadio = document.querySelector('.crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options .crm-option-label-pair input.crm-form-radio[value="1"]');
