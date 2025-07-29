@@ -76,7 +76,7 @@ class RuralPlannedVisitService extends AutoSubscriber {
         'directive' => 'afsearch-rural-logistics-details',
         'template' => 'CRM/Goonjcustom/Tabs/RuralPlannedVisit/Logistics.tpl',
         'entity' => ['id' => $eventID],
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt_and_accounts_chapter_team'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt_and_accounts_chapter_team', 'project_ho_and_accounts'],
       ],
       'report' => [
         'id' => 'outcome report',
@@ -86,7 +86,7 @@ class RuralPlannedVisitService extends AutoSubscriber {
         'directive' => 'afsearch-rural-planned-visits-outcome-reports-details',
         'template' => 'CRM/Goonjcustom/Tabs/RuralPlannedVisit/Report.tpl',
         'entity' => ['id' => $eventID],
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt_and_accounts_chapter_team'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt_and_accounts_chapter_team', 'project_ho_and_accounts'],
       ],
       'outcome' => [
         'id' => 'outcome',
@@ -96,7 +96,7 @@ class RuralPlannedVisitService extends AutoSubscriber {
         'directive' => 'afsearch-rural-planned-visit-outcome-details',
         'template' => 'CRM/Goonjcustom/Tabs/RuralPlannedVisit/Outcome.tpl',
         'entity' => ['id' => $eventID],
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt_and_accounts_chapter_team'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt_and_accounts_chapter_team', 'project_ho_and_accounts'],
       ],
       'feedback' => [
         'id' => 'feedback',
@@ -106,7 +106,7 @@ class RuralPlannedVisitService extends AutoSubscriber {
         'directive' => 'afsearch-rural-planned-visit-feedbacks-details',
         'template' => 'CRM/Goonjcustom/Tabs/RuralPlannedVisit/Feedback.tpl',
         'entity' => ['id' => $eventID],
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt_and_accounts_chapter_team'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt_and_accounts_chapter_team', 'project_ho_and_accounts'],
       ],
     ];
 
