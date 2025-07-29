@@ -87,12 +87,13 @@ document.addEventListener('DOMContentLoaded', function() {
     var isRecurCheckbox = document.getElementById('is_recur');
     var installmentsField = document.getElementById('installments');
     var isRecurCheckbox = document.getElementById('is_recur');
-
-	// Check and lock the checkbox
-	isRecurCheckbox.checked = true;
-	isRecurCheckbox.addEventListener('click', function (event) {
-		event.preventDefault();
-	});
+    if (!isRecurCheckbox) {
+        var firstProfileDiv = document.querySelector('fieldset.crm-profile > div:first-of-type');
+        if (firstProfileDiv) {
+            firstProfileDiv.style.display = 'none';
+        }
+    }
+    
 
     // Set "Donate Once" as default on page load
     var donateOnceRadio = document.querySelector('.crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options .crm-option-label-pair input.crm-form-radio[value="1"]');
