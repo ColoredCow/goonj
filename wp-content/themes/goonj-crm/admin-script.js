@@ -74,6 +74,8 @@ function injectCityDropdown() {
       document.querySelector('af-field[name="Goonj_Activities.State"]') ||
       document.querySelector('af-field[name="Urban_Planned_Visit.State"]') ||
       document.querySelector('.editrow_state_province-Primary-section') ||
+            document.querySelector('#s2id_address_1_state_province_id') ||
+      document.querySelector('#address_1_state_province_id')?.closest('td') ||
       Array.from(document.querySelectorAll("label"))
         .find((label) => cleanLabelText(label.textContent) === "State")
         ?.closest("af-field") ||
@@ -84,10 +86,12 @@ function injectCityDropdown() {
   function findCityFieldWrapper() {
     return (
       document.querySelector('af-field[name="city"]') ||
+      document.querySelector('af-field[name="address_1_city"]') ||
       document.querySelector('af-field[name="Institution_Dropping_Center_Intent.District_City"]') ||
       document.querySelector('af-field[name="Goonj_Activities.City"]') ||
       document.querySelector('.editrow_city-Primary-section') ||
       document.getElementById("editrow-city-Primary") ||
+      document.querySelector('#address_1_city')?.closest('td') ||
       Array.from(document.querySelectorAll("label"))
         .find((label) => cleanLabelText(label.textContent) === "City")
         ?.closest("af-field") ||
