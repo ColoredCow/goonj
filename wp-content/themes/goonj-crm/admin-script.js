@@ -58,170 +58,170 @@ setTimeout(function () {
     anchor.style.setProperty("font-family", fontFamily, "important");
   });
 }, 1500);
-function injectCityDropdown() {
-  function cleanLabelText(text) {
-    return text.trim().replace(/\*$/, '').trim();
-  }
+// function injectCityDropdown() {
+//   function cleanLabelText(text) {
+//     return text.trim().replace(/\*$/, '').trim();
+//   }
 
-  function findStateFieldWrapper() {
-    return (
-      document.querySelector('af-field[name="state_province_id"]') ||
-      document.querySelector('af-field[name="Institution_Collection_Camp_Intent.State"]') ||
-      document.querySelector('af-field[name="Institution_Dropping_Center_Intent.State"]') ||
-      document.querySelector('af-field[name="Collection_Camp_Intent_Details.State"]') ||
-      document.querySelector('af-field[name="Dropping_Centre.State"]') ||
-      document.querySelector('af-field[name="Institution_Goonj_Activities.State"]') ||
-      document.querySelector('af-field[name="Goonj_Activities.State"]') ||
-      document.querySelector('af-field[name="Urban_Planned_Visit.State"]') ||
-      document.querySelector('.editrow_state_province-Primary-section') ||
-      Array.from(document.querySelectorAll("label"))
-        .find((label) => cleanLabelText(label.textContent) === "State")
-        ?.closest("af-field") ||
-      document.querySelector('.crm-summary-row[id*="state_province"]')
-    );
-  }
+//   function findStateFieldWrapper() {
+//     return (
+//       document.querySelector('af-field[name="state_province_id"]') ||
+//       document.querySelector('af-field[name="Institution_Collection_Camp_Intent.State"]') ||
+//       document.querySelector('af-field[name="Institution_Dropping_Center_Intent.State"]') ||
+//       document.querySelector('af-field[name="Collection_Camp_Intent_Details.State"]') ||
+//       document.querySelector('af-field[name="Dropping_Centre.State"]') ||
+//       document.querySelector('af-field[name="Institution_Goonj_Activities.State"]') ||
+//       document.querySelector('af-field[name="Goonj_Activities.State"]') ||
+//       document.querySelector('af-field[name="Urban_Planned_Visit.State"]') ||
+//       document.querySelector('.editrow_state_province-Primary-section') ||
+//       Array.from(document.querySelectorAll("label"))
+//         .find((label) => cleanLabelText(label.textContent) === "State")
+//         ?.closest("af-field") ||
+//       document.querySelector('.crm-summary-row[id*="state_province"]')
+//     );
+//   }
 
-  function findCityFieldWrapper() {
-    return (
-      document.querySelector('af-field[name="city"]') ||
-      document.querySelector('af-field[name="Institution_Dropping_Center_Intent.District_City"]') ||
-      document.querySelector('af-field[name="Goonj_Activities.City"]') ||
-      document.querySelector('.editrow_city-Primary-section') ||
-      document.getElementById("editrow-city-Primary") ||
-      Array.from(document.querySelectorAll("label"))
-        .find((label) => cleanLabelText(label.textContent) === "City")
-        ?.closest("af-field") ||
-      document.querySelector('.crm-summary-row[id*="city"]')
-    );
-  }
+//   function findCityFieldWrapper() {
+//     return (
+//       document.querySelector('af-field[name="city"]') ||
+//       document.querySelector('af-field[name="Institution_Dropping_Center_Intent.District_City"]') ||
+//       document.querySelector('af-field[name="Goonj_Activities.City"]') ||
+//       document.querySelector('.editrow_city-Primary-section') ||
+//       document.getElementById("editrow-city-Primary") ||
+//       Array.from(document.querySelectorAll("label"))
+//         .find((label) => cleanLabelText(label.textContent) === "City")
+//         ?.closest("af-field") ||
+//       document.querySelector('.crm-summary-row[id*="city"]')
+//     );
+//   }
 
-  function waitForElementsAndInject() {
-    const interval = setInterval(() => {
-      const stateFieldWrapper = findStateFieldWrapper();
-      const stateChosenSpan =
-        stateFieldWrapper?.querySelector(".select2-chosen") ||
-        stateFieldWrapper?.querySelector('span[id^="select2-chosen"]');
+//   function waitForElementsAndInject() {
+//     const interval = setInterval(() => {
+//       const stateFieldWrapper = findStateFieldWrapper();
+//       const stateChosenSpan =
+//         stateFieldWrapper?.querySelector(".select2-chosen") ||
+//         stateFieldWrapper?.querySelector('span[id^="select2-chosen"]');
 
-      const cityFieldWrapper = findCityFieldWrapper();
-      const cityInput = cityFieldWrapper?.querySelector('input[type="text"]');
+//       const cityFieldWrapper = findCityFieldWrapper();
+//       const cityInput = cityFieldWrapper?.querySelector('input[type="text"]');
 
-      console.log({ stateFieldWrapper, stateChosenSpan, cityFieldWrapper, cityInput });
+//       console.log({ stateFieldWrapper, stateChosenSpan, cityFieldWrapper, cityInput });
 
-      if (stateFieldWrapper && stateChosenSpan && cityFieldWrapper && cityInput) {
-        clearInterval(interval);
-        setupDropdown({
-          stateFieldWrapper,
-          stateChosenSpan,
-          cityFieldWrapper,
-          cityInput,
-        });
-      }
-    }, 300);
+//       if (stateFieldWrapper && stateChosenSpan && cityFieldWrapper && cityInput) {
+//         clearInterval(interval);
+//         setupDropdown({
+//           stateFieldWrapper,
+//           stateChosenSpan,
+//           cityFieldWrapper,
+//           cityInput,
+//         });
+//       }
+//     }, 300);
 
-    setTimeout(() => clearInterval(interval), 30000);
-  }
+//     setTimeout(() => clearInterval(interval), 30000);
+//   }
 
-  function setupDropdown({ stateFieldWrapper, stateChosenSpan, cityFieldWrapper, cityInput }) {
-    if (cityFieldWrapper.querySelector('select[name="city-dropdown"]')) return;
+//   function setupDropdown({ stateFieldWrapper, stateChosenSpan, cityFieldWrapper, cityInput }) {
+//     if (cityFieldWrapper.querySelector('select[name="city-dropdown"]')) return;
 
-    cityInput.style.display = "none";
+//     cityInput.style.display = "none";
 
-    const citySelect = document.createElement("select");
-    citySelect.name = "city-dropdown";
-    citySelect.className = "form-control";
-    citySelect.style.width = "100%";
-    citySelect.style.maxWidth = "100%";
-    cityInput.parentElement.appendChild(citySelect);
+//     const citySelect = document.createElement("select");
+//     citySelect.name = "city-dropdown";
+//     citySelect.className = "form-control";
+//     citySelect.style.width = "100%";
+//     citySelect.style.maxWidth = "100%";
+//     cityInput.parentElement.appendChild(citySelect);
 
-    function applySelect2() {
-      if (window.jQuery && jQuery.fn.select2) {
-        jQuery(citySelect).select2("destroy");
-        jQuery(citySelect).select2({
-          placeholder: "Select a city",
-          allowClear: true,
-          width: "resolve",
-          dropdownAutoWidth: true,
-          minimumResultsForSearch: 0,
-        });
-        jQuery(citySelect).next(".select2-container").css({
-          width: "100%",
-          "max-width": "100%",
-        });
-      } else {
-        setTimeout(applySelect2, 500);
-      }
-    }
+//     function applySelect2() {
+//       if (window.jQuery && jQuery.fn.select2) {
+//         jQuery(citySelect).select2("destroy");
+//         jQuery(citySelect).select2({
+//           placeholder: "Select a city",
+//           allowClear: true,
+//           width: "resolve",
+//           dropdownAutoWidth: true,
+//           minimumResultsForSearch: 0,
+//         });
+//         jQuery(citySelect).next(".select2-container").css({
+//           width: "100%",
+//           "max-width": "100%",
+//         });
+//       } else {
+//         setTimeout(applySelect2, 500);
+//       }
+//     }
 
-    applySelect2();
+//     applySelect2();
 
-    citySelect.addEventListener("change", () => {
-      cityInput.value = citySelect.value;
-      cityInput.dispatchEvent(new Event("input", { bubbles: true }));
-    });
+//     citySelect.addEventListener("change", () => {
+//       cityInput.value = citySelect.value;
+//       cityInput.dispatchEvent(new Event("input", { bubbles: true }));
+//     });
 
-    let lastState = stateChosenSpan.textContent.trim();
-    if (lastState !== "") {
-      loadCities(lastState, citySelect, cityInput, applySelect2);
-    }
+//     let lastState = stateChosenSpan.textContent.trim();
+//     if (lastState !== "") {
+//       loadCities(lastState, citySelect, cityInput, applySelect2);
+//     }
 
-    const stateObserver = new MutationObserver(() => {
-      const currentState = stateChosenSpan.textContent.trim();
-      if (currentState !== lastState && currentState !== "") {
-        lastState = currentState;
-        loadCities(currentState, citySelect, cityInput, applySelect2);
-      }
-    });
+//     const stateObserver = new MutationObserver(() => {
+//       const currentState = stateChosenSpan.textContent.trim();
+//       if (currentState !== lastState && currentState !== "") {
+//         lastState = currentState;
+//         loadCities(currentState, citySelect, cityInput, applySelect2);
+//       }
+//     });
 
-    stateObserver.observe(stateChosenSpan, {
-      characterData: true,
-      childList: true,
-      subtree: true,
-    });
-  }
+//     stateObserver.observe(stateChosenSpan, {
+//       characterData: true,
+//       childList: true,
+//       subtree: true,
+//     });
+//   }
 
-  function loadCities(stateName, citySelect, cityInput, applySelect2) {
-    const baseUrl = `${window.location.origin}/wp-admin/admin-ajax.php`;
-    fetch(baseUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        action: "get_cities_by_state",
-        state_name: stateName,
-      }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        citySelect.innerHTML = `<option value="">Select a city</option>`;
-        if (data.success && data.data?.cities?.length) {
-          data.data.cities.forEach((city) => {
-            const opt = document.createElement("option");
-            opt.value = city.name;
-            opt.textContent = city.name;
-            citySelect.appendChild(opt);
-          });
-        }
-        citySelect.appendChild(new Option("Other", "Other"));
-        applySelect2();
-        if (cityInput.value) {
-          jQuery(citySelect).val(cityInput.value).trigger("change");
-        } else {
-          jQuery(citySelect).trigger("change");
-        }
-      })
-      .catch((err) => {
-        console.error("City dropdown error:", err);
-      });
-  }
+//   function loadCities(stateName, citySelect, cityInput, applySelect2) {
+//     const baseUrl = `${window.location.origin}/wp-admin/admin-ajax.php`;
+//     fetch(baseUrl, {
+//       method: "POST",
+//       headers: { "Content-Type": "application/x-www-form-urlencoded" },
+//       body: new URLSearchParams({
+//         action: "get_cities_by_state",
+//         state_name: stateName,
+//       }),
+//     })
+//       .then((res) => res.json())
+//       .then((data) => {
+//         citySelect.innerHTML = `<option value="">Select a city</option>`;
+//         if (data.success && data.data?.cities?.length) {
+//           data.data.cities.forEach((city) => {
+//             const opt = document.createElement("option");
+//             opt.value = city.name;
+//             opt.textContent = city.name;
+//             citySelect.appendChild(opt);
+//           });
+//         }
+//         citySelect.appendChild(new Option("Other", "Other"));
+//         applySelect2();
+//         if (cityInput.value) {
+//           jQuery(citySelect).val(cityInput.value).trigger("change");
+//         } else {
+//           jQuery(citySelect).trigger("change");
+//         }
+//       })
+//       .catch((err) => {
+//         console.error("City dropdown error:", err);
+//       });
+//   }
 
-  waitForElementsAndInject();
-}
+//   waitForElementsAndInject();
+// }
 
-injectCityDropdown();
+// injectCityDropdown();
 
-const bodyObserver = new MutationObserver(() => {
-  if (!document.querySelector('select[name="city-dropdown"]')) {
-    injectCityDropdown();
-  }
-});
-bodyObserver.observe(document.body, { childList: true, subtree: true });
-setTimeout(() => bodyObserver.disconnect(), 30000);
+// const bodyObserver = new MutationObserver(() => {
+//   if (!document.querySelector('select[name="city-dropdown"]')) {
+//     injectCityDropdown();
+//   }
+// });
+// bodyObserver.observe(document.body, { childList: true, subtree: true });
+// setTimeout(() => bodyObserver.disconnect(), 30000);
