@@ -650,7 +650,7 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
         'directive' => 'afsearch-events-outcome-details',
         'template' => 'CRM/Goonjcustom/Tabs/Events/Outcome.tpl',
         'entity' => ['id' => $eventID],
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'sanjha_team', 'project_team_ho', 'project_team_chapter', 'njpc_ho_team'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'sanjha_team', 'project_team_ho', 'project_team_chapter', 'njpc_ho_team', 'project_ho_and_accounts'],
       ],
       'feedback' => [
         'id' => 'feedback',
@@ -660,7 +660,7 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
         'directive' => 'afsearch-goonj-initiated-events-feedback-view',
         'template' => 'CRM/Goonjcustom/Tabs/Events/Feedback.tpl',
         'entity' => ['id' => $eventID],
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'sanjha_team', 'project_team_ho', 'project_team_chapter', 'njpc_ho_team'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'sanjha_team', 'project_team_ho', 'project_team_chapter', 'njpc_ho_team', 'project_ho_and_accounts'],
       ],
       'materialContributions' => [
         'id' => 'material_contributions',
@@ -670,7 +670,7 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
         'module' => 'afsearchEventsMaterialContributions',
         'directive' => 'afsearch-events-material-contributions',
         'entity' => ['id' => $eventID],
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'sanjha_team', 'project_team_ho', 'project_team_chapter', 'njpc_ho_team'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'sanjha_team', 'project_team_ho', 'project_team_chapter', 'njpc_ho_team', 'project_ho_and_accounts'],
       ],
       'monetaryContribution' => [
         'id' => 'monetary_contributions',
@@ -680,7 +680,7 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
         'directive' => 'afsearch-events-monetary-contribution',
         'template' => 'CRM/Goonjcustom/Tabs/Events/MonetaryContribution.tpl',
         'entity' => ['id' => $eventID],
-        'permissions' => ['goonj_chapter_admin', 'account_team', 'ho_account'],
+        'permissions' => ['goonj_chapter_admin', 'account_team', 'ho_account', 'project_ho_and_accounts'],
       ],
     ];
 
