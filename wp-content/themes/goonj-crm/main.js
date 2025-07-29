@@ -317,7 +317,6 @@ document.addEventListener("DOMContentLoaded", function () {
             placeholder: "Select a city",
             allowClear: true,
             width: "resolve",
-            minimumResultsForSearch: 0,
             dropdownAutoWidth: true,
           });
 

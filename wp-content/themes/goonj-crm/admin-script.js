@@ -141,7 +141,6 @@ function injectCityDropdown() {
           allowClear: true,
           width: "resolve",
           dropdownAutoWidth: true,
-          minimumResultsForSearch: 0,
         });
         jQuery(citySelect).next(".select2-container").css({
           width: "100%",
