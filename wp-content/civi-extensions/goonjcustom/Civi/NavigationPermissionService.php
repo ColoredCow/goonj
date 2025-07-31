@@ -373,6 +373,8 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Institutes',
           'MMT - Offices',
           'MMT - Urban Visits',
+          'Account - Individuals',
+          'Account - Institutions',
         ],
         'hide_child_menus' => [
           'New Contribution',
