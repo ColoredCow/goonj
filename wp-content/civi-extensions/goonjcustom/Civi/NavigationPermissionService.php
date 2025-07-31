@@ -362,6 +362,30 @@ class NavigationPermissionService extends AutoSubscriber {
           'Manage Price Sets',
         ],
       ],
+      'project_ho_and_accounts' => [
+        'hide_menus' => [
+          'Induction Tab',
+          'Induction',
+          'Inductions',
+          'Volunteers',
+          'Individuals',
+          'MMT - Individuals',
+          'MMT - Institutes',
+          'MMT - Offices',
+          'MMT - Urban Visits',
+        ],
+        'hide_child_menus' => [
+          'New Contribution',
+          'Find Contributions',
+          'Import Contributions',
+          'Batch Data Entry',
+          'Accounting Batches',
+          'Manage Contribution Pages',
+          'Personal Campaign Pages',
+          'Premiums',
+          'Manage Price Sets',
+        ],
+      ]
     ];
 
     foreach ($roleMenuMapping as $role => $menuConfig) {
