@@ -376,7 +376,6 @@ class NavigationPermissionService extends AutoSubscriber {
         ],
         'hide_child_menus' => [
           'New Contribution',
-          'Find Contributions',
           'Import Contributions',
           'Batch Data Entry',
           'Accounting Batches',
