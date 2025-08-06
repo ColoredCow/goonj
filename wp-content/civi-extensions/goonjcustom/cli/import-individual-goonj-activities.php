@@ -166,6 +166,7 @@ function main() {
         'Goonj_Activities_Outcome.Cash_Contribution' => $data['Cash Contribution'],
         'Goonj_Activities_Outcome.Product_Sale_Amount' => $data['Product Sale Amount'],
         'Goonj_Activities_Outcome.No_of_Attendees' => $data['No. of Attendees'],
+        'Core_Contribution_Details.Total_online_monetary_contributions' => $data['Total Monetary Contributed'] ?? '',
         'Goonj_Activities_Outcome.Any_unique_efforts_made_by_organizers' => $data['Any unique efforts made by organizers'],
         'Goonj_Activities_Outcome.Did_you_face_any_challenges_' => $data['Do you faced any difficulty/challenges while organising or on activity day?'],
         'Goonj_Activities_Outcome.Remarks' => $data['Remarks'],
@@ -199,6 +200,7 @@ function main() {
           ->addValue('Collection_Camp_Core_Details.Status', $values['Collection_Camp_Core_Details.Status'])
           ->addValue('Collection_Camp_Core_Details.Contact_Id', $values['Collection_Camp_Core_Details.Contact_Id'])
           ->addValue('Goonj_Activities_Outcome.No_of_Sessions', $values['Goonj_Activities_Outcome.No_of_Sessions'])
+          ->addValue('Core_Contribution_Details.Total_online_monetary_contributions', $values['Core_Contribution_Details.Total_online_monetary_contributions'])
           ->addValue('Goonj_Activities_Outcome.Rate_the_activity', $values['Goonj_Activities_Outcome.Rate_the_activity'])
           ->addValue('subtype:name', 'Goonj_Activities')
           ->execute();

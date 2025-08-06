@@ -267,63 +267,60 @@ function main() {
 
       $data = array_combine($header, $row);
 
-      // Split engagement types into an array if multiple values exist.
-      $engagementTypes = array_map('trim', explode(',', $data['How do you want to engage with Goonj?']));
-
       $values = [
-        'title' => $data['Title'],
-        'Type_of_institution' => $data['Type Of Institution'],
-        'Institution_Goonj_Activities.How_do_you_want_to_engage_with_Goonj_:name' => $engagementTypes,
-        'Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_' => $data['Where do you wish to organise the activity?'],
-        'Institution_Goonj_Activities.City' => $data['City'],
-        'Institution_Goonj_Activities.State' => get_state_id($data['State']),
-        'Institution_Goonj_Activities.Start_Date' => $data['Start Date'],
-        'Institution_Goonj_Activities.End_Date' => $data['End Date'],
-        'Institution_Goonj_Activities.Coordinating_Urban_Poc' => assignCoordinatorByRelationshipType($data['Coordinating Urban Poc'], $data['Goonj Office'], $data['Type Of Institution']),
-        'Institution_Goonj_Activities.Goonj_Office' => get_office_id($data['Goonj Office']),
-        'Institution_Goonj_Activities_Outcome.Cash_Contribution' => $data['Cash Contribution'],
-        'Institution_Goonj_Activities_Outcome.Product_Sale_Amount' => $data['Product Sale Amount'],
-        'Institution_Goonj_Activities_Outcome.No_of_Attendees' => $data['No. of Attendees'],
-        'Institution_Goonj_Activities_Outcome.Any_unique_efforts_made_by_organizers' => $data['Any unique efforts made by organizers'],
-        'Institution_Goonj_Activities_Outcome.Did_you_face_any_challenges_' => $data['Do you faced any difficulty/challenges while organising or on activity day?'],
-        'Institution_Goonj_Activities_Outcome.Remarks' => $data['Remarks'],
+        'title' => $data['Camp Code'],
+        'Type_of_institution' => $data['Institution Type'],
+        'created_date' => $data['Created Date (MM/DD/YY)'] ?? '',
+        'Institution_Collection_Camp_Intent.District_City' => $data['City'],
+        'Institution_Collection_Camp_Intent.State' => get_state_id($data['State']),
         'Collection_Camp_Core_Details.Status' => 'authorized',
-        'Institution_Goonj_Activities_Outcome.No_of_Sessions' => $data['No. of Sessions'],
+        'Institution_Collection_Camp_Intent.Collections_will_start_on_Date_' => $data['Start Date'],
+        'Institution_Collection_Camp_Intent.Collections_will_end_on_Date_' => $data['End Date'],
+        'Institution_collection_camp_Review.Coordinating_POC' => assignCoordinatorByRelationshipType($data['Coordinating Urban Poc'], $data['Goonj Office'], $data['Type Of Institution']),
+        'Institution_collection_camp_Review.Goonj_Office' => get_office_id($data['Goonj Office']),
+        'Institution_Collection_Camp_Intent.Collection_Camp_Address' => $data['Event Venue'],
+        'Institution_collection_camp_Review.Campaign' => $data['Campaign Name'] ?? '',
+        'Institution_collection_camp_Review.Is_the_camp_IHC_PCC_' => $data['Type of Camp'] ?? '',
         'Core_Contribution_Details.Total_online_monetary_contributions' => $data['Total Monetary Contributed'] ?? '',
-        'Institution_Goonj_Activities_Outcome.Rate_the_activity' => $data['Rate the camp'],
-        'Institution_Goonj_Activities.Support_person_details' => $data['Support person details'],
-        'Institution_Goonj_Activities.Institution_POC' => get_poc_id($data['Poc Phone'], $data['Poc Email']),
-        'Institution_Goonj_Activities.Organization_name' => get_organization_id($data['Organization Name']),
+        'Camp_Outcome.Product_Sale_Amount' => $data['Total Product Sale'] ?? '',
+        'Institution_Collection_Camp_Logistics.Camp_to_be_attended_by' => $data['Attended By'] ?? '',
+        'Institution_Collection_Camp_Logistics.Support_person_details' => $data['Support person details'] ?? '',
+        'Camp_Outcome.Any_unique_efforts_made_by_Volunteer' => $data['Any unique efforts made by organizers'] ?? '',
+        'Camp_Outcome.Any_Difficulty_challenge_faced' => $data['Difficulty/challenge faced by organizers'] ?? '',
+        'Collection_Camp_Core_Details.Status' => 'authorized',
+        'eck_collection_source_vehicle_dispatch.Camp_Vehicle_Dispatch.Material_weight_In_KGs_' => $data['Total Weight of Material Collected (Kg)'] ?? '',
+        'eck_collection_source_vehicle_dispatch.Camp_Vehicle_Dispatch.Vehicle_Category' => $data['Vehicle Category of material collected'] ?? '',
+        'Camp_Vehicle_Dispatch.Remarks' => $data['Remarks'] ?? '',
+        'Institution_Collection_Camp_Intent.Institution_POC' => get_poc_id($data['Poc Phone'], $data['Poc Email']),
+        'Institution_Collection_Camp_Intent.Organization_Name' => get_organization_id($data['Organization Name']),
       ];
 
       try {
         $i++;
-        // \Civi::log()->info('values', ['values'=>$values, $i]);
         $results = EckEntity::create('Collection_Camp', TRUE)
           ->addValue('title', $values['title'])
-          ->addValue('Institution_Goonj_Activities.You_wish_to_register_as:label', $values['Type_of_institution'])
-          ->addValue('Institution_Goonj_Activities.How_do_you_want_to_engage_with_Goonj_:label', $values['Institution_Goonj_Activities.How_do_you_want_to_engage_with_Goonj_:name'])
-          ->addValue('Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_', $values['Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'])
-          ->addValue('Institution_Goonj_Activities.City', $values['Institution_Goonj_Activities.City'])
-          ->addValue('Institution_Goonj_Activities.State', $values['Institution_Goonj_Activities.State'])
-          ->addValue('Institution_Goonj_Activities.Start_Date', $values['Institution_Goonj_Activities.Start_Date'])
-          ->addValue('Institution_Goonj_Activities.End_Date', $values['Institution_Goonj_Activities.End_Date'])
-          ->addValue('Institution_Goonj_Activities.Coordinating_Urban_Poc', $values['Institution_Goonj_Activities.Coordinating_Urban_Poc'])
-          ->addValue('Institution_Goonj_Activities.Goonj_Office', $values['Institution_Goonj_Activities.Goonj_Office'])
-          ->addValue('Institution_Goonj_Activities_Outcome.Cash_Contribution', $values['Institution_Goonj_Activities_Outcome.Cash_Contribution'])
-          ->addValue('Institution_Goonj_Activities_Outcome.Product_Sale_Amount', $values['Institution_Goonj_Activities_Outcome.Product_Sale_Amount'])
-          ->addValue('Institution_Goonj_Activities_Outcome.No_of_Attendees', $values['Institution_Goonj_Activities_Outcome.No_of_Attendees'])
-          ->addValue('Institution_Goonj_Activities_Outcome.Any_unique_efforts_made_by_organizers', $values['Institution_Goonj_Activities_Outcome.Any_unique_efforts_made_by_organizers'])
-          ->addValue('Institution_Goonj_Activities_Outcome.Did_you_face_any_challenges_', $values['Institution_Goonj_Activities_Outcome.Did_you_face_any_challenges_'])
-          ->addValue('Institution_Goonj_Activities_Outcome.Remarks', $values['Institution_Goonj_Activities_Outcome.Remarks'])
-          ->addValue('Collection_Camp_Core_Details.Status', 'authorized')
-          ->addValue('Core_Contribution_Details.Total_online_monetary_contributions', $values['Core_Contribution_Details.Total_online_monetary_contributions'])
-          ->addValue('Institution_Goonj_Activities_Outcome.No_of_Sessions', $values['Institution_Goonj_Activities_Outcome.No_of_Sessions'])
-          ->addValue('Institution_Goonj_Activities_Outcome.Rate_the_activity', $values['Institution_Goonj_Activities_Outcome.Rate_the_activity'])
-          ->addValue('Logistics_Coordination.Support_person_details', $values['Institution_Goonj_Activities.Support_person_details'])
-          ->addValue('Institution_Goonj_Activities.Institution_POC', $values['Institution_Goonj_Activities.Institution_POC'])
-          ->addValue('Institution_Goonj_Activities.Organization_Name', $values['Institution_Goonj_Activities.Organization_name'])
-          ->addValue('subtype:name', 'Institution_Goonj_Activities')
+          ->addValue('created_date', $values['created_date'])
+          ->addValue('Institution_Collection_Camp_Intent.District_City', $values['Institution_Collection_Camp_Intent.District_City'])
+          ->addValue('Institution_Collection_Camp_Intent.State', $values['Institution_Collection_Camp_Intent.State'])
+          ->addValue('Collection_Camp_Core_Details.Status', $values['Collection_Camp_Core_Details.Status'])
+          ->addValue('Institution_Collection_Camp_Intent.District_City', $values['Institution_Collection_Camp_Intent.District_City'])
+          ->addValue('Institution_Collection_Camp_Intent.State', $values['Institution_Collection_Camp_Intent.Statee'])
+          ->addValue('Institution_Collection_Camp_Intent.Collections_will_start_on_Date_', $values['Institution_Collection_Camp_Intent.Collections_will_start_on_Date_'])
+          ->addValue('Institution_Collection_Camp_Intent.Collections_will_end_on_Date_', $values['Institution_Collection_Camp_Intent.Collections_will_end_on_Date_'])
+          ->addValue('Institution_collection_camp_Review.Coordinating_POC', $values['Institution_collection_camp_Review.Coordinating_POC'])
+          ->addValue('Institution_collection_camp_Review.Goonj_Office', $values['Institution_collection_camp_Review.Goonj_Office'])
+          ->addValue('Institution_collection_camp_Review.Campaign', $values['Institution_collection_camp_Review.Campaign'])
+          ->addValue('Institution_collection_camp_Review.Is_the_camp_IHC_PCC_', $values['Institution_collection_camp_Review.Is_the_camp_IHC_PCC_'])
+          ->addValue('Institution_collection_camp_Review.Campaign', $values['Institution_collection_camp_Review.Campaign'])
+          ->addValue('Institution_collection_camp_Review.Is_the_camp_IHC_PCC_', $values['Institution_collection_camp_Review.Is_the_camp_IHC_PCC_'])
+          ->addValue('Logistics_Coordination.Support_person_details', $values['Institution_Collection_Camp_Logistics.Support_person_details'])
+          ->addValue('Institution_Collection_Camp_Intent.Institution_POC', $values['Institution_Collection_Camp_Intent.Institution_POC'])
+          ->addValue('Institution_Collection_Camp_Intent.Organization_Name', $values['Institution_Collection_Camp_Intent.Organization_Name'])
+          ->addValue('Camp_Outcome.Product_Sale_Amount', $values['Camp_Outcome.Product_Sale_Amount'])
+          ->addValue('Camp_Vehicle_Dispatch.Remarks', $values['Camp_Vehicle_Dispatch.Remarks'])
+          ->addValue('eck_collection_source_vehicle_dispatch.Camp_Vehicle_Dispatch.Vehicle_Category', $values['eck_collection_source_vehicle_dispatch.Camp_Vehicle_Dispatch.Vehicle_Category'])
+          ->addValue('eck_collection_source_vehicle_dispatch.Camp_Vehicle_Dispatch.Material_weight_In_KGs_', $values['eck_collection_source_vehicle_dispatch.Camp_Vehicle_Dispatch.Material_weight_In_KGs_'])
+          ->addValue('subtype:name', 'Institution_Collection_Camp')
           ->execute();
         echo "Created entry for: " . $data['Title'] . "\n";
       }
