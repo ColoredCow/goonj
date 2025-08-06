@@ -2,6 +2,9 @@
 
 use Civi\Api4\Contact;
 use Civi\Api4\StateProvince;
+use Civi\Api4\Relationship;
+use Civi\Api4\EckEntity;
+use Civi\Api4\Activity;
 
 if (php_sapi_name() !== 'cli') {
   exit("This script can only be run from the command line.\n");
@@ -128,8 +131,8 @@ function main() {
       'Collection_Camp_Intent_Details.Start_Date' => $data['Start Date (DD-MM-YYYY)'] ?? '',
       'Collection_Camp_Intent_Details.End_Date' => $data['End Date (DD-MM-YYYY)'] ?? '',
       'Logistics_Coordination.Support_person_details' => $data['Support person details'] ?? '',
-      'Logistics_Coordination.Camp_to_be_attended_by' => get_attended_id($data['Attended By'] ?? ''),     
-      'Collection_Camp_Intent_Details.Goonj_Office' => get_office_id($data['Coordinating Goonj Office'] ?? ''), 
+      'Logistics_Coordination.Camp_to_be_attended_by' => get_attended_id($data['Attended By'] ?? ''),
+      'Collection_Camp_Intent_Details.Goonj_Office' => get_office_id($data['Coordinating Goonj Office'] ?? ''),
       'Core_Contribution_Details.Total_online_monetary_contributions' => $data['Total Monetary Contributed'] ?? '',
       'Camp_Outcome.Product_Sale_Amount' => $data['Total Product Sale'] ?? '',
       'Camp_Outcome.Rate_the_camp' => $data['Rate the camp'] ?? '',
@@ -157,18 +160,29 @@ function main() {
 
       echo "✅ Camp created with ID: $campId (Camp Code: $campCode)\n";
 
-
       // ✅ Step 3: Create Dispatch entity
-      $dispatch = \Civi\Api4\EckEntity::create('Collection_Source_Vehicle_Dispatch', FALSE)
+      \Civi\Api4\EckEntity::create('Collection_Source_Vehicle_Dispatch', FALSE)
         ->addValue('title', $campCode ?: 'Camp Vehicle Dispatch')
         ->addValue('subtype:label', 'Vehicle Dispatch')
         ->addValue('Camp_Vehicle_Dispatch.Collection_Camp', $campId)
         ->addValue('Camp_Vehicle_Dispatch.Remarks', $data['Remark'] ?? '')
         ->addValue('Camp_Vehicle_Dispatch.Material_weight_In_KGs_', $data['Total Weight of Material Collected (Kg)'] ?? '')
-        ->addValue('Camp_Vehicle_Dispatch.Vehicle_Category:label', $data['Vehicle Category of material collected'])
-        ->addValue('Camp_Vehicle_Dispatch.Other_Vehicle_category', $data['other Vehicle Category of material collected'])
+        ->addValue('Camp_Vehicle_Dispatch.Vehicle_Category:label', $data['Vehicle Category of material collected'] ?? '')
+        ->addValue('Camp_Vehicle_Dispatch.Other_Vehicle_category', $data['other Vehicle Category of material collected'] ?? '')
         ->execute();
+
       echo "✅ Dispatch added for Camp Code: $campCode\n";
+
+      // ✅ Step 4: Create Activity
+      Activity::create(FALSE)
+        ->addValue('subject', $campCode)
+        ->addValue('activity_type_id:name', 'Organize Collection Camp')
+        ->addValue('status_id:name', 'Authorized')
+        ->addValue('activity_date_time', $data['Created Date  (DD-MM-YYYY)'])
+        ->addValue('source_contact_id', get_initiator_id($data))
+        ->addValue('target_contact_id', get_initiator_id($data))
+        ->addValue('Collection_Camp_Data.Collection_Camp_ID', $campId)
+        ->execute();
 
     } catch (\Throwable $e) {
       echo "❌ Error for Camp Code $campCode: " . $e->getMessage() . "\n";

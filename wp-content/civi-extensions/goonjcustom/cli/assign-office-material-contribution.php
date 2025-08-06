@@ -61,6 +61,21 @@ function readContactsFromCsv(string $filePath): array {
   return $contacts;
 }
 
+function get_office_id($office_name) {
+  $office_id = '';
+  $contacts = Contact::get(FALSE)
+    ->addSelect('id')
+    ->addWhere('contact_type', '=', 'Organization')
+    ->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_office')
+    ->addWhere('display_name', 'LIKE', '%' . $office_name)
+    ->execute()
+    ->first();
+  if ($contacts) {
+    $office_id = $contacts['id'];
+  }
+  return $office_id;
+}
+
 /**
  * Assign Office Visit activity.
  */
@@ -103,7 +118,7 @@ function assignOfficeVisitActivity(array $data): void {
       ->addValue('Material_Contribution.Contribution_Date', $data['visit_date'])
       ->addValue('Material_Contribution.Delivered_By', $data['delivered_by'])
       ->addValue('Material_Contribution.Delivered_By_Contact', $data['delivered_by_contact'] ?: null)
-      ->addValue('Material_Contribution.Goonj_Office', $data['goonj_office'] ?: null)
+      ->addValue('Material_Contribution.Goonj_Office', get_office_id($data['Coordinating Goonj Office']))
       ->execute();
 
     echo "✅ Office Visit assigned for Contact ID $contactId\n";
