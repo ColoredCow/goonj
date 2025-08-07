@@ -75,7 +75,7 @@ function get_initiator_id($data) {
 // === Main Execution ===
 
 function main() {
-  $csvFilePath = '/Users/shubhambelwal/Sites/goonj/wp-content/civi-extensions/goonjcustom/cli/Final data cleanups - test (2).csv'; // Replace with real path
+  $csvFilePath = '/var/www/html/crm.goonj.org/wp-content/civi-extensions/goonjcustom/cli/Final data cleanups - testing institution (5).csv'; // Replace with real path
 
   echo "CSV File: $csvFilePath\n";
   if (!file_exists($csvFilePath)) {
@@ -110,10 +110,6 @@ function main() {
     }
 
     $initiatorId = get_initiator_id($data);
-    if (!$initiatorId) {
-      echo "❌ Skipping $campCode — Initiator not found.\n";
-      continue;
-    }
 
 
     try {
@@ -143,10 +139,6 @@ function main() {
         ->execute();
 
       $campId = $createResult[0]['id'] ?? null;
-      if (!$campId) {
-        echo "❌ Failed to create EckEntity for $campCode\n";
-        continue;
-      }
 
     $results = EckEntity::create('Collection_Camp_Activity', FALSE)
             ->addValue('title',$data['Goonj Activity Type'] ?? '')
