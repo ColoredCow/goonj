@@ -374,7 +374,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
       </head>
       <body>
         <div style="text-align: center; margin-bottom: 16px;">
-          <img alt="Goonj Logo" src="	https://crm.goonj.org/wp-content/uploads/2024/09/Goonj-logo-10June20-300x193-1.png" style="width: 150px; height: auto;" />
+          <img alt="Goonj Logo" src="https://crm.goonj.org/wp-content/uploads/2024/09/Goonj-logo-10June20-300x193-1.png" style="width: 150px; height: auto;" />
         </div>
         <div style="width: 100%; font-size: 11px;">
           <div style="float: left; text-align: left;">
