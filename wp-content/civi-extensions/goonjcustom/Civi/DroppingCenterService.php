@@ -659,13 +659,13 @@ class DroppingCenterService extends AutoSubscriber {
         'template' => 'CRM/Goonjcustom/Tabs/DroppingCenter/DonationBox.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts'],
       ],
-      'outcome' => [
-        'title' => ts('Outcome'),
-        'module' => 'afsearchDroppingCenterOutcome',
-        'directive' => 'afsearch-dropping-center-outcome',
-        'template' => 'CRM/Goonjcustom/Tabs/DroppingCenter/Outcome.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts'],
-      ],
+      // 'outcome' => [
+      //   'title' => ts('Outcome'),
+      //   'module' => 'afsearchDroppingCenterOutcome',
+      //   'directive' => 'afsearch-dropping-center-outcome',
+      //   'template' => 'CRM/Goonjcustom/Tabs/DroppingCenter/Outcome.tpl',
+      //   'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts'],
+      // ],
       'feedback' => [
         'title' => ts('Feedback'),
         'module' => 'afsearchFeedback',
