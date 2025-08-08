@@ -1,339 +1,378 @@
 <?php
 
 /**
- * @file
- * CLI Script to import individual goonj activities.
+ * CLI Script to import institution goonj activities (optimized).
+ * Assumes CSV headers exactly as provided by the user at the end of the prompt.
  */
 
 use Civi\Api4\Contact;
 use Civi\Api4\StateProvince;
 use Civi\Api4\Relationship;
 use Civi\Api4\EckEntity;
+use Civi\Api4\Activity;
 
-if (php_sapi_name() != 'cli') {
+if (php_sapi_name() !== 'cli') {
   exit("This script can only be run from the command line.\n");
 }
 
-/**
- * Retrieves the office ID based on the office name.
- */
-function get_office_id($office_name) {
-  $office_id = '';
-  $contacts = Contact::get(FALSE)
+/* =========================
+ * Config
+ * ========================= */
+const CSV_FILE_PATH = '/path/to/institutionactivities.csv'; // <-- change this
+const DRY_RUN = false; // true to only print what would be created
+
+/* =========================
+ * Helpers
+ * ========================= */
+
+function ddmmyyyy_to_ymd(?string $d): ?string {
+  $d = trim((string)$d);
+  if ($d === '' || $d === '0') return null;
+  $dt = \DateTime::createFromFormat('d-m-Y', $d);
+  return $dt ? $dt->format('Y-m-d') : null;
+}
+
+function clean_number(?string $val): ?float {
+  $val = trim((string)$val);
+  if ($val === '') return null;
+  $val = str_replace([",", " "], "", $val);
+  if (!is_numeric($val)) return null;
+  return (float)$val;
+}
+
+/** Find state id by name (exact match on api4 'name') */
+function get_state_id(?string $state_name): ?int {
+  $state_name = trim((string)$state_name);
+  if ($state_name === '') return null;
+
+  $st = StateProvince::get(FALSE)
+    ->addWhere('name', '=', $state_name)
+    ->execute()
+    ->first();
+
+  return $st['id'] ?? null;
+}
+
+/** Lookup org office by display name 'LIKE %...'. */
+function get_office_id(?string $office_name): ?int {
+  $office_name = trim((string)$office_name);
+  if ($office_name === '') return null;
+
+  $row = Contact::get(FALSE)
     ->addSelect('id')
     ->addWhere('contact_type', '=', 'Organization')
-    ->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_office')
+    ->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_Office') // fixed subtype case
     ->addWhere('display_name', 'LIKE', '%' . $office_name)
     ->execute()
     ->first();
-  if ($contacts) {
-    $office_id = $contacts['id'];
-  }
-  return $office_id;
+
+  return $row['id'] ?? null;
 }
 
-/**
- * Retrieves the initiator ID based on the mobile number.
- */
-function get_initiator_id($initiator_mobile_number) {
-  $contacts = Contact::get(FALSE)
+/** Get contact id for "Attended By" (email preferred; fallback by display_name). */
+function get_attended_id(?string $attendedBy): ?int {
+  $attendedBy = trim((string)$attendedBy);
+  if ($attendedBy === '') return null;
+
+  // Try as email
+  $byEmail = Contact::get(FALSE)
     ->addSelect('id')
-    ->addWhere('phone_primary.phone', '=', $initiator_mobile_number)
+    ->addJoin('Email AS email', 'LEFT')
+    ->addWhere('email.email', '=', $attendedBy)
     ->execute()
     ->first();
+  if (!empty($byEmail['id'])) return (int)$byEmail['id'];
 
-  return $contacts['id'] ?? '';
-}
-
-/**
- * Retrieves the state ID based on the state name.
- */
-function get_state_id($state_name) {
-  $stateProvinces = StateProvince::get(FALSE)
-    ->addWhere('name', '=', $state_name)
-    ->execute()->first();
-
-  return $stateProvinces['id'] ?? '';
-}
-
-/**
- *
- */
-function getFallbackCoordinator($relationshipTypeName) {
-  $fallbackOffice = getFallbackOffice();
-  if (!$fallbackOffice) {
-    \CRM_Core_Error::debug_log_message('No fallback office found.');
-    return FALSE;
-  }
-
-  // Retrieve fallback coordinators associated with the fallback office and relationship type.
-  $fallbackCoordinators = Relationship::get(FALSE)
-    ->addWhere('contact_id_b', '=', $fallbackOffice['id'])
-    ->addWhere('relationship_type_id:name', '=', $relationshipTypeName)
-    ->addWhere('is_current', '=', TRUE)
-    ->execute();
-
-  // If no coordinators found, return false.
-  if ($fallbackCoordinators->count() === 0) {
-    \CRM_Core_Error::debug_log_message('No fallback coordinators found.');
-    return FALSE;
-  }
-
-  // Randomly select a fallback coordinator if more than one is found.
-  $randomIndex = rand(0, $fallbackCoordinators->count() - 1);
-  return $fallbackCoordinators->itemAt($randomIndex);
-}
-
-/**
- *
- */
-function assignCoordinatorByRelationshipType($poc_email, $state_name, $type) {
-  if (empty($poc_email)) {
-    $relationshipTypeMap = [
-      'Corporate' => 'Corporate Coordinator of',
-      'School' => 'School Coordinator of',
-      'College/University' => 'College Coordinator of',
-      'Association' => 'Associations Coordinator of',
-      'Other' => 'Default Coordinator of',
-    ];
-
-    $registrationCategorySelection = $type;
-
-    $registrationCategorySelection = trim($registrationCategorySelection);
-
-    if (array_key_exists($registrationCategorySelection, $relationshipTypeMap)) {
-      $relationshipTypeName = $relationshipTypeMap[$registrationCategorySelection];
-    }
-    else {
-      $relationshipTypeName = 'Other Entities Coordinator of';
-    }
-
-    // // Retrieve the coordinators for the selected relationship type.
-    $stateOfficeId = get_office_id($state_name);
-
-    $coordinators = Relationship::get(FALSE)
-      ->addWhere('contact_id_b', '=', $stateOfficeId)
-      ->addWhere('relationship_type_id:name', '=', $relationshipTypeName)
-      ->addWhere('is_current', '=', TRUE)
-      ->execute();
-
-    $coordinator = getCoordinator($stateOfficeId, $relationshipTypeName, $coordinators);
-    if (!$coordinator) {
-      \CRM_Core_Error::debug_log_message('No coordinator available to assign.');
-      return FALSE;
-    }
-
-    return $coordinator['contact_id_a'] ?? '';
-  }
-
-  $contacts = Contact::get(FALSE)
-    ->addJoin('Email AS email', 'LEFT')
-    ->addWhere('email.email', '=', $poc_email)
-    ->execute()->first();
-  return $contacts['id'] ?? '';
-}
-
-/**
- *
- */
-function getCoordinator($stateOfficeId, $relationshipTypeName, $existingCoordinators = NULL) {
-  if (!$existingCoordinators) {
-    $existingCoordinators = Relationship::get(FALSE)
-      ->addWhere('contact_id_b', '=', $stateOfficeId)
-      ->addWhere('relationship_type_id:name', '=', $relationshipTypeName)
-      ->addWhere('is_current', '=', TRUE)
-      ->execute();
-  }
-
-  if ($existingCoordinators->count() === 0) {
-    return getFallbackCoordinator($relationshipTypeName);
-  }
-
-  $coordinatorCount = $existingCoordinators->count();
-  return $existingCoordinators->count() > 1
-      ? $existingCoordinators->itemAt(rand(0, $coordinatorCount - 1))
-      : $existingCoordinators->first();
-}
-
-/**
- *
- */
-function getFallbackOffice() {
-  $fallbackOffices = Contact::get(FALSE)
+  // Fallback: try by display_name
+  $byName = Contact::get(FALSE)
     ->addSelect('id')
-    ->addWhere('organization_name', 'CONTAINS', 'Delhi')
-    ->execute();
-
-  return $fallbackOffices->first();
+    ->addWhere('display_name', '=', $attendedBy)
+    ->execute()
+    ->first();
+  return $byName['id'] ?? null;
 }
 
-/**
- * Retrieves the coordinating POC ID based on the email.
- */
-function get_coordinating_poc_id($poc_email, $stateOffice = '') {
-  if (empty($poc_email)) {
-    $stateOfficeId = get_state_id($stateOffice);
-    $coordinators = Relationship::get(FALSE)
-      ->addWhere('contact_id_b', '=', $stateOfficeId)
-      ->addWhere('relationship_type_id:name', '=', 'Goonj Activities Coordinator of')
-      ->addWhere('is_active', '=', TRUE)
-      ->execute();
-    $coordinatorCount = $coordinators->count();
-    if ($coordinatorCount === 0) {
-      $coordinator = getFallbackCoordinator();
-    }
-    elseif ($coordinatorCount > 1) {
-      $randomIndex = rand(0, $coordinatorCount - 1);
-      $coordinator = $coordinators->itemAt($randomIndex);
-    }
-    else {
-      $coordinator = $coordinators->first();
-    }
-    return $coordinator['contact_id_a'] ?? '';
+/** Find/derive the initiator based on First Name + (Email or Mobile). */
+function get_initiator_id(array $data): ?int {
+  $firstName = trim((string)($data['First Name'] ?? ''));
+  $email     = trim((string)($data['Email'] ?? ''));
+  $mobile    = trim((string)($data['Mobile'] ?? ''));
+
+  if ($firstName !== '' && $email !== '') {
+    $row = Contact::get(FALSE)
+      ->addSelect('id')
+      ->addJoin('Email AS email', 'LEFT')
+      ->addWhere('first_name', '=', $firstName)
+      ->addWhere('email.email', '=', $email)
+      ->execute()
+      ->first();
+    if (!empty($row['id'])) return (int)$row['id'];
   }
 
-  $contacts = Contact::get(FALSE)
-    ->addJoin('Email AS email', 'LEFT')
-    ->addWhere('email.email', '=', $poc_email)
-    ->execute()->first();
+  if ($firstName !== '' && $mobile !== '') {
+    $row = Contact::get(FALSE)
+      ->addSelect('id')
+      ->addJoin('Phone AS phone', 'LEFT')
+      ->addWhere('first_name', '=', $firstName)
+      ->addWhere('phone.phone', '=', $mobile)
+      ->execute()
+      ->first();
+    if (!empty($row['id'])) return (int)$row['id'];
+  }
 
-  return $contacts['id'] ?? '';
+  return null;
 }
 
-/**
- *
- */
-function get_organization_id($organization_name) {
-  $contacts = Contact::get(FALSE)
+/** Organization id by exact organization_name */
+function get_organization_id(?string $organization_name): ?int {
+  $organization_name = trim((string)$organization_name);
+  if ($organization_name === '') return null;
+
+  $row = Contact::get(FALSE)
     ->addSelect('id')
     ->addWhere('organization_name', '=', $organization_name)
     ->execute()
     ->first();
 
-  return $contacts['id'] ?? '';
+  return $row['id'] ?? null;
+}
+
+/** Find PoC contact using both phone/email if provided. */
+function get_poc_id(?string $poc_phone, ?string $poc_email): ?int {
+  $poc_phone = trim((string)$poc_phone);
+  $poc_email = trim((string)$poc_email);
+
+  $q = Contact::get(FALSE)->addSelect('id');
+
+  if ($poc_phone !== '') {
+    $q->addJoin('Phone AS p', 'LEFT')
+      ->addWhere('p.phone', '=', $poc_phone);
+  }
+  if ($poc_email !== '') {
+    $q->addJoin('Email AS e', 'LEFT')
+      ->addWhere('e.email', '=', $poc_email);
+  }
+
+  $row = $q->execute()->first();
+  return $row['id'] ?? null;
 }
 
 /**
- *
+ * Assign coordinator if email not given, by relationship type + office.
  */
-function get_poc_id($poc_phone, $poc_email) {
-  // If both phone and email are empty, return an empty string.
-  if (empty($poc_phone) && empty($poc_email)) {
-    return '';
+function assignCoordinatorByRelationshipType(?string $poc_email, ?string $officeDisplay, ?string $typeOfInstitution): ?int {
+  $poc_email = trim((string)$poc_email);
+  if ($poc_email !== '') {
+    $row = Contact::get(FALSE)
+      ->addSelect('id')
+      ->addJoin('Email AS email', 'LEFT')
+      ->addWhere('email.email', '=', $poc_email)
+      ->execute()
+      ->first();
+    return $row['id'] ?? null;
   }
 
-  $contacts = Contact::get(FALSE)->addSelect('id');
+  $relationshipTypeMap = [
+    'Corporate'            => 'Corporate Coordinator of',
+    'School'               => 'School Coordinator of',
+    'College/University'   => 'College/University Coordinator of',
+    'Association'          => 'Default Coordinator of',
+    'Other'                => 'Default Coordinator of',
+  ];
+  $rt = $relationshipTypeMap[$typeOfInstitution] ?? 'Default Coordinator of';
 
-  // Add conditions based on available inputs.
-  if (!empty($poc_phone) && !empty($poc_email)) {
-    $contacts->addWhere('phone_primary.phone', '=', $poc_phone)
-      ->addWhere('email_primary.email', '=', $poc_email);
-  }
-  elseif (!empty($poc_phone)) {
-    $contacts->addWhere('phone_primary.phone', '=', $poc_phone);
-  }
-  elseif (!empty($poc_email)) {
-    $contacts->addWhere('email_primary.email', '=', $poc_email);
+  $officeId = get_office_id($officeDisplay);
+  if (!$officeId) return null;
+
+  $rels = Relationship::get(FALSE)
+    ->addSelect('contact_id_a')
+    ->addWhere('contact_id_b', '=', $officeId)
+    ->addWhere('relationship_type_id:name', '=', $rt)
+    ->addWhere('is_active', '=', TRUE)
+    ->addOrderBy('start_date', 'DESC')
+    ->execute();
+
+  if ($rels->count() > 0) {
+    return $rels->first()['contact_id_a'] ?? null;
   }
 
-  return $contacts->execute()->first()['id'] ?? '';
+  if ($rt !== 'Default Coordinator of') {
+    $rels = Relationship::get(FALSE)
+      ->addSelect('contact_id_a')
+      ->addWhere('contact_id_b', '=', $officeId)
+      ->addWhere('relationship_type_id:name', '=', 'Default Coordinator of')
+      ->addWhere('is_active', '=', TRUE)
+      ->execute();
+    return $rels->first()['contact_id_a'] ?? null;
+  }
+
+  return null;
 }
 
-/**
- * Main function to process the CSV file.
- */
-function main() {
-  $csvFilePath = '/Users/nishantkumar/Downloads/institutionactivities.csv';
+/* =========================
+ * Main
+ * ========================= */
 
-  if (!$csvFilePath) {
-    exit("Error: CSV_FILE_PATH constant must be set.\n");
+function main(): void {
+  $csv = '/Users/shubhambelwal/Sites/goonj/wp-content/civi-extensions/goonjcustom/cli/Final data cleanups - test (11).csv';
+  if (!file_exists($csv)) {
+    exit("Error: CSV not found at " . CSV_FILE_PATH . PHP_EOL);
   }
 
-  echo "CSV File: $csvFilePath\n";
-  if (($handle = fopen($csvFilePath, 'r')) !== FALSE) {
-    $header = fgetcsv($handle, 0, ',', '"', '\\');
-    if ($header === FALSE) {
-      echo "Error: Unable to read header row from CSV file.\n";
-      exit;
+  echo "CSV File: $csv\n";
+
+  $fh = fopen($csv, 'r');
+  if (!$fh) {
+    exit("Error: Unable to open CSV file.\n");
+  }
+
+  $header = fgetcsv($fh, 0, ',', '"', '\\');
+  if ($header === FALSE) {
+    fclose($fh);
+    exit("Error: Unable to read header row.\n");
+  }
+
+  $rowNum = 1;
+  while (($row = fgetcsv($fh, 0, ',', '"', '\\')) !== FALSE) {
+    $rowNum++;
+    if (count($row) !== count($header)) {
+      echo "Row $rowNum: column mismatch, skipping.\n";
+      continue;
     }
 
-    $i = 0;
-    while (($row = fgetcsv($handle, 0, ',', '"', '\\')) !== FALSE) {
-      $i++;
-      if (count($row) != count($header)) {
-        echo "Error: Row $i has an incorrect number of columns.\n";
+    $data = array_combine($header, $row);
+
+    $campCode       = trim((string)($data['Goonj Activity Code'] ?? ''));
+    $title          = $campCode ?: trim((string)($data['Institution name'] ?? 'Activity'));
+    $typeOfInst     = trim((string)($data['Institution type'] ?? ''));
+    $engageRaw      = trim((string)($data['Goonj Activity Type'] ?? ''));
+    $venue          = trim((string)($data['Venue'] ?? ''));
+    $city           = trim((string)($data['City'] ?? ''));
+    $stateName      = trim((string)($data['State'] ?? ''));
+    $officeDisplay  = trim((string)($data['Coordinating Goonj Office'] ?? ''));
+    $statusLabel    = trim((string)($data['Activity Status'] ?? ''));
+    $createdRaw     = trim((string)($data['Created Date (DD-MM-YYYY)'] ?? ''));
+    $startDate      = trim((string)($data['Start Date (DD-MM-YYYY)'] ?? ''));
+    $endDate       = trim((string)($data['End Date (DD-MM-YYYY)'] ?? ''));
+    $attendedBy     = trim((string)($data['Attended By'] ?? ''));
+    $support        = trim((string)($data['Support person details'] ?? ''));
+    $activityType   = trim((string)($data['Goonj Activity Type'] ?? ''));
+    $n_attendees    = clean_number($data['No. of Attendees'] ?? null);
+    $n_sessions     = clean_number($data['No. of Sessions'] ?? null);
+    $moneyContrib   = clean_number($data['Total Monetary Contributed'] ?? null);
+    $productSale    = clean_number($data['Total Product Sale'] ?? null);
+    $uniqueEfforts  = trim((string)($data['Any unique efforts made by organizers'] ?? ''));
+    $challenges     = trim((string)($data['Difficulty/challenge faced by organizers'] ?? ''));
+    $rating         = trim((string)($data['Rate the activity'] ?? ''));
+    $remarks        = trim((string)($data['Any remarks for internal use'] ?? ''));
+
+    $organizationName = trim((string)($data['Institution name'] ?? ''));
+    $organizationId   = get_organization_id($organizationName);
+
+    $stateId = get_state_id($stateName);
+    $officeId = get_office_id($officeDisplay);
+
+    $initiatorId = get_initiator_id($data);
+    // if (!$initiatorId) {
+    //   echo "Row $rowNum ($campCode): initiator not found — skipping.\n";
+    //   continue;
+    // }
+
+    $coordinatorId = assignCoordinatorByRelationshipType(
+      $data['Coordinating Urban Poc'] ?? '',
+      $officeDisplay,
+      $typeOfInst
+    );
+
+    $attendedId = get_attended_id($attendedBy);
+
+    // Dates to Y-m-d
+
+    echo "Row $rowNum: importing [$campCode] '$title' ...\n";
+
+    if (DRY_RUN) {
+      echo "  (dry-run) would create Collection_Camp + Activity\n";
+      continue;
+    }
+
+    try {
+      // Create the parent EckEntity (Collection_Camp) with subtype Institution_Goonj_Activities
+      $create = EckEntity::create('Collection_Camp', FALSE)
+        ->addValue('subtype:name', 'Institution_Goonj_Activities')
+        ->addValue('title', $title)
+        ->addValue('Institution_Goonj_Activities.You_wish_to_register_as:label', $typeOfInst ?: null)
+        ->addValue('Institution_Goonj_Activities.How_do_you_want_to_engage_with_Goonj_:label', $activityType ?: null)
+        ->addValue('Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_', $venue ?: null)
+        ->addValue('Logistics_Coordination.Feedback_Email_Sent', 1)
+        ->addValue('Institution_Goonj_Activities.City', $city ?: null)
+        ->addValue('Logistics_Coordination.Support_person_details', $support ?: null)
+        ->addValue('Logistics_Coordination.Camp_to_be_attended_by', $attendedId ?: null)
+        ->addValue('Institution_Goonj_Activities.State', $stateId)
+        ->addValue('Institution_Goonj_Activities.Start_Date', $startDate)
+        ->addValue('Institution_Goonj_Activities.End_Date', $endDate)
+        ->addValue('Institution_Goonj_Activities.Goonj_Office', $officeId)
+        ->addValue('Institution_Goonj_Activities.Coordinating_Urban_Poc', $coordinatorId)
+        ->addValue('Institution_Goonj_Activities.Institution_POC', get_poc_id($data['Mobile'] ?? '', $data['Email'] ?? ''))
+        ->addValue('Institution_Goonj_Activities.Organization_Name', $organizationId)
+        ->addValue('Institution_Goonj_Activities_Outcome.Cash_Contribution', $moneyContrib)
+        ->addValue('Institution_Goonj_Activities_Outcome.Product_Sale_Amount', $productSale)
+        ->addValue('Institution_Goonj_Activities_Outcome.No_of_Attendees', $n_attendees)
+        ->addValue('Institution_Goonj_Activities_Outcome.No_of_Sessions', $n_sessions)
+        ->addValue('Institution_Goonj_Activities_Outcome.Any_unique_efforts_made_by_organizers', $uniqueEfforts ?: null)
+        ->addValue('Institution_Goonj_Activities_Outcome.Did_you_face_any_challenges_', $challenges ?: null)
+        ->addValue('Institution_Goonj_Activities_Outcome.Rate_the_activity', $rating ?: null)
+        ->addValue('Institution_Goonj_Activities_Outcome.Remarks', $remarks ?: null)
+         ->addValue('Core_Contribution_Details.Total_online_monetary_contributions', $data['Total Monetary Contributed'] ?? '')
+        ->addValue('Collection_Camp_Core_Details.Status', 'authorized')
+        ->execute();
+
+      $campId = $create[0]['id'] ?? null;
+      if (!$campId) {
+        echo "  ❌ Could not get camp id for $campCode\n";
         continue;
       }
 
-      $data = array_combine($header, $row);
+      // Link organizer (initiator) to core
+      EckEntity::update('Collection_Camp', FALSE)
+        ->addWhere('id', '=', $campId)
+        ->addValue('Collection_Camp_Core_Details.Contact_Id', $initiatorId)
+        ->execute();
 
-      // Split engagement types into an array if multiple values exist.
-      $engagementTypes = array_map('trim', explode(',', $data['How do you want to engage with Goonj?']));
+      echo "  ✅ Created Collection_Camp id=$campId\n";
 
-      $values = [
-        'title' => $data['Title'],
-        'Type_of_institution' => $data['Type Of Institution'],
-        'Institution_Goonj_Activities.How_do_you_want_to_engage_with_Goonj_:name' => $engagementTypes,
-        'Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_' => $data['Where do you wish to organise the activity?'],
-        'Institution_Goonj_Activities.City' => $data['City'],
-        'Institution_Goonj_Activities.State' => get_state_id($data['State']),
-        'Institution_Goonj_Activities.Start_Date' => $data['Start Date'],
-        'Institution_Goonj_Activities.End_Date' => $data['End Date'],
-        'Institution_Goonj_Activities.Coordinating_Urban_Poc' => assignCoordinatorByRelationshipType($data['Coordinating Urban Poc'], $data['Goonj Office'], $data['Type Of Institution']),
-        'Institution_Goonj_Activities.Goonj_Office' => get_office_id($data['Goonj Office']),
-        'Institution_Goonj_Activities_Outcome.Cash_Contribution' => $data['Cash Contribution'],
-        'Institution_Goonj_Activities_Outcome.Product_Sale_Amount' => $data['Product Sale Amount'],
-        'Institution_Goonj_Activities_Outcome.No_of_Attendees' => $data['No. of Attendees'],
-        'Institution_Goonj_Activities_Outcome.Any_unique_efforts_made_by_organizers' => $data['Any unique efforts made by organizers'],
-        'Institution_Goonj_Activities_Outcome.Did_you_face_any_challenges_' => $data['Do you faced any difficulty/challenges while organising or on activity day?'],
-        'Institution_Goonj_Activities_Outcome.Remarks' => $data['Remarks'],
-        'Collection_Camp_Core_Details.Status' => 'authorized',
-        'Institution_Goonj_Activities_Outcome.No_of_Sessions' => $data['No. of Sessions'],
-        'Institution_Goonj_Activities_Outcome.Rate_the_activity' => $data['Rate the camp'],
-        'Institution_Goonj_Activities.Support_person_details' => $data['Support person details'],
-        'Institution_Goonj_Activities.Institution_POC' => get_poc_id($data['Poc Phone'], $data['Poc Email']),
-        'Institution_Goonj_Activities.Organization_name' => get_organization_id($data['Organization Name']),
-      ];
+      // Optional: create a child “Collection_Camp_Activity” record
+      EckEntity::create('Collection_Camp_Activity', FALSE)
+        ->addValue('subtype:name', 'Institution_Goonj_Activities')
+        ->addValue('title', $engageRaw ?: $title)
+        ->addValue('Collection_Camp_Activity.Collection_Camp_Id', $campId)
+        ->addValue('Collection_Camp_Activity.Start_Date', $startDate)
+        ->addValue('Collection_Camp_Activity.End_Date', $endDate)
+        ->addValue('Collection_Camp_Activity.Organizing_Person', $initiatorId)
+        ->addValue('Collection_Camp_Activity.Activity_Status', $statusLabel ?: 'completed')
+        ->addValue('Collection_Camp_Activity.Attending_Goonj_PoC', $attendedId)
+        ->execute();
 
-      try {
-        $i++;
-        // \Civi::log()->info('values', ['values'=>$values, $i]);
-        $results = EckEntity::create('Collection_Camp', TRUE)
-          ->addValue('title', $values['title'])
-          ->addValue('Institution_Goonj_Activities.You_wish_to_register_as:label', $values['Type_of_institution'])
-          ->addValue('Institution_Goonj_Activities.How_do_you_want_to_engage_with_Goonj_:label', $values['Institution_Goonj_Activities.How_do_you_want_to_engage_with_Goonj_:name'])
-          ->addValue('Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_', $values['Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'])
-          ->addValue('Institution_Goonj_Activities.City', $values['Institution_Goonj_Activities.City'])
-          ->addValue('Institution_Goonj_Activities.State', $values['Institution_Goonj_Activities.State'])
-          ->addValue('Institution_Goonj_Activities.Start_Date', $values['Institution_Goonj_Activities.Start_Date'])
-          ->addValue('Institution_Goonj_Activities.End_Date', $values['Institution_Goonj_Activities.End_Date'])
-          ->addValue('Institution_Goonj_Activities.Coordinating_Urban_Poc', $values['Institution_Goonj_Activities.Coordinating_Urban_Poc'])
-          ->addValue('Institution_Goonj_Activities.Goonj_Office', $values['Institution_Goonj_Activities.Goonj_Office'])
-          ->addValue('Institution_Goonj_Activities_Outcome.Cash_Contribution', $values['Institution_Goonj_Activities_Outcome.Cash_Contribution'])
-          ->addValue('Institution_Goonj_Activities_Outcome.Product_Sale_Amount', $values['Institution_Goonj_Activities_Outcome.Product_Sale_Amount'])
-          ->addValue('Institution_Goonj_Activities_Outcome.No_of_Attendees', $values['Institution_Goonj_Activities_Outcome.No_of_Attendees'])
-          ->addValue('Institution_Goonj_Activities_Outcome.Any_unique_efforts_made_by_organizers', $values['Institution_Goonj_Activities_Outcome.Any_unique_efforts_made_by_organizers'])
-          ->addValue('Institution_Goonj_Activities_Outcome.Did_you_face_any_challenges_', $values['Institution_Goonj_Activities_Outcome.Did_you_face_any_challenges_'])
-          ->addValue('Institution_Goonj_Activities_Outcome.Remarks', $values['Institution_Goonj_Activities_Outcome.Remarks'])
-          ->addValue('Collection_Camp_Core_Details.Status', 'authorized')
-          ->addValue('Institution_Goonj_Activities_Outcome.No_of_Sessions', $values['Institution_Goonj_Activities_Outcome.No_of_Sessions'])
-          ->addValue('Institution_Goonj_Activities_Outcome.Rate_the_activity', $values['Institution_Goonj_Activities_Outcome.Rate_the_activity'])
-          ->addValue('Logistics_Coordination.Support_person_details', $values['Institution_Goonj_Activities.Support_person_details'])
-          ->addValue('Institution_Goonj_Activities.Institution_POC', $values['Institution_Goonj_Activities.Institution_POC'])
-          ->addValue('Institution_Goonj_Activities.Organization_Name', $values['Institution_Goonj_Activities.Organization_name'])
-          ->addValue('subtype:name', 'Institution_Goonj_Activities')
-          ->execute();
-        echo "Created entry for: " . $data['Title'] . "\n";
-      }
-      catch (Exception $e) {
-        echo "Error creating entry for: " . $data['Title'] . " - " . $e->getMessage() . "\n";
-      }
+      // Optional: log a Civi Activity
+      Activity::create(FALSE)
+        ->addValue('subject', $campCode ?: $title)
+        ->addValue('activity_type_id:name', 'Organize Goonj Activities')
+        ->addValue('status_id:name', 'Authorized')
+        ->addValue('activity_date_time', date('Y-m-d H:i:s'))
+        ->addValue('source_contact_id', $initiatorId)
+        ->addValue('target_contact_id', $organizationId)
+        ->addValue('Collection_Camp_Data.Collection_Camp_ID', $campId)
+        ->execute();
+
+      echo "  📝 Logged activity for $campCode\n";
+
+    } catch (\Throwable $e) {
+      echo "  ❌ Error for $campCode (row $rowNum): " . $e->getMessage() . "\n";
+      continue;
     }
-    fclose($handle);
   }
-  else {
-    echo "Error: Unable to open CSV file.\n";
-  }
+
+  fclose($fh);
+  echo "=== Import complete ===\n";
 }
 
 main();
