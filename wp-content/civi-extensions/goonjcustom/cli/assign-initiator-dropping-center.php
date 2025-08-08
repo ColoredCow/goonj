@@ -86,7 +86,7 @@ function get_office_id(?string $office_name): ?int {
 
 function main(): void {
   // TODO: update path
-  $csvFilePath = 'var/www/html/wp-content/civi-extensions/goonjcustom/cli/Final data cleanups - goonj activities contact (6).csv';
+  $csvFilePath = '/var/www/html/wp-content/civi-extensions/goonjcustom/cli/Final data cleanups - goonj activities contact (7).csv';
 
   echo "CSV File: $csvFilePath\n";
   if (!file_exists($csvFilePath)) {
@@ -171,9 +171,9 @@ function main(): void {
 
     try {
       $create = EckEntity::create('Collection_Source_Vehicle_Dispatch', FALSE)
-        ->addValue('title', $campCode . ' - Dispatch')
+        ->addValue('title', $campCode)
         ->addValue('subtype:label', 'Vehicle Dispatch')
-        ->addValue('Camp_Vehicle_Dispatch.Dropping_Center', $campId)
+        ->addValue('Camp_Vehicle_Dispatch.Institution_Dropping_Center', $campId)
         ->addValue('Camp_Vehicle_Dispatch.Number_of_Bags_loaded_in_vehicle', 'Imported Dispatches')  
         ->addValue('Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office', 'Imported Dispatches')       // numeric or null
         ->addValue('Camp_Vehicle_Dispatch.Material_weight_In_KGs_', $weight)                 // numeric or null
