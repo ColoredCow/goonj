@@ -214,7 +214,7 @@ function assignCoordinatorByRelationshipType(?string $poc_email, ?string $office
  * ========================= */
 
 function main(): void {
-  $csv = '/Users/shubhambelwal/Sites/goonj/wp-content/civi-extensions/goonjcustom/cli/Final data cleanups - test (11).csv';
+  $csv = '/var/www/html/crm.goonj.org/wp-content/civi-extensions/goonjcustom/cli/Final data cleanups - Copy of conatct test 1 (1).csv';
   if (!file_exists($csv)) {
     exit("Error: CSV not found at " . CSV_FILE_PATH . PHP_EOL);
   }
@@ -273,10 +273,6 @@ function main(): void {
     $officeId = get_office_id($officeDisplay);
 
     $initiatorId = get_initiator_id($data);
-    // if (!$initiatorId) {
-    //   echo "Row $rowNum ($campCode): initiator not found — skipping.\n";
-    //   continue;
-    // }
 
     $coordinatorId = assignCoordinatorByRelationshipType(
       $data['Coordinating Urban Poc'] ?? '',
@@ -285,8 +281,6 @@ function main(): void {
     );
 
     $attendedId = get_attended_id($attendedBy);
-
-    // Dates to Y-m-d
 
     echo "Row $rowNum: importing [$campCode] '$title' ...\n";
 
