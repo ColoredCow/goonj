@@ -46,7 +46,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       '&hook_civicrm_tabset' => 'institutionDroppingCenterTabset',
       '&hook_civicrm_custom' => [
         ['setOfficeDetails'],
-        ['mailNotificationToMmt'],
+        // ['mailNotificationToMmt'],
       ],
       'civi.afform.submit' => [
         ['setInstitutionDroppingCenterAddress', 9],
@@ -743,66 +743,66 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
   /**
    *
    */
-  public static function mailNotificationToMmt($op, $groupID, $entityID, &$params) {
-    if ($op !== 'create') {
-      return;
-    }
+  // public static function mailNotificationToMmt($op, $groupID, $entityID, &$params) {
+  //   if ($op !== 'create') {
+  //     return;
+  //   }
 
-    if (!($goonjField = self::findOfficeId($params))) {
-      return;
-    }
+  //   if (!($goonjField = self::findOfficeId($params))) {
+  //     return;
+  //   }
 
-    $goonjFieldId = $goonjField['value'];
-    $vehicleDispatchId = $goonjField['entity_id'];
+  //   $goonjFieldId = $goonjField['value'];
+  //   $vehicleDispatchId = $goonjField['entity_id'];
 
-    $collectionSourceVehicleDispatch = EckEntity::get('Collection_Source_Vehicle_Dispatch', FALSE)
-      ->addSelect('Camp_Vehicle_Dispatch.Institution_Dropping_Center')
-      ->addWhere('id', '=', $vehicleDispatchId)
-      ->execute()->first();
+  //   $collectionSourceVehicleDispatch = EckEntity::get('Collection_Source_Vehicle_Dispatch', FALSE)
+  //     ->addSelect('Camp_Vehicle_Dispatch.Institution_Dropping_Center')
+  //     ->addWhere('id', '=', $vehicleDispatchId)
+  //     ->execute()->first();
 
-    $institutionDroppingCenterId = $collectionSourceVehicleDispatch['Camp_Vehicle_Dispatch.Institution_Dropping_Center'];
+  //   $institutionDroppingCenterId = $collectionSourceVehicleDispatch['Camp_Vehicle_Dispatch.Institution_Dropping_Center'];
 
-    if (self::getEntitySubtypeName($institutionDroppingCenterId) !== self::ENTITY_SUBTYPE_NAME) {
-      return;
-    }
+  //   if (self::getEntitySubtypeName($institutionDroppingCenterId) !== self::ENTITY_SUBTYPE_NAME) {
+  //     return;
+  //   }
 
-    $institutionDroppingCenter = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Institution_Dropping_Center_Intent.Dropping_Center_Address', 'title')
-      ->addWhere('id', '=', $institutionDroppingCenterId)
-      ->execute()->single();
+  //   $institutionDroppingCenter = EckEntity::get('Collection_Camp', FALSE)
+  //     ->addSelect('Institution_Dropping_Center_Intent.Dropping_Center_Address', 'title')
+  //     ->addWhere('id', '=', $institutionDroppingCenterId)
+  //     ->execute()->single();
 
-    $InstitutionDroppingCenterCode = $institutionDroppingCenter['title'];
-    $institutionDroppingCenterAddress = $institutionDroppingCenter['Institution_Dropping_Center_Intent.Dropping_Center_Address'];
+  //   $InstitutionDroppingCenterCode = $institutionDroppingCenter['title'];
+  //   $institutionDroppingCenterAddress = $institutionDroppingCenter['Institution_Dropping_Center_Intent.Dropping_Center_Address'];
 
-    $coordinators = Relationship::get(FALSE)
-      ->addWhere('contact_id_b', '=', $goonjFieldId)
-      ->addWhere('relationship_type_id:name', '=', self::MATERIAL_RELATIONSHIP_TYPE_NAME)
-      ->addWhere('is_current', '=', TRUE)
-      ->execute()->first();
-    $mmtId = $coordinators['contact_id_a'];
+  //   $coordinators = Relationship::get(FALSE)
+  //     ->addWhere('contact_id_b', '=', $goonjFieldId)
+  //     ->addWhere('relationship_type_id:name', '=', self::MATERIAL_RELATIONSHIP_TYPE_NAME)
+  //     ->addWhere('is_current', '=', TRUE)
+  //     ->execute()->first();
+  //   $mmtId = $coordinators['contact_id_a'];
 
-    if (empty($mmtId)) {
-      return;
-    }
+  //   if (empty($mmtId)) {
+  //     return;
+  //   }
 
-    $email = Email::get(FALSE)
-      ->addSelect('email')
-      ->addWhere('contact_id', '=', $mmtId)
-      ->execute()->single();
+  //   $email = Email::get(FALSE)
+  //     ->addSelect('email')
+  //     ->addWhere('contact_id', '=', $mmtId)
+  //     ->execute()->single();
 
-    $mmtEmail = $email['email'];
+  //   $mmtEmail = $email['email'];
 
-    $from = HelperService::getDefaultFromEmail();
-    $mailParams = [
-      'subject' => 'Dropping Center Material Acknowledgement - ' . $institutionDroppingCenterAddress,
-      'from' => $from,
-      'toEmail' => $mmtEmail,
-      'replyTo' => $fromEmail['label'],
-      'html' => self::getMmtEmailHtml($institutionDroppingCenterId, $InstitutionDroppingCenterCode, $institutionDroppingCenterAddress, $vehicleDispatchId, $mmtId),
-    ];
-    \CRM_Utils_Mail::send($mailParams);
+  //   $from = HelperService::getDefaultFromEmail();
+  //   $mailParams = [
+  //     'subject' => 'Dropping Center Material Acknowledgement - ' . $institutionDroppingCenterAddress,
+  //     'from' => $from,
+  //     'toEmail' => $mmtEmail,
+  //     'replyTo' => $fromEmail['label'],
+  //     'html' => self::getMmtEmailHtml($institutionDroppingCenterId, $InstitutionDroppingCenterCode, $institutionDroppingCenterAddress, $vehicleDispatchId, $mmtId),
+  //   ];
+  //   \CRM_Utils_Mail::send($mailParams);
 
-  }
+  // }
 
   /**
    *
