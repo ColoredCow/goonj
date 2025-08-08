@@ -27,20 +27,6 @@ function get_state_id($state_name) {
 /**
  *
  */
-function get_attended_id($email) {
-  $contacts = Contact::get(FALSE)
-    ->addSelect('id')
-    ->addJoin('Email AS email', 'LEFT')
-    ->addWhere('email.email', '=', $email)
-    ->execute()
-    ->first();
-
-  return $contacts['id'] ?? '';
-}
-
-/**
- *
- */
 function get_office_id($office_name) {
   $office_id = '';
   $contacts = Contact::get(FALSE)
@@ -96,11 +82,21 @@ function get_initiator_id($data) {
   }
 }
 
+
+function get_attended_id($email) {
+  return Contact::get(FALSE)
+    ->addSelect('id')
+    ->addJoin('Email AS email', 'LEFT')
+    ->addWhere('email.email', '=', $email)
+    ->execute()
+    ->first()['id'] ?? '';
+}
+
 /**
  *
  */
 function main() {
-  $csvFilePath = '/Users/shubhambelwal/Sites/goonj/wp-content/civi-extensions/goonjcustom/cli/testing data - Institution collection camp (3).csv';
+  $csvFilePath = '/Users/shubhambelwal/Sites/goonj/wp-content/civi-extensions/goonjcustom/cli/Final data cleanups - conatct test (2).csv';
 
   echo "CSV File: $csvFilePath\n";
   if (!file_exists($csvFilePath)) {
@@ -128,7 +124,7 @@ function main() {
     }
 
     $data = array_combine($header, $row);
-    $campCode = trim($data['Camp Code'] ?? '');
+    $campCode = trim($data['Dropping Center Code'] ?? '');
 
     if (empty($campCode)) {
       echo "⚠️  Skipping row $rowNum — Camp Code missing.\n";
@@ -137,25 +133,23 @@ function main() {
 
     $values = [
       'title' => $campCode,
-      'Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_' => $data['Venue'] ?? '',
+      'Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_' => $data['Address'] ?? '',
       'Collection_Camp_Intent_Details.Camp_Status:label' => $data['Camp Status'] ?? '',
-      'created_date' => $data['Created Date  (DD-MM-YYYY)'] ?? '',
       'Collection_Camp_Core_Details.Contact_Id' => get_initiator_id($data),
+      'Dropping_Centre.Current_Status' => 3,
       '"Dropping_Centre.District_City' => $data['City'] ?? '',
       'Collection_Camp_Core_Details.Status' => 'authorized',
-      'Collection_Camp_Intent_Details.Camp_Type:name' => $data['Type of Camp'] ?? '',
       'Dropping_Centre.State:name' => get_state_id($data['State'] ?? ''),
-      'Dropping_Centre.When_do_you_wish_to_open_center_Date_' => $data['Start Date (DD-MM-YYYY)'] ?? '',
-      'Logistics_Coordination.Support_person_details' => $data['Support person details'] ?? '',
-      'Logistics_Coordination.Camp_to_be_attended_by' => get_attended_id($data['Attended By'] ?? ''),
+      'Dropping_Centre.Timing' => $data['Timing'] ?? '',
+      'Dropping_Centre.When_do_you_wish_to_open_center_Date_' => $data['When do you wish to open center (Date) (DD/MM/YY)'] ?? '',
       'Dropping_Centre.Goonj_Office' => get_office_id($data['Coordinating Goonj Office'] ?? ''),
-      'Core_Contribution_Details.Total_online_monetary_contributions' => $data['Total Monetary Contributed'] ?? '',
+      'Core_Contribution_Details.Total_online_monetary_contributions' => $data['Total Online Monetary Contribution'] ?? '',
       'Camp_Outcome.Product_Sale_Amount' => $data['Total Product Sale'] ?? '',
     ];
 
     try {
       $camp = EckEntity::create('Collection_Camp', FALSE)
-        ->addValue('subtype:label', 'Collection Camp');
+        ->addValue('subtype:label', 'Dropping Center');
 
       foreach ($values as $field => $value) {
         if (!empty($value)) {
@@ -172,46 +166,46 @@ function main() {
 
       echo "✅ Camp created with ID: $campId (Camp Code: $campCode)\n";
 
-      // ✅ Step 3: Create Dispatch entity
-      EckEntity::create('Collection_Source_Vehicle_Dispatch', FALSE)
-        ->addValue('title', $campCode ?: 'Camp Vehicle Dispatch')
-        ->addValue('subtype:label', 'Vehicle Dispatch')
-        ->addValue('Camp_Vehicle_Dispatch.Dropping_Center', $campId)
-        ->addValue('Camp_Vehicle_Dispatch.Material_weight_In_KGs_', $data['Total Weight of Material Collected (Kg)'] ?? '')
-        ->addValue('Camp_Vehicle_Dispatch.Vehicle_Category:label', $data['Vehicle Category of material collected'] ?? '')
-        ->addValue('Camp_Vehicle_Dispatch.Other_Vehicle_category', $data['other Vehicle Category of material collected'] ?? '')
-        ->execute();
+      // // ✅ Step 3: Create Dispatch entity
+      // EckEntity::create('Collection_Source_Vehicle_Dispatch', FALSE)
+      //   ->addValue('title', $campCode ?: 'Camp Vehicle Dispatch')
+      //   ->addValue('subtype:label', 'Vehicle Dispatch')
+      //   ->addValue('Camp_Vehicle_Dispatch.Dropping_Center', $campId)
+      //   ->addValue('Camp_Vehicle_Dispatch.Material_weight_In_KGs_', $data['Total Weight of Material Collected (Kg)'] ?? '')
+      //   ->addValue('Camp_Vehicle_Dispatch.Vehicle_Category:label', $data['Vehicle Category of material collected'] ?? '')
+      //   ->addValue('Camp_Vehicle_Dispatch.Other_Vehicle_category', $data['other Vehicle Category of material collected'] ?? '')
+      //   ->execute();
 
-      echo "✅ Dispatch added for Camp Code: $campCode\n";
+      // echo "✅ Dispatch added for Camp Code: $campCode\n";
 
-      $results = EckEntity::create('Dropping_Center_Meta', TRUE)
-        ->addValue('Status.Closing_Date', $data['Closing date'] ?? '')
-        ->addValue('Status.Status:name', $data['Status'] ?? '')
-        ->addValue('Status.Reason_for_Closing_center', $data['Reason For Closing'] ?? '')
-        ->addValue('Dropping_Center_Meta.Dropping_Center', $campCode)
+      $results = EckEntity::create('Dropping_Center_Meta', FALSE)
+        ->addValue('Status.Closing_Date', $data['Closing Date'] ?? '')
+        ->addValue('Status.Status', 3)
+        ->addValue('Status.Reason_for_Closing_center', $data['Reason For Closing Center'] ?? '')
+        ->addValue('Dropping_Center_Meta.Dropping_Center', $campId)
         ->addValue('subtype:label', 'Status')
         ->addValue('title', 'Status')
         ->execute();
 
-      $results = EckEntity::create('Dropping_Center_Meta', TRUE)
+      $results = EckEntity::create('Dropping_Center_Meta', FALSE)
         ->addValue('subtype:label', 'Visit')
-        ->addValue('Visit.Date_of_Visit', $data['Date of visit'] ?? '')
-        ->addValue('Visit.Feedback_Remark_of_visit', $data['Visit Remark'] ?? '')
-        ->addValue('Visit.Visited_by', $data['visited by'] ?? '')
-        ->addValue('Dropping_Center_Meta.Dropping_Center', $campCode)
+        ->addValue('Visit.Date_of_Visit', $data['Date of Visit'] ?? '')
+        ->addValue('Visit.Feedback_Remark_of_visit', $data['Feedback/ Remark of visit'] ?? '')
+        ->addValue('Visit.Visited_by', get_attended_id($data['Visited By'] ?? ''))
+        ->addValue('Dropping_Center_Meta.Dropping_Center', $campId)
         ->addValue('title', 'Visit')
         ->execute();
 
       // ✅ Step 4: Create Activity
-      Activity::create(FALSE)
-        ->addValue('subject', $campCode)
-        ->addValue('activity_type_id:name', 'Organize Dropping Center')
-        ->addValue('status_id:name', 'Authorized')
-        ->addValue('activity_date_time', $data['Created Date  (DD-MM-YYYY)'])
-        ->addValue('source_contact_id', get_initiator_id($data))
-        ->addValue('target_contact_id', get_initiator_id($data))
-        ->addValue('Collection_Camp_Data.Collection_Camp_ID', $campId)
-        ->execute();
+      // Activity::create(FALSE)
+      //   ->addValue('subject', $campCode)
+      //   ->addValue('activity_type_id:name', 'Organize Dropping Center')
+      //   ->addValue('status_id:name', 'Authorized')
+      //   ->addValue('activity_date_time', $data['Created Date  (DD-MM-YYYY)'])
+      //   ->addValue('source_contact_id', get_initiator_id($data))
+      //   ->addValue('target_contact_id', get_initiator_id($data))
+      //   ->addValue('Collection_Camp_Data.Collection_Camp_ID', $campId)
+      //   ->execute();
 
     }
     catch (\Throwable $e) {
