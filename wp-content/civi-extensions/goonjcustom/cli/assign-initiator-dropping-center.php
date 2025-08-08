@@ -2,14 +2,12 @@
 
 /**
  * @file
- * CLI script to update initiator on Dropping Center (Collection_Camp) by title
- * and create a linked Civi Activity per row.
+ * CLI script to create Vehicle Dispatch records from a CSV for Dropping Centers.
+ * Looks up the parent Collection_Camp by "Dropping Center Code" (title).
  */
 
-use Civi\Api4\Activity;
-use Civi\Api4\Contact;
 use Civi\Api4\EckEntity;
-use Civi\Api4\StateProvince;
+use Civi\Api4\Contact;
 
 if (php_sapi_name() !== 'cli') {
   exit("This script can only be run from the command line.\n");
@@ -23,85 +21,72 @@ ini_set('display_errors', '0');
  * Helpers
  * ========================= */
 
-/** Convert "DD-MM-YYYY" -> "YYYY-MM-DD" (returns null if invalid/empty) */
-function dmy_to_ymd(?string $d): ?string {
+/** Normalize a header key for matching: trim, lower, collapse inner spaces */
+function norm(string $s): string {
+  $s = preg_replace('/\s+/u', ' ', trim($s));
+  return mb_strtolower($s);
+}
+
+/** Build a map of normalized header -> original header from the CSV header row */
+function build_header_map(array $header): array {
+  $map = [];
+  foreach ($header as $h) {
+    $map[norm($h)] = $h;
+  }
+  return $map;
+}
+
+/** Get a value from the CSV row using flexible header matching (tries aliases) */
+function getv(array $row, array $hmap, array $aliases): ?string {
+  foreach ($aliases as $alias) {
+    $key = $hmap[norm($alias)] ?? null;
+    if ($key !== null && array_key_exists($key, $row)) {
+      $val = trim((string)$row[$key]);
+      if ($val !== '') return $val;
+    }
+  }
+  return null;
+}
+
+/** Convert "DD/MM/YY" or "DD/MM/YYYY" -> "YYYY-MM-DD" */
+function dmy_slash_to_ymd(?string $d): ?string {
   $d = trim((string)$d);
   if ($d === '') return null;
-  $dt = \DateTime::createFromFormat('d-m-Y', $d);
+  $dt = \DateTime::createFromFormat('d/m/y', $d) ?: \DateTime::createFromFormat('d/m/Y', $d);
   return $dt ? $dt->format('Y-m-d') : null;
 }
 
-/** Get state id by name (exact match) — unused here but kept for reuse */
-function get_state_id($state_name) {
-  $state = StateProvince::get(FALSE)
-    ->addWhere('name', '=', $state_name)
-    ->execute()
-    ->first();
-  return $state['id'] ?? '';
+/** Parse integers/floats; return null if not numeric (after stripping commas/spaces). */
+function clean_number(?string $val): ?float {
+  $val = trim((string)$val);
+  if ($val === '') return null;
+  $val = str_replace([",", " "], "", $val);
+  return is_numeric($val) ? (float)$val : null;
 }
 
-/** Lookup office id by display name and subtype Goonj_Office — unused here but kept for reuse */
-function get_office_id($office_name) {
+/** Lookup office contact id by display name and subtype Goonj_Office */
+function get_office_id(?string $office_name): ?int {
   $office_name = trim((string)$office_name);
-  if ($office_name === '') return '';
+  if ($office_name === '') return null;
+
   $row = Contact::get(FALSE)
     ->addSelect('id')
     ->addWhere('contact_type', '=', 'Organization')
-    ->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_Office') // fixed subtype case
+    ->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_Office') // correct subtype case
     ->addWhere('display_name', 'LIKE', '%' . $office_name)
     ->execute()
     ->first();
-  return $row['id'] ?? '';
-}
 
-/** Find initiator by First Name + (Email OR Mobile) */
-function get_initiator_id(array $data) {
-  $firstName = trim($data['First Name'] ?? '');
-  $email     = trim($data['Email'] ?? '');
-  $mobile    = trim($data['Mobile'] ?? '');
-
-  // Try First Name + Email
-  if ($firstName !== '' && $email !== '') {
-    $contact = Contact::get(FALSE)
-      ->addJoin('Email AS email', 'LEFT')
-      ->addSelect('id')
-      ->addWhere('first_name', '=', $firstName)
-      ->addWhere('email.email', '=', $email)
-      ->execute()
-      ->first();
-
-    if (!empty($contact['id'])) {
-      \Civi::log()->info("Matched contact by First Name + Email: {$firstName} / {$email} (ID: {$contact['id']})");
-      return $contact['id'];
-    }
-  }
-
-  // Try First Name + Mobile
-  if ($firstName !== '' && $mobile !== '') {
-    $contact = Contact::get(FALSE)
-      ->addJoin('Phone AS phone', 'LEFT')
-      ->addSelect('id')
-      ->addWhere('first_name', '=', $firstName)
-      ->addWhere('phone.phone', '=', $mobile)
-      ->execute()
-      ->first();
-
-    if (!empty($contact['id'])) {
-      \Civi::log()->info("Matched contact by First Name + Mobile: {$firstName} / {$mobile} (ID: {$contact['id']})");
-      return $contact['id'];
-    }
-  }
-
-  return '';
+  return isset($row['id']) ? (int)$row['id'] : null;
 }
 
 /* =========================
  * Main
  * ========================= */
 
-function main() {
-  // Update path as needed
-  $csvFilePath = '/var/www/html/crm.goonj.org/wp-content/civi-extensions/goonjcustom/cli/Final data cleanups - goonj activities contact (4).csv';
+function main(): void {
+  // TODO: update path
+  $csvFilePath = 'var/www/html/wp-content/civi-extensions/goonjcustom/cli/Final data cleanups - goonj activities contact (6).csv';
 
   echo "CSV File: $csvFilePath\n";
   if (!file_exists($csvFilePath)) {
@@ -113,72 +98,96 @@ function main() {
     return;
   }
 
+  // Read header
   $header = fgetcsv($handle, 0, ',', '"', '\\');
   if ($header === FALSE) {
-    echo "Error: Unable to read header row from CSV file.\n";
+    echo "Error: Unable to read header row.\n";
     fclose($handle);
     return;
   }
+  $hmap = build_header_map($header);
+
+  /* Column aliases (handles minor naming drift) */
+  $COL = [
+    'camp_code'         => ['Dropping Center Code', 'Dropping Centre Code', 'Dropping Center code'],
+    'collection_date'   => ['Date of Material Collection (DD/MM/YY)', 'Date of Material Collection (DD/MM/YYYY)', 'Date of Material Collection'],
+    'bags_count'        => ['Number of Bags loaded in vehicle', 'Number of Bags Loaded in Vehicle'],
+    'weight_kg'         => ['Material weight (In KGs)', 'Material Weight (in KGs)', 'Total Weight of Material Collected (Kg)'],
+    'vehicle_category'  => ['Vehicle Category', 'Vehicle Category of material collected'],
+    'fill_level'        => ['How much vehicle is filled', 'How much vehicle is filled '],
+    'destination'       => ['To which PU/Center material is being sent', 'To which PU Center material is being sent'],
+  ];
 
   $rowNum = 1;
   while (($row = fgetcsv($handle, 0, ',', '"', '\\')) !== FALSE) {
     $rowNum++;
     if (count($row) !== count($header)) {
-      echo "Error: Row $rowNum column mismatch.\n";
+      echo "Row $rowNum: column mismatch, skipping.\n";
+      continue;
+    }
+    $data = array_combine($header, $row) ?: [];
+
+    // Read values
+    $campCode   = getv($data, $hmap, $COL['camp_code']);
+    if (!$campCode) {
+      echo "⚠️  Row $rowNum: missing Dropping Center Code — skipping.\n";
       continue;
     }
 
-    $data = array_combine($header, $row);
+    $dateRaw    = getv($data, $hmap, $COL['collection_date']);
+    $bagsRaw    = getv($data, $hmap, $COL['bags_count']);   // may be "Imported Dispatches" -> becomes null
+    $weightRaw  = getv($data, $hmap, $COL['weight_kg']);
+    $vehCat     = getv($data, $hmap, $COL['vehicle_category']);
+    $fillLevel  = getv($data, $hmap, $COL['fill_level']);
+    $destName   = getv($data, $hmap, $COL['destination']);
 
-    // Camp code = the title of the Collection_Camp (Dropping Center)
-    $campCode = trim($data['Dropping Center Code'] ?? '');
-    if ($campCode === '') {
-      echo "⚠️  Skipping row $rowNum — Camp Code missing.\n";
+    $bags   = clean_number($bagsRaw);
+    $weight = clean_number($weightRaw);
+
+    // Find parent camp by title
+    $camp = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect('id', 'title')
+      ->addWhere('title', '=', $campCode)
+      ->setLimit(1)
+      ->execute()
+      ->first();
+
+    $campId = $camp['id'] ?? null;
+    if (!$campId) {
+      echo "❌ Row $rowNum ($campCode): parent camp not found — skipping.\n";
       continue;
     }
 
-    // Parse Created Date -> Y-m-d 00:00:00
-    $createdRaw = trim((string)($data['Created Date (DD/MM/YY)'] ?? ''));
-    $createdYmd = dmy_to_ymd($createdRaw);
-    // $activityDateTime = $createdYmd ? ($createdYmd . ' 00:00:00') : date('Y-m-d H:i:s');
+    // Convert collection date for created_date (entity expects Y-m-d H:i:s)
+    $collectionDateYmd = dmy_slash_to_ymd($dateRaw);
+    $createdDateTime = $collectionDateYmd ? ($collectionDateYmd . ' 00:00:00') : date('Y-m-d H:i:s');
 
-    // Resolve initiator
-    $initiatorId = get_initiator_id($data);
+    // Destination: try to resolve to office ID; if not found, keep the name
+    $destIdOrName = null;
+    if ($destName !== null && $destName !== '') {
+      $oid = get_office_id($destName);
+      $destIdOrName = $oid ?? $destName;
+    }
+
     try {
-      // 1) Update initiator on camp with matching title
-      EckEntity::update('Collection_Camp', FALSE)
-        ->addValue('Collection_Camp_Core_Details.Contact_Id', $initiatorId)
-        ->addWhere('title', '=', $campCode)
-        ->execute();
+      $create = EckEntity::create('Collection_Source_Vehicle_Dispatch', FALSE)
+        ->addValue('title', $campCode . ' - Dispatch')
+        ->addValue('subtype:label', 'Vehicle Dispatch')
+        ->addValue('Camp_Vehicle_Dispatch.Dropping_Center', $campId)
+        ->addValue('Camp_Vehicle_Dispatch.Number_of_Bags_loaded_in_vehicle', 'Imported Dispatches')  
+        ->addValue('Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office', 'Imported Dispatches')       // numeric or null
+        ->addValue('Camp_Vehicle_Dispatch.Material_weight_In_KGs_', $weight)                 // numeric or null
+        ->addValue('Camp_Vehicle_Dispatch.Vehicle_Category:label', $vehCat)
+        ->addValue('Camp_Vehicle_Dispatch.How_much_vehicle_is_filled:label', $fillLevel)
+        ->addValue('Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent', $destIdOrName)
+        ->addValue('created_date', $createdDateTime);
 
-      // 2) Fetch camp id for link in the Activity
-      $camp = EckEntity::get('Collection_Camp', FALSE)
-        ->addSelect('id')
-        ->addWhere('title', '=', $campCode)
-        ->setLimit(1)
-        ->execute()
-        ->first();
+      $result = $create->execute();
+      $childId = $result[0]['id'] ?? null;
 
-      $campId = $camp['id'] ?? null;
-
-      if (!$campId) {
-        echo "❌ Row $rowNum ($campCode): camp not found after update — skipping activity.\n";
-        continue;
-      }
-
-      // 3) Create activity for initiator
-      Activity::create(FALSE)
-        ->addValue('subject', $campCode)
-        ->addValue('activity_type_id:name', 'Organize Dropping Center')
-        ->addValue('status_id:name', 'Authorized')
-        ->addValue('activity_date_time', $createdRaw)
-        ->addValue('source_contact_id', $initiatorId)
-        ->addValue('target_contact_id', $initiatorId)
-        ->addValue('Collection_Camp_Data.Collection_Camp_ID', $campId)
-        ->execute();
-
-      echo "✅ Row $rowNum ($campCode): initiator set and activity logged (camp id: $campId)\n";
-
+      echo "✅ Row $rowNum ($campCode): dispatch created"
+         . ($childId ? " (id: $childId)" : "")
+         . ".\n";
     } catch (\Throwable $e) {
       echo "❌ Row $rowNum ($campCode): " . $e->getMessage() . "\n";
       continue;
