@@ -86,8 +86,7 @@ function get_office_id(?string $office_name): ?int {
 
 function main(): void {
   // TODO: update path
-  $csvFilePath = 'var/www/html/wp-content/civi-extensions/goonjcustom/cli/Final data cleanups - goonj activities contact (6).csv';
-
+  $csvFilePath = '/var/www/html/crm.goonj.org/wp-content/civi-extensions/goonjcustom/cli/Final data cleanups - goonj activities contact (6).csv';
   echo "CSV File: $csvFilePath\n";
   if (!file_exists($csvFilePath)) {
     exit("Error: File not found.\n");
