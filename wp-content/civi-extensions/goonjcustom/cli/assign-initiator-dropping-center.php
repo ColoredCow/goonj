@@ -86,7 +86,7 @@ function get_office_id(?string $office_name): ?int {
 
 function main(): void {
   // TODO: update path
-  $csvFilePath = '/var/www/html/wp-content/civi-extensions/goonjcustom/cli/Final data cleanups - goonj activities contact (7).csv';
+  $csvFilePath = '/var/www/html/wp-content/civi-extensions/goonjcustom/cli/Final data cleanups - goonj activities contact (8).csv';
 
   echo "CSV File: $csvFilePath\n";
   if (!file_exists($csvFilePath)) {
