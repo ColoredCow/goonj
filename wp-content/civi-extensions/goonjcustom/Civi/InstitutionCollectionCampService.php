@@ -60,7 +60,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       ],
       '&hook_civicrm_custom' => [
         ['setOfficeDetails'],
-        ['mailNotificationToMmt'],
+        // ['mailNotificationToMmt'],
       ],
       '&hook_civicrm_tabset' => 'institutionCollectionCampTabset',
     ];
@@ -572,80 +572,80 @@ class InstitutionCollectionCampService extends AutoSubscriber {
   /**
    *
    */
-  public static function mailNotificationToMmt($op, $groupID, $entityID, &$params) {
-    if ($op !== 'create') {
-      return;
-    }
-    if (!($goonjField = self::getOfficeId($params))) {
-      return;
-    }
+  // public static function mailNotificationToMmt($op, $groupID, $entityID, &$params) {
+  //   if ($op !== 'create') {
+  //     return;
+  //   }
+  //   if (!($goonjField = self::getOfficeId($params))) {
+  //     return;
+  //   }
 
-    $goonjFieldId = $goonjField['value'];
-    $vehicleDispatchId = $goonjField['entity_id'];
+  //   $goonjFieldId = $goonjField['value'];
+  //   $vehicleDispatchId = $goonjField['entity_id'];
 
-    $collectionSourceVehicleDispatch = EckEntity::get('Collection_Source_Vehicle_Dispatch', FALSE)
-      ->addSelect('Camp_Vehicle_Dispatch.Institution_Collection_Camp', 'Camp_Institution_Data.Name_of_the_institution', 'Camp_Institution_Data.Address', 'Camp_Institution_Data.Email', 'Camp_Institution_Data.Contact_Number')
-      ->addWhere('id', '=', $vehicleDispatchId)
-      ->execute()->first();
+  //   $collectionSourceVehicleDispatch = EckEntity::get('Collection_Source_Vehicle_Dispatch', FALSE)
+  //     ->addSelect('Camp_Vehicle_Dispatch.Institution_Collection_Camp', 'Camp_Institution_Data.Name_of_the_institution', 'Camp_Institution_Data.Address', 'Camp_Institution_Data.Email', 'Camp_Institution_Data.Contact_Number')
+  //     ->addWhere('id', '=', $vehicleDispatchId)
+  //     ->execute()->first();
 
-    $collectionCampId = $collectionSourceVehicleDispatch['Camp_Vehicle_Dispatch.Institution_Collection_Camp'];
-    $nameOfInstitution = $collectionSourceVehicleDispatch['Camp_Institution_Data.Name_of_the_institution'];
-    $addressOfInstitution = urlencode($collectionSourceVehicleDispatch['Camp_Institution_Data.Address']);
-    $pocEmail = $collectionSourceVehicleDispatch['Camp_Institution_Data.Email'];
-    $pocContactNumber = $collectionSourceVehicleDispatch['Camp_Institution_Data.Contact_Number'];
+  //   $collectionCampId = $collectionSourceVehicleDispatch['Camp_Vehicle_Dispatch.Institution_Collection_Camp'];
+  //   $nameOfInstitution = $collectionSourceVehicleDispatch['Camp_Institution_Data.Name_of_the_institution'];
+  //   $addressOfInstitution = urlencode($collectionSourceVehicleDispatch['Camp_Institution_Data.Address']);
+  //   $pocEmail = $collectionSourceVehicleDispatch['Camp_Institution_Data.Email'];
+  //   $pocContactNumber = $collectionSourceVehicleDispatch['Camp_Institution_Data.Contact_Number'];
 
-    if (self::getEntitySubtypeName($collectionCampId) !== self::ENTITY_SUBTYPE_NAME) {
-      return;
-    }
+  //   if (self::getEntitySubtypeName($collectionCampId) !== self::ENTITY_SUBTYPE_NAME) {
+  //     return;
+  //   }
 
-    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Institution_Collection_Camp_Intent.Collection_Camp_Address', 'title')
-      ->addWhere('id', '=', $collectionCampId)
-      ->execute()->single();
+  //   $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+  //     ->addSelect('Institution_Collection_Camp_Intent.Collection_Camp_Address', 'title')
+  //     ->addWhere('id', '=', $collectionCampId)
+  //     ->execute()->single();
 
-    if (!$collectionCamp) {
-      return;
-    }
+  //   if (!$collectionCamp) {
+  //     return;
+  //   }
 
-    $campCode = $collectionCamp['title'];
-    $campAddress = $collectionCamp['Institution_Collection_Camp_Intent.Collection_Camp_Address'];
+  //   $campCode = $collectionCamp['title'];
+  //   $campAddress = $collectionCamp['Institution_Collection_Camp_Intent.Collection_Camp_Address'];
 
-    $coordinators = Relationship::get(FALSE)
-      ->addWhere('contact_id_b', '=', $goonjFieldId)
-      ->addWhere('relationship_type_id:name', '=', self::MATERIAL_RELATIONSHIP_TYPE_NAME)
-      ->addWhere('is_current', '=', TRUE)
-      ->execute()->first();
+  //   $coordinators = Relationship::get(FALSE)
+  //     ->addWhere('contact_id_b', '=', $goonjFieldId)
+  //     ->addWhere('relationship_type_id:name', '=', self::MATERIAL_RELATIONSHIP_TYPE_NAME)
+  //     ->addWhere('is_current', '=', TRUE)
+  //     ->execute()->first();
 
-    $mmtId = $coordinators['contact_id_a'];
+  //   $mmtId = $coordinators['contact_id_a'];
 
-    if (empty($mmtId)) {
-      return;
-    }
+  //   if (empty($mmtId)) {
+  //     return;
+  //   }
 
-    $email = Email::get(FALSE)
-      ->addSelect('email')
-      ->addWhere('contact_id', '=', $mmtId)
-      ->execute()->single();
+  //   $email = Email::get(FALSE)
+  //     ->addSelect('email')
+  //     ->addWhere('contact_id', '=', $mmtId)
+  //     ->execute()->single();
 
-    $mmtEmail = $email['email'];
+  //   $mmtEmail = $email['email'];
 
-    $fromEmail = OptionValue::get(FALSE)
-      ->addSelect('label')
-      ->addWhere('option_group_id:name', '=', 'from_email_address')
-      ->addWhere('is_default', '=', TRUE)
-      ->execute()->single();
+  //   $fromEmail = OptionValue::get(FALSE)
+  //     ->addSelect('label')
+  //     ->addWhere('option_group_id:name', '=', 'from_email_address')
+  //     ->addWhere('is_default', '=', TRUE)
+  //     ->execute()->single();
 
-    // Email to material management team member.
-    $mailParams = [
-      'subject' => 'Material Acknowledgement for Camp: ' . $campCode . ' at ' . $campAddress,
-      'from' => $fromEmail['label'],
-      'toEmail' => $mmtEmail,
-      'replyTo' => $fromEmail['label'],
-      'html' => self::sendEmailToMmt($collectionCampId, $campCode, $campAddress, $vehicleDispatchId, $nameOfInstitution, $addressOfInstitution, $pocEmail, $pocContactNumber),
-    ];
-    \CRM_Utils_Mail::send($mailParams);
+  //   // Email to material management team member.
+  //   $mailParams = [
+  //     'subject' => 'Material Acknowledgement for Camp: ' . $campCode . ' at ' . $campAddress,
+  //     'from' => $fromEmail['label'],
+  //     'toEmail' => $mmtEmail,
+  //     'replyTo' => $fromEmail['label'],
+  //     'html' => self::sendEmailToMmt($collectionCampId, $campCode, $campAddress, $vehicleDispatchId, $nameOfInstitution, $addressOfInstitution, $pocEmail, $pocContactNumber),
+  //   ];
+  //   \CRM_Utils_Mail::send($mailParams);
 
-  }
+  // }
 
   /**
    *
