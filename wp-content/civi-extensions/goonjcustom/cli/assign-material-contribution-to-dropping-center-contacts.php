@@ -22,7 +22,7 @@ if (php_sapi_name() !== 'cli') {
 /* =========================
  * Config
  * ========================= */
-const CSV_FILE_PATH = '/var/www/html/crm.goonj.org/wp-content/civi-extensions/goonjcustom/cli/Final data cleanups - goonj activities contact (11).csv';
+const CSV_FILE_PATH = '/var/www/html/crm.goonj.org/wp-content/civi-extensions/goonjcustom/cli/Final data cleanups - goonj activities contact (12).csv';
 const DRY_RUN       = false; // set true to test without writing
 
 // Custom field key on Activity (adjust if different on your site)
