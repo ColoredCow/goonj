@@ -260,21 +260,12 @@ function main(): void {
       $skipped++; continue;
     }
 
-    $subject = "Office visit — {$officeName}" . ($first ? " ({$first} {$last})" : "");
 
     try {
-      if (DRY_RUN) {
-        echo "DRY-RUN Row $rowNum: would create activity: "
-          . "type='" . ACTIVITY_TYPE_NAME . "', source={$contactId}, target={$contactId}, "
-          . "date={$activityDateTime}, officeId={$officeId}, visitingAs='Individual', subject='{$subject}'\n";
-        $created++; continue;
-      }
-
       $res = Activity::create(FALSE)
         ->addValue('activity_type_id:name', ACTIVITY_TYPE_NAME)
         ->addValue('status_id:name', 'Completed')
         ->addValue('activity_date_time', $activityDateTime)
-        ->addValue('subject', $subject)
         ->addValue('source_contact_id', $contactId)
         ->addValue('target_contact_id', $contactId)
         ->addValue(CF_OFFICE_FIELD, $officeId)
