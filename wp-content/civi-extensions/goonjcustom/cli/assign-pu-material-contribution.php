@@ -33,7 +33,7 @@ if (php_sapi_name() !== 'cli') {
   exit("This script can only be run from the command line.\n");
 }
 // --- CONFIG: set your CSV path here ---
-$csvFilePath = '/var/www/html/crm.goonj.org/wp-content/civi-extensions/goonjcustom/cli/goonj office material contribution - Goonj Office Contribution.csv';
+$csvFilePath = '/var/www/html/crm.goonj.org/wp-content/civi-extensions/goonjcustom/cli/goonj office material contribution - Goonj Office Contribution (1).csv';
 
 echo "CSV File: {$csvFilePath}\n";
 
