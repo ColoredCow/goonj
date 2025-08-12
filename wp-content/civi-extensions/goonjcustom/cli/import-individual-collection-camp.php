@@ -116,10 +116,6 @@ function main() {
     }
 
     $initiatorId = get_initiator_id($data);
-    if (!$initiatorId) {
-      echo "❌ Skipping Camp Code $campCode — initiator not found.\n";
-      continue;
-    }
 
     function clean_float($value) {
     return isset($value) && $value !== ''
@@ -131,7 +127,7 @@ function main() {
       'title' => $campCode,
       'Collection_Camp_Intent_Details.Location_Area_of_camp' => $data['Event Venue'] ?? '',
       'Collection_Camp_Intent_Details.Camp_Status:label' => $data['Camp Status'] ?? '',
-      'created_date' => $data['Created Date  (DD-MM-YYYY)'] ?? '',      
+      'created_date' => $data['Created Date (DD-MM-YYYY)'] ?? '',      
       'Collection_Camp_Intent_Details.City' => $data['City'] ?? '',
       'Collection_Camp_Intent_Details.State:name' => get_state_id($data['State'] ?? ''),
       'Collection_Camp_Intent_Details.Start_Date' => $data['Start Date (DD-MM-YYYY)'] ?? '',
@@ -142,7 +138,6 @@ function main() {
       'Collection_Camp_Intent_Details.Goonj_Office' => get_office_id($data['Coordinating Goonj Office'] ?? ''),
       'Core_Contribution_Details.Total_online_monetary_contributions' => clean_float($data['Total Monetary Contributed'] ?? ''),
       'Camp_Outcome.Product_Sale_Amount' => clean_float($data['Total Product Sale'] ?? ''),
-      'Camp_Vehicle_Dispatch.Material_weight_In_KGs_' => clean_float($data['Total Weight of Material Collected (Kg)'] ?? ''),
       'Camp_Outcome.Any_other_remarks_and_suggestions_for_Urban_Relation_Team' => $data['Any remarks for internal use'] ?? '',
       'Camp_Outcome.Any_unique_efforts_made_by_Volunteer' => $data['Any unique efforts made by organizers'] ?? '',
       'Camp_Outcome.Any_Difficulty_challenge_faced' => $data['Difficulty/challenge faced by organizers'] ?? '',
