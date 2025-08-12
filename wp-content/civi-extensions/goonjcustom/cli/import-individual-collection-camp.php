@@ -80,7 +80,7 @@ function get_initiator_id($data) {
 }
 
 function main() {
-  $csvFilePath = '/var/www/html/crm.goonj.org/wp-content/civi-extensions/goonjcustom/cli/Final data cleanups - testing (3).csv';
+  $csvFilePath = '/var/www/html/crm.goonj.org/wp-content/civi-extensions/goonjcustom/cli/Final data cleanups - testing (6).csv';
 
   echo "CSV File: $csvFilePath\n";
   if (!file_exists($csvFilePath)) {
