@@ -110,10 +110,6 @@ class CRM_Goonjcustom_Token_CollectionCamp extends AbstractTokenSubscriber {
         $fileName = $files['uri'];
         $value = $baseUrl . $fileName;
         error_log('value : ' . print_r($value, TRUE));
-
-
-      default:
-        $value = '';
         break;
 
     }
