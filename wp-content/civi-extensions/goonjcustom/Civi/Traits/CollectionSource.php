@@ -145,9 +145,8 @@ trait CollectionSource {
         // Fetch the Goonj-specific state code.
         $config = self::getConfig();
         $stateCode = $config['state_codes'][$stateAbbreviation] ?? 'UNKNOWN';
-
         // Get the current event title.
-        $currentTitle = $objectRef['title'] ?? 'Collection Camp';
+        $currentTitle = $sourceTitle ?? 'Collection Camp';
 
         // Fetch the event code.
         $eventCode = $config['event_codes'][$currentTitle] ?? 'UNKNOWN';
