@@ -3,6 +3,8 @@
 namespace Civi\Traits;
 
 use Civi\Api4\CustomField;
+use Civi\Api4\EckEntity;
+
 use Civi\InstitutionMaterialContributionService;
 use Civi\MaterialContributionService;
 use Dompdf\Dompdf;
@@ -45,6 +47,45 @@ trait QrCodeable {
     }
 
     return TRUE;
+  }
+
+  /**
+   *
+   */
+  public static function handleCampRedirect($id) {
+    $camp = EckEntity::get('Collection_Camp', TRUE)
+      ->addSelect('Collection_Camp_Intent_Details.End_Date')
+      ->addWhere('id', '=', $id)
+      ->execute()
+      ->first();
+
+    error_log("data: " . print_r($camp, TRUE));
+
+    $endRaw = $camp['Collection_Camp_Intent_Details.End_Date'] ?? NULL;
+    error_log("endRaw: " . print_r($endRaw, TRUE));
+
+    if ($endRaw) {
+      $endDate = new \DateTime($endRaw);
+      $endDate->modify('+3 days');
+      $today = new \DateTime();
+
+      if ($today > $endDate) {
+    error_log("working");
+
+        // Redirect to goonj.org after end+3 days.
+        \CRM_Utils_System::redirect('https://goonj.org/');
+        error_log("is redirect??: ");
+
+        return;
+
+        error_log("Checking ??: ");
+
+      }
+    }
+
+    // Otherwise normal camp page.
+    $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+    \CRM_Utils_System::redirect("{$baseUrl}actions/collection-camp/{$id}");
   }
 
   /**
