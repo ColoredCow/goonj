@@ -3,6 +3,8 @@
 namespace Civi\Traits;
 
 use Civi\Api4\CustomField;
+use Civi\Api4\EckEntity;
+
 use Civi\InstitutionMaterialContributionService;
 use Civi\MaterialContributionService;
 use Dompdf\Dompdf;
@@ -25,26 +27,126 @@ trait QrCodeable {
         'eccLevel'   => QRCode::ECC_L,
         'scale'      => 10,
       ]);
-
+  
+      // Generate QR as PNG binary
       $qrcode = (new QRCode($options))->render($data);
-
-      // Remove the base64 header and decode the image data.
       $qrcode = str_replace('data:image/png;base64,', '', $qrcode);
       $qrcode = base64_decode($qrcode);
-
+  
+      // --- Step 1: Create GD image from QR ---
+      $qrImage = imagecreatefromstring($qrcode);
+      $qrWidth = imagesx($qrImage);
+      $qrHeight = imagesy($qrImage);
+  
+      // --- Step 2: Load logo image (from URL) ---
+      $logoUrl = "https://goonj.org/wp-content/uploads/2020/06/Goonj-logo-10June20.png";
+      $logoData = file_get_contents($logoUrl);
+      $logoImage = imagecreatefromstring($logoData);
+  
+      $logoWidth = imagesx($logoImage);
+      $logoHeight = imagesy($logoImage);
+  
+      // --- Step 2a: Resize logo with scale factor ---
+      $scaleFactor = 0.4; // 👈 change this (0.5 = 50% width, 0.3 = 30% width, etc.)
+      $newLogoWidth = (int)($qrWidth * $scaleFactor);
+      $newLogoHeight = (int)($logoHeight * ($newLogoWidth / $logoWidth));
+  
+      $resizedLogo = imagecreatetruecolor($newLogoWidth, $newLogoHeight);
+      imagealphablending($resizedLogo, false);
+      imagesavealpha($resizedLogo, true);
+  
+      imagecopyresampled(
+        $resizedLogo, $logoImage,
+        0, 0, 0, 0,
+        $newLogoWidth, $newLogoHeight,
+        $logoWidth, $logoHeight
+      );
+  
+      // --- Step 3: Create new canvas (logo + QR + text space) ---
+      $text = "Hello here is the qr code";
+      $fontHeight = 30; // reserve space for text
+  
+      $canvasHeight = $newLogoHeight + $qrHeight + $fontHeight + 20;
+      $canvas = imagecreatetruecolor($qrWidth, $canvasHeight);
+  
+      // White background
+      $white = imagecolorallocate($canvas, 255, 255, 255);
+      imagefill($canvas, 0, 0, $white);
+  
+      // --- Step 4: Copy logo (centered) + QR ---
+      $logoX = (int)(($qrWidth - $newLogoWidth) / 2);
+      imagecopy($canvas, $resizedLogo, $logoX, 0, 0, 0, $newLogoWidth, $newLogoHeight);
+  
+      imagecopy($canvas, $qrImage, 0, $newLogoHeight, 0, 0, $qrWidth, $qrHeight);
+  
+      // --- Step 5: Add text below QR ---
+      $black = imagecolorallocate($canvas, 0, 0, 0);
+      $x = 10;
+      $y = $newLogoHeight + $qrHeight + 20;
+      imagestring($canvas, 5, $x, $y, $text, $black);
+  
+      // --- Step 6: Save combined image ---
+      ob_start();
+      imagepng($canvas);
+      $finalImage = ob_get_clean();
+  
+      imagedestroy($qrImage);
+      imagedestroy($logoImage);
+      imagedestroy($resizedLogo);
+      imagedestroy($canvas);
+  
       $baseFileName = "qr_code_{$entityId}.png";
-
       $saveOptions['baseFileName'] = $baseFileName;
       $saveOptions['entityId'] = $entityId;
-
-      self::saveQrCode($qrcode, $saveOptions);
-    }
-    catch (\Exception $e) {
+  
+      self::saveQrCode($finalImage, $saveOptions);
+  
+    } catch (\Exception $e) {
       \CRM_Core_Error::debug_log_message('Error generating QR code: ' . $e->getMessage());
       return FALSE;
     }
-
+  
     return TRUE;
+  }
+  
+
+  /**
+   *
+   */
+  public static function handleCampRedirect($id) {
+    $camp = EckEntity::get('Collection_Camp', TRUE)
+      ->addSelect('Collection_Camp_Intent_Details.End_Date')
+      ->addWhere('id', '=', $id)
+      ->execute()
+      ->first();
+
+    error_log("data: " . print_r($camp, TRUE));
+
+    $endRaw = $camp['Collection_Camp_Intent_Details.End_Date'] ?? NULL;
+    error_log("endRaw: " . print_r($endRaw, TRUE));
+
+    if ($endRaw) {
+      $endDate = new \DateTime($endRaw);
+      $endDate->modify('+3 days');
+      $today = new \DateTime();
+
+      if ($today > $endDate) {
+    error_log("working");
+
+        // Redirect to goonj.org after end+3 days.
+        \CRM_Utils_System::redirect('https://goonj.org/');
+        error_log("is redirect??: ");
+
+        return;
+
+        error_log("Checking ??: ");
+
+      }
+    }
+
+    // Otherwise normal camp page.
+    $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+    \CRM_Utils_System::redirect("{$baseUrl}actions/collection-camp/{$id}");
   }
 
   /**
