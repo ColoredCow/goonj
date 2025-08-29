@@ -523,7 +523,8 @@ class CollectionCampService extends AutoSubscriber {
    */
   private static function generateCollectionCampQrCode($id) {
     $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
-    $data = "{$baseUrl}actions/collection-camp/{$id}";
+    error_log("baseUrl: " . print_r($baseUrl, TRUE));
+    $data = "{$baseUrl}civicrm/camp-redirect?id={$id}";
 
     $saveOptions = [
       'customGroupName' => 'Collection_Camp_QR_Code',
@@ -1118,7 +1119,6 @@ class CollectionCampService extends AutoSubscriber {
    *
    */
 
-
   /**
    * This hook is called after a db write on entities.
    *
@@ -1366,6 +1366,39 @@ class CollectionCampService extends AutoSubscriber {
 
       $receiptNumber = $contribution['invoice_number'];
 
+      error_log(" working outsode the functon : ");
+
+      error_log("attachments are there : " . print_r($params['attachments'], TRUE));
+
+      // --- Add: Copy generated PDF to persistent folder ---
+      if (!empty($params['attachments']) && $contributionID) {
+        error_log(" working inside the functon : ");
+
+        foreach ($params['attachments'] as $attach) {
+          $sourceFile = $attach['fullPath'];
+          error_log("sourceFile : " . print_r($sourceFile, TRUE));
+
+          // Build persistent path.
+          $uploadDir = WP_CONTENT_DIR . '/uploads/civicrm/persist/contribute/contribution';
+          if (!file_exists($uploadDir)) {
+            // Recursive create.
+            mkdir($uploadDir, 0777, TRUE);
+          }
+          $destFile = $uploadDir . "/receipt_{$contributionID}.pdf";
+          error_log(" destFile : " . print_r($destFile, TRUE));
+
+          if (file_exists($sourceFile)) {
+            copy($sourceFile, $destFile);
+            error_log("Saved receipt for contribution : " . print_r($destFile, TRUE));
+            error_log(" contribution : " . print_r($contributionID, TRUE));
+          }
+          else {
+            error_log("ource receipt file not found for contribution : " . print_r($sourceFile, TRUE));
+            error_log(" contribution else: " . print_r($contributionID, TRUE));
+          }
+        }
+      }
+      // --- End copy PDF ---
       // Check if title is 'Team 5000'.
       if (!empty($params['tplParams']['title']) && $params['tplParams']['title'] === 'Team 5000') {
         $params['text'] = "Dear $donorName,\n\nThank you for the contribution and coming on-board of Team 5000.\n\nBy joining https://goonj.org/donate/micro-team-5000 you step into this legacy of grassroots action and become an integral part of our extended family. This isn’t just about giving; it’s about becoming a vital contributor to a movement that empowers communities and amplifies the voices of the marginalised. Your committed cooperation and continued engagement fuel our sustained efforts.\n\nThe receipt No. ($receiptNumber) for the same is enclosed with the details of 80G exemptions and our PAN No.\n\nFor a regular update on our activities and new campaigns please keep an eye on www.goonj.org and our FB page https://www.facebook.com/goonj.org, which are regularly updated.\n\nThank you once again for joining the journey..\n\nRegards,\nPriyanka";
