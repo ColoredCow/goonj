@@ -2,6 +2,8 @@
 
 namespace Civi\Traits;
 
+use Civi\Api4\Event;
+use Civi\Api4\Address;
 use Civi\Api4\EckEntity;
 use Civi\Api4\CustomField;
 use Civi\InstitutionMaterialContributionService;
@@ -28,39 +30,47 @@ trait QrCodeable {
       ]);
 
       if (!empty($saveOptions['customGroupName']) && $saveOptions['customGroupName'] === 'Event_QR') {
+        $event = Event::get(TRUE)
+          ->addSelect('loc_block_id.address_id')
+          ->addWhere('id', '=', $entityId)
+          ->execute()->first();
 
-        
-        
-        $address = $campData['Collection_Camp_Intent_Details.Location_Area_of_camp'];
+        $addresses = Address::get(FALSE)
+          ->addWhere('id', '=', $event['loc_block_id.address_id'])
+          ->setLimit(1)
+          ->execute()->first();
+        $address = \CRM_Utils_Address::format($addresses);
       }
 
-      $campData = EckEntity::get('Collection_Camp', FALSE)
-        ->addSelect('subtype:name', 'Collection_Camp_Intent_Details.Location_Area_of_camp', 'Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_', 'Goonj_Activities.Where_do_you_wish_to_organise_the_activity_', 'Institution_Collection_Camp_Intent.Collection_Camp_Address', 'Institution_Dropping_Center_Intent.Dropping_Center_Address', 'Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_')
-        ->addWhere('id', '=', $entityId)
-        ->execute()->first();
+      if (!empty($saveOptions['customGroupName']) && $saveOptions['customGroupName'] != 'Event_QR') {
+        $campData = EckEntity::get('Collection_Camp', FALSE)
+          ->addSelect('subtype:name', 'Collection_Camp_Intent_Details.Location_Area_of_camp', 'Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_', 'Goonj_Activities.Where_do_you_wish_to_organise_the_activity_', 'Institution_Collection_Camp_Intent.Collection_Camp_Address', 'Institution_Dropping_Center_Intent.Dropping_Center_Address', 'Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_')
+          ->addWhere('id', '=', $entityId)
+          ->execute()->first();
 
-      $campStatus = $campData['subtype:name'];
+        $campStatus = $campData['subtype:name'];
 
-      if ($campStatus == 'Collection_Camp') {
-        $address = $campData['Collection_Camp_Intent_Details.Location_Area_of_camp'];
-      }
-      elseif ($campStatus == 'Dropping_Center') {
-        $address = $campData['Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_'];
-      }
-      elseif ($campStatus == 'Goonj_Activities') {
-        $address = $campData['Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'];
-      }
-      elseif ($campStatus == 'Institution_Collection_Camp') {
-        $address = $campData['Institution_Collection_Camp_Intent.Collection_Camp_Address'];
-      }
-      elseif ($campStatus == 'Institution_Dropping_Center') {
-        $address = $campData['Institution_Dropping_Center_Intent.Dropping_Center_Address'];
-      }
-      elseif ($campStatus == 'Institution_Goonj_Activities') {
-        $address = $campData['Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'];
-      }
-      else {
-        throw new \Exception('Invalid entity type for QR code generation.');
+        if ($campStatus == 'Collection_Camp') {
+          $address = $campData['Collection_Camp_Intent_Details.Location_Area_of_camp'];
+        }
+        elseif ($campStatus == 'Dropping_Center') {
+          $address = $campData['Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_'];
+        }
+        elseif ($campStatus == 'Goonj_Activities') {
+          $address = $campData['Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'];
+        }
+        elseif ($campStatus == 'Institution_Collection_Camp') {
+          $address = $campData['Institution_Collection_Camp_Intent.Collection_Camp_Address'];
+        }
+        elseif ($campStatus == 'Institution_Dropping_Center') {
+          $address = $campData['Institution_Dropping_Center_Intent.Dropping_Center_Address'];
+        }
+        elseif ($campStatus == 'Institution_Goonj_Activities') {
+          $address = $campData['Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'];
+        }
+        else {
+          throw new \Exception('Invalid entity type for QR code generation.');
+        }
       }
 
       // Generate QR.
