@@ -51,22 +51,22 @@ trait QrCodeable {
         $campStatus = $campData['subtype:name'];
 
         if ($campStatus == 'Collection_Camp') {
-          $address = $campData['Collection_Camp_Intent_Details.Location_Area_of_camp'];
+          $address = $campData['Collection_Camp_Intent_Details.Location_Area_of_camp'] ?? '';
         }
         elseif ($campStatus == 'Dropping_Center') {
-          $address = $campData['Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_'];
+          $address = $campData['Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_'] ?? '';
         }
         elseif ($campStatus == 'Goonj_Activities') {
-          $address = $campData['Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'];
+          $address = $campData['Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'] ?? '';
         }
         elseif ($campStatus == 'Institution_Collection_Camp') {
-          $address = $campData['Institution_Collection_Camp_Intent.Collection_Camp_Address'];
+          $address = $campData['Institution_Collection_Camp_Intent.Collection_Camp_Address'] ?? '';
         }
         elseif ($campStatus == 'Institution_Dropping_Center') {
-          $address = $campData['Institution_Dropping_Center_Intent.Dropping_Center_Address'];
+          $address = $campData['Institution_Dropping_Center_Intent.Dropping_Center_Address'] ?? '';
         }
         elseif ($campStatus == 'Institution_Goonj_Activities') {
-          $address = $campData['Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'];
+          $address = $campData['Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'] ?? '';
         }
         else {
           throw new \Exception('Invalid entity type for QR code generation.');
