@@ -121,7 +121,7 @@ trait QrCodeable {
 
       // Texts.
       $topText = "Scan to Record Your\nContribution";
-      $venueLabel = "Venue - ";
+      $venueLabel = "Venue: ";
       $venueValue = $address;
 
       // Canvas: logo + top text + QR + bottom text.
@@ -134,8 +134,8 @@ trait QrCodeable {
       imagefill($canvas, 0, 0, $white);
 
       // Fonts.
-      $fontPath = dirname(__DIR__, 2) . '/fonts/AbhayaLibre-Bold.ttf';
-      $fontPathRegular = dirname(__DIR__, 2) . '/fonts/AbhayaLibre-Regular.ttf';
+      $fontPath = dirname(__DIR__, 2) . '/fonts/Fontspring-proximanova-bold.otf';
+      $fontPathRegular = dirname(__DIR__, 2) . '/fonts/Fontspring-proximanova-regular.otf';
 
       // --- Step 1: Logo
       $logoX = (int) (($canvasWidth - $newLogoWidth) / 2);
