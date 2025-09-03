@@ -582,7 +582,7 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
         'customFieldName' => 'QR_Code_For_Poster',
       ];
   
-      self::generateQrCodeForPoster($data, $id, $saveOptionsForPoster);
+      self::generateQrCodeForPoster($qrCodeData, $eventId, $saveOptionsForPoster);
 
       // Generate and save the QR Code.
       self::generateQrCode($qrCodeData, $eventId, $saveOptions);
