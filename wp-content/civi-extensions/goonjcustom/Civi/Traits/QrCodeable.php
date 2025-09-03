@@ -24,7 +24,8 @@ trait QrCodeable {
         'version'    => 5,
         'outputType' => QRCode::OUTPUT_IMAGE_PNG,
         'eccLevel'   => QRCode::ECC_L,
-        'scale'      => 10,
+      // Keep high for good quality.
+        'scale'      => 12,
       ]);
 
       $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
@@ -33,6 +34,7 @@ trait QrCodeable {
         ->execute()->first();
 
       $collectionCampAddress = $collectionCamp['Collection_Camp_Intent_Details.Location_Area_of_camp'];
+
       // Generate QR.
       $qrcode = (new QRCode($options))->render($data);
       $qrcode = str_replace('data:image/png;base64,', '', $qrcode);
@@ -40,6 +42,23 @@ trait QrCodeable {
       $qrImage = imagecreatefromstring($qrcode);
       $qrWidth = imagesx($qrImage);
       $qrHeight = imagesy($qrImage);
+
+      // --- Resize QR code only (make it smaller while keeping canvas size).
+      // 50% of original size (adjust as needed)
+      $qrScale = 0.7;
+      $newQrWidth  = (int) ($qrWidth * $qrScale);
+      $newQrHeight = (int) ($qrHeight * $qrScale);
+
+      $resizedQr = imagecreatetruecolor($newQrWidth, $newQrHeight);
+      imagealphablending($resizedQr, FALSE);
+      imagesavealpha($resizedQr, TRUE);
+
+      imagecopyresampled(
+        $resizedQr, $qrImage,
+        0, 0, 0, 0,
+        $newQrWidth, $newQrHeight,
+        $qrWidth, $qrHeight
+      );
 
       // Load logo (from uploads folder URL).
       $upload_dir = wp_upload_dir();
@@ -51,7 +70,7 @@ trait QrCodeable {
 
       // Resize logo (smaller).
       $scaleFactor = 0.5;
-      $newLogoWidth = (int) ($qrWidth * $scaleFactor);
+      $newLogoWidth = (int) ($newQrWidth * $scaleFactor);
       $newLogoHeight = (int) ($logoHeight * ($newLogoWidth / $logoWidth));
       $resizedLogo = imagecreatetruecolor($newLogoWidth, $newLogoHeight);
       imagealphablending($resizedLogo, FALSE);
@@ -64,11 +83,11 @@ trait QrCodeable {
       );
 
       // Texts.
-      // force a line break.
       $topText = "Scan to Record Your\nContribution";
       $bottomText = "Venue: $collectionCampAddress";
 
       // Canvas: logo + top text + QR + bottom text.
+      // still using original QR size → consistent white space.
       $canvasWidth = $qrWidth + 100;
       $canvasHeight = $newLogoHeight + $qrHeight + 160;
       $canvas = imagecreatetruecolor($canvasWidth, $canvasHeight);
@@ -84,30 +103,28 @@ trait QrCodeable {
 
       // --- Step 2: Place heading text below logo using TTF font
       $fontPath = dirname(__DIR__, 2) . '/fonts/DejaVuSans-Bold.ttf';
-      $fontSize = 28;
+      $fontSize = 35;
       $topY = $logoY + $newLogoHeight + 40;
 
       // Split text into lines.
       $lines = explode("\n", $topText);
-      // Extra spacing between lines.
       $lineHeight = $fontSize + 8;
 
       foreach ($lines as $i => $line) {
         $bbox = imagettfbbox($fontSize, 0, $fontPath, $line);
         $textWidth = abs($bbox[2] - $bbox[0]);
-        // Center each line.
         $x = (int) (($canvasWidth - $textWidth) / 2);
         $y = $topY + ($i * $lineHeight);
         imagettftext($canvas, $fontSize, 0, $x, $y, $black, $fontPath, $line);
       }
 
-      // --- Step 3: Place QR code in center.
-      $qrY = $topY + 40;
-      $qrX = (int) (($canvasWidth - $qrWidth) / 2);
-      imagecopy($canvas, $qrImage, $qrX, $qrY, 0, 0, $qrWidth, $qrHeight);
+      // --- Step 3: Place resized QR code in center.
+      $qrY = $topY + 50;
+      $qrX = (int) (($canvasWidth - $newQrWidth) / 2);
+      imagecopy($canvas, $resizedQr, $qrX, $qrY, 0, 0, $newQrWidth, $newQrHeight);
 
       // --- Step 4: Place bottom text below QR.
-      $bottomY = $qrY + $qrHeight + 30;
+      $bottomY = $qrY + $newQrHeight + 30;
       $bottomX = (int) (($canvasWidth - (strlen($bottomText) * 9)) / 2);
       imagestring($canvas, 5, $bottomX, $bottomY, $bottomText, $black);
 
@@ -117,6 +134,7 @@ trait QrCodeable {
       $finalImage = ob_get_clean();
 
       imagedestroy($qrImage);
+      imagedestroy($resizedQr);
       imagedestroy($logoImage);
       imagedestroy($resizedLogo);
       imagedestroy($canvas);
