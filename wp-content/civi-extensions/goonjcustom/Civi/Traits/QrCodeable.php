@@ -2,6 +2,9 @@
 
 namespace Civi\Traits;
 
+use Civi\Api4\Event;
+use Civi\Api4\Address;
+use Civi\Api4\EckEntity;
 use Civi\Api4\CustomField;
 use Civi\InstitutionMaterialContributionService;
 use Civi\MaterialContributionService;
@@ -23,21 +26,206 @@ trait QrCodeable {
         'version'    => 5,
         'outputType' => QRCode::OUTPUT_IMAGE_PNG,
         'eccLevel'   => QRCode::ECC_L,
-        'scale'      => 10,
+        'scale'      => 12,
       ]);
 
-      $qrcode = (new QRCode($options))->render($data);
+      if (!empty($saveOptions['customGroupName']) && $saveOptions['customGroupName'] === 'Event_QR') {
+        $event = Event::get(FALSE)
+          ->addSelect('loc_block_id.address_id')
+          ->addWhere('id', '=', $entityId)
+          ->execute()->first();
 
-      // Remove the base64 header and decode the image data.
+        $addresses = Address::get(FALSE)
+          ->addWhere('id', '=', $event['loc_block_id.address_id'])
+          ->setLimit(1)
+          ->execute()->first();
+        $address = \CRM_Utils_Address::format($addresses);
+      }
+
+      if (!empty($saveOptions['customGroupName']) && $saveOptions['customGroupName'] != 'Event_QR') {
+        $campData = EckEntity::get('Collection_Camp', FALSE)
+          ->addSelect('subtype:name', 'Collection_Camp_Intent_Details.Location_Area_of_camp', 'Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_', 'Goonj_Activities.Where_do_you_wish_to_organise_the_activity_', 'Institution_Collection_Camp_Intent.Collection_Camp_Address', 'Institution_Dropping_Center_Intent.Dropping_Center_Address', 'Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_')
+          ->addWhere('id', '=', $entityId)
+          ->execute()->first();
+
+        $campStatus = $campData['subtype:name'];
+
+        if ($campStatus == 'Collection_Camp') {
+          $address = $campData['Collection_Camp_Intent_Details.Location_Area_of_camp'] ?? '';
+        }
+        elseif ($campStatus == 'Dropping_Center') {
+          $address = $campData['Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_'] ?? '';
+        }
+        elseif ($campStatus == 'Goonj_Activities') {
+          $address = $campData['Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'] ?? '';
+        }
+        elseif ($campStatus == 'Institution_Collection_Camp') {
+          $address = $campData['Institution_Collection_Camp_Intent.Collection_Camp_Address'] ?? '';
+        }
+        elseif ($campStatus == 'Institution_Dropping_Center') {
+          $address = $campData['Institution_Dropping_Center_Intent.Dropping_Center_Address'] ?? '';
+        }
+        elseif ($campStatus == 'Institution_Goonj_Activities') {
+          $address = $campData['Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'] ?? '';
+        }
+        else {
+          throw new \Exception('Invalid entity type for QR code generation.');
+        }
+      }
+
+      // Generate QR.
+      $qrcode = (new QRCode($options))->render($data);
       $qrcode = str_replace('data:image/png;base64,', '', $qrcode);
       $qrcode = base64_decode($qrcode);
+      $qrImage = imagecreatefromstring($qrcode);
+      $qrWidth = imagesx($qrImage);
+      $qrHeight = imagesy($qrImage);
+
+      // Resize QR
+      $qrScale = 0.7;
+      $newQrWidth  = (int) ($qrWidth * $qrScale);
+      $newQrHeight = (int) ($qrHeight * $qrScale);
+
+      $resizedQr = imagecreatetruecolor($newQrWidth, $newQrHeight);
+      imagealphablending($resizedQr, FALSE);
+      imagesavealpha($resizedQr, TRUE);
+
+      imagecopyresampled(
+            $resizedQr, $qrImage,
+            0, 0, 0, 0,
+            $newQrWidth, $newQrHeight,
+            $qrWidth, $qrHeight
+        );
+
+      // Load logo.
+      $upload_dir = wp_upload_dir();
+      $logoUrl = $upload_dir['baseurl'] . '/2024/09/Goonj-logo-10June20-300x193-1.png';
+      $logoData = file_get_contents($logoUrl);
+      $logoImage = imagecreatefromstring($logoData);
+      $logoWidth = imagesx($logoImage);
+      $logoHeight = imagesy($logoImage);
+
+      // Resize logo.
+      $scaleFactor = 0.5;
+      $newLogoWidth = (int) ($newQrWidth * $scaleFactor);
+      $newLogoHeight = (int) ($logoHeight * ($newLogoWidth / $logoWidth));
+      $resizedLogo = imagecreatetruecolor($newLogoWidth, $newLogoHeight);
+      imagealphablending($resizedLogo, FALSE);
+      imagesavealpha($resizedLogo, TRUE);
+      imagecopyresized(
+            $resizedLogo, $logoImage,
+            0, 0, 0, 0,
+            $newLogoWidth, $newLogoHeight,
+            $logoWidth, $logoHeight
+        );
+
+      // Texts.
+      $topText = "Scan to Record Your\nContribution";
+      $venueLabel = "Venue: ";
+      $venueValue = $address;
+
+      // Canvas: logo + top text + QR + bottom text.
+      $canvasWidth = $qrWidth + 100;
+      $canvasHeight = $newLogoHeight + $qrHeight + 220;
+      $canvas = imagecreatetruecolor($canvasWidth, $canvasHeight);
+
+      $white = imagecolorallocate($canvas, 255, 255, 255);
+      $black = imagecolorallocate($canvas, 0, 0, 0);
+      imagefill($canvas, 0, 0, $white);
+
+      // Fonts.
+      $fontPath = dirname(__DIR__, 2) . '/fonts/Fontspring-proximanova-bold.otf';
+      $fontPathRegular = dirname(__DIR__, 2) . '/fonts/Fontspring-proximanova-regular.otf';
+
+      // --- Step 1: Logo
+      $logoX = (int) (($canvasWidth - $newLogoWidth) / 2);
+      $logoY = 10;
+      imagecopy($canvas, $resizedLogo, $logoX, $logoY, 0, 0, $newLogoWidth, $newLogoHeight);
+
+      // --- Step 2: Heading text
+      $fontSize = 47;
+      $topY = $logoY + $newLogoHeight + 60;
+      $lines = explode("\n", $topText);
+      $lineHeight = $fontSize + 10;
+
+      foreach ($lines as $i => $line) {
+        $bbox = imagettfbbox($fontSize, 0, $fontPath, $line);
+        $textWidth = abs($bbox[2] - $bbox[0]);
+        $x = (int) (($canvasWidth - $textWidth) / 2);
+        $y = $topY + ($i * $lineHeight);
+        imagettftext($canvas, $fontSize, 0, $x, $y, $black, $fontPath, $line);
+      }
+
+      // --- Step 3: QR code
+      $qrY = $topY + 70;
+      $qrX = (int) (($canvasWidth - $newQrWidth) / 2);
+      imagecopy($canvas, $resizedQr, $qrX, $qrY, 0, 0, $newQrWidth, $newQrHeight);
+
+      // --- Step 4: Venue text with wrapping
+      $bottomFontSize = 25;
+      $maxWidth = $canvasWidth - 80;
+      $bottomY = $qrY + $newQrHeight + 40;
+
+      // Start with bold "Venue:".
+      $bboxLabel = imagettfbbox($bottomFontSize, 0, $fontPath, $venueLabel);
+      $labelWidth = abs($bboxLabel[2] - $bboxLabel[0]);
+
+      $lines = [];
+      $currentLine = $venueLabel;
+      $currentWidth = $labelWidth;
+
+      $words = explode(" ", $venueValue);
+      foreach ($words as $word) {
+        $testLine = ($currentLine === $venueLabel ? $currentLine : $currentLine . " ") . $word;
+        $bboxTest = imagettfbbox($bottomFontSize, 0, $fontPathRegular, $testLine);
+        $testWidth = abs($bboxTest[2] - $bboxTest[0]);
+
+        if ($testWidth > $maxWidth) {
+          $lines[] = $currentLine;
+          $currentLine = $word;
+        }
+        else {
+          $currentLine = $testLine;
+        }
+      }
+      $lines[] = $currentLine;
+
+      $lineHeight = $bottomFontSize + 8;
+      foreach ($lines as $i => $line) {
+        $bbox = imagettfbbox($bottomFontSize, 0, $fontPathRegular, $line);
+        $lineWidth = abs($bbox[2] - $bbox[0]);
+        $x = (int) (($canvasWidth - $lineWidth) / 2);
+        $y = $bottomY + ($i * $lineHeight);
+
+        if ($i === 0) {
+          imagettftext($canvas, $bottomFontSize, 0, $x, $y, $black, $fontPath, $venueLabel);
+          $valuePart = trim(str_replace($venueLabel, "", $line));
+          if ($valuePart !== "") {
+            $bboxLabel = imagettfbbox($bottomFontSize, 0, $fontPath, $venueLabel);
+            $offset = abs($bboxLabel[2] - $bboxLabel[0]);
+            imagettftext($canvas, $bottomFontSize, 0, $x + $offset, $y, $black, $fontPathRegular, $valuePart);
+          }
+        }
+        else {
+          imagettftext($canvas, $bottomFontSize, 0, $x, $y, $black, $fontPathRegular, $line);
+        }
+      }
+
+      // Save final.
+      ob_start();
+      imagepng($canvas);
+      $finalImage = ob_get_clean();
+
+      imagedestroy($qrImage);
+      imagedestroy($resizedQr);
+      imagedestroy($logoImage);
+      imagedestroy($resizedLogo);
+      imagedestroy($canvas);
 
       $baseFileName = "qr_code_{$entityId}.png";
-
       $saveOptions['baseFileName'] = $baseFileName;
       $saveOptions['entityId'] = $entityId;
-
-      self::saveQrCode($qrcode, $saveOptions);
+      self::saveQrCode($finalImage, $saveOptions);
     }
     catch (\Exception $e) {
       \CRM_Core_Error::debug_log_message('Error generating QR code: ' . $e->getMessage());
@@ -104,6 +292,36 @@ trait QrCodeable {
 
     return $attachment;
 
+  }
+
+  public static function generateQrCodeForPoster($data, $entityId, $saveOptions) {
+    try {
+      $options = new QROptions([
+        'version'    => 5,
+        'outputType' => QRCode::OUTPUT_IMAGE_PNG,
+        'eccLevel'   => QRCode::ECC_L,
+        'scale'      => 10,
+      ]);
+
+      $qrcode = (new QRCode($options))->render($data);
+
+      // Remove the base64 header and decode the image data.
+      $qrcode = str_replace('data:image/png;base64,', '', $qrcode);
+      $qrcode = base64_decode($qrcode);
+
+      $baseFileName = "qr_code_{$entityId}.png";
+
+      $saveOptions['baseFileName'] = $baseFileName;
+      $saveOptions['entityId'] = $entityId;
+
+      self::saveQrCode($qrcode, $saveOptions);
+    }
+    catch (\Exception $e) {
+      \CRM_Core_Error::debug_log_message('Error generating QR code: ' . $e->getMessage());
+      return FALSE;
+    }
+
+    return TRUE;
   }
 
   /**
