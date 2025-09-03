@@ -568,10 +568,6 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
       }
 
       $eventQrCode = $event['Event_QR.QR_Code'] ?? NULL;
-      if (!empty($eventQrCode)) {
-        \Civi::log()->info('QR Code already exists for the event.', ['eventId' => $eventId]);
-        return;
-      }
 
       // Generate base URL for QR Code.
       $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
