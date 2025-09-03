@@ -75,7 +75,7 @@ trait QrCodeable {
       $resizedLogo = imagecreatetruecolor($newLogoWidth, $newLogoHeight);
       imagealphablending($resizedLogo, FALSE);
       imagesavealpha($resizedLogo, TRUE);
-      imagecopyresampled(
+      imagecopyresized(
         $resizedLogo, $logoImage,
         0, 0, 0, 0,
         $newLogoWidth, $newLogoHeight,
@@ -104,7 +104,7 @@ trait QrCodeable {
       // --- Step 2: Place heading text below logo using TTF font
       $fontPath = dirname(__DIR__, 2) . '/fonts/DejaVuSans-Bold.ttf';
       $fontSize = 35;
-      $topY = $logoY + $newLogoHeight + 40;
+      $topY = $logoY + $newLogoHeight + 50;
 
       // Split text into lines.
       $lines = explode("\n", $topText);
