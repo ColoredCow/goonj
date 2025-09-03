@@ -24,9 +24,15 @@ trait QrCodeable {
         'version'    => 5,
         'outputType' => QRCode::OUTPUT_IMAGE_PNG,
         'eccLevel'   => QRCode::ECC_L,
-      // High for good quality.
         'scale'      => 12,
       ]);
+
+      if (!empty($saveOptions['customGroupName']) && $saveOptions['customGroupName'] === 'Event_QR') {
+
+        
+        
+        $address = $campData['Collection_Camp_Intent_Details.Location_Area_of_camp'];
+      }
 
       $campData = EckEntity::get('Collection_Camp', FALSE)
         ->addSelect('subtype:name', 'Collection_Camp_Intent_Details.Location_Area_of_camp', 'Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_', 'Goonj_Activities.Where_do_you_wish_to_organise_the_activity_', 'Institution_Collection_Camp_Intent.Collection_Camp_Address', 'Institution_Dropping_Center_Intent.Dropping_Center_Address', 'Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_')
