@@ -28,12 +28,34 @@ trait QrCodeable {
         'scale'      => 12,
       ]);
 
-      $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
-        ->addSelect('Collection_Camp_Intent_Details.Location_Area_of_camp')
+      $campData = EckEntity::get('Collection_Camp', FALSE)
+        ->addSelect('subtype:name', 'Collection_Camp_Intent_Details.Location_Area_of_camp', 'Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_', 'Goonj_Activities.Where_do_you_wish_to_organise_the_activity_', 'Institution_Collection_Camp_Intent.Collection_Camp_Address', 'Institution_Dropping_Center_Intent.Dropping_Center_Address', 'Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_')
         ->addWhere('id', '=', $entityId)
         ->execute()->first();
 
-      $collectionCampAddress = $collectionCamp['Collection_Camp_Intent_Details.Location_Area_of_camp'];
+      $campStatus = $campData['subtype:name'];
+
+      if ($campStatus == 'Collection_Camp') {
+        $address = $campData['Collection_Camp_Intent_Details.Location_Area_of_camp'];
+      }
+      elseif ($campStatus == 'Dropping_Center') {
+        $address = $campData['Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_'];
+      }
+      elseif ($campStatus == 'Goonj_Activities') {
+        $address = $campData['Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'];
+      }
+      elseif ($campStatus == 'Institution_Collection_Camp') {
+        $address = $campData['Institution_Collection_Camp_Intent.Collection_Camp_Address'];
+      }
+      elseif ($campStatus == 'Institution_Dropping_Center') {
+        $address = $campData['Institution_Dropping_Center_Intent.Dropping_Center_Address'];
+      }
+      elseif ($campStatus == 'Institution_Goonj_Activities') {
+        $address = $campData['Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'];
+      }
+      else {
+        throw new \Exception('Invalid entity type for QR code generation.');
+      }
 
       // Generate QR.
       $qrcode = (new QRCode($options))->render($data);
@@ -84,7 +106,7 @@ trait QrCodeable {
       // Texts.
       $topText = "Scan to Record Your\nContribution";
       $venueLabel = "Venue - ";
-      $venueValue = $collectionCampAddress;
+      $venueValue = $address;
 
       // Canvas: logo + top text + QR + bottom text.
       $canvasWidth = $qrWidth + 100;
