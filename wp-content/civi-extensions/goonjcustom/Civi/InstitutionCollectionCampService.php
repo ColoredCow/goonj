@@ -533,7 +533,12 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       'customGroupName' => 'Collection_Camp_QR_Code',
       'customFieldName' => 'QR_Code',
     ];
+    $saveOptionsForPoster = [
+      'customGroupName' => 'Collection_Camp_QR_Code',
+      'customFieldName' => 'QR_Code_For_Poster',
+    ];
 
+    self::generateQrCodeForPoster($data, $id, $saveOptionsForPoster);
     self::generateQrCode($data, $id, $saveOptions);
   }
 

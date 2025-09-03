@@ -294,6 +294,36 @@ trait QrCodeable {
 
   }
 
+  public static function generateQrCodeForPoster($data, $entityId, $saveOptions) {
+    try {
+      $options = new QROptions([
+        'version'    => 5,
+        'outputType' => QRCode::OUTPUT_IMAGE_PNG,
+        'eccLevel'   => QRCode::ECC_L,
+        'scale'      => 10,
+      ]);
+
+      $qrcode = (new QRCode($options))->render($data);
+
+      // Remove the base64 header and decode the image data.
+      $qrcode = str_replace('data:image/png;base64,', '', $qrcode);
+      $qrcode = base64_decode($qrcode);
+
+      $baseFileName = "qr_code_{$entityId}.png";
+
+      $saveOptions['baseFileName'] = $baseFileName;
+      $saveOptions['entityId'] = $entityId;
+
+      self::saveQrCode($qrcode, $saveOptions);
+    }
+    catch (\Exception $e) {
+      \CRM_Core_Error::debug_log_message('Error generating QR code: ' . $e->getMessage());
+      return FALSE;
+    }
+
+    return TRUE;
+  }
+
   /**
    *
    */
