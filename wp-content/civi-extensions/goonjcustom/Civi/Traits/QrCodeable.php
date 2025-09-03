@@ -2,6 +2,7 @@
 
 namespace Civi\Traits;
 
+use Civi\Api4\EckEntity;
 use Civi\Api4\CustomField;
 use Civi\InstitutionMaterialContributionService;
 use Civi\MaterialContributionService;
@@ -26,6 +27,12 @@ trait QrCodeable {
         'scale'      => 10,
       ]);
 
+      $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+        ->addSelect('Collection_Camp_Intent_Details.Location_Area_of_camp')
+        ->addWhere('id', '=', $entityId)
+        ->execute()->first();
+
+      $collectionCampAddress = $collectionCamp['Collection_Camp_Intent_Details.Location_Area_of_camp'];
       // Generate QR.
       $qrcode = (new QRCode($options))->render($data);
       $qrcode = str_replace('data:image/png;base64,', '', $qrcode);
@@ -58,7 +65,7 @@ trait QrCodeable {
 
       // Texts.
       $topText = "Scan to Record Your Contribution";
-      $bottomText = "Venue: Gaur Saundaryam Society, Greater Noida";
+      $bottomText = "Venue: $collectionCampAddress";
 
       // Canvas: logo + top text + QR + bottom text.
       $canvasWidth = $qrWidth + 100;
