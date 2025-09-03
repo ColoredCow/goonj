@@ -64,7 +64,8 @@ trait QrCodeable {
       );
 
       // Texts.
-      $topText = "Scan to Record Your Contribution";
+      // force a line break.
+      $topText = "Scan to Record Your\nContribution";
       $bottomText = "Venue: $collectionCampAddress";
 
       // Canvas: logo + top text + QR + bottom text.
@@ -81,10 +82,24 @@ trait QrCodeable {
       $logoY = 10;
       imagecopy($canvas, $resizedLogo, $logoX, $logoY, 0, 0, $newLogoWidth, $newLogoHeight);
 
-      // --- Step 2: Place heading text below logo.
-      $topY = $logoY + $newLogoHeight + 20;
-      $topX = (int) (($canvasWidth - (strlen($topText) * 9)) / 2);
-      imagestring($canvas, 5, $topX, $topY, $topText, $black);
+      // --- Step 2: Place heading text below logo using TTF font
+      $fontPath = dirname(__DIR__, 2) . '/fonts/DejaVuSans-Bold.ttf';
+      $fontSize = 28;
+      $topY = $logoY + $newLogoHeight + 40;
+
+      // Split text into lines.
+      $lines = explode("\n", $topText);
+      // Extra spacing between lines.
+      $lineHeight = $fontSize + 8;
+
+      foreach ($lines as $i => $line) {
+        $bbox = imagettfbbox($fontSize, 0, $fontPath, $line);
+        $textWidth = abs($bbox[2] - $bbox[0]);
+        // Center each line.
+        $x = (int) (($canvasWidth - $textWidth) / 2);
+        $y = $topY + ($i * $lineHeight);
+        imagettftext($canvas, $fontSize, 0, $x, $y, $black, $fontPath, $line);
+      }
 
       // --- Step 3: Place QR code in center.
       $qrY = $topY + 40;
