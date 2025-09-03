@@ -24,7 +24,7 @@ trait QrCodeable {
         'version'    => 5,
         'outputType' => QRCode::OUTPUT_IMAGE_PNG,
         'eccLevel'   => QRCode::ECC_L,
-      // Keep high for good quality.
+      // High for good quality.
         'scale'      => 12,
       ]);
 
@@ -43,8 +43,7 @@ trait QrCodeable {
       $qrWidth = imagesx($qrImage);
       $qrHeight = imagesy($qrImage);
 
-      // --- Resize QR code only (make it smaller while keeping canvas size).
-      // 50% of original size (adjust as needed)
+      // Resize QR (smaller inside fixed canvas)
       $qrScale = 0.7;
       $newQrWidth  = (int) ($qrWidth * $qrScale);
       $newQrHeight = (int) ($qrHeight * $qrScale);
@@ -54,13 +53,13 @@ trait QrCodeable {
       imagesavealpha($resizedQr, TRUE);
 
       imagecopyresampled(
-        $resizedQr, $qrImage,
-        0, 0, 0, 0,
-        $newQrWidth, $newQrHeight,
-        $qrWidth, $qrHeight
-      );
+            $resizedQr, $qrImage,
+            0, 0, 0, 0,
+            $newQrWidth, $newQrHeight,
+            $qrWidth, $qrHeight
+        );
 
-      // Load logo (from uploads folder URL).
+      // Load logo.
       $upload_dir = wp_upload_dir();
       $logoUrl = $upload_dir['baseurl'] . '/2024/09/Goonj-logo-10June20-300x193-1.png';
       $logoData = file_get_contents($logoUrl);
@@ -68,7 +67,7 @@ trait QrCodeable {
       $logoWidth = imagesx($logoImage);
       $logoHeight = imagesy($logoImage);
 
-      // Resize logo (smaller).
+      // Resize logo.
       $scaleFactor = 0.5;
       $newLogoWidth = (int) ($newQrWidth * $scaleFactor);
       $newLogoHeight = (int) ($logoHeight * ($newLogoWidth / $logoWidth));
@@ -76,37 +75,38 @@ trait QrCodeable {
       imagealphablending($resizedLogo, FALSE);
       imagesavealpha($resizedLogo, TRUE);
       imagecopyresized(
-        $resizedLogo, $logoImage,
-        0, 0, 0, 0,
-        $newLogoWidth, $newLogoHeight,
-        $logoWidth, $logoHeight
-      );
+            $resizedLogo, $logoImage,
+            0, 0, 0, 0,
+            $newLogoWidth, $newLogoHeight,
+            $logoWidth, $logoHeight
+        );
 
       // Texts.
       $topText = "Scan to Record Your\nContribution";
-      $bottomText = "Venue: $collectionCampAddress";
+      $venueLabel = "Venue: ";
+      $venueValue = $collectionCampAddress;
 
       // Canvas: logo + top text + QR + bottom text.
-      // still using original QR size → consistent white space.
       $canvasWidth = $qrWidth + 100;
-      $canvasHeight = $newLogoHeight + $qrHeight + 160;
+      $canvasHeight = $newLogoHeight + $qrHeight + 220;
       $canvas = imagecreatetruecolor($canvasWidth, $canvasHeight);
 
       $white = imagecolorallocate($canvas, 255, 255, 255);
       $black = imagecolorallocate($canvas, 0, 0, 0);
       imagefill($canvas, 0, 0, $white);
 
-      // --- Step 1: Place logo at top center.
+      // Fonts.
+      $fontPath = dirname(__DIR__, 2) . '/fonts/DejaVuSans-Bold.ttf';
+      $fontPathRegular = dirname(__DIR__, 2) . '/fonts/DejaVuSans.ttf';
+
+      // --- Step 1: Logo
       $logoX = (int) (($canvasWidth - $newLogoWidth) / 2);
       $logoY = 10;
       imagecopy($canvas, $resizedLogo, $logoX, $logoY, 0, 0, $newLogoWidth, $newLogoHeight);
 
-      // --- Step 2: Place heading text below logo using TTF font
-      $fontPath = dirname(__DIR__, 2) . '/fonts/DejaVuSans-Bold.ttf';
+      // --- Step 2: Heading text
       $fontSize = 35;
       $topY = $logoY + $newLogoHeight + 50;
-
-      // Split text into lines.
       $lines = explode("\n", $topText);
       $lineHeight = $fontSize + 8;
 
@@ -118,15 +118,60 @@ trait QrCodeable {
         imagettftext($canvas, $fontSize, 0, $x, $y, $black, $fontPath, $line);
       }
 
-      // --- Step 3: Place resized QR code in center.
+      // --- Step 3: QR code
       $qrY = $topY + 50;
       $qrX = (int) (($canvasWidth - $newQrWidth) / 2);
       imagecopy($canvas, $resizedQr, $qrX, $qrY, 0, 0, $newQrWidth, $newQrHeight);
 
-      // --- Step 4: Place bottom text below QR.
-      $bottomY = $qrY + $newQrHeight + 30;
-      $bottomX = (int) (($canvasWidth - (strlen($bottomText) * 9)) / 2);
-      imagestring($canvas, 5, $bottomX, $bottomY, $bottomText, $black);
+      // --- Step 4: Venue text with wrapping
+      $bottomFontSize = 25;
+      $maxWidth = $canvasWidth - 80;
+      $bottomY = $qrY + $newQrHeight + 40;
+
+      // Start with bold "Venue:".
+      $bboxLabel = imagettfbbox($bottomFontSize, 0, $fontPath, $venueLabel);
+      $labelWidth = abs($bboxLabel[2] - $bboxLabel[0]);
+
+      $lines = [];
+      $currentLine = $venueLabel;
+      $currentWidth = $labelWidth;
+
+      $words = explode(" ", $venueValue);
+      foreach ($words as $word) {
+        $testLine = ($currentLine === $venueLabel ? $currentLine : $currentLine . " ") . $word;
+        $bboxTest = imagettfbbox($bottomFontSize, 0, $fontPathRegular, $testLine);
+        $testWidth = abs($bboxTest[2] - $bboxTest[0]);
+
+        if ($testWidth > $maxWidth) {
+          $lines[] = $currentLine;
+          $currentLine = $word;
+        }
+        else {
+          $currentLine = $testLine;
+        }
+      }
+      $lines[] = $currentLine;
+
+      $lineHeight = $bottomFontSize + 8;
+      foreach ($lines as $i => $line) {
+        $bbox = imagettfbbox($bottomFontSize, 0, $fontPathRegular, $line);
+        $lineWidth = abs($bbox[2] - $bbox[0]);
+        $x = (int) (($canvasWidth - $lineWidth) / 2);
+        $y = $bottomY + ($i * $lineHeight);
+
+        if ($i === 0) {
+          imagettftext($canvas, $bottomFontSize, 0, $x, $y, $black, $fontPath, $venueLabel);
+          $valuePart = trim(str_replace($venueLabel, "", $line));
+          if ($valuePart !== "") {
+            $bboxLabel = imagettfbbox($bottomFontSize, 0, $fontPath, $venueLabel);
+            $offset = abs($bboxLabel[2] - $bboxLabel[0]);
+            imagettftext($canvas, $bottomFontSize, 0, $x + $offset, $y, $black, $fontPathRegular, $valuePart);
+          }
+        }
+        else {
+          imagettftext($canvas, $bottomFontSize, 0, $x, $y, $black, $fontPathRegular, $line);
+        }
+      }
 
       // Save final.
       ob_start();
@@ -143,7 +188,6 @@ trait QrCodeable {
       $saveOptions['baseFileName'] = $baseFileName;
       $saveOptions['entityId'] = $entityId;
       self::saveQrCode($finalImage, $saveOptions);
-
     }
     catch (\Exception $e) {
       \CRM_Core_Error::debug_log_message('Error generating QR code: ' . $e->getMessage());
