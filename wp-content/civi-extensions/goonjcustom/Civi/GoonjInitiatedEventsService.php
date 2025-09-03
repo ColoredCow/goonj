@@ -578,7 +578,7 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
         'customFieldName' => 'QR_Code',
       ];
       $saveOptionsForPoster = [
-        'customGroupName' => 'Collection_Camp_QR_Code',
+        'customGroupName' => 'Event_QR',
         'customFieldName' => 'QR_Code_For_Poster',
       ];
   
