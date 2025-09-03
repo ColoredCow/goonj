@@ -30,7 +30,7 @@ trait QrCodeable {
       ]);
 
       if (!empty($saveOptions['customGroupName']) && $saveOptions['customGroupName'] === 'Event_QR') {
-        $event = Event::get(TRUE)
+        $event = Event::get(FALSE)
           ->addSelect('loc_block_id.address_id')
           ->addWhere('id', '=', $entityId)
           ->execute()->first();
@@ -81,7 +81,7 @@ trait QrCodeable {
       $qrWidth = imagesx($qrImage);
       $qrHeight = imagesy($qrImage);
 
-      // Resize QR (smaller inside fixed canvas)
+      // Resize QR
       $qrScale = 0.7;
       $newQrWidth  = (int) ($qrWidth * $qrScale);
       $newQrHeight = (int) ($qrHeight * $qrScale);
