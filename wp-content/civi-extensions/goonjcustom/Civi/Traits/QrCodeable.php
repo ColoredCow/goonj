@@ -106,7 +106,7 @@ trait QrCodeable {
 
       // --- Step 2: Heading text
       $fontSize = 47;
-      $topY = $logoY + $newLogoHeight + 50;
+      $topY = $logoY + $newLogoHeight + 60;
       $lines = explode("\n", $topText);
       $lineHeight = $fontSize + 10;
 
@@ -119,7 +119,7 @@ trait QrCodeable {
       }
 
       // --- Step 3: QR code
-      $qrY = $topY + 60;
+      $qrY = $topY + 70;
       $qrX = (int) (($canvasWidth - $newQrWidth) / 2);
       imagecopy($canvas, $resizedQr, $qrX, $qrY, 0, 0, $newQrWidth, $newQrHeight);
 
