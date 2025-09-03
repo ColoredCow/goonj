@@ -83,7 +83,7 @@ trait QrCodeable {
 
       // Texts.
       $topText = "Scan to Record Your\nContribution";
-      $venueLabel = "Venue: ";
+      $venueLabel = "Venue - ";
       $venueValue = $collectionCampAddress;
 
       // Canvas: logo + top text + QR + bottom text.
@@ -96,8 +96,8 @@ trait QrCodeable {
       imagefill($canvas, 0, 0, $white);
 
       // Fonts.
-      $fontPath = dirname(__DIR__, 2) . '/fonts/DejaVuSans-Bold.ttf';
-      $fontPathRegular = dirname(__DIR__, 2) . '/fonts/DejaVuSans.ttf';
+      $fontPath = dirname(__DIR__, 2) . '/fonts/AbhayaLibre-Bold.ttf';
+      $fontPathRegular = dirname(__DIR__, 2) . '/fonts/AbhayaLibre-Regular.ttf';
 
       // --- Step 1: Logo
       $logoX = (int) (($canvasWidth - $newLogoWidth) / 2);
@@ -105,10 +105,10 @@ trait QrCodeable {
       imagecopy($canvas, $resizedLogo, $logoX, $logoY, 0, 0, $newLogoWidth, $newLogoHeight);
 
       // --- Step 2: Heading text
-      $fontSize = 35;
+      $fontSize = 47;
       $topY = $logoY + $newLogoHeight + 50;
       $lines = explode("\n", $topText);
-      $lineHeight = $fontSize + 8;
+      $lineHeight = $fontSize + 10;
 
       foreach ($lines as $i => $line) {
         $bbox = imagettfbbox($fontSize, 0, $fontPath, $line);
@@ -119,7 +119,7 @@ trait QrCodeable {
       }
 
       // --- Step 3: QR code
-      $qrY = $topY + 50;
+      $qrY = $topY + 60;
       $qrX = (int) (($canvasWidth - $newQrWidth) / 2);
       imagecopy($canvas, $resizedQr, $qrX, $qrY, 0, 0, $newQrWidth, $newQrHeight);
 
