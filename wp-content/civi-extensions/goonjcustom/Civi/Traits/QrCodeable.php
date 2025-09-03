@@ -26,39 +26,29 @@ trait QrCodeable {
         'scale'      => 10,
       ]);
 
-      // Generate QR as PNG binary.
+      // Generate QR.
       $qrcode = (new QRCode($options))->render($data);
       $qrcode = str_replace('data:image/png;base64,', '', $qrcode);
       $qrcode = base64_decode($qrcode);
-
-      // --- Step 1: Create GD image from QR ---
       $qrImage = imagecreatefromstring($qrcode);
       $qrWidth = imagesx($qrImage);
       $qrHeight = imagesy($qrImage);
 
-      // --- Step 2: Load logo image (from URL) ---
-      // $logoUrl = "https://goonj.org/wp-content/uploads/2020/06/Goonj-logo-10June20.png";
+      // Load logo (from uploads folder URL).
       $upload_dir = wp_upload_dir();
       $logoUrl = $upload_dir['baseurl'] . '/2024/09/Goonj-logo-10June20-300x193-1.png';
-      error_log('path: ' . print_r($logoUrl, TRUE));
-
-      error_log('upload_dir: ' . print_r($upload_dir, TRUE));
       $logoData = file_get_contents($logoUrl);
       $logoImage = imagecreatefromstring($logoData);
-
       $logoWidth = imagesx($logoImage);
       $logoHeight = imagesy($logoImage);
 
-      // --- Step 2a: Resize logo with scale factor ---
-      // 👈 change this (0.5 = 50% width, 0.3 = 30% width, etc.)
-      $scaleFactor = 0.4;
+      // Resize logo (smaller).
+      $scaleFactor = 0.5;
       $newLogoWidth = (int) ($qrWidth * $scaleFactor);
       $newLogoHeight = (int) ($logoHeight * ($newLogoWidth / $logoWidth));
-
       $resizedLogo = imagecreatetruecolor($newLogoWidth, $newLogoHeight);
       imagealphablending($resizedLogo, FALSE);
       imagesavealpha($resizedLogo, TRUE);
-
       imagecopyresampled(
         $resizedLogo, $logoImage,
         0, 0, 0, 0,
@@ -66,31 +56,40 @@ trait QrCodeable {
         $logoWidth, $logoHeight
       );
 
-      // --- Step 3: Create new canvas (logo + QR + text space) ---
-      $text = "Hello here is the qr code";
-      // Reserve space for text.
-      $fontHeight = 30;
+      // Texts.
+      $topText = "Scan to Record Your Contribution";
+      $bottomText = "Venue: Gaur Saundaryam Society, Greater Noida";
 
-      $canvasHeight = $newLogoHeight + $qrHeight + $fontHeight + 20;
-      $canvas = imagecreatetruecolor($qrWidth, $canvasHeight);
+      // Canvas: logo + top text + QR + bottom text.
+      $canvasWidth = $qrWidth + 100;
+      $canvasHeight = $newLogoHeight + $qrHeight + 160;
+      $canvas = imagecreatetruecolor($canvasWidth, $canvasHeight);
 
-      // White background.
       $white = imagecolorallocate($canvas, 255, 255, 255);
+      $black = imagecolorallocate($canvas, 0, 0, 0);
       imagefill($canvas, 0, 0, $white);
 
-      // --- Step 4: Copy logo (centered) + QR ---
-      $logoX = (int) (($qrWidth - $newLogoWidth) / 2);
-      imagecopy($canvas, $resizedLogo, $logoX, 0, 0, 0, $newLogoWidth, $newLogoHeight);
+      // --- Step 1: Place logo at top center.
+      $logoX = (int) (($canvasWidth - $newLogoWidth) / 2);
+      $logoY = 10;
+      imagecopy($canvas, $resizedLogo, $logoX, $logoY, 0, 0, $newLogoWidth, $newLogoHeight);
 
-      imagecopy($canvas, $qrImage, 0, $newLogoHeight, 0, 0, $qrWidth, $qrHeight);
+      // --- Step 2: Place heading text below logo.
+      $topY = $logoY + $newLogoHeight + 20;
+      $topX = (int) (($canvasWidth - (strlen($topText) * 9)) / 2);
+      imagestring($canvas, 5, $topX, $topY, $topText, $black);
 
-      // --- Step 5: Add text below QR ---
-      $black = imagecolorallocate($canvas, 0, 0, 0);
-      $x = 10;
-      $y = $newLogoHeight + $qrHeight + 20;
-      imagestring($canvas, 5, $x, $y, $text, $black);
+      // --- Step 3: Place QR code in center.
+      $qrY = $topY + 40;
+      $qrX = (int) (($canvasWidth - $qrWidth) / 2);
+      imagecopy($canvas, $qrImage, $qrX, $qrY, 0, 0, $qrWidth, $qrHeight);
 
-      // --- Step 6: Save combined image ---
+      // --- Step 4: Place bottom text below QR.
+      $bottomY = $qrY + $qrHeight + 30;
+      $bottomX = (int) (($canvasWidth - (strlen($bottomText) * 9)) / 2);
+      imagestring($canvas, 5, $bottomX, $bottomY, $bottomText, $black);
+
+      // Save final.
       ob_start();
       imagepng($canvas);
       $finalImage = ob_get_clean();
@@ -103,7 +102,6 @@ trait QrCodeable {
       $baseFileName = "qr_code_{$entityId}.png";
       $saveOptions['baseFileName'] = $baseFileName;
       $saveOptions['entityId'] = $entityId;
-
       self::saveQrCode($finalImage, $saveOptions);
 
     }
