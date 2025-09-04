@@ -351,15 +351,12 @@ trait QrCodeable {
       if ($today > $endDate) {
         error_log("working");
 
-        // Redirect to goonj.org after end+3 days.
-        \CRM_Utils_System::redirect('https://goonj.org/');
-        error_log("is redirect??: ");
+        $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+        \CRM_Utils_System::redirect("{$baseUrl}qr-code-expire/");
 
         return;
-
-        error_log("Checking ??: ");
-
       }
+
     }
 
     // Otherwise normal camp page.
