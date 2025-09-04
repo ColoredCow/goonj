@@ -333,61 +333,123 @@ trait QrCodeable {
   public static function handleCampRedirect($id) {
     $type = $_GET['type'] ?? NULL;
     $camp = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Collection_Camp_Intent_Details.End_Date', 'subtype:name')
+      ->addSelect('Collection_Camp_Intent_Details.End_Date', 'subtype:name', 'Goonj_Activities.End_Date', 'Institution_Collection_Camp_Intent.Collections_will_end_on_Date_', 'Institution_Goonj_Activities.End_Date')
       ->addWhere('id', '=', $id)
       ->execute()
       ->first();
 
-    error_log("data: " . print_r($camp, TRUE));
+    $campStatus = $camp['subtype:name'];
 
-    $endRaw = $camp['Collection_Camp_Intent_Details.End_Date'] ?? NULL;
-    error_log("endRaw: " . print_r($endRaw, TRUE));
+    if ($type === 'event') {
+      $event = Event::get(TRUE)
+        ->addSelect('end_date')
+        ->addWhere('id', '=', $id)
+        ->execute()->first();
 
-    if ($endRaw) {
-      $endDate = new \DateTime($endRaw);
-      $endDate->modify('+3 days');
-      $today = new \DateTime();
+      $endRaw = $event['end_date'] ?? NULL;
 
-      if ($today > $endDate) {
-        error_log("working");
+      if ($endRaw) {
+        $endDate = new \DateTime($endRaw);
+        $endDate->modify('+7 days');
+        $today = new \DateTime();
+
+        if ($today > $endDate) {
+          $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+          \CRM_Utils_System::redirect("{$baseUrl}qr-code-expire/");
+          return;
+        }
+      }
+
+      $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+      \CRM_Utils_System::redirect("{$baseUrl}actions/events/{$id}");
+    }
+
+    if ($type === 'entity') {
+
+      if ($campStatus == 'Collection_Camp') {
+        $endRaw = $camp['Collection_Camp_Intent_Details.End_Date'] ?? NULL;
+
+        if ($endRaw) {
+          $endDate = new \DateTime($endRaw);
+          $endDate->modify('+7 days');
+          $today = new \DateTime();
+
+          if ($today > $endDate) {
+            $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+            \CRM_Utils_System::redirect("{$baseUrl}qr-code-expire/");
+            return;
+          }
+        }
 
         $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
-        \CRM_Utils_System::redirect("{$baseUrl}qr-code-expire/");
+        \CRM_Utils_System::redirect("{$baseUrl}actions/collection-camp/{$id}");
+      }
+      elseif ($campStatus == 'Dropping_Center') {
+        \CRM_Utils_System::redirect("{$baseUrl}actions/dropping-center/{$id}");
+      }
+      elseif ($campStatus == 'Goonj_Activities') {
+        $endRaw = $camp['Goonj_Activities.End_Date'] ?? NULL;
 
-        return;
+        if ($endRaw) {
+          $endDate = new \DateTime($endRaw);
+          $endDate->modify('+7 days');
+          $today = new \DateTime();
+
+          if ($today > $endDate) {
+            $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+            \CRM_Utils_System::redirect("{$baseUrl}qr-code-expire/");
+            return;
+          }
+        }
+
+        $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+        \CRM_Utils_System::redirect("{$baseUrl}actions/goonj-activities/{$id}");
+      }
+      elseif ($campStatus == 'Institution_Collection_Camp') {
+        $endRaw = $camp['Institution_Collection_Camp_Intent.Collections_will_end_on_Date_'] ?? NULL;
+
+        if ($endRaw) {
+          $endDate = new \DateTime($endRaw);
+          $endDate->modify('+7 days');
+          $today = new \DateTime();
+
+          if ($today > $endDate) {
+            $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+            \CRM_Utils_System::redirect("{$baseUrl}qr-code-expire/");
+            return;
+          }
+        }
+
+        $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+        \CRM_Utils_System::redirect("{$baseUrl}actions/institution-collection-camp/{$id}");
+      }
+      elseif ($campStatus == 'Institution_Dropping_Center') {
+        \CRM_Utils_System::redirect("{$baseUrl}actions/institution-dropping-center/{$id}");
+      }
+      elseif ($campStatus == 'Institution_Goonj_Activities') {
+        $endRaw = $camp['Institution_Goonj_Activities.End_Date'] ?? NULL;
+
+        if ($endRaw) {
+          $endDate = new \DateTime($endRaw);
+          $endDate->modify('+7 days');
+          $today = new \DateTime();
+
+          if ($today > $endDate) {
+            $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+            \CRM_Utils_System::redirect("{$baseUrl}qr-code-expire/");
+            return;
+          }
+        }
+
+        $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+        \CRM_Utils_System::redirect("{$baseUrl}actions/institution-goonj-activities/{$id}");
+      }
+      else {
+        throw new \Exception('Invalid entity type');
       }
 
     }
 
-    // Otherwise normal camp page.
-    $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
-
-    $campStatus = $camp['subtype:name'];
-
-    if ($type === 'event') {
-      \CRM_Utils_System::redirect("{$baseUrl}actions/events/{$id}");
-    }
-    if ($campStatus == 'Collection_Camp') {
-      \CRM_Utils_System::redirect("{$baseUrl}actions/collection-camp/{$id}");
-    }
-    elseif ($campStatus == 'Dropping_Center') {
-      \CRM_Utils_System::redirect("{$baseUrl}actions/dropping-center/{$id}");
-    }
-    elseif ($campStatus == 'Goonj_Activities') {
-      \CRM_Utils_System::redirect("{$baseUrl}actions/goonj-activities/{$id}");
-    }
-    elseif ($campStatus == 'Institution_Collection_Camp') {
-      \CRM_Utils_System::redirect("{$baseUrl}actions/institution-collection-camp/{$id}");
-    }
-    elseif ($campStatus == 'Institution_Dropping_Center') {
-      \CRM_Utils_System::redirect("{$baseUrl}actions/institution-dropping-center/{$id}");
-    }
-    elseif ($campStatus == 'Institution_Goonj_Activities') {
-      \CRM_Utils_System::redirect("{$baseUrl}actions/institution-goonj-activities/{$id}");
-    }
-    else {
-      throw new \Exception('Invalid entity type');
-    }
   }
 
   /**
