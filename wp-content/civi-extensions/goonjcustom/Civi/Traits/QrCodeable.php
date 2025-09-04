@@ -385,6 +385,20 @@ trait QrCodeable {
         \CRM_Utils_System::redirect("{$baseUrl}actions/collection-camp/{$id}");
       }
       elseif ($campStatus == 'Dropping_Center') {
+        $droppingCenterMetas = EckEntity::get('Dropping_Center_Meta', FALSE)
+          ->addSelect('Status.Status:name')
+          ->addWhere('Dropping_Center_Meta.Dropping_Center', '=', $id)
+          ->addWhere('subtype:name', '=', 'Status')
+          ->execute();
+
+        foreach ($droppingCenterMetas as $meta) {
+          if (!empty($meta['Status.Status:name']) && $meta['Status.Status:name'] === 'Permanently_Closed') {
+            $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+            \CRM_Utils_System::redirect("{$baseUrl}qr-code-expire/");
+            exit;
+          }
+        }
+
         $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
         \CRM_Utils_System::redirect("{$baseUrl}actions/dropping-center/{$id}");
       }
@@ -425,6 +439,20 @@ trait QrCodeable {
         \CRM_Utils_System::redirect("{$baseUrl}actions/institution-collection-camp/{$id}");
       }
       elseif ($campStatus == 'Institution_Dropping_Center') {
+        $droppingCenterMetas = EckEntity::get('Dropping_Center_Meta', FALSE)
+          ->addSelect('Status.Status:name')
+          ->addWhere('Dropping_Center_Meta.Institution_Dropping_Center', '=', $id)
+          ->addWhere('subtype:name', '=', 'Status')
+          ->execute();
+
+        foreach ($droppingCenterMetas as $meta) {
+          if (!empty($meta['Status.Status:name']) && $meta['Status.Status:name'] === 'Permanently_Closed') {
+            $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+            \CRM_Utils_System::redirect("{$baseUrl}qr-code-expire/");
+            exit;
+          }
+        }
+
         $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
         \CRM_Utils_System::redirect("{$baseUrl}actions/institution-dropping-center/{$id}");
       }
