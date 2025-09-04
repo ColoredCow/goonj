@@ -385,6 +385,7 @@ trait QrCodeable {
         \CRM_Utils_System::redirect("{$baseUrl}actions/collection-camp/{$id}");
       }
       elseif ($campStatus == 'Dropping_Center') {
+        $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
         \CRM_Utils_System::redirect("{$baseUrl}actions/dropping-center/{$id}");
       }
       elseif ($campStatus == 'Goonj_Activities') {
@@ -424,6 +425,7 @@ trait QrCodeable {
         \CRM_Utils_System::redirect("{$baseUrl}actions/institution-collection-camp/{$id}");
       }
       elseif ($campStatus == 'Institution_Dropping_Center') {
+        $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
         \CRM_Utils_System::redirect("{$baseUrl}actions/institution-dropping-center/{$id}");
       }
       elseif ($campStatus == 'Institution_Goonj_Activities') {
