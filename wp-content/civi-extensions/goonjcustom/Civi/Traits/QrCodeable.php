@@ -81,7 +81,7 @@ trait QrCodeable {
       $qrWidth = imagesx($qrImage);
       $qrHeight = imagesy($qrImage);
 
-      // Resize QR
+      // Resize QR.
       $qrScale = 0.7;
       $newQrWidth  = (int) ($qrWidth * $qrScale);
       $newQrHeight = (int) ($qrHeight * $qrScale);
@@ -294,6 +294,9 @@ trait QrCodeable {
 
   }
 
+  /**
+   *
+   */
   public static function generateQrCodeForPoster($data, $entityId, $saveOptions) {
     try {
       $options = new QROptions([
@@ -322,6 +325,72 @@ trait QrCodeable {
     }
 
     return TRUE;
+  }
+
+  /**
+   *
+   */
+  public static function handleCampRedirect($id) {
+    $type = $_GET['type'] ?? NULL;
+    $camp = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect('Collection_Camp_Intent_Details.End_Date', 'subtype:name')
+      ->addWhere('id', '=', $id)
+      ->execute()
+      ->first();
+
+    error_log("data: " . print_r($camp, TRUE));
+
+    $endRaw = $camp['Collection_Camp_Intent_Details.End_Date'] ?? NULL;
+    error_log("endRaw: " . print_r($endRaw, TRUE));
+
+    if ($endRaw) {
+      $endDate = new \DateTime($endRaw);
+      $endDate->modify('+3 days');
+      $today = new \DateTime();
+
+      if ($today > $endDate) {
+        error_log("working");
+
+        // Redirect to goonj.org after end+3 days.
+        \CRM_Utils_System::redirect('https://goonj.org/');
+        error_log("is redirect??: ");
+
+        return;
+
+        error_log("Checking ??: ");
+
+      }
+    }
+
+    // Otherwise normal camp page.
+    $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+
+    $campStatus = $camp['subtype:name'];
+
+    if ($type === 'event') {
+      \CRM_Utils_System::redirect("{$baseUrl}actions/events/{$id}");
+    }
+    if ($campStatus == 'Collection_Camp') {
+      \CRM_Utils_System::redirect("{$baseUrl}actions/collection-camp/{$id}");
+    }
+    elseif ($campStatus == 'Dropping_Center') {
+      \CRM_Utils_System::redirect("{$baseUrl}actions/dropping-center/{$id}");
+    }
+    elseif ($campStatus == 'Goonj_Activities') {
+      \CRM_Utils_System::redirect("{$baseUrl}actions/goonj-activities/{$id}");
+    }
+    elseif ($campStatus == 'Institution_Collection_Camp') {
+      \CRM_Utils_System::redirect("{$baseUrl}actions/institution-collection-camp/{$id}");
+    }
+    elseif ($campStatus == 'Institution_Dropping_Center') {
+      \CRM_Utils_System::redirect("{$baseUrl}actions/institution-dropping-center/{$id}");
+    }
+    elseif ($campStatus == 'Institution_Goonj_Activities') {
+      \CRM_Utils_System::redirect("{$baseUrl}actions/institution-goonj-activities/{$id}");
+    }
+    else {
+      throw new \Exception('Invalid entity type');
+    }
   }
 
   /**

@@ -483,7 +483,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
    */
   private static function generateInstitutionGoonjActivitiesQrCode($id) {
     $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
-    $data = "{$baseUrl}actions/institution-goonj-activities/{$id}";
+    $data = "{$baseUrl}civicrm/camp-redirect?id={$id}&type=entity";
 
     $saveOptions = [
       'customGroupName' => 'Collection_Camp_QR_Code',
