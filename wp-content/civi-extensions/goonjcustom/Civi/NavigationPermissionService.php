@@ -185,6 +185,11 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Offices',
           'MMT - Urban Visits',
           'Contributions',
+          'Mailings',
+        ],
+        'hide_child_menus' => [
+          'Manage Groups',
+          'Manage Groups',
         ],
       ],
       'ho_account' => [
