@@ -2,6 +2,9 @@
 
 namespace Civi;
 
+use Civi\Api4\Contact;
+use CRM\Civiglific\GlificClient;
+use Civi\Api4\Phone;
 use Civi\Api4\Contribution;
 use Civi\Core\Service\AutoSubscriber;
 
@@ -125,7 +128,63 @@ class MonetaryReceiptService extends AutoSubscriber {
       $baseUrl = rtrim(\CRM_Core_Config::singleton()->userFrameworkBaseURL, '/');
       $pdfUrl  = $baseUrl . '/wp-content/uploads/civicrm/persist/contribute/contribution/' . $fileNameForPdf;
 
-      return $savePath;
+      $contributionContactId = $contributionData['contact_id'];
+
+      $phones = Phone::get(FALSE)
+        ->addSelect('phone')
+        ->addWhere('contact_id', '=', $contributionContactId)
+        ->execute()->first();
+
+      $contacts = Contact::get(FALSE)
+        ->addSelect('display_name')
+        ->addWhere('id', '=', $contributionContactId)
+        ->execute()->first();
+
+      $contactName = $contacts['display_name'];
+
+      $phoneNumber = $phones['phone'] ?? NULL;
+
+      // --- Call GlificClient function ---
+      $glificContactId = NULL;
+      if ($phoneNumber) {
+        try {
+          $glificClient = new GlificClient();
+          $glificContactId = $glificClient->getContactIdByPhone($phoneNumber);
+
+          if ($glificContactId) {
+            \error_log("[MonetaryReceiptService] Found existing Glific contact ID: {$glificContactId}");
+          }
+          else {
+            \error_log("[MonetaryReceiptService] No Glific contact found for {$phoneNumber}, creating...");
+            $newContactId = $glificClient->createContact($contactName, $phoneNumber);
+            if ($newContactId) {
+              \error_log("[MonetaryReceiptService] Created Glific contact ID: {$newContactId}");
+              // Opt-in immediately after creation.
+              $optinId = $glificClient->optinContact($phoneNumber, $contactName);
+              if ($optinId) {
+                \error_log("[MonetaryReceiptService] Opted-in Glific contact ID: {$optinId}");
+                $glificContactId = $optinId;
+              }
+              else {
+                // Fallback if opt-in fails.
+                $glificContactId = $newContactId;
+              }
+            }
+          }
+        }
+        catch (\Throwable $e) {
+          \error_log("[MonetaryReceiptService] Glific sync failed: " . $e->getMessage());
+        }
+      }
+      else {
+        \error_log("[MonetaryReceiptService] No phone number available, skipping Glific sync");
+      }
+
+      // Return both receipt path + glific contact id.
+      return [
+        'receipt_path' => $savePath,
+        'glific_contact_id' => $glificContactId,
+      ];
 
     }
     catch (\Throwable $e) {
