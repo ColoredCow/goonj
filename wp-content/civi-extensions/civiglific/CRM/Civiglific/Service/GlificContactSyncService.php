@@ -14,6 +14,7 @@ use Civi\Api4\GlificGroupMap;
 /**
  *
  */
+if (!class_exists('\CRM\Civiglific\Service\GlificContactSyncService')) {
 class GlificContactSyncService {
 
   protected $glific;
@@ -361,5 +362,7 @@ class GlificContactSyncService {
       }
     }
   }
+
+}
 
 }
