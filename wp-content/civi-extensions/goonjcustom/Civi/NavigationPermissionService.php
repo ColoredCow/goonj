@@ -189,7 +189,7 @@ class NavigationPermissionService extends AutoSubscriber {
         ],
         'hide_child_menus' => [
           'Manage Groups',
-          'Manage Groups',
+          'Manage Duplicates',
         ],
       ],
       'ho_account' => [
