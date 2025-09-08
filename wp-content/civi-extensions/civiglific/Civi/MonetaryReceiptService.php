@@ -121,6 +121,10 @@ class MonetaryReceiptService extends AutoSubscriber {
         throw new \Exception("Failed to save PDF to {$savePath}");
       }
 
+      // Build public URL.
+      $baseUrl = rtrim(\CRM_Core_Config::singleton()->userFrameworkBaseURL, '/');
+      $pdfUrl  = $baseUrl . '/wp-content/uploads/civicrm/persist/contribute/contribution/' . $fileNameForPdf;
+
       return $savePath;
 
     }
