@@ -2,6 +2,7 @@
 
 namespace Civi;
 
+use Civi\Api4\Contribution;
 use Civi\Core\Service\AutoSubscriber;
 
 /**
@@ -14,9 +15,8 @@ class MonetaryReceiptService extends AutoSubscriber {
    */
   public static function getSubscribedEvents() {
     return [
-      '&hook_civicrm_post' => [],
-      '&hook_civicrm_alterMailParams' => [
-        ['saveReceiptFromMail'],
+      '&hook_civicrm_post' => [
+        'triggerMonetaryEmail',
       ],
     ];
   }
@@ -24,42 +24,100 @@ class MonetaryReceiptService extends AutoSubscriber {
   /**
    *
    */
-  public static function saveReceiptFromMail(&$params, $context) {
-    if (!empty($params['workflow']) && $params['workflow'] === 'contribution_online_receipt') {
-      $contributionID = !empty($params['tplParams']['contributionID']) ? $params['tplParams']['contributionID'] : NULL;
+  public static function triggerMonetaryEmail($op, $entity, $id, $objectRef = NULL) {
+    if ($entity !== 'Contribution' || !$objectRef->id) {
+      return;
+    }
+    try {
+      $contributionId = $objectRef->id;
 
-      error_log("attachments are there : " . print_r($params['attachments'], TRUE));
-
-      // --- Add: Copy generated PDF to persistent folder ---
-      if (!empty($params['attachments']) && $contributionID) {
-        error_log(" working inside the functon : ");
-
-        foreach ($params['attachments'] as $attach) {
-          $sourceFile = $attach['fullPath'];
-          error_log("sourceFile : " . print_r($sourceFile, TRUE));
-
-          // Build persistent path.
-          $uploadDir = WP_CONTENT_DIR . '/uploads/civicrm/persist/contribute/contribution';
-          if (!file_exists($uploadDir)) {
-            // Recursive create.
-            mkdir($uploadDir, 0777, TRUE);
-          }
-          $destFile = $uploadDir . "/receipt_{$contributionID}.pdf";
-          error_log(" destFile : " . print_r($destFile, TRUE));
-
-          if (file_exists($sourceFile)) {
-            copy($sourceFile, $destFile);
-            $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
-            error_log("Saved receipt for contribution : " . print_r($destFile, TRUE));
-            error_log(" contribution : " . print_r($contributionID, TRUE));
-          }
-          else {
-            error_log("source receipt file not found for contribution : " . print_r($sourceFile, TRUE));
-            error_log(" contribution else: " . print_r($contributionID, TRUE));
-          }
-        }
+      // Load contribution BAO.
+      if (!class_exists('\CRM_Contribute_BAO_Contribution')) {
+        require_once 'CRM/Contribute/BAO/Contribution.php';
       }
-      // --- End copy PDF ---
+
+      $contribution = new \CRM_Contribute_BAO_Contribution();
+
+      $contributionData = Contribution::get(FALSE)
+        ->addSelect('total_amount', 'is_test', 'fee_amount', 'net_amount', 'trxn_id', 'receive_date', 'contribution_status_id', 'contact_id')
+        ->addWhere('id', '=', '$contributionId')
+        ->execute()->first();
+
+      // Prepare input and IDs.
+      $input = [
+        'amount' => $contributionData['total_amount'] ?? NULL,
+        'is_test' => $contributionData['is_test'] ?? 0,
+        'fee_amount' => $contributionData['fee_amount'] ?? 0,
+        'net_amount' => $contributionData['net_amount'] ?? 0,
+        'trxn_id' => $contributionData['trxn_id'] ?? '',
+        'trxn_date' => $contributionData['receive_date'] ?? NULL,
+        'receipt_update' => 1,
+        'contribution_status_id' => $contributionData['contribution_status_id'] ?? NULL,
+        'payment_processor_id' => !empty($contribution->trxn_id)
+          ? \CRM_Core_DAO::singleValueQuery(
+                    "SELECT payment_processor_id FROM civicrm_financial_trxn WHERE trxn_id = %1 LIMIT 1",
+                    [1 => [$contribution->trxn_id, 'String']]
+        )
+          : NULL,
+      ];
+      $ids = [
+        'contact' => $contributionData['contact_id'] ?? NULL,
+        'contribution' => $contributionId,
+        'contributionRecur' => NULL,
+        'contributionPage' => NULL,
+        'membership' => NULL,
+        'participant' => NULL,
+        'event' => NULL,
+      ];
+
+      // Generate PDF.
+      if (!class_exists('\CRM_Utils_PDF_Utils')) {
+        require_once 'CRM/Utils/PDF/Utils.php';
+      }
+
+      $pdfFormatId = NULL;
+      if (class_exists('\CRM_Core_BAO_PdfFormat')) {
+        $def = \CRM_Core_BAO_PdfFormat::getDefaultValues();
+        $pdfFormatId = $def['id'] ?? NULL;
+      }
+
+      $messages = [];
+      $mail = \CRM_Contribute_BAO_Contribution::sendMail($input, $ids, $contributionId, TRUE);
+
+      if (!empty($mail['html'])) {
+        $messages[] = $mail['html'];
+      }
+      elseif (!empty($mail['body'])) {
+        $messages[] = nl2br(htmlspecialchars($mail['body']));
+      }
+      else {
+        $messages[] = "<html><body><h3>Contribution Receipt</h3><p>Contribution ID: {$contributionId}</p></body></html>";
+      }
+
+      $fileNameForPdf = "receipt_{$contributionId}.pdf";
+      $pdfBinary = \CRM_Utils_PDF_Utils::html2pdf($messages, $fileNameForPdf, TRUE, $pdfFormatId);
+      if (empty($pdfBinary)) {
+        throw new \Exception("PDF generation failed for contribution {$contributionId}");
+      }
+
+      // Save PDF to persistent location.
+      $uploadBase = defined('WP_CONTENT_DIR') ? rtrim(WP_CONTENT_DIR, '/') : rtrim($_SERVER['DOCUMENT_ROOT'] ?? __DIR__, '/');
+      $saveDir = $uploadBase . '/uploads/civicrm/persist/contribute/contribution/';
+      if (!file_exists($saveDir)) {
+        mkdir($saveDir, 0755, TRUE);
+      }
+
+      $savePath = $saveDir . $fileNameForPdf;
+      if (@file_put_contents($savePath, $pdfBinary) === FALSE) {
+        throw new \Exception("Failed to save PDF to {$savePath}");
+      }
+
+      return $savePath;
+
+    }
+    catch (\Throwable $e) {
+      error_log("[MonetaryReceiptService] EXCEPTION: {$e->getMessage()}\n{$e->getTraceAsString()}");
+      return NULL;
     }
   }
 
