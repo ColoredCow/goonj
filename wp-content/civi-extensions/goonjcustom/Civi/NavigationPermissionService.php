@@ -104,6 +104,8 @@ class NavigationPermissionService extends AutoSubscriber {
       return;
     }
 
+    error_log('paramas: ' . print_r($params, TRUE));  
+
     $roleMenuMapping = [
       'account_team' => [
         'hide_menus' => [
@@ -185,6 +187,11 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Offices',
           'MMT - Urban Visits',
           'Contributions',
+          'Mailings',
+        ],
+        'hide_child_menus' => [
+          'Manage Groups',
+          'Manage Duplicates',
         ],
       ],
       'ho_account' => [
