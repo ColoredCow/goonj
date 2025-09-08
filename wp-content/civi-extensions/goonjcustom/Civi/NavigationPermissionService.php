@@ -104,8 +104,6 @@ class NavigationPermissionService extends AutoSubscriber {
       return;
     }
 
-    error_log('paramas: ' . print_r($params, TRUE));  
-
     $roleMenuMapping = [
       'account_team' => [
         'hide_menus' => [
