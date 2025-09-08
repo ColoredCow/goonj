@@ -39,13 +39,16 @@ class MonetaryReceiptService extends AutoSubscriber {
       $contribution = new \CRM_Contribute_BAO_Contribution();
 
       $contributionData = Contribution::get(FALSE)
-        ->addSelect('total_amount', 'is_test', 'fee_amount', 'net_amount', 'trxn_id', 'receive_date', 'contribution_status_id', 'contact_id', 'Send_Receipt_via_WhatsApp:name')
-        ->addWhere('id', '=', '$contributionId')
+        ->addSelect('total_amount', 'is_test', 'fee_amount', 'net_amount', 'trxn_id', 'receive_date', 'contribution_status_id', 'contact_id', 'Contribution_Details.Send_Receipt_via_WhatsApp:name')
+        ->addWhere('id', '=', $contributionId)
         ->execute()->first();
 
-      $isSendReceiptViaWhatsApp = $contributionData['Send_Receipt_via_WhatsApp:name'] ?? NULL;
+      error_log('contributionData: ' . print_r($contributionData, TRUE));
 
-      if ($isSendReceiptViaWhatsApp === NULL) {
+      $isSendReceiptViaWhatsApp = $contributionData['Contribution_Details.Send_Receipt_via_WhatsApp:name'];
+      error_log('issendreceipt: ' . print_r($isSendReceiptViaWhatsApp, TRUE));
+
+      if ($isSendReceiptViaWhatsApp == NULL) {
         return;
       }
 
