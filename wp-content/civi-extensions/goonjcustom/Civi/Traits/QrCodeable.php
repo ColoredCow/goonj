@@ -36,15 +36,17 @@ trait QrCodeable {
           ->execute()->first();
 
         $addresses = Address::get(FALSE)
+          ->addSelect('city', 'street_address')
           ->addWhere('id', '=', $event['loc_block_id.address_id'])
           ->setLimit(1)
           ->execute()->first();
-        $address = \CRM_Utils_Address::format($addresses);
+        $address = $addresses['street_address'] ?? '';
+        $city = $addresses['city'] ?? '';
       }
 
       if (!empty($saveOptions['customGroupName']) && $saveOptions['customGroupName'] != 'Event_QR') {
         $campData = EckEntity::get('Collection_Camp', FALSE)
-          ->addSelect('subtype:name', 'Collection_Camp_Intent_Details.Location_Area_of_camp', 'Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_', 'Goonj_Activities.Where_do_you_wish_to_organise_the_activity_', 'Institution_Collection_Camp_Intent.Collection_Camp_Address', 'Institution_Dropping_Center_Intent.Dropping_Center_Address', 'Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_')
+          ->addSelect('subtype:name', 'Collection_Camp_Intent_Details.Location_Area_of_camp', 'Collection_Camp_Intent_Details.City', 'Collection_Camp_Intent_Details.Other_City', 'Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_', 'Dropping_Centre.District_City', 'Dropping_Centre.Other_City', 'Goonj_Activities.Where_do_you_wish_to_organise_the_activity_', 'Goonj_Activities.City', 'Collection_Camp_Intent_Details.Other_City', 'Institution_Collection_Camp_Intent.Collection_Camp_Address', 'Institution_Collection_Camp_Intent.District_City', 'Institution_Collection_Camp_Intent.Other_Type', 'Institution_Dropping_Center_Intent.Dropping_Center_Address', 'Institution_Dropping_Center_Intent.District_City', 'Institution_Dropping_Center_Intent.Other_City', 'Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_', 'Institution_Goonj_Activities.City', 'Institution_Goonj_Activities.Other_City')
           ->addWhere('id', '=', $entityId)
           ->execute()->first();
 
@@ -52,21 +54,27 @@ trait QrCodeable {
 
         if ($campStatus == 'Collection_Camp') {
           $address = $campData['Collection_Camp_Intent_Details.Location_Area_of_camp'] ?? '';
+          $city = $campData['Collection_Camp_Intent_Details.City'] ?? 'Collection_Camp_Intent_Details.Other_City';
         }
         elseif ($campStatus == 'Dropping_Center') {
           $address = $campData['Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_'] ?? '';
+          $city = $campData['Dropping_Centre.District_City'] ?? $campData['Dropping_Centre.Other_City'] ?? '';
         }
         elseif ($campStatus == 'Goonj_Activities') {
           $address = $campData['Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'] ?? '';
+          $city = $campData['Goonj_Activities.City'] ?? 'Collection_Camp_Intent_Details.Other_City';
         }
         elseif ($campStatus == 'Institution_Collection_Camp') {
           $address = $campData['Institution_Collection_Camp_Intent.Collection_Camp_Address'] ?? '';
+          $city = $campData['Institution_Collection_Camp_Intent.District_City'] ?? $campData['Institution_Collection_Camp_Intent.Other_Type'] ?? '';
         }
         elseif ($campStatus == 'Institution_Dropping_Center') {
           $address = $campData['Institution_Dropping_Center_Intent.Dropping_Center_Address'] ?? '';
+          $city = $campData['Institution_Dropping_Center_Intent.District_City'] ?? $campData['Institution_Dropping_Center_Intent.Other_City'] ?? '';
         }
         elseif ($campStatus == 'Institution_Goonj_Activities') {
           $address = $campData['Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'] ?? '';
+          $city = $campData['Institution_Goonj_Activities.City'] ?? $campData['Institution_Goonj_Activities.Other_City'] ?? '';
         }
         else {
           throw new \Exception('Invalid entity type for QR code generation.');
@@ -123,6 +131,10 @@ trait QrCodeable {
       $topText = "Scan to Record Your\nContribution";
       $venueLabel = "Venue: ";
       $venueValue = $address;
+
+      if (!empty($city)) {
+        $venueValue .= ', ' . $city;
+      }
 
       // Canvas: logo + top text + QR + bottom text.
       $canvasWidth = $qrWidth + 100;
