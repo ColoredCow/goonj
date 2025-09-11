@@ -523,7 +523,7 @@ class CollectionCampService extends AutoSubscriber {
    */
   private static function generateCollectionCampQrCode($id) {
     $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
-    $data = "{$baseUrl}actions/collection-camp/{$id}";
+    $data = "{$baseUrl}civicrm/camp-redirect?id={$id}&type=entity";
 
     $saveOptions = [
       'customGroupName' => 'Collection_Camp_QR_Code',

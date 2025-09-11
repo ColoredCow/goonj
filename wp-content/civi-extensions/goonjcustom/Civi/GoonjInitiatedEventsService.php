@@ -571,7 +571,8 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
 
       // Generate base URL for QR Code.
       $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
-      $qrCodeData = "{$baseUrl}actions/events/{$eventId}";
+      $qrCodeData = "{$baseUrl}civicrm/camp-redirect?id={$eventId}&type=event";
+
       // Define save options for custom group and field.
       $saveOptions = [
         'customGroupName' => 'Event_QR',
