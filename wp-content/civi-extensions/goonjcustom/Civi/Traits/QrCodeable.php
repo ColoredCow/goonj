@@ -146,8 +146,8 @@ trait QrCodeable {
       imagefill($canvas, 0, 0, $white);
 
       // Fonts.
-      $fontPath = dirname(__DIR__, 2) . '/fonts/Fontspring-proximanova-bold.otf';
-      $fontPathRegular = dirname(__DIR__, 2) . '/fonts/Fontspring-proximanova-regular.otf';
+      $fontPath = dirname(__DIR__, 2) . '/fonts/proximanova_bold.otf';
+      $fontPathRegular = dirname(__DIR__, 2) . '/fonts/proximanova_regular.ttf';
 
       // --- Step 1: Logo
       $logoX = (int) (($canvasWidth - $newLogoWidth) / 2);
