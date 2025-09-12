@@ -81,7 +81,7 @@ trait QrCodeable {
       $qrWidth = imagesx($qrImage);
       $qrHeight = imagesy($qrImage);
 
-      // Resize QR
+      // Resize QR.
       $qrScale = 0.7;
       $newQrWidth  = (int) ($qrWidth * $qrScale);
       $newQrHeight = (int) ($qrHeight * $qrScale);
@@ -294,6 +294,9 @@ trait QrCodeable {
 
   }
 
+  /**
+   *
+   */
   public static function generateQrCodeForPoster($data, $entityId, $saveOptions) {
     try {
       $options = new QROptions([
@@ -322,6 +325,161 @@ trait QrCodeable {
     }
 
     return TRUE;
+  }
+
+  /**
+   *
+   */
+  public static function handleCampRedirect($id) {
+    $type = $_GET['type'] ?? NULL;
+    $camp = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect('Collection_Camp_Intent_Details.End_Date', 'subtype:name', 'Goonj_Activities.End_Date', 'Institution_Collection_Camp_Intent.Collections_will_end_on_Date_', 'Institution_Goonj_Activities.End_Date')
+      ->addWhere('id', '=', $id)
+      ->execute()
+      ->first();
+
+    $campStatus = $camp['subtype:name'];
+
+    if ($type === 'event') {
+      $event = Event::get(TRUE)
+        ->addSelect('end_date')
+        ->addWhere('id', '=', $id)
+        ->execute()->first();
+
+      $endRaw = $event['end_date'] ?? NULL;
+
+      if ($endRaw) {
+        $endDate = new \DateTime($endRaw);
+        $endDate->modify('+7 days');
+        $today = new \DateTime();
+
+        if ($today > $endDate) {
+          $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+          \CRM_Utils_System::redirect("{$baseUrl}qr-code-expire/");
+          return;
+        }
+      }
+
+      $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+      \CRM_Utils_System::redirect("{$baseUrl}actions/events/{$id}");
+    }
+
+    if ($type === 'entity') {
+
+      if ($campStatus == 'Collection_Camp') {
+        $endRaw = $camp['Collection_Camp_Intent_Details.End_Date'] ?? NULL;
+
+        if ($endRaw) {
+          $endDate = new \DateTime($endRaw);
+          $endDate->modify('+7 days');
+          $today = new \DateTime();
+
+          if ($today > $endDate) {
+            $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+            \CRM_Utils_System::redirect("{$baseUrl}qr-code-expire/");
+            return;
+          }
+        }
+
+        $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+        \CRM_Utils_System::redirect("{$baseUrl}actions/collection-camp/{$id}");
+      }
+      elseif ($campStatus == 'Dropping_Center') {
+        $droppingCenterMetas = EckEntity::get('Dropping_Center_Meta', FALSE)
+          ->addSelect('Status.Status:name')
+          ->addWhere('Dropping_Center_Meta.Dropping_Center', '=', $id)
+          ->addWhere('subtype:name', '=', 'Status')
+          ->execute();
+
+        foreach ($droppingCenterMetas as $meta) {
+          if (!empty($meta['Status.Status:name']) && $meta['Status.Status:name'] === 'Permanently_Closed') {
+            $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+            \CRM_Utils_System::redirect("{$baseUrl}qr-code-expire/");
+            exit;
+          }
+        }
+
+        $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+        \CRM_Utils_System::redirect("{$baseUrl}actions/dropping-center/{$id}");
+      }
+      elseif ($campStatus == 'Goonj_Activities') {
+        $endRaw = $camp['Goonj_Activities.End_Date'] ?? NULL;
+
+        if ($endRaw) {
+          $endDate = new \DateTime($endRaw);
+          $endDate->modify('+7 days');
+          $today = new \DateTime();
+
+          if ($today > $endDate) {
+            $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+            \CRM_Utils_System::redirect("{$baseUrl}qr-code-expire/");
+            return;
+          }
+        }
+
+        $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+        \CRM_Utils_System::redirect("{$baseUrl}actions/goonj-activities/{$id}");
+      }
+      elseif ($campStatus == 'Institution_Collection_Camp') {
+        $endRaw = $camp['Institution_Collection_Camp_Intent.Collections_will_end_on_Date_'] ?? NULL;
+
+        if ($endRaw) {
+          $endDate = new \DateTime($endRaw);
+          $endDate->modify('+7 days');
+          $today = new \DateTime();
+
+          if ($today > $endDate) {
+            $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+            \CRM_Utils_System::redirect("{$baseUrl}qr-code-expire/");
+            return;
+          }
+        }
+
+        $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+        \CRM_Utils_System::redirect("{$baseUrl}actions/institution-collection-camp/{$id}");
+      }
+      elseif ($campStatus == 'Institution_Dropping_Center') {
+        $droppingCenterMetas = EckEntity::get('Dropping_Center_Meta', FALSE)
+          ->addSelect('Status.Status:name')
+          ->addWhere('Dropping_Center_Meta.Institution_Dropping_Center', '=', $id)
+          ->addWhere('subtype:name', '=', 'Status')
+          ->execute();
+
+        foreach ($droppingCenterMetas as $meta) {
+          if (!empty($meta['Status.Status:name']) && $meta['Status.Status:name'] === 'Permanently_Closed') {
+            $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+            \CRM_Utils_System::redirect("{$baseUrl}qr-code-expire/");
+            exit;
+          }
+        }
+
+        $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+        \CRM_Utils_System::redirect("{$baseUrl}actions/institution-dropping-center/{$id}");
+      }
+      elseif ($campStatus == 'Institution_Goonj_Activities') {
+        $endRaw = $camp['Institution_Goonj_Activities.End_Date'] ?? NULL;
+
+        if ($endRaw) {
+          $endDate = new \DateTime($endRaw);
+          $endDate->modify('+7 days');
+          $today = new \DateTime();
+
+          if ($today > $endDate) {
+            $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+            \CRM_Utils_System::redirect("{$baseUrl}qr-code-expire/");
+            return;
+          }
+        }
+
+        $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+        \CRM_Utils_System::redirect("{$baseUrl}actions/institution-goonj-activities/{$id}");
+      }
+      else {
+        throw new \Exception('Invalid entity type');
+      }
+
+    }
+
   }
 
   /**
