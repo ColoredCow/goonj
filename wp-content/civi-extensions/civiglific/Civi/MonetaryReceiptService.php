@@ -31,6 +31,8 @@ class MonetaryReceiptService extends AutoSubscriber {
     if ($entity !== 'Contribution' || !$objectRef->id) {
       return;
     }
+    error_log('checking');
+
     try {
       $contributionId = $objectRef->id;
 
@@ -50,6 +52,8 @@ class MonetaryReceiptService extends AutoSubscriber {
 
       $isSendReceiptViaWhatsApp = $contributionData['Contribution_Details.Send_Receipt_via_WhatsApp:name'];
       error_log('issendreceipt: ' . print_r($isSendReceiptViaWhatsApp, TRUE));
+      error_log('isSendReceiptViaWhatsApp:' . print_r($isSendReceiptViaWhatsApp, TRUE));
+
 
       if ($isSendReceiptViaWhatsApp == NULL) {
         return;
@@ -115,6 +119,8 @@ class MonetaryReceiptService extends AutoSubscriber {
       // Save PDF to persistent location.
       $uploadBase = defined('WP_CONTENT_DIR') ? rtrim(WP_CONTENT_DIR, '/') : rtrim($_SERVER['DOCUMENT_ROOT'] ?? __DIR__, '/');
       $saveDir = $uploadBase . '/uploads/civicrm/persist/contribute/contribution/';
+      error_log('saveDir:' . print_r($saveDir, TRUE));
+
       if (!file_exists($saveDir)) {
         mkdir($saveDir, 0755, TRUE);
       }
@@ -178,6 +184,28 @@ class MonetaryReceiptService extends AutoSubscriber {
       }
       else {
         \error_log("[MonetaryReceiptService] No phone number available, skipping Glific sync");
+      }
+
+      error_log('finder:' . print_r($glificContactId, TRUE));
+      error_log('pdfUrl:' . print_r($pdfUrl, TRUE));
+
+
+      if ($glificContactId && $pdfUrl) {
+        try {
+          $glificClient = new GlificClient();
+          $media = $glificClient->createMessageMedia($pdfUrl);
+
+          if ($media) {
+            $mediaId = $media['id'];
+            error_log("[MonetaryReceiptService] Created media ID in Glific: {$mediaId}");
+          \Civi::log()->error("media Id" . $media['id']);
+
+            \Civi::log()->error("Media created in Glific");
+          }
+        }
+        catch (\Throwable $e) {
+          \Civi::log()->error("[MonetaryReceiptService] createMessageMedia failed: " . $e->getMessage());
+        }
       }
 
       // Return both receipt path + glific contact id.

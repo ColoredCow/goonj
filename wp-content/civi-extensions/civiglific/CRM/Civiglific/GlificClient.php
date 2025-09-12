@@ -257,6 +257,51 @@ class GlificClient {
     return $response['data']['contact']['contact'] ?? [];
   }
 
+  /**
+   * Uploads a media message (e.g., PDF) to Glific.
+   *
+   * @param string $url
+   *   Public URL of the media file.
+   * @param string|null $sourceUrl
+   *   Optional source URL (defaults to $url).
+   *
+   * @return array|null
+   *   Returns messageMedia { id, url } or null on failure.
+   */
+  public function createMessageMedia($url, $sourceUrl = NULL) {
+    $query = '
+      mutation($input: MessageMediaInput!) {
+        createMessageMedia(input:$input) {
+          messageMedia {
+            id
+            url
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    ';
+
+    $variables = [
+      'input' => [
+        'url' => $url,
+        'source_url' => $sourceUrl ?? $url,
+      ],
+    ];
+
+    $response = $this->query($query, $variables);
+
+    if (!empty($response['data']['createMessageMedia']['errors'])) {
+      \Civi::log()->error("Glific createMessageMedia error: " . json_encode($response['data']['createMessageMedia']['errors']));
+      return NULL;
+    }
+
+    return $response['data']['createMessageMedia']['messageMedia'] ?? NULL;
+  }
+
+
 }
 
 }
