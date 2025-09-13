@@ -155,7 +155,7 @@ trait QrCodeable {
       imagecopy($canvas, $resizedLogo, $logoX, $logoY, 0, 0, $newLogoWidth, $newLogoHeight);
 
       // --- Step 2: Heading text
-      $fontSize = 47;
+      $fontSize = 40;
       $topY = $logoY + $newLogoHeight + 60;
       $lines = explode("\n", $topText);
       $lineHeight = $fontSize + 10;
