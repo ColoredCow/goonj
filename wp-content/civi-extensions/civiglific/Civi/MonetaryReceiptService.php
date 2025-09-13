@@ -31,7 +31,6 @@ class MonetaryReceiptService extends AutoSubscriber {
     if ($entity !== 'Contribution' || !$objectRef->id) {
       return;
     }
-    error_log('checking');
 
     try {
       $contributionId = $objectRef->id;
@@ -48,11 +47,7 @@ class MonetaryReceiptService extends AutoSubscriber {
         ->addWhere('id', '=', $contributionId)
         ->execute()->first();
 
-      error_log('contributionData: ' . print_r($contributionData, TRUE));
-
       $isSendReceiptViaWhatsApp = $contributionData['Contribution_Details.Send_Receipt_via_WhatsApp:name'];
-      error_log('issendreceipt: ' . print_r($isSendReceiptViaWhatsApp, TRUE));
-      error_log('isSendReceiptViaWhatsApp:' . print_r($isSendReceiptViaWhatsApp, TRUE));
 
       if ($isSendReceiptViaWhatsApp == NULL) {
         return;
@@ -60,7 +55,6 @@ class MonetaryReceiptService extends AutoSubscriber {
 
       $invoiceNumber = $contributionData['invoice_number'] ?? '';
 
-      // Prepare input and IDs.
       $input = [
         'amount' => $contributionData['total_amount'] ?? NULL,
         'is_test' => $contributionData['is_test'] ?? 0,
@@ -120,7 +114,6 @@ class MonetaryReceiptService extends AutoSubscriber {
       // Save PDF to persistent location.
       $uploadBase = defined('WP_CONTENT_DIR') ? rtrim(WP_CONTENT_DIR, '/') : rtrim($_SERVER['DOCUMENT_ROOT'] ?? __DIR__, '/');
       $saveDir = $uploadBase . '/uploads/civicrm/persist/contribute/contribution/';
-      error_log('saveDir:' . print_r($saveDir, TRUE));
 
       if (!file_exists($saveDir)) {
         mkdir($saveDir, 0755, TRUE);
@@ -131,10 +124,8 @@ class MonetaryReceiptService extends AutoSubscriber {
         throw new \Exception("Failed to save PDF to {$savePath}");
       }
 
-      // Build public URL.
       $baseUrl = rtrim(\CRM_Core_Config::singleton()->userFrameworkBaseURL, '/');
       // $pdfUrl  = $baseUrl . '/wp-content/uploads/civicrm/persist/contribute/contribution/' . $fileNameForPdf;
-
       $pdfUrl = "https://staging-crm.goonj.org/wp-content/uploads/civicrm/persist/contribute/contribution/receipt_11313.pdf";
 
       $contributionContactId = $contributionData['contact_id'];
@@ -160,18 +151,12 @@ class MonetaryReceiptService extends AutoSubscriber {
           $glificClient = new GlificClient();
           $glificContactId = $glificClient->getContactIdByPhone($phoneNumber);
 
-          if ($glificContactId) {
-            \error_log("[MonetaryReceiptService] Found existing Glific contact ID: {$glificContactId}");
-          }
-          else {
-            \error_log("[MonetaryReceiptService] No Glific contact found for {$phoneNumber}, creating...");
+          if (!$glificContactId) {
             $newContactId = $glificClient->createContact($contactName, $phoneNumber);
             if ($newContactId) {
-              \error_log("[MonetaryReceiptService] Created Glific contact ID: {$newContactId}");
               // Opt-in immediately after creation.
               $optinId = $glificClient->optinContact($phoneNumber, $contactName);
               if ($optinId) {
-                \error_log("[MonetaryReceiptService] Opted-in Glific contact ID: {$optinId}");
                 $glificContactId = $optinId;
               }
               else {
@@ -189,12 +174,10 @@ class MonetaryReceiptService extends AutoSubscriber {
         \error_log("[MonetaryReceiptService] No phone number available, skipping Glific sync");
       }
 
-      error_log('finder:' . print_r($glificContactId, TRUE));
-      error_log('pdfUrl:' . print_r($pdfUrl, TRUE));
-
       if ($glificContactId && $pdfUrl) {
         try {
           $glificClient = new GlificClient();
+
           // --- 1. Upload PDF to Glific ---
           $media = $glificClient->createMessageMedia($pdfUrl);
 
@@ -208,10 +191,11 @@ class MonetaryReceiptService extends AutoSubscriber {
 
             // Hardcoded template ID.
             $templateId = 741701;
+
             // Dynamic template params.
             $params = [
-              $contactName ?: "-",        // If empty, put "-"
-              $invoiceNumber ?: "-"       // If empty, put "-"
+              $contactName ?: "-",
+              $invoiceNumber ?: "-",
             ];
 
             $message = $glificClient->sendMessage($glificContactId, $mediaId, $templateId, $params);
@@ -228,7 +212,6 @@ class MonetaryReceiptService extends AutoSubscriber {
         }
       }
 
-      // Return both receipt path + glific contact id.
       return [
         'receipt_path' => $savePath,
         'glific_contact_id' => $glificContactId,
