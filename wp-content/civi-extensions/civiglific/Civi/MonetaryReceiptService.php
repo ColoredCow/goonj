@@ -119,7 +119,7 @@ class MonetaryReceiptService extends AutoSubscriber {
 
       // Save PDF to persistent location.
       $uploadBase = defined('WP_CONTENT_DIR') ? rtrim(WP_CONTENT_DIR, '/') : rtrim($_SERVER['DOCUMENT_ROOT'] ?? __DIR__, '/');
-      $saveDir = $uploadBase . '/uploads/civicrm/persist/contribute/contribution/';
+      $saveDir = $uploadBase . CIVICRM_PERSIST_PDF_PATH;
 
       if (!file_exists($saveDir)) {
         mkdir($saveDir, 0755, TRUE);
@@ -131,7 +131,7 @@ class MonetaryReceiptService extends AutoSubscriber {
       }
 
       $baseUrl = rtrim(\CRM_Core_Config::singleton()->userFrameworkBaseURL, '/');
-      // $pdfUrl  = $baseUrl . '/wp-content/uploads/civicrm/persist/contribute/contribution/' . $fileNameForPdf;
+      // $pdfUrl  = $baseUrl . CIVICRM_SAVED_PDF_PATH . $fileNameForPdf;
       $pdfUrl = "https://staging-crm.goonj.org/wp-content/uploads/civicrm/persist/contribute/contribution/receipt_11313.pdf";
 
       $contributionContactId = $contributionData['contact_id'];
@@ -219,7 +219,7 @@ class MonetaryReceiptService extends AutoSubscriber {
 
     }
     catch (\Throwable $e) {
-      \Civi::log()->info("[MonetaryReceiptService] EXCEPTION", $e->getMessage());
+      \Civi::log()->error("[MonetaryReceiptService] Exception: " . $e->getMessage(), ['exception' => $e]);
 
       return NULL;
     }
