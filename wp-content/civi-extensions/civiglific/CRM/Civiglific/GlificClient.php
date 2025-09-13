@@ -346,12 +346,7 @@ class GlificClient {
       ],
     ];
 
-    \Civi::log()->info("Glific payload", $variables);
-
     $response = $this->query($query, $variables);
-
-    \Civi::log()->info("Full response", $response );
-
 
     if (!empty($response['data']['createAndSendMessage']['errors'])) {
       \Civi::log()->error("Glific sendMessage error: " . json_encode($response['data']['createAndSendMessage']['errors']));
