@@ -28,9 +28,16 @@ class MonetaryReceiptService extends AutoSubscriber {
    *
    */
   public static function triggerMonetaryEmail($op, $entity, $id, $objectRef = NULL) {
+    static $processed = [];
     if ($entity !== 'Contribution' || !$objectRef->id) {
       return;
     }
+
+    // Prevent infinite loop.
+    if (in_array($objectRef->id, $processed)) {
+      return;
+    }
+    $processed[] = $objectRef->id;
 
     try {
       $contributionId = $objectRef->id;
@@ -43,17 +50,29 @@ class MonetaryReceiptService extends AutoSubscriber {
       $contribution = new \CRM_Contribute_BAO_Contribution();
 
       $contributionData = Contribution::get(FALSE)
-        ->addSelect('total_amount', 'is_test', 'fee_amount', 'net_amount', 'trxn_id', 'receive_date', 'contribution_status_id', 'contact_id', 'Contribution_Details.Send_Receipt_via_WhatsApp:name', 'invoice_number')
+        ->addSelect('total_amount', 'is_test', 'fee_amount', 'net_amount', 'trxn_id', 'receive_date', 'contribution_status_id', 'contact_id', 'Contribution_Details.Send_Receipt_via_WhatsApp:name', 'invoice_number', 'contribution_page_id:name', 'Contribution_Details.Is_WhatsApp_Message_Send')
         ->addWhere('id', '=', $contributionId)
         ->execute()->first();
 
       $isSendReceiptViaWhatsApp = $contributionData['Contribution_Details.Send_Receipt_via_WhatsApp:name'];
+      $isWhatsaApppMessageSent = $contributionData['Contribution_Details.Is_WhatsApp_Message_Send'];
 
       if ($isSendReceiptViaWhatsApp == NULL) {
         return;
       }
 
+      if ($isWhatsaApppMessageSent == TRUE) {
+        return;
+      }
+
       $invoiceNumber = $contributionData['invoice_number'] ?? '';
+      $contributionPageName = $contributionData['contribution_page_id:name'] ?? '';
+      if ($contributionPageName === 'Team_5000') {
+        $templateId = CIVICRM_GLIFIC_TEMPLATE_ID_TEAM5000;
+      }
+      else {
+        $templateId = CIVICRM_GLIFIC_TEMPLATE_ID_DEFAULT;
+      }
 
       $input = [
         'amount' => $contributionData['total_amount'] ?? NULL,
@@ -113,7 +132,7 @@ class MonetaryReceiptService extends AutoSubscriber {
 
       // Save PDF to persistent location.
       $uploadBase = defined('WP_CONTENT_DIR') ? rtrim(WP_CONTENT_DIR, '/') : rtrim($_SERVER['DOCUMENT_ROOT'] ?? __DIR__, '/');
-      $saveDir = $uploadBase . '/uploads/civicrm/persist/contribute/contribution/';
+      $saveDir = $uploadBase . CIVICRM_PERSIST_PDF_PATH;
 
       if (!file_exists($saveDir)) {
         mkdir($saveDir, 0755, TRUE);
@@ -125,8 +144,7 @@ class MonetaryReceiptService extends AutoSubscriber {
       }
 
       $baseUrl = rtrim(\CRM_Core_Config::singleton()->userFrameworkBaseURL, '/');
-      // $pdfUrl  = $baseUrl . '/wp-content/uploads/civicrm/persist/contribute/contribution/' . $fileNameForPdf;
-      $pdfUrl = "https://staging-crm.goonj.org/wp-content/uploads/civicrm/persist/contribute/contribution/receipt_11313.pdf";
+      $pdfUrl  = $baseUrl . CIVICRM_SAVED_PDF_PATH . $fileNameForPdf;
 
       $contributionContactId = $contributionData['contact_id'];
 
@@ -186,9 +204,6 @@ class MonetaryReceiptService extends AutoSubscriber {
               'media_url' => $media['url'],
             ]);
 
-            // Hardcoded template ID.
-            $templateId = 741701;
-
             // Dynamic template params.
             $params = [
               $contactName ?: "-",
@@ -209,6 +224,11 @@ class MonetaryReceiptService extends AutoSubscriber {
         }
       }
 
+      $results = Contribution::update(FALSE)
+        ->addValue('Contribution_Details.Is_WhatsApp_Message_Send', TRUE)
+        ->addWhere('id', '=', $contributionId)
+        ->execute();
+
       return [
         'receipt_path' => $savePath,
         'glific_contact_id' => $glificContactId,
@@ -216,7 +236,7 @@ class MonetaryReceiptService extends AutoSubscriber {
 
     }
     catch (\Throwable $e) {
-      \Civi::log()->info("[MonetaryReceiptService] EXCEPTION", $e->getMessage());
+      \Civi::log()->error("[MonetaryReceiptService] Exception: " . $e->getMessage(), ['exception' => $e]);
 
       return NULL;
     }
