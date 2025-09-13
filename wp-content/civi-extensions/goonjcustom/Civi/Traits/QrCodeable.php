@@ -26,7 +26,7 @@ trait QrCodeable {
         'version'    => 5,
         'outputType' => QRCode::OUTPUT_IMAGE_PNG,
         'eccLevel'   => QRCode::ECC_L,
-        'scale'      => 12,
+        'scale'      => 14,
       ]);
 
       if (!empty($saveOptions['customGroupName']) && $saveOptions['customGroupName'] === 'Event_QR') {
