@@ -26,7 +26,7 @@ trait QrCodeable {
         'version'    => 5,
         'outputType' => QRCode::OUTPUT_IMAGE_PNG,
         'eccLevel'   => QRCode::ECC_L,
-        'scale'      => 12,
+        'scale'      => 14,
       ]);
 
       if (!empty($saveOptions['customGroupName']) && $saveOptions['customGroupName'] === 'Event_QR') {
@@ -36,15 +36,17 @@ trait QrCodeable {
           ->execute()->first();
 
         $addresses = Address::get(FALSE)
+          ->addSelect('city', 'street_address')
           ->addWhere('id', '=', $event['loc_block_id.address_id'])
           ->setLimit(1)
           ->execute()->first();
-        $address = \CRM_Utils_Address::format($addresses);
+        $address = $addresses['street_address'] ?? '';
+        $city = $addresses['city'] ?? '';
       }
 
       if (!empty($saveOptions['customGroupName']) && $saveOptions['customGroupName'] != 'Event_QR') {
         $campData = EckEntity::get('Collection_Camp', FALSE)
-          ->addSelect('subtype:name', 'Collection_Camp_Intent_Details.Location_Area_of_camp', 'Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_', 'Goonj_Activities.Where_do_you_wish_to_organise_the_activity_', 'Institution_Collection_Camp_Intent.Collection_Camp_Address', 'Institution_Dropping_Center_Intent.Dropping_Center_Address', 'Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_')
+          ->addSelect('subtype:name', 'Collection_Camp_Intent_Details.Location_Area_of_camp', 'Collection_Camp_Intent_Details.City', 'Collection_Camp_Intent_Details.Other_City', 'Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_', 'Dropping_Centre.District_City', 'Dropping_Centre.Other_City', 'Goonj_Activities.Where_do_you_wish_to_organise_the_activity_', 'Goonj_Activities.City', 'Collection_Camp_Intent_Details.Other_City', 'Institution_Collection_Camp_Intent.Collection_Camp_Address', 'Institution_Collection_Camp_Intent.District_City', 'Institution_Collection_Camp_Intent.Other_Type', 'Institution_Dropping_Center_Intent.Dropping_Center_Address', 'Institution_Dropping_Center_Intent.District_City', 'Institution_Dropping_Center_Intent.Other_City', 'Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_', 'Institution_Goonj_Activities.City', 'Institution_Goonj_Activities.Other_City')
           ->addWhere('id', '=', $entityId)
           ->execute()->first();
 
@@ -52,21 +54,27 @@ trait QrCodeable {
 
         if ($campStatus == 'Collection_Camp') {
           $address = $campData['Collection_Camp_Intent_Details.Location_Area_of_camp'] ?? '';
+          $city = $campData['Collection_Camp_Intent_Details.City'] ?? 'Collection_Camp_Intent_Details.Other_City';
         }
         elseif ($campStatus == 'Dropping_Center') {
           $address = $campData['Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_'] ?? '';
+          $city = $campData['Dropping_Centre.District_City'] ?? $campData['Dropping_Centre.Other_City'] ?? '';
         }
         elseif ($campStatus == 'Goonj_Activities') {
           $address = $campData['Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'] ?? '';
+          $city = $campData['Goonj_Activities.City'] ?? 'Collection_Camp_Intent_Details.Other_City';
         }
         elseif ($campStatus == 'Institution_Collection_Camp') {
           $address = $campData['Institution_Collection_Camp_Intent.Collection_Camp_Address'] ?? '';
+          $city = $campData['Institution_Collection_Camp_Intent.District_City'] ?? $campData['Institution_Collection_Camp_Intent.Other_Type'] ?? '';
         }
         elseif ($campStatus == 'Institution_Dropping_Center') {
           $address = $campData['Institution_Dropping_Center_Intent.Dropping_Center_Address'] ?? '';
+          $city = $campData['Institution_Dropping_Center_Intent.District_City'] ?? $campData['Institution_Dropping_Center_Intent.Other_City'] ?? '';
         }
         elseif ($campStatus == 'Institution_Goonj_Activities') {
           $address = $campData['Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'] ?? '';
+          $city = $campData['Institution_Goonj_Activities.City'] ?? $campData['Institution_Goonj_Activities.Other_City'] ?? '';
         }
         else {
           throw new \Exception('Invalid entity type for QR code generation.');
@@ -124,6 +132,10 @@ trait QrCodeable {
       $venueLabel = "Venue: ";
       $venueValue = $address;
 
+      if (!empty($city)) {
+        $venueValue .= ', ' . $city;
+      }
+
       // Canvas: logo + top text + QR + bottom text.
       $canvasWidth = $qrWidth + 100;
       $canvasHeight = $newLogoHeight + $qrHeight + 220;
@@ -134,8 +146,8 @@ trait QrCodeable {
       imagefill($canvas, 0, 0, $white);
 
       // Fonts.
-      $fontPath = dirname(__DIR__, 2) . '/fonts/Fontspring-proximanova-bold.otf';
-      $fontPathRegular = dirname(__DIR__, 2) . '/fonts/Fontspring-proximanova-regular.otf';
+      $fontPath = dirname(__DIR__, 2) . '/fonts/proximanova_bold.otf';
+      $fontPathRegular = dirname(__DIR__, 2) . '/fonts/proximanova_regular.ttf';
 
       // --- Step 1: Logo
       $logoX = (int) (($canvasWidth - $newLogoWidth) / 2);
@@ -143,7 +155,7 @@ trait QrCodeable {
       imagecopy($canvas, $resizedLogo, $logoX, $logoY, 0, 0, $newLogoWidth, $newLogoHeight);
 
       // --- Step 2: Heading text
-      $fontSize = 47;
+      $fontSize = 40;
       $topY = $logoY + $newLogoHeight + 60;
       $lines = explode("\n", $topText);
       $lineHeight = $fontSize + 10;
@@ -208,6 +220,49 @@ trait QrCodeable {
         }
         else {
           imagettftext($canvas, $bottomFontSize, 0, $x, $y, $black, $fontPathRegular, $line);
+        }
+      }
+      // --- Step 5: Banner at the very bottom
+      $bannerPath = '/wp-content/uploads/2025/09/banner-line.png';
+      $siteUrl = get_site_url();
+      $bannerUrl = $siteUrl . $bannerPath;
+      $bannerData = file_get_contents($bannerUrl);
+      if ($bannerData !== FALSE) {
+        $bannerImage = imagecreatefromstring($bannerData);
+        if ($bannerImage !== FALSE) {
+          $bannerWidth = imagesx($bannerImage);
+          $bannerHeight = imagesy($bannerImage);
+
+          // Resize banner to fit canvas width.
+          $newBannerWidth = $canvasWidth;
+          $newBannerHeight = (int) ($bannerHeight * ($newBannerWidth / $bannerWidth));
+          $resizedBanner = imagecreatetruecolor($newBannerWidth, $newBannerHeight);
+          imagealphablending($resizedBanner, FALSE);
+          imagesavealpha($resizedBanner, TRUE);
+
+          // Fill banner background transparent.
+          $transparent = imagecolorallocatealpha($resizedBanner, 0, 0, 0, 127);
+          imagefill($resizedBanner, 0, 0, $transparent);
+
+          imagecopyresampled(
+                $resizedBanner, $bannerImage,
+                0, 0, 0, 0,
+                $newBannerWidth, $newBannerHeight,
+                $bannerWidth, $bannerHeight
+            );
+
+          // Paste banner flush at bottom of canvas.
+          $bannerX = 0;
+          $bannerY = $canvasHeight - $newBannerHeight;
+          imagecopy(
+                $canvas, $resizedBanner,
+                $bannerX, $bannerY,
+                0, 0,
+                $newBannerWidth, $newBannerHeight
+            );
+
+          imagedestroy($bannerImage);
+          imagedestroy($resizedBanner);
         }
       }
 
