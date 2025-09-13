@@ -43,7 +43,7 @@ class MonetaryReceiptService extends AutoSubscriber {
       $contribution = new \CRM_Contribute_BAO_Contribution();
 
       $contributionData = Contribution::get(FALSE)
-        ->addSelect('total_amount', 'is_test', 'fee_amount', 'net_amount', 'trxn_id', 'receive_date', 'contribution_status_id', 'contact_id', 'Contribution_Details.Send_Receipt_via_WhatsApp:name', 'invoice_number')
+        ->addSelect('total_amount', 'is_test', 'fee_amount', 'net_amount', 'trxn_id', 'receive_date', 'contribution_status_id', 'contact_id', 'Contribution_Details.Send_Receipt_via_WhatsApp:name', 'invoice_number', 'contribution_page_id:name')
         ->addWhere('id', '=', $contributionId)
         ->execute()->first();
 
@@ -54,6 +54,12 @@ class MonetaryReceiptService extends AutoSubscriber {
       }
 
       $invoiceNumber = $contributionData['invoice_number'] ?? '';
+      $contributionPageName = $contributionData['contribution_page_id:name'] ?? '';
+      if ($contributionPageName === 'Team_5000') {
+        $templateId = CIVICRM_GLIFIC_TEMPLATE_ID_TEAM5000;
+      } else {
+        $templateId = CIVICRM_GLIFIC_TEMPLATE_ID_DEFAULT;
+      }
 
       $input = [
         'amount' => $contributionData['total_amount'] ?? NULL,
@@ -185,9 +191,6 @@ class MonetaryReceiptService extends AutoSubscriber {
               'media_id' => $mediaId,
               'media_url' => $media['url'],
             ]);
-
-            // Hardcoded template ID.
-            $templateId = 741701;
 
             // Dynamic template params.
             $params = [
