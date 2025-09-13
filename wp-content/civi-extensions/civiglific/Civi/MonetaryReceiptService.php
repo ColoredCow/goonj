@@ -28,9 +28,16 @@ class MonetaryReceiptService extends AutoSubscriber {
    *
    */
   public static function triggerMonetaryEmail($op, $entity, $id, $objectRef = NULL) {
+    static $processed = [];
     if ($entity !== 'Contribution' || !$objectRef->id) {
       return;
     }
+
+    // Prevent infinite loop.
+    if (in_array($objectRef->id, $processed)) {
+      return;
+    }
+    $processed[] = $objectRef->id;
 
     try {
       $contributionId = $objectRef->id;
@@ -43,13 +50,18 @@ class MonetaryReceiptService extends AutoSubscriber {
       $contribution = new \CRM_Contribute_BAO_Contribution();
 
       $contributionData = Contribution::get(FALSE)
-        ->addSelect('total_amount', 'is_test', 'fee_amount', 'net_amount', 'trxn_id', 'receive_date', 'contribution_status_id', 'contact_id', 'Contribution_Details.Send_Receipt_via_WhatsApp:name', 'invoice_number', 'contribution_page_id:name')
+        ->addSelect('total_amount', 'is_test', 'fee_amount', 'net_amount', 'trxn_id', 'receive_date', 'contribution_status_id', 'contact_id', 'Contribution_Details.Send_Receipt_via_WhatsApp:name', 'invoice_number', 'contribution_page_id:name', 'Contribution_Details.Is_WhatsApp_Message_Send')
         ->addWhere('id', '=', $contributionId)
         ->execute()->first();
 
       $isSendReceiptViaWhatsApp = $contributionData['Contribution_Details.Send_Receipt_via_WhatsApp:name'];
+      $isWhatsaApppMessageSent = $contributionData['Contribution_Details.Is_WhatsApp_Message_Send'];
 
       if ($isSendReceiptViaWhatsApp == NULL) {
+        return;
+      }
+
+      if ($isWhatsaApppMessageSent == TRUE) {
         return;
       }
 
@@ -57,7 +69,8 @@ class MonetaryReceiptService extends AutoSubscriber {
       $contributionPageName = $contributionData['contribution_page_id:name'] ?? '';
       if ($contributionPageName === 'Team_5000') {
         $templateId = CIVICRM_GLIFIC_TEMPLATE_ID_TEAM5000;
-      } else {
+      }
+      else {
         $templateId = CIVICRM_GLIFIC_TEMPLATE_ID_DEFAULT;
       }
 
@@ -211,6 +224,11 @@ class MonetaryReceiptService extends AutoSubscriber {
           \Civi::log()->error("[MonetaryReceiptService] Glific API failed: " . $e->getMessage());
         }
       }
+
+      $results = Contribution::update(FALSE)
+        ->addValue('Contribution_Details.Is_WhatsApp_Message_Send', TRUE)
+        ->addWhere('id', '=', $contributionId)
+        ->execute();
 
       return [
         'receipt_path' => $savePath,
