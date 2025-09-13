@@ -53,7 +53,7 @@ class CollectionCampService extends AutoSubscriber {
       ['individualCreated'],
       ['assignChapterGroupToIndividual'],
       ['reGenerateCollectionCampQr'],
-      ['updateCampStatusOnOutcomeFilled'],
+      ['updateCampStatusOnOutcomeAndAckFilled'],
       ['assignChapterGroupToIndividualForContribution'],
       ['updateCampaignForCollectionSourceContribution'],
       ['generateInvoiceIdForContribution'],
@@ -1124,7 +1124,6 @@ class CollectionCampService extends AutoSubscriber {
    *
    */
 
-
   /**
    * This hook is called after a db write on entities.
    *
@@ -1179,23 +1178,34 @@ class CollectionCampService extends AutoSubscriber {
    * @param object $objectRef
    *   The reference to the object.
    */
-  public static function updateCampStatusOnOutcomeFilled(string $op, string $objectName, int $objectId, &$objectRef) {
+  public static function updateCampStatusOnOutcomeAndAckFilled(string $op, string $objectName, int $objectId, &$objectRef) {
     if ($objectName !== 'AfformSubmission') {
       return;
     }
 
     $afformName = $objectRef->afform_name;
-
-    if ($afformName !== 'afformCampOutcomeForm') {
+    if ($afformName !== 'afformFrontFacingAcknowledgementFormForLogistics' &&
+    $afformName !== 'afformAcknowledgementFormForLogistics') {
       return;
     }
 
     $jsonData = $objectRef->data;
     $dataArray = json_decode($jsonData, TRUE);
 
-    $collectionCampId = $dataArray['Eck_Collection_Camp1'][0]['fields']['id'];
+    $collectionCampId = $dataArray['Eck_Collection_Source_Vehicle_Dispatch1'][0]['fields']['Camp_Vehicle_Dispatch.Collection_Camp'];
 
     if (!$collectionCampId) {
+      return;
+    }
+
+    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect('Camp_Outcome.Rate_the_camp')
+      ->addWhere('id', '=', $collectionCampId)
+      ->execute()->first();
+
+    $campOutcome = $collectionCamp['Camp_Outcome.Rate_the_camp'] ?? NULL;
+
+    if (!$campOutcome) {
       return;
     }
 

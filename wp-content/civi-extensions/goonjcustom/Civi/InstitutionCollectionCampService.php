@@ -55,7 +55,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       ],
       '&hook_civicrm_post' => [
         ['updateNameOfTheInstitution'],
-        ['updateCampStatusOnOutcomeFilled'],
+        ['updateCampStatusOnOutcomeAndACKFilled'],
         ['updateInstitutionDispatchDetails'],
       ],
       '&hook_civicrm_custom' => [
@@ -115,23 +115,35 @@ class InstitutionCollectionCampService extends AutoSubscriber {
   /**
    *
    */
-  public static function updateCampStatusOnOutcomeFilled(string $op, string $objectName, int $objectId, &$objectRef) {
+  public static function updateCampStatusOnOutcomeAndACKFilled(string $op, string $objectName, int $objectId, &$objectRef) {
     if ($objectName !== 'AfformSubmission') {
       return;
     }
 
     $afformName = $objectRef->afform_name;
 
-    if ($afformName !== 'afformInstitutionCampOutcomeForm') {
+    if ($afformName !== 'afformInstitutionAcknowledgementForm' &&
+    $afformName !== 'afformInstitutionCampAcknowledgementFormForLogistics') {
       return;
     }
 
     $jsonData = $objectRef->data;
     $dataArray = json_decode($jsonData, TRUE);
 
-    $collectionCampId = $dataArray['Eck_Collection_Camp1'][0]['fields']['id'];
+    $collectionCampId = $dataArray['Eck_Collection_Source_Vehicle_Dispatch1'][0]['fields']['Camp_Vehicle_Dispatch.Institution_Collection_Camp'];
 
     if (!$collectionCampId) {
+      return;
+    }
+
+    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect('Camp_Outcome.Rate_the_camp')
+      ->addWhere('id', '=', $collectionCampId)
+      ->execute()->first();
+
+    $campOutcome = $collectionCamp['Camp_Outcome.Rate_the_camp'] ?? NULL;
+
+    if (!$campOutcome) {
       return;
     }
 
@@ -615,24 +627,26 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     $campCode = $collectionCamp['title'];
     $campAddress = $collectionCamp['Institution_Collection_Camp_Intent.Collection_Camp_Address'];
 
-    $coordinators = Relationship::get(FALSE)
-      ->addWhere('contact_id_b', '=', $goonjFieldId)
-      ->addWhere('relationship_type_id:name', '=', self::MATERIAL_RELATIONSHIP_TYPE_NAME)
-      ->addWhere('is_current', '=', TRUE)
-      ->execute()->first();
+    // $coordinators = Relationship::get(FALSE)
+    //   ->addWhere('contact_id_b', '=', $goonjFieldId)
+    //   ->addWhere('relationship_type_id:name', '=', self::MATERIAL_RELATIONSHIP_TYPE_NAME)
+    //   ->addWhere('is_current', '=', TRUE)
+    //   ->execute()->first();
 
-    $mmtId = $coordinators['contact_id_a'];
+    // $mmtId = $coordinators['contact_id_a'];
 
-    if (empty($mmtId)) {
-      return;
-    }
+    // if (empty($mmtId)) {
+    //   return;
+    // }
 
-    $email = Email::get(FALSE)
-      ->addSelect('email')
-      ->addWhere('contact_id', '=', $mmtId)
-      ->execute()->single();
+    // $email = Email::get(FALSE)
+    //   ->addSelect('email')
+    //   ->addWhere('contact_id', '=', $mmtId)
+    //   ->execute()->single();
 
-    $mmtEmail = $email['email'];
+    // $mmtEmail = $email['email'];
+    $mmtEmail = "bb@hh.com";
+
 
     $fromEmail = OptionValue::get(FALSE)
       ->addSelect('label')
