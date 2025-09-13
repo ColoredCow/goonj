@@ -167,11 +167,8 @@ class MonetaryReceiptService extends AutoSubscriber {
           }
         }
         catch (\Throwable $e) {
-          \error_log("[MonetaryReceiptService] Glific sync failed: " . $e->getMessage());
+          \Civi::log()->info("MonetaryReceiptService] Glific sync failed:", $e->getMessage());
         }
-      }
-      else {
-        \error_log("[MonetaryReceiptService] No phone number available, skipping Glific sync");
       }
 
       if ($glificContactId && $pdfUrl) {
@@ -219,7 +216,8 @@ class MonetaryReceiptService extends AutoSubscriber {
 
     }
     catch (\Throwable $e) {
-      error_log("[MonetaryReceiptService] EXCEPTION: {$e->getMessage()}\n{$e->getTraceAsString()}");
+      \Civi::log()->info("[MonetaryReceiptService] EXCEPTION", $e->getMessage());
+
       return NULL;
     }
   }
