@@ -222,6 +222,49 @@ trait QrCodeable {
           imagettftext($canvas, $bottomFontSize, 0, $x, $y, $black, $fontPathRegular, $line);
         }
       }
+      // --- Step 5: Banner at the very bottom
+      $bannerPath = '/wp-content/uploads/2025/09/banner-line.png';
+      $siteUrl = get_site_url();
+      $bannerUrl = $siteUrl . $bannerPath;
+      $bannerData = file_get_contents($bannerUrl);
+      if ($bannerData !== FALSE) {
+        $bannerImage = imagecreatefromstring($bannerData);
+        if ($bannerImage !== FALSE) {
+          $bannerWidth = imagesx($bannerImage);
+          $bannerHeight = imagesy($bannerImage);
+
+          // Resize banner to fit canvas width.
+          $newBannerWidth = $canvasWidth;
+          $newBannerHeight = (int) ($bannerHeight * ($newBannerWidth / $bannerWidth));
+          $resizedBanner = imagecreatetruecolor($newBannerWidth, $newBannerHeight);
+          imagealphablending($resizedBanner, FALSE);
+          imagesavealpha($resizedBanner, TRUE);
+
+          // Fill banner background transparent.
+          $transparent = imagecolorallocatealpha($resizedBanner, 0, 0, 0, 127);
+          imagefill($resizedBanner, 0, 0, $transparent);
+
+          imagecopyresampled(
+                $resizedBanner, $bannerImage,
+                0, 0, 0, 0,
+                $newBannerWidth, $newBannerHeight,
+                $bannerWidth, $bannerHeight
+            );
+
+          // Paste banner flush at bottom of canvas.
+          $bannerX = 0;
+          $bannerY = $canvasHeight - $newBannerHeight;
+          imagecopy(
+                $canvas, $resizedBanner,
+                $bannerX, $bannerY,
+                0, 0,
+                $newBannerWidth, $newBannerHeight
+            );
+
+          imagedestroy($bannerImage);
+          imagedestroy($resizedBanner);
+        }
+      }
 
       // Save final.
       ob_start();
