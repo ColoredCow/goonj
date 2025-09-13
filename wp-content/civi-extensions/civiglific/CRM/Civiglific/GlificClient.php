@@ -301,6 +301,66 @@ class GlificClient {
     return $response['data']['createMessageMedia']['messageMedia'] ?? NULL;
   }
 
+  /**
+   * Sends a message via Glific using template + media.
+   *
+   * @param string $receiverId
+   *   The Glific contact ID (receiver).
+   * @param string $mediaId
+   *   The uploaded media ID from Glific.
+   * @param int $templateId
+   *   The approved template ID in Glific.
+   * @param array $params
+   *   Parameters for the template (e.g., contact name, invoice number).
+   *
+   * @return array|null
+   *   Message response from Glific or null on failure.
+   */
+  public function sendMessage($receiverId, $mediaId, $templateId, array $params = []) {
+    $query = '
+      mutation CreateAndSendMessage($input: MessageInput!) {
+        createAndSendMessage(input: $input) {
+          message {
+            id
+            templateId
+          }
+          errors {
+            key
+            message
+          }
+        }
+      }
+    ';
+
+    $variables = [
+      'input' => [
+        'body' => "",
+        'senderId' => 1,
+        'receiverId' => (string) $receiverId,
+        'flow' => 'OUTBOUND',
+        'type' => 'DOCUMENT',
+        'mediaId' => (string) $mediaId,
+        'isHsm' => true,
+        'templateId' => (int) $templateId,
+        'params' => array_values($params),
+      ],
+    ];
+
+    \Civi::log()->info("Glific payload", $variables);
+
+    $response = $this->query($query, $variables);
+
+    \Civi::log()->info("Full response", $response );
+
+
+    if (!empty($response['data']['createAndSendMessage']['errors'])) {
+      \Civi::log()->error("Glific sendMessage error: " . json_encode($response['data']['createAndSendMessage']['errors']));
+      return NULL;
+    }
+
+    return $response['data']['createAndSendMessage']['message'] ?? NULL;
+  }
+
 
 }
 

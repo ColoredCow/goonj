@@ -44,7 +44,7 @@ class MonetaryReceiptService extends AutoSubscriber {
       $contribution = new \CRM_Contribute_BAO_Contribution();
 
       $contributionData = Contribution::get(FALSE)
-        ->addSelect('total_amount', 'is_test', 'fee_amount', 'net_amount', 'trxn_id', 'receive_date', 'contribution_status_id', 'contact_id', 'Contribution_Details.Send_Receipt_via_WhatsApp:name')
+        ->addSelect('total_amount', 'is_test', 'fee_amount', 'net_amount', 'trxn_id', 'receive_date', 'contribution_status_id', 'contact_id', 'Contribution_Details.Send_Receipt_via_WhatsApp:name', 'invoice_number')
         ->addWhere('id', '=', $contributionId)
         ->execute()->first();
 
@@ -54,10 +54,11 @@ class MonetaryReceiptService extends AutoSubscriber {
       error_log('issendreceipt: ' . print_r($isSendReceiptViaWhatsApp, TRUE));
       error_log('isSendReceiptViaWhatsApp:' . print_r($isSendReceiptViaWhatsApp, TRUE));
 
-
       if ($isSendReceiptViaWhatsApp == NULL) {
         return;
       }
+
+      $invoiceNumber = $contributionData['invoice_number'] ?? '';
 
       // Prepare input and IDs.
       $input = [
@@ -146,7 +147,7 @@ class MonetaryReceiptService extends AutoSubscriber {
         ->addWhere('id', '=', $contributionContactId)
         ->execute()->first();
 
-      $contactName = $contacts['display_name'];
+      $contactName = $contacts['display_name'] ?? 'Valued Supporter';
 
       $phoneNumber = $phones['phone'] ?? NULL;
 
@@ -189,22 +190,39 @@ class MonetaryReceiptService extends AutoSubscriber {
       error_log('finder:' . print_r($glificContactId, TRUE));
       error_log('pdfUrl:' . print_r($pdfUrl, TRUE));
 
-
       if ($glificContactId && $pdfUrl) {
         try {
           $glificClient = new GlificClient();
+          // --- 1. Upload PDF to Glific ---
           $media = $glificClient->createMessageMedia($pdfUrl);
 
           if ($media) {
             $mediaId = $media['id'];
-            error_log("[MonetaryReceiptService] Created media ID in Glific: {$mediaId}");
-          \Civi::log()->error("media Id" . $media['id']);
 
-            \Civi::log()->error("Media created in Glific");
+            \Civi::log()->info("[MonetaryReceiptService] Created media in Glific", [
+              'media_id' => $mediaId,
+              'media_url' => $media['url'],
+            ]);
+
+            // Hardcoded template ID.
+            $templateId = 741701;
+            // Dynamic template params.
+            $params = [
+              $contactName ?: "-",        // If empty, put "-"
+              $invoiceNumber ?: "-"       // If empty, put "-"
+            ];
+
+            $message = $glificClient->sendMessage($glificContactId, $mediaId, $templateId, $params);
+            if ($message) {
+              \Civi::log()->info("[MonetaryReceiptService] Message sent via Glific", [
+                'message_id' => $message['id'],
+                'template_id' => $message['templateId'],
+              ]);
+            }
           }
         }
         catch (\Throwable $e) {
-          \Civi::log()->error("[MonetaryReceiptService] createMessageMedia failed: " . $e->getMessage());
+          \Civi::log()->error("[MonetaryReceiptService] Glific API failed: " . $e->getMessage());
         }
       }
 
