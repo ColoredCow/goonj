@@ -356,7 +356,6 @@ class GlificClient {
     return $response['data']['createAndSendMessage']['message'] ?? NULL;
   }
 
-
 }
 
 }

@@ -144,8 +144,7 @@ class MonetaryReceiptService extends AutoSubscriber {
       }
 
       $baseUrl = rtrim(\CRM_Core_Config::singleton()->userFrameworkBaseURL, '/');
-      // $pdfUrl  = $baseUrl . CIVICRM_SAVED_PDF_PATH . $fileNameForPdf;
-      $pdfUrl = "https://staging-crm.goonj.org/wp-content/uploads/civicrm/persist/contribute/contribution/receipt_11313.pdf";
+      $pdfUrl  = $baseUrl . CIVICRM_SAVED_PDF_PATH . $fileNameForPdf;
 
       $contributionContactId = $contributionData['contact_id'];
 
