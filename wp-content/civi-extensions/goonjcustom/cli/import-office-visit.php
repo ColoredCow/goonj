@@ -1,26 +1,13 @@
 <?php
 
 /**
- * CLI Script: Create "Material Contribution" activities from a CSV
- * ----------------------------------------------------------------
- * For each row, this script:
- *  1) Finds the contact by (First Name + Email) or (First Name + Mobile).
- *     If not found, falls back to Email-only, then Phone-only.
- *  2) Finds the Dropping Center (Collection_Camp) by title (code) with subtype Dropping_Center.
- *  3) Creates an Activity "Material Contribution" (Completed) on the given date.
- *  4) Sets custom fields:
- *       - Material_Contribution.Contribution_Date
- *       - Material_Contribution.Dropping_Center
- *
- * Run:
- *   sudo cv scr /var/www/html/wp-content/civi-extensions/goonjcustom/cli/assign-material-contribution-to-dropping-center-contacts.php
+ * CLI script: Create "Office visit" activities from CSV.
+ * CSV columns (example):
+ * Contact ID | Visit Date (MM/DD/YY) | Visited to Goonj Office (GCOC) | First Name | Last Name | Street | City | State | Country | Mobile | Email | Contact Created Date (MM/DD/YY)
  */
 
-use Civi\Api4\Email;
-use Civi\Api4\Phone;
-use Civi\Api4\Contact;
 use Civi\Api4\Activity;
-use Civi\Api4\EckEntity;
+use Civi\Api4\Contact;
 
 if (php_sapi_name() !== 'cli') {
   exit("This script can only be run from the command line.\n");
@@ -30,14 +17,14 @@ if (php_sapi_name() !== 'cli') {
  * Config
  * ========================= */
 
-// CSV path (as requested)
-const CSV_FILE_PATH = '/var/www/html/crm.goonj.org/wp-content/civi-extensions/goonjcustom/cli//Users/shubhambelwal/Sites/goonj/wp-content/civi-extensions/goonjcustom/cli/Final data cleanups - test (16).csv';
+// Custom field keys on Activity (adjust to match your site)
+const CF_OFFICE_FIELD     = 'Office_Visit.Goonj_Processing_Center';
+const CF_VISITING_AS      = 'Office_Visit.You_are_Visiting_as';
 
-// Custom field keys on Activity (adjust if your site uses different keys)
-const CF_DROPPING_CENTER   = 'Material_Contribution.Institution_Dropping_Center';
-const CF_CONTRIBUTION_DATE = 'Material_Contribution.Contribution_Date';
+// Activity type name
+const ACTIVITY_TYPE_NAME  = 'Office visit';
 
-// Set to TRUE to test without writing data
+// Safety switch: TRUE => preview only; FALSE => write to DB
 const DRY_RUN = false;
 
 /* =========================
@@ -47,16 +34,16 @@ error_reporting(E_ALL & ~E_DEPRECATED & ~E_STRICT);
 ini_set('display_errors', '0');
 
 /* =========================
- * CSV helpers
+ * Helpers
  * ========================= */
 
-/** Normalize header: trim, lowercase, collapse spaces */
+/** Normalize a header key for matching: trim, lower, collapse inner spaces */
 function norm(string $s): string {
   $s = preg_replace('/\s+/u', ' ', trim($s));
   return mb_strtolower($s);
 }
 
-/** Build normalized header map: norm(header) => original header */
+/** Build a map of normalized header -> original header from the CSV header row */
 function build_header_map(array $header): array {
   $map = [];
   foreach ($header as $h) {
@@ -65,9 +52,9 @@ function build_header_map(array $header): array {
   return $map;
 }
 
-/** Get a value from a row by trying multiple aliases */
+/** Get a value from the CSV row using flexible header matching (tries aliases) */
 function getv(array $row, array $hmap, array $aliases): ?string {
-  foreach ($aliases as $alias) {
+  foreach ((array)$aliases as $alias) {
     $key = $hmap[norm($alias)] ?? null;
     if ($key !== null && array_key_exists($key, $row)) {
       $val = trim((string)$row[$key]);
@@ -77,17 +64,13 @@ function getv(array $row, array $hmap, array $aliases): ?string {
   return null;
 }
 
-/** Parse "DD/MM/YY" or "DD/MM/YYYY" -> "YYYY-MM-DD 00:00:00" */
-function parse_contribution_date(?string $d): ?string {
+/** Convert "MM/DD/YY" or "MM/DD/YYYY" -> "YYYY-MM-DD 00:00:00" */
+function mdy_slash_to_datetime(?string $d): ?string {
   $d = trim((string)$d);
   if ($d === '') return null;
-  $dt = \DateTime::createFromFormat('d/m/y', $d) ?: \DateTime::createFromFormat('d/m/Y', $d);
+  $dt = \DateTime::createFromFormat('m/d/y', $d) ?: \DateTime::createFromFormat('m/d/Y', $d);
   return $dt ? $dt->format('Y-m-d 00:00:00') : null;
 }
-
-/* =========================
- * Civi helpers
- * ========================= */
 
 /** Preferred lookup: (First Name + Email) then (First Name + Mobile) */
 function get_initiator_id(array $data): ?int {
@@ -126,13 +109,13 @@ function get_initiator_id(array $data): ?int {
   return null;
 }
 
-/** Fallback lookup: by email then phone */
+/** Fallback lookup: by Email then Phone */
 function find_contact_id_fallback(?string $email, ?string $phone): ?int {
   $email = trim((string)$email);
   $phone = trim((string)$phone);
 
   if ($email !== '') {
-    $row = Email::get(FALSE)
+    $row = \Civi\Api4\Email::get(FALSE)
       ->addSelect('contact_id')
       ->addWhere('email', '=', $email)
       ->execute()
@@ -141,7 +124,7 @@ function find_contact_id_fallback(?string $email, ?string $phone): ?int {
   }
 
   if ($phone !== '') {
-    $row = Phone::get(FALSE)
+    $row = \Civi\Api4\Phone::get(FALSE)
       ->addSelect('contact_id')
       ->addWhere('phone', '=', $phone)
       ->execute()
@@ -152,15 +135,40 @@ function find_contact_id_fallback(?string $email, ?string $phone): ?int {
   return null;
 }
 
-/** Find Dropping Center (Collection_Camp) by title + subtype Dropping_Center */
-function find_dropping_center_id(string $code): ?int {
-  $code = trim($code);
-  if ($code === '') return null;
+/** Resolve contact id from CSV "Contact ID": numeric ID or external_identifier */
+function resolve_contact_id_from_csv(?string $contactIdCsv): ?int {
+  $raw = trim((string)$contactIdCsv);
+  if ($raw === '') return null;
 
-  $row = EckEntity::get('Collection_Camp', FALSE)
+  if (ctype_digit($raw)) {
+    $row = Contact::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('id', '=', (int)$raw)
+      ->execute()
+      ->first();
+    return $row['id'] ?? null;
+  }
+
+  // Treat as external_identifier (your sample looks like one)
+  $row = Contact::get(FALSE)
     ->addSelect('id')
-    ->addWhere('title', '=', $code)
-    ->addWhere('subtype:name', '=', 'Dropping_Center')
+    ->addWhere('external_identifier', '=', $raw)
+    ->execute()
+    ->first();
+
+  return $row['id'] ?? null;
+}
+
+/** Lookup office contact id by display name and subtype Goonj_Office */
+function get_office_id(?string $office_name): ?int {
+  $office_name = trim((string)$office_name);
+  if ($office_name === '') return null;
+
+  $row = Contact::get(FALSE)
+    ->addSelect('id')
+    ->addWhere('contact_type', '=', 'Organization')
+    ->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_Office')
+    ->addWhere('display_name', 'LIKE', '%' . $office_name . '%')
     ->setLimit(1)
     ->execute()
     ->first();
@@ -169,12 +177,12 @@ function find_dropping_center_id(string $code): ?int {
 }
 
 /* =========================
- * Main (as requested style)
+ * Main
  * ========================= */
 
 function main(): void {
-  // TODO: update path (kept exactly as you asked)
-  $csvFilePath = CSV_FILE_PATH;
+    
+  $csvFilePath = '/var/www/html/crm.goonj.org/wp-content/civi-extensions/goonjcustom/cli/Final data cleanups - conatct test (10).csv';
 
   echo "CSV File: $csvFilePath\n";
   if (!file_exists($csvFilePath)) {
@@ -195,17 +203,16 @@ function main(): void {
   }
   $hmap = build_header_map($header);
 
-  // Column aliases (match your sheet headers)
   $COL = [
-    'center_code' => ['Dropping Center Code', 'dropping_center', 'Dropping Center'],
-    'date'        => ['Contribution Date (DD/MM/YY)', 'Contribution Date (DD/MM/YYYY)', 'contribution_date'],
+    'visit_date'  => ['Visit Date (MM/DD/YY)', 'Visit Date', 'Visited Date'],
+    'office'      => ['Visited to Goonj Office (GCOC)', 'Visited to Goonj Office', 'GCOC'],
     'first_name'  => ['First Name', 'first_name'],
+    'last_name'   => ['Last Name', 'last_name'],
+    'mobile'      => ['Mobile', 'Phone', 'phone'],
     'email'       => ['Email', 'email'],
-    'phone'       => ['Mobile', 'Phone', 'phone'],
   ];
 
-  $rowNum = 1;
-  $created = 0; $skipped = 0; $errors = 0;
+  $rowNum = 1; $created = 0; $skipped = 0; $errors = 0;
 
   while (($row = fgetcsv($handle, 0, ',', '"', '\\')) !== FALSE) {
     $rowNum++;
@@ -213,70 +220,66 @@ function main(): void {
       echo "Row $rowNum: column mismatch — skipping.\n";
       $skipped++; continue;
     }
-
     $data = array_combine($header, $row) ?: [];
 
-    $code   = getv($data, $hmap, $COL['center_code']);
-    $date   = getv($data, $hmap, $COL['date']);
-    $first  = getv($data, $hmap, $COL['first_name']);
-    $email  = getv($data, $hmap, $COL['email']);
-    $phone  = getv($data, $hmap, $COL['phone']);
+    $contactCsv = getv($data, $hmap, $COL['contact_id']);
+    $visitRaw   = getv($data, $hmap, $COL['visit_date']);
+    $officeName = getv($data, $hmap, $COL['office']);
+    $first      = getv($data, $hmap, $COL['first_name']);
+    $last       = getv($data, $hmap, $COL['last_name']);
+    $mobile     = getv($data, $hmap, $COL['mobile']);
+    $email      = getv($data, $hmap, $COL['email']);
 
-    if (!$code) {
-      echo "Row $rowNum: missing Dropping Center Code — skipping.\n";
+    if (!$visitRaw || !$officeName) {
+      echo "Row $rowNum: missing Visit Date or Office — skipping.\n";
       $skipped++; continue;
     }
 
-    // Normalize keys for get_initiator_id()
     if ($first !== null) $data['First Name'] = $first;
     if ($email !== null) $data['Email']      = $email;
-    if ($phone !== null) { $data['Mobile'] = $phone; $data['Phone'] = $phone; }
+    if ($mobile !== null) { $data['Mobile'] = $mobile; $data['Phone'] = $mobile; }
 
-    // Contact lookup
-    $contactId = get_initiator_id($data) ?: find_contact_id_fallback($email, $phone);
+    $contactId = get_initiator_id($data)
+      ?: find_contact_id_fallback($email, $mobile)
+      ?: resolve_contact_id_from_csv($contactCsv);
+
     if (!$contactId) {
-      echo "Row $rowNum ($code): contact not found (first: {$first}, email: {$email}, phone: {$phone}) — skipping.\n";
+      echo "Row $rowNum: contact not found (first: {$first}, email: {$email}, phone: {$mobile}, CSV ID: {$contactCsv}) — skipping.\n";
       $skipped++; continue;
     }
 
-    // Dropping center lookup
-    $centerId = find_dropping_center_id($code);
-    if (!$centerId) {
-      echo "Row $rowNum ($code): Dropping Center not found — skipping.\n";
+    $officeId = get_office_id($officeName);
+    if (!$officeId) {
+      echo "Row $rowNum: Goonj Office not found for '{$officeName}' — skipping.\n";
       $skipped++; continue;
     }
 
-    // Date parse
-    $activityDateTime = parse_contribution_date($date);
+    $activityDateTime = mdy_slash_to_datetime($visitRaw);
     if (!$activityDateTime) {
-      echo "Row $rowNum ($code): invalid contribution date '{$date}' — skipping.\n";
+      echo "Row $rowNum: invalid visit date '{$visitRaw}' — skipping.\n";
       $skipped++; continue;
     }
 
-    if (DRY_RUN) {
-      echo "DRY-RUN Row $rowNum: would create Material Contribution for contact {$contactId}, center {$centerId}, date {$activityDateTime}\n";
-      $created++; continue;
-    }
 
-    // Create the activity (only this, as you requested)
     try {
-      Activity::create(FALSE)
-        ->addValue('activity_type_id:name', 'Material Contribution')
+      $res = Activity::create(FALSE)
+        ->addValue('activity_type_id:name', ACTIVITY_TYPE_NAME)
         ->addValue('status_id:name', 'Completed')
         ->addValue('activity_date_time', $activityDateTime)
         ->addValue('source_contact_id', $contactId)
         ->addValue('target_contact_id', $contactId)
-        ->addValue(CF_CONTRIBUTION_DATE, $activityDateTime) // custom field
-        ->addValue(CF_DROPPING_CENTER, $centerId)           // custom field
+        ->addValue(CF_OFFICE_FIELD, $officeId)
+        ->addValue(CF_VISITING_AS, 'Individual')
         ->execute();
 
-      echo "✅ Row $rowNum: created activity for contact {$contactId} at center {$centerId} (date: {$activityDateTime})\n";
+      $newId = $res['id'] ?? null;
+      echo "✅ Row $rowNum: created Office visit activity"
+        . ($newId ? " (id: {$newId})" : "")
+        . " for contact {$contactId} at office {$officeId} on {$activityDateTime}\n";
       $created++;
-    }
-    catch (\Throwable $e) {
-      echo "❌ Row $rowNum ($code): " . $e->getMessage() . "\n";
-      $errors++;
-      continue;
+    } catch (\Throwable $e) {
+      echo "❌ Row $rowNum: " . $e->getMessage() . "\n";
+      $errors++; continue;
     }
   }
 

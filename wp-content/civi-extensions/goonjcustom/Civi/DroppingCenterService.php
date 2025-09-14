@@ -288,13 +288,19 @@ class DroppingCenterService extends AutoSubscriber {
    */
   private static function generateDroppingCenterQrCode($id) {
     $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
-    $data = "{$baseUrl}actions/dropping-center/{$id}";
+    $data = "{$baseUrl}civicrm/camp-redirect?id={$id}&type=entity";
 
     $saveOptions = [
       'customGroupName' => 'Collection_Camp_QR_Code',
       'customFieldName' => 'QR_Code',
     ];
 
+    $saveOptionsForPoster = [
+      'customGroupName' => 'Collection_Camp_QR_Code',
+      'customFieldName' => 'QR_Code_For_Poster',
+    ];
+
+    self::generateQrCodeForPoster($data, $id, $saveOptionsForPoster);
     self::generateQrCode($data, $id, $saveOptions);
   }
 
@@ -601,84 +607,84 @@ class DroppingCenterService extends AutoSubscriber {
         'module' => 'afformDroppingCenterIntentEdit',
         'directive' => 'afform-dropping-center-intent-edit',
         'template' => 'CRM/Goonjcustom/Tabs/DroppingCenter/Edit.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt_and_accounts_chapter_team', 'urban_ops_and_accounts_chapter_team'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt_and_accounts_chapter_team', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts'],
       ],
       'logistics' => [
         'title' => ts('Logistics'),
         'module' => 'afsearchLogistics',
         'directive' => 'afsearch-logistics',
         'template' => 'CRM/Goonjcustom/Tabs/DroppingCenter/Logistics.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts'],
       ],
       'eventCoordinators' => [
         'title' => ts('Event Coordinators'),
         'module' => 'afsearchCoordinator',
         'directive' => 'afsearch-coordinator',
         'template' => 'CRM/Goonjcustom/Tabs/DroppingCenter/EventCoordinators.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts'],
       ],
       'vehicleDispatch' => [
         'title' => ts('Dispatch'),
         'module' => 'afsearchDroppingCenterVehicleDispatchData',
         'directive' => 'afsearch-dropping-center-vehicle-dispatch-data',
         'template' => 'CRM/Goonjcustom/Tabs/DroppingCenter/VehicleDispatch.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts'],
       ],
       'materialAuthorization' => [
         'title' => ts('Material Authorization'),
         'module' => 'afsearchDroppingCenterAcknowledgementForLogisticsData',
         'directive' => 'afsearch-dropping-center-acknowledgement-for-logistics-data',
         'template' => 'CRM/Goonjcustom/Tabs/DroppingCenter/MaterialAuthorization.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts'],
       ],
       'materialContribution' => [
         'title' => ts('Material Contribution'),
         'module' => 'afsearchDroppingCenterMaterialContributions',
         'directive' => 'afsearch-dropping-center-material-contributions',
         'template' => 'CRM/Goonjcustom/Tabs/DroppingCenter/MaterialContribution.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'mmt', 'urban_ops_admin', 'data_entry', 'urban_ops_and_accounts_chapter_team'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'mmt', 'urban_ops_admin', 'data_entry', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts'],
       ],
       'status' => [
         'title' => ts('Status'),
         'module' => 'afsearchStatus',
         'directive' => 'afsearch-status',
         'template' => 'CRM/Goonjcustom/Tabs/DroppingCenter/Status.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts'],
       ],
       'visit' => [
         'title' => ts('Visit'),
         'module' => 'afsearchVisitList',
         'directive' => 'afsearch-visit-list',
         'template' => 'CRM/Goonjcustom/Tabs/DroppingCenter/Visit.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts'],
       ],
       'donationBox' => [
         'title' => ts('Donation Box'),
         'module' => 'afsearchDonation',
         'directive' => 'afsearch-donation',
         'template' => 'CRM/Goonjcustom/Tabs/DroppingCenter/DonationBox.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts'],
       ],
       'outcome' => [
         'title' => ts('Outcome'),
         'module' => 'afsearchDroppingCenterOutcome',
         'directive' => 'afsearch-dropping-center-outcome',
         'template' => 'CRM/Goonjcustom/Tabs/DroppingCenter/Outcome.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts'],
       ],
       'feedback' => [
         'title' => ts('Feedback'),
         'module' => 'afsearchFeedback',
         'directive' => 'afsearch-feedback',
         'template' => 'CRM/Goonjcustom/Tabs/DroppingCenter/Feedback.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts'],
       ],
       'monetaryContribution' => [
         'title' => ts('Monetary Contribution'),
         'module' => 'afsearchMonetaryContribution',
         'directive' => 'afsearch-monetary-contribution',
         'template' => 'CRM/Goonjcustom/Tabs/MonetaryContribution.tpl',
-        'permissions' => ['account_team', 'ho_account', 'mmt_and_accounts_chapter_team', 'urban_ops_and_accounts_chapter_team'],
+        'permissions' => ['account_team', 'ho_account', 'mmt_and_accounts_chapter_team', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts'],
       ],
       'monetaryContributionForUrbanOps' => [
         'title' => ts('Monetary Contribution'),

@@ -527,13 +527,18 @@ class InstitutionCollectionCampService extends AutoSubscriber {
    */
   private static function generateInstitutionCollectionCampQrCode($id) {
     $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
-    $data = "{$baseUrl}actions/institution-collection-camp/{$id}";
+    $data = "{$baseUrl}civicrm/camp-redirect?id={$id}&type=entity";
 
     $saveOptions = [
       'customGroupName' => 'Collection_Camp_QR_Code',
       'customFieldName' => 'QR_Code',
     ];
+    $saveOptionsForPoster = [
+      'customGroupName' => 'Collection_Camp_QR_Code',
+      'customFieldName' => 'QR_Code_For_Poster',
+    ];
 
+    self::generateQrCodeForPoster($data, $id, $saveOptionsForPoster);
     self::generateQrCode($data, $id, $saveOptions);
   }
 
@@ -1170,63 +1175,63 @@ class InstitutionCollectionCampService extends AutoSubscriber {
         'module' => 'afformInstitutionCollectionCampIntentReviewEditForm',
         'directive' => 'afform-institution-collection-camp-intent-review-edit-form',
         'template' => 'CRM/Goonjcustom/Tabs/InstitutionCollectionCamp/Edit.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter', 'urban_ops_and_accounts_chapter_team', 'mmt_and_accounts_chapter_team'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter', 'urban_ops_and_accounts_chapter_team', 'mmt_and_accounts_chapter_team', 'project_ho_and_accounts'],
       ],
       'logistics' => [
         'title' => ts('Logistics'),
         'module' => 'afsearchInstitutionCollectionCampLogistics',
         'directive' => 'afsearch-institution-collection-camp-logistics',
         'template' => 'CRM/Goonjcustom/Tabs/InstitutionCollectionCamp/Logistics.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter', 'urban_ops_and_accounts_chapter_team'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts'],
       ],
       'eventVolunteers' => [
         'title' => ts('Camp Coordinators'),
         'module' => 'afsearchInstitutionCollectionCampEventVolunteers',
         'directive' => 'afsearch-institution-collection-camp-event-volunteers',
         'template' => 'CRM/Goonjcustom/Tabs/InstitutionCollectionCamp/EventVolunteers.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter', 'urban_ops_and_accounts_chapter_team'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts'],
       ],
       'vehicleDispatch' => [
         'title' => ts('Dispatch'),
         'module' => 'afsearchInstitutionCampVehicleDispatchData',
         'directive' => 'afsearch-institution-camp-vehicle-dispatch-data',
         'template' => 'CRM/Goonjcustom/Tabs/InstitutionCollectionCamp/VehicleDispatch.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter', 'urban_ops_and_accounts_chapter_team'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts'],
       ],
       'materialAcknowledgement' => [
         'title' => ts('Dispatch Acknowledgement'),
         'module' => 'afsearchInstitutionCampAcknowledgementDispatch',
         'directive' => 'afsearch-institution-camp-acknowledgement-dispatch',
         'template' => 'CRM/Goonjcustom/Tabs/InstitutionCollectionCamp/MaterialAcknowledgement.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter', 'urban_ops_and_accounts_chapter_team'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts'],
       ],
       'materialContribution' => [
         'title' => ts('Material Contribution'),
         'module' => 'afsearchInstitutionCollectionCampMaterialContribution',
         'directive' => 'afsearch-institution-collection-camp-material-contribution',
         'template' => 'CRM/Goonjcustom/Tabs/InstitutionCollectionCamp/MaterialContribution.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'mmt', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter', 'data_entry', 'urban_ops_and_accounts_chapter_team'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'mmt', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter', 'data_entry', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts'],
       ],
       'campOutcome' => [
         'title' => ts('Camp Outcome'),
         'module' => 'afsearchInstitutionCampOutcome',
         'directive' => 'afsearch-institution-camp-outcome',
         'template' => 'CRM/Goonjcustom/Tabs/InstitutionCollectionCamp/Outcome.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter', 'urban_ops_and_accounts_chapter_team'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts'],
       ],
       'campFeedback' => [
         'title' => ts('Volunteer Feedback'),
         'module' => 'afsearchInstitutionCollectionCampFeedback',
         'directive' => 'afsearch-institution-collection-camp-feedback',
         'template' => 'CRM/Goonjcustom/Tabs/InstitutionCollectionCamp/Feedback.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter', 'urban_ops_and_accounts_chapter_team'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts'],
       ],
       'monetaryContribution' => [
         'title' => ts('Monetary Contribution'),
         'module' => 'afsearchMonetaryContribution',
         'directive' => 'afsearch-monetary-contribution',
         'template' => 'CRM/Goonjcustom/Tabs/MonetaryContribution.tpl',
-        'permissions' => ['mmt_and_accounts_chapter_team', 'urban_ops_and_accounts_chapter_team', 'account_team', 'ho_account'],
+        'permissions' => ['mmt_and_accounts_chapter_team', 'urban_ops_and_accounts_chapter_team', 'account_team', 'ho_account', 'project_ho_and_accounts'],
       ],
       // 'monetaryContributionForUrbanOps' => [
       //   'title' => ts('Monetary Contribution'),

@@ -185,6 +185,11 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Offices',
           'MMT - Urban Visits',
           'Contributions',
+          'Mailings',
+        ],
+        'hide_child_menus' => [
+          'Manage Groups',
+          'Manage Duplicates',
         ],
       ],
       'ho_account' => [
@@ -362,6 +367,31 @@ class NavigationPermissionService extends AutoSubscriber {
           'Manage Price Sets',
         ],
       ],
+      'project_ho_and_accounts' => [
+        'hide_menus' => [
+          'Induction Tab',
+          'Induction',
+          'Inductions',
+          'Volunteers',
+          'Individuals',
+          'MMT - Individuals',
+          'MMT - Institutes',
+          'MMT - Offices',
+          'MMT - Urban Visits',
+          'Account - Individuals',
+          'Account - Institutions',
+        ],
+        'hide_child_menus' => [
+          'New Contribution',
+          'Import Contributions',
+          'Batch Data Entry',
+          'Accounting Batches',
+          'Manage Contribution Pages',
+          'Personal Campaign Pages',
+          'Premiums',
+          'Manage Price Sets',
+        ],
+      ]
     ];
 
     foreach ($roleMenuMapping as $role => $menuConfig) {

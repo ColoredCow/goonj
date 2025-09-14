@@ -42,193 +42,200 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
     ];
   }
 
+  /**
+   *
+   */
   public static function handleEventMonetaryContributionDelete(string $op, string $objectName, $objectId, &$params) {
-  if ($op !== 'delete' || $objectName !== 'Contribution') {
-    return;
-  }
+    if ($op !== 'delete' || $objectName !== 'Contribution') {
+      return;
+    }
 
-  static $processed = [];
+    static $processed = [];
 
-  if (isset($processed[$objectId])) {
-    return;
-  }
-  $processed[$objectId] = TRUE;
+    if (isset($processed[$objectId])) {
+      return;
+    }
+    $processed[$objectId] = TRUE;
 
-  try {
-    $contribution = Contribution::get(FALSE)
-      ->addSelect(
+    try {
+      $contribution = Contribution::get(FALSE)
+        ->addSelect(
         'id',
         'contact_id',
         'Contribution_Details.Events.id',
         'contribution_status_id:name',
         'total_amount',
         'payment_instrument_id:name'
-      )
-      ->addWhere('id', '=', $objectId)
-      ->setLimit(1)
-      ->execute()
-      ->first();
+        )
+        ->addWhere('id', '=', $objectId)
+        ->setLimit(1)
+        ->execute()
+        ->first();
 
-    if (
-      !$contribution ||
-      $contribution['contribution_status_id:name'] !== 'Completed' ||
-      empty($contribution['Contribution_Details.Events.id']) ||
-      empty($contribution['contact_id'])
-    ) {
+      if (
+        !$contribution ||
+        $contribution['contribution_status_id:name'] !== 'Completed' ||
+        empty($contribution['Contribution_Details.Events.id']) ||
+        empty($contribution['contact_id'])
+      ) {
+        return;
+      }
+
+      $contactId = (int) $contribution['contact_id'];
+      $eventId = $contribution['Contribution_Details.Events.id'];
+      $amount = (float) $contribution['total_amount'];
+      $paymentMethod = $contribution['payment_instrument_id:name'];
+
+      $otherContributions = Contribution::get(FALSE)
+        ->addSelect('contact_id')
+        ->addWhere('Contribution_Details.Events.id', '=', $eventId)
+        ->addWhere('contribution_status_id:name', '=', 'Completed')
+        ->addWhere('id', '!=', $objectId)
+        ->execute();
+
+      $monetaryContactIds = [];
+      $currentContactStillExists = FALSE;
+
+      foreach ($otherContributions as $c) {
+        if (!empty($c['contact_id'])) {
+          $cid = (int) $c['contact_id'];
+          $monetaryContactIds[] = $cid;
+
+          if ($cid === $contactId) {
+            $currentContactStillExists = TRUE;
+          }
+        }
+      }
+
+      $materialActivities = Activity::get(FALSE)
+        ->addSelect('source_contact_id')
+        ->addWhere('Material_Contribution.Event', '=', $eventId)
+        ->execute();
+
+      $materialContactIds = [];
+      foreach ($materialActivities as $a) {
+        if (!empty($a['source_contact_id'])) {
+          $materialContactIds[] = (int) $a['source_contact_id'];
+        }
+      }
+
+      $allContactIds = array_unique(array_merge($monetaryContactIds, $materialContactIds));
+      $totalUniqueContributors = count($allContactIds);
+      $uniqueMonetaryCount = count(array_unique($monetaryContactIds));
+
+      $existing = Event::get(FALSE)
+        ->addSelect(
+        'Goonj_Events_Outcome.Online_Monetary_Contribution',
+        'Goonj_Events_Outcome.Cash_Contribution'
+        )
+        ->addWhere('id', '=', $eventId)
+        ->execute()
+        ->first();
+
+      $onlineCurrent = (float) ($existing['Goonj_Events_Outcome.Online_Monetary_Contribution'] ?? 0);
+      $cashCurrent = (float) ($existing['Goonj_Events_Outcome.Cash_Contribution'] ?? 0);
+
+      $update = Event::update()
+        ->addWhere('id', '=', $eventId);
+
+      if (!$currentContactStillExists) {
+        $update->addValue('Goonj_Events_Outcome.Number_of_unique_monetary_contributors', $uniqueMonetaryCount);
+      }
+
+      if (!in_array($contactId, $materialContactIds, TRUE) && !$currentContactStillExists) {
+        $update->addValue('Goonj_Events_Outcome.Number_of_Contributors', $totalUniqueContributors);
+      }
+
+      if ($paymentMethod === 'Credit Card') {
+        $update->addValue('Goonj_Events_Outcome.Online_Monetary_Contribution', max(0, $onlineCurrent - $amount));
+      }
+
+      if (in_array($paymentMethod, ['Cash', 'Check'], TRUE)) {
+        $update->addValue('Goonj_Events_Outcome.Cash_Contribution', max(0, $cashCurrent - $amount));
+      }
+
+      $update->execute();
+
+    }
+    catch (\Exception $e) {
+    }
+  }
+
+  /**
+   *
+   */
+  public static function handleEventMaterialContributionDelete(string $op, string $objectName, $objectId, &$params) {
+    if ($op !== 'delete' || $objectName !== 'Activity') {
       return;
     }
 
-    $contactId = (int) $contribution['contact_id'];
-    $eventId = $contribution['Contribution_Details.Events.id'];
-    $amount = (float) $contribution['total_amount'];
-    $paymentMethod = $contribution['payment_instrument_id:name'];
+    try {
+      $activity = Activity::get(FALSE)
+        ->addSelect('id', 'source_contact_id', 'custom.*')
+        ->addWhere('id', '=', $objectId)
+        ->setLimit(1)
+        ->execute()
+        ->first();
 
-    $otherContributions = Contribution::get(FALSE)
-      ->addSelect('contact_id')
-      ->addWhere('Contribution_Details.Events.id', '=', $eventId)
-      ->addWhere('contribution_status_id:name', '=', 'Completed')
-      ->addWhere('id', '!=', $objectId)
-      ->execute();
-
-    $monetaryContactIds = [];
-    $currentContactStillExists = FALSE;
-
-    foreach ($otherContributions as $c) {
-      if (!empty($c['contact_id'])) {
-        $cid = (int) $c['contact_id'];
-        $monetaryContactIds[] = $cid;
-
-        if ($cid === $contactId) {
-          $currentContactStillExists = TRUE;
-        }
-      }
-    }
-
-    $materialActivities = Activity::get(FALSE)
-      ->addSelect('source_contact_id')
-      ->addWhere('Material_Contribution.Event', '=', $eventId)
-      ->execute();
-
-    $materialContactIds = [];
-    foreach ($materialActivities as $a) {
-      if (!empty($a['source_contact_id'])) {
-        $materialContactIds[] = (int) $a['source_contact_id'];
-      }
-    }
-
-    $allContactIds = array_unique(array_merge($monetaryContactIds, $materialContactIds));
-    $totalUniqueContributors = count($allContactIds);
-    $uniqueMonetaryCount = count(array_unique($monetaryContactIds));
-
-    $existing = Event::get(FALSE)
-      ->addSelect(
-        'Goonj_Events_Outcome.Online_Monetary_Contribution',
-        'Goonj_Events_Outcome.Cash_Contribution'
-      )
-      ->addWhere('id', '=', $eventId)
-      ->execute()
-      ->first();
-
-    $onlineCurrent = (float) ($existing['Goonj_Events_Outcome.Online_Monetary_Contribution'] ?? 0);
-    $cashCurrent = (float) ($existing['Goonj_Events_Outcome.Cash_Contribution'] ?? 0);
-
-    $update = Event::update()
-      ->addWhere('id', '=', $eventId);
-
-    if (!$currentContactStillExists) {
-      $update->addValue('Goonj_Events_Outcome.Number_of_unique_monetary_contributors', $uniqueMonetaryCount);
-    }
-
-    if (!in_array($contactId, $materialContactIds, TRUE) && !$currentContactStillExists) {
-      $update->addValue('Goonj_Events_Outcome.Number_of_Contributors', $totalUniqueContributors);
-    }
-
-    if ($paymentMethod === 'Credit Card') {
-      $update->addValue('Goonj_Events_Outcome.Online_Monetary_Contribution', max(0, $onlineCurrent - $amount));
-    }
-
-    if (in_array($paymentMethod, ['Cash', 'Check'], TRUE)) {
-      $update->addValue('Goonj_Events_Outcome.Cash_Contribution', max(0, $cashCurrent - $amount));
-    }
-
-    $update->execute();
-
-  } catch (\Exception $e) {
-  }
-}
-
-public static function handleEventMaterialContributionDelete(string $op, string $objectName, $objectId, &$params) {
-  if ($op !== 'delete' || $objectName !== 'Activity') {
-    return;
-  }
-
-  try {
-    $activity = Activity::get(FALSE)
-      ->addSelect('id', 'source_contact_id', 'custom.*')
-      ->addWhere('id', '=', $objectId)
-      ->setLimit(1)
-      ->execute()
-      ->first();
-
-    if (
+      if (
       !$activity ||
       empty($activity['Material_Contribution.Event']) ||
       empty($activity['source_contact_id'])
-    ) {
-      return;
-    }
+      ) {
+        return;
+      }
 
-    $eventId = $activity['Material_Contribution.Event'];
-    $contactId = (int) $activity['source_contact_id'];
+      $eventId = $activity['Material_Contribution.Event'];
+      $contactId = (int) $activity['source_contact_id'];
 
-    $materialActivities = Activity::get(FALSE)
-      ->addSelect('source_contact_id')
-      ->addWhere('Material_Contribution.Event', '=', $eventId)
-      ->addWhere('id', '!=', $objectId)
-      ->execute();
+      $materialActivities = Activity::get(FALSE)
+        ->addSelect('source_contact_id')
+        ->addWhere('Material_Contribution.Event', '=', $eventId)
+        ->addWhere('id', '!=', $objectId)
+        ->execute();
 
-    $materialContactIds = [];
-    $currentContactStillExists = FALSE;
+      $materialContactIds = [];
+      $currentContactStillExists = FALSE;
 
-    foreach ($materialActivities as $a) {
-      if (!empty($a['source_contact_id'])) {
-        $cid = (int) $a['source_contact_id'];
-        $materialContactIds[] = $cid;
+      foreach ($materialActivities as $a) {
+        if (!empty($a['source_contact_id'])) {
+          $cid = (int) $a['source_contact_id'];
+          $materialContactIds[] = $cid;
 
-        if ($cid === $contactId) {
-          $currentContactStillExists = TRUE;
+          if ($cid === $contactId) {
+            $currentContactStillExists = TRUE;
+          }
         }
       }
-    }
 
-    $monetaryContributions = Contribution::get(FALSE)
-      ->addSelect('contact_id')
-      ->addWhere('Contribution_Details.Events.id', '=', $eventId)
-      ->addWhere('contribution_status_id:name', '=', 'Completed')
-      ->execute();
+      $monetaryContributions = Contribution::get(FALSE)
+        ->addSelect('contact_id')
+        ->addWhere('Contribution_Details.Events.id', '=', $eventId)
+        ->addWhere('contribution_status_id:name', '=', 'Completed')
+        ->execute();
 
-    $monetaryContactIds = [];
-    foreach ($monetaryContributions as $c) {
-      if (!empty($c['contact_id'])) {
-        $monetaryContactIds[] = (int) $c['contact_id'];
+      $monetaryContactIds = [];
+      foreach ($monetaryContributions as $c) {
+        if (!empty($c['contact_id'])) {
+          $monetaryContactIds[] = (int) $c['contact_id'];
+        }
       }
+
+      $allContactIds = array_unique(array_merge($materialContactIds, $monetaryContactIds));
+      $totalUniqueContributors = count($allContactIds);
+      $uniqueMaterialCount = count(array_unique($materialContactIds));
+
+      $update = Event::update()
+        ->addWhere('id', '=', $eventId)
+        ->addValue('Goonj_Events_Outcome.Number_of_Material_Contributors', $uniqueMaterialCount)
+        ->addValue('Goonj_Events_Outcome.Number_of_Contributors', $totalUniqueContributors);
+
+      $update->execute();
+
     }
-
-    $allContactIds = array_unique(array_merge($materialContactIds, $monetaryContactIds));
-    $totalUniqueContributors = count($allContactIds);
-    $uniqueMaterialCount = count(array_unique($materialContactIds));
-
-    $update = Event::update()
-      ->addWhere('id', '=', $eventId)
-      ->addValue('Goonj_Events_Outcome.Number_of_Material_Contributors', $uniqueMaterialCount)
-      ->addValue('Goonj_Events_Outcome.Number_of_Contributors', $totalUniqueContributors);
-
-    $update->execute();
-
-  } catch (\Exception $e) {
+    catch (\Exception $e) {
+    }
   }
-}
-
 
   /**
    *
@@ -561,19 +568,22 @@ public static function handleEventMaterialContributionDelete(string $op, string 
       }
 
       $eventQrCode = $event['Event_QR.QR_Code'] ?? NULL;
-      if (!empty($eventQrCode)) {
-        \Civi::log()->info('QR Code already exists for the event.', ['eventId' => $eventId]);
-        return;
-      }
 
       // Generate base URL for QR Code.
       $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
-      $qrCodeData = "{$baseUrl}actions/events/{$eventId}";
+      $qrCodeData = "{$baseUrl}civicrm/camp-redirect?id={$eventId}&type=event";
+
       // Define save options for custom group and field.
       $saveOptions = [
         'customGroupName' => 'Event_QR',
         'customFieldName' => 'QR_Code',
       ];
+      $saveOptionsForPoster = [
+        'customGroupName' => 'Event_QR',
+        'customFieldName' => 'QR_Code_For_Poster',
+      ];
+  
+      self::generateQrCodeForPoster($qrCodeData, $eventId, $saveOptionsForPoster);
 
       // Generate and save the QR Code.
       self::generateQrCode($qrCodeData, $eventId, $saveOptions);
@@ -643,7 +653,7 @@ public static function handleEventMaterialContributionDelete(string $op, string 
         'directive' => 'afsearch-events-outcome-details',
         'template' => 'CRM/Goonjcustom/Tabs/Events/Outcome.tpl',
         'entity' => ['id' => $eventID],
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'sanjha_team', 'project_team_ho', 'project_team_chapter', 'njpc_ho_team'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'sanjha_team', 'project_team_ho', 'project_team_chapter', 'njpc_ho_team', 'project_ho_and_accounts'],
       ],
       'feedback' => [
         'id' => 'feedback',
@@ -653,7 +663,7 @@ public static function handleEventMaterialContributionDelete(string $op, string 
         'directive' => 'afsearch-goonj-initiated-events-feedback-view',
         'template' => 'CRM/Goonjcustom/Tabs/Events/Feedback.tpl',
         'entity' => ['id' => $eventID],
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'sanjha_team', 'project_team_ho', 'project_team_chapter', 'njpc_ho_team'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'sanjha_team', 'project_team_ho', 'project_team_chapter', 'njpc_ho_team', 'project_ho_and_accounts'],
       ],
       'materialContributions' => [
         'id' => 'material_contributions',
@@ -663,7 +673,7 @@ public static function handleEventMaterialContributionDelete(string $op, string 
         'module' => 'afsearchEventsMaterialContributions',
         'directive' => 'afsearch-events-material-contributions',
         'entity' => ['id' => $eventID],
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'sanjha_team', 'project_team_ho', 'project_team_chapter', 'njpc_ho_team'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'sanjha_team', 'project_team_ho', 'project_team_chapter', 'njpc_ho_team', 'project_ho_and_accounts'],
       ],
       'monetaryContribution' => [
         'id' => 'monetary_contributions',
@@ -673,7 +683,7 @@ public static function handleEventMaterialContributionDelete(string $op, string 
         'directive' => 'afsearch-events-monetary-contribution',
         'template' => 'CRM/Goonjcustom/Tabs/Events/MonetaryContribution.tpl',
         'entity' => ['id' => $eventID],
-        'permissions' => ['goonj_chapter_admin', 'account_team', 'ho_account'],
+        'permissions' => ['goonj_chapter_admin', 'account_team', 'ho_account', 'project_ho_and_accounts'],
       ],
     ];
 
