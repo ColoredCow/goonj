@@ -227,7 +227,7 @@ function goonj_handle_user_identification_form() {
 		// If the user does not exist in the Goonj database
 		// redirect to the volunteer registration form.
 		$volunteer_registration_form_path = sprintf(
-			'/volunteer-registration/form/#?email=%s&phone=%s&message=%s&Volunteer_fields.Which_activities_are_you_interested_in_=%s&source=%s',
+			'/collection-camp-intent-test/',
 			$email,
 			$phone,
 			'not-inducted-volunteer',
@@ -566,20 +566,20 @@ function goonj_handle_user_identification_form() {
 		// If the volunteer is not inducted,
 		// 1. Trigger an email for Induction
 		// 2. Change volunteer status to "Waiting for Induction"
-		if ( ! goonj_is_volunteer_inducted( $found_contacts ) ) {
-			if ( $purpose === 'dropping-center' ) {
+if ( ! goonj_is_volunteer_inducted( $found_contacts ) ) {
+	if ( $purpose === 'dropping-center' ) {
 				$redirect_url = home_url( '/dropping-center/waiting-induction/' );
-			} elseif ( $purpose === 'volunteer-registration' ) {
+	} elseif ( $purpose === 'volunteer-registration' ) {
 				$redirect_url = home_url( '/volunteer-registration/waiting-induction/' );
-			} elseif ( $purpose === 'goonj-activities' ) {
+	} elseif ( $purpose === 'goonj-activities' ) {
 				$redirect_url = home_url( '/goonj-activities/waiting-induction' );
-			} else {
-				$redirect_url = home_url( '/collection-camp/waiting-induction/' );
-			}
+	} else {
+				$redirect_url = home_url( '/collection-camp/intent/' );
+	}
 
-			wp_redirect( $redirect_url );
-			exit;
-		}
+	wp_redirect( $redirect_url );
+	exit;
+}
 
 		// If we are here, then it means the user exists as an inducted volunteer.
 		// Fetch the most recent collection camp activity based on the creation date
