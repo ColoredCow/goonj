@@ -227,12 +227,7 @@ function goonj_handle_user_identification_form() {
 		// If the user does not exist in the Goonj database
 		// redirect to the volunteer registration form.
 		$volunteer_registration_form_path = sprintf(
-			'/collection-camp-intent-test/',
-			$email,
-			$phone,
-			'not-inducted-volunteer',
-			'9', // Activity to create collection camp.
-			$source
+			'/collection-camp/volunteer-with-intent/',
 		);
 
 		$individual_volunteer_registration_form_path = sprintf(
