@@ -1818,7 +1818,7 @@ class CollectionCampService extends AutoSubscriber {
       'from' => self::getFromAddress(),
       'toEmail' => $attendeeEmail,
       'replyTo' => self::getFromAddress(),
-      'html' => self::getCampOutcomeAckEmailAfter5Days($attendeeName, $campAddress, $campDate, $totalAmount, $materialGenerated, $uniqueContributors, $campRating, $fundsGenerated),
+      'html' => self::getCampOutcomeAckEmailAfter5Days($attendeeName, $campAddress, $campDate, $totalAmount, $materialGenerated, $uniqueContributors, $campRating, $fundsGenerated, $campId),
     ];
 
     $emailSendResult = \CRM_Utils_Mail::send($mailParams);
@@ -1836,18 +1836,28 @@ class CollectionCampService extends AutoSubscriber {
   /**
    *
    */
-  public static function getCampOutcomeAckEmailAfter5Days($attendeeName, $campAddress, $campDate, $totalAmount, $materialGenerated, $uniqueContributors, $campRating, $fundsGenerated) {
+  public static function getCampOutcomeAckEmailAfter5Days($attendeeName, $campAddress, $campDate, $totalAmount, $materialGenerated, $uniqueContributors, $campRating, $fundsGenerated, $campId) {
+    $homeUrl = \CRM_Utils_System::baseCMSURL();
+    $campVolunteerFeedback = $homeUrl . 'volunteer-camp-feedback/#?Eck_Collection_Camp1=' . $campId;
+
     $html = "
-      <p>Dear $attendeeName,</p>
-      <p>Thank you for organizing the camp! We hope it was a successful event.</p>
-      <p>We would appreciate it if you could take a moment to provide us with a quick snapshot of the camp's outcomes. Your feedback is invaluable in helping us improve our future initiatives and better serve our community.</p>
-      <p>Please click on the link below to access the Camp Outcome Form:</p>
-      <p><a href='https://goonj.org/camp-outcome-form/#?Eck_Collection_Camp1=$campId&Camp_Outcome.Filled_By=$campId'>Camp Outcome Form</a></p>
-      <p>Your insights and experiences are crucial to us, and we look forward to hearing from you.</p>
-      <p>Warm Regards,<br>Urban Relations Team</p>";
+        <p>Dear $attendeeName,</p>
+        <p>Thank you for organising the recent collection drive at <strong>$campAddress</strong> on <strong>$campDate</strong>! Your effort brought people together and added strength to this movement of mindful giving.</p>
+        <p>Here’s a quick snapshot of the camp:</p>
+        <ul>
+            <li>Material generated: $materialGenerated</li>
+            <li>Footfall: $uniqueContributors</li>
+            <li>Monetary contributions: $totalAmount</li>
+            <li>Camp rating from our team: $campRating</li>
+            <li>Funds raised through activities: $fundsGenerated</li>
+        </ul>
+        <p>If you haven’t filled the feedback form yet, you can share your thoughts here: <a href='$campVolunteerFeedback'>Feedback Form</a></p>
+        <p>We would also love to hear about any highlights, challenges, or ideas you’d like us to know. Your reflections will help us make future drives even more impactful.</p>
+        <p>Looking forward to many more such collaborations ahead!</p>
+        <p>Warm regards,<br>Team Goonj</p>
+    ";
 
     return $html;
-
   }
 
 }
