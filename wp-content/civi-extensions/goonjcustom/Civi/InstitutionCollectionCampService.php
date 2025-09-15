@@ -627,26 +627,24 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     $campCode = $collectionCamp['title'];
     $campAddress = $collectionCamp['Institution_Collection_Camp_Intent.Collection_Camp_Address'];
 
-    // $coordinators = Relationship::get(FALSE)
-    //   ->addWhere('contact_id_b', '=', $goonjFieldId)
-    //   ->addWhere('relationship_type_id:name', '=', self::MATERIAL_RELATIONSHIP_TYPE_NAME)
-    //   ->addWhere('is_current', '=', TRUE)
-    //   ->execute()->first();
+    $coordinators = Relationship::get(FALSE)
+      ->addWhere('contact_id_b', '=', $goonjFieldId)
+      ->addWhere('relationship_type_id:name', '=', self::MATERIAL_RELATIONSHIP_TYPE_NAME)
+      ->addWhere('is_current', '=', TRUE)
+      ->execute()->first();
 
-    // $mmtId = $coordinators['contact_id_a'];
+    $mmtId = $coordinators['contact_id_a'];
 
-    // if (empty($mmtId)) {
-    //   return;
-    // }
+    if (empty($mmtId)) {
+      return;
+    }
 
-    // $email = Email::get(FALSE)
-    //   ->addSelect('email')
-    //   ->addWhere('contact_id', '=', $mmtId)
-    //   ->execute()->single();
+    $email = Email::get(FALSE)
+      ->addSelect('email')
+      ->addWhere('contact_id', '=', $mmtId)
+      ->execute()->single();
 
-    // $mmtEmail = $email['email'];
-    $mmtEmail = "bb@hh.com";
-
+    $mmtEmail = $email['email'];
 
     $fromEmail = OptionValue::get(FALSE)
       ->addSelect('label')

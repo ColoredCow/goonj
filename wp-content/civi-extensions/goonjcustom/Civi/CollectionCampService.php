@@ -1210,9 +1210,11 @@ class CollectionCampService extends AutoSubscriber {
     }
 
     try {
+      $currentDate = date('Y-m-d');
       EckEntity::update('Collection_Camp', FALSE)
         ->addWhere('id', '=', $collectionCampId)
         ->addValue('Collection_Camp_Intent_Details.Camp_Status', 'completed')
+        ->addValue('Camp_Outcome.Camp_Status_Completion_Date', $currentDate)
         ->execute();
 
     }
