@@ -9,6 +9,9 @@ use Civi\Api4\MessageTemplate;
 use Civi\Api4\Relationship;
 use Civi\Api4\StateProvince;
 use Civi\Core\Service\AutoSubscriber;
+use Civi\Api4\Email;
+use Civi\Token\TokenProcessor;
+
 
 /**
  *
@@ -29,6 +32,7 @@ class InductionService extends AutoSubscriber {
     return [
       '&hook_civicrm_pre' => [
         ['hasIndividualChangedToVolunteer'],
+        ['sendActivityEmailToVolunteer'],
       ],
       '&hook_civicrm_post' => [
             ['volunteerCreated'],
@@ -42,7 +46,290 @@ class InductionService extends AutoSubscriber {
       ],
     ];
   }
+// Map of <option value id> => message template title
+ private const TEMPLATE_MAP = [
+    21 => ['title' => 'Induction – Welcome'],
+    22 => ['title' => 'Workshop – Next Steps'],
+    23 => ['title' => 'Field Visit – Instructions'],
+    24 => ['title' => 'Fundraising – Starter Kit'],
+    25 => ['title' => 'Clothes Donation Drive – Guide'],
+    26 => ['title' => 'Acitivity email testing'],
+    27 => ['title' => 'Eck – Institution Visit 2'],
+    28 => ['title' => 'Administrative Volunteering'],
+    29 => ['title' => 'Design/Media Volunteering'],
+    30 => ['title' => 'Events/Outreach Volunteering'],
+  ];
 
+  /** Normalize extension-style custom tokens -> core syntax */
+  private static function normalizeActivityCustomTokens(?string $s): ?string {
+    if ($s === null || $s === '') return $s;
+    return preg_replace_callback(
+      '/\{activity_tokens\.custom_(\d+)\}/i',
+      fn($m) => '{activity.custom_' . ((int)$m[1]) . '}',
+      $s
+    );
+  }
+
+  /** Collect all custom field IDs referenced as {activity.custom_###} */
+  private static function scanActivityCustomIds(string ...$chunks): array {
+    $ids = [];
+    foreach ($chunks as $s) {
+      if (!$s) continue;
+      if (preg_match_all('/\{activity\.custom_(\d+)\}/i', $s, $m)) {
+        foreach ($m[1] as $id) { $ids[(int)$id] = true; }
+      }
+    }
+    return array_keys($ids);
+  }
+
+  private static function resolveActivityCustomValues(int $activityId, array $fieldIds): array {
+    $values = [];
+    if (empty($fieldIds)) return $values;
+
+    $return = array_map(fn($id) => "custom_" . (int)$id, $fieldIds);
+    try {
+      $row = civicrm_api3('Activity', 'getsingle', [
+        'id' => $activityId,
+        'return' => $return,
+        'check_permissions' => 0,
+      ]);
+    } catch (\Exception $e) {
+      error_log("ActivityEmail WARNING: Activity.get failed while pre-resolving custom tokens: " . $e->getMessage());
+      return $values;
+    }
+
+    foreach ($fieldIds as $fid) {
+      $key = "custom_" . $fid;
+      if (!array_key_exists($key, $row)) { $values[$fid] = ''; continue; }
+      $raw = $row[$key];
+
+      try {
+        $display = \CRM_Core_BAO_CustomField::displayValue($raw, (int)$fid, (int)$activityId);
+      } catch (\Throwable $e) {
+        $display = is_array($raw) ? implode(', ', $raw) : (string)$raw;
+        error_log("ActivityEmail INFO: displayValue fallback for custom_$fid due to: " . $e->getMessage());
+      }
+
+      if (is_array($display)) {
+        $display = implode(', ', array_filter(array_map('strval', $display)));
+      } else {
+        $display = (string)$display;
+      }
+
+      $values[$fid] = $display;
+    }
+
+    error_log("ActivityEmail: Pre-resolved custom tokens = " . json_encode($values));
+    return $values;
+  }
+
+  private static function replaceActivityCustomTokens(?string $s, array $resolved): ?string {
+    if ($s === null || $s === '') return $s;
+    return preg_replace_callback('/\{activity\.custom_(\d+)\}/i', function($m) use ($resolved) {
+      $id = (int)$m[1];
+      return array_key_exists($id, $resolved) ? (string)$resolved[$id] : '';
+    }, $s);
+  }
+
+  public static function sendActivityEmailToVolunteer(string $op, string $objectName, $objectId, &$objectRef) {
+    error_log("op: Pre-hook params = " . print_r($op, TRUE));
+        error_log("objectName = " . print_r($objectName, TRUE));
+                error_log("objectRef = " . print_r($objectRef, TRUE));
+    if ($op !== 'create' || $objectName !== 'AfformSubmission') {
+      return FALSE;
+    }
+
+    try {
+      $data = json_decode($objectRef->data ?? '[]', TRUE);
+      error_log("ActivityEmail: Payload data = " . print_r($data, TRUE));
+
+      $activityId   = (int)($data['Activity1'][0]['fields']['id'] ?? 0);
+      $individualId = (int)($data['Individual1'][0]['fields']['id'] ?? 0);
+      if (!$activityId)   { error_log("ActivityEmail ERROR: No activityId found in submission payload"); return FALSE; }
+      if (!$individualId) { error_log("ActivityEmail ERROR: No Individual contact ID in submission payload"); return FALSE; }
+
+      // Collect interests
+      $interestIdsRaw = $data['Individual1'][0]['fields']['Volunteer_fields.Which_activities_are_you_interested_in_'] ?? null;
+      $interestIds = [];
+      if (is_array($interestIdsRaw)) {
+        $interestIds = array_values(array_filter(array_map('intval', $interestIdsRaw), fn($v) => $v > 0));
+      } elseif (is_int($interestIdsRaw) || (is_string($interestIdsRaw) && ctype_digit($interestIdsRaw))) {
+        $v = (int)$interestIdsRaw; if ($v > 0) $interestIds = [$v];
+      } elseif (is_string($interestIdsRaw)) {
+        $parts = preg_split('/[,\s;|]+/', $interestIdsRaw) ?: [];
+        $interestIds = array_values(array_filter(array_map('intval', $parts), fn($v) => $v > 0));
+      }
+      error_log("ActivityEmail: Selected interest IDs (normalized) = " . print_r($interestIds, TRUE));
+
+      $templateIds = array_map('intval', array_keys(self::TEMPLATE_MAP));
+      $matchedIds  = array_values(array_intersect($interestIds, $templateIds));
+
+      // TESTING: force testing template if nothing matched
+      if (empty($matchedIds)) {
+        error_log("ActivityEmail: No matching templates. For testing, forcing 'Acitivity email testing' (26).");
+        $matchedIds = [26];
+      }
+
+      // Recipient
+      $contact = Contact::get(FALSE)
+        ->addSelect('display_name')
+        ->addWhere('id', '=', $individualId)
+        ->execute()
+        ->first();
+      if (!$contact) { error_log("ActivityEmail ERROR: Contact not found: " . $individualId); return FALSE; }
+
+      $emailRow = Email::get(FALSE)
+        ->addSelect('email', 'is_primary')
+        ->addWhere('contact_id', '=', $individualId)
+        ->addWhere('is_primary', '=', TRUE)
+        ->execute()
+        ->first();
+      $toEmail = $emailRow['email'] ?? NULL;
+      if (!$toEmail) { error_log("ActivityEmail ERROR: No primary email for contact: " . $individualId); return FALSE; }
+
+      // Verify activity exists
+      $activity = Activity::get(FALSE)
+        ->addSelect('id')
+        ->addWhere('id', '=', $activityId)
+        ->execute()
+        ->first();
+      if (!$activity) { error_log("ActivityEmail ERROR: Activity not found: " . $activityId); return FALSE; }
+
+      // CC from assignees (if any)
+      $assignRaw = $data['Activity1'][0]['fields']['Induction_Fields.Assign'] ?? null;
+      $assignIds = [];
+      if (is_array($assignRaw)) {
+        $assignIds = array_values(array_filter(array_map('intval', $assignRaw), fn($v) => $v > 0));
+      } elseif (is_int($assignRaw) || (is_string($assignRaw) && ctype_digit($assignRaw))) {
+        $v = (int)$assignRaw; if ($v > 0) $assignIds = [$v];
+      } elseif (is_string($assignRaw)) {
+        $parts = preg_split('/[,\s;|]+/', $assignRaw) ?: [];
+        $assignIds = array_values(array_filter(array_map('intval', $parts), fn($v) => $v > 0));
+      }
+
+      $ccEmails = [];
+      if (!empty($assignIds)) {
+        foreach ($assignIds as $assigneeId) {
+          $assignEmailRow = Email::get(FALSE)
+            ->addSelect('email', 'is_primary')
+            ->addWhere('contact_id', '=', (int)$assigneeId)
+            ->addWhere('is_primary', '=', TRUE)
+            ->execute()
+            ->first();
+          $assignEmail = $assignEmailRow['email'] ?? null;
+          if (!empty($assignEmail)) $ccEmails[] = trim($assignEmail);
+          else error_log("ActivityEmail WARNING: Assignee (#{$assigneeId}) has no primary email; CC skipped.");
+        }
+      } else {
+        error_log("ActivityEmail INFO: No assignee contact id(s) found in payload; CC skipped.");
+      }
+      $ccEmails = array_values(array_unique(array_filter($ccEmails, fn($e) => strcasecmp($e, $toEmail) !== 0)));
+      if (!empty($ccEmails)) error_log("ActivityEmail: CC list = " . implode(', ', $ccEmails));
+
+      $from = HelperService::getDefaultFromEmail();
+
+      sort($matchedIds, SORT_NUMERIC);
+      $sentCount = 0;
+
+      foreach ($matchedIds as $interestId) {
+        $templateTitle = self::TEMPLATE_MAP[$interestId]['title'] ?? NULL;
+        if (!$templateTitle) { error_log("ActivityEmail WARNING: Template title missing for interestId {$interestId}. Skipping."); continue; }
+
+        // Load template by title
+        try {
+          $template = civicrm_api3('MessageTemplate', 'getsingle', ['msg_title' => $templateTitle]);
+        } catch (\CiviCRM_API3_Exception $e) {
+          error_log("ActivityEmail ERROR: Could not load template '{$templateTitle}': " . $e->getMessage());
+          continue;
+        }
+
+        $subject = trim((string) ($template['msg_subject'] ?? '')) ?: ($templateTitle ?: 'Hello');
+        $html    = (string) ($template['msg_html'] ?? '');
+        $text    = trim((string) ($template['msg_text'] ?? ''));
+
+        // 1) Normalize extension custom tokens to core
+        $subject = self::normalizeActivityCustomTokens($subject);
+        $html    = self::normalizeActivityCustomTokens($html);
+        $text    = self::normalizeActivityCustomTokens($text);
+
+        // 2) Pre-resolve any {activity.custom_###} before TokenSmarty
+        $idsToResolve = self::scanActivityCustomIds($subject, $html, $text);
+        if (!empty($idsToResolve)) {
+          $resolved = self::resolveActivityCustomValues($activityId, $idsToResolve);
+          $subject  = self::replaceActivityCustomTokens($subject, $resolved);
+          $html     = self::replaceActivityCustomTokens($html, $resolved);
+          $text     = self::replaceActivityCustomTokens($text, $resolved);
+        }
+
+        // 3) Now render remaining tokens via TokenSmarty
+        $context = ['contactId' => $individualId, 'activityId' => $activityId];
+        error_log("ActivityEmail context = " . json_encode($context));
+
+        $templatesToRender = [];
+        if ($subject !== '') $templatesToRender['subject'] = $subject;
+        if ($html !== '')    $templatesToRender['html']    = $html;
+        if ($text !== '')    $templatesToRender['text']    = $text;
+
+        try {
+          if (!empty($templatesToRender)) {
+            $rendered = \CRM_Core_TokenSmarty::render($templatesToRender, $context);
+            $subject = isset($rendered['subject']) ? trim((string)$rendered['subject']) : $subject;
+            $html    = isset($rendered['html'])    ? (string)$rendered['html']          : $html;
+            $text    = isset($rendered['text'])    ? trim((string)$rendered['text'])    : $text;
+          }
+        } catch (\Throwable $e) {
+          error_log("ActivityEmail WARNING: Token rendering failed for '{$templateTitle}': " . $e->getMessage());
+          // Continue with pre-resolved content
+        }
+
+        // Text fallback after rendering
+        if ($html !== '' && $text === '') {
+          $text = \CRM_Utils_String::htmlToText($html);
+        }
+        if ($html === '' && $text === '') {
+          error_log("ActivityEmail WARNING: Template '{$templateTitle}' has empty body after rendering. Skipping.");
+          continue;
+        }
+
+        // Debug
+        error_log("ActivityEmail DEBUG: Rendered subject='{$subject}'");
+        error_log("ActivityEmail DEBUG: Rendered html length=" . strlen($html) . ", text length=" . strlen($text));
+
+        // Send
+        $params = [
+          'from'    => $from,
+          'toName'  => $contact['display_name'] ?? '',
+          'toEmail' => $toEmail,
+          'subject' => $subject,
+          'html'    => $html ?: NULL,
+          'text'    => $text ?: NULL,
+        ];
+          error_log("html'{$html}'.");
+        if (!empty($ccEmails)) $params['cc'] = implode(',', $ccEmails);
+
+        $sent = \CRM_Utils_Mail::send($params);
+        if (!$sent) {
+          error_log("ActivityEmail ERROR: Mail::send returned FALSE for template '{$templateTitle}' (interest {$interestId})");
+          continue;
+        }
+
+        $sentCount++;
+        error_log("ActivityEmail: Email sent (template '{$templateTitle}', interest {$interestId}) to {$toEmail} (contact #{$individualId}) with subject: {$subject}" . (!empty($ccEmails) ? " [CC: " . implode(', ', $ccEmails) . "]" : ""));
+      }
+
+      if ($sentCount === 0) {
+        error_log("ActivityEmail: No emails were sent (all failed or no valid templates).");
+        return FALSE;
+      }
+
+      error_log("ActivityEmail: Completed. Sent {$sentCount} email(s).");
+      return TRUE;
+
+    } catch (\Throwable $e) {
+      error_log("ActivityEmail ERROR: " . $e->getMessage());
+      return FALSE;
+    }
+  }
   /**
    *
    */
