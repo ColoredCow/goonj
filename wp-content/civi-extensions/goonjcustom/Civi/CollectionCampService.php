@@ -121,6 +121,7 @@ class CollectionCampService extends AutoSubscriber {
       return FALSE;
     }
   }
+
   public static function collectionCampTabset($tabsetName, &$tabs, $context) {
     if (!self::isViewingCollectionCamp($tabsetName, $context)) {
       return;
