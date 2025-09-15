@@ -35,10 +35,6 @@ function _civicrm_api3_goonjcustom_send_camp_outcome_ack_email_after_5_days_cron
 function civicrm_api3_goonjcustom_send_camp_outcome_ack_email_after_5_days_cron($params) {
   $returnValues = [];
 
-  $today = new DateTimeImmutable();
-  $startOfDay = $today->setTime(0, 0, 0)->format('Y-m-d H:i:s');
-  $endOfDay = $today->setTime(23, 59, 59)->format('Y-m-d H:i:s');
-
   $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
     ->addSelect('Camp_Outcome.Rate_the_camp', 'created_date', 'Camp_Outcome.Camp_Status_Completion_Date', 'Collection_Camp_Core_Details.Contact_Id')
     ->addWhere('Camp_Outcome.Camp_Status_Completion_Date', 'IS NOT NULL')
