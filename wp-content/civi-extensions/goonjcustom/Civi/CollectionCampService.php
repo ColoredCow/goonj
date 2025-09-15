@@ -101,21 +101,20 @@ class CollectionCampService extends AutoSubscriber {
     try {
       $data = $objectRef['data'] ?? [];
       if (!$data) {
-        return FALSE;
+        return;
       }
 
-      $campId = $data['Eck_Collection_Camp1'][0]['id'] ?? NULL;
-      $volunteerId = $data['Individual6'][0]['id'] ?? NULL;
+      $campId = $data['Eck_Collection_Camp1'][0]['id'];
+      $volunteerId = $data['Individual6'][0]['id'];
 
       if (empty($campId) || empty($volunteerId)) {
-        return FALSE;
+        return;
       }
 
-      EckEntity::update('Collection_Camp', TRUE)
-        ->addValue('Collection_Camp_Core_Details.Contact_Id', (int) $volunteerId)
-        ->addWhere('id', '=', (int) $campId)
+      EckEntity::update('Collection_Camp', FALSE)
+        ->addValue('Collection_Camp_Core_Details.Contact_Id', $volunteerId)
+        ->addWhere('id', '=', $campId)
         ->execute();
-      return TRUE;
     }
     catch (\Throwable $e) {
       return FALSE;
