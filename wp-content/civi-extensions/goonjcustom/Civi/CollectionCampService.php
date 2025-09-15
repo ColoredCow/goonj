@@ -1767,7 +1767,7 @@ class CollectionCampService extends AutoSubscriber {
     $campId = $collectionCamp['id'];
 
     $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Collection_Camp_Intent_Details.Location_Area_of_camp', 'Collection_Camp_Intent_Details.Start_Date', 'Core_Contribution_Details.Number_of_unique_contributors', 'Camp_Outcome.Rate_the_camp', 'Camp_Outcome.Total_Fundraised_form_Activity', 'Collection_Camp_Intent_Details.Start_Date')
+      ->addSelect('Collection_Camp_Intent_Details.Location_Area_of_camp', 'Collection_Camp_Intent_Details.Start_Date', 'Core_Contribution_Details.Number_of_unique_contributors', 'Camp_Outcome.Rate_the_camp', 'Camp_Outcome.Total_Fundraised_form_Activity', 'Collection_Camp_Intent_Details.Start_Date', 'title')
       ->addWhere('id', '=', $campId)
       ->execute()->single();
 
@@ -1794,6 +1794,7 @@ class CollectionCampService extends AutoSubscriber {
 
     $campRating = $collectionCamps['Camp_Outcome.Rate_the_camp'];
     $fundsGenerated = $collectionCamps['Camp_Outcome.Total_Fundraised_form_Activity'];
+    $collectionCampTitle = $collectionCamps['title'];
 
     $campAddress = $collectionCamps['Collection_Camp_Intent_Details.Location_Area_of_camp'];
     $campDate = $collectionCamps['Collection_Camp_Intent_Details.Start_Date'];
@@ -1826,10 +1827,32 @@ class CollectionCampService extends AutoSubscriber {
 
     if ($emailSendResult) {
       \Civi::log()->info("Camp status email sent for collection camp: $campId");
-      EckEntity::update('Collection_Camp', FALSE)
-        ->addValue('Camp_Outcome.Five_Day_Email_Sent', 1)
-        ->addWhere('id', '=', $campId)
-        ->execute();
+      try {
+        EckEntity::update('Collection_Camp', FALSE)
+          ->addValue('Camp_Outcome.Five_Day_Email_Sent', 1)
+          ->addWhere('id', '=', $campId)
+          ->execute();
+
+      }
+      catch (\CiviCRM_API4_Exception $ex) {
+        \Civi::log()->debug("Exception while creating update the email sent " . $ex->getMessage());
+      }
+      try {
+        $results = Activity::create(FALSE)
+          ->addValue('subject', $collectionCampTitle)
+          ->addValue('activity_type_id:name', 'Camp summary email')
+          ->addValue('status_id:name', 'Authorized')
+          ->addValue('activity_date_time', date('Y-m-d H:i:s'))
+          ->addValue('source_contact_id', $campOrganiserId)
+          ->addValue('target_contact_id', $campOrganiserId)
+          ->addValue('Collection_Camp_Data.Collection_Camp_ID', $campId)
+          ->execute();
+
+      }
+      catch (\CiviCRM_API4_Exception $ex) {
+        \Civi::log()->debug("Exception while creating Camp summary email activity: " . $ex->getMessage());
+      }
+
     }
 
   }
