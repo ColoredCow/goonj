@@ -105,8 +105,18 @@ class CollectionCampService extends AutoSubscriber {
       }
 
       $campId = $data['Eck_Collection_Camp1'][0]['id'];
-      $volunteerId = $data['Individual6'][0]['id'];
+      $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
+        ->addSelect('subtype:name')
+        ->addWhere('id', '=', $campId)
+        ->execute()->single();
 
+      $subtype = $collectionCamps['subtype:name'];
+
+      if ($subtype !== 'Collection_Camp') {
+        return;
+      }
+
+      $volunteerId = $data['Individual6'][0]['id'];
       if (empty($campId) || empty($volunteerId)) {
         return;
       }
