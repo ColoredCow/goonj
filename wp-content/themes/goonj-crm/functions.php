@@ -571,6 +571,7 @@ function goonj_handle_user_identification_form() {
 			} else {
 				$redirect_url = home_url( '/collection-camp/intent/' );
 			}
+
 			wp_redirect( $redirect_url );
 			exit;
 		}
