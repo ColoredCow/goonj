@@ -46,7 +46,7 @@ trait QrCodeable {
 
       if (!empty($saveOptions['customGroupName']) && $saveOptions['customGroupName'] != 'Event_QR') {
         $campData = EckEntity::get('Collection_Camp', FALSE)
-          ->addSelect('subtype:name', 'Collection_Camp_Intent_Details.Location_Area_of_camp', 'Collection_Camp_Intent_Details.City', 'Collection_Camp_Intent_Details.Other_City', 'Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_', 'Dropping_Centre.District_City', 'Dropping_Centre.Other_City', 'Goonj_Activities.Where_do_you_wish_to_organise_the_activity_', 'Goonj_Activities.City', 'Collection_Camp_Intent_Details.Other_City', 'Institution_Collection_Camp_Intent.Collection_Camp_Address', 'Institution_Collection_Camp_Intent.District_City', 'Institution_Collection_Camp_Intent.Other_Type', 'Institution_Dropping_Center_Intent.Dropping_Center_Address', 'Institution_Dropping_Center_Intent.District_City', 'Institution_Dropping_Center_Intent.Other_City', 'Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_', 'Institution_Goonj_Activities.City', 'Institution_Goonj_Activities.Other_City')
+          ->addSelect('subtype:name', 'Collection_Camp_Intent_Details.Location_Area_of_camp', 'Collection_Camp_Intent_Details.City', 'Collection_Camp_Intent_Details.Other_City', 'Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_', 'Dropping_Centre.District_City', 'Dropping_Centre.Other_City', 'Goonj_Activities.Where_do_you_wish_to_organise_the_activity_', 'Goonj_Activities.City', 'Collection_Camp_Intent_Details.Other_City', 'Institution_Collection_Camp_Intent.Collection_Camp_Address', 'Institution_Collection_Camp_Intent.District_City', 'Institution_Collection_Camp_Intent.Other_Type', 'Institution_Dropping_Center_Intent.Dropping_Center_Address', 'Institution_Dropping_Center_Intent.District_City', 'Institution_Dropping_Center_Intent.Other_City', 'Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_', 'Institution_Goonj_Activities.City', 'Institution_Goonj_Activities.Other_City', 'Dropping_Centre.Landmark_or_Near_by_area', 'Institution_Dropping_Center_Intent.Landmark_or_Near_by_area')
           ->addWhere('id', '=', $entityId)
           ->execute()->first();
 
@@ -57,7 +57,11 @@ trait QrCodeable {
           $city = $campData['Collection_Camp_Intent_Details.City'] ?? 'Collection_Camp_Intent_Details.Other_City';
         }
         elseif ($campStatus == 'Dropping_Center') {
+          $landmark = $campData['Dropping_Centre.Landmark_or_Near_by_area'] ?? '';
           $address = $campData['Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_'] ?? '';
+          if (!empty($landmark)) {
+            $city .= " (" . $landmark . ")";
+          }
           $city = $campData['Dropping_Centre.District_City'] ?? $campData['Dropping_Centre.Other_City'] ?? '';
         }
         elseif ($campStatus == 'Goonj_Activities') {
@@ -71,6 +75,12 @@ trait QrCodeable {
         elseif ($campStatus == 'Institution_Dropping_Center') {
           $address = $campData['Institution_Dropping_Center_Intent.Dropping_Center_Address'] ?? '';
           $city = $campData['Institution_Dropping_Center_Intent.District_City'] ?? $campData['Institution_Dropping_Center_Intent.Other_City'] ?? '';
+          $landmark = $campData['Institution_Dropping_Center_Intent.Landmark_or_Near_by_area'] ?? '';
+
+          if (!empty($landmark)) {
+            $city .= " (" . $landmark . ")";
+          }
+
         }
         elseif ($campStatus == 'Institution_Goonj_Activities') {
           $address = $campData['Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'] ?? '';
@@ -156,7 +166,7 @@ trait QrCodeable {
 
       // --- Step 2: Heading text
       $fontSize = 40;
-      $topY = $logoY + $newLogoHeight + 60;
+      $topY = $logoY + $newLogoHeight + 70;
       $lines = explode("\n", $topText);
       $lineHeight = $fontSize + 10;
 
