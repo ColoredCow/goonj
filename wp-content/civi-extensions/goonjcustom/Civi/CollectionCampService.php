@@ -1765,6 +1765,15 @@ class CollectionCampService extends AutoSubscriber {
    */
   public static function sendCampOutcomeAckEmailAfter5Days($collectionCamp) {
     $campId = $collectionCamp['id'];
+
+    $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect('Collection_Camp_Intent_Details.Location_Area_of_camp', 'Collection_Camp_Intent_Details.Start_Date')
+      ->addWhere('id', '=', $campId)
+      ->execute()->single();
+
+    $campAddress = $collectionCamps['Collection_Camp_Intent_Details.Location_Area_of_camp'];
+    $campDate = $campIds['Collection_Camp_Intent_Details.Start_Date'];
+
     $campCompletionDate = $collectionCamp['Camp_Outcome.Camp_Status_Completion_Date'];
     $campOrganiserId = $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
 
@@ -1786,7 +1795,7 @@ class CollectionCampService extends AutoSubscriber {
       'from' => self::getFromAddress(),
       'toEmail' => $attendeeEmail,
       'replyTo' => self::getFromAddress(),
-      'html' => self::getCampOutcomeAckEmailAfter5Days($attendeeName, $campId),
+      'html' => self::getCampOutcomeAckEmailAfter5Days($attendeeName, $campAddress, $campDate)
     ];
 
     $emailSendResult = \CRM_Utils_Mail::send($mailParams);
@@ -1804,7 +1813,7 @@ class CollectionCampService extends AutoSubscriber {
   /**
    *
    */
-  public static function getCampOutcomeAckEmailAfter5Days($attendeeName, $campId) {
+  public static function getCampOutcomeAckEmailAfter5Days($attendeeName, $campAddress, $campDate) {
     $html = "
       <p>Dear $attendeeName,</p>
       <p>Thank you for organizing the camp! We hope it was a successful event.</p>
