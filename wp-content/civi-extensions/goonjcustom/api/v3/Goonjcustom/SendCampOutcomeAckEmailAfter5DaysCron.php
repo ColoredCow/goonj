@@ -43,6 +43,10 @@ function civicrm_api3_goonjcustom_send_camp_outcome_ack_email_after_5_days_cron(
     ->addSelect('Camp_Outcome.Rate_the_camp', 'created_date', 'Camp_Outcome.Camp_Status_Completion_Date', 'Collection_Camp_Core_Details.Contact_Id')
     ->addWhere('Camp_Outcome.Camp_Status_Completion_Date', 'IS NOT NULL')
     ->addWhere('Camp_Outcome.Rate_the_camp', 'IS NOT NULL')
+    ->addClause('OR',
+      ['Camp_Outcome.Five_Day_Email_Sent', 'IS NULL'],
+      ['Camp_Outcome.Five_Day_Email_Sent', '=', 0]
+    )
     ->setLimit(25)
     ->execute();
 
@@ -53,16 +57,12 @@ function civicrm_api3_goonjcustom_send_camp_outcome_ack_email_after_5_days_cron(
 
       // Calculate difference in days.
       $diff = $today->diff($campCompletionDate)->days;
-      error_log('Difference in days: ' . $diff);
 
       // Only send if 5 or more days have passed.
       if ($diff < 5) {
         // Skip this camp.
         continue;
       }
-      error_log('Camp completion date: ' . $campCompletionDate->format('Y-m-d'));
-      error_log('Today: ' . $today->format('Y-m-d'));
-      error_log('Days passed: ' . $diff);
 
       CollectionCampService::sendCampOutcomeAckEmailAfter5Days($collectionCamp);
     }

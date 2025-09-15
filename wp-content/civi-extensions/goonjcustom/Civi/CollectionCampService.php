@@ -1767,7 +1767,7 @@ class CollectionCampService extends AutoSubscriber {
     $campId = $collectionCamp['id'];
 
     $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Collection_Camp_Intent_Details.Location_Area_of_camp', 'Collection_Camp_Intent_Details.Start_Date', 'Core_Contribution_Details.Number_of_unique_contributors', 'Camp_Outcome.Rate_the_camp', 'Camp_Outcome.Total_Fundraised_form_Activity')
+      ->addSelect('Collection_Camp_Intent_Details.Location_Area_of_camp', 'Collection_Camp_Intent_Details.Start_Date', 'Core_Contribution_Details.Number_of_unique_contributors', 'Camp_Outcome.Rate_the_camp', 'Camp_Outcome.Total_Fundraised_form_Activity', 'Collection_Camp_Intent_Details.Start_Date')
       ->addWhere('id', '=', $campId)
       ->execute()->single();
 
@@ -1785,17 +1785,18 @@ class CollectionCampService extends AutoSubscriber {
 
     $collectionSourceVehicleDispatche = EckEntity::get('Collection_Source_Vehicle_Dispatch', FALSE)
       ->addSelect('Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office')
-      ->addWhere('Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id', '=', $campId)
+      ->addWhere('Camp_Vehicle_Dispatch.Collection_Camp', '=', $campId)
       ->execute()->first();
 
     $materialGenerated = $collectionSourceVehicleDispatche['Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office'];
 
     $uniqueContributors = $collectionCamps['Core_Contribution_Details.Number_of_unique_contributors'];
+
     $campRating = $collectionCamps['Camp_Outcome.Rate_the_camp'];
     $fundsGenerated = $collectionCamps['Camp_Outcome.Total_Fundraised_form_Activity'];
 
     $campAddress = $collectionCamps['Collection_Camp_Intent_Details.Location_Area_of_camp'];
-    $campDate = $campIds['Collection_Camp_Intent_Details.Start_Date'];
+    $campDate = $collectionCamps['Collection_Camp_Intent_Details.Start_Date'];
 
     $campCompletionDate = $collectionCamp['Camp_Outcome.Camp_Status_Completion_Date'];
     $campOrganiserId = $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
@@ -1814,7 +1815,7 @@ class CollectionCampService extends AutoSubscriber {
     }
 
     $mailParams = [
-      'subject' => $attendeeName . 'thankyou for organizing the camp! A quick snapshot.',
+      'subject' => $attendeeName . ' thankyou for organizing the camp! A quick snapshot.',
       'from' => self::getFromAddress(),
       'toEmail' => $attendeeEmail,
       'replyTo' => self::getFromAddress(),
@@ -1825,10 +1826,10 @@ class CollectionCampService extends AutoSubscriber {
 
     if ($emailSendResult) {
       \Civi::log()->info("Camp status email sent for collection camp: $campId");
-      // EckEntity::update('Collection_Camp', FALSE)
-      //   ->addValue('Camp_Outcome.Five_Day_Email_Sent', 1)
-      //   ->addWhere('id', '=', $campId)
-      //   ->execute();
+      EckEntity::update('Collection_Camp', FALSE)
+        ->addValue('Camp_Outcome.Five_Day_Email_Sent', 1)
+        ->addWhere('id', '=', $campId)
+        ->execute();
     }
 
   }
