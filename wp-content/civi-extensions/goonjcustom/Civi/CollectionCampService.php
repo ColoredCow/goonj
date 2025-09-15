@@ -1783,6 +1783,13 @@ class CollectionCampService extends AutoSubscriber {
       $totalAmount += $c['total_amount'];
     }
 
+    $collectionSourceVehicleDispatche = EckEntity::get('Collection_Source_Vehicle_Dispatch', FALSE)
+      ->addSelect('Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office')
+      ->addWhere('Camp_Vehicle_Dispatch.Collection_Camp_Intent_Id', '=', $campId)
+      ->execute()->first();
+
+    $materialGenerated = $collectionSourceVehicleDispatche['Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office'];
+
     $campAddress = $collectionCamps['Collection_Camp_Intent_Details.Location_Area_of_camp'];
     $campDate = $campIds['Collection_Camp_Intent_Details.Start_Date'];
 
@@ -1807,7 +1814,7 @@ class CollectionCampService extends AutoSubscriber {
       'from' => self::getFromAddress(),
       'toEmail' => $attendeeEmail,
       'replyTo' => self::getFromAddress(),
-      'html' => self::getCampOutcomeAckEmailAfter5Days($attendeeName, $campAddress, $campDate, $totalAmount, ),
+      'html' => self::getCampOutcomeAckEmailAfter5Days($attendeeName, $campAddress, $campDate, $totalAmount, $materialGenerated),
     ];
 
     $emailSendResult = \CRM_Utils_Mail::send($mailParams);
