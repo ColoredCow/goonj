@@ -1760,4 +1760,62 @@ class CollectionCampService extends AutoSubscriber {
     }
   }
 
+  /**
+   * Send camp outcome acknowledgement email after 5 days.
+   */
+  public static function sendCampOutcomeAckEmailAfter5Days($collectionCamp) {
+    $campId = $collectionCamp['id'];
+    $campCompletionDate = $collectionCamp['Camp_Outcome.Camp_Status_Completion_Date'];
+    $campOrganiserId = $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
+
+    $campAttendedBy = Contact::get(FALSE)
+      ->addSelect('email.email', 'display_name')
+      ->addJoin('Email AS email', 'LEFT')
+      ->addWhere('id', '=', $campOrganiserId)
+      ->execute()->single();
+
+    $attendeeEmail = $campAttendedBy['email.email'];
+    $attendeeName = $campAttendedBy['display_name'];
+
+    if (!$attendeeEmail) {
+      throw new \Exception('Attendee email missing');
+    }
+
+    $mailParams = [
+      'subject' => $attendeeName . 'thankyou for organizing the camp! A quick snapshot.',
+      'from' => self::getFromAddress(),
+      'toEmail' => $attendeeEmail,
+      'replyTo' => self::getFromAddress(),
+      'html' => self::getCampOutcomeAckEmailAfter5Days($attendeeName, $campId),
+    ];
+
+    $emailSendResult = \CRM_Utils_Mail::send($mailParams);
+
+    if ($emailSendResult) {
+      \Civi::log()->info("Camp status email sent for collection camp: $campId");
+      // EckEntity::update('Collection_Camp', FALSE)
+      //   ->addValue('Camp_Outcome.Five_Day_Email_Sent', 1)
+      //   ->addWhere('id', '=', $campId)
+      //   ->execute();
+    }
+
+  }
+
+  /**
+   *
+   */
+  public static function getCampOutcomeAckEmailAfter5Days($attendeeName, $campId) {
+    $html = "
+      <p>Dear $attendeeName,</p>
+      <p>Thank you for organizing the camp! We hope it was a successful event.</p>
+      <p>We would appreciate it if you could take a moment to provide us with a quick snapshot of the camp's outcomes. Your feedback is invaluable in helping us improve our future initiatives and better serve our community.</p>
+      <p>Please click on the link below to access the Camp Outcome Form:</p>
+      <p><a href='https://goonj.org/camp-outcome-form/#?Eck_Collection_Camp1=$campId&Camp_Outcome.Filled_By=$campId'>Camp Outcome Form</a></p>
+      <p>Your insights and experiences are crucial to us, and we look forward to hearing from you.</p>
+      <p>Warm Regards,<br>Urban Relations Team</p>";
+
+    return $html;
+
+  }
+
 }
