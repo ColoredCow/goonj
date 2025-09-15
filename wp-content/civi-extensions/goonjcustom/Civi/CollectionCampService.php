@@ -90,36 +90,66 @@ class CollectionCampService extends AutoSubscriber {
     ];
   }
 
+  /**
+   *
+   */
   public static function assignVolunteerAsCampInitiator(string $op, string $objectName, $objectId, &$objectRef) {
     if ($op !== 'edit' || $objectName !== 'AfformSubmission') {
       return FALSE;
     }
 
-  try {
-    $data = $objectRef['data'] ?? [];
-    if (!$data) {
+    try {
+      $data = $objectRef['data'] ?? [];
+      if (!$data) {
+        return FALSE;
+      }
+
+      $campId = $data['Eck_Collection_Camp1'][0]['id'] ?? NULL;
+      $volunteerId = $data['Individual6'][0]['id'] ?? NULL;
+
+      if (empty($campId) || empty($volunteerId)) {
+        return FALSE;
+      }
+
+      EckEntity::update('Collection_Camp', TRUE)
+        ->addValue('Collection_Camp_Core_Details.Contact_Id', (int) $volunteerId)
+        ->addWhere('id', '=', (int) $campId)
+        ->execute();
+      return TRUE;
+    }
+    catch (\Throwable $e) {
       return FALSE;
     }
+  }  /**
 
-    $campId = $data['Eck_Collection_Camp1'][0]['id'] ?? NULL;
-    $volunteerId = $data['Individual6'][0]['id'] ?? NULL;
 
-    if (empty($campId) || empty($volunteerId)) {
-      return FALSE;
-    }
 
-    \Civi\Api4\EckEntity::update('Collection_Camp', TRUE)
-      ->addValue('Collection_Camp_Core_Details.Contact_Id', (int) $volunteerId)
-      ->addWhere('id', '=', (int) $campId)
-      ->execute();
-    return TRUE;
-  }
-  catch (\Throwable $e) {
-    return FALSE;
-  }
-}  /**
-   *
-   */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      *
+      */
   public static function collectionCampTabset($tabsetName, &$tabs, $context) {
     if (!self::isViewingCollectionCamp($tabsetName, $context)) {
       return;
@@ -1151,7 +1181,6 @@ class CollectionCampService extends AutoSubscriber {
   /**
    *
    */
-
 
   /**
    * This hook is called after a db write on entities.
