@@ -49,7 +49,7 @@ function civicrm_api3_goonjcustom_monthly_summary_for_dropping_center_cron($para
     }
     catch (\Exception $e) {
       \Civi::log()->info('Error while sending mail after 5 days', [
-        'id' => $collectionCamp['id'],
+        'id' => $droppingCenter['id'],
         'error' => $e->getMessage(),
       ]);
     }

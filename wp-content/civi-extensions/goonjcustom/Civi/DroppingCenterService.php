@@ -31,6 +31,7 @@ class DroppingCenterService extends AutoSubscriber {
     'afformAdminDroppingCenterDetailForm',
   ];
   private static $droppingCentreAddress = NULL;
+  private static $fromAddress = NULL;
 
   /**
    *
@@ -750,24 +751,28 @@ class DroppingCenterService extends AutoSubscriber {
     $campAttendedBy = Contact::get(FALSE)
       ->addSelect('email.email', 'display_name')
       ->addJoin('Email AS email', 'LEFT')
-      ->addWhere('id', '=', $droppingCenterId)
+      ->addWhere('id', '=', $initiatorId)
       ->execute()->single();
 
     $attendeeEmail = $campAttendedBy['email.email'];
     $attendeeName  = $campAttendedBy['display_name'];
 
     // Define last month’s range.
-    $startDate = (new DateTime('first day of last month'))->format('Y-m-d');
-    $endDate   = (new DateTime('last day of last month'))->format('Y-m-d');
-    $monthName = (new DateTime('first day of last month'))->format('F Y');
+    // $startDate = (new DateTime('first day of last month'))->format('Y-m-d');
+    // $endDate   = (new DateTime('last day of last month'))->format('Y-m-d');
+    // $monthName = (new DateTime('first day of last month'))->format('F Y');.
+    $startDate = '2025-05-01';
+    $endDate   = '2025-09-20';
+    $monthName = 'May 2025';
 
     $dispatches = EckEntity::get('Collection_Source_Vehicle_Dispatch', FALSE)
       ->addSelect('Camp_Vehicle_Dispatch.Date_Time_of_Dispatch', 'Camp_Vehicle_Dispatch.Number_of_Bags_loaded_in_vehicle')
       ->addWhere('Camp_Vehicle_Dispatch.Dropping_Center', '=', $droppingCenterId)
+      ->addWhere('Camp_Vehicle_Dispatch.Number_of_Bags_loaded_in_vehicle', 'IS NOT NULL')
       ->addWhere('Camp_Vehicle_Dispatch.Date_Time_of_Dispatch', 'BETWEEN', [$startDate, $endDate])
       ->execute();
 
-      error_log("dispatch:" . print_r($dispatches, TRUE));
+    error_log("dispatch:" . print_r($dispatches, TRUE));
 
     // Group dispatches by date.
     $grouped = [];
@@ -775,7 +780,6 @@ class DroppingCenterService extends AutoSubscriber {
       $date = $dispatch['Camp_Vehicle_Dispatch.Date_Time_of_Dispatch'];
       $bags = $dispatch['Camp_Vehicle_Dispatch.Number_of_Bags_loaded_in_vehicle'];
       error_log("bags:" . print_r($bags, TRUE));
-
 
       if (!isset($grouped[$date])) {
         $grouped[$date] = ['count' => 0, 'materials' => 0];
@@ -863,6 +867,17 @@ class DroppingCenterService extends AutoSubscriber {
   ";
 
     return $html;
+  }
+
+  /**
+   *
+   */
+  public static function getFromAddress() {
+    if (!self::$fromAddress) {
+      [$defaultFromName, $defaultFromEmail] = \CRM_Core_BAO_Domain::getNameAndEmail();
+      self::$fromAddress = "\"$defaultFromName\" <$defaultFromEmail>";
+    }
+    return self::$fromAddress;
   }
 
 }
