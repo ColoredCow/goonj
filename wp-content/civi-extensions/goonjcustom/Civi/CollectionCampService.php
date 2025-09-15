@@ -1771,6 +1771,18 @@ class CollectionCampService extends AutoSubscriber {
       ->addWhere('id', '=', $campId)
       ->execute()->single();
 
+    $contribution = Contribution::get(FALSE)
+      ->addSelect('total_amount')
+      ->addWhere('contribution_status_id:name', '=', 'Completed')
+      ->addWhere('Contribution_Details.Source', '=', $campId)
+      ->execute();
+
+    $totalAmount = 0;
+
+    foreach ($contribution as $c) {
+      $totalAmount += $c['total_amount'];
+    }
+
     $campAddress = $collectionCamps['Collection_Camp_Intent_Details.Location_Area_of_camp'];
     $campDate = $campIds['Collection_Camp_Intent_Details.Start_Date'];
 
@@ -1795,7 +1807,7 @@ class CollectionCampService extends AutoSubscriber {
       'from' => self::getFromAddress(),
       'toEmail' => $attendeeEmail,
       'replyTo' => self::getFromAddress(),
-      'html' => self::getCampOutcomeAckEmailAfter5Days($attendeeName, $campAddress, $campDate)
+      'html' => self::getCampOutcomeAckEmailAfter5Days($attendeeName, $campAddress, $campDate, $totalAmount, ),
     ];
 
     $emailSendResult = \CRM_Utils_Mail::send($mailParams);
