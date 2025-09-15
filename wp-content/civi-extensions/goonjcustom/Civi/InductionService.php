@@ -57,25 +57,18 @@ class InductionService extends AutoSubscriber {
     }
 
     try {
-      $data         = $objectRef['data'] ?? [];
-      $activityId   = (int) ($data['Activity1'][0]['fields']['id'] ?? 0);
-      $individualId = (int) ($data['Individual1'][0]['fields']['id'] ?? 0);
+      $data = $objectRef['data'] ?? [];
+      $activityId   = $data['Activity1'][0]['fields']['id'];
+      $individualId = $data['Individual1'][0]['fields']['id'];
 
       if (!$activityId || !$individualId) {
         return FALSE;
       }
 
-      $selectedRaw = $data['Individual1'][0]['fields']['Volunteer_fields.Which_activities_are_you_interested_in_'] ?? NULL;
-      $selectedValues = [];
-      if (is_array($selectedRaw)) {
-        $selectedValues = array_values(array_filter(array_map('intval', $selectedRaw), fn($v) => $v !== 0));
-      }
-      elseif ($selectedRaw !== NULL && $selectedRaw !== '') {
-        $selectedValues = [(int) $selectedRaw];
-      }
+      $selectedValue = $data['Individual1'][0]['fields']['Volunteer_fields.Selected_Activity_By_Urban_Ops'];
 
       $selectedLabel = '';
-      if (!empty($selectedValues)) {
+      if (!empty($selectedValue)) {
         $field = CustomField::get(FALSE)
           ->addSelect('option_group_id')
           ->addWhere('custom_group_id:name', '=', 'Volunteer_fields')
@@ -86,7 +79,7 @@ class InductionService extends AutoSubscriber {
         $opt = OptionValue::get(FALSE)
           ->addSelect('label', 'value')
           ->addWhere('option_group_id', '=', (int) $field['option_group_id'])
-          ->addWhere('value', '=', (int) $selectedValues[0])
+          ->addWhere('value', '=', $selectedValue)
           ->execute()
           ->first();
 
@@ -240,9 +233,6 @@ class InductionService extends AutoSubscriber {
       $html    = (string) ($template['msg_html'] ?? '');
       $text    = trim((string) ($template['msg_text'] ?? ''));
 
-      if ($subject === '') {
-        $subject = $templateTitle ?: 'Hello';
-      }
       if ($html !== '' && $text === '') {
         $text = \CRM_Utils_String::htmlToText($html);
       }
@@ -260,8 +250,8 @@ class InductionService extends AutoSubscriber {
         'toName'  => $contactName,
         'toEmail' => $toEmail,
         'subject' => $subject,
-        'html'    => $html ?: NULL,
-        'text'    => $text ?: NULL,
+        'html'    => $html,
+        'text'    => $text,
       ];
       if (!empty($ccEmails)) {
         $params['cc'] = implode(',', $ccEmails);
@@ -272,7 +262,7 @@ class InductionService extends AutoSubscriber {
 
     }
     catch (\Throwable $e) {
-      error_log("ActivityEmail ERROR: " . $e->getMessage());
+      \Civi::log()->info('ActivityEmail: Email sent', ['to' => $toEmail, 'template' => $templateTitle]);
       return FALSE;
     }
   }
