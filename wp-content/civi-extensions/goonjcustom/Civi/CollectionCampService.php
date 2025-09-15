@@ -1767,7 +1767,7 @@ class CollectionCampService extends AutoSubscriber {
     $campId = $collectionCamp['id'];
 
     $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Collection_Camp_Intent_Details.Location_Area_of_camp', 'Collection_Camp_Intent_Details.Start_Date')
+      ->addSelect('Collection_Camp_Intent_Details.Location_Area_of_camp', 'Collection_Camp_Intent_Details.Start_Date', 'Core_Contribution_Details.Number_of_unique_contributors')
       ->addWhere('id', '=', $campId)
       ->execute()->single();
 
@@ -1789,6 +1789,8 @@ class CollectionCampService extends AutoSubscriber {
       ->execute()->first();
 
     $materialGenerated = $collectionSourceVehicleDispatche['Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office'];
+
+    $uniqueContributors = $collectionCamps['Core_Contribution_Details.Number_of_unique_contributors'];
 
     $campAddress = $collectionCamps['Collection_Camp_Intent_Details.Location_Area_of_camp'];
     $campDate = $campIds['Collection_Camp_Intent_Details.Start_Date'];
