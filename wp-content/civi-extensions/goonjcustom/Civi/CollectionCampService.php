@@ -127,6 +127,13 @@ class CollectionCampService extends AutoSubscriber {
         ->execute();
     }
     catch (\Throwable $e) {
+      \Civi::log()->info('assignVolunteerAsCampInitiator failed', [
+      'error' => $e->getMessage(),
+      'trace' => $e->getTraceAsString(),
+      'objectId' => $objectId,
+      'op' => $op,
+      'objectName' => $objectName,
+    ]);
       return FALSE;
     }
   }
