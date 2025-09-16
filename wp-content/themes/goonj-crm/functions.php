@@ -227,7 +227,12 @@ function goonj_handle_user_identification_form() {
 		// If the user does not exist in the Goonj database
 		// redirect to the volunteer registration form.
 		$volunteer_registration_form_path = sprintf(
-			'/collection-camp/volunteer-with-intent/',
+			'/volunteer-registration/form/#?email=%s&phone=%s&message=%s&Volunteer_fields.Which_activities_are_you_interested_in_=%s&source=%s',
+			$email,
+			$phone,
+			'not-inducted-volunteer',
+			'9', // Activity to create collection camp.
+			$source
 		);
 
 		$individual_volunteer_registration_form_path = sprintf(
@@ -404,6 +409,12 @@ function goonj_handle_user_identification_form() {
 					);
 					$redirect_url = $individual_volunteer_registration_form_path;
 					break;
+				case 'individual-collection-camp':
+					$individual_volunteer_registration_form_path = sprintf(
+						'/collection-camp/volunteer-with-intent/',
+					);
+					$redirect_url = $individual_volunteer_registration_form_path;
+					break;
 				// Contact does not exist and the purpose is not defined.
 				// Redirect to volunteer registration with collection camp activity selected.
 				default:
@@ -413,7 +424,7 @@ function goonj_handle_user_identification_form() {
 
 			wp_redirect( $redirect_url );
 			exit;
-		}
+		}	
 
 		// If we are here, then it means for sure that the contact exists.	
 		if ($purpose === 'material-contribution') {
