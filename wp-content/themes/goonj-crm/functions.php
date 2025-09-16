@@ -579,8 +579,11 @@ function goonj_handle_user_identification_form() {
 				$redirect_url = home_url( '/volunteer-registration/waiting-induction/' );
 			} elseif ( $purpose === 'goonj-activities' ) {
 				$redirect_url = home_url( '/goonj-activities/waiting-induction' );
-			} else {
+			} elseif ( $purpose === 'individual-collection-camp' ) {
 				$redirect_url = home_url( '/collection-camp/intent/' );
+			} 
+			else {
+				$redirect_url = home_url( '/collection-camp/waiting-induction/' );
 			}
 
 			wp_redirect( $redirect_url );
