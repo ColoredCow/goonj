@@ -264,12 +264,72 @@ class InductionService extends AutoSubscriber {
       }
 
       \CRM_Utils_Mail::send($params);
-      \Civi::log()->info('ActivityEmail: Email sent', ['to' => $toEmail, 'template' => $templateTitle]);
+
+      self::createEmailActivity(
+        targetContactId: $individualId,
+        subject: $subject,
+        html: $html,
+        text: $text,
+        parentActivityId: $activityId ?: NULL,
+        assigneeId: $individualId,
+      );
+
       return TRUE;
 
     }
     catch (\Throwable $e) {
       \Civi::log()->info('ActivityEmail: Email sent', ['to' => $toEmail, 'template' => $templateTitle]);
+      return FALSE;
+    }
+  }
+
+  /**
+   *
+   */
+  private static function createEmailActivity(
+    int $targetContactId,
+    string $subject,
+    ?string $html = NULL,
+    ?string $text = NULL,
+    ?int $parentActivityId = NULL,
+    ?int $assigneeId = NULL,
+  ): bool {
+    try {
+
+      $payload = [
+        'activity_type_id:name' => 'Email',
+        'subject'               => $subject ?: 'Email sent',
+        'details'               => ($html ?: $text ?: ''),
+        'status_id:name'        => 'Completed',
+        'activity_date_time'    => date('Y-m-d H:i:s'),
+        'source_contact_id'     => $targetContactId,
+        'target_contact_id'     => [$targetContactId],
+      ];
+
+      if (!empty($parentActivityId)) {
+        $payload['parent_id'] = (int) $parentActivityId;
+      }
+      if (!empty($assigneeId)) {
+        $payload['assignee_contact_id'] = [(int) $assigneeId];
+      }
+
+      Activity::create(FALSE)
+        ->setValues($payload)
+        ->execute();
+
+      \Civi::log()->info('ActivityEmail: Follow-up Activity created', [
+        'for'       => $targetContactId,
+        'parent_id' => $parentActivityId,
+        'type'      => 'Email',
+      ]);
+
+      return TRUE;
+    }
+    catch (\Throwable $e) {
+      \Civi::log()->info('ActivityEmail: Failed to create follow-up Activity', [
+        'for'   => $targetContactId,
+        'error' => $e->getMessage(),
+      ]);
       return FALSE;
     }
   }
