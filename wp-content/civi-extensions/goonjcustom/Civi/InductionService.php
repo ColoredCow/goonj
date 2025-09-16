@@ -59,7 +59,13 @@ class InductionService extends AutoSubscriber {
     try {
       $data = $objectRef['data'] ?? [];
       $activityId   = $data['Activity1'][0]['fields']['id'];
+      $statusId   = $data['Activity1'][0]['fields']['status_id'];
+      \Civi::log()->info('ActivityEmail: Email sent', ['to' => $data, 'template' => $data]);
       $individualId = $data['Individual1'][0]['fields']['id'];
+
+      if ($statusId !== 2) {
+        return FALSE;
+      }
 
       if (!$activityId || !$individualId) {
         return FALSE;
@@ -258,6 +264,7 @@ class InductionService extends AutoSubscriber {
       }
 
       \CRM_Utils_Mail::send($params);
+      \Civi::log()->info('ActivityEmail: Email sent', ['to' => $toEmail, 'template' => $templateTitle]);
       return TRUE;
 
     }
