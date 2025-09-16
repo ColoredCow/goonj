@@ -409,6 +409,12 @@ function goonj_handle_user_identification_form() {
 					);
 					$redirect_url = $individual_volunteer_registration_form_path;
 					break;
+				case 'individual-collection-camp':
+					$individual_volunteer_registration_form_path = sprintf(
+						'/collection-camp/volunteer-with-intent/',
+					);
+					$redirect_url = $individual_volunteer_registration_form_path;
+					break;
 				// Contact does not exist and the purpose is not defined.
 				// Redirect to volunteer registration with collection camp activity selected.
 				default:
@@ -418,7 +424,7 @@ function goonj_handle_user_identification_form() {
 
 			wp_redirect( $redirect_url );
 			exit;
-		}
+		}	
 
 		// If we are here, then it means for sure that the contact exists.	
 		if ($purpose === 'material-contribution') {
@@ -573,7 +579,10 @@ function goonj_handle_user_identification_form() {
 				$redirect_url = home_url( '/volunteer-registration/waiting-induction/' );
 			} elseif ( $purpose === 'goonj-activities' ) {
 				$redirect_url = home_url( '/goonj-activities/waiting-induction' );
-			} else {
+			} elseif ( $purpose === 'individual-collection-camp' ) {
+				$redirect_url = home_url( '/collection-camp/intent/' );
+			} 
+			else {
 				$redirect_url = home_url( '/collection-camp/waiting-induction/' );
 			}
 
