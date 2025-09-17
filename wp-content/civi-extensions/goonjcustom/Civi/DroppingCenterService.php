@@ -870,8 +870,6 @@ class DroppingCenterService extends AutoSubscriber {
       'html'    => self::monthlySummaryEmail(
         $attendeeName,
         $dispatchData,
-        $footfall,
-        $contributions,
         $monthName,
         $totalMaterialContributors,
         $totalMonetaryContributors
@@ -888,7 +886,7 @@ class DroppingCenterService extends AutoSubscriber {
   /**
    *
    */
-  public static function monthlySummaryEmail($attendeeName, $dispatchData, $footfall, $contributions, $monthName, $totalMaterialContributors, $totalMonetaryContributors) {
+  public static function monthlySummaryEmail($attendeeName, $dispatchData, $monthName, $totalMaterialContributors, $totalMonetaryContributors) {
     $tableRows = '';
     foreach ($dispatchData as $row) {
       $tableRows .= "
