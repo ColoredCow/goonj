@@ -768,7 +768,6 @@ class DroppingCenterService extends AutoSubscriber {
     // $startDate = '2025-05-01';
     // $endDate   = '2025-09-20';
     // $monthName = 'May 2025';
-
     $dispatches = EckEntity::get('Collection_Source_Vehicle_Dispatch', FALSE)
       ->addSelect('Camp_Vehicle_Dispatch.Date_Time_of_Dispatch', 'Camp_Vehicle_Dispatch.Number_of_Bags_loaded_in_vehicle')
       ->addWhere('Camp_Vehicle_Dispatch.Dropping_Center', '=', $droppingCenterId)
@@ -801,6 +800,50 @@ class DroppingCenterService extends AutoSubscriber {
         'materials_generated' => $data['materials'],
       ];
     }
+
+    /**
+     * -------------------------------------
+     * UNIQUE CONTRIBUTORS (monthly basis)
+     * -------------------------------------
+     */
+    $materialContactIds = [];
+    $monetaryContactIds = [];
+
+    // Material contributors for the month.
+    $materialActivities = Activity::get(FALSE)
+      ->addSelect('id', 'source_contact_id')
+      ->addWhere('activity_type_id:name', '=', 'Material Contribution')
+      ->addWhere('activity_date_time', 'BETWEEN', [$startDate, $endDate])
+    // Adjust if needed.
+      ->addWhere('target_entity_id', '=', $droppingCenterId)
+      ->execute();
+
+    foreach ($materialActivities as $item) {
+      if (!empty($item['source_contact_id'])) {
+        $materialContactIds[] = (int) $item['source_contact_id'];
+      }
+    }
+
+    // Monetary contributors for the month.
+    $monetaryContributions = Contribution::get(FALSE)
+      ->addSelect('contact_id')
+      ->addWhere('contribution_status_id:name', '=', 'Completed')
+      ->addWhere('receive_date', 'BETWEEN', [$startDate, $endDate])
+    // Adjust if needed.
+      ->addWhere('Contribution_Details.Source.id', '=', $droppingCenterId)
+      ->execute();
+
+    foreach ($monetaryContributions as $contribution) {
+      if (!empty($contribution['contact_id'])) {
+        $monetaryContactIds[] = (int) $contribution['contact_id'];
+      }
+    }
+
+    $allContactIds      = array_unique(array_merge($materialContactIds, $monetaryContactIds));
+    $uniqueContributors = count($allContactIds);
+
+    // ------------------------------------------------
+
 
     // @todo Replace with real values from API/DB.
     $footfall      = 0;
