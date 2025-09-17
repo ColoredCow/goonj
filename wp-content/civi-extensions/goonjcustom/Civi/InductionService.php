@@ -5,7 +5,9 @@ namespace Civi;
 use Civi\Api4\Activity;
 use Civi\Api4\Contact;
 use Civi\Api4\CustomField;
+use Civi\Api4\Email;
 use Civi\Api4\MessageTemplate;
+use Civi\Api4\OptionValue;
 use Civi\Api4\Relationship;
 use Civi\Api4\StateProvince;
 use Civi\Core\Service\AutoSubscriber;
@@ -29,6 +31,7 @@ class InductionService extends AutoSubscriber {
     return [
       '&hook_civicrm_pre' => [
         ['hasIndividualChangedToVolunteer'],
+        ['sendActivityEmailToVolunteer'],
       ],
       '&hook_civicrm_post' => [
             ['volunteerCreated'],
@@ -41,6 +44,294 @@ class InductionService extends AutoSubscriber {
         ['volunteerInductionAssignee'],
       ],
     ];
+  }
+
+  private const OTHER_TEMPLATE_TITLE = 'Volunteer Acitvity Email For Other';
+
+  /**
+   *
+   */
+  public static function sendActivityEmailToVolunteer(string $op, string $objectName, $objectId, &$objectRef): bool {
+    if ($op !== 'create' || $objectName !== 'AfformSubmission' || ($objectRef['afform_name'] ?? '') !== 'afformScheduleInductionForm') {
+      return FALSE;
+    }
+
+    try {
+      $data = $objectRef['data'] ?? [];
+      $activityId   = $data['Activity1'][0]['fields']['id'];
+      $statusId   = $data['Activity1'][0]['fields']['status_id'];
+      \Civi::log()->info('ActivityEmail: Email sent', ['to' => $data, 'template' => $data]);
+      $individualId = $data['Individual1'][0]['fields']['id'];
+
+      if ($statusId !== 2) {
+        return FALSE;
+      }
+
+      if (!$activityId || !$individualId) {
+        return FALSE;
+      }
+
+      $selectedValue = $data['Individual1'][0]['fields']['Volunteer_fields.Selected_Activity_By_Urban_Ops'];
+
+      $selectedLabel = '';
+      if (!empty($selectedValue)) {
+        $field = CustomField::get(FALSE)
+          ->addSelect('option_group_id')
+          ->addWhere('custom_group_id:name', '=', 'Volunteer_fields')
+          ->addWhere('name', '=', 'Which_activities_are_you_interested_in_')
+          ->execute()
+          ->first();
+
+        $opt = OptionValue::get(FALSE)
+          ->addSelect('label', 'value')
+          ->addWhere('option_group_id', '=', (int) $field['option_group_id'])
+          ->addWhere('value', '=', $selectedValue)
+          ->execute()
+          ->first();
+
+        $selectedLabel = trim((string) ($opt['label'] ?? ''));
+      }
+
+      $contact = Contact::get(FALSE)
+        ->addSelect('display_name')
+        ->addWhere('id', '=', $individualId)
+        ->execute()
+        ->first();
+
+      if (!$contact) {
+        error_log("ActivityEmail ERROR: Contact not found: {$individualId}");
+        return FALSE;
+      }
+      $contactName = trim((string) ($contact['display_name'] ?? ''));
+
+      $emailRow = Email::get(FALSE)
+        ->addSelect('email')
+        ->addWhere('contact_id', '=', $individualId)
+        ->addWhere('is_primary', '=', TRUE)
+        ->execute()
+        ->first();
+
+      $toEmail = trim((string) ($emailRow['email'] ?? ''));
+      if ($toEmail === '') {
+        return FALSE;
+      }
+
+      $activity = Activity::get(FALSE)
+        ->addSelect('id')
+        ->addWhere('id', '=', $activityId)
+        ->execute()
+        ->first();
+
+      if (!$activity) {
+        return FALSE;
+      }
+
+      $ccEmails = [];
+      $assigneeNames = [];
+
+      $assignId = (int) ($data['Activity1'][0]['fields']['Induction_Fields.Assign'] ?? 0);
+      if ($assignId) {
+        $assignEmailRow = Email::get(FALSE)
+          ->addSelect('email')
+          ->addWhere('contact_id', '=', $assignId)
+          ->addWhere('is_primary', '=', TRUE)
+          ->execute()
+          ->first();
+
+        $assignEmail = trim((string) ($assignEmailRow['email'] ?? ''));
+        if ($assignEmail !== '') {
+          $ccEmails[] = $assignEmail;
+        }
+        $assignContactRow = Contact::get(FALSE)
+          ->addSelect('display_name')
+          ->addWhere('id', '=', $assignId)
+          ->execute()
+          ->first();
+
+        if (!empty($assignContactRow['display_name'])) {
+          $assigneeNames[] = trim((string) $assignContactRow['display_name']);
+        }
+      }
+
+      $cityPocName = '';
+      if (!empty($assigneeNames)) {
+        $cityPocName = implode(', ', array_unique($assigneeNames));
+      }
+
+      $applyTokens = function ($str) use ($contactName, $cityPocName) {
+        if ($str === NULL || $str === '') {
+          return $str;
+        }
+        $patterns = [
+          '/\{\{\s*(?:acitivity|activity)\.display_name\s*\}\}/i',
+          '/\{\{\s*(?:acitivity|activity)\.city_poc\s*\}\}/i',
+        ];
+        $replacements = [
+          $contactName,
+          $cityPocName,
+        ];
+        return preg_replace($patterns, $replacements, $str);
+      };
+
+      $isOthers = (bool) preg_match('/^\s*others?\b/i', $selectedLabel);
+      $templateTitleCandidate = $isOthers ? self::OTHER_TEMPLATE_TITLE : ($selectedLabel ?: self::OTHER_TEMPLATE_TITLE);
+
+      $normalizeTitle = function (string $s): string {
+        $map = [
+          "\xE2\x80\x98" => "'",
+          "\xE2\x80\x99" => "'",
+          "\xE2\x80\x9C" => '"',
+          "\xE2\x80\x9D" => '"',
+        ];
+        $s = strtr($s, $map);
+        $s = preg_replace('/\s+/', ' ', $s);
+        return trim($s);
+      };
+
+      $templateTitle = $normalizeTitle($templateTitleCandidate);
+
+      $template = NULL;
+
+      try {
+        $template = civicrm_api3('MessageTemplate', 'getsingle', [
+          'msg_title' => $templateTitle,
+        ]);
+      }
+      catch (\Throwable $e) {
+      }
+
+      if (!$template) {
+        try {
+          $res = civicrm_api3('MessageTemplate', 'get', [
+            'sequential' => 1,
+            'options' => ['limit' => 1],
+            'msg_title' => ['LIKE' => $templateTitle],
+          ]);
+          if (!empty($res['count'])) {
+            $template = $res['values'][0] ?? NULL;
+          }
+        }
+        catch (\Throwable $e) {
+          // ignore; try fallback.
+        }
+      }
+
+      if (!$template && !$isOthers) {
+        try {
+          $res = civicrm_api3('MessageTemplate', 'get', [
+            'sequential' => 1,
+            'options' => ['limit' => 1],
+            'msg_title' => self::OTHER_TEMPLATE_TITLE,
+          ]);
+          if (!empty($res['count'])) {
+            $template = $res['values'][0] ?? NULL;
+          }
+        }
+        catch (\Throwable $e) {
+        }
+      }
+
+      if (!$template) {
+        return FALSE;
+      }
+
+      $subject = trim((string) ($template['msg_subject'] ?? ''));
+      $html    = (string) ($template['msg_html'] ?? '');
+      $text    = trim((string) ($template['msg_text'] ?? ''));
+
+      if ($html !== '' && $text === '') {
+        $text = \CRM_Utils_String::htmlToText($html);
+      }
+      if ($html === '' && $text === '') {
+        return FALSE;
+      }
+
+      $subject = $applyTokens($subject);
+      $html    = $applyTokens($html);
+      $text    = $applyTokens($text);
+
+      $from = HelperService::getDefaultFromEmail();
+      $params = [
+        'from'    => $from,
+        'toName'  => $contactName,
+        'toEmail' => $toEmail,
+        'subject' => $subject,
+        'html'    => $html,
+        'text'    => $text,
+      ];
+      if (!empty($ccEmails)) {
+        $params['cc'] = implode(',', $ccEmails);
+      }
+
+      \CRM_Utils_Mail::send($params);
+
+      self::createEmailActivity(
+        targetContactId: $individualId,
+        subject: $subject,
+        html: $html,
+        text: $text,
+        parentActivityId: $activityId ?: NULL,
+        assigneeId: $individualId,
+      );
+
+      return TRUE;
+
+    }
+    catch (\Throwable $e) {
+      \Civi::log()->info('ActivityEmail: Email sent', ['to' => $toEmail, 'template' => $templateTitle]);
+      return FALSE;
+    }
+  }
+
+  /**
+   *
+   */
+  private static function createEmailActivity(
+    int $targetContactId,
+    string $subject,
+    ?string $html = NULL,
+    ?string $text = NULL,
+    ?int $parentActivityId = NULL,
+    ?int $assigneeId = NULL,
+  ): bool {
+    try {
+
+      $payload = [
+        'activity_type_id:name' => 'Email',
+        'subject'               => $subject ?: 'Email sent',
+        'details'               => ($html ?: $text ?: ''),
+        'status_id:name'        => 'Completed',
+        'activity_date_time'    => date('Y-m-d H:i:s'),
+        'source_contact_id'     => $targetContactId,
+        'target_contact_id'     => [$targetContactId],
+      ];
+
+      if (!empty($parentActivityId)) {
+        $payload['parent_id'] = (int) $parentActivityId;
+      }
+      if (!empty($assigneeId)) {
+        $payload['assignee_contact_id'] = [(int) $assigneeId];
+      }
+
+      Activity::create(FALSE)
+        ->setValues($payload)
+        ->execute();
+
+      \Civi::log()->info('ActivityEmail: Follow-up Activity created', [
+        'for'       => $targetContactId,
+        'parent_id' => $parentActivityId,
+        'type'      => 'Email',
+      ]);
+
+      return TRUE;
+    }
+    catch (\Throwable $e) {
+      \Civi::log()->info('ActivityEmail: Failed to create follow-up Activity', [
+        'for'   => $targetContactId,
+        'error' => $e->getMessage(),
+      ]);
+      return FALSE;
+    }
   }
 
   /**
@@ -112,19 +403,18 @@ class InductionService extends AutoSubscriber {
     }
 
     $placeholderActivityDate = self::getPlaceholderActivityDate();
-    
+
     // Fetch induction activities for the target contact.
     $contactInductionExists = Activity::get(FALSE)
       ->addWhere('activity_type_id:name', '=', 'Induction')
       ->addWhere('target_contact_id', '=', $targetContactId)
       ->execute();
-    
-    
+
     // Check if an induction activity already exists.
     if ($contactInductionExists->count() > 0) {
       return;
     }
-    
+
     Activity::create(FALSE)
       ->addValue('activity_type_id:name', self::INDUCTION_ACTIVITY_TYPE_NAME)
       ->addValue('status_id:name', self::INDUCTION_DEFAULT_STATUS_NAME)
@@ -136,12 +426,13 @@ class InductionService extends AutoSubscriber {
       ->execute();
 
     return TRUE;
-  }    
+  }
+
   /**
    * Handles induction creation for a volunteer.
    */
   public static function createInductionForVolunteer(string $op, string $objectName, int $objectId, &$objectRef) {
-    
+
     if ($op !== 'create' || $objectName !== 'Address' || self::$volunteerId !== $objectRef->contact_id || !$objectRef->is_primary) {
       return FALSE;
     }
@@ -200,107 +491,107 @@ class InductionService extends AutoSubscriber {
    */
   private static function sendInductionEmail($volunteerId) {
     \Civi::log()->info('Initiating induction email process', ['volunteerId' => $volunteerId]);
-  
+
     if (self::isEmailAlreadySent($volunteerId)) {
       \Civi::log()->info('Induction email already sent', ['volunteerId' => $volunteerId]);
       return FALSE;
     }
-  
+
     if (empty($volunteerId)) {
       \Civi::log()->info('Volunteer ID is empty');
       return;
     }
-  
+
     $contact = Contact::get(FALSE)
-    ->addSelect('address_primary.state_province_id')
-    ->addWhere('id', '=', $volunteerId)
-    ->execute()->first();
-    
+      ->addSelect('address_primary.state_province_id')
+      ->addWhere('id', '=', $volunteerId)
+      ->execute()->first();
+
     \Civi::log()->info('Contact fetched', ['contact' => $contact]);
-  
+
     $stateId = $contact['address_primary.state_province_id'];
     if (!$stateId) {
       \Civi::log()->info('State not found', ['contactId' => $contact['id'], 'StateId' => $stateId]);
       return FALSE;
     }
-  
+
     \Civi::log()->info('Fetched state for volunteer', ['volunteerId' => $volunteerId, 'stateId' => $stateId]);
-  
+
     $inductionType = self::fetchTypeOfInduction($volunteerId);
     \Civi::log()->info('Induction type determined', ['volunteerId' => $volunteerId, 'inductionType' => $inductionType]);
-  
+
     $templateName = ($inductionType === 'Offline')
         ? 'New_Volunteer_Registration%'
         : 'New_Volunteer_Registration_Online%';
-  
+
     $template = MessageTemplate::get(FALSE)
       ->addWhere('msg_title', 'LIKE', $templateName)
       ->setLimit(1)
       ->execute()->single();
-  
+
     if (!$template) {
       \Civi::log()->info('No email template found', ['templateName' => $templateName]);
       return FALSE;
     }
-  
+
     \Civi::log()->info('Email template found', ['templateId' => $template['id']]);
-  
+
     $emailParams = [
       'contact_id' => $volunteerId,
       'template_id' => $template['id'],
       'cc' => self::$volunteerInductionAssigneeEmail,
     ];
-  
+
     $inductionActivity = Activity::get(FALSE)
       ->addWhere('activity_type_id:name', '=', self::INDUCTION_ACTIVITY_TYPE_NAME)
       ->addWhere('status_id:name', 'IN', ['Scheduled', 'Completed', 'To be scheduled', 'Cancelled'])
       ->addWhere('target_contact_id', '=', $volunteerId)
       ->setLimit(1)
       ->execute();
-  
+
     if ($inductionActivity->count() === 0) {
       \Civi::log()->info('No induction activity found, creating new one');
       self::createInduction($volunteerId, $stateId);
-    } else {
+    }
+    else {
       \Civi::log()->info('Induction activity already exists');
     }
-  
+
     \Civi::log()->info('Queuing induction email');
     self::queueInductionEmail($emailParams);
-  
+
     \Civi::log()->info('Marking email as sent in custom field');
     Contact::update(FALSE)
       ->addValue('Individual_fields.Volunteer_Registration_Email_Sent', 1)
       ->addWhere('id', '=', $volunteerId)
       ->execute();
-  
+
     \Civi::log()->info('Induction email process completed', ['volunteerId' => $volunteerId]);
     return TRUE;
   }
-  
 
   /**
    * Queue the induction email to be processed later.
    */
   private static function queueInductionEmail($params) {
     \Civi::log()->info('Preparing to queue induction email', ['contactId' => $params['contact_id']]);
-  
+
     try {
       $queue = \Civi::queue(\CRM_Goonjcustom_Engine::QUEUE_NAME, [
         'type' => 'Sql',
         'error' => 'abort',
         'runner' => 'task',
       ]);
-  
+
       \Civi::log()->info('Queue initialized for induction email', ['contactId' => $params['contact_id']]);
-  
+
       $queue->createItem(new \CRM_Queue_Task(
             [self::class, 'processQueuedInductionEmail'],
             [$params]
         ), [
           'weight' => 1,
         ]);
-  
+
       \Civi::log()->info('Induction email queued for contact', ['contactId' => $params['contact_id']]);
     }
     catch (\CRM_Core_Exception $ex) {
@@ -310,7 +601,6 @@ class InductionService extends AutoSubscriber {
       ]);
     }
   }
-  
 
   /**
    * Process the queued induction email task.

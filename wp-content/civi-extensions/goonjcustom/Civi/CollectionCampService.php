@@ -61,6 +61,7 @@ class CollectionCampService extends AutoSubscriber {
       ],
       '&hook_civicrm_pre' => [
         ['generateCollectionCampQr'],
+        ['assignVolunteerAsCampInitiator'],
         ['linkCollectionCampToContact'],
         ['createActivityForCollectionCamp'],
         ['updateCampStatusAfterAuth'],
@@ -87,6 +88,54 @@ class CollectionCampService extends AutoSubscriber {
       '&hook_civicrm_validateForm' => 'validateCheckNumber',
 
     ];
+  }
+
+  /**
+   *
+   */
+  public static function assignVolunteerAsCampInitiator(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($op !== 'edit' || $objectName !== 'AfformSubmission') {
+      return FALSE;
+    }
+
+    try {
+      $data = $objectRef['data'] ?? [];
+      if (!$data) {
+        return;
+      }
+
+      $campId = $data['Eck_Collection_Camp1'][0]['id'];
+      $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
+        ->addSelect('subtype:name')
+        ->addWhere('id', '=', $campId)
+        ->execute()->single();
+
+      $subtype = $collectionCamps['subtype:name'];
+
+      if ($subtype !== 'Collection_Camp') {
+        return;
+      }
+
+      $volunteerId = $data['Individual6'][0]['id'];
+      if (empty($campId) || empty($volunteerId)) {
+        return;
+      }
+
+      EckEntity::update('Collection_Camp', FALSE)
+        ->addValue('Collection_Camp_Core_Details.Contact_Id', $volunteerId)
+        ->addWhere('id', '=', $campId)
+        ->execute();
+    }
+    catch (\Throwable $e) {
+      \Civi::log()->info('assignVolunteerAsCampInitiator failed', [
+      'error' => $e->getMessage(),
+      'trace' => $e->getTraceAsString(),
+      'objectId' => $objectId,
+      'op' => $op,
+      'objectName' => $objectName,
+    ]);
+      return FALSE;
+    }
   }
 
   /**
