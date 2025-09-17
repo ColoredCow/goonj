@@ -758,12 +758,16 @@ class DroppingCenterService extends AutoSubscriber {
     $attendeeName  = $campAttendedBy['display_name'];
 
     // Define last month’s range.
-    // $startDate = (new DateTime('first day of last month'))->format('Y-m-d');
-    // $endDate   = (new DateTime('last day of last month'))->format('Y-m-d');
-    // $monthName = (new DateTime('first day of last month'))->format('F Y');.
-    $startDate = '2025-05-01';
-    $endDate   = '2025-09-20';
-    $monthName = 'May 2025';
+    $startDate = (new \DateTime('first day of last month'))->format('Y-m-d');
+    $endDate   = (new \DateTime('last day of last month'))->format('Y-m-d');
+    $monthName = (new \DateTime('first day of last month'))->format('F Y');
+    error_log("startDate:" . print_r($startDate, TRUE));
+    error_log("endDate:" . print_r($endDate, TRUE));
+    error_log("monthName:" . print_r($monthName, TRUE));
+
+    // $startDate = '2025-05-01';
+    // $endDate   = '2025-09-20';
+    // $monthName = 'May 2025';
 
     $dispatches = EckEntity::get('Collection_Source_Vehicle_Dispatch', FALSE)
       ->addSelect('Camp_Vehicle_Dispatch.Date_Time_of_Dispatch', 'Camp_Vehicle_Dispatch.Number_of_Bags_loaded_in_vehicle')
