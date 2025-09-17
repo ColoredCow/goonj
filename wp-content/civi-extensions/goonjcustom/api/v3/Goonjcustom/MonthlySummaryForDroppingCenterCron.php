@@ -36,17 +36,16 @@ function civicrm_api3_goonjcustom_monthly_summary_for_dropping_center_cron($para
   $returnValues = [];
   $today = new \DateTime();
   $lastDay = new \DateTime('last day of this month');
-  error_log('today :' . print_r($today->format('Y-m-d'), TRUE));
-  error_log('lastDay :' . print_r($lastDay->format('Y-m-d'), TRUE));
 
-  if ($today->format('Y-m-d') !== $lastDay->format('Y-m-d')) {
-    \Civi::log()->info('MonthlySummaryForDroppingCenterCron skipped (not last day of month)');
-    return civicrm_api3_create_success([], $params, 'Goonjcustom', 'monthly_summary_for_dropping_center_cron');
-  }
+  // if ($today->format('Y-m-d') !== $lastDay->format('Y-m-d')) {
+  //   \Civi::log()->info('MonthlySummaryForDroppingCenterCron skipped (not last day of month)');
+  //   return civicrm_api3_create_success([], $params, 'Goonjcustom', 'monthly_summary_for_dropping_center_cron');
+  // }
 
   $droppingCenters = EckEntity::get('Collection_Camp', FALSE)
     ->addSelect('Collection_Camp_Core_Details.Contact_Id', 'Dropping_Centre.Goonj_Office.display_name')
     ->addWhere('subtype:name', '=', 'Dropping_Center')
+    ->addWhere('Collection_Camp_Core_Details.Status', '=', 'authorized')
     ->addWhere('created_date', '>=', '2025/9/1')
     ->setLimit(25)
     ->execute();
