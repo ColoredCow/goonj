@@ -36,7 +36,7 @@ function civicrm_api3_goonjcustom_monthly_summary_for_dropping_center_cron($para
   $returnValues = [];
 
   $droppingCenters = EckEntity::get('Collection_Camp', FALSE)
-    ->addSelect('Collection_Camp_Core_Details.Contact_Id')
+    ->addSelect('Collection_Camp_Core_Details.Contact_Id', 'Dropping_Centre.Goonj_Office.display_name')
     ->addWhere('subtype:name', '=', 'Dropping_Center')
     ->addWhere('created_date', '>=', '2025/9/1')
     ->setLimit(25)

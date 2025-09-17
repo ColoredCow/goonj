@@ -2,6 +2,7 @@
 
 namespace Civi;
 
+use Civi\Api4\OptionValue;
 use Civi\Afform\Event\AfformSubmitEvent;
 use Civi\Api4\Activity;
 use Civi\Api4\Contact;
@@ -13,6 +14,7 @@ use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
+use Civi\Api4\Contribution;
 
 /**
  *
@@ -744,6 +746,30 @@ class DroppingCenterService extends AutoSubscriber {
    */
   public static function SendMonthlySummaryEmail($droppingCenter) {
     $droppingCenterId = $droppingCenter['id'];
+    $receivedAt       = $droppingCenter['Dropping_Centre.Goonj_Office.display_name'];
+
+    $customFields = CustomField::get(TRUE)
+      ->addSelect('option_group_id')
+      ->addWhere('custom_group_id:name', '=', 'Camp_Vehicle_Dispatch')
+      ->addWhere('name', '=', 'Vehicle_Category')
+      ->execute()->first();
+
+    $optionGroupId = $customFields['option_group_id'] ?? NULL;
+
+    $optionValues = OptionValue::get(TRUE)
+      ->addSelect('id', 'value', 'label', 'name')
+      ->addWhere('option_group_id', '=', $optionGroupId)
+      ->setLimit(25)
+      ->execute();
+    // Build lookup array value => label.
+    $optionMap = [];
+    foreach ($optionValues as $opt) {
+      $optionMap[$opt['value']] = $opt['label'];
+    }
+
+    // Replace receivedAt with its label if found.
+    $receivedAtLabel = $optionMap[$receivedAt] ?? $receivedAt;
+
     error_log("droppingCenterId:" . print_r($droppingCenterId, TRUE));
 
     $initiatorId = $droppingCenter['Collection_Camp_Core_Details.Contact_Id'];
@@ -758,18 +784,19 @@ class DroppingCenterService extends AutoSubscriber {
     $attendeeName  = $campAttendedBy['display_name'];
 
     // Define last month’s range.
-    $startDate = (new \DateTime('first day of last month'))->format('Y-m-d');
-    $endDate   = (new \DateTime('last day of last month'))->format('Y-m-d');
-    $monthName = (new \DateTime('first day of last month'))->format('F Y');
-    error_log("startDate:" . print_r($startDate, TRUE));
-    error_log("endDate:" . print_r($endDate, TRUE));
-    error_log("monthName:" . print_r($monthName, TRUE));
+    // $startDate = (new \DateTime('first day of last month'))->format('Y-m-d');
+    // $endDate   = (new \DateTime('last day of last month'))->format('Y-m-d');
+    // $monthName = (new \DateTime('first day of last month'))->format('F Y');
+    // error_log("startDate:" . print_r($startDate, TRUE));
+    // error_log("endDate:" . print_r($endDate, TRUE));
+    // error_log("monthName:" . print_r($monthName, TRUE));.
+    $startDate = '2025-05-01';
+    $endDate   = '2025-09-20';
+    $monthName = 'May 2025';
 
-    // $startDate = '2025-05-01';
-    // $endDate   = '2025-09-20';
-    // $monthName = 'May 2025';
+    // Fetch dispatches for the month.
     $dispatches = EckEntity::get('Collection_Source_Vehicle_Dispatch', FALSE)
-      ->addSelect('Camp_Vehicle_Dispatch.Date_Time_of_Dispatch', 'Camp_Vehicle_Dispatch.Number_of_Bags_loaded_in_vehicle')
+      ->addSelect('Camp_Vehicle_Dispatch.Date_Time_of_Dispatch', 'Camp_Vehicle_Dispatch.Number_of_Bags_loaded_in_vehicle', 'Camp_Vehicle_Dispatch.Vehicle_Category')
       ->addWhere('Camp_Vehicle_Dispatch.Dropping_Center', '=', $droppingCenterId)
       ->addWhere('Camp_Vehicle_Dispatch.Number_of_Bags_loaded_in_vehicle', 'IS NOT NULL')
       ->addWhere('Camp_Vehicle_Dispatch.Date_Time_of_Dispatch', 'BETWEEN', [$startDate, $endDate])
@@ -777,46 +804,45 @@ class DroppingCenterService extends AutoSubscriber {
 
     error_log("dispatch:" . print_r($dispatches, TRUE));
 
-    // Group dispatches by date.
-    $grouped = [];
-    foreach ($dispatches as $dispatch) {
-      $date = $dispatch['Camp_Vehicle_Dispatch.Date_Time_of_Dispatch'];
-      $bags = $dispatch['Camp_Vehicle_Dispatch.Number_of_Bags_loaded_in_vehicle'];
-      error_log("bags:" . print_r($bags, TRUE));
-
-      if (!isset($grouped[$date])) {
-        $grouped[$date] = ['count' => 0, 'materials' => 0];
-      }
-      $grouped[$date]['count']++;
-      $grouped[$date]['materials'] += $bags;
-    }
-
     // Prepare data for table rows.
     $dispatchData = [];
-    foreach ($grouped as $date => $data) {
+    $counter = 1;
+    foreach ($dispatches as $dispatch) {
+      $date            = $dispatch['Camp_Vehicle_Dispatch.Date_Time_of_Dispatch'];
+      $bags            = $dispatch['Camp_Vehicle_Dispatch.Number_of_Bags_loaded_in_vehicle'];
+      $vehicleCategory = $dispatch['Camp_Vehicle_Dispatch.Vehicle_Category'] ?? '';
+      error_log("date:" . print_r($date, TRUE));
+
       $dispatchData[] = [
-        'num_dispatches'    => $data['count'],
-        'dispatch_date'     => $date,
-        'materials_generated' => $data['materials'],
+      // One row = one dispatch.
+        'num_dispatches'      => $counter,
+        'dispatch_date'       => $date,
+      // Placeholder for description of material.
+        'materials_generated' => $bags,
+        'vehicle_info'        => $vehicleCategory,
+        'received_at'         => $receivedAtLabel,
       ];
+      $counter++;
     }
 
     /**
      * -------------------------------------
-     * UNIQUE CONTRIBUTORS (monthly basis)
+     * CONTRIBUTORS (monthly basis, not unique)
      * -------------------------------------
      */
     $materialContactIds = [];
     $monetaryContactIds = [];
 
+    error_log("working flow");
+
     // Material contributors for the month.
     $materialActivities = Activity::get(FALSE)
       ->addSelect('id', 'source_contact_id')
       ->addWhere('activity_type_id:name', '=', 'Material Contribution')
-      ->addWhere('activity_date_time', 'BETWEEN', [$startDate, $endDate])
-    // Adjust if needed.
-      ->addWhere('target_entity_id', '=', $droppingCenterId)
+      ->addWhere('Material_Contribution.Contribution_Date', 'BETWEEN', [$startDate, $endDate])
+      ->addWhere('Material_Contribution.Dropping_Center', '=', $droppingCenterId)
       ->execute();
+    error_log("materialActivities:" . print_r($materialActivities, TRUE));
 
     foreach ($materialActivities as $item) {
       if (!empty($item['source_contact_id'])) {
@@ -829,9 +855,9 @@ class DroppingCenterService extends AutoSubscriber {
       ->addSelect('contact_id')
       ->addWhere('contribution_status_id:name', '=', 'Completed')
       ->addWhere('receive_date', 'BETWEEN', [$startDate, $endDate])
-    // Adjust if needed.
       ->addWhere('Contribution_Details.Source.id', '=', $droppingCenterId)
       ->execute();
+    error_log("monetaryContributions:" . print_r($monetaryContributions, TRUE));
 
     foreach ($monetaryContributions as $contribution) {
       if (!empty($contribution['contact_id'])) {
@@ -839,13 +865,14 @@ class DroppingCenterService extends AutoSubscriber {
       }
     }
 
-    $allContactIds      = array_unique(array_merge($materialContactIds, $monetaryContactIds));
-    $uniqueContributors = count($allContactIds);
+    // Just count everything, no uniqueness applied.
+    $totalMaterialContributors = count($materialContactIds);
+    error_log("totalMaterialContributors:" . print_r($totalMaterialContributors, TRUE));
 
-    // ------------------------------------------------
+    $totalMonetaryContributors = count($monetaryContactIds);
+    error_log("totalMonetaryContributors:" . print_r($totalMonetaryContributors, TRUE));
 
-
-    // @todo Replace with real values from API/DB.
+    // @todo Replace with real values if required.
     $footfall      = 0;
     $contributions = 0;
 
@@ -858,10 +885,19 @@ class DroppingCenterService extends AutoSubscriber {
       'from'    => self::getFromAddress(),
       'toEmail' => $attendeeEmail,
       'replyTo' => self::getFromAddress(),
-      'html'    => self::monthlySummaryEmail($attendeeName, $dispatchData, $footfall, $contributions, $monthName),
+      'html'    => self::monthlySummaryEmail(
+        $attendeeName,
+        $dispatchData,
+        $footfall,
+        $contributions,
+        $monthName,
+        $totalMaterialContributors,
+        $totalMonetaryContributors
+      ),
     ];
 
     $emailSendResult = \CRM_Utils_Mail::send($mailParams);
+    error_log("emailSendResult:" . print_r($emailSendResult, TRUE));
 
     if ($emailSendResult) {
       \Civi::log()->info("Monthly summary email sent for dropping center: $droppingCenterId");
@@ -871,47 +907,51 @@ class DroppingCenterService extends AutoSubscriber {
   /**
    *
    */
-  public static function monthlySummaryEmail($attendeeName, $dispatchData, $footfall, $contributions, $monthName) {
+  public static function monthlySummaryEmail($attendeeName, $dispatchData, $footfall, $contributions, $monthName, $totalMaterialContributors, $totalMonetaryContributors) {
     // Build table rows dynamically from dispatch data.
     $tableRows = '';
     foreach ($dispatchData as $row) {
       $tableRows .= "
-      <tr>
-        <td style='border:1px solid #ddd; padding:8px; text-align:center;'>{$row['num_dispatches']}</td>
-        <td style='border:1px solid #ddd; padding:8px; text-align:center;'>{$row['dispatch_date']}</td>
-        <td style='border:1px solid #ddd; padding:8px; text-align:center;'>{$row['materials_generated']}</td>
-      </tr>
-    ";
+        <tr>
+          <td style='border:1px solid #ddd; padding:8px; text-align:center;'>{$row['num_dispatches']}</td>
+          <td style='border:1px solid #ddd; padding:8px; text-align:center;'>{$row['dispatch_date']}</td>
+          <td style='border:1px solid #ddd; padding:8px; text-align:center;'>{$row['materials_generated']}</td>
+          <td style='border:1px solid #ddd; padding:8px; text-align:center;'>{$row['vehicle_info']}</td>
+          <td style='border:1px solid #ddd; padding:8px; text-align:center;'>{$row['received_at']}</td>
+        </tr>
+      ";
     }
 
     // Full HTML table.
     $tableHtml = "
-    <table style='border-collapse:collapse; width:100%; margin:15px 0; font-family:Arial, sans-serif; font-size:14px;'>
-      <thead>
-        <tr style='background-color:#f2f2f2;'>
-          <th style='border:1px solid #ddd; padding:8px; text-align:center;'>Number of Dispatches</th>
-          <th style='border:1px solid #ddd; padding:8px; text-align:center;'>Dispatch Date</th>
-          <th style='border:1px solid #ddd; padding:8px; text-align:center;'>Materials Generated</th>
-        </tr>
-      </thead>
-      <tbody>
-        $tableRows
-      </tbody>
-    </table>
-  ";
+      <table style='border-collapse:collapse; width:100%; margin:15px 0; font-family:Arial, sans-serif; font-size:14px;'>
+        <thead>
+          <tr style='background-color:#f2f2f2;'>
+            <th style='border:1px solid #ddd; padding:8px; text-align:center;'>Number of Dispatches</th>
+            <th style='border:1px solid #ddd; padding:8px; text-align:center;'>Dispatch Date</th>
+            <th style='border:1px solid #ddd; padding:8px; text-align:center;'>Description of Material</th>
+            <th style='border:1px solid #ddd; padding:8px; text-align:center;'>Vehicle Information</th>
+            <th style='border:1px solid #ddd; padding:8px; text-align:center;'>Received At</th>
+          </tr>
+        </thead>
+        <tbody>
+          $tableRows
+        </tbody>
+      </table>
+    ";
 
     // Mail content.
     $html = "
-    <p>Dear $attendeeName,</p>
-    <p>Thank you for being such an amazing ambassador of Goonj! 🌿</p>
-    <p>Your energy and commitment are truly making a difference as we work to reach essential materials to some of the most remote villages across the country.</p>
-    <p>Here’s a quick snapshot of your center’s work from <strong>$monthName</strong>:</p>
-    $tableHtml
-    <p>Alongside this, your center welcomed <strong>$footfall</strong> visitors and received <strong>$contributions</strong> contributions (Footfall, Online and Offline monetary contributions).</p>
-    <p>We would also love to hear from you—whether it’s highlights, suggestions, or even challenges you have faced. Every little insight helps us grow stronger together.</p>
-    <p>Excited to keep building this journey with you!</p>
-    <p>Warm regards,<br>Team Goonj..</p>
-  ";
+      <p>Dear $attendeeName,</p>
+      <p>Thank you for being such an amazing ambassador of Goonj! 🌿</p>
+      <p>Your energy and commitment are truly making a difference as we work to reach essential materials to some of the most remote villages across the country.</p>
+      <p>Here’s a quick snapshot of your center’s work from <strong>$monthName</strong>:</p>
+      $tableHtml
+      <p>Alongside this, your center recorded <strong>$totalMaterialContributors</strong> material contributions and <strong>$totalMonetaryContributors</strong> monetary contributions.</p>
+      <p>We would also love to hear from you—whether it’s highlights, suggestions, or even challenges you have faced. Every little insight helps us grow stronger together.</p>
+      <p>Excited to keep building this journey with you!</p>
+      <p>Warm regards,<br>Team Goonj..</p>
+    ";
 
     return $html;
   }
