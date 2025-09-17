@@ -761,16 +761,13 @@ class DroppingCenterService extends AutoSubscriber {
       ->addWhere('option_group_id', '=', $optionGroupId)
       ->setLimit(25)
       ->execute();
-    // Build lookup array value => label.
+
     $optionMap = [];
     foreach ($optionValues as $opt) {
       $optionMap[$opt['value']] = $opt['label'];
     }
 
-    // Replace receivedAt with its label if found.
     $receivedAtLabel = $optionMap[$receivedAt] ?? $receivedAt;
-
-    error_log("droppingCenterId:" . print_r($droppingCenterId, TRUE));
 
     $initiatorId = $droppingCenter['Collection_Camp_Core_Details.Contact_Id'];
 
@@ -784,16 +781,15 @@ class DroppingCenterService extends AutoSubscriber {
     $attendeeName  = $campAttendedBy['display_name'];
 
     // Define last month’s range.
-    // $startDate = (new \DateTime('first day of last month'))->format('Y-m-d');
-    // $endDate   = (new \DateTime('last day of last month'))->format('Y-m-d');
-    // $monthName = (new \DateTime('first day of last month'))->format('F Y');
+    $startDate = (new \DateTime('first day of last month'))->format('Y-m-d');
+    $endDate   = (new \DateTime('last day of last month'))->format('Y-m-d');
+    $monthName = (new \DateTime('first day of last month'))->format('F Y');
     // error_log("startDate:" . print_r($startDate, TRUE));
     // error_log("endDate:" . print_r($endDate, TRUE));
     // error_log("monthName:" . print_r($monthName, TRUE));.
-    $startDate = '2025-05-01';
-    $endDate   = '2025-09-20';
-    $monthName = 'May 2025';
-
+    // $startDate = '2025-05-01';
+    // $endDate   = '2025-09-20';
+    // $monthName = 'May 2025';.
     // Fetch dispatches for the month.
     $dispatches = EckEntity::get('Collection_Source_Vehicle_Dispatch', FALSE)
       ->addSelect('Camp_Vehicle_Dispatch.Date_Time_of_Dispatch', 'Camp_Vehicle_Dispatch.Number_of_Bags_loaded_in_vehicle', 'Camp_Vehicle_Dispatch.Vehicle_Category')
@@ -801,8 +797,6 @@ class DroppingCenterService extends AutoSubscriber {
       ->addWhere('Camp_Vehicle_Dispatch.Number_of_Bags_loaded_in_vehicle', 'IS NOT NULL')
       ->addWhere('Camp_Vehicle_Dispatch.Date_Time_of_Dispatch', 'BETWEEN', [$startDate, $endDate])
       ->execute();
-
-    error_log("dispatch:" . print_r($dispatches, TRUE));
 
     // Prepare data for table rows.
     $dispatchData = [];
@@ -827,13 +821,11 @@ class DroppingCenterService extends AutoSubscriber {
 
     /**
      * -------------------------------------
-     * CONTRIBUTORS (monthly basis, not unique)
+     * CONTRIBUTORS (monthly basis)
      * -------------------------------------
      */
     $materialContactIds = [];
     $monetaryContactIds = [];
-
-    error_log("working flow");
 
     // Material contributors for the month.
     $materialActivities = Activity::get(FALSE)
@@ -842,7 +834,6 @@ class DroppingCenterService extends AutoSubscriber {
       ->addWhere('Material_Contribution.Contribution_Date', 'BETWEEN', [$startDate, $endDate])
       ->addWhere('Material_Contribution.Dropping_Center', '=', $droppingCenterId)
       ->execute();
-    error_log("materialActivities:" . print_r($materialActivities, TRUE));
 
     foreach ($materialActivities as $item) {
       if (!empty($item['source_contact_id'])) {
@@ -857,7 +848,6 @@ class DroppingCenterService extends AutoSubscriber {
       ->addWhere('receive_date', 'BETWEEN', [$startDate, $endDate])
       ->addWhere('Contribution_Details.Source.id', '=', $droppingCenterId)
       ->execute();
-    error_log("monetaryContributions:" . print_r($monetaryContributions, TRUE));
 
     foreach ($monetaryContributions as $contribution) {
       if (!empty($contribution['contact_id'])) {
@@ -865,16 +855,8 @@ class DroppingCenterService extends AutoSubscriber {
       }
     }
 
-    // Just count everything, no uniqueness applied.
     $totalMaterialContributors = count($materialContactIds);
-    error_log("totalMaterialContributors:" . print_r($totalMaterialContributors, TRUE));
-
     $totalMonetaryContributors = count($monetaryContactIds);
-    error_log("totalMonetaryContributors:" . print_r($totalMonetaryContributors, TRUE));
-
-    // @todo Replace with real values if required.
-    $footfall      = 0;
-    $contributions = 0;
 
     if (!$attendeeEmail) {
       throw new \Exception('Attendee email missing');
@@ -897,7 +879,6 @@ class DroppingCenterService extends AutoSubscriber {
     ];
 
     $emailSendResult = \CRM_Utils_Mail::send($mailParams);
-    error_log("emailSendResult:" . print_r($emailSendResult, TRUE));
 
     if ($emailSendResult) {
       \Civi::log()->info("Monthly summary email sent for dropping center: $droppingCenterId");
@@ -908,7 +889,6 @@ class DroppingCenterService extends AutoSubscriber {
    *
    */
   public static function monthlySummaryEmail($attendeeName, $dispatchData, $footfall, $contributions, $monthName, $totalMaterialContributors, $totalMonetaryContributors) {
-    // Build table rows dynamically from dispatch data.
     $tableRows = '';
     foreach ($dispatchData as $row) {
       $tableRows .= "
@@ -922,7 +902,6 @@ class DroppingCenterService extends AutoSubscriber {
       ";
     }
 
-    // Full HTML table.
     $tableHtml = "
       <table style='border-collapse:collapse; width:100%; margin:15px 0; font-family:Arial, sans-serif; font-size:14px;'>
         <thead>
@@ -940,7 +919,6 @@ class DroppingCenterService extends AutoSubscriber {
       </table>
     ";
 
-    // Mail content.
     $html = "
       <p>Dear $attendeeName,</p>
       <p>Thank you for being such an amazing ambassador of Goonj! 🌿</p>
