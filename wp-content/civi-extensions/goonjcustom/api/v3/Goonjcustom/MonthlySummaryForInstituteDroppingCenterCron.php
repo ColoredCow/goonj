@@ -39,10 +39,10 @@ function civicrm_api3_goonjcustom_monthly_summary_for_institute_dropping_center_
   $lastDay = new \DateTime('last day of this month');
 
   // Run this last day of month only.
-//   if ($today->format('Y-m-d') !== $lastDay->format('Y-m-d')) {
-//     \Civi::log()->info('MonthlySummaryForInstituteDroppingCenterCron skipped (not last day of month)');
-//     return civicrm_api3_create_success([], $params, 'Goonjcustom', 'monthly_summary_for_institute_dropping_center_cron');
-//   }
+  if ($today->format('Y-m-d') !== $lastDay->format('Y-m-d')) {
+    \Civi::log()->info('MonthlySummaryForInstituteDroppingCenterCron skipped (not last day of month)');
+    return civicrm_api3_create_success([], $params, 'Goonjcustom', 'monthly_summary_for_institute_dropping_center_cron');
+  }
 
   $limit  = 20;
   $offset = 0;
@@ -57,8 +57,6 @@ function civicrm_api3_goonjcustom_monthly_summary_for_institute_dropping_center_
       ->execute();
 
     $instituteDroppingCenters = $instituteDroppingCentersResult->getArrayCopy();
-    error_log("instituteDroppingCenters:" . print_r($instituteDroppingCenters, TRUE));
-
 
     if (count($instituteDroppingCenters) === 0) {
       break;
@@ -68,8 +66,6 @@ function civicrm_api3_goonjcustom_monthly_summary_for_institute_dropping_center_
       try {
         $instituteDroppingCenterId = $droppingCenter['id'];
         $lastSentDate = $droppingCenter['Institution_Dropping_Center_Intent.Is_Monthly_Institution_Email_Sent'] ?? NULL;
-    error_log("lastSentDate:" . print_r($lastSentDate, TRUE));
-
 
         $today = new \DateTime();
         $currentMonth = $today->format('Y-m');
@@ -88,13 +84,12 @@ function civicrm_api3_goonjcustom_monthly_summary_for_institute_dropping_center_
           continue;
         }
 
-        // Send email.
         InstitutionDroppingCenterService::SendMonthlySummaryEmailToInstitute($droppingCenter);
 
-        // EckEntity::update('Collection_Camp', FALSE)
-        //   ->addValue('Institution_Dropping_Center_Intent.Is_Monthly_Institution_Email_Sent', $today->format('Y-m-d'))
-        //   ->addWhere('id', '=', $instituteDroppingCenterId)
-        //   ->execute();
+        EckEntity::update('Collection_Camp', FALSE)
+          ->addValue('Institution_Dropping_Center_Intent.Is_Monthly_Institution_Email_Sent', $today->format('Y-m-d'))
+          ->addWhere('id', '=', $instituteDroppingCenterId)
+          ->execute();
 
         $returnValues[] = [
           'id' => $instituteDroppingCenterId,
