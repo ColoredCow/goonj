@@ -37,17 +37,18 @@ function civicrm_api3_goonjcustom_monthly_summary_for_dropping_center_cron($para
   $today   = new \DateTime();
   $lastDay = new \DateTime('last day of this month');
 
-  // If you want last-day-only, uncomment this:
-  // if ($today->format('Y-m-d') !== $lastDay->format('Y-m-d')) {
-  //   \Civi::log()->info('MonthlySummaryForDroppingCenterCron skipped (not last day of month)');
-  //   return civicrm_api3_create_success([], $params, 'Goonjcustom', 'monthly_summary_for_dropping_center_cron');
-  // }.
+  // Run this last day of month only.
+  if ($today->format('Y-m-d') !== $lastDay->format('Y-m-d')) {
+    \Civi::log()->info('MonthlySummaryForDroppingCenterCron skipped (not last day of month)');
+    return civicrm_api3_create_success([], $params, 'Goonjcustom', 'monthly_summary_for_dropping_center_cron');
+  }
+
   $limit  = 20;
   $offset = 0;
 
   while (TRUE) {
     $droppingCentersResult = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('id', 'Collection_Camp_Core_Details.Contact_Id', 'Dropping_Centre.Goonj_Office.display_name')
+      ->addSelect('id', 'Collection_Camp_Core_Details.Contact_Id', 'Dropping_Centre.Goonj_Office.display_name', 'Dropping_Centre.Is_Monthly_Email_Sent')
       ->addWhere('subtype:name', '=', 'Dropping_Center')
       ->addWhere('Collection_Camp_Core_Details.Status', '=', 'authorized')
       ->setLimit($limit)
@@ -63,42 +64,48 @@ function civicrm_api3_goonjcustom_monthly_summary_for_dropping_center_cron($para
     foreach ($droppingCenters as $droppingCenter) {
       try {
         $droppingCenterId = $droppingCenter['id'];
+        $lastSentDate = $droppingCenter['Dropping_Centre.Is_Monthly_Email_Sent'] ?? NULL;
 
-        $droppingCenterMetas = EckEntity::get('Dropping_Center_Meta', FALSE)
-          ->addSelect('Status.Status:label')
-          ->addWhere('Dropping_Center_Meta.Dropping_Center', '=', $droppingCenterId)
-          ->execute()
-          ->getArrayCopy();
+        $today = new \DateTime();
+        $currentMonth = $today->format('Y-m');
 
-        $isPermanentlyClosed = FALSE;
-        foreach ($droppingCenterMetas as $meta) {
-          if ($meta['Status.Status:label'] === 'Permanently Closed') {
-            $isPermanentlyClosed = TRUE;
-            break;
+        $alreadySentThisMonth = FALSE;
+        if ($lastSentDate) {
+          $lastSentMonth = (new \DateTime($lastSentDate))->format('Y-m');
+
+          if ($lastSentMonth === $currentMonth) {
+            $alreadySentThisMonth = TRUE;
           }
         }
 
-        if ($isPermanentlyClosed) {
-          \Civi::log()->info("Skipping dropping center (permanently closed): $droppingCenterId");
+        if ($alreadySentThisMonth) {
+          \Civi::log()->info("Skipping Dropping Center $droppingCenterId: email already sent this month");
           continue;
         }
 
+        // Send email.
         DroppingCenterService::SendMonthlySummaryEmail($droppingCenter);
 
+        // Update custom field after sending.
+        EckEntity::update('Collection_Camp', FALSE)
+          ->addValue('Dropping_Centre.Is_Monthly_Email_Sent', $today->format('Y-m-d'))
+          ->addWhere('id', '=', $droppingCenterId)
+          ->execute();
+
         $returnValues[] = [
-          'id'     => $droppingCenterId,
+          'id' => $droppingCenterId,
           'status' => 'sent',
         ];
       }
       catch (\Exception $e) {
         \Civi::log()->info('Error while sending mail', [
-          'id'    => $droppingCenter['id'] ?? NULL,
+          'id' => $droppingCenter['id'] ?? NULL,
           'error' => $e->getMessage(),
         ]);
         $returnValues[] = [
-          'id'     => $droppingCenter['id'] ?? NULL,
+          'id' => $droppingCenter['id'] ?? NULL,
           'status' => 'error',
-          'error'  => $e->getMessage(),
+          'error' => $e->getMessage(),
         ];
       }
     }
