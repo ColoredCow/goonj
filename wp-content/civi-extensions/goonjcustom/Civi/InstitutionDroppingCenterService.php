@@ -16,6 +16,8 @@ use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
+use Civi\Api4\OptionValue;
+use Civi\Api4\Contribution;
 
 /**
  *
@@ -37,6 +39,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
   ];
 
   private static $droppingCenterAddress = NULL;
+  private static $fromAddress = NULL;
 
   /**
    *
@@ -1038,10 +1041,11 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
 
     $dispatches = EckEntity::get('Collection_Source_Vehicle_Dispatch', FALSE)
       ->addSelect('Camp_Vehicle_Dispatch.Date_Time_of_Dispatch', 'Camp_Vehicle_Dispatch.Number_of_Bags_loaded_in_vehicle', 'Camp_Vehicle_Dispatch.Vehicle_Category')
-      ->addWhere('Camp_Vehicle_Dispatch.Dropping_Center', '=', $droppingCenterId)
+      ->addWhere('Camp_Vehicle_Dispatch.Institution_Dropping_Center', '=', $droppingCenterId)
       ->addWhere('Camp_Vehicle_Dispatch.Number_of_Bags_loaded_in_vehicle', 'IS NOT NULL')
       ->addWhere('Camp_Vehicle_Dispatch.Date_Time_of_Dispatch', 'BETWEEN', [$startDate, $endDate])
       ->execute();
+      error_log('dispatches:' . print_r($dispatches, TRUE));
 
     // Prepare data for table rows.
     $dispatchData = [];
