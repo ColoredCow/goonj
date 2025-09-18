@@ -49,7 +49,7 @@ function civicrm_api3_goonjcustom_monthly_summary_for_institute_dropping_center_
 
   while (TRUE) {
     $instituteDroppingCentersResult = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('id', 'Institution_Collection_Camp_Intent.Institution_POC', 'Institution_Dropping_Center_Review.Goonj_Office', 'Institution_Dropping_Center_Intent.Is_Monthly_Institution_Email_Sent')
+      ->addSelect('id', 'Institution_Dropping_Center_Intent.Institution_POC', 'Institution_Dropping_Center_Review.Goonj_Office', 'Institution_Dropping_Center_Intent.Is_Monthly_Institution_Email_Sent')
       ->addWhere('subtype:name', '=', 'Institution_Dropping_Center')
       ->addWhere('Collection_Camp_Core_Details.Status', '=', 'authorized')
       ->setLimit($limit)

@@ -1023,7 +1023,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
 
     $receivedAtLabel = $optionMap[$receivedAt] ?? $receivedAt;
 
-    $initiatorId = $droppingCenter['Institution_Collection_Camp_Intent.Institution_POC'];
+    $initiatorId = $droppingCenter['Institution_Dropping_Center_Intent.Institution_POC'];
 
     $campAttendedBy = Contact::get(FALSE)
       ->addSelect('email.email', 'display_name')
