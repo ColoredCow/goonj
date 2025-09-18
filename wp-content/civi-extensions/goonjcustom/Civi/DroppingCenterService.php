@@ -863,14 +863,13 @@ class DroppingCenterService extends AutoSubscriber {
     }
 
     $mailParams = [
-      'subject' => "Monthly update for your dropping center - $monthName",
+      'subject' => "Monthly update for your dropping center",
       'from'    => self::getFromAddress(),
       'toEmail' => $attendeeEmail,
       'replyTo' => self::getFromAddress(),
       'html'    => self::monthlySummaryEmail(
         $attendeeName,
         $dispatchData,
-        $monthName,
         $totalMaterialContributors,
         $totalMonetaryContributors
       ),
@@ -886,7 +885,7 @@ class DroppingCenterService extends AutoSubscriber {
   /**
    *
    */
-  public static function monthlySummaryEmail($attendeeName, $dispatchData, $monthName, $totalMaterialContributors, $totalMonetaryContributors) {
+  public static function monthlySummaryEmail($attendeeName, $dispatchData, $totalMaterialContributors, $totalMonetaryContributors) {
     $tableRows = '';
     foreach ($dispatchData as $row) {
       $tableRows .= "
@@ -920,8 +919,8 @@ class DroppingCenterService extends AutoSubscriber {
     $html = "
       <p>Dear $attendeeName,</p>
       <p>Thank you for being such an amazing ambassador of Goonj! 🌿</p>
-      <p>Your energy and commitment are truly making a difference as we work to reach essential materials to some of the most remote villages across the country.</p>
-      <p>Here’s a quick snapshot of your center’s work from <strong>$monthName</strong>:</p>
+      <p>Your energy and commitment are truly making a difference as we work to reach the essential materials to some of the most remote villages across the country</p>
+      <p>Here’s a quick snapshot of your center’s work from the past month:
       $tableHtml
       <p>Alongside this, your center recorded <strong>$totalMaterialContributors</strong> material contributions and <strong>$totalMonetaryContributors</strong> monetary contributions.</p>
       <p>We would also love to hear from you—whether it’s highlights, suggestions, or even challenges you have faced. Every little insight helps us grow stronger together.</p>
