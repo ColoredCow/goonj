@@ -86,7 +86,6 @@ function civicrm_api3_goonjcustom_monthly_summary_for_dropping_center_cron($para
         // Send email.
         DroppingCenterService::SendMonthlySummaryEmail($droppingCenter);
 
-        // Update custom field after sending.
         EckEntity::update('Collection_Camp', FALSE)
           ->addValue('Dropping_Centre.Is_Monthly_Email_Sent', $today->format('Y-m-d'))
           ->addWhere('id', '=', $droppingCenterId)
