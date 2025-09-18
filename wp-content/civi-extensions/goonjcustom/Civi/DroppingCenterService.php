@@ -784,13 +784,7 @@ class DroppingCenterService extends AutoSubscriber {
     $startDate = (new \DateTime('first day of last month'))->format('Y-m-d');
     $endDate   = (new \DateTime('last day of last month'))->format('Y-m-d');
     $monthName = (new \DateTime('first day of last month'))->format('F Y');
-    // error_log("startDate:" . print_r($startDate, TRUE));
-    // error_log("endDate:" . print_r($endDate, TRUE));
-    // error_log("monthName:" . print_r($monthName, TRUE));.
-    // $startDate = '2025-05-01';
-    // $endDate   = '2025-09-20';
-    // $monthName = 'May 2025';.
-    // Fetch dispatches for the month.
+
     $dispatches = EckEntity::get('Collection_Source_Vehicle_Dispatch', FALSE)
       ->addSelect('Camp_Vehicle_Dispatch.Date_Time_of_Dispatch', 'Camp_Vehicle_Dispatch.Number_of_Bags_loaded_in_vehicle', 'Camp_Vehicle_Dispatch.Vehicle_Category')
       ->addWhere('Camp_Vehicle_Dispatch.Dropping_Center', '=', $droppingCenterId)
@@ -808,10 +802,8 @@ class DroppingCenterService extends AutoSubscriber {
       error_log("date:" . print_r($date, TRUE));
 
       $dispatchData[] = [
-      // One row = one dispatch.
         'num_dispatches'      => $counter,
         'dispatch_date'       => $date,
-      // Placeholder for description of material.
         'materials_generated' => $bags,
         'vehicle_info'        => $vehicleCategory,
         'received_at'         => $receivedAtLabel,
