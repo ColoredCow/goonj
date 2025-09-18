@@ -57,8 +57,8 @@ class InductionService extends AutoSubscriber {
     }
 
     try {
-      $data = $objectRef['data'] ?? [];
-      $activityId   = $data['Activity1'][0]['fields']['id'];
+      $data       = $objectRef['data'] ?? [];
+      $activityId = $data['Activity1'][0]['fields']['id'];
       $statusId   = $data['Activity1'][0]['fields']['status_id'];
       \Civi::log()->info('ActivityEmail: Email sent', ['to' => $data, 'template' => $data]);
       $individualId = $data['Individual1'][0]['fields']['id'];
@@ -176,6 +176,10 @@ class InductionService extends AutoSubscriber {
       $isOthers = (bool) preg_match('/^\s*others?\b/i', $selectedLabel);
       $templateTitleCandidate = $isOthers ? self::OTHER_TEMPLATE_TITLE : ($selectedLabel ?: self::OTHER_TEMPLATE_TITLE);
 
+      \Civi::log()->info('ActivityEmail: Selected label', [
+        'selectedLabel' => $selectedLabel,
+      ]);
+
       $normalizeTitle = function (string $s): string {
         $map = [
           "\xE2\x80\x98" => "'",
@@ -189,6 +193,11 @@ class InductionService extends AutoSubscriber {
       };
 
       $templateTitle = $normalizeTitle($templateTitleCandidate);
+
+      \Civi::log()->info('ActivityEmail: Normalized template title', [
+        'templateTitleCandidate' => $templateTitleCandidate,
+        'templateTitleNormalized' => $templateTitle,
+      ]);
 
       $template = NULL;
 
