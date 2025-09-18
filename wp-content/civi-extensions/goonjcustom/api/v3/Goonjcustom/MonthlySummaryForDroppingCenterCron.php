@@ -37,11 +37,10 @@ function civicrm_api3_goonjcustom_monthly_summary_for_dropping_center_cron($para
   $today = new \DateTime();
   $lastDay = new \DateTime('last day of this month');
 
-  // if ($today->format('Y-m-d') !== $lastDay->format('Y-m-d')) {
+  // If ($today->format('Y-m-d') !== $lastDay->format('Y-m-d')) {
   //   \Civi::log()->info('MonthlySummaryForDroppingCenterCron skipped (not last day of month)');
   //   return civicrm_api3_create_success([], $params, 'Goonjcustom', 'monthly_summary_for_dropping_center_cron');
-  // }
-
+  // }.
   $droppingCenters = EckEntity::get('Collection_Camp', FALSE)
     ->addSelect('Collection_Camp_Core_Details.Contact_Id', 'Dropping_Centre.Goonj_Office.display_name')
     ->addWhere('subtype:name', '=', 'Dropping_Center')
@@ -52,15 +51,37 @@ function civicrm_api3_goonjcustom_monthly_summary_for_dropping_center_cron($para
 
   foreach ($droppingCenters as $droppingCenter) {
     try {
+      $droppingCenterId = $droppingCenter['id'];
+
+      // 🔎 Check Dropping Center Meta statuses
+      $droppingCenterMetas = EckEntity::get('Dropping_Center_Meta', FALSE)
+        ->addSelect('Status.Status:label')
+        ->addWhere('Dropping_Center_Meta.Dropping_Center', '=', $droppingCenterId)
+        ->execute();
+
+      // If any status = Permanently Closed → skip.
+      $isPermanentlyClosed = FALSE;
+      foreach ($droppingCenterMetas as $meta) {
+        if ($meta['Status.Status:label'] === 'Permanently Closed') {
+          $isPermanentlyClosed = TRUE;
+          break;
+        }
+      }
+
+      if ($isPermanentlyClosed) {
+        \Civi::log()->info("Skipping dropping center (permanently closed): $droppingCenterId");
+        continue;
+      }
 
       DroppingCenterService::SendMonthlySummaryEmail($droppingCenter);
     }
     catch (\Exception $e) {
       \Civi::log()->info('Error while sending mail', [
-        'id' => $droppingCenter['id'],
+        'id'    => $droppingCenter['id'],
         'error' => $e->getMessage(),
       ]);
     }
   }
+
   return civicrm_api3_create_success($returnValues, $params, 'Goonjcustom', 'monthly_summary_for_dropping_center_cron');
 }
