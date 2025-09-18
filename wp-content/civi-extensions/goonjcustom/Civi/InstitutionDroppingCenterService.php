@@ -1002,7 +1002,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     $droppingCenterId = $droppingCenter['id'];
     $receivedAt       = $droppingCenter['Institution_Dropping_Center_Review.Goonj_Office'];
 
-    $customFields = CustomField::get(TRUE)
+    $customFields = CustomField::get(FALSE)
       ->addSelect('option_group_id')
       ->addWhere('custom_group_id:name', '=', 'Camp_Vehicle_Dispatch')
       ->addWhere('name', '=', 'Vehicle_Category')
@@ -1010,7 +1010,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
 
     $optionGroupId = $customFields['option_group_id'] ?? NULL;
 
-    $optionValues = OptionValue::get(TRUE)
+    $optionValues = OptionValue::get(FALSE)
       ->addSelect('id', 'value', 'label', 'name')
       ->addWhere('option_group_id', '=', $optionGroupId)
       ->setLimit(25)
