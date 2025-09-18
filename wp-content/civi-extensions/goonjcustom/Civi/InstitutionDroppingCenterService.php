@@ -1045,7 +1045,6 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       ->addWhere('Camp_Vehicle_Dispatch.Number_of_Bags_loaded_in_vehicle', 'IS NOT NULL')
       ->addWhere('Camp_Vehicle_Dispatch.Date_Time_of_Dispatch', 'BETWEEN', [$startDate, $endDate])
       ->execute();
-      error_log('dispatches:' . print_r($dispatches, TRUE));
 
     // Prepare data for table rows.
     $dispatchData = [];

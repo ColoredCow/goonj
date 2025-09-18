@@ -799,7 +799,6 @@ class DroppingCenterService extends AutoSubscriber {
       $date            = $dispatch['Camp_Vehicle_Dispatch.Date_Time_of_Dispatch'];
       $bags            = $dispatch['Camp_Vehicle_Dispatch.Number_of_Bags_loaded_in_vehicle'];
       $vehicleCategory = $dispatch['Camp_Vehicle_Dispatch.Vehicle_Category'] ?? '';
-      error_log("date:" . print_r($date, TRUE));
 
       $dispatchData[] = [
         'num_dispatches'      => $counter,
