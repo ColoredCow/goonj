@@ -995,7 +995,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
   /**
    *
    */
-  public static function SendMonthlySummaryEmail($droppingCenter) {
+  public static function SendMonthlySummaryEmailToInstitute($droppingCenter) {
     $droppingCenterId = $droppingCenter['id'];
     $receivedAt       = $droppingCenter['Institution_Dropping_Center_Review.Goonj_Office'];
 
