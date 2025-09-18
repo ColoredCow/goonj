@@ -1020,7 +1020,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
 
     $receivedAtLabel = $optionMap[$receivedAt] ?? $receivedAt;
 
-    $initiatorId = $droppingCenter['Collection_Camp_Core_Details.Contact_Id'];
+    $initiatorId = $droppingCenter['Institution_Collection_Camp_Intent.Institution_POC'];
 
     $campAttendedBy = Contact::get(FALSE)
       ->addSelect('email.email', 'display_name')
@@ -1075,7 +1075,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       ->addSelect('id', 'source_contact_id')
       ->addWhere('activity_type_id:name', '=', 'Material Contribution')
       ->addWhere('Material_Contribution.Contribution_Date', 'BETWEEN', [$startDate, $endDate])
-      ->addWhere('Material_Contribution.Dropping_Center', '=', $droppingCenterId)
+      ->addWhere('Material_Contribution.Institution_Dropping_Center', '=', $droppingCenterId)
       ->execute();
 
     foreach ($materialActivities as $item) {
