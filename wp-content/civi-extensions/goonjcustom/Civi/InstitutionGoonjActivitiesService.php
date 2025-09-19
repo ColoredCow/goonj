@@ -474,7 +474,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
     $institutionGoonjActivityQr = $collectionCamp['Collection_Camp_QR_Code.QR_Code'];
 
     if ($institutionGoonjActivityQr !== NULL) {
-      self::generateInstitutionGoonjActivitiesQrCode($droppingCenterId, $objectRef);
+      self::generateInstitutionGoonjActivitiesQrCode($collectionCampId, $objectRef);
       return;
     }
 
