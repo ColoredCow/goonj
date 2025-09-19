@@ -135,10 +135,12 @@ class CollectionCampService extends AutoSubscriber {
       return;
     }
 
-    $volunteerId = $data['Individual6'][0]['id'] ?? NULL;
-    \Civi::log()->debug('assignVolunteerAsCampInitiator: extracted volunteerId', [
-      'volunteerId' => $volunteerId,
+      \Civi::log()->debug('assignVolunteerAsCampInitiator: extracted volunteerId', [
+      'volunteerId' => $data,
     ]);
+
+    $volunteerId = $data['Individual6'][0]['id'] ?? NULL;
+
 
     if (empty($campId) || empty($volunteerId)) {
       \Civi::log()->warning('assignVolunteerAsCampInitiator: missing campId or volunteerId', [
