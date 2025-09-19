@@ -574,18 +574,24 @@ class GoonjActivitiesService extends AutoSubscriber {
     }
 
     $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
-      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id')
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id', 'Collection_Camp_QR_Code.QR_Code')
       ->addWhere('id', '=', $objectId)
       ->execute();
 
     $currentCollectionCamp = $collectionCamps->first();
     $currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
     $collectionCampId = $currentCollectionCamp['id'];
+    $goonjActivityQr = $currentCollectionCamp['Collection_Camp_QR_Code.QR_Code'];
+
+    if ($goonjActivityQr !== NULL) {
+      self::generateGoonjActivitiesQrCode($collectionCampId, $objectRef);
+      return;
+    }
 
     // Check for status change.
     if ($currentStatus !== $newStatus) {
       if ($newStatus === 'authorized') {
-        self::generateGoonjActivitiesQrCode($collectionCampId);
+        self::generateGoonjActivitiesQrCode($collectionCampId, $objectRef);
 
       }
     }
@@ -594,7 +600,7 @@ class GoonjActivitiesService extends AutoSubscriber {
   /**
    *
    */
-  private static function generateGoonjActivitiesQrCode($id) {
+  private static function generateGoonjActivitiesQrCode($id, $objectRef) {
     $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
     $data = "{$baseUrl}civicrm/camp-redirect?id={$id}&type=entity";
 
@@ -609,7 +615,7 @@ class GoonjActivitiesService extends AutoSubscriber {
     ];
 
     self::generateQrCodeForPoster($data, $id, $saveOptionsForPoster);
-    self::generateQrCode($data, $id, $saveOptions);
+    self::generateQrCode($data, $id, $saveOptions, $objectRef);
 
   }
 

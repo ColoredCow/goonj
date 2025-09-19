@@ -550,19 +550,24 @@ class CollectionCampService extends AutoSubscriber {
     }
 
     $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
-      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id')
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id', 'Collection_Camp_QR_Code.QR_Code')
       ->addWhere('id', '=', $objectId)
       ->execute();
 
     $currentCollectionCamp = $collectionCamps->first();
     $currentStatus = $currentCollectionCamp['Collection_Camp_Core_Details.Status'];
     $collectionCampId = $currentCollectionCamp['id'];
+    $collectionCampQr = $currentCollectionCamp['Collection_Camp_QR_Code.QR_Code'];
+
+    if ($collectionCampQr !== NULL) {
+      self::generateCollectionCampQrCode($collectionCampId, $objectRef);
+      return;
+    }
 
     // Check for status change.
     if ($currentStatus !== $newStatus) {
       if ($newStatus === 'authorized') {
-        self::generateCollectionCampQrCode($collectionCampId);
-
+        self::generateCollectionCampQrCode($collectionCampId, $objectRef);
       }
     }
   }
@@ -570,7 +575,7 @@ class CollectionCampService extends AutoSubscriber {
   /**
    *
    */
-  private static function generateCollectionCampQrCode($id) {
+  private static function generateCollectionCampQrCode($id, $objectRef) {
     $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
     $data = "{$baseUrl}civicrm/camp-redirect?id={$id}&type=entity";
 
@@ -584,7 +589,7 @@ class CollectionCampService extends AutoSubscriber {
       'customFieldName' => 'QR_Code_For_Poster',
     ];
 
-    self::generateQrCode($data, $id, $saveOptions);
+    self::generateQrCode($data, $id, $saveOptions, $objectRef);
     self::generateQrCodeForPoster($data, $id, $saveOptionsForPoster);
 
   }
@@ -621,7 +626,7 @@ class CollectionCampService extends AutoSubscriber {
         return;
       }
 
-      self::generateCollectionCampQrCode($collectionCampId);
+      self::generateCollectionCampQrCode($collectionCampId, $objectRef);
 
     }
     catch (\Exception $e) {
