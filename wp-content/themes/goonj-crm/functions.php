@@ -574,20 +574,34 @@ function goonj_handle_user_identification_form() {
 			}
 		}
 		if ( $purpose === 'individual-collection-camp' ) {
-			$contacts = \Civi\Api4\Contact::get(FALSE)
+
+		$contacts = \Civi\Api4\Contact::get(FALSE)
 			->addSelect('contact_sub_type')
 			->addWhere('id', '=', $found_contacts['id'])
 			->execute()->first();
-			
-			if ( ! empty( $contacts ) ) {
-				$contact = $contacts[0];
-				if ( ! empty( $contact['contact_sub_type'] ) ) {
-					$redirect_url = home_url( '/collection-camp/intent/' );
-					wp_redirect( esc_url( $redirect_url ) );
-					exit;
-				}
+
+		if ( ! empty( $contacts ) ) {
+			$contact = $contacts[0];
+
+			if ( ! empty( $contact['contact_sub_type'] ) 
+				&& in_array( 'Volunteer', (array) $contact['contact_sub_type'], true ) ) {
+
+				$redirect_url = home_url( '/collection-camp/intent/' );
+				wp_redirect( esc_url( $redirect_url ) );
+				exit;
+
+			} else {
+				$volunteer_registration_form_path = sprintf(
+					'/collection-camp/volunteer-with-intent/#?email=%s&phone=%s&message=%s',
+					rawurlencode( $email ),
+					rawurlencode( $phone ),
+					rawurlencode( $message )
+				);
+				wp_redirect( esc_url( $volunteer_registration_form_path ) );
+				exit;
 			}
 		}
+	}
 
 
 		// If we are here, then it means Volunteer exists in our system.
