@@ -54,7 +54,7 @@ trait QrCodeable {
 
         if ($campStatus == 'Collection_Camp') {
           $address = $objectRef['Collection_Camp_Intent_Details.Location_Area_of_camp'] ?? '';
-          $city = $objectRef['Collection_Camp_Intent_Details.City'] ?? 'Collection_Camp_Intent_Details.Other_City';
+          $city = $objectRef['Collection_Camp_Intent_Details.City'] ?? $objectRef['Collection_Camp_Intent_Details.Other_City'];
         }
         elseif ($campStatus == 'Dropping_Center') {
           $landmark = $objectRef['Dropping_Centre.Landmark_or_Near_by_area'] ?? '';
@@ -67,7 +67,7 @@ trait QrCodeable {
         }
         elseif ($campStatus == 'Goonj_Activities') {
           $address = $objectRef['Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'] ?? '';
-          $city = $objectRef['Goonj_Activities.City'] ?? 'Collection_Camp_Intent_Details.Other_City';
+          $city = $objectRef['Goonj_Activities.City'] ?? $objectRef['Collection_Camp_Intent_Details.Other_City'];
         }
         elseif ($campStatus == 'Institution_Collection_Camp') {
           $address = $objectRef['Institution_Collection_Camp_Intent.Collection_Camp_Address'] ?? '';
