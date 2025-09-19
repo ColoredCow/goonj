@@ -566,6 +566,30 @@ function goonj_handle_user_identification_form() {
 			wp_redirect( '/volunteer-form/#?Individual1=' . $contactId . '&message=' . $message );
 			exit;
 		}
+		if ( goonj_is_volunteer_inducted( $found_contacts ) ) {
+			if ( $purpose === 'individual-collection-camp' ) {
+				$redirect_url = home_url( '/collection-camp/intent/' );
+				wp_redirect( $redirect_url );
+				exit;
+			}
+		}
+		if ( $purpose === 'individual-collection-camp' ) {
+			$contacts = \Civi\Api4\Contact::get(TRUE)
+			->addSelect('contact_sub_type')
+			->addWhere('id', '=', $found_contacts['id'])
+			->setLimit(1)
+			->execute();
+			
+			if ( ! empty( $contacts ) ) {
+				$contact = $contacts[0];
+				if ( ! empty( $contact['contact_sub_type'] ) ) {
+					$redirect_url = home_url( '/collection-camp/intent/' );
+					wp_redirect( esc_url( $redirect_url ) );
+					exit;
+				}
+			}
+		}
+
 
 		// If we are here, then it means Volunteer exists in our system.
 		// Now we need to check if the volunteer is inducted or not.
@@ -580,15 +604,22 @@ function goonj_handle_user_identification_form() {
 			} elseif ( $purpose === 'goonj-activities' ) {
 				$redirect_url = home_url( '/goonj-activities/waiting-induction' );
 			} elseif ( $purpose === 'individual-collection-camp' ) {
-				$redirect_url = home_url( '/collection-camp/intent/' );
-			} 
-			else {
-				$redirect_url = home_url( '/collection-camp/waiting-induction/' );
+				$volunteer_registration_form_path = sprintf(
+					'/collection-camp/volunteer-with-intent/#?email=%s&phone=%s&message=%s',
+					$email,
+					$phone,
+					$message
+					);
+					wp_redirect( $volunteer_registration_form_path );
+					exit;
+				} else {
+					$redirect_url = home_url( '/collection-camp/waiting-induction/' );
+				}
+				if ( isset( $redirect_url ) ) {
+					wp_redirect( $redirect_url );
+					exit;
+				}
 			}
-
-			wp_redirect( $redirect_url );
-			exit;
-		}
 
 		// If we are here, then it means the user exists as an inducted volunteer.
 		// Fetch the most recent collection camp activity based on the creation date
