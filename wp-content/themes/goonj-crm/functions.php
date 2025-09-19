@@ -610,16 +610,10 @@ function goonj_handle_user_identification_form() {
 					$message
 					);
 					wp_redirect( $volunteer_registration_form_path );
-					exit;
-				} else {
-					$redirect_url = home_url( '/collection-camp/waiting-induction/' );
 				}
-				if ( isset( $redirect_url ) ) {
-					wp_redirect( $redirect_url );
-					exit;
-				}
+				wp_redirect( $redirect_url );	
+				exit;	
 			}
-
 		// If we are here, then it means the user exists as an inducted volunteer.
 		// Fetch the most recent collection camp activity based on the creation date
 		$optionValues = \Civi\Api4\OptionValue::get( false )
