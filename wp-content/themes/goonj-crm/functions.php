@@ -574,11 +574,10 @@ function goonj_handle_user_identification_form() {
 			}
 		}
 		if ( $purpose === 'individual-collection-camp' ) {
-			$contacts = \Civi\Api4\Contact::get(TRUE)
+			$contacts = \Civi\Api4\Contact::get(FALSE)
 			->addSelect('contact_sub_type')
 			->addWhere('id', '=', $found_contacts['id'])
-			->setLimit(1)
-			->execute();
+			->execute()->first();
 			
 			if ( ! empty( $contacts ) ) {
 				$contact = $contacts[0];
