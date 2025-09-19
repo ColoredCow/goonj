@@ -561,7 +561,15 @@ function goonj_handle_user_identification_form() {
 		$contactSubType = $found_contacts['contact_sub_type'] ?? array();
 		// Check if the contact is a volunteer
 		$message = ($purpose === 'dropping-center') ? 'dropping-center-individual-user' : 'individual-user';
-
+		if ( empty( $contactSubType ) || ! in_array( 'Volunteer', $contactSubType ) ) {
+		if ( isset($purpose) && $purpose === 'individual-collection-camp' ) {
+			wp_redirect( '/collection-camp/volunteer-option-with-collection-camp-intent/#?Individual1=' . $contactId . '&message=' . $message );
+			exit;
+		} else {
+			wp_redirect( '/volunteer-form/#?Individual1=' . $contactId . '&message=' . $message );
+			exit;
+		}
+	}
 		if ( goonj_is_volunteer_inducted( $found_contacts ) ) {
 			if ( $purpose === 'individual-collection-camp' ) {
 				$redirect_url = home_url( '/collection-camp/intent/' );
@@ -596,11 +604,6 @@ function goonj_handle_user_identification_form() {
 				wp_redirect( esc_url( $volunteer_registration_form_path ) );
 				exit;
 			}
-		}
-				
-		if ( empty( $contactSubType ) || ! in_array( 'Volunteer', $contactSubType ) ) {
-			wp_redirect( '/volunteer-form/#?Individual1=' . $contactId . '&message=' . $message );
-			exit;
 		}
 	}
 
