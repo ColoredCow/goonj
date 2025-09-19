@@ -20,7 +20,7 @@ trait QrCodeable {
   /**
    *
    */
-  public static function generateQrCode($data, $entityId, $saveOptions) {
+  public static function generateQrCode($data, $entityId, $saveOptions, $objectRef) {
     try {
       $options = new QROptions([
         'version'    => 5,
@@ -53,29 +53,30 @@ trait QrCodeable {
         $campStatus = $campData['subtype:name'];
 
         if ($campStatus == 'Collection_Camp') {
-          $address = $campData['Collection_Camp_Intent_Details.Location_Area_of_camp'] ?? '';
-          $city = $campData['Collection_Camp_Intent_Details.City'] ?? 'Collection_Camp_Intent_Details.Other_City';
+          $address = $objectRef['Collection_Camp_Intent_Details.Location_Area_of_camp'] ?? '';
+          $city = $objectRef['Collection_Camp_Intent_Details.City'] ?? $objectRef['Collection_Camp_Intent_Details.Other_City'];
         }
         elseif ($campStatus == 'Dropping_Center') {
-          $landmark = $campData['Dropping_Centre.Landmark_or_Near_by_area'] ?? '';
-          $address = $campData['Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_'] ?? '';
+          $landmark = $objectRef['Dropping_Centre.Landmark_or_Near_by_area'] ?? '';
+          $address = $objectRef['Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_'] ?? '';
+          $city = $objectRef['Dropping_Centre.District_City'] ?? $objectRef['Dropping_Centre.Other_City'] ?? '';
+
           if (!empty($landmark)) {
             $city .= " (" . $landmark . ")";
           }
-          $city = $campData['Dropping_Centre.District_City'] ?? $campData['Dropping_Centre.Other_City'] ?? '';
         }
         elseif ($campStatus == 'Goonj_Activities') {
-          $address = $campData['Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'] ?? '';
-          $city = $campData['Goonj_Activities.City'] ?? 'Collection_Camp_Intent_Details.Other_City';
+          $address = $objectRef['Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'] ?? '';
+          $city = $objectRef['Goonj_Activities.City'] ?? $objectRef['Collection_Camp_Intent_Details.Other_City'];
         }
         elseif ($campStatus == 'Institution_Collection_Camp') {
-          $address = $campData['Institution_Collection_Camp_Intent.Collection_Camp_Address'] ?? '';
-          $city = $campData['Institution_Collection_Camp_Intent.District_City'] ?? $campData['Institution_Collection_Camp_Intent.Other_Type'] ?? '';
+          $address = $objectRef['Institution_Collection_Camp_Intent.Collection_Camp_Address'] ?? '';
+          $city = $objectRef['Institution_Collection_Camp_Intent.District_City'] ?? $objectRef['Institution_Collection_Camp_Intent.Other_Type'] ?? '';
         }
         elseif ($campStatus == 'Institution_Dropping_Center') {
-          $address = $campData['Institution_Dropping_Center_Intent.Dropping_Center_Address'] ?? '';
-          $city = $campData['Institution_Dropping_Center_Intent.District_City'] ?? $campData['Institution_Dropping_Center_Intent.Other_City'] ?? '';
-          $landmark = $campData['Institution_Dropping_Center_Intent.Landmark_or_Near_by_area'] ?? '';
+          $address = $objectRef['Institution_Dropping_Center_Intent.Dropping_Center_Address'] ?? '';
+          $city = $objectRef['Institution_Dropping_Center_Intent.District_City'] ?? $objectRef['Institution_Dropping_Center_Intent.Other_City'] ?? '';
+          $landmark = $objectRef['Institution_Dropping_Center_Intent.Landmark_or_Near_by_area'] ?? '';
 
           if (!empty($landmark)) {
             $city .= " (" . $landmark . ")";
@@ -83,8 +84,8 @@ trait QrCodeable {
 
         }
         elseif ($campStatus == 'Institution_Goonj_Activities') {
-          $address = $campData['Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'] ?? '';
-          $city = $campData['Institution_Goonj_Activities.City'] ?? $campData['Institution_Goonj_Activities.Other_City'] ?? '';
+          $address = $objectRef['Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'] ?? '';
+          $city = $objectRef['Institution_Goonj_Activities.City'] ?? $objectRef['Institution_Goonj_Activities.Other_City'] ?? '';
         }
         else {
           throw new \Exception('Invalid entity type for QR code generation.');

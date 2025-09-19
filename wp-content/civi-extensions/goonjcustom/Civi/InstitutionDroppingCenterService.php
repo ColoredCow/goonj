@@ -590,24 +590,30 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     }
 
     $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
-      ->addSelect('Collection_Camp_Core_Details.Status')
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_QR_Code.QR_Code')
       ->addWhere('id', '=', $objectId)
       ->execute();
 
     $currentDroppingCenter = $collectionCamps->first();
     $currentStatus = $currentDroppingCenter['Collection_Camp_Core_Details.Status'];
     $droppingCenterId = $currentDroppingCenter['id'];
+    $institutionDroppingCenterQr = $currentDroppingCenter['Collection_Camp_QR_Code.QR_Code'];
+
+    if ($institutionDroppingCenterQr !== NULL) {
+      self::generateInstitutionDroppingCenterQrCode($droppingCenterId, $objectRef);
+      return;
+    }
 
     // Check for status change.
     if ($currentStatus !== $newStatus && $newStatus === 'authorized') {
-      self::generateInstitutionDroppingCenterQrCode($droppingCenterId);
+      self::generateInstitutionDroppingCenterQrCode($droppingCenterId, $objectRef);
     }
   }
 
   /**
    *
    */
-  private static function generateInstitutionDroppingCenterQrCode($id) {
+  private static function generateInstitutionDroppingCenterQrCode($id, $objectRef) {
     $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
     $data = "{$baseUrl}civicrm/camp-redirect?id={$id}&type=entity";
 
@@ -622,7 +628,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     ];
 
     self::generateQrCodeForPoster($data, $id, $saveOptionsForPoster);
-    self::generateQrCode($data, $id, $saveOptions);
+    self::generateQrCode($data, $id, $saveOptions, $objectRef);
   }
 
   /**
