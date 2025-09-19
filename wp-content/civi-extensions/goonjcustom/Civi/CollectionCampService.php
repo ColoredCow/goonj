@@ -94,83 +94,96 @@ class CollectionCampService extends AutoSubscriber {
    *
    */
   public static function assignVolunteerAsCampInitiator(string $op, string $objectName, $objectId, &$objectRef) {
-  if ($op !== 'edit' || $objectName !== 'AfformSubmission') {
-    \Civi::log()->debug('assignVolunteerAsCampInitiator skipped: invalid op or object', [
-      'op' => $op,
-      'objectName' => $objectName,
-    ]);
-    return FALSE;
-  }
-
-  try {
-    $data = $objectRef['data'] ?? [];
-    if (!$data) {
-      \Civi::log()->debug('assignVolunteerAsCampInitiator: no data found', [
-        'objectId' => $objectId,
+    if ($op !== 'edit' || $objectName !== 'AfformSubmission') {
+      \Civi::log()->debug('assignVolunteerAsCampInitiator skipped: invalid op or object', [
+        'op' => $op,
+        'objectName' => $objectName,
       ]);
-      return;
+      return FALSE;
     }
 
-    $campId = $data['Eck_Collection_Camp1'][0]['id'] ?? NULL;
-    \Civi::log()->debug('assignVolunteerAsCampInitiator: extracted campId', [
-      'campId' => $campId,
-    ]);
+    try {
+      $data = $objectRef['data'] ?? [];
+      if (!$data) {
+        \Civi::log()->debug('assignVolunteerAsCampInitiator: no data found', [
+          'objectId' => $objectId,
+        ]);
+        return;
+      }
 
-    $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('subtype:name')
-      ->addWhere('id', '=', $campId)
-      ->execute()->single();
+      $campId = $data['Eck_Collection_Camp1'][0]['id'] ?? NULL;
+      \Civi::log()->debug('assignVolunteerAsCampInitiator: extracted campId', [
+        'campId' => $campId,
+      ]);
 
-    $subtype = $collectionCamps['subtype:name'] ?? NULL;
-    \Civi::log()->debug('assignVolunteerAsCampInitiator: camp subtype', [
-      'campId' => $campId,
-      'subtype' => $subtype,
-    ]);
+      $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
+        ->addSelect('subtype:name')
+        ->addWhere('id', '=', $campId)
+        ->execute()->single();
 
-    if ($subtype !== 'Collection_Camp') {
-      \Civi::log()->info('assignVolunteerAsCampInitiator: not a Collection_Camp subtype, skipping', [
+      $subtype = $collectionCamps['subtype:name'] ?? NULL;
+      \Civi::log()->debug('assignVolunteerAsCampInitiator: camp subtype', [
         'campId' => $campId,
         'subtype' => $subtype,
       ]);
-      return;
-    }
+
+      if ($subtype !== 'Collection_Camp') {
+        \Civi::log()->info('assignVolunteerAsCampInitiator: not a Collection_Camp subtype, skipping', [
+          'campId' => $campId,
+          'subtype' => $subtype,
+        ]);
+        return;
+      }
 
       \Civi::log()->debug('assignVolunteerAsCampInitiator: extracted volunteerId', [
-      'volunteerId' => $data,
-    ]);
+        'volunteerId' => $data,
+      ]);
 
-    $volunteerId = $data['Individual6'][0]['id'] ?? NULL;
+      $volunteerId = NULL;
+      if (!empty($_GET['Individual1'])) {
+        $volunteerId = $_GET['Individual1'];
+        \Civi::log()->debug('assignVolunteerAsCampInitiator: volunteerId from query param', [
+          'volunteerId' => $volunteerId,
+        ]);
+      }
 
+      // If not found in params, fallback to $data.
+      if (empty($volunteerId)) {
+        $volunteerId = $data['Individual6'][0]['id'] ?? NULL;
+        \Civi::log()->debug('assignVolunteerAsCampInitiator: volunteerId from AfformSubmission data', [
+          'volunteerId' => $volunteerId,
+        ]);
+      }
 
-    if (empty($campId) || empty($volunteerId)) {
-      \Civi::log()->warning('assignVolunteerAsCampInitiator: missing campId or volunteerId', [
+      if (empty($campId) || empty($volunteerId)) {
+        \Civi::log()->warning('assignVolunteerAsCampInitiator: missing campId or volunteerId', [
+          'campId' => $campId,
+          'volunteerId' => $volunteerId,
+        ]);
+        return;
+      }
+
+      EckEntity::update('Collection_Camp', FALSE)
+        ->addValue('Collection_Camp_Core_Details.Contact_Id', $volunteerId)
+        ->addWhere('id', '=', $campId)
+        ->execute();
+
+      \Civi::log()->info('assignVolunteerAsCampInitiator: volunteer assigned successfully', [
         'campId' => $campId,
         'volunteerId' => $volunteerId,
       ]);
-      return;
     }
-
-    EckEntity::update('Collection_Camp', FALSE)
-      ->addValue('Collection_Camp_Core_Details.Contact_Id', $volunteerId)
-      ->addWhere('id', '=', $campId)
-      ->execute();
-
-    \Civi::log()->info('assignVolunteerAsCampInitiator: volunteer assigned successfully', [
-      'campId' => $campId,
-      'volunteerId' => $volunteerId,
-    ]);
+    catch (\Throwable $e) {
+      \Civi::log()->error('assignVolunteerAsCampInitiator failed', [
+        'error' => $e->getMessage(),
+        'trace' => $e->getTraceAsString(),
+        'objectId' => $objectId,
+        'op' => $op,
+        'objectName' => $objectName,
+      ]);
+      return FALSE;
+    }
   }
-  catch (\Throwable $e) {
-    \Civi::log()->error('assignVolunteerAsCampInitiator failed', [
-      'error' => $e->getMessage(),
-      'trace' => $e->getTraceAsString(),
-      'objectId' => $objectId,
-      'op' => $op,
-      'objectName' => $objectName,
-    ]);
-    return FALSE;
-  }
-}
 
   /**
    *
