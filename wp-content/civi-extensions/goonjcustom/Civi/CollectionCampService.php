@@ -102,7 +102,7 @@ class CollectionCampService extends AutoSubscriber {
 
     try {
       $data = $objectRef['data'] ?? [];
-        \Civi::log()->info('fetching data', $data);
+        \Civi::log()->info('fetching data', ['data' => $data]);
       if (!$data) {
         return;
       }
