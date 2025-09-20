@@ -95,61 +95,61 @@ class CollectionCampService extends AutoSubscriber {
   /**
    *
    */
-  public static function assignVolunteerAsCampInitiator(string $op, string $objectName, $objectId, &$objectRef) {
-    if ($op !== 'edit' || $objectName !== 'AfformSubmission') {
-      return FALSE;
-    }
+  // public static function assignVolunteerAsCampInitiator(string $op, string $objectName, $objectId, &$objectRef) {
+  //   if ($op !== 'edit' || $objectName !== 'AfformSubmission') {
+  //     return FALSE;
+  //   }
 
-    try {
-      $data = $objectRef['data'] ?? [];
-        \Civi::log()->info('fetching data', ['data' => $data]);
-      if (!$data) {
-        return;
-      }
+  //   try {
+  //     $data = $objectRef['data'] ?? [];
+  //       \Civi::log()->info('fetching data', ['data' => $data]);
+  //     if (!$data) {
+  //       return;
+  //     }
 
-      $campId = $data['Eck_Collection_Camp1'][0]['id'] ?? NULL;
+  //     $campId = $data['Eck_Collection_Camp1'][0]['id'] ?? NULL;
 
-      $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
-        ->addSelect('subtype:name')
-        ->addWhere('id', '=', $campId)
-        ->execute()->single();
+  //     $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
+  //       ->addSelect('subtype:name')
+  //       ->addWhere('id', '=', $campId)
+  //       ->execute()->single();
 
-      $subtype = $collectionCamps['subtype:name'] ?? NULL;
-      if ($subtype !== 'Collection_Camp') {
-        return;
-      }
+  //     $subtype = $collectionCamps['subtype:name'] ?? NULL;
+  //     if ($subtype !== 'Collection_Camp') {
+  //       return;
+  //     }
 
-      $volunteerId = NULL;
-      if (!empty($_GET['Individual6'])) {
-        $volunteerId = $_GET['Individual6'];
-      }
+  //     $volunteerId = NULL;
+  //     if (!empty($_GET['Individual6'])) {
+  //       $volunteerId = $_GET['Individual6'];
+  //     }
 
-      // If not found in params, fallback to $data.
-      if (empty($volunteerId)) {
-        $volunteerId = $data['Individual6'][0]['id'] ?? NULL;
-      }
+  //     // If not found in params, fallback to $data.
+  //     if (empty($volunteerId)) {
+  //       $volunteerId = $data['Individual6'][0]['id'] ?? NULL;
+  //     }
 
-      if (empty($campId) || empty($volunteerId)) {
-        return;
-      }
+  //     if (empty($campId) || empty($volunteerId)) {
+  //       return;
+  //     }
 
-      EckEntity::update('Collection_Camp', FALSE)
-        ->addValue('Collection_Camp_Core_Details.Contact_Id', $volunteerId)
-        ->addWhere('id', '=', $campId)
-        ->execute();
+  //     EckEntity::update('Collection_Camp', FALSE)
+  //       ->addValue('Collection_Camp_Core_Details.Contact_Id', $volunteerId)
+  //       ->addWhere('id', '=', $campId)
+  //       ->execute();
 
-    }
-    catch (\Throwable $e) {
-      \Civi::log()->error('assignVolunteerAsCampInitiator failed', [
-        'error' => $e->getMessage(),
-        'trace' => $e->getTraceAsString(),
-        'objectId' => $objectId,
-        'op' => $op,
-        'objectName' => $objectName,
-      ]);
-      return FALSE;
-    }
-  }
+  //   }
+  //   catch (\Throwable $e) {
+  //     \Civi::log()->error('assignVolunteerAsCampInitiator failed', [
+  //       'error' => $e->getMessage(),
+  //       'trace' => $e->getTraceAsString(),
+  //       'objectId' => $objectId,
+  //       'op' => $op,
+  //       'objectName' => $objectName,
+  //     ]);
+  //     return FALSE;
+  //   }
+  // }
 
   /**
    *
