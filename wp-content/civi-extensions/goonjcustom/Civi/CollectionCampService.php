@@ -33,6 +33,8 @@ class CollectionCampService extends AutoSubscriber {
   const COLLECTION_CAMP_INTENT_FB_NAME = [
     'afformAdminCollectionCampIntentDetails',
     'afformCollectionCampIntentDetails',
+    'afformVolunteerOptionWithCollectionCampIntentDetails',
+    'afformVolunteerWithCollectionCampIntentDetails',
   ];
   const ENTITY_NAME = 'Collection_Camp';
   const ENTITY_SUBTYPE_NAME = 'Collection_Camp';
