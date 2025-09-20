@@ -587,8 +587,8 @@ function goonj_handle_user_identification_form() {
 		if ( ! empty( $contacts ) ) {
 			$contact = $contacts[0];
 
-			if ( ! empty( $contact['contact_sub_type'] ) 
-				&& in_array( 'Volunteer', (array) $contact['contact_sub_type'], true ) ) {
+			if ( ! empty( $contacts['contact_sub_type'][0] ) 
+				&& in_array( 'Volunteer', (array) $contacts['contact_sub_type'][0], true ) ) {
 
 				$redirect_url = home_url( '/collection-camp/intent/' );
 				wp_redirect( esc_url( $redirect_url ) );
