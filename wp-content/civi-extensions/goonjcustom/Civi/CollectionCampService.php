@@ -105,16 +105,10 @@ class CollectionCampService extends AutoSubscriber {
     try {
       $data = $objectRef['data'] ?? [];
       if (!$data) {
-        \Civi::log()->debug('assignVolunteerAsCampInitiator: no data found', [
-          'objectId' => $objectId,
-        ]);
         return;
       }
 
       $campId = $data['Eck_Collection_Camp1'][0]['id'] ?? NULL;
-      \Civi::log()->debug('assignVolunteerAsCampInitiator: extracted campId', [
-        'campId' => $campId,
-      ]);
 
       $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
         ->addSelect('subtype:name')
@@ -122,44 +116,21 @@ class CollectionCampService extends AutoSubscriber {
         ->execute()->single();
 
       $subtype = $collectionCamps['subtype:name'] ?? NULL;
-      \Civi::log()->debug('assignVolunteerAsCampInitiator: camp subtype', [
-        'campId' => $campId,
-        'subtype' => $subtype,
-      ]);
-
       if ($subtype !== 'Collection_Camp') {
-        \Civi::log()->info('assignVolunteerAsCampInitiator: not a Collection_Camp subtype, skipping', [
-          'campId' => $campId,
-          'subtype' => $subtype,
-        ]);
         return;
       }
 
-      \Civi::log()->debug('assignVolunteerAsCampInitiator: extracted volunteerId', [
-        'volunteerId' => $data,
-      ]);
-
       $volunteerId = NULL;
-      if (!empty($_GET['Individual1'])) {
-        $volunteerId = $_GET['Individual1'];
-        \Civi::log()->debug('assignVolunteerAsCampInitiator: volunteerId from query param', [
-          'volunteerId' => $volunteerId,
-        ]);
+      if (!empty($_GET['Individual6'])) {
+        $volunteerId = $_GET['Individual6'];
       }
 
       // If not found in params, fallback to $data.
       if (empty($volunteerId)) {
         $volunteerId = $data['Individual6'][0]['id'] ?? NULL;
-        \Civi::log()->debug('assignVolunteerAsCampInitiator: volunteerId from AfformSubmission data', [
-          'volunteerId' => $volunteerId,
-        ]);
       }
 
       if (empty($campId) || empty($volunteerId)) {
-        \Civi::log()->warning('assignVolunteerAsCampInitiator: missing campId or volunteerId', [
-          'campId' => $campId,
-          'volunteerId' => $volunteerId,
-        ]);
         return;
       }
 
@@ -168,10 +139,6 @@ class CollectionCampService extends AutoSubscriber {
         ->addWhere('id', '=', $campId)
         ->execute();
 
-      \Civi::log()->info('assignVolunteerAsCampInitiator: volunteer assigned successfully', [
-        'campId' => $campId,
-        'volunteerId' => $volunteerId,
-      ]);
     }
     catch (\Throwable $e) {
       \Civi::log()->error('assignVolunteerAsCampInitiator failed', [
