@@ -97,15 +97,12 @@ class CollectionCampService extends AutoSubscriber {
    */
   public static function assignVolunteerAsCampInitiator(string $op, string $objectName, $objectId, &$objectRef) {
     if ($op !== 'edit' || $objectName !== 'AfformSubmission') {
-      \Civi::log()->debug('assignVolunteerAsCampInitiator skipped: invalid op or object', [
-        'op' => $op,
-        'objectName' => $objectName,
-      ]);
       return FALSE;
     }
 
     try {
       $data = $objectRef['data'] ?? [];
+        \Civi::log()->info('fetching data', $data);
       if (!$data) {
         return;
       }
