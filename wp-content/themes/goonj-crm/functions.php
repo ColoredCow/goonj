@@ -585,8 +585,6 @@ function goonj_handle_user_identification_form() {
 			->execute()->first();
 
 		if ( ! empty( $contacts ) ) {
-			$contact = $contacts[0];
-
 			if ( ! empty( $contacts['contact_sub_type'][0] ) 
 				&& in_array( 'Volunteer', (array) $contacts['contact_sub_type'][0], true ) ) {
 
