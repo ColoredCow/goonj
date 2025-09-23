@@ -960,7 +960,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
 
     $afformName = $objectRef->afform_name;
 
-    if (!in_array($afformName, ['afformInstitutionActivityOutcomeForm', 'afformInstitutionActivityOutcomeForm2'])) {
+    if (!in_array($afformName, ['afformInstitutionActivityOutcomeForm', 'afformInstitutionActivityOutcomeForm2', 'afformActivitiesOutcomeForm'])) {
       return;
     }
 
