@@ -158,7 +158,7 @@ function goonjcustom_evaluate_tokens(TokenValueEvent $e) {
 			$inductionActivities = \Civi\Api4\Activity::get(FALSE)
 				->addSelect('activity_date_time', 'Induction_Fields.Goonj_Office')
 				->addWhere('activity_type_id:name', '=', 'Induction')
-				->addWhere('source_contact_id', '=', $contactId)
+				->addWhere('target_contact_id', '=', $contactId)
 				->execute();
 
 			if ($inductionActivities->count() === 0) {
