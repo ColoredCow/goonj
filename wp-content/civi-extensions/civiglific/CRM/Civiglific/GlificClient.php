@@ -9,6 +9,7 @@ use CRM\Civiglific\GlificHelper;
  * GlificClient
  * Acts as the API interface for everything Glific.
  */
+if (!class_exists('CRM\Civiglific\GlificClient')) {
 class GlificClient {
 
   protected $client;
@@ -255,5 +256,7 @@ class GlificClient {
 
     return $response['data']['contact']['contact'] ?? [];
   }
+
+}
 
 }

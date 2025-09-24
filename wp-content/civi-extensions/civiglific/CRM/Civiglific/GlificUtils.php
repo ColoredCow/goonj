@@ -5,6 +5,7 @@ namespace CRM\Civiglific;
 /**
  *
  */
+if (!class_exists('CRM\Civiglific\GlificUtils')) {
 class GlificUtils {
 
   /**
@@ -20,4 +21,5 @@ class GlificUtils {
     return preg_replace('/\D+/', '', $phone);
   }
 
+}
 }

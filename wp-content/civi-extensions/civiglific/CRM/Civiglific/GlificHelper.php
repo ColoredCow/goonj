@@ -7,6 +7,7 @@ use GuzzleHttp\Client;
 /**
  *
  */
+if (!class_exists('CRM\Civiglific\GlificHelper')) {
 class GlificHelper {
 
   /**
@@ -54,4 +55,5 @@ class GlificHelper {
     }
   }
 
+}
 }
