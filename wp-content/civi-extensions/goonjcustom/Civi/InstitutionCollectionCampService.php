@@ -509,32 +509,43 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     }
 
     $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id')
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_Core_Details.Contact_Id', 'Collection_Camp_QR_Code.QR_Code')
       ->addWhere('id', '=', $objectId)
       ->execute()->first();
 
     $currentStatus = $collectionCamp['Collection_Camp_Core_Details.Status'];
     $collectionCampId = $collectionCamp['id'];
+    $institutionCollectionCampQr = $collectionCamp['Collection_Camp_QR_Code.QR_Code'];
+
+    if ($institutionCollectionCampQr !== NULL) {
+      self::generateInstitutionCollectionCampQrCode($collectionCampId, $objectRef);
+      return;
+    }
 
     // Check for status change.
     if ($currentStatus !== $newStatus && $newStatus === 'authorized') {
-      self::generateInstitutionCollectionCampQrCode($collectionCampId);
+      self::generateInstitutionCollectionCampQrCode($collectionCampId, $objectRef);
     }
   }
 
   /**
    *
    */
-  private static function generateInstitutionCollectionCampQrCode($id) {
+  private static function generateInstitutionCollectionCampQrCode($id, $objectRef) {
     $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
-    $data = "{$baseUrl}actions/institution-collection-camp/{$id}";
+    $data = "{$baseUrl}civicrm/camp-redirect?id={$id}&type=entity";
 
     $saveOptions = [
       'customGroupName' => 'Collection_Camp_QR_Code',
       'customFieldName' => 'QR_Code',
     ];
+    $saveOptionsForPoster = [
+      'customGroupName' => 'Collection_Camp_QR_Code',
+      'customFieldName' => 'QR_Code_For_Poster',
+    ];
 
-    self::generateQrCode($data, $id, $saveOptions);
+    self::generateQrCodeForPoster($data, $id, $saveOptionsForPoster);
+    self::generateQrCode($data, $id, $saveOptions, $objectRef);
   }
 
   /**
