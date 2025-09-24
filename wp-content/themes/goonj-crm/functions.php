@@ -911,21 +911,31 @@ function goonj_remove_logo_href( $html, $blog_id ) {
 }
 
 add_filter('user_has_cap', function($allcaps, $cap, $args, $user) {
-    if (in_array('urban_ops_admin', (array) $user->roles)) {
-        // Check if this is a switch attempt
-        if (isset($args[0]) && $args[0] === 'switch_to_user') {
-            $target_user_id = $args[2];
-            $target_user = get_userdata($target_user_id);
+    if (!defined('ROLE_SWITCH_RESTRICTIONS')) {
+        return $allcaps;
+    }
+    $restrictions = unserialize(ROLE_SWITCH_RESTRICTIONS);
 
-            if ($target_user) {
-                $target_roles = $target_user->roles;
+    foreach ((array) $user->roles as $role) {
+        if (isset($restrictions[$role])) {
 
-                if (in_array('ho_account', $target_roles) || in_array('administrator', $target_roles)) {
-                    error_log("Switch attempt blocked for user ID {$user->ID} to target ID {$target_user_id} due to restricted role.");
-                    $allcaps[$cap[0]] = false;
+            if (isset($args[0]) && $args[0] === 'switch_to_user') {
+                $target_user_id = $args[2];
+                $target_user = get_userdata($target_user_id);
+
+                if ($target_user) {
+                    $target_roles = $target_user->roles;
+
+                    foreach ($restrictions[$role] as $blocked_role) {
+                        if (in_array($blocked_role, $target_roles)) {
+                            $allcaps[$cap[0]] = false;
+                        }
+                    }
                 }
             }
         }
     }
+
     return $allcaps;
+
 }, 10, 4);
