@@ -568,19 +568,22 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
       }
 
       $eventQrCode = $event['Event_QR.QR_Code'] ?? NULL;
-      if (!empty($eventQrCode)) {
-        \Civi::log()->info('QR Code already exists for the event.', ['eventId' => $eventId]);
-        return;
-      }
 
       // Generate base URL for QR Code.
       $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
-      $qrCodeData = "{$baseUrl}actions/events/{$eventId}";
+      $qrCodeData = "{$baseUrl}civicrm/camp-redirect?id={$eventId}&type=event";
+
       // Define save options for custom group and field.
       $saveOptions = [
         'customGroupName' => 'Event_QR',
         'customFieldName' => 'QR_Code',
       ];
+      $saveOptionsForPoster = [
+        'customGroupName' => 'Event_QR',
+        'customFieldName' => 'QR_Code_For_Poster',
+      ];
+  
+      self::generateQrCodeForPoster($qrCodeData, $eventId, $saveOptionsForPoster);
 
       // Generate and save the QR Code.
       self::generateQrCode($qrCodeData, $eventId, $saveOptions);

@@ -2,6 +2,9 @@
 
 namespace Civi\Traits;
 
+use Civi\Api4\Event;
+use Civi\Api4\Address;
+use Civi\Api4\EckEntity;
 use Civi\Api4\CustomField;
 use Civi\InstitutionMaterialContributionService;
 use Civi\MaterialContributionService;
@@ -17,27 +20,278 @@ trait QrCodeable {
   /**
    *
    */
-  public static function generateQrCode($data, $entityId, $saveOptions) {
+  public static function generateQrCode($data, $entityId, $saveOptions, $objectRef) {
     try {
       $options = new QROptions([
         'version'    => 5,
         'outputType' => QRCode::OUTPUT_IMAGE_PNG,
         'eccLevel'   => QRCode::ECC_L,
-        'scale'      => 10,
+        'scale'      => 16,
       ]);
 
-      $qrcode = (new QRCode($options))->render($data);
+      if (!empty($saveOptions['customGroupName']) && $saveOptions['customGroupName'] === 'Event_QR') {
+        $event = Event::get(FALSE)
+          ->addSelect('loc_block_id.address_id')
+          ->addWhere('id', '=', $entityId)
+          ->execute()->first();
 
-      // Remove the base64 header and decode the image data.
+        $addresses = Address::get(FALSE)
+          ->addSelect('city', 'street_address')
+          ->addWhere('id', '=', $event['loc_block_id.address_id'])
+          ->setLimit(1)
+          ->execute()->first();
+        $address = $addresses['street_address'] ?? '';
+        $city = $addresses['city'] ?? '';
+      }
+
+      if (!empty($saveOptions['customGroupName']) && $saveOptions['customGroupName'] != 'Event_QR') {
+        $campData = EckEntity::get('Collection_Camp', FALSE)
+          ->addSelect('subtype:name', 'Collection_Camp_Intent_Details.Location_Area_of_camp', 'Collection_Camp_Intent_Details.City', 'Collection_Camp_Intent_Details.Other_City', 'Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_', 'Dropping_Centre.District_City', 'Dropping_Centre.Other_City', 'Goonj_Activities.Where_do_you_wish_to_organise_the_activity_', 'Goonj_Activities.City', 'Collection_Camp_Intent_Details.Other_City', 'Institution_Collection_Camp_Intent.Collection_Camp_Address', 'Institution_Collection_Camp_Intent.District_City', 'Institution_Collection_Camp_Intent.Other_Type', 'Institution_Dropping_Center_Intent.Dropping_Center_Address', 'Institution_Dropping_Center_Intent.District_City', 'Institution_Dropping_Center_Intent.Other_City', 'Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_', 'Institution_Goonj_Activities.City', 'Institution_Goonj_Activities.Other_City', 'Dropping_Centre.Landmark_or_Near_by_area', 'Institution_Dropping_Center_Intent.Landmark_or_Near_by_area')
+          ->addWhere('id', '=', $entityId)
+          ->execute()->first();
+
+        $campStatus = $campData['subtype:name'];
+
+        if ($campStatus == 'Collection_Camp') {
+          $address = $objectRef['Collection_Camp_Intent_Details.Location_Area_of_camp'] ?? '';
+          $city = $objectRef['Collection_Camp_Intent_Details.City'] ?? $objectRef['Collection_Camp_Intent_Details.Other_City'];
+        }
+        elseif ($campStatus == 'Dropping_Center') {
+          $landmark = $objectRef['Dropping_Centre.Landmark_or_Near_by_area'] ?? '';
+          $address = $objectRef['Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_'] ?? '';
+          $city = $objectRef['Dropping_Centre.District_City'] ?? $objectRef['Dropping_Centre.Other_City'] ?? '';
+
+          if (!empty($landmark)) {
+            $city .= " (" . $landmark . ")";
+          }
+        }
+        elseif ($campStatus == 'Goonj_Activities') {
+          $address = $objectRef['Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'] ?? '';
+          $city = $objectRef['Goonj_Activities.City'] ?? $objectRef['Collection_Camp_Intent_Details.Other_City'];
+        }
+        elseif ($campStatus == 'Institution_Collection_Camp') {
+          $address = $objectRef['Institution_Collection_Camp_Intent.Collection_Camp_Address'] ?? '';
+          $city = $objectRef['Institution_Collection_Camp_Intent.District_City'] ?? $objectRef['Institution_Collection_Camp_Intent.Other_Type'] ?? '';
+        }
+        elseif ($campStatus == 'Institution_Dropping_Center') {
+          $address = $objectRef['Institution_Dropping_Center_Intent.Dropping_Center_Address'] ?? '';
+          $city = $objectRef['Institution_Dropping_Center_Intent.District_City'] ?? $objectRef['Institution_Dropping_Center_Intent.Other_City'] ?? '';
+          $landmark = $objectRef['Institution_Dropping_Center_Intent.Landmark_or_Near_by_area'] ?? '';
+
+          if (!empty($landmark)) {
+            $city .= " (" . $landmark . ")";
+          }
+
+        }
+        elseif ($campStatus == 'Institution_Goonj_Activities') {
+          $address = $objectRef['Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'] ?? '';
+          $city = $objectRef['Institution_Goonj_Activities.City'] ?? $objectRef['Institution_Goonj_Activities.Other_City'] ?? '';
+        }
+        else {
+          throw new \Exception('Invalid entity type for QR code generation.');
+        }
+      }
+
+      // Generate QR.
+      $qrcode = (new QRCode($options))->render($data);
       $qrcode = str_replace('data:image/png;base64,', '', $qrcode);
       $qrcode = base64_decode($qrcode);
+      $qrImage = imagecreatefromstring($qrcode);
+      $qrWidth = imagesx($qrImage);
+      $qrHeight = imagesy($qrImage);
+
+      // Resize QR.
+      $qrScale = 0.7;
+      $newQrWidth  = (int) ($qrWidth * $qrScale);
+      $newQrHeight = (int) ($qrHeight * $qrScale);
+
+      $resizedQr = imagecreatetruecolor($newQrWidth, $newQrHeight);
+      imagealphablending($resizedQr, FALSE);
+      imagesavealpha($resizedQr, TRUE);
+
+      imagecopyresampled(
+            $resizedQr, $qrImage,
+            0, 0, 0, 0,
+            $newQrWidth, $newQrHeight,
+            $qrWidth, $qrHeight
+        );
+
+      // Load logo.
+      $upload_dir = wp_upload_dir();
+      $logoUrl = $upload_dir['baseurl'] . '/2024/09/Goonj-logo-10June20-300x193-1.png';
+      $logoData = file_get_contents($logoUrl);
+      $logoImage = imagecreatefromstring($logoData);
+      $logoWidth = imagesx($logoImage);
+      $logoHeight = imagesy($logoImage);
+
+      // Resize logo.
+      $scaleFactor = 0.5;
+      $newLogoWidth = (int) ($newQrWidth * $scaleFactor);
+      $newLogoHeight = (int) ($logoHeight * ($newLogoWidth / $logoWidth));
+      $resizedLogo = imagecreatetruecolor($newLogoWidth, $newLogoHeight);
+      imagealphablending($resizedLogo, FALSE);
+      imagesavealpha($resizedLogo, TRUE);
+      imagecopyresized(
+            $resizedLogo, $logoImage,
+            0, 0, 0, 0,
+            $newLogoWidth, $newLogoHeight,
+            $logoWidth, $logoHeight
+        );
+
+      // Texts.
+      $topText = "Scan to Record Your\nContribution";
+      $venueLabel = "Venue: ";
+      $venueValue = $address;
+
+      if (!empty($city)) {
+        $venueValue .= ', ' . $city;
+      }
+
+      // Canvas: logo + top text + QR + bottom text.
+      $canvasWidth = $qrWidth + 100;
+      $canvasHeight = $newLogoHeight + $qrHeight + 220;
+      $canvas = imagecreatetruecolor($canvasWidth, $canvasHeight);
+
+      $white = imagecolorallocate($canvas, 255, 255, 255);
+      $black = imagecolorallocate($canvas, 0, 0, 0);
+      imagefill($canvas, 0, 0, $white);
+
+      // Fonts.
+      $fontPath = dirname(__DIR__, 2) . '/fonts/proximanova_bold.otf';
+      $fontPathRegular = dirname(__DIR__, 2) . '/fonts/proximanova_regular.ttf';
+
+      // --- Step 1: Logo
+      $logoX = (int) (($canvasWidth - $newLogoWidth) / 2);
+      $logoY = 10;
+      imagecopy($canvas, $resizedLogo, $logoX, $logoY, 0, 0, $newLogoWidth, $newLogoHeight);
+
+      // --- Step 2: Heading text
+      $fontSize = 40;
+      $topY = $logoY + $newLogoHeight + 70;
+      $lines = explode("\n", $topText);
+      $lineHeight = $fontSize + 10;
+
+      foreach ($lines as $i => $line) {
+        $bbox = imagettfbbox($fontSize, 0, $fontPath, $line);
+        $textWidth = abs($bbox[2] - $bbox[0]);
+        $x = (int) (($canvasWidth - $textWidth) / 2);
+        $y = $topY + ($i * $lineHeight);
+        imagettftext($canvas, $fontSize, 0, $x, $y, $black, $fontPath, $line);
+      }
+
+      // --- Step 3: QR code
+      $qrY = $topY + 70;
+      $qrX = (int) (($canvasWidth - $newQrWidth) / 2);
+      imagecopy($canvas, $resizedQr, $qrX, $qrY, 0, 0, $newQrWidth, $newQrHeight);
+
+      // --- Step 4: Venue text with wrapping
+      $bottomFontSize = 25;
+      $maxWidth = $canvasWidth - 80;
+      $bottomY = $qrY + $newQrHeight + 40;
+
+      // Start with bold "Venue:".
+      $bboxLabel = imagettfbbox($bottomFontSize, 0, $fontPath, $venueLabel);
+      $labelWidth = abs($bboxLabel[2] - $bboxLabel[0]);
+
+      $lines = [];
+      $currentLine = $venueLabel;
+      $currentWidth = $labelWidth;
+
+      $words = explode(" ", $venueValue);
+      foreach ($words as $word) {
+        $testLine = ($currentLine === $venueLabel ? $currentLine : $currentLine . " ") . $word;
+        $bboxTest = imagettfbbox($bottomFontSize, 0, $fontPathRegular, $testLine);
+        $testWidth = abs($bboxTest[2] - $bboxTest[0]);
+
+        if ($testWidth > $maxWidth) {
+          $lines[] = $currentLine;
+          $currentLine = $word;
+        }
+        else {
+          $currentLine = $testLine;
+        }
+      }
+      $lines[] = $currentLine;
+
+      $lineHeight = $bottomFontSize + 8;
+      foreach ($lines as $i => $line) {
+        $bbox = imagettfbbox($bottomFontSize, 0, $fontPathRegular, $line);
+        $lineWidth = abs($bbox[2] - $bbox[0]);
+        $x = (int) (($canvasWidth - $lineWidth) / 2);
+        $y = $bottomY + ($i * $lineHeight);
+
+        if ($i === 0) {
+          imagettftext($canvas, $bottomFontSize, 0, $x, $y, $black, $fontPath, $venueLabel);
+          $valuePart = trim(str_replace($venueLabel, "", $line));
+          if ($valuePart !== "") {
+            $bboxLabel = imagettfbbox($bottomFontSize, 0, $fontPath, $venueLabel);
+            $offset = abs($bboxLabel[2] - $bboxLabel[0]);
+            imagettftext($canvas, $bottomFontSize, 0, $x + $offset, $y, $black, $fontPathRegular, $valuePart);
+          }
+        }
+        else {
+          imagettftext($canvas, $bottomFontSize, 0, $x, $y, $black, $fontPathRegular, $line);
+        }
+      }
+      // --- Step 5: Banner at the very bottom
+      $bannerPath = '/wp-content/uploads/2025/09/banner-line.png';
+      $siteUrl = get_site_url();
+      $bannerUrl = $siteUrl . $bannerPath;
+      $bannerData = file_get_contents($bannerUrl);
+      if ($bannerData !== FALSE) {
+        $bannerImage = imagecreatefromstring($bannerData);
+        if ($bannerImage !== FALSE) {
+          $bannerWidth = imagesx($bannerImage);
+          $bannerHeight = imagesy($bannerImage);
+
+          // Resize banner to fit canvas width.
+          $newBannerWidth = $canvasWidth;
+          $newBannerHeight = (int) ($bannerHeight * ($newBannerWidth / $bannerWidth));
+          $resizedBanner = imagecreatetruecolor($newBannerWidth, $newBannerHeight);
+          imagealphablending($resizedBanner, FALSE);
+          imagesavealpha($resizedBanner, TRUE);
+
+          // Fill banner background transparent.
+          $transparent = imagecolorallocatealpha($resizedBanner, 0, 0, 0, 127);
+          imagefill($resizedBanner, 0, 0, $transparent);
+
+          imagecopyresampled(
+                $resizedBanner, $bannerImage,
+                0, 0, 0, 0,
+                $newBannerWidth, $newBannerHeight,
+                $bannerWidth, $bannerHeight
+            );
+
+          // Paste banner flush at bottom of canvas.
+          $bannerX = 0;
+          $bannerY = $canvasHeight - $newBannerHeight;
+          imagecopy(
+                $canvas, $resizedBanner,
+                $bannerX, $bannerY,
+                0, 0,
+                $newBannerWidth, $newBannerHeight
+            );
+
+          imagedestroy($bannerImage);
+          imagedestroy($resizedBanner);
+        }
+      }
+
+      // Save final.
+      ob_start();
+      imagepng($canvas);
+      $finalImage = ob_get_clean();
+
+      imagedestroy($qrImage);
+      imagedestroy($resizedQr);
+      imagedestroy($logoImage);
+      imagedestroy($resizedLogo);
+      imagedestroy($canvas);
 
       $baseFileName = "qr_code_{$entityId}.png";
-
       $saveOptions['baseFileName'] = $baseFileName;
       $saveOptions['entityId'] = $entityId;
-
-      self::saveQrCode($qrcode, $saveOptions);
+      self::saveQrCode($finalImage, $saveOptions);
     }
     catch (\Exception $e) {
       \CRM_Core_Error::debug_log_message('Error generating QR code: ' . $e->getMessage());
@@ -103,6 +357,194 @@ trait QrCodeable {
     $attachment = $result['values'][$result['id']];
 
     return $attachment;
+
+  }
+
+  /**
+   *
+   */
+  public static function generateQrCodeForPoster($data, $entityId, $saveOptions) {
+    try {
+      $options = new QROptions([
+        'version'    => 5,
+        'outputType' => QRCode::OUTPUT_IMAGE_PNG,
+        'eccLevel'   => QRCode::ECC_L,
+        'scale'      => 10,
+      ]);
+
+      $qrcode = (new QRCode($options))->render($data);
+
+      // Remove the base64 header and decode the image data.
+      $qrcode = str_replace('data:image/png;base64,', '', $qrcode);
+      $qrcode = base64_decode($qrcode);
+
+      $baseFileName = "qr_code_{$entityId}.png";
+
+      $saveOptions['baseFileName'] = $baseFileName;
+      $saveOptions['entityId'] = $entityId;
+
+      self::saveQrCode($qrcode, $saveOptions);
+    }
+    catch (\Exception $e) {
+      \CRM_Core_Error::debug_log_message('Error generating QR code: ' . $e->getMessage());
+      return FALSE;
+    }
+
+    return TRUE;
+  }
+
+  /**
+   *
+   */
+  public static function handleCampRedirect($id) {
+    $type = $_GET['type'] ?? NULL;
+    $camp = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect('Collection_Camp_Intent_Details.End_Date', 'subtype:name', 'Goonj_Activities.End_Date', 'Institution_Collection_Camp_Intent.Collections_will_end_on_Date_', 'Institution_Goonj_Activities.End_Date')
+      ->addWhere('id', '=', $id)
+      ->execute()
+      ->first();
+
+    $campStatus = $camp['subtype:name'];
+
+    if ($type === 'event') {
+      $event = Event::get(TRUE)
+        ->addSelect('end_date')
+        ->addWhere('id', '=', $id)
+        ->execute()->first();
+
+      $endRaw = $event['end_date'] ?? NULL;
+
+      if ($endRaw) {
+        $endDate = new \DateTime($endRaw);
+        $endDate->modify('+7 days');
+        $today = new \DateTime();
+
+        if ($today > $endDate) {
+          $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+          \CRM_Utils_System::redirect("{$baseUrl}qr-code-expire/");
+          return;
+        }
+      }
+
+      $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+      \CRM_Utils_System::redirect("{$baseUrl}actions/events/{$id}");
+    }
+
+    if ($type === 'entity') {
+
+      if ($campStatus == 'Collection_Camp') {
+        $endRaw = $camp['Collection_Camp_Intent_Details.End_Date'] ?? NULL;
+
+        if ($endRaw) {
+          $endDate = new \DateTime($endRaw);
+          $endDate->modify('+7 days');
+          $today = new \DateTime();
+
+          if ($today > $endDate) {
+            $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+            \CRM_Utils_System::redirect("{$baseUrl}qr-code-expire/");
+            return;
+          }
+        }
+
+        $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+        \CRM_Utils_System::redirect("{$baseUrl}actions/collection-camp/{$id}");
+      }
+      elseif ($campStatus == 'Dropping_Center') {
+        $droppingCenterMetas = EckEntity::get('Dropping_Center_Meta', FALSE)
+          ->addSelect('Status.Status:name')
+          ->addWhere('Dropping_Center_Meta.Dropping_Center', '=', $id)
+          ->addWhere('subtype:name', '=', 'Status')
+          ->execute();
+
+        foreach ($droppingCenterMetas as $meta) {
+          if (!empty($meta['Status.Status:name']) && $meta['Status.Status:name'] === 'Permanently_Closed') {
+            $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+            \CRM_Utils_System::redirect("{$baseUrl}qr-code-expire/");
+            exit;
+          }
+        }
+
+        $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+        \CRM_Utils_System::redirect("{$baseUrl}actions/dropping-center/{$id}");
+      }
+      elseif ($campStatus == 'Goonj_Activities') {
+        $endRaw = $camp['Goonj_Activities.End_Date'] ?? NULL;
+
+        if ($endRaw) {
+          $endDate = new \DateTime($endRaw);
+          $endDate->modify('+7 days');
+          $today = new \DateTime();
+
+          if ($today > $endDate) {
+            $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+            \CRM_Utils_System::redirect("{$baseUrl}qr-code-expire/");
+            return;
+          }
+        }
+
+        $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+        \CRM_Utils_System::redirect("{$baseUrl}actions/goonj-activities/{$id}");
+      }
+      elseif ($campStatus == 'Institution_Collection_Camp') {
+        $endRaw = $camp['Institution_Collection_Camp_Intent.Collections_will_end_on_Date_'] ?? NULL;
+
+        if ($endRaw) {
+          $endDate = new \DateTime($endRaw);
+          $endDate->modify('+7 days');
+          $today = new \DateTime();
+
+          if ($today > $endDate) {
+            $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+            \CRM_Utils_System::redirect("{$baseUrl}qr-code-expire/");
+            return;
+          }
+        }
+
+        $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+        \CRM_Utils_System::redirect("{$baseUrl}actions/institution-collection-camp/{$id}");
+      }
+      elseif ($campStatus == 'Institution_Dropping_Center') {
+        $droppingCenterMetas = EckEntity::get('Dropping_Center_Meta', FALSE)
+          ->addSelect('Status.Status:name')
+          ->addWhere('Dropping_Center_Meta.Institution_Dropping_Center', '=', $id)
+          ->addWhere('subtype:name', '=', 'Status')
+          ->execute();
+
+        foreach ($droppingCenterMetas as $meta) {
+          if (!empty($meta['Status.Status:name']) && $meta['Status.Status:name'] === 'Permanently_Closed') {
+            $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+            \CRM_Utils_System::redirect("{$baseUrl}qr-code-expire/");
+            exit;
+          }
+        }
+
+        $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+        \CRM_Utils_System::redirect("{$baseUrl}actions/institution-dropping-center/{$id}");
+      }
+      elseif ($campStatus == 'Institution_Goonj_Activities') {
+        $endRaw = $camp['Institution_Goonj_Activities.End_Date'] ?? NULL;
+
+        if ($endRaw) {
+          $endDate = new \DateTime($endRaw);
+          $endDate->modify('+7 days');
+          $today = new \DateTime();
+
+          if ($today > $endDate) {
+            $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+            \CRM_Utils_System::redirect("{$baseUrl}qr-code-expire/");
+            return;
+          }
+        }
+
+        $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
+        \CRM_Utils_System::redirect("{$baseUrl}actions/institution-goonj-activities/{$id}");
+      }
+      else {
+        throw new \Exception('Invalid entity type');
+      }
+
+    }
 
   }
 

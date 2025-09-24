@@ -10,6 +10,7 @@ use Civi\Api4\EckEntity;
 use Civi\Api4\Phone;
 use Civi\Token\AbstractTokenSubscriber;
 use Civi\Token\TokenRow;
+use Civi\Api4\File;
 
 /**
  *
@@ -28,6 +29,7 @@ class CRM_Goonjcustom_Token_CollectionCamp extends AbstractTokenSubscriber {
       'remarks' => \CRM_Goonjcustom_ExtensionUtil::ts('Remarks'),
       'type' => \CRM_Goonjcustom_ExtensionUtil::ts('Type (Camp/Drive)'),
       'address_city' => \CRM_Goonjcustom_ExtensionUtil::ts('City'),
+      'QRCode' => \CRM_Goonjcustom_ExtensionUtil::ts('QR CODE'),
     ]);
   }
 
@@ -92,6 +94,19 @@ class CRM_Goonjcustom_Token_CollectionCamp extends AbstractTokenSubscriber {
 
       case 'address_city':
         $value = $collectionSource['Collection_Camp_Intent_Details.City'];
+        break;
+
+      case 'QRCode':
+        $QRCode = $collectionSource['Collection_Camp_QR_Code.QR_Code_For_Poster'];
+        $files = File::get(FALSE)
+          ->addSelect('uri')
+          ->addWhere('id', '=', $QRCode)
+          ->execute()->first();
+
+        $upload_dir = wp_upload_dir();
+        $baseUrl = $upload_dir['baseurl'] . '/civicrm/custom/';
+        $fileName = $files['uri'];
+        $value = $baseUrl . $fileName;
         break;
 
       default:

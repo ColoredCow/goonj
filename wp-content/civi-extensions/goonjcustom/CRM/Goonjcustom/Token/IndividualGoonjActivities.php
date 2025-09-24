@@ -10,6 +10,7 @@ use Civi\Api4\Phone;
 use Civi\Api4\Relationship;
 use Civi\Token\AbstractTokenSubscriber;
 use Civi\Token\TokenRow;
+use Civi\Api4\File;
 
 /**
  *
@@ -28,6 +29,8 @@ class CRM_Goonjcustom_Token_IndividualGoonjActivities extends AbstractTokenSubsc
       'remarks' => \CRM_Goonjcustom_ExtensionUtil::ts('Remarks'),
       'type' => \CRM_Goonjcustom_ExtensionUtil::ts('Type (Camp/Drive)'),
       'address_city' => \CRM_Goonjcustom_ExtensionUtil::ts('City'),
+      'QRCode' => \CRM_Goonjcustom_ExtensionUtil::ts('QR CODE'),
+      'activity_name' => \CRM_Goonjcustom_ExtensionUtil::ts('Activity Name'),
     ]);
   }
 
@@ -50,7 +53,7 @@ class CRM_Goonjcustom_Token_IndividualGoonjActivities extends AbstractTokenSubsc
     $newCustomData = $row->context['collectionSourceCustomData'];
 
     $currentCustomData = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('custom.*')
+      ->addSelect('custom.*', 'Goonj_Activities.How_do_you_want_to_engage_with_Goonj_:label')
       ->addWhere('id', '=', $row->context['collectionSourceId'])
       ->execute()->single();
 
@@ -90,6 +93,26 @@ class CRM_Goonjcustom_Token_IndividualGoonjActivities extends AbstractTokenSubsc
         $value = $collectionSource['Goonj_Activities.City'];
         break;
 
+      case 'QRCode':
+        $QRCode = $collectionSource['Collection_Camp_QR_Code.QR_Code_For_Poster'];
+        $files = File::get(FALSE)
+          ->addSelect('uri')
+          ->addWhere('id', '=', $QRCode)
+          ->execute()->first();
+
+        $upload_dir = wp_upload_dir();
+        $baseUrl = $upload_dir['baseurl'] . '/civicrm/custom/';
+        $fileName = $files['uri'];
+        $value = $baseUrl . $fileName;
+        break;
+      
+      case 'activity_name':
+        $value = $collectionSource['Goonj_Activities.How_do_you_want_to_engage_with_Goonj_:label'];
+        if (is_array($value)) {
+            $value = implode(', ', $value);
+        }
+        break;
+      
       default:
         $value = '';
         break;

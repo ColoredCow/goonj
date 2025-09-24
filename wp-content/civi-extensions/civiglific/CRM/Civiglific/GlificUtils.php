@@ -5,6 +5,7 @@ namespace CRM\Civiglific;
 /**
  *
  */
+if (!class_exists('CRM\Civiglific\GlificUtils')) {
 class GlificUtils {
 
   /**
@@ -19,5 +20,7 @@ class GlificUtils {
   public static function normalizePhone($phone) {
     return preg_replace('/\D+/', '', $phone);
   }
+
+}
 
 }

@@ -16,6 +16,8 @@ use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
+use Civi\Api4\OptionValue;
+use Civi\Api4\Contribution;
 
 /**
  *
@@ -37,6 +39,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
   ];
 
   private static $droppingCenterAddress = NULL;
+  private static $fromAddress = NULL;
 
   /**
    *
@@ -587,33 +590,45 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     }
 
     $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
-      ->addSelect('Collection_Camp_Core_Details.Status')
+      ->addSelect('Collection_Camp_Core_Details.Status', 'Collection_Camp_QR_Code.QR_Code')
       ->addWhere('id', '=', $objectId)
       ->execute();
 
     $currentDroppingCenter = $collectionCamps->first();
     $currentStatus = $currentDroppingCenter['Collection_Camp_Core_Details.Status'];
     $droppingCenterId = $currentDroppingCenter['id'];
+    $institutionDroppingCenterQr = $currentDroppingCenter['Collection_Camp_QR_Code.QR_Code'];
+
+    if ($institutionDroppingCenterQr !== NULL) {
+      self::generateInstitutionDroppingCenterQrCode($droppingCenterId, $objectRef);
+      return;
+    }
 
     // Check for status change.
     if ($currentStatus !== $newStatus && $newStatus === 'authorized') {
-      self::generateInstitutionDroppingCenterQrCode($droppingCenterId);
+      self::generateInstitutionDroppingCenterQrCode($droppingCenterId, $objectRef);
     }
   }
 
   /**
    *
    */
-  private static function generateInstitutionDroppingCenterQrCode($id) {
+  private static function generateInstitutionDroppingCenterQrCode($id, $objectRef) {
     $baseUrl = \CRM_Core_Config::singleton()->userFrameworkBaseURL;
-    $data = "{$baseUrl}actions/institution-dropping-center/{$id}";
+    $data = "{$baseUrl}civicrm/camp-redirect?id={$id}&type=entity";
 
     $saveOptions = [
       'customGroupName' => 'Collection_Camp_QR_Code',
       'customFieldName' => 'QR_Code',
     ];
 
-    self::generateQrCode($data, $id, $saveOptions);
+    $saveOptionsForPoster = [
+      'customGroupName' => 'Collection_Camp_QR_Code',
+      'customFieldName' => 'QR_Code_For_Poster',
+    ];
+
+    self::generateQrCodeForPoster($data, $id, $saveOptionsForPoster);
+    self::generateQrCode($data, $id, $saveOptions, $objectRef);
   }
 
   /**
@@ -984,6 +999,199 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     $subtypeId = self::getSubtypeId();
 
     return (int) $entitySubtypeValue === $subtypeId;
+  }
+
+  /**
+   *
+   */
+  public static function SendMonthlySummaryEmailToInstitute($droppingCenter) {
+    $droppingCenterId = $droppingCenter['id'];
+    $receivedAt       = $droppingCenter['Institution_Dropping_Center_Review.Goonj_Office'];
+
+    $customFields = CustomField::get(FALSE)
+      ->addSelect('option_group_id')
+      ->addWhere('custom_group_id:name', '=', 'Camp_Vehicle_Dispatch')
+      ->addWhere('name', '=', 'Vehicle_Category')
+      ->execute()->first();
+
+    $optionGroupId = $customFields['option_group_id'] ?? NULL;
+
+    $optionValues = OptionValue::get(FALSE)
+      ->addSelect('id', 'value', 'label', 'name')
+      ->addWhere('option_group_id', '=', $optionGroupId)
+      ->setLimit(25)
+      ->execute();
+
+    $optionMap = [];
+    foreach ($optionValues as $opt) {
+      $optionMap[$opt['value']] = $opt['label'];
+    }
+
+    $receivedAtLabel = $optionMap[$receivedAt] ?? $receivedAt;
+
+    $initiatorId = $droppingCenter['Institution_Dropping_Center_Intent.Institution_POC'];
+
+    $campAttendedBy = Contact::get(FALSE)
+      ->addSelect('email.email', 'display_name')
+      ->addJoin('Email AS email', 'LEFT')
+      ->addWhere('id', '=', $initiatorId)
+      ->execute()->single();
+
+    $attendeeEmail = $campAttendedBy['email.email'];
+    $attendeeName  = $campAttendedBy['display_name'];
+
+    // Define last month’s range.
+    $startDate = (new \DateTime('first day of last month'))->format('Y-m-d');
+    $endDate   = (new \DateTime('last day of last month'))->format('Y-m-d');
+    $monthName = (new \DateTime('first day of last month'))->format('F Y');
+
+    $dispatches = EckEntity::get('Collection_Source_Vehicle_Dispatch', FALSE)
+      ->addSelect('Camp_Vehicle_Dispatch.Date_Time_of_Dispatch', 'Camp_Vehicle_Dispatch.Number_of_Bags_loaded_in_vehicle', 'Camp_Vehicle_Dispatch.Vehicle_Category')
+      ->addWhere('Camp_Vehicle_Dispatch.Institution_Dropping_Center', '=', $droppingCenterId)
+      ->addWhere('Camp_Vehicle_Dispatch.Number_of_Bags_loaded_in_vehicle', 'IS NOT NULL')
+      ->addWhere('Camp_Vehicle_Dispatch.Date_Time_of_Dispatch', 'BETWEEN', [$startDate, $endDate])
+      ->execute();
+
+    // Prepare data for table rows.
+    $dispatchData = [];
+    $counter = 1;
+    foreach ($dispatches as $dispatch) {
+      $date            = $dispatch['Camp_Vehicle_Dispatch.Date_Time_of_Dispatch'];
+      $bags            = $dispatch['Camp_Vehicle_Dispatch.Number_of_Bags_loaded_in_vehicle'];
+      $vehicleCategory = $dispatch['Camp_Vehicle_Dispatch.Vehicle_Category'] ?? '';
+      error_log("date:" . print_r($date, TRUE));
+
+      $dispatchData[] = [
+        'num_dispatches'      => $counter,
+        'dispatch_date'       => $date,
+        'materials_generated' => $bags,
+        'vehicle_info'        => $vehicleCategory,
+        'received_at'         => $receivedAtLabel,
+      ];
+      $counter++;
+    }
+
+    /**
+     * -------------------------------------
+     * CONTRIBUTORS (monthly basis)
+     * -------------------------------------
+     */
+    $materialContactIds = [];
+    $monetaryContactIds = [];
+
+    // Material contributors for the month.
+    $materialActivities = Activity::get(FALSE)
+      ->addSelect('id', 'source_contact_id')
+      ->addWhere('activity_type_id:name', '=', 'Material Contribution')
+      ->addWhere('Material_Contribution.Contribution_Date', 'BETWEEN', [$startDate, $endDate])
+      ->addWhere('Material_Contribution.Institution_Dropping_Center', '=', $droppingCenterId)
+      ->execute();
+
+    foreach ($materialActivities as $item) {
+      if (!empty($item['source_contact_id'])) {
+        $materialContactIds[] = (int) $item['source_contact_id'];
+      }
+    }
+
+    // Monetary contributors for the month.
+    $monetaryContributions = Contribution::get(FALSE)
+      ->addSelect('contact_id')
+      ->addWhere('contribution_status_id:name', '=', 'Completed')
+      ->addWhere('receive_date', 'BETWEEN', [$startDate, $endDate])
+      ->addWhere('Contribution_Details.Source.id', '=', $droppingCenterId)
+      ->execute();
+
+    foreach ($monetaryContributions as $contribution) {
+      if (!empty($contribution['contact_id'])) {
+        $monetaryContactIds[] = (int) $contribution['contact_id'];
+      }
+    }
+
+    $totalMaterialContributors = count($materialContactIds);
+    $totalMonetaryContributors = count($monetaryContactIds);
+
+    if (!$attendeeEmail) {
+      throw new \Exception('Attendee email missing');
+    }
+
+    $mailParams = [
+      'subject' => "Monthly update for your dropping center",
+      'from'    => self::getFromAddress(),
+      'toEmail' => $attendeeEmail,
+      'replyTo' => self::getFromAddress(),
+      'html'    => self::monthlySummaryEmail(
+        $attendeeName,
+        $dispatchData,
+        $totalMaterialContributors,
+        $totalMonetaryContributors
+      ),
+    ];
+
+    $emailSendResult = \CRM_Utils_Mail::send($mailParams);
+
+    if ($emailSendResult) {
+      \Civi::log()->info("Monthly summary email sent for dropping center: $droppingCenterId");
+    }
+  }
+
+  /**
+   *
+   */
+  public static function monthlySummaryEmail($attendeeName, $dispatchData, $totalMaterialContributors, $totalMonetaryContributors) {
+    $tableRows = '';
+    foreach ($dispatchData as $row) {
+      $tableRows .= "
+        <tr>
+          <td style='border:1px solid #ddd; padding:8px; text-align:center;'>{$row['num_dispatches']}</td>
+          <td style='border:1px solid #ddd; padding:8px; text-align:center;'>{$row['dispatch_date']}</td>
+          <td style='border:1px solid #ddd; padding:8px; text-align:center;'>{$row['materials_generated']}</td>
+          <td style='border:1px solid #ddd; padding:8px; text-align:center;'>{$row['vehicle_info']}</td>
+          <td style='border:1px solid #ddd; padding:8px; text-align:center;'>{$row['received_at']}</td>
+        </tr>
+      ";
+    }
+
+    $tableHtml = "
+      <table style='border-collapse:collapse; width:100%; margin:15px 0; font-family:Arial, sans-serif; font-size:14px;'>
+        <thead>
+          <tr style='background-color:#f2f2f2;'>
+            <th style='border:1px solid #ddd; padding:8px; text-align:center;'>Number of Dispatches</th>
+            <th style='border:1px solid #ddd; padding:8px; text-align:center;'>Dispatch Date</th>
+            <th style='border:1px solid #ddd; padding:8px; text-align:center;'>Description of Material</th>
+            <th style='border:1px solid #ddd; padding:8px; text-align:center;'>Vehicle Information</th>
+            <th style='border:1px solid #ddd; padding:8px; text-align:center;'>Received At</th>
+          </tr>
+        </thead>
+        <tbody>
+          $tableRows
+        </tbody>
+      </table>
+    ";
+
+    $html = "
+      <p>Dear $attendeeName,</p>
+      <p>Thank you for being such an amazing ambassador of Goonj! 🌿</p>
+      <p>Your energy and commitment are truly making a difference as we work to reach the essential materials to some of the most remote villages across the country</p>
+      <p>Here’s a quick snapshot of your center’s work from the past month:
+      $tableHtml
+      <p>Alongside this, your center recorded <strong>$totalMaterialContributors</strong> material contributions and <strong>$totalMonetaryContributors</strong> monetary contributions.</p>
+      <p>We would also love to hear from you—whether it’s highlights, suggestions, or even challenges you have faced. Every little insight helps us grow stronger together.</p>
+      <p>Excited to keep building this journey with you!</p>
+      <p>Warm regards,<br>Team Goonj..</p>
+    ";
+
+    return $html;
+  }
+
+  /**
+   *
+   */
+  public static function getFromAddress() {
+    if (!self::$fromAddress) {
+      [$defaultFromName, $defaultFromEmail] = \CRM_Core_BAO_Domain::getNameAndEmail();
+      self::$fromAddress = "\"$defaultFromName\" <$defaultFromEmail>";
+    }
+    return self::$fromAddress;
   }
 
 }

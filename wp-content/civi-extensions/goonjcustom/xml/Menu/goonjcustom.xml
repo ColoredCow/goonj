@@ -60,4 +60,10 @@
     <title>ruralPlannedVisitLinks</title>
     <access_arguments>access CiviCRM</access_arguments>
   </item>
+  <item>
+    <path>civicrm/camp-redirect</path>
+    <page_callback>CRM_Goonjcustom_Page_CampRedirect</page_callback>
+    <title>Camp Redirect</title>
+    <access_arguments>access CiviCRM</access_arguments>
+  </item>
 </menu>

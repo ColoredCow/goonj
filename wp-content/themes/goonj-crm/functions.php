@@ -409,6 +409,12 @@ function goonj_handle_user_identification_form() {
 					);
 					$redirect_url = $individual_volunteer_registration_form_path;
 					break;
+				case 'individual-collection-camp':
+					$individual_volunteer_registration_form_path = sprintf(
+						'/collection-camp/volunteer-with-intent/',
+					);
+					$redirect_url = $individual_volunteer_registration_form_path;
+					break;
 				// Contact does not exist and the purpose is not defined.
 				// Redirect to volunteer registration with collection camp activity selected.
 				default:
@@ -418,7 +424,7 @@ function goonj_handle_user_identification_form() {
 
 			wp_redirect( $redirect_url );
 			exit;
-		}
+		}	
 
 		// If we are here, then it means for sure that the contact exists.	
 		if ($purpose === 'material-contribution') {
@@ -555,11 +561,50 @@ function goonj_handle_user_identification_form() {
 		$contactSubType = $found_contacts['contact_sub_type'] ?? array();
 		// Check if the contact is a volunteer
 		$message = ($purpose === 'dropping-center') ? 'dropping-center-individual-user' : 'individual-user';
-		
 		if ( empty( $contactSubType ) || ! in_array( 'Volunteer', $contactSubType ) ) {
+		if ( isset($purpose) && $purpose === 'individual-collection-camp' ) {
+			wp_redirect( '/collection-camp/volunteer-option-with-collection-camp-intent/#?Individual6=' . $contactId . '&message=' . $message );
+			exit;
+		} else {
 			wp_redirect( '/volunteer-form/#?Individual1=' . $contactId . '&message=' . $message );
 			exit;
 		}
+	}
+		if ( goonj_is_volunteer_inducted( $found_contacts ) ) {
+			if ( $purpose === 'individual-collection-camp' ) {
+				$redirect_url = home_url( '/collection-camp/intent/' );
+				wp_redirect( $redirect_url );
+				exit;
+			}
+		}
+		if ( $purpose === 'individual-collection-camp' ) {
+
+		$contacts = \Civi\Api4\Contact::get(FALSE)
+			->addSelect('contact_sub_type')
+			->addWhere('id', '=', $found_contacts['id'])
+			->execute()->first();
+
+		if ( ! empty( $contacts ) ) {
+			if ( ! empty( $contacts['contact_sub_type'][0] ) 
+				&& in_array( 'Volunteer', (array) $contacts['contact_sub_type'][0], true ) ) {
+
+				$redirect_url = home_url( '/collection-camp/intent/' );
+				wp_redirect( esc_url( $redirect_url ) );
+				exit;
+
+			} else {
+				$volunteer_registration_form_path = sprintf(
+					'/collection-camp/volunteer-with-intent/#?email=%s&phone=%s&message=%s',
+					rawurlencode( $email ),
+					rawurlencode( $phone ),
+					rawurlencode( $message )
+				);
+				wp_redirect( esc_url( $volunteer_registration_form_path ) );
+				exit;
+			}
+		}
+	}
+
 
 		// If we are here, then it means Volunteer exists in our system.
 		// Now we need to check if the volunteer is inducted or not.
@@ -573,14 +618,18 @@ function goonj_handle_user_identification_form() {
 				$redirect_url = home_url( '/volunteer-registration/waiting-induction/' );
 			} elseif ( $purpose === 'goonj-activities' ) {
 				$redirect_url = home_url( '/goonj-activities/waiting-induction' );
-			} else {
-				$redirect_url = home_url( '/collection-camp/waiting-induction/' );
+			} elseif ( $purpose === 'individual-collection-camp' ) {
+				$volunteer_registration_form_path = sprintf(
+					'/collection-camp/volunteer-with-intent/#?email=%s&phone=%s&message=%s',
+					$email,
+					$phone,
+					$message
+					);
+					wp_redirect( $volunteer_registration_form_path );
+				}
+				wp_redirect( $redirect_url );	
+				exit;	
 			}
-
-			wp_redirect( $redirect_url );
-			exit;
-		}
-
 		// If we are here, then it means the user exists as an inducted volunteer.
 		// Fetch the most recent collection camp activity based on the creation date
 		$optionValues = \Civi\Api4\OptionValue::get( false )
