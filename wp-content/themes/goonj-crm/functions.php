@@ -911,19 +911,19 @@ function goonj_remove_logo_href( $html, $blog_id ) {
 }
 
 add_filter('user_has_cap', function($allcaps, $cap, $args, $user) {
-    // Check if this is a switch attempt
-    if ( isset($args[0]) && $args[0] === 'switch_to_user' ) {
-        $target_user_id = $args[2];
-        $target_user = get_userdata($target_user_id);
+    if (in_array('urban_ops_admin', (array) $user->roles)) {
+        // Check if this is a switch attempt
+        if (isset($args[0]) && $args[0] === 'switch_to_user') {
+            $target_user_id = $args[2];
+            $target_user = get_userdata($target_user_id);
 
-        if ($target_user) {
-            $target_roles = $target_user->roles;
+            if ($target_user) {
+                $target_roles = $target_user->roles;
 
-            // Block switch if target has ho_account or admin role
-            if (in_array('ho_account', $target_roles) || in_array('administrator', $target_roles)) {
-                error_log("Switch attempt blocked for user ID {$user->ID} to target ID {$target_user_id} due to restricted role.");
-                // Remove capability to switch
-                $allcaps[$cap[0]] = false;
+                if (in_array('ho_account', $target_roles) || in_array('administrator', $target_roles)) {
+                    error_log("Switch attempt blocked for user ID {$user->ID} to target ID {$target_user_id} due to restricted role.");
+                    $allcaps[$cap[0]] = false;
+                }
             }
         }
     }
