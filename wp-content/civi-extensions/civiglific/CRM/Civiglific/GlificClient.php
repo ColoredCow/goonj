@@ -286,6 +286,7 @@ class GlificClient {
 
     $variables = [
       'input' => [
+        "caption" => "receipt",
         'url' => $url,
         'source_url' => $sourceUrl ?? $url,
       ],
