@@ -586,7 +586,7 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
       self::generateQrCodeForPoster($qrCodeData, $eventId, $saveOptionsForPoster);
 
       // Generate and save the QR Code.
-      self::generateQrCode($qrCodeData, $eventId, $saveOptions);
+      self::generateQrCode($qrCodeData, $eventId, $saveOptions, $objectRef);
       \Civi::log()->info('QR Code generated and saved successfully.', ['eventId' => $eventId]);
     }
     catch (\Exception $e) {
