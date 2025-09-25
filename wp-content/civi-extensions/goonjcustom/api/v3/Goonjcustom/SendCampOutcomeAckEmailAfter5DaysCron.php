@@ -45,7 +45,6 @@ function civicrm_api3_goonjcustom_send_camp_outcome_ack_email_after_5_days_cron(
     )
     ->setLimit(25)
     ->execute();
-    error_log('count of camps: ' . print_r(count($collectionCamps), TRUE));
 
   foreach ($collectionCamps as $collectionCamp) {
     try {
@@ -63,12 +62,9 @@ function civicrm_api3_goonjcustom_send_camp_outcome_ack_email_after_5_days_cron(
       // Testing Purpose
       // Calculate difference in minutes instead of days.
       // $diffInMinutes = ($today->getTimestamp() - $campCompletionDate->getTimestamp()) / 60;
-      // error_log('diffInMinutes:' . print_r($diffInMinutes, TRUE));
 
       // // For testing: Only send if 1 or more minutes have passed.
       // if ($diffInMinutes < 1) {
-      // error_log('inside the if condition');
-
       //   // Skip this camp.
       //   continue;
       // }

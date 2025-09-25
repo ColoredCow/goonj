@@ -1891,8 +1891,6 @@ class CollectionCampService extends AutoSubscriber {
     ];
 
     $emailSendResult = \CRM_Utils_Mail::send($mailParams);
-    error_log('emailSendResult:' . print_r($emailSendResult, TRUE));
-
 
     if ($emailSendResult) {
       \Civi::log()->info("Camp status email sent for collection camp: $campId");
