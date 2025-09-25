@@ -1113,7 +1113,7 @@ class CollectionCampService extends AutoSubscriber {
           ->addSelect('email.email', 'display_name')
           ->addJoin('Email AS email', 'LEFT')
           ->addWhere('id', '=', $campAttendedById)
-          ->execute()->single();
+          ->execute()->first();
 
         $attendeeEmail = $campAttendedBy['email.email'];
         $attendeeName = $campAttendedBy['display_name'];
@@ -1861,7 +1861,7 @@ class CollectionCampService extends AutoSubscriber {
       ->addSelect('email.email', 'display_name')
       ->addJoin('Email AS email', 'LEFT')
       ->addWhere('id', '=', $campOrganiserId)
-      ->execute()->single();
+      ->execute()->first();
 
     $attendeeEmail = $campAttendedBy['email.email'];
     $attendeeName = $campAttendedBy['display_name'];
