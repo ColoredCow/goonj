@@ -66,6 +66,10 @@ class MonetaryReceiptService extends AutoSubscriber {
       }
 
       $invoiceNumber = $contributionData['invoice_number'] ?? '';
+      if (empty($invoiceNumber)) {
+        return;
+      }
+
       $contributionPageName = $contributionData['contribution_page_id:name'] ?? '';
       if ($contributionPageName === 'Team_5000') {
         $templateId = CIVICRM_GLIFIC_TEMPLATE_ID_TEAM5000;
