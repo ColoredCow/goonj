@@ -98,23 +98,18 @@ class CRM_Goonjcustom_Token_CollectionCamp extends AbstractTokenSubscriber {
 
       case 'QRCode':
         $QRCode = $collectionSource['Collection_Camp_QR_Code.QR_Code_For_Poster'];
-        error_log('rcode:' . print_r($QRCode, TRUE));
         $files = File::get(FALSE)
           ->addSelect('uri')
           ->addWhere('id', '=', $QRCode)
           ->execute()->first();
 
         $upload_dir = wp_upload_dir();
-        error_log('upload_dir:' . print_r($upload_dir, TRUE));
 
         $baseUrl = $upload_dir['baseurl'] . '/civicrm/custom/';
-        error_log('baseUrl:' . print_r($baseUrl, TRUE));
 
         $fileName = $files['uri'];
-        error_log('fileName:' . print_r($fileName, TRUE));
 
         $value = $baseUrl . $fileName;
-        error_log('value:' . print_r($value, TRUE));
 
         break;
 
