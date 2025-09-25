@@ -45,6 +45,7 @@ function civicrm_api3_goonjcustom_send_camp_outcome_ack_email_after_5_days_cron(
     )
     ->setLimit(25)
     ->execute();
+    error_log('count of camps: ' . print_r(count($collectionCamps), TRUE));
 
   foreach ($collectionCamps as $collectionCamp) {
     try {
