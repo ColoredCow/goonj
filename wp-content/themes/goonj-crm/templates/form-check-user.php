@@ -1,45 +1,38 @@
-<div style="width:1200px;"><!-- Header Section -->
-<div>
-<p style="font-family: 'Proxima Nova' !important;"><img alt="" src="https://staging-crm.goonj.org/wp-content/uploads/2025/09/JSM-collection-camp-template-2025-5.jpg" style="width: 1200px; height: 845px;" /></p>
-</div>
-<!-- QR code section  -->
+<?php
+/**
+ * Theme file to Design User Identification form
+ */
 
-<div style="display: flex; font-family: 'Proxima Nova' !important; margin: auto; width: 100%; height: 235px;"><!-- Left section -->
-<div style=" padding-left: 48px; width: 76%%;">
-<p style="margin: 0; font-family: 'Proxima Nova' !important; font-size: 23px; line-height: 30px; width: 560px;"><span style="font-weight: bold; font-size: 23px; font-family: &quot;Proxima Nova&quot; !important;">What you can contribute:</span> Your unused/still usable household/office material / unsold inventories, woolens, sarees, general clothing, new undergarments, utensils, stationery, one-side used paper, school supplies, toys, books, shoes, unused diaries, audio cassettes, curtains, bedsheets, blankets, and electronic items, etc.</p>
-</div>
-<!-- Divider -->
+$purpose = $args['purpose'];
+$target_id = get_query_var('target_id', '');
+$source = get_query_var('source', '');
+$state_id = get_query_var('state_province_id', '');
+$city = get_query_var('city', '');
 
-<div style="border-left: 3px solid black; height: 215px; margin-left: 9px;">&nbsp;</div>
-<!-- Right section -->
+$is_purpose_requiring_email = !in_array($purpose, ['material-contribution', 'processing-center-office-visit', 'processing-center-material-contribution', 'dropping-center-contribution', 'institution-collection-camp', 'institution-dropping-center', 'event-material-contribution', 'goonj-activity-attendee-feedback', 'institute-goonj-activity-attendee-feedback']);
+?>
 
-<div style="display: flex; align-items: center; gap: 20px; height: 215px;"><img alt="QR Code" src="{collection_camp.QRCode}" style="width: 233px; height: 233px;" />
-<p style="margin: 0; font-family: 'Proxima Nova' !important; font-size: 23px; line-height: 36px; position: relative; top: -10px; width: 38%;"><span style="font-weight: bold; font-size: 23px; font-family: &quot;Proxima Nova&quot; !important;">With Material, Money Matters!!</span><br />
-<span style="font-size: 23px; font-family: 'Proxima Nova' !important;">Scan for Monetary Contribution Or log on to www.goonj.org</span></p>
-</div>
-</div>
-<!-- Dynamic content section -->
-
-<div style="margin: auto; display:flex; justify-content: center; padding: 0px 30px;">
-<div style="width: 100%; font-family: 'Proxima Nova' !important; margin: auto; padding:5px 20px; border: 1px solid #b8763f; border-radius: 5px">
-<div style="padding: 10px;">
-<div style=" margin-bottom: 10px; font-weight: 700; font-size: 30px; text-align: center; color: rgb(28, 27, 23);text-decoration: underline;">Collection {collection_camp.type} in {collection_camp.address_city}</div>
-
-<div style=" font-family: 'Proxima Nova' !important; margin-bottom: 10px; font-size: 28px; text-align: left; color: rgb(28, 27, 23);"><strong>Venue:</strong>&nbsp;{collection_camp.venue}</div>
-
-<div style="font-family: 'Proxima Nova' !important; margin-bottom: 10px; font-size: 28px; text-align: left; color: rgb(28, 27, 23);"><strong>Date:</strong>&nbsp;{collection_camp.date}</div>
-
-<div style="font-family: 'Proxima Nova' !important; margin-bottom: 10px; font-size: 28px; text-align: left; color: rgb(28, 27, 23);"><strong>Time:</strong>&nbsp;{collection_camp.time}</div>
-
-<div style="font-family: 'Proxima Nova' !important; margin-bottom: 10px; font-size: 28px; text-align: left; color: rgb(28, 27, 23);"><strong>Volunteers:</strong>&nbsp;{collection_camp.volunteers}</div>
-
-<div style="font-family: 'Proxima Nova' !important; margin-bottom: 10px; font-size: 28px; text-align: left; color: rgb(28, 27, 23);"><strong>Camp Coordinators:</strong>&nbsp;{collection_camp.coordinator}</div>
-</div>
-</div>
-</div>
-<!-- Footer Section -->
-
-<div>
-<p style="font-family: 'Proxima Nova' !important; margin-bottom:0px;"><img alt="" src="https://staging-crm.goonj.org/wp-content/uploads/2025/09/JSM-collection-camp-template-2025-1-3.png" style="width: 1200px;" /></p>
-</div>
+<div class="text-center w-xl-520 m-auto">
+    <form class="logged-out wp-block-loginout ml-30 mr-30 ml-md-0 mr-md-0" action="<?php echo home_url(); ?>" method="POST">
+        <!-- Hidden input field with conditional action value -->
+        <input type="hidden" name="action" value="goonj-check-user" />
+        <input type="hidden" name="purpose" value="<?php echo esc_attr($purpose); ?>" />
+        <input type="hidden" name="target_id" value="<?php echo esc_attr($target_id); ?>" />
+        <input type="hidden" name="source" value="<?php echo esc_attr($source); ?>" />
+        <input type="hidden" name="state_id" value="<?php echo esc_attr($state_id); ?>" />
+        <input type="hidden" name="city" value="<?php echo esc_attr($city); ?>" />
+            <div class="d-grid">
+                <label class="font-sans" for="email">Email <?php if ($is_purpose_requiring_email) : ?><span class="required-indicator">*</span><?php endif; ?></label>
+                <input type="email" id="email" name="email" <?php echo $is_purpose_requiring_email ? 'required' : ''; ?> value="<?php echo isset($_POST['email']) ? esc_attr(sanitize_email($_POST['email'])) : ''; ?>">
+            </div>
+            <br>
+            <div class="d-grid">
+                <label class="font-sans" for="phone">Contact Number <span class="required-indicator">*</span></label>
+                <input type="tel" id="phone" name="phone" required value="<?php echo isset($_POST['phone']) ? esc_attr(sanitize_text_field($_POST['phone'])) : ''; ?>">
+            </div>
+            <br>
+            <p class="login-submit" data-test=submitButton>
+                <input type="submit" class="button button-primary w-100p" value="Continue">
+            </p>
+    </form>
 </div>
