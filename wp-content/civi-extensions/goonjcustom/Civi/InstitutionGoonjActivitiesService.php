@@ -827,6 +827,9 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
 
       $campAddress = $collectionCamp['Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_'];
       $volunteerFeedbackForm = $collectionCamp['Institution_Goonj_Activities.Select_Institute_POC_Feedback_Form'] ?? NULL;
+      if (!$volunteerFeedbackForm) {
+        return;
+      }
 
       // Get recipient email and name.
       $campAttendedBy = Contact::get(TRUE)
