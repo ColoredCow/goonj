@@ -836,7 +836,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
         ->addSelect('email.email', 'display_name')
         ->addJoin('Email AS email', 'LEFT')
         ->addWhere('id', '=', $initiatorId)
-        ->execute()->single();
+        ->execute()->first();
 
       $contactEmailId = $campAttendedBy['email.email'];
       $organizingContactName = $campAttendedBy['display_name'];
@@ -879,7 +879,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
 
     $html = "
       <p>Dear $organizingContactName,</p>
-      <p>Thank you for stepping up and organising the recent goonj activity  at <strong>$campAddress</strong>! Your time, effort, and enthusiasm made all the difference, and we hope that it was a meaningful effort for you as well.</p>
+      <p>Thank you for stepping up and organising the recent goonj activity at <strong>$campAddress</strong>! Your time, effort, and enthusiasm made all the difference, and we hope that it was a meaningful effort for you as well.</p>
       <p>To help us improve, we’d love to hear your thoughts and experiences. Kindly take a few minutes to fill out our feedback form. Your input will be valuable to us:</p>
       <p><a href=\"$campVolunteerFeedback\">Feedback Form Link</a></p>
       <p>Feel free to share any highlights, suggestions, or challenges you faced. We're eager to learn how we can make it better together!</p>
