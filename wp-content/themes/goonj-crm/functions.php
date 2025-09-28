@@ -577,34 +577,6 @@ function goonj_handle_user_identification_form() {
 				exit;
 			}
 		}
-		if ( $purpose === 'individual-collection-camp' ) {
-
-		$contacts = \Civi\Api4\Contact::get(FALSE)
-			->addSelect('contact_sub_type')
-			->addWhere('id', '=', $found_contacts['id'])
-			->execute()->first();
-
-		if ( ! empty( $contacts ) ) {
-			if ( ! empty( $contacts['contact_sub_type'][0] ) 
-				&& in_array( 'Volunteer', (array) $contacts['contact_sub_type'][0], true ) ) {
-
-				$redirect_url = home_url( '/collection-camp/intent/' );
-				wp_redirect( esc_url( $redirect_url ) );
-				exit;
-
-			} else {
-				$volunteer_registration_form_path = sprintf(
-					'/collection-camp/volunteer-with-intent/#?email=%s&phone=%s&message=%s',
-					rawurlencode( $email ),
-					rawurlencode( $phone ),
-					rawurlencode( $message )
-				);
-				wp_redirect( esc_url( $volunteer_registration_form_path ) );
-				exit;
-			}
-		}
-	}
-
 
 		// If we are here, then it means Volunteer exists in our system.
 		// Now we need to check if the volunteer is inducted or not.
@@ -620,10 +592,10 @@ function goonj_handle_user_identification_form() {
 				$redirect_url = home_url( '/goonj-activities/waiting-induction' );
 			} elseif ( $purpose === 'individual-collection-camp' ) {
 				$volunteer_registration_form_path = sprintf(
-					'/collection-camp/volunteer-with-intent/#?email=%s&phone=%s&message=%s',
+					'/collection-camp/intent/#?email=%s&phone=%s&message=%s',
 					$email,
 					$phone,
-					$message
+					$message='waiting-induction-collection-camp'
 					);
 					wp_redirect( $volunteer_registration_form_path );
 				}
