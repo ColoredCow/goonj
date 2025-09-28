@@ -19,8 +19,6 @@ function handleUrlMessages() {
   var params = new URLSearchParams(hash);
   var message = params.get("message");
 
-  console.log(message,"message")
-
   if (message) {
     var messageDiv = document.getElementById("custom-message");
     if (messageDiv) {
