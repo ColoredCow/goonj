@@ -754,7 +754,7 @@ class DroppingCenterService extends AutoSubscriber {
     $droppingCenterId = $droppingCenter['id'];
     $receivedAt       = $droppingCenter['Dropping_Centre.Goonj_Office.display_name'];
 
-    $customFields = CustomField::get(TRUE)
+    $customFields = CustomField::get(FALSE)
       ->addSelect('option_group_id')
       ->addWhere('custom_group_id:name', '=', 'Camp_Vehicle_Dispatch')
       ->addWhere('name', '=', 'Vehicle_Category')
@@ -762,7 +762,7 @@ class DroppingCenterService extends AutoSubscriber {
 
     $optionGroupId = $customFields['option_group_id'] ?? NULL;
 
-    $optionValues = OptionValue::get(TRUE)
+    $optionValues = OptionValue::get(FALSE)
       ->addSelect('id', 'value', 'label', 'name')
       ->addWhere('option_group_id', '=', $optionGroupId)
       ->setLimit(25)
@@ -781,15 +781,15 @@ class DroppingCenterService extends AutoSubscriber {
       ->addSelect('email.email', 'display_name')
       ->addJoin('Email AS email', 'LEFT')
       ->addWhere('id', '=', $initiatorId)
-      ->execute()->single();
+      ->execute()->first();
 
     $attendeeEmail = $campAttendedBy['email.email'];
     $attendeeName  = $campAttendedBy['display_name'];
 
     // Define last month’s range.
-    $startDate = (new \DateTime('first day of last month'))->format('Y-m-d');
-    $endDate   = (new \DateTime('last day of last month'))->format('Y-m-d');
-    $monthName = (new \DateTime('first day of last month'))->format('F Y');
+    $startDate = (new \DateTime('first day of this month'))->format('Y-m-d');
+    $endDate   = (new \DateTime('last day of this month'))->format('Y-m-d');
+    $monthName = (new \DateTime('first day of this month'))->format('F Y');
 
     $dispatches = EckEntity::get('Collection_Source_Vehicle_Dispatch', FALSE)
       ->addSelect('Camp_Vehicle_Dispatch.Date_Time_of_Dispatch', 'Camp_Vehicle_Dispatch.Number_of_Bags_loaded_in_vehicle', 'Camp_Vehicle_Dispatch.Vehicle_Category')
@@ -806,11 +806,14 @@ class DroppingCenterService extends AutoSubscriber {
       $bags            = $dispatch['Camp_Vehicle_Dispatch.Number_of_Bags_loaded_in_vehicle'];
       $vehicleCategory = $dispatch['Camp_Vehicle_Dispatch.Vehicle_Category'] ?? '';
 
+      // Map the vehicle number to its label
+      $vehicleLabel = $optionMap[$vehicleCategory] ?? $vehicleCategory;
+
       $dispatchData[] = [
         'num_dispatches'      => $counter,
         'dispatch_date'       => $date,
         'materials_generated' => $bags,
-        'vehicle_info'        => $vehicleCategory,
+        'vehicle_info'        => $vehicleLabel,
         'received_at'         => $receivedAtLabel,
       ];
       $counter++;
