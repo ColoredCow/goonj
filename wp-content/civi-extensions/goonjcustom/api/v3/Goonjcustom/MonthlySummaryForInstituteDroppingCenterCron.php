@@ -65,6 +65,26 @@ function civicrm_api3_goonjcustom_monthly_summary_for_institute_dropping_center_
     foreach ($instituteDroppingCenters as $droppingCenter) {
       try {
         $instituteDroppingCenterId = $droppingCenter['id'];
+
+        $droppingCenterMetas = EckEntity::get('Dropping_Center_Meta', FALSE)
+        ->addSelect('Status.Status:name')
+        ->addWhere('Dropping_Center_Meta.Institution_Dropping_Center', '=', $instituteDroppingCenterId)
+        ->addWhere('subtype:name', '=', 'Status')
+        ->execute();
+
+        $permanentlyClosed = FALSE;
+        foreach ($droppingCenterMetas as $meta) {
+            if (!empty($meta['Status.Status:name']) && $meta['Status.Status:name'] === 'Permanently_Closed') {
+                $permanentlyClosed = TRUE;
+                break;
+            }
+        }
+
+        if ($permanentlyClosed) {
+            \Civi::log()->info("Skipping Dropping Center $droppingCenterId: Permanently Closed");
+            continue;
+        }
+
         $lastSentDate = $droppingCenter['Institution_Dropping_Center_Intent.Is_Monthly_Institution_Email_Sent'] ?? NULL;
 
         $today = new \DateTime();
