@@ -792,7 +792,7 @@ class DroppingCenterService extends AutoSubscriber {
     $monthName = (new \DateTime('first day of this month'))->format('F Y');
 
     $dispatches = EckEntity::get('Collection_Source_Vehicle_Dispatch', FALSE)
-      ->addSelect('Camp_Vehicle_Dispatch.Date_Time_of_Dispatch', 'Camp_Vehicle_Dispatch.Number_of_Bags_loaded_in_vehicle', 'Camp_Vehicle_Dispatch.Vehicle_Category')
+      ->addSelect('Camp_Vehicle_Dispatch.Date_Time_of_Dispatch', 'Camp_Vehicle_Dispatch.Number_of_Bags_loaded_in_vehicle', 'Camp_Vehicle_Dispatch.Vehicle_Category', 'Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office')
       ->addWhere('Camp_Vehicle_Dispatch.Dropping_Center', '=', $droppingCenterId)
       ->addWhere('Camp_Vehicle_Dispatch.Number_of_Bags_loaded_in_vehicle', 'IS NOT NULL')
       ->addWhere('Camp_Vehicle_Dispatch.Date_Time_of_Dispatch', 'BETWEEN', [$startDate, $endDate])
@@ -803,7 +803,7 @@ class DroppingCenterService extends AutoSubscriber {
     $counter = 1;
     foreach ($dispatches as $dispatch) {
       $rawDate        = $dispatch['Camp_Vehicle_Dispatch.Date_Time_of_Dispatch'];
-      $bags            = $dispatch['Camp_Vehicle_Dispatch.Number_of_Bags_loaded_in_vehicle'];
+      $bags            = $dispatch['Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office'];
       $vehicleCategory = $dispatch['Camp_Vehicle_Dispatch.Vehicle_Category'] ?? '';
 
       // Format date to DD-MM-YYYY
