@@ -42,6 +42,13 @@ class MonetaryReceiptService extends AutoSubscriber {
     try {
       $contributionId = $objectRef->id;
 
+      // ---- 1. Invoice generation (if not already there) ----
+      try {
+        \Civi\CollectionCampService::generateInvoiceNumber($op, $entity, $id, $objectRef);
+      } catch (\Throwable $e) {
+        \Civi::log()->error("[triggerMonetaryEmail] Failed to call generateInvoiceNumber: " . $e->getMessage());
+      }
+
       // Load contribution BAO.
       if (!class_exists('\CRM_Contribute_BAO_Contribution')) {
         require_once 'CRM/Contribute/BAO/Contribution.php';
