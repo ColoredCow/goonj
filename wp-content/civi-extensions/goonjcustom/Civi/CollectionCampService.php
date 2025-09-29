@@ -1936,9 +1936,11 @@ class CollectionCampService extends AutoSubscriber {
       $fundsGeneratedHtml = "<li>Funds raised through activities: $fundsGenerated</li>";
     }
 
+    $formattedCampDate = date('d-m-Y', strtotime($campDate));
+
     $html = "
         <p>Dear $attendeeName,</p>
-        <p>Thank you for organising the recent collection drive at <strong>$campAddress</strong> on <strong>$campDate</strong>! Your effort brought people together and added strength to this movement of mindful giving.</p>
+        <p>Thank you for organising the recent collection drive at <strong>$campAddress</strong> on <strong>$formattedCampDate</strong>! Your effort brought people together and added strength to this movement of mindful giving.</p>
         <p>Here’s a quick snapshot of the camp:</p>
         <ul>
             <li>Material generated: $materialGenerated</li>
