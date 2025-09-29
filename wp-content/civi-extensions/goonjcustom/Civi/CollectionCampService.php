@@ -1930,6 +1930,11 @@ class CollectionCampService extends AutoSubscriber {
   public static function getCampOutcomeAckEmailAfter5Days($attendeeName, $campAddress, $campDate, $totalAmount, $materialGenerated, $uniqueContributors, $campRating, $fundsGenerated, $campId) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
     $campVolunteerFeedback = $homeUrl . 'volunteer-camp-feedback/#?Eck_Collection_Camp1=' . $campId;
+    // Conditionally include funds raised
+    $fundsGeneratedHtml = '';
+    if (!empty($fundsGenerated)) {
+      $fundsGeneratedHtml = "<li>Funds raised through activities: $fundsGenerated</li>";
+    }
 
     $html = "
         <p>Dear $attendeeName,</p>
@@ -1938,9 +1943,8 @@ class CollectionCampService extends AutoSubscriber {
         <ul>
             <li>Material generated: $materialGenerated</li>
             <li>Footfall: $uniqueContributors</li>
-            <li>Monetary contributions: $totalAmount</li>
             <li>Camp rating from our team: $campRating</li>
-            <li>Funds raised through activities: $fundsGenerated</li>
+            $fundsGeneratedHtml
         </ul>
         <p>If you haven’t filled the feedback form yet, you can share your thoughts here: <a href='$campVolunteerFeedback'>Feedback Form</a></p>
         <p>We would also love to hear about any highlights, challenges, or ideas you’d like us to know. Your reflections will help us make future drives even more impactful.</p>
