@@ -1062,7 +1062,6 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       $formattedDate = date('d-m-Y', strtotime($rawDate));
 
       $vehicleLabel = $optionMap[$vehicleCategory] ?? $vehicleCategory;
-      error_log("date:" . print_r($date, TRUE));
 
       $dispatchData[] = [
         'num_dispatches'      => $counter,
