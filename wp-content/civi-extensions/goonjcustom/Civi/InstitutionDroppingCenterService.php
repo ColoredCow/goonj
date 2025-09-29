@@ -1035,7 +1035,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       ->addSelect('email.email', 'display_name')
       ->addJoin('Email AS email', 'LEFT')
       ->addWhere('id', '=', $initiatorId)
-      ->execute()->single();
+      ->execute()->first();
 
     $attendeeEmail = $campAttendedBy['email.email'];
     $attendeeName  = $campAttendedBy['display_name'];
