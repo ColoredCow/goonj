@@ -73,6 +73,7 @@ class MonetaryReceiptService extends AutoSubscriber {
         } catch (\Throwable $e) {
           \Civi::log()->error("[triggerMonetaryEmail] Failed to call generateInvoiceNumber: " . $e->getMessage());
         }
+        $invoiceNumber = $contributionData['invoice_number'] ?? '';
       }
 
       $contributionPageName = $contributionData['contribution_page_id:name'] ?? '';
