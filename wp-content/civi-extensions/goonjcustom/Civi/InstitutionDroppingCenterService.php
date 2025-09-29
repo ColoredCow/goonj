@@ -1006,7 +1006,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
    */
   public static function SendMonthlySummaryEmailToInstitute($droppingCenter) {
     $droppingCenterId = $droppingCenter['id'];
-    $receivedAt       = $droppingCenter['Institution_Dropping_Center_Review.Goonj_Office'];
+    $receivedAt       = $droppingCenter['Institution_Dropping_Center_Review.Goonj_Office.display_name'];
 
     $customFields = CustomField::get(FALSE)
       ->addSelect('option_group_id')
@@ -1026,8 +1026,6 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     foreach ($optionValues as $opt) {
       $optionMap[$opt['value']] = $opt['label'];
     }
-
-    $receivedAtLabel = $optionMap[$receivedAt] ?? $receivedAt;
 
     $initiatorId = $droppingCenter['Institution_Dropping_Center_Intent.Institution_POC'];
 
@@ -1059,14 +1057,16 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       $date            = $dispatch['Camp_Vehicle_Dispatch.Date_Time_of_Dispatch'];
       $bags            = $dispatch['Camp_Vehicle_Dispatch.Number_of_Bags_loaded_in_vehicle'];
       $vehicleCategory = $dispatch['Camp_Vehicle_Dispatch.Vehicle_Category'] ?? '';
+
+      $vehicleLabel = $optionMap[$vehicleCategory] ?? $vehicleCategory;
       error_log("date:" . print_r($date, TRUE));
 
       $dispatchData[] = [
         'num_dispatches'      => $counter,
         'dispatch_date'       => $date,
         'materials_generated' => $bags,
-        'vehicle_info'        => $vehicleCategory,
-        'received_at'         => $receivedAtLabel,
+        'vehicle_info'        => $vehicleLabel,
+        'received_at'         => $receivedAt,
       ];
       $counter++;
     }
