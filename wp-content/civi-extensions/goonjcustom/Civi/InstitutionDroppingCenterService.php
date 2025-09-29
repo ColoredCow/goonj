@@ -1054,16 +1054,19 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     $dispatchData = [];
     $counter = 1;
     foreach ($dispatches as $dispatch) {
-      $date            = $dispatch['Camp_Vehicle_Dispatch.Date_Time_of_Dispatch'];
+      $rawDate            = $dispatch['Camp_Vehicle_Dispatch.Date_Time_of_Dispatch'];
       $bags            = $dispatch['Camp_Vehicle_Dispatch.Number_of_Bags_loaded_in_vehicle'];
       $vehicleCategory = $dispatch['Camp_Vehicle_Dispatch.Vehicle_Category'] ?? '';
+
+      // Format date to DD-MM-YYYY
+      $formattedDate = date('d-m-Y', strtotime($rawDate));
 
       $vehicleLabel = $optionMap[$vehicleCategory] ?? $vehicleCategory;
       error_log("date:" . print_r($date, TRUE));
 
       $dispatchData[] = [
         'num_dispatches'      => $counter,
-        'dispatch_date'       => $date,
+        'dispatch_date'       => $formattedDate,
         'materials_generated' => $bags,
         'vehicle_info'        => $vehicleLabel,
         'received_at'         => $receivedAt,
