@@ -65,15 +65,21 @@ class MonetaryReceiptService extends AutoSubscriber {
         return;
       }
 
-      $invoiceNumber = $contributionData['invoice_number'] ?? '';
+      // ---- 1. Invoice generation (if not already there) ----
+      try {
+        \Civi\CollectionCampService::generateInvoiceNumber($op, $entity, $id, $objectRef);
+      } catch (\Throwable $e) {
+        \Civi::log()->error("[triggerMonetaryEmail] Failed to call generateInvoiceNumber: " . $e->getMessage());
+      }
+
+      $invoiceData = Contribution::get(FALSE)
+      ->addSelect('invoice_number')
+      ->addWhere('id', '=', $contributionId)
+      ->execute()->first();
+
+      $invoiceNumber = $invoiceData['invoice_number'] ?? '';
       if (empty($invoiceNumber)) {
-        // ---- 1. Invoice generation (if not already there) ----
-        try {
-          \Civi\CollectionCampService::generateInvoiceNumber($op, $entity, $id, $objectRef);
-        } catch (\Throwable $e) {
-          \Civi::log()->error("[triggerMonetaryEmail] Failed to call generateInvoiceNumber: " . $e->getMessage());
-        }
-        $invoiceNumber = $contributionData['invoice_number'] ?? '';
+        return;
       }
 
       $contributionPageName = $contributionData['contribution_page_id:name'] ?? '';
