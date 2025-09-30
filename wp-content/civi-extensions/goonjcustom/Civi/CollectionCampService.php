@@ -1853,7 +1853,24 @@ class CollectionCampService extends AutoSubscriber {
     $collectionSourceVehicleDispatche = EckEntity::get('Collection_Source_Vehicle_Dispatch', FALSE)
       ->addSelect('Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office')
       ->addWhere('Camp_Vehicle_Dispatch.Collection_Camp', '=', $campId)
-      ->execute()->first();
+      ->execute();
+
+    $materialGeneratedList = [];
+    foreach ($collectionSourceVehicleDispatche as $dispatch) {
+        $materialGeneratedList[] = $dispatch['Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office'];
+    }
+
+    $materialGeneratedHtml = '';
+    if (!empty($collectionSourceVehicleDispatche)) {
+        // Outer bullet
+        $materialGeneratedHtml .= "<li>Material generated:<br>";
+        // Inner numbered list with inline style for emails
+        $materialGeneratedHtml .= "<ol style='margin:0; padding-left:20px;'>";
+        foreach ($collectionSourceVehicleDispatche as $dispatch) {
+            $materialGeneratedHtml .= "<li>" . $dispatch['Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office'] . "</li>";
+        }
+        $materialGeneratedHtml .= "</ol></li>";
+    }
 
     $materialGenerated = $collectionSourceVehicleDispatche['Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office'];
 
@@ -1887,7 +1904,7 @@ class CollectionCampService extends AutoSubscriber {
       'from' => self::getFromAddress(),
       'toEmail' => $attendeeEmail,
       'replyTo' => self::getFromAddress(),
-      'html' => self::getCampOutcomeAckEmailAfter5Days($attendeeName, $campAddress, $campDate, $totalAmount, $materialGenerated, $uniqueContributors, $campRating, $fundsGenerated, $campId),
+      'html' => self::getCampOutcomeAckEmailAfter5Days($attendeeName, $campAddress, $campDate, $totalAmount, $materialGeneratedHtml, $uniqueContributors, $campRating, $fundsGenerated, $campId),
     ];
 
     $emailSendResult = \CRM_Utils_Mail::send($mailParams);
@@ -1927,7 +1944,7 @@ class CollectionCampService extends AutoSubscriber {
   /**
    *
    */
-  public static function getCampOutcomeAckEmailAfter5Days($attendeeName, $campAddress, $campDate, $totalAmount, $materialGenerated, $uniqueContributors, $campRating, $fundsGenerated, $campId) {
+  public static function getCampOutcomeAckEmailAfter5Days($attendeeName, $campAddress, $campDate, $totalAmount, $materialGeneratedHtml, $uniqueContributors, $campRating, $fundsGenerated, $campId) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
     $campVolunteerFeedback = $homeUrl . 'volunteer-camp-feedback/#?Eck_Collection_Camp1=' . $campId;
     // Conditionally include funds raised
@@ -1943,7 +1960,7 @@ class CollectionCampService extends AutoSubscriber {
         <p>Thank you for organising the recent collection drive at <strong>$campAddress</strong> on <strong>$formattedCampDate</strong>! Your effort brought people together and added strength to this movement of mindful giving.</p>
         <p>Here’s a quick snapshot of the camp:</p>
         <ul>
-            <li>Material generated: $materialGenerated</li>
+            $materialGeneratedHtml
             <li>Footfall: $uniqueContributors</li>
             <li>Camp rating from our team: $campRating</li>
             $fundsGeneratedHtml
