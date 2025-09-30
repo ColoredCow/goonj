@@ -563,7 +563,12 @@ function goonj_handle_user_identification_form() {
 		$message = ($purpose === 'dropping-center') ? 'dropping-center-individual-user' : 'individual-user';
 		if ( empty( $contactSubType ) || ! in_array( 'Volunteer', $contactSubType ) ) {
 		if ( isset($purpose) && $purpose === 'individual-collection-camp' ) {
-			wp_redirect( '/collection-camp/volunteer-with-intent/' );
+			$collection_camp_registration_form_path = sprintf(
+					'/collection-camp/intent/#?email=%s&phone=%s',
+					$email,
+					$phone,
+					);
+					wp_redirect( $collection_camp_registration_form_path );
 			exit;
 		} else {
 			wp_redirect( '/volunteer-form/#?Individual1=' . $contactId . '&message=' . $message );
