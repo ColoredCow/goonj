@@ -564,7 +564,7 @@ function goonj_handle_user_identification_form() {
 		if ( empty( $contactSubType ) || ! in_array( 'Volunteer', $contactSubType ) ) {
 		if ( isset($purpose) && $purpose === 'individual-collection-camp' ) {
 			$collection_camp_registration_form_path = sprintf(
-					'/collection-camp/intent/#?email=%s&phone=%s',
+					'/collection-camp/volunteer-with-intent/#?email=%s&phone=%s',
 					$email,
 					$phone,
 					);
