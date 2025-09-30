@@ -596,9 +596,11 @@ function goonj_handle_user_identification_form() {
 			}
 		}
 
+		$initiator_name = $found_contacts['display_name'];
+
 		if ( goonj_is_volunteer_inducted( $found_contacts ) ) {
 			if ( $purpose === 'individual-collection-camp' ) {
-				wp_redirect( home_url( '/collection-camp/intent/' ) );
+				$redirect_url = get_home_url() . '/collection-camp/intent/#?Collection_Camp_Core_Details.Contact_Id=' . $found_contacts['id'] . '&message=collection-camp-page&Collection_Camp_Intent_Details.Name=' . $initiator_name . '&Collection_Camp_Intent_Details.Contact_Number=' . $phone;
 				exit;
 			}
 		}
@@ -617,15 +619,7 @@ function goonj_handle_user_identification_form() {
 				$redirect_url = home_url( '/goonj-activities/waiting-induction' );
 			} elseif ( $purpose === 'individual-collection-camp' ) {
 				// UPDATED: include names when not inducted and going to intent
-				$volunteer_registration_form_path = sprintf(
-					'/collection-camp/intent/#?email=%s&phone=%s&first_name=%s&last_name=%s&message=%s',
-					rawurlencode($email),
-					rawurlencode($phone),
-					rawurlencode($first_name),
-					rawurlencode($last_name),
-					'waiting-induction-collection-camp'
-				);
-				wp_redirect( $volunteer_registration_form_path );
+				$redirect_url = get_home_url() . '/collection-camp/intent/#?Collection_Camp_Core_Details.Contact_Id=' . $found_contacts['id'] . '&message=waiting-induction-collection-camp&Collection_Camp_Intent_Details.Name=' . $initiator_name . '&Collection_Camp_Intent_Details.Contact_Number=' . $phone;
 			}
 			wp_redirect( $redirect_url );
 			exit;
