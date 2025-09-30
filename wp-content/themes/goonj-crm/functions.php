@@ -196,13 +196,13 @@ function goonj_handle_user_identification_form() {
 	$source    = $_POST['source'] ?? '';
 
 	// Retrieve the email and phone number from the POST data
-	$email   = $_POST['email'] ?? '';
-	$phone   = $_POST['phone'] ?? '';
+	$email = $_POST['email'] ?? '';
+	$phone = $_POST['phone'] ?? '';
 	$state_id = $_POST['state_id'] ?? '';
-	$city     = $_POST['city'] ?? '';
+	$city = $_POST['city'] ?? '';
 
-	$first_name = isset($_POST['first_name']) ? sanitize_text_field($_POST['first_name']) : '';
-	$last_name  = isset($_POST['last_name'])  ? sanitize_text_field($_POST['last_name'])  : '';
+	$first_name = $_POST['first_name'] ?? '';
+	$last_name  = $_POST['last_name'] ?? '';
 
 	$is_purpose_requiring_email = ! in_array( $purpose, array( 'material-contribution', 'processing-center-office-visit', 'processing-center-material-contribution', 'dropping-center-contribution', 'institution-collection-camp', 'institution-dropping-center', 'event-material-contribution', 'goonj-activity-attendee-feedback', 'institute-goonj-activity-attendee-feedback', 'individual-collection-camp') );
 
