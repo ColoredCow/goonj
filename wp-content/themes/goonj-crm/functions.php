@@ -191,9 +191,9 @@ function goonj_handle_user_identification_form() {
 		return;
 	}
 
-	$purpose   = $_POST['purpose'] ?? 'collection-camp-intent';
+	$purpose = $_POST['purpose'] ?? 'collection-camp-intent';
 	$target_id = $_POST['target_id'] ?? '';
-	$source    = $_POST['source'] ?? '';
+	$source = $_POST['source'] ?? '';
 
 	// Retrieve the email and phone number from the POST data
 	$email = $_POST['email'] ?? '';
@@ -671,9 +671,9 @@ function goonj_handle_user_identification_form() {
 		if ( ! empty( $recentCamp ) ) {
 			// Save the recentCamp data to the session
 			$_SESSION['recentCampData'] = $recentCamp;
-			$_SESSION['contactId']      = $found_contacts['id'];
-			$_SESSION['displayName']    = $display_name;
-			$_SESSION['contactNumber']  = $phone;
+			$_SESSION['contactId']  = $found_contacts['id'];
+			$_SESSION['displayName']  = $display_name;
+			$_SESSION['contactNumber'] = $phone;
 
 			wp_redirect( get_home_url() . '/collection-camp/choose-from-past/#?Collection_Camp_Core_Details.Contact_Id=' . $found_contacts['id'] . '&message=past-collection-data' );
 			exit;
