@@ -19,7 +19,7 @@ class MonetaryReceiptService extends AutoSubscriber {
   public static function getSubscribedEvents() {
     return [
       '&hook_civicrm_post' => [
-        'triggerMonetaryEmail',
+        // 'triggerMonetaryEmail',
       ],
     ];
   }
