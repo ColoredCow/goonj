@@ -39,10 +39,10 @@ function civicrm_api3_goonjcustom_monthly_summary_for_institute_dropping_center_
   $lastDay = new \DateTime('last day of this month');
 
   // Run this last day of month only.
-  // if ($today->format('Y-m-d') !== $lastDay->format('Y-m-d')) {
-  //   \Civi::log()->info('MonthlySummaryForInstituteDroppingCenterCron skipped (not last day of month)');
-  //   return civicrm_api3_create_success([], $params, 'Goonjcustom', 'monthly_summary_for_institute_dropping_center_cron');
-  // }
+  if ($today->format('Y-m-d') !== $lastDay->format('Y-m-d')) {
+    \Civi::log()->info('MonthlySummaryForInstituteDroppingCenterCron skipped (not last day of month)');
+    return civicrm_api3_create_success([], $params, 'Goonjcustom', 'monthly_summary_for_institute_dropping_center_cron');
+  }
 
   $limit  = 20;
   $offset = 0;
