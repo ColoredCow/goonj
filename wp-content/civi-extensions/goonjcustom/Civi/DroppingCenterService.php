@@ -817,7 +817,7 @@ class DroppingCenterService extends AutoSubscriber {
         'dispatch_date'       => $formattedDate,
         'materials_generated' => $bags,
         'vehicle_info'        => $vehicleLabel,
-        'received_at'         => $receivedAtLabel,
+        'received_at'         => $receivedAt,
       ];
       $counter++;
     }
