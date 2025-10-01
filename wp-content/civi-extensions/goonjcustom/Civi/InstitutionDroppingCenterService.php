@@ -1027,6 +1027,8 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
       $optionMap[$opt['value']] = $opt['label'];
     }
 
+    $receivedAtLabel = $optionMap[$receivedAt] ?? $receivedAt;
+
     $initiatorId = $droppingCenter['Institution_Dropping_Center_Intent.Institution_POC'];
 
     $campAttendedBy = Contact::get(FALSE)

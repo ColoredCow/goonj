@@ -33,8 +33,8 @@ class CollectionCampService extends AutoSubscriber {
   const COLLECTION_CAMP_INTENT_FB_NAME = [
     'afformAdminCollectionCampIntentDetails',
     'afformCollectionCampIntentDetails',
-    'afformVolunteerOptionWithCollectionCampIntentDetails',
-    'afformVolunteerWithCollectionCampIntentDetails',
+    // 'afformVolunteerOptionWithCollectionCampIntentDetails',
+    // 'afformVolunteerWithCollectionCampIntentDetails',
   ];
   const ENTITY_NAME = 'Collection_Camp';
   const ENTITY_SUBTYPE_NAME = 'Collection_Camp';
@@ -63,7 +63,7 @@ class CollectionCampService extends AutoSubscriber {
       ],
       '&hook_civicrm_pre' => [
         ['generateCollectionCampQr'],
-        ['assignVolunteerAsCampInitiator'],
+        // ['assignVolunteerAsCampInitiator'],
         ['linkCollectionCampToContact'],
         ['createActivityForCollectionCamp'],
         ['updateCampStatusAfterAuth'],
@@ -1834,6 +1834,7 @@ class CollectionCampService extends AutoSubscriber {
     $campId = $collectionCamp['id'];
 
     $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
+
       ->addSelect('Collection_Camp_Intent_Details.Location_Area_of_camp', 'Core_Contribution_Details.Number_of_unique_contributors', 'Camp_Outcome.Rate_the_camp', 'Camp_Outcome.Total_Fundraised_form_Activity', 'Collection_Camp_Intent_Details.Start_Date', 'title', 'Collection_Camp_Intent_Details.End_Date')
       ->addWhere('id', '=', $campId)
       ->execute()->single();
@@ -1881,6 +1882,7 @@ class CollectionCampService extends AutoSubscriber {
     $collectionCampTitle = $collectionCamps['title'];
 
     $campAddress = $collectionCamps['Collection_Camp_Intent_Details.Location_Area_of_camp'];
+
     $campStartDate = $collectionCamps['Collection_Camp_Intent_Details.Start_Date'];
     $campEndDate = $collectionCamps['Collection_Camp_Intent_Details.End_Date'];
 
@@ -1945,7 +1947,7 @@ class CollectionCampService extends AutoSubscriber {
   /**
    *
    */
-  public static function getCampOutcomeAckEmailAfter5Days($attendeeName, $campAddress, $campStartDate, $totalAmount, $materialGeneratedHtml, $uniqueContributors, $campRating, $fundsGenerated, $campId, $campEndDate) {
+public static function getCampOutcomeAckEmailAfter5Days($attendeeName, $campAddress, $campStartDate, $totalAmount, $materialGeneratedHtml, $uniqueContributors, $campRating, $fundsGenerated, $campId, $campEndDate) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
     $campVolunteerFeedback = $homeUrl . 'volunteer-camp-feedback/#?Eck_Collection_Camp1=' . $campId;
     // Conditionally include funds raised
