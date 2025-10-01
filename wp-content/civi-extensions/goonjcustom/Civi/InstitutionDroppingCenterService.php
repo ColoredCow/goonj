@@ -1085,7 +1085,10 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     $materialActivities = Activity::get(FALSE)
       ->addSelect('id', 'source_contact_id')
       ->addWhere('activity_type_id:name', '=', 'Material Contribution')
-      ->addWhere('Material_Contribution.Contribution_Date', 'BETWEEN', [$startDate, $endDate])
+      ->addClause('OR', 
+      ['Material_Contribution.Contribution_Date', 'BETWEEN', [$startDate, $endDate]],
+      ['activity_date_time', 'BETWEEN', [$startDate, $endDate]]
+      )
       ->addWhere('Material_Contribution.Institution_Dropping_Center', '=', $droppingCenterId)
       ->execute();
 
