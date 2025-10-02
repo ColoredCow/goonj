@@ -31,7 +31,7 @@ class InductionService extends AutoSubscriber {
     return [
       '&hook_civicrm_pre' => [
         ['hasIndividualChangedToVolunteer'],
-        // ['sendActivityEmailToVolunteer'],
+        ['sendActivityEmailToVolunteer'],
       ],
       '&hook_civicrm_post' => [
             ['volunteerCreated'],
