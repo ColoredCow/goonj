@@ -469,8 +469,8 @@
         
         // Collection camp start date and end date validation
         if (['afformCollectionCampIntentDetails',
-        'afformVolunteerOptionWithCollectionCampIntentDetails', 
-        'afformVolunteerWithCollectionCampIntentDetails',
+        // 'afformVolunteerOptionWithCollectionCampIntentDetails', 
+        // 'afformVolunteerWithCollectionCampIntentDetails',
         'afformGoonjActivitiesIndividualIntentForm', 
           'afformInstitutionCollectionCampIntent'].includes(ctrl.getFormMeta().name)) {
           var dateFields = [
