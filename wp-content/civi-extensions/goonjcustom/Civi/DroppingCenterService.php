@@ -754,7 +754,7 @@ class DroppingCenterService extends AutoSubscriber {
     $droppingCenterId = $droppingCenter['id'];
     $receivedAt       = $droppingCenter['Dropping_Centre.Goonj_Office.display_name'];
 
-    $customFields = CustomField::get(TRUE)
+    $customFields = CustomField::get(FALSE)
       ->addSelect('option_group_id')
       ->addWhere('custom_group_id:name', '=', 'Camp_Vehicle_Dispatch')
       ->addWhere('name', '=', 'Vehicle_Category')
@@ -762,7 +762,7 @@ class DroppingCenterService extends AutoSubscriber {
 
     $optionGroupId = $customFields['option_group_id'] ?? NULL;
 
-    $optionValues = OptionValue::get(TRUE)
+    $optionValues = OptionValue::get(FALSE)
       ->addSelect('id', 'value', 'label', 'name')
       ->addWhere('option_group_id', '=', $optionGroupId)
       ->setLimit(25)
@@ -781,18 +781,18 @@ class DroppingCenterService extends AutoSubscriber {
       ->addSelect('email.email', 'display_name')
       ->addJoin('Email AS email', 'LEFT')
       ->addWhere('id', '=', $initiatorId)
-      ->execute()->single();
+      ->execute()->first();
 
     $attendeeEmail = $campAttendedBy['email.email'];
     $attendeeName  = $campAttendedBy['display_name'];
 
     // Define last month’s range.
-    $startDate = (new \DateTime('first day of last month'))->format('Y-m-d');
-    $endDate   = (new \DateTime('last day of last month'))->format('Y-m-d');
-    $monthName = (new \DateTime('first day of last month'))->format('F Y');
+    $startDate = (new \DateTime('first day of this month'))->format('Y-m-d');
+    $endDate   = (new \DateTime('last day of this month'))->format('Y-m-d');
+    $monthName = (new \DateTime('first day of this month'))->format('F Y');
 
     $dispatches = EckEntity::get('Collection_Source_Vehicle_Dispatch', FALSE)
-      ->addSelect('Camp_Vehicle_Dispatch.Date_Time_of_Dispatch', 'Camp_Vehicle_Dispatch.Number_of_Bags_loaded_in_vehicle', 'Camp_Vehicle_Dispatch.Vehicle_Category')
+      ->addSelect('Camp_Vehicle_Dispatch.Date_Time_of_Dispatch', 'Camp_Vehicle_Dispatch.Number_of_Bags_loaded_in_vehicle', 'Camp_Vehicle_Dispatch.Vehicle_Category', 'Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office')
       ->addWhere('Camp_Vehicle_Dispatch.Dropping_Center', '=', $droppingCenterId)
       ->addWhere('Camp_Vehicle_Dispatch.Number_of_Bags_loaded_in_vehicle', 'IS NOT NULL')
       ->addWhere('Camp_Vehicle_Dispatch.Date_Time_of_Dispatch', 'BETWEEN', [$startDate, $endDate])
@@ -802,16 +802,22 @@ class DroppingCenterService extends AutoSubscriber {
     $dispatchData = [];
     $counter = 1;
     foreach ($dispatches as $dispatch) {
-      $date            = $dispatch['Camp_Vehicle_Dispatch.Date_Time_of_Dispatch'];
-      $bags            = $dispatch['Camp_Vehicle_Dispatch.Number_of_Bags_loaded_in_vehicle'];
+      $rawDate        = $dispatch['Camp_Vehicle_Dispatch.Date_Time_of_Dispatch'];
+      $bags            = $dispatch['Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office'];
       $vehicleCategory = $dispatch['Camp_Vehicle_Dispatch.Vehicle_Category'] ?? '';
+
+      // Format date to DD-MM-YYYY
+      $formattedDate = date('d-m-Y', strtotime($rawDate));
+
+      // Map the vehicle number to its label
+      $vehicleLabel = $optionMap[$vehicleCategory] ?? $vehicleCategory;
 
       $dispatchData[] = [
         'num_dispatches'      => $counter,
-        'dispatch_date'       => $date,
+        'dispatch_date'       => $formattedDate,
         'materials_generated' => $bags,
-        'vehicle_info'        => $vehicleCategory,
-        'received_at'         => $receivedAtLabel,
+        'vehicle_info'        => $vehicleLabel,
+        'received_at'         => $receivedAt,
       ];
       $counter++;
     }
@@ -919,7 +925,7 @@ class DroppingCenterService extends AutoSubscriber {
       <p>Your energy and commitment are truly making a difference as we work to reach the essential materials to some of the most remote villages across the country</p>
       <p>Here’s a quick snapshot of your center’s work from the past month:
       $tableHtml
-      <p>Alongside this, your center recorded <strong>$totalMaterialContributors</strong> material contributions and <strong>$totalMonetaryContributors</strong> monetary contributions.</p>
+      <p>Alongside this, your center recorded <strong>$totalMaterialContributors</strong> material contributions.</p>
       <p>We would also love to hear from you—whether it’s highlights, suggestions, or even challenges you have faced. Every little insight helps us grow stronger together.</p>
       <p>Excited to keep building this journey with you!</p>
       <p>Warm regards,<br>Team Goonj..</p>

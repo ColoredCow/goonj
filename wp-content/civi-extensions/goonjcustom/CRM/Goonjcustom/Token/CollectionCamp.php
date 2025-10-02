@@ -104,13 +104,9 @@ class CRM_Goonjcustom_Token_CollectionCamp extends AbstractTokenSubscriber {
           ->execute()->first();
 
         $upload_dir = wp_upload_dir();
-
         $baseUrl = $upload_dir['baseurl'] . '/civicrm/custom/';
-
         $fileName = $files['uri'];
-
         $value = $baseUrl . $fileName;
-
         break;
 
       default:

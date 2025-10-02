@@ -860,3 +860,42 @@ function goonj_remove_logo_href( $html, $blog_id ) {
     $html = preg_replace( '/<a([^>]*?) href="[^"]*"/', '<a\1', $html );
     return $html;
 }
+
+/**
+* Prevent user switching to different roles.
+*
+* @param array   $allcaps Array of key/value pairs where keys represent a capability name.
+* @param array   $cap     Required primitive capabilities for the requested capability.
+* @param array   $args    Arguments that accompany the requested capability check.
+* @param WP_User $user    The user object.
+* @return array Modified capabilities array.
+*/
+add_filter('user_has_cap', function($allcaps, $cap, $args, $user) {
+    if (!defined('ROLE_SWITCH_RESTRICTIONS')) {
+        return $allcaps;
+    }
+    $restrictions = unserialize(ROLE_SWITCH_RESTRICTIONS);
+
+    foreach ((array) $user->roles as $role) {
+        if (isset($restrictions[$role])) {
+
+            if (isset($args[0]) && $args[0] === 'switch_to_user') {
+                $target_user_id = $args[2];
+                $target_user = get_userdata($target_user_id);
+
+                if ($target_user) {
+                    $target_roles = $target_user->roles;
+
+                    foreach ($restrictions[$role] as $blocked_role) {
+                        if (in_array($blocked_role, $target_roles)) {
+                            $allcaps[$cap[0]] = false;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return $allcaps;
+
+}, 10, 4);

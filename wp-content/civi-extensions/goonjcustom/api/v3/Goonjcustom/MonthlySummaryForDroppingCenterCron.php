@@ -38,10 +38,10 @@ function civicrm_api3_goonjcustom_monthly_summary_for_dropping_center_cron($para
   $lastDay = new \DateTime('last day of this month');
 
   // Run this last day of month only.
-  // if ($today->format('Y-m-d') !== $lastDay->format('Y-m-d')) {
-  //   \Civi::log()->info('MonthlySummaryForDroppingCenterCron skipped (not last day of month)');
-  //   return civicrm_api3_create_success([], $params, 'Goonjcustom', 'monthly_summary_for_dropping_center_cron');
-  // }
+  if ($today->format('Y-m-d') !== $lastDay->format('Y-m-d')) {
+    \Civi::log()->info('MonthlySummaryForDroppingCenterCron skipped (not last day of month)');
+    return civicrm_api3_create_success([], $params, 'Goonjcustom', 'monthly_summary_for_dropping_center_cron');
+  }
 
   $limit  = 20;
   $offset = 0;
@@ -64,6 +64,26 @@ function civicrm_api3_goonjcustom_monthly_summary_for_dropping_center_cron($para
     foreach ($droppingCenters as $droppingCenter) {
       try {
         $droppingCenterId = $droppingCenter['id'];
+
+        $droppingCenterMetas = EckEntity::get('Dropping_Center_Meta', FALSE)
+        ->addSelect('Status.Status:name')
+        ->addWhere('Dropping_Center_Meta.Dropping_Center', '=', $droppingCenterId)
+        ->addWhere('subtype:name', '=', 'Status')
+        ->execute();
+
+        $permanentlyClosed = FALSE;
+        foreach ($droppingCenterMetas as $meta) {
+            if (!empty($meta['Status.Status:name']) && $meta['Status.Status:name'] === 'Permanently_Closed') {
+                $permanentlyClosed = TRUE;
+                break;
+            }
+        }
+
+        if ($permanentlyClosed) {
+            \Civi::log()->info("Skipping Dropping Center $droppingCenterId: Permanently Closed");
+            continue;
+        }
+
         $lastSentDate = $droppingCenter['Dropping_Centre.Is_Monthly_Email_Sent'] ?? NULL;
 
         $today = new \DateTime();

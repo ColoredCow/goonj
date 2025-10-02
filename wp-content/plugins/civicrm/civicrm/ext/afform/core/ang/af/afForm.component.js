@@ -468,7 +468,11 @@
         }
         
         // Collection camp start date and end date validation
-        if (['afformCollectionCampIntentDetails', 'afformGoonjActivitiesIndividualIntentForm', 'afformInstitutionCollectionCampIntent'].includes(ctrl.getFormMeta().name)) {
+        if (['afformCollectionCampIntentDetails',
+        // 'afformVolunteerOptionWithCollectionCampIntentDetails', 
+        // 'afformVolunteerWithCollectionCampIntentDetails',
+        'afformGoonjActivitiesIndividualIntentForm', 
+          'afformInstitutionCollectionCampIntent'].includes(ctrl.getFormMeta().name)) {
           var dateFields = [
             {
               startDateField: "af-field[name='Collection_Camp_Intent_Details.Start_Date'] .crm-form-date-wrapper input.crm-form-date",
