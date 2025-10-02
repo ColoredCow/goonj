@@ -63,7 +63,7 @@ class CollectionCampService extends AutoSubscriber {
       ],
       '&hook_civicrm_pre' => [
         ['generateCollectionCampQr'],
-        // ['assignVolunteerAsCampInitiator'],
+        ['assignVolunteerAsCampInitiator'],
         ['linkCollectionCampToContact'],
         ['createActivityForCollectionCamp'],
         ['updateCampStatusAfterAuth'],
