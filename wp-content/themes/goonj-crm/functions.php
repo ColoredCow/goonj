@@ -424,11 +424,8 @@ function goonj_handle_user_identification_form() {
 
 				case 'individual-collection-camp':
 					$redirect_url = sprintf(
-						'/collection-camp/volunteer-with-intent/#?email=%s&phone=%s&first_name=%s&last_name=%s',
-						rawurlencode($email),
-						rawurlencode($phone),
-						rawurlencode($first_name),
-						rawurlencode($last_name)
+						'/collection-camp/volunteer-with-intent/#?Volunteer_fields.Which_activities_are_you_interested_in_=%s',
+						'23'
 					);
 					break;
 
@@ -582,11 +579,9 @@ function goonj_handle_user_identification_form() {
 		if ( empty( $contactSubType ) || ! in_array( 'Volunteer', $contactSubType ) ) {
 			if ( isset($purpose) && $purpose === 'individual-collection-camp' ) {
 				$collection_camp_registration_form_path = sprintf(
-					'/collection-camp/volunteer-with-intent/#?email=%s&phone=%s&first_name=%s&last_name=%s',
-					rawurlencode($email),
-					rawurlencode($phone),
-					rawurlencode($first_name),
-					rawurlencode($last_name)
+					'/collection-camp/volunteer-with-intent/#?Individual6=%s&Volunteer_fields.Which_activities_are_you_interested_in_=%s',
+					rawurlencode($contactId),
+					'23'
 				);
 				wp_redirect( $collection_camp_registration_form_path );
 				exit;
@@ -601,6 +596,7 @@ function goonj_handle_user_identification_form() {
 		if ( goonj_is_volunteer_inducted( $found_contacts ) ) {
 			if ( $purpose === 'individual-collection-camp' ) {
 				$redirect_url = get_home_url() . '/collection-camp/intent/#?Collection_Camp_Core_Details.Contact_Id=' . $found_contacts['id'] . '&message=collection-camp-page&Collection_Camp_Intent_Details.Name=' . $initiator_name . '&Collection_Camp_Intent_Details.Contact_Number=' . $phone;
+				wp_redirect( $redirect_url );
 				exit;
 			}
 		}
