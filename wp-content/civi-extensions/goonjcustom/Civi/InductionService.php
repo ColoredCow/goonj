@@ -8,6 +8,7 @@ use Civi\Api4\CustomField;
 use Civi\Api4\Email;
 use Civi\Api4\MessageTemplate;
 use Civi\Api4\OptionValue;
+use Civi\Api4\Phone;
 use Civi\Api4\Relationship;
 use Civi\Api4\StateProvince;
 use Civi\Core\Service\AutoSubscriber;
@@ -128,8 +129,9 @@ class InductionService extends AutoSubscriber {
 
       $ccEmails = [];
       $assigneeNames = [];
-
       $assignId = (int) ($data['Activity1'][0]['fields']['Induction_Fields.Assign'] ?? 0);
+      $cityPocPhone = '';
+
       if ($assignId) {
         $assignEmailRow = Email::get(FALSE)
           ->addSelect('email')
@@ -142,6 +144,7 @@ class InductionService extends AutoSubscriber {
         if ($assignEmail !== '') {
           $ccEmails[] = $assignEmail;
         }
+
         $assignContactRow = Contact::get(FALSE)
           ->addSelect('display_name')
           ->addWhere('id', '=', $assignId)
@@ -151,6 +154,18 @@ class InductionService extends AutoSubscriber {
         if (!empty($assignContactRow['display_name'])) {
           $assigneeNames[] = trim((string) $assignContactRow['display_name']);
         }
+
+        $assignPhoneRow = Phone::get(FALSE)
+          ->addSelect('phone')
+          ->addWhere('contact_id', '=', $assignId)
+          ->addWhere('is_primary', '=', TRUE)
+          ->execute()
+          ->first();
+
+        $assignPhone = trim((string) ($assignPhoneRow['phone'] ?? ''));
+        if ($assignPhone !== '') {
+          $cityPocPhone = $assignPhone;
+        }
       }
 
       $cityPocName = '';
@@ -158,17 +173,19 @@ class InductionService extends AutoSubscriber {
         $cityPocName = implode(', ', array_unique($assigneeNames));
       }
 
-      $applyTokens = function ($str) use ($contactName, $cityPocName) {
+      $applyTokens = function ($str) use ($contactName, $cityPocName, $cityPocPhone) {
         if ($str === NULL || $str === '') {
           return $str;
         }
         $patterns = [
           '/\{\{\s*(?:acitivity|activity)\.display_name\s*\}\}/i',
           '/\{\{\s*(?:acitivity|activity)\.city_poc\s*\}\}/i',
+          '/\{\{\s*(?:acitivity|activity)\.city_poc_phone\s*\}\}/i',
         ];
         $replacements = [
           $contactName,
           $cityPocName,
+          $cityPocPhone,
         ];
         return preg_replace($patterns, $replacements, $str);
       };
@@ -221,7 +238,6 @@ class InductionService extends AutoSubscriber {
           }
         }
         catch (\Throwable $e) {
-          // ignore; try fallback.
         }
       }
 
@@ -284,7 +300,6 @@ class InductionService extends AutoSubscriber {
       );
 
       return TRUE;
-
     }
     catch (\Throwable $e) {
       \Civi::log()->info('ActivityEmail: Email sent', ['to' => $toEmail, 'template' => $templateTitle]);
