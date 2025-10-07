@@ -182,6 +182,13 @@ class MonetaryReceiptService extends AutoSubscriber {
 
       $phoneNumber = $phones['phone'] ?? NULL;
 
+      if ($phoneNumber) {
+        $phoneNumber = preg_replace('/\D/', '', $phoneNumber);
+        if (strlen($phoneNumber) === 10) {
+            $phoneNumber = '91' . $phoneNumber;
+        }
+      }
+
       // --- Call GlificClient function ---
       $glificContactId = NULL;
       if ($phoneNumber) {
