@@ -1305,10 +1305,25 @@ class InductionService extends AutoSubscriber {
 
     \Civi::log()->info('Email template found', ['templateId' => $template['id']]);
 
+    $office = InductionService::findOfficeForState($stateId);
+    error_log('Office details: ' . print_r($office, TRUE));
+
+    $coordinatorId = InductionService::findCoordinatorForOffice($office['id']);
+
+    $coordinatorDetails = Contact::get(FALSE)
+      ->addSelect('email.email')
+      ->addJoin('Email AS email', 'LEFT')
+      ->addWhere('id', '=', $coordinatorId)
+      ->execute();
+
+    $coordinatorDetail = $coordinatorDetails->first();
+
+    $urbanOpsEmail = $coordinatorDetail['email.email'] ?? '';
+
     $emailParams = [
       'contact_id' => $volunteerId,
       'template_id' => $template['id'],
-      'cc' => self::$volunteerInductionAssigneeEmail,
+      'cc' => $urbanOpsEmail,
     ];
 
     \Civi::log()->info('Queuing induction email');
