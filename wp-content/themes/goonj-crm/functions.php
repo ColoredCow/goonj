@@ -579,7 +579,7 @@ function goonj_handle_user_identification_form() {
 		if ( empty( $contactSubType ) || ! in_array( 'Volunteer', $contactSubType ) ) {
 			if ( isset($purpose) && $purpose === 'individual-collection-camp' ) {
 				$collection_camp_registration_form_path = sprintf(
-					'/collection-camp/volunteer-with-intent/&Volunteer_fields.Which_activities_are_you_interested_in_=%s',
+					'/collection-camp/volunteer-with-intent/#?Volunteer_fields.Which_activities_are_you_interested_in_=%s',
 					'23'
 				);
 				wp_redirect( $collection_camp_registration_form_path );
