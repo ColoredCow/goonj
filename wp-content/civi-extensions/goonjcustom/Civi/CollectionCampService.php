@@ -96,12 +96,17 @@ class CollectionCampService extends AutoSubscriber {
 
   public static function sendInductionEmailToUser(string $op, string $objectName, int $objectId, &$objectRef) {
     try {
-      if ($objectName !== 'Eck_Collection_Camp' || $op !== 'create' || empty($objectRef->id)) {
+      if ($objectName !== 'AfformSubmission' || $op !== 'create' || empty($objectRef->id)) {
         return;
     }
-    error_log('counting of function');
+
+    $data = json_decode($objectRef->data, true);
+    $contactId = null;
+    if (isset($data['Eck_Collection_Camp1'][0]['fields']['Collection_Camp_Core_Details.Contact_Id'])) {
+        $contactId = (int) $data['Eck_Collection_Camp1'][0]['fields']['Collection_Camp_Core_Details.Contact_Id'];
+        error_log("Fetched contactId: " . $contactId);
+    }
     
-    $contactId = '363799';
     InductionService::sendInductionEmail($contactId);
 
     } catch (\Throwable $e) {
