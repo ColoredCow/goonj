@@ -61,7 +61,7 @@ class CollectionCampService extends AutoSubscriber {
       ['updateCampaignForCollectionSourceContribution'],
       ['generateInvoiceIdForContribution'],
       ['generateInvoiceNumber'],
-      ['sendInductionEmailToUser'],
+      ['sendInductionEmailToCollectionCampUser'],
       ],
       '&hook_civicrm_pre' => [
         ['generateCollectionCampQr'],
@@ -97,7 +97,7 @@ class CollectionCampService extends AutoSubscriber {
   /**
    *
    */
-  public static function sendInductionEmailToUser(string $op, string $objectName, int $objectId, &$objectRef) {
+  public static function sendInductionEmailToCollectionCampUser(string $op, string $objectName, int $objectId, &$objectRef) {
     try {
       if ($objectName !== 'AfformSubmission' || $op !== 'create' || empty($objectRef->id)) {
         return;
