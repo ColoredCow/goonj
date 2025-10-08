@@ -61,7 +61,7 @@ class CollectionCampService extends AutoSubscriber {
       ['updateCampaignForCollectionSourceContribution'],
       ['generateInvoiceIdForContribution'],
       ['generateInvoiceNumber'],
-      ['sendInductionEmail'],
+      ['sendInductionEmailToUser'],
       ],
       '&hook_civicrm_pre' => [
         ['generateCollectionCampQr'],
@@ -94,30 +94,24 @@ class CollectionCampService extends AutoSubscriber {
     ];
   }
 
-  public static function sendInductionEmail(string $op, string $objectName, int $objectId, &$objectRef) {
-    // Check if the object name is 'Eck_Collection_Camp'.
-    if ($objectName !== 'Eck_Collection_Camp' || !$objectRef->id) {
-      return;
-    }
-
+  public static function sendInductionEmailToUser(string $op, string $objectName, int $objectId, &$objectRef) {
     try {
-      $collectionCampId = $objectRef->id;
-      $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
-        ->addSelect('Collection_Camp_Core_Details.Contact_Id')
-        ->addWhere('id', '=', $collectionCampId)
-        ->execute()->single();
+        if ($objectName !== 'Eck_Collection_Camp' || empty($objectRef->id)) {
+            return;
+        }
 
-      $contactId = $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
-      // Call the function from InductionService
-      InductionService::sendInductionEmail($contactId);
+        $contactId = '363793';
+        InductionService::sendInductionEmail($contactId);
 
+    } catch (\Throwable $e) {
+        \Civi::log()->error('Error in sendInductionEmail hook', [
+            'error' => $e->getMessage(),
+            'objectName' => $objectName,
+            'objectId' => $objectId,
+            'objectRef' => $objectRef,
+        ]);
     }
-    catch (\Exception $e) {
-      // @ignoreException
-    }
-
-  }
-
+}
 
   /**
    *

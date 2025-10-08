@@ -516,10 +516,10 @@ class InductionService extends AutoSubscriber {
   public static function sendInductionEmail($volunteerId) {
     \Civi::log()->info('Initiating induction email process', ['volunteerId' => $volunteerId]);
 
-    if (self::isEmailAlreadySent($volunteerId)) {
-      \Civi::log()->info('Induction email already sent', ['volunteerId' => $volunteerId]);
-      return FALSE;
-    }
+    // if (self::isEmailAlreadySent($volunteerId)) {
+    //   \Civi::log()->info('Induction email already sent', ['volunteerId' => $volunteerId]);
+    //   return FALSE;
+    // }
 
     if (empty($volunteerId)) {
       \Civi::log()->info('Volunteer ID is empty');
@@ -573,22 +573,22 @@ class InductionService extends AutoSubscriber {
       ->setLimit(1)
       ->execute();
 
-    if ($inductionActivity->count() === 0) {
-      \Civi::log()->info('No induction activity found, creating new one');
-      self::createInduction($volunteerId, $stateId);
-    }
-    else {
-      \Civi::log()->info('Induction activity already exists');
-    }
+    // if ($inductionActivity->count() === 0) {
+    //   \Civi::log()->info('No induction activity found, creating new one');
+    //   self::createInduction($volunteerId, $stateId);
+    // }
+    // else {
+    //   \Civi::log()->info('Induction activity already exists');
+    // }
 
     \Civi::log()->info('Queuing induction email');
     self::queueInductionEmail($emailParams);
 
     \Civi::log()->info('Marking email as sent in custom field');
-    Contact::update(FALSE)
-      ->addValue('Individual_fields.Volunteer_Registration_Email_Sent', 1)
-      ->addWhere('id', '=', $volunteerId)
-      ->execute();
+    // Contact::update(FALSE)
+    //   ->addValue('Individual_fields.Volunteer_Registration_Email_Sent', 1)
+    //   ->addWhere('id', '=', $volunteerId)
+    //   ->execute();
 
     \Civi::log()->info('Induction email process completed', ['volunteerId' => $volunteerId]);
     return TRUE;
