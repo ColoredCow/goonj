@@ -1266,7 +1266,7 @@ class InductionService extends AutoSubscriber {
   }
 
   /**
-   * Common logic to send an email.
+   * Send an email to collection camp initiator.
    */
   public static function sendInductionEmailToCollectionCampInitiator($volunteerId) {
     \Civi::log()->info('Initiating induction email process', ['volunteerId' => $volunteerId]);
