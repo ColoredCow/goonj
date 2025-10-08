@@ -116,10 +116,10 @@ class CollectionCampService extends AutoSubscriber {
         ->setLimit(1)
         ->execute();
 
-      if (empty($inductionActivity)) {
-        error_log("No induction activity found for contact $contactId in specified statuses, returning early.");
-        return;
-      }
+        if ($inductionActivity->rowCount === 0) {
+          error_log("No induction activity found for contact $contactId in specified statuses, returning early.");
+          return;
+        }
 
       InductionService::sendInductionEmailToCollectionCampInitiator($contactId);
 
