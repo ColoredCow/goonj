@@ -20,6 +20,7 @@ use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
+use Civi\InductionService;
 
 /**
  *
@@ -60,6 +61,7 @@ class CollectionCampService extends AutoSubscriber {
       ['updateCampaignForCollectionSourceContribution'],
       ['generateInvoiceIdForContribution'],
       ['generateInvoiceNumber'],
+      ['sendInductionEmail'],
       ],
       '&hook_civicrm_pre' => [
         ['generateCollectionCampQr'],
@@ -91,6 +93,31 @@ class CollectionCampService extends AutoSubscriber {
 
     ];
   }
+
+  public static function sendInductionEmail(string $op, string $objectName, int $objectId, &$objectRef) {
+    // Check if the object name is 'Eck_Collection_Camp'.
+    if ($objectName !== 'Eck_Collection_Camp' || !$objectRef->id) {
+      return;
+    }
+
+    try {
+      $collectionCampId = $objectRef->id;
+      $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+        ->addSelect('Collection_Camp_Core_Details.Contact_Id')
+        ->addWhere('id', '=', $collectionCampId)
+        ->execute()->single();
+
+      $contactId = $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
+      // Call the function from InductionService
+      InductionService::sendInductionEmail($contactId);
+
+    }
+    catch (\Exception $e) {
+      // @ignoreException
+    }
+
+  }
+
 
   /**
    *

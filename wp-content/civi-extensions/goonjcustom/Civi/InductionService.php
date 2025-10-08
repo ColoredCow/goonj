@@ -513,7 +513,7 @@ class InductionService extends AutoSubscriber {
   /**
    * Common logic to send an email.
    */
-  private static function sendInductionEmail($volunteerId) {
+  public static function sendInductionEmail($volunteerId) {
     \Civi::log()->info('Initiating induction email process', ['volunteerId' => $volunteerId]);
 
     if (self::isEmailAlreadySent($volunteerId)) {
