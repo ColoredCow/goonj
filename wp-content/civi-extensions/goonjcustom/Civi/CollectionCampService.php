@@ -121,7 +121,7 @@ class CollectionCampService extends AutoSubscriber {
 
     error_log('coming here or not');
     
-    InductionService::sendInductionEmail($contactId);
+    InductionService::sendInductionEmailToCollectionCampInitiator($contactId);
 
     } catch (\Throwable $e) {
         \Civi::log()->error('Error in sendInductionEmail hook', [

@@ -513,14 +513,13 @@ class InductionService extends AutoSubscriber {
   /**
    * Common logic to send an email.
    */
-  public static function sendInductionEmail($volunteerId) {
-    error_log("sendInductionEmail called for volunteerId: {$volunteerId}");
+  private static function sendInductionEmail($volunteerId) {
     \Civi::log()->info('Initiating induction email process', ['volunteerId' => $volunteerId]);
 
-    // if (self::isEmailAlreadySent($volunteerId)) {
-    //   \Civi::log()->info('Induction email already sent', ['volunteerId' => $volunteerId]);
-    //   return FALSE;
-    // }
+    if (self::isEmailAlreadySent($volunteerId)) {
+      \Civi::log()->info('Induction email already sent', ['volunteerId' => $volunteerId]);
+      return FALSE;
+    }
 
     if (empty($volunteerId)) {
       \Civi::log()->info('Volunteer ID is empty');
@@ -574,13 +573,13 @@ class InductionService extends AutoSubscriber {
       ->setLimit(1)
       ->execute();
 
-    // if ($inductionActivity->count() === 0) {
-    //   \Civi::log()->info('No induction activity found, creating new one');
-    //   self::createInduction($volunteerId, $stateId);
-    // }
-    // else {
-    //   \Civi::log()->info('Induction activity already exists');
-    // }
+    if ($inductionActivity->count() === 0) {
+      \Civi::log()->info('No induction activity found, creating new one');
+      self::createInduction($volunteerId, $stateId);
+    }
+    else {
+      \Civi::log()->info('Induction activity already exists');
+    }
 
     \Civi::log()->info('Queuing induction email');
     self::queueInductionEmail($emailParams);
@@ -1264,6 +1263,59 @@ class InductionService extends AutoSubscriber {
       $inductionType = 'Online';
       return $inductionType;
     }
+  }
+
+  /**
+   * Common logic to send an email.
+   */
+  public static function sendInductionEmailToCollectionCampInitiator($volunteerId) {
+    \Civi::log()->info('Initiating induction email process', ['volunteerId' => $volunteerId]);
+
+    $contact = Contact::get(FALSE)
+      ->addSelect('address_primary.state_province_id')
+      ->addWhere('id', '=', $volunteerId)
+      ->execute()->first();
+
+    \Civi::log()->info('Contact fetched', ['contact' => $contact]);
+
+    $stateId = $contact['address_primary.state_province_id'];
+    if (!$stateId) {
+      \Civi::log()->info('State not found', ['contactId' => $contact['id'], 'StateId' => $stateId]);
+      return FALSE;
+    }
+
+    \Civi::log()->info('Fetched state for volunteer', ['volunteerId' => $volunteerId, 'stateId' => $stateId]);
+
+    $inductionType = self::fetchTypeOfInduction($volunteerId);
+    \Civi::log()->info('Induction type determined', ['volunteerId' => $volunteerId, 'inductionType' => $inductionType]);
+
+    $templateName = ($inductionType === 'Offline')
+        ? 'New_Volunteer_Registration%'
+        : 'New_Volunteer_Registration_Online%';
+
+    $template = MessageTemplate::get(FALSE)
+      ->addWhere('msg_title', 'LIKE', $templateName)
+      ->setLimit(1)
+      ->execute()->single();
+
+    if (!$template) {
+      \Civi::log()->info('No email template found', ['templateName' => $templateName]);
+      return FALSE;
+    }
+
+    \Civi::log()->info('Email template found', ['templateId' => $template['id']]);
+
+    $emailParams = [
+      'contact_id' => $volunteerId,
+      'template_id' => $template['id'],
+      'cc' => self::$volunteerInductionAssigneeEmail,
+    ];
+
+    \Civi::log()->info('Queuing induction email');
+    self::queueInductionEmail($emailParams);
+
+    \Civi::log()->info('Induction email process completed', ['volunteerId' => $volunteerId]);
+    return TRUE;
   }
 
 }
