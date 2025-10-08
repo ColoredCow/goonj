@@ -94,44 +94,43 @@ class CollectionCampService extends AutoSubscriber {
     ];
   }
 
+  /**
+   *
+   */
   public static function sendInductionEmailToUser(string $op, string $objectName, int $objectId, &$objectRef) {
     try {
       if ($objectName !== 'AfformSubmission' || $op !== 'create' || empty($objectRef->id)) {
         return;
-    }
+      }
 
-    $data = json_decode($objectRef->data, true);
-    $contactId = null;
-    if (isset($data['Eck_Collection_Camp1'][0]['fields']['Collection_Camp_Core_Details.Contact_Id'])) {
+      $data = json_decode($objectRef->data, TRUE);
+      $contactId = NULL;
+      if (isset($data['Eck_Collection_Camp1'][0]['fields']['Collection_Camp_Core_Details.Contact_Id'])) {
         $contactId = (int) $data['Eck_Collection_Camp1'][0]['fields']['Collection_Camp_Core_Details.Contact_Id'];
-        error_log("Fetched contactId: " . $contactId);
+      }
+
+      $inductionActivity = Activity::get(FALSE)
+        ->addWhere('activity_type_id:name', '=', 'Induction')
+        ->addWhere('status_id:name', 'IN', ['To be scheduled', 'No_show', 'Not Visited'])
+        ->addWhere('target_contact_id', '=', $contactId)
+        ->setLimit(1)
+        ->execute();
+
+      if (empty($inductionActivity)) {
+        error_log("No induction activity found for contact $contactId in specified statuses, returning early.");
+        return;
+      }
+
+      InductionService::sendInductionEmailToCollectionCampInitiator($contactId);
+
     }
-
-    $inductionActivity = Activity::get(FALSE)
-    ->addWhere('activity_type_id:name', '=', 'Induction')
-    ->addWhere('status_id:name', 'IN', ['To be scheduled', 'No_show', 'Not Visited'])
-    ->addWhere('target_contact_id', '=', $contactId)
-    ->setLimit(1)
-    ->execute();
-
-    if (empty($inductionActivity)) {
-      error_log("No induction activity found for contact $contactId in specified statuses, returning early.");
-      return;
+    catch (\Throwable $e) {
+      \Civi::log()->error('Error in sendInductionEmail hook', [
+        'error' => $e->getMessage(),
+        'contactId' => $contactId,
+      ]);
     }
-
-    error_log('coming here or not');
-    
-    InductionService::sendInductionEmailToCollectionCampInitiator($contactId);
-
-    } catch (\Throwable $e) {
-        \Civi::log()->error('Error in sendInductionEmail hook', [
-            'error' => $e->getMessage(),
-            'objectName' => $objectName,
-            'objectId' => $objectId,
-            'objectRef' => $objectRef,
-        ]);
-    }
-}
+  }
 
   /**
    *
