@@ -19,7 +19,7 @@ class MonetaryReceiptService extends AutoSubscriber {
   public static function getSubscribedEvents() {
     return [
       '&hook_civicrm_post' => [
-        // 'triggerMonetaryEmail',
+        'triggerMonetaryEmail',
       ],
     ];
   }
@@ -181,6 +181,13 @@ class MonetaryReceiptService extends AutoSubscriber {
       $contactName = $contacts['display_name'] ?? 'Valued Supporter';
 
       $phoneNumber = $phones['phone'] ?? NULL;
+
+      if ($phoneNumber) {
+        $phoneNumber = preg_replace('/\D/', '', $phoneNumber);
+        if (strlen($phoneNumber) === 10) {
+            $phoneNumber = '91' . $phoneNumber;
+        }
+      }
 
       // --- Call GlificClient function ---
       $glificContactId = NULL;
