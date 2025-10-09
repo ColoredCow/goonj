@@ -137,6 +137,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Personal Campaign Pages',
           'Premiums',
           'Manage Price Sets',
+          'Find Contributions',
           ],
       ],
       'mmt' => [
@@ -346,6 +347,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Personal Campaign Pages',
           'Premiums',
           'Manage Price Sets',
+          'Find Contributions',
         ],
       ],
       'urban_ops_and_accounts_chapter_team' => [
@@ -369,6 +371,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Personal Campaign Pages',
           'Premiums',
           'Manage Price Sets',
+          'Find Contributions',
         ],
       ],
       'project_ho_and_accounts' => [
@@ -394,6 +397,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Personal Campaign Pages',
           'Premiums',
           'Manage Price Sets',
+          'Find Contributions',
         ],
       ]
     ];
