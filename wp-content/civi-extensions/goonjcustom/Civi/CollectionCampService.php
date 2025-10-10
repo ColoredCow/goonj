@@ -20,6 +20,7 @@ use Civi\Api4\Utils\CoreUtil;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
+use Civi\InductionService;
 
 /**
  *
@@ -33,8 +34,8 @@ class CollectionCampService extends AutoSubscriber {
   const COLLECTION_CAMP_INTENT_FB_NAME = [
     'afformAdminCollectionCampIntentDetails',
     'afformCollectionCampIntentDetails',
-    // 'afformVolunteerOptionWithCollectionCampIntentDetails',
-    // 'afformVolunteerWithCollectionCampIntentDetails',
+    'afformVolunteerOptionWithCollectionCampIntentDetails',
+    'afformVolunteerWithCollectionCampIntentDetails',
   ];
   const ENTITY_NAME = 'Collection_Camp';
   const ENTITY_SUBTYPE_NAME = 'Collection_Camp';
@@ -60,10 +61,11 @@ class CollectionCampService extends AutoSubscriber {
       ['updateCampaignForCollectionSourceContribution'],
       ['generateInvoiceIdForContribution'],
       ['generateInvoiceNumber'],
+      ['sendInductionEmailToCollectionCampUser'],
       ],
       '&hook_civicrm_pre' => [
         ['generateCollectionCampQr'],
-        // ['assignVolunteerAsCampInitiator'],
+        ['assignVolunteerAsCampInitiator'],
         ['linkCollectionCampToContact'],
         ['createActivityForCollectionCamp'],
         ['updateCampStatusAfterAuth'],
@@ -90,6 +92,44 @@ class CollectionCampService extends AutoSubscriber {
       '&hook_civicrm_validateForm' => 'validateCheckNumber',
 
     ];
+  }
+
+  /**
+   *
+   */
+  public static function sendInductionEmailToCollectionCampUser(string $op, string $objectName, int $objectId, &$objectRef) {
+    try {
+      if ($objectName !== 'AfformSubmission' || $op !== 'create' || empty($objectRef->id)) {
+        return;
+      }
+
+      $data = json_decode($objectRef->data, TRUE);
+      $contactId = NULL;
+      if (isset($data['Eck_Collection_Camp1'][0]['fields']['Collection_Camp_Core_Details.Contact_Id'])) {
+        $contactId = (int) $data['Eck_Collection_Camp1'][0]['fields']['Collection_Camp_Core_Details.Contact_Id'];
+      }
+
+      $inductionActivity = Activity::get(FALSE)
+        ->addWhere('activity_type_id:name', '=', 'Induction')
+        ->addWhere('status_id:name', 'IN', ['To be scheduled', 'No_show', 'Not Visited'])
+        ->addWhere('target_contact_id', '=', $contactId)
+        ->setLimit(1)
+        ->execute();
+
+        if ($inductionActivity->rowCount === 0) {
+          error_log("No induction activity found for contact $contactId in specified statuses, returning early.");
+          return;
+        }
+
+      InductionService::sendInductionEmailToCollectionCampInitiator($contactId);
+
+    }
+    catch (\Throwable $e) {
+      \Civi::log()->error('Error in sendInductionEmail hook', [
+        'error' => $e->getMessage(),
+        'contactId' => $contactId,
+      ]);
+    }
   }
 
   /**
@@ -137,7 +177,28 @@ class CollectionCampService extends AutoSubscriber {
         ->addValue('Collection_Camp_Core_Details.Contact_Id', $volunteerId)
         ->addWhere('id', '=', $campId)
         ->execute();
-
+      
+      $optionValue = OptionValue::get(FALSE)
+      ->addWhere('option_group_id:name', '=', 'activity_type')
+      ->addWhere('label', '=', 'Induction')
+      ->execute()->single();
+  
+      $activityTypeId = $optionValue['value'];
+  
+      $induction = Activity::get(FALSE)
+        ->addSelect('id')
+        ->addWhere('target_contact_id', '=', $volunteerId)
+        ->addWhere('activity_type_id', '=', $activityTypeId)
+        ->addOrderBy('created_date', 'DESC')
+        ->setLimit(1)
+        ->execute()->single();
+  
+      $inductionId = $induction['id'];
+  
+      EckEntity::update('Collection_Camp', FALSE)
+        ->addValue('Collection_Camp_Intent_Details.Initiator_Induction_Id', $inductionId)
+        ->addWhere('id', '=', $campId)
+        ->execute();
     }
     catch (\Throwable $e) {
       \Civi::log()->error('assignVolunteerAsCampInitiator failed', [
@@ -346,12 +407,14 @@ class CollectionCampService extends AutoSubscriber {
     }
 
     foreach ($event->records as $index => $contact) {
-      if (empty($contact['fields'])) {
-        continue;
-      }
-      $event->records[$index]['joins']['Address'][] = self::$collectionCampAddress;
+        if (empty($contact['fields'])) {
+            continue;
+        }
+        $hasAddress = !empty($contact['joins']['Address']);
+        if (!$hasAddress) {
+            $event->records[$index]['joins']['Address'][] = self::$collectionCampAddress;
+        }
     }
-
   }
 
   /**

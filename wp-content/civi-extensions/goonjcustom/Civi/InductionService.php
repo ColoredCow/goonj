@@ -1265,4 +1265,72 @@ class InductionService extends AutoSubscriber {
     }
   }
 
+  /**
+   * Send an email to collection camp initiator.
+   */
+  public static function sendInductionEmailToCollectionCampInitiator($volunteerId) {
+    \Civi::log()->info('Initiating induction email process', ['volunteerId' => $volunteerId]);
+
+    $contact = Contact::get(FALSE)
+      ->addSelect('address_primary.state_province_id')
+      ->addWhere('id', '=', $volunteerId)
+      ->execute()->first();
+
+    \Civi::log()->info('Contact fetched', ['contact' => $contact]);
+
+    $stateId = $contact['address_primary.state_province_id'];
+    if (!$stateId) {
+      \Civi::log()->info('State not found', ['contactId' => $contact['id'], 'StateId' => $stateId]);
+      return FALSE;
+    }
+
+    \Civi::log()->info('Fetched state for volunteer', ['volunteerId' => $volunteerId, 'stateId' => $stateId]);
+
+    $inductionType = self::fetchTypeOfInduction($volunteerId);
+    \Civi::log()->info('Induction type determined', ['volunteerId' => $volunteerId, 'inductionType' => $inductionType]);
+
+    $templateName = ($inductionType === 'Offline')
+        ? 'New_Volunteer_Registration%'
+        : 'New_Volunteer_Registration_Online%';
+
+    $template = MessageTemplate::get(FALSE)
+      ->addWhere('msg_title', 'LIKE', $templateName)
+      ->setLimit(1)
+      ->execute()->single();
+
+    if (!$template) {
+      \Civi::log()->info('No email template found', ['templateName' => $templateName]);
+      return FALSE;
+    }
+
+    \Civi::log()->info('Email template found', ['templateId' => $template['id']]);
+
+    $office = InductionService::findOfficeForState($stateId);
+    error_log('Office details: ' . print_r($office, TRUE));
+
+    $coordinatorId = InductionService::findCoordinatorForOffice($office['id']);
+
+    $coordinatorDetails = Contact::get(FALSE)
+      ->addSelect('email.email')
+      ->addJoin('Email AS email', 'LEFT')
+      ->addWhere('id', '=', $coordinatorId)
+      ->execute();
+
+    $coordinatorDetail = $coordinatorDetails->first();
+
+    $urbanOpsEmail = $coordinatorDetail['email.email'] ?? '';
+
+    $emailParams = [
+      'contact_id' => $volunteerId,
+      'template_id' => $template['id'],
+      'cc' => $urbanOpsEmail,
+    ];
+
+    \Civi::log()->info('Queuing induction email');
+    self::queueInductionEmail($emailParams);
+
+    \Civi::log()->info('Induction email process completed', ['volunteerId' => $volunteerId]);
+    return TRUE;
+  }
+
 }
