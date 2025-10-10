@@ -177,7 +177,28 @@ class CollectionCampService extends AutoSubscriber {
         ->addValue('Collection_Camp_Core_Details.Contact_Id', $volunteerId)
         ->addWhere('id', '=', $campId)
         ->execute();
-
+      
+      $optionValue = OptionValue::get(FALSE)
+      ->addWhere('option_group_id:name', '=', 'activity_type')
+      ->addWhere('label', '=', 'Induction')
+      ->execute()->single();
+  
+      $activityTypeId = $optionValue['value'];
+  
+      $induction = Activity::get(FALSE)
+        ->addSelect('id')
+        ->addWhere('target_contact_id', '=', $volunteerId)
+        ->addWhere('activity_type_id', '=', $activityTypeId)
+        ->addOrderBy('created_date', 'DESC')
+        ->setLimit(1)
+        ->execute()->single();
+  
+      $inductionId = $induction['id'];
+  
+      EckEntity::update('Collection_Camp', FALSE)
+        ->addValue('Collection_Camp_Intent_Details.Initiator_Induction_Id', $inductionId)
+        ->addWhere('id', '=', $campId)
+        ->execute();
     }
     catch (\Throwable $e) {
       \Civi::log()->error('assignVolunteerAsCampInitiator failed', [
