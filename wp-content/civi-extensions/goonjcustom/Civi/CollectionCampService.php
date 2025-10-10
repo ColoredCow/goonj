@@ -407,12 +407,14 @@ class CollectionCampService extends AutoSubscriber {
     }
 
     foreach ($event->records as $index => $contact) {
-      if (empty($contact['fields'])) {
-        continue;
-      }
-      $event->records[$index]['joins']['Address'][] = self::$collectionCampAddress;
+        if (empty($contact['fields'])) {
+            continue;
+        }
+        $hasAddress = !empty($contact['joins']['Address']);
+        if (!$hasAddress) {
+            $event->records[$index]['joins']['Address'][] = self::$collectionCampAddress;
+        }
     }
-
   }
 
   /**
