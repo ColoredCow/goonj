@@ -683,7 +683,8 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
         'directive' => 'afsearch-events-monetary-contribution',
         'template' => 'CRM/Goonjcustom/Tabs/Events/MonetaryContribution.tpl',
         'entity' => ['id' => $eventID],
-        'permissions' => ['goonj_chapter_admin', 'account_team', 'ho_account', 'project_ho_and_accounts'],
+        'permissions' => ['goonj_chapter_admin', 'ho_account'],
+
       ],
     ];
 
