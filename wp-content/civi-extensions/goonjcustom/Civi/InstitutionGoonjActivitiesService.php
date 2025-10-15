@@ -607,7 +607,7 @@ class InstitutionGoonjActivitiesService extends AutoSubscriber {
         'module' => 'afsearchMonetaryContribution',
         'directive' => 'afsearch-monetary-contribution',
         'template' => 'CRM/Goonjcustom/Tabs/MonetaryContribution.tpl',
-        'permissions' => ['mmt_and_accounts_chapter_team', 'urban_ops_and_accounts_chapter_team', 'account_team', 'urban_ops_and_accounts_chapter_team', 'ho_account', 'project_ho_and_accounts'],
+        'permissions' => ['goonj_chapter_admin', 'ho_account'],
       ],
       // 'monetaryContributionForUrbanOps' => [
       //   'title' => ts('Monetary Contribution'),
