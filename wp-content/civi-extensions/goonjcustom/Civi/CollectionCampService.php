@@ -2036,7 +2036,6 @@ public static function getCampOutcomeAckEmailAfter5Days($attendeeName, $campAddr
         <ul>
             $materialGeneratedHtml
             <li>Footfall: $uniqueContributors</li>
-            <li>Camp rating from our team: $campRating</li>
             $fundsGeneratedHtml
         </ul>
         <p>If you haven’t filled the feedback form yet, you can share your thoughts here: <a href='$campVolunteerFeedback'>Feedback Form</a></p>
