@@ -693,15 +693,15 @@ class DroppingCenterService extends AutoSubscriber {
         'module' => 'afsearchMonetaryContribution',
         'directive' => 'afsearch-monetary-contribution',
         'template' => 'CRM/Goonjcustom/Tabs/MonetaryContribution.tpl',
-        'permissions' => ['account_team', 'ho_account', 'mmt_and_accounts_chapter_team', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts'],
+        'permissions' => ['goonj_chapter_admin', 'ho_account'],
       ],
-      'monetaryContributionForUrbanOps' => [
-        'title' => ts('Monetary Contribution'),
-        'module' => 'afsearchMonetaryContributionForUrbanOps',
-        'directive' => 'afsearch-monetary-contribution-for-urban-ops',
-        'template' => 'CRM/Goonjcustom/Tabs/MonetaryContributionForUrbanOps.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops'],
-      ],
+      // 'monetaryContributionForUrbanOps' => [
+      //   'title' => ts('Monetary Contribution'),
+      //   'module' => 'afsearchMonetaryContributionForUrbanOps',
+      //   'directive' => 'afsearch-monetary-contribution-for-urban-ops',
+      //   'template' => 'CRM/Goonjcustom/Tabs/MonetaryContributionForUrbanOps.tpl',
+      //   'permissions' => ['goonj_chapter_admin', 'urbanops'],
+      // ],
     ];
 
     foreach ($tabConfigs as $key => $config) {
