@@ -261,169 +261,169 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 });
 
-// document.addEventListener("DOMContentLoaded", function () {
-//   function waitForFieldsAndInit() {
-//     const stateFieldWrapper =
-//       document.querySelector('af-field[name="state_province_id"]') ||
-//       document.getElementById("editrow-state_province-Primary") ||
-//       document.querySelector(
-//         'af-field[name="Institution_Collection_Camp_Intent.State"]'
-//       ) ||
-//       document.querySelector(
-//         'af-field[name="Institution_Dropping_Center_Intent.State"]'
-//       ) ||
-//       document.querySelector(
-//         'af-field[name="Collection_Camp_Intent_Details.State"]'
-//       ) ||
-//       document.querySelector('af-field[name="Dropping_Centre.State"]') ||
-//       document.querySelector(
-//         'af-field[name="Institution_Goonj_Activities.State"]'
-//       ) ||
-//       document.querySelector('af-field[name="Goonj_Activities.State"]') ||
-//       document.querySelector('af-field[name="Urban_Planned_Visit.State"]') ||
-//       Array.from(document.querySelectorAll("label"))
-//         .find((label) => label.textContent.trim() === "State")
-//         ?.closest("af-field");
+document.addEventListener("DOMContentLoaded", function () {
+  function waitForFieldsAndInit() {
+    const stateFieldWrapper =
+      document.querySelector('af-field[name="state_province_id"]') ||
+      document.getElementById("editrow-state_province-Primary") ||
+      document.querySelector(
+        'af-field[name="Institution_Collection_Camp_Intent.State"]'
+      ) ||
+      document.querySelector(
+        'af-field[name="Institution_Dropping_Center_Intent.State"]'
+      ) ||
+      document.querySelector(
+        'af-field[name="Collection_Camp_Intent_Details.State"]'
+      ) ||
+      document.querySelector('af-field[name="Dropping_Centre.State"]') ||
+      document.querySelector(
+        'af-field[name="Institution_Goonj_Activities.State"]'
+      ) ||
+      document.querySelector('af-field[name="Goonj_Activities.State"]') ||
+      document.querySelector('af-field[name="Urban_Planned_Visit.State"]') ||
+      Array.from(document.querySelectorAll("label"))
+        .find((label) => label.textContent.trim() === "State")
+        ?.closest("af-field");
 
-//     const chosenSpan =
-//       stateFieldWrapper?.querySelector(".select2-chosen") ||
-//       stateFieldWrapper?.querySelector('span[id^="select2-chosen"]');
+    const chosenSpan =
+      stateFieldWrapper?.querySelector(".select2-chosen") ||
+      stateFieldWrapper?.querySelector('span[id^="select2-chosen"]');
 
-//     const cityFieldWrapper =
-//       document.querySelector('af-field[name="city"]') ||
-//       document.querySelector('af-field[name="Goonj_Activities.City"]') ||
-//       document.getElementById("editrow-city-Primary") ||
-//       Array.from(document.querySelectorAll("label"))
-//         .find((label) => label.textContent.trim().startsWith("City"))
-//         ?.closest("af-field");
+    const cityFieldWrapper =
+      document.querySelector('af-field[name="city"]') ||
+      document.querySelector('af-field[name="Goonj_Activities.City"]') ||
+      document.getElementById("editrow-city-Primary") ||
+      Array.from(document.querySelectorAll("label"))
+        .find((label) => label.textContent.trim().startsWith("City"))
+        ?.closest("af-field");
 
-//     const cityInput = cityFieldWrapper?.querySelector('input[type="text"]');
+    const cityInput = cityFieldWrapper?.querySelector('input[type="text"]');
 
-//     if (!stateFieldWrapper || !chosenSpan || !cityFieldWrapper || !cityInput) {
-//       requestAnimationFrame(waitForFieldsAndInit);
-//       return;
-//     }
+    if (!stateFieldWrapper || !chosenSpan || !cityFieldWrapper || !cityInput) {
+      requestAnimationFrame(waitForFieldsAndInit);
+      return;
+    }
 
-//     if (!cityFieldWrapper.querySelector('select[name="city-dropdown"]')) {
-//       cityInput.style.display = "none";
+    if (!cityFieldWrapper.querySelector('select[name="city-dropdown"]')) {
+      cityInput.style.display = "none";
 
-//       const citySelect = document.createElement("select");
-//       citySelect.className = "form-control";
-//       citySelect.name = "city-dropdown";
-//       citySelect.style.width = "100%";
-//       citySelect.style.maxWidth = "100%";
-//       citySelect.innerHTML = `
-//         <option value="">Select a city</option>
-//         <option value="Other">Other</option>
-//       `;
-//       cityInput.parentElement.appendChild(citySelect);
+      const citySelect = document.createElement("select");
+      citySelect.className = "form-control";
+      citySelect.name = "city-dropdown";
+      citySelect.style.width = "100%";
+      citySelect.style.maxWidth = "100%";
+      citySelect.innerHTML = `
+        <option value="">Select a city</option>
+        <option value="Other">Other</option>
+      `;
+      cityInput.parentElement.appendChild(citySelect);
 
-//       function applySelect2() {
-//         if (window.jQuery && jQuery.fn.select2) {
-//           jQuery(citySelect).select2("destroy");
-//           jQuery(citySelect).select2({
-//             placeholder: "Select a city",
-//             allowClear: true,
-//             width: "resolve",
-//             minimumResultsForSearch: 0,
-//             dropdownAutoWidth: true,
-//           });
+      function applySelect2() {
+        if (window.jQuery && jQuery.fn.select2) {
+          jQuery(citySelect).select2("destroy");
+          jQuery(citySelect).select2({
+            placeholder: "Select a city",
+            allowClear: true,
+            width: "resolve",
+            minimumResultsForSearch: 0,
+            dropdownAutoWidth: true,
+          });
 
-//           jQuery(citySelect).next(".select2-container").css({
-//             width: "100%",
-//             "max-width": "100%",
-//           });
-//         }
-//       }
+          jQuery(citySelect).next(".select2-container").css({
+            width: "100%",
+            "max-width": "100%",
+          });
+        }
+      }
 
-//       applySelect2();
+      applySelect2();
 
-//       citySelect.addEventListener("change", () => {
-//         cityInput.value = citySelect.value;
-//         cityInput.dispatchEvent(new Event("input", { bubbles: true }));
-//       });
-//     }
+      citySelect.addEventListener("change", () => {
+        cityInput.value = citySelect.value;
+        cityInput.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    }
 
-//     const citySelect = cityFieldWrapper.querySelector(
-//       'select[name="city-dropdown"]'
-//     );
-//     let lastState = chosenSpan.textContent.trim();
+    const citySelect = cityFieldWrapper.querySelector(
+      'select[name="city-dropdown"]'
+    );
+    let lastState = chosenSpan.textContent.trim();
 
-//     // Function to fetch and populate cities
-//     function fetchAndPopulateCities(stateName, preselectValue = null) {
-//       if (!stateName) return;
+    // Function to fetch and populate cities
+    function fetchAndPopulateCities(stateName, preselectValue = null) {
+      if (!stateName) return;
 
-//       const baseUrl = `${window.location.origin}/wp-admin/admin-ajax.php`;
+      const baseUrl = `${window.location.origin}/wp-admin/admin-ajax.php`;
 
-//       fetch(baseUrl, {
-//         method: "POST",
-//         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-//         body: new URLSearchParams({
-//           action: "get_cities_by_state",
-//           state_name: stateName,
-//         }),
-//       })
-//         .then((res) => res.json())
-//         .then((data) => {
-//           citySelect.innerHTML = `<option value="">Select a city</option>`;
-//           if (data.success && data.data?.cities?.length) {
-//             data.data.cities.forEach((city) => {
-//               const opt = document.createElement("option");
-//               opt.value = city.name;
-//               opt.textContent = city.name;
-//               citySelect.appendChild(opt);
-//             });
-//           }
+      fetch(baseUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          action: "get_cities_by_state",
+          state_name: stateName,
+        }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          citySelect.innerHTML = `<option value="">Select a city</option>`;
+          if (data.success && data.data?.cities?.length) {
+            data.data.cities.forEach((city) => {
+              const opt = document.createElement("option");
+              opt.value = city.name;
+              opt.textContent = city.name;
+              citySelect.appendChild(opt);
+            });
+          }
 
-//           citySelect.appendChild(new Option("Other", "Other"));
+          citySelect.appendChild(new Option("Other", "Other"));
 
-//           applySelect2();
+          applySelect2();
 
-//           // If there's a preselect value (e.g., from initial cityInput.value), set it
-//           if (preselectValue) {
-//             // Check if the preselectValue exists in the options
-//             const optionExists = Array.from(citySelect.options).some(
-//               (opt) => opt.value === preselectValue
-//             );
-//             if (optionExists) {
-//               jQuery(citySelect).val(preselectValue).trigger("change");
-//             } else {
-//               // If not found, select "Other" and set the input value manually
-//               jQuery(citySelect).val("Other").trigger("change");
-//               cityInput.value = preselectValue;
-//               cityInput.dispatchEvent(new Event("input", { bubbles: true }));
-//             }
-//           } else {
-//             jQuery(citySelect).trigger("change");
-//           }
-//         })
-//         .catch((err) => {
-//         });
-//     }
+          // If there's a preselect value (e.g., from initial cityInput.value), set it
+          if (preselectValue) {
+            // Check if the preselectValue exists in the options
+            const optionExists = Array.from(citySelect.options).some(
+              (opt) => opt.value === preselectValue
+            );
+            if (optionExists) {
+              jQuery(citySelect).val(preselectValue).trigger("change");
+            } else {
+              // If not found, select "Other" and set the input value manually
+              jQuery(citySelect).val("Other").trigger("change");
+              cityInput.value = preselectValue;
+              cityInput.dispatchEvent(new Event("input", { bubbles: true }));
+            }
+          } else {
+            jQuery(citySelect).trigger("change");
+          }
+        })
+        .catch((err) => {
+        });
+    }
 
-//     const observer = new MutationObserver(() => {
-//       const currentState = chosenSpan.textContent.trim();
-//       if (currentState !== lastState && currentState !== "") {
-//         lastState = currentState;
-//         fetchAndPopulateCities(currentState);
-//       }
-//     });
+    const observer = new MutationObserver(() => {
+      const currentState = chosenSpan.textContent.trim();
+      if (currentState !== lastState && currentState !== "") {
+        lastState = currentState;
+        fetchAndPopulateCities(currentState);
+      }
+    });
 
-//     observer.observe(chosenSpan, {
-//       characterData: true,
-//       childList: true,
-//       subtree: true,
-//     });
+    observer.observe(chosenSpan, {
+      characterData: true,
+      childList: true,
+      subtree: true,
+    });
 
-//     // Initial fetch if state is already selected
-//     const initialState = chosenSpan.textContent.trim();
-//     const initialCity = cityInput.value.trim();
-//     if (initialState !== "") {
-//       lastState = initialState;
-//       fetchAndPopulateCities(initialState, initialCity);
-//     }
-//   }
+    // Initial fetch if state is already selected
+    const initialState = chosenSpan.textContent.trim();
+    const initialCity = cityInput.value.trim();
+    if (initialState !== "") {
+      lastState = initialState;
+      fetchAndPopulateCities(initialState, initialCity);
+    }
+  }
 
-//   requestAnimationFrame(waitForFieldsAndInit);
-// });
+  requestAnimationFrame(waitForFieldsAndInit);
+});
 
