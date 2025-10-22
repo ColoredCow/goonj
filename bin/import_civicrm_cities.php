@@ -28,6 +28,55 @@ require_once __DIR__ . '/../wp-config.php';
 
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
+/**
+ * Attempt to include CiviCRM settings so we can connect using its DSN when available.
+ */
+$potentialSettings = [];
+if (defined('CIVICRM_SETTINGS_PATH')) {
+    $potentialSettings[] = rtrim(CIVICRM_SETTINGS_PATH, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'civicrm.settings.php';
+}
+if (defined('WP_CONTENT_DIR')) {
+    $potentialSettings[] = WP_CONTENT_DIR . '/uploads/civicrm/civicrm.settings.php';
+}
+$potentialSettings[] = __DIR__ . '/../wp-content/uploads/civicrm/civicrm.settings.php';
+
+foreach ($potentialSettings as $settingsPath) {
+    if (is_readable($settingsPath)) {
+        require_once $settingsPath;
+        break;
+    }
+}
+
+$resolveDsn = static function (string $dsn): array {
+    $parts = parse_url($dsn);
+    if ($parts === false) {
+        throw new RuntimeException("Unable to parse CIVICRM_DSN value: {$dsn}");
+    }
+
+    $host = $parts['host'] ?? 'localhost';
+    $user = $parts['user'] ?? '';
+    $password = $parts['pass'] ?? '';
+    $database = isset($parts['path']) ? ltrim($parts['path'], '/') : '';
+    $port = isset($parts['port']) ? (int) $parts['port'] : (int) ini_get('mysqli.default_port');
+    $socket = null;
+
+    if (!empty($parts['query'])) {
+        parse_str($parts['query'], $query);
+        if (isset($query['socket'])) {
+            $socket = $query['socket'];
+        }
+    }
+
+    return [
+        'host' => $host,
+        'user' => $user,
+        'password' => $password,
+        'database' => $database,
+        'port' => $port,
+        'socket' => $socket,
+    ];
+};
+
 $defaultPath = __DIR__ . '/Newcitydata.csv';
 $inputPath = $argv[1] ?? $defaultPath;
 
@@ -44,7 +93,27 @@ if (!is_readable($inputPath)) {
     exit(1);
 }
 
-$db = @new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+$dbConfig = null;
+if (defined('CIVICRM_DSN')) {
+    try {
+        $dbConfig = $resolveDsn(CIVICRM_DSN);
+    } catch (RuntimeException $e) {
+        fwrite(STDERR, $e->getMessage() . "\nFalling back to WordPress database credentials.\n");
+    }
+}
+
+if ($dbConfig !== null) {
+    $db = @new mysqli(
+        $dbConfig['host'],
+        $dbConfig['user'],
+        $dbConfig['password'],
+        $dbConfig['database'],
+        $dbConfig['port'] > 0 ? $dbConfig['port'] : ini_get('mysqli.default_port'),
+        $dbConfig['socket']
+    );
+} else {
+    $db = @new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+}
 if ($db->connect_errno) {
     fwrite(
         STDERR,
