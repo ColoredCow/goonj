@@ -1896,8 +1896,41 @@ class CollectionCampService extends AutoSubscriber {
   public static function sendCampOutcomeAckEmailAfter5Days($collectionCamp) {
     $campId = $collectionCamp['id'];
 
-    $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
+    // Fetch Event Volunteer
+    $volunteeringActivities = Activity::get(FALSE)
+    ->addSelect('activity_contact.contact_id')
+    ->addJoin('ActivityContact AS activity_contact', 'LEFT')
+    ->addWhere('activity_type_id:name', '=', 'Volunteering')
+    ->addWhere('Volunteering_Activity.Collection_Camp', '=', $campId)
+    ->addWhere('activity_contact.record_type_id', '=', 3)
+    ->execute();
 
+    // Collect volunteer contact IDs
+    $volunteerContactIds = [];
+    foreach ($volunteeringActivities as $volunteer) {
+        $volunteerContactIds[] = $volunteer['activity_contact.contact_id'];
+    }
+
+    // Fetch volunteer emails (if any volunteers found)
+    $eventVolunteerEmails = [];
+    if (!empty($volunteerContactIds)) {
+        $volunteerContacts = Contact::get(FALSE)
+            ->addSelect('email.email')
+            ->addJoin('Email AS email', 'LEFT')
+            ->addWhere('id', 'IN', $volunteerContactIds)
+            ->execute();
+
+        foreach ($volunteerContacts as $contact) {
+            if (!empty($contact['email.email'])) {
+                $eventVolunteerEmails[] = $contact['email.email'];
+            }
+        }
+    }
+
+    // Convert to comma-separated string for CC
+    $eventVolunteerCC = implode(',', $eventVolunteerEmails);
+
+    $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
       ->addSelect('Collection_Camp_Intent_Details.Location_Area_of_camp', 'Core_Contribution_Details.Number_of_unique_contributors', 'Camp_Outcome.Rate_the_camp', 'Camp_Outcome.Total_Fundraised_form_Activity', 'Collection_Camp_Intent_Details.Start_Date', 'title', 'Collection_Camp_Intent_Details.End_Date')
       ->addWhere('id', '=', $campId)
       ->execute()->single();
@@ -1971,6 +2004,7 @@ class CollectionCampService extends AutoSubscriber {
       'toEmail' => $attendeeEmail,
       'replyTo' => self::getFromAddress(),
       'html' => self::getCampOutcomeAckEmailAfter5Days($attendeeName, $campAddress, $campStartDate, $totalAmount, $materialGeneratedHtml, $uniqueContributors, $campRating, $fundsGenerated, $campId, $campEndDate),
+      'CC' => $eventVolunteerCC,
     ];
 
     $emailSendResult = \CRM_Utils_Mail::send($mailParams);
