@@ -90,7 +90,7 @@ class MaterialContributionService extends AutoSubscriber {
     }
 
     $contactData = Contact::get(FALSE)
-      ->addSelect('email_primary.email', 'phone_primary.phone')
+      ->addSelect('email_primary.email', 'phone_primary.phone', 'address_primary.street_address')
       ->addWhere('id', '=', $params['contactId'])
       ->execute()->single();
 
@@ -98,13 +98,14 @@ class MaterialContributionService extends AutoSubscriber {
 
     $email = $contactData['email_primary.email'] ?? 'N/A';
     $phone = $contactData['phone_primary.phone'] ?? 'N/A';
+    $contributorAddress = $contactData['address_primary.street_address'] ?? 'N/A';
 
     if (!$contribution) {
       return;
     }
     $eventId = $contribution['Material_Contribution.Event'];
 
-    $html = self::generateContributionReceiptHtml($contribution, $email, $phone, $locationAreaOfCamp, $contributionDate, $subtype, $eventId, $goonjOfficeId);
+    $html = self::generateContributionReceiptHtml($contribution, $email, $phone, $locationAreaOfCamp, $contributionDate, $subtype, $eventId, $goonjOfficeId, $contributorAddress);
     $fileName = 'material_contribution_' . $contribution['id'] . '.pdf';
     $params['attachments'][] = \CRM_Utils_Mail::appendPDF($fileName, $html);
   }
@@ -197,7 +198,7 @@ class MaterialContributionService extends AutoSubscriber {
    * @return string
    *   The generated HTML.
    */
-  public static function generateContributionReceiptHtml($activity, $email, $phone, $locationAreaOfCamp, $contributionDate, $subtype, $eventId, $goonjOfficeId) {
+  public static function generateContributionReceiptHtml($activity, $email, $phone, $locationAreaOfCamp, $contributionDate, $subtype, $eventId, $goonjOfficeId, $contributorAddress) {
     $activityDate = date("F j, Y", strtotime($activity['activity_date_time']));
     $receivedOnDate = !empty($contributionDate)
     ? date("F j, Y", strtotime($contributionDate))
@@ -291,6 +292,10 @@ class MaterialContributionService extends AutoSubscriber {
           <tr>
             <td class="table-header">Phone</td>
             <td style="text-align: center;">{$phone}</td>
+          </tr>
+          <tr>
+            <td class="table-header">Contributor Address</td>
+            <td style="text-align: center;">{$contributorAddress}</td>
           </tr>
           {$deliveredByRow}
         </tr>
