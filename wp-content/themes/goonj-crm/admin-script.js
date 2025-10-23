@@ -180,38 +180,62 @@ function injectCityDropdown() {
   }
 
   function loadCities(stateName, citySelect, cityInput, applySelect2) {
-    const baseUrl = `${window.location.origin}/wp-admin/admin-ajax.php`;
-    fetch(baseUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        action: "get_cities_by_state",
-        state_name: stateName,
-      }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        citySelect.innerHTML = `<option value="">Select a city</option>`;
-        if (data.success && data.data?.cities?.length) {
-          data.data.cities.forEach((city) => {
-            const opt = document.createElement("option");
-            opt.value = city.name;
-            opt.textContent = city.name;
-            citySelect.appendChild(opt);
-          });
+  const baseUrl = `${window.location.origin}/wp-admin/admin-ajax.php`;
+  fetch(baseUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      action: "get_cities_by_state",
+      state_name: stateName,
+    }),
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      citySelect.innerHTML = `<option value="">Select a city</option>`;
+      if (data.success && data.data?.cities?.length) {
+        data.data.cities.forEach((city) => {
+          const opt = document.createElement("option");
+          opt.value = city.name;
+          opt.textContent = city.name;
+          citySelect.appendChild(opt);
+        });
+      }
+      citySelect.appendChild(new Option("Other", "Other"));
+      applySelect2();
+
+      const currentVal = (cityInput.value || "").trim();
+      if (currentVal) {
+        const options = Array.from(citySelect.options);
+        const hasExact =
+          options.some(
+            (o) => (o.value || "").toLowerCase() === currentVal.toLowerCase()
+          );
+
+        if (!hasExact) {
+          const unmatchedOpt = new Option(`${currentVal} (incorrect city name)`, currentVal, true, true);
+          unmatchedOpt.dataset.unmatched = "1";
+          citySelect.insertBefore(unmatchedOpt, citySelect.options[1] || null);
         }
-        citySelect.appendChild(new Option("Other", "Other"));
-        applySelect2();
-        if (cityInput.value) {
-          jQuery(citySelect).val(cityInput.value).trigger("change");
+
+        if (window.jQuery) {
+          jQuery(citySelect).val(currentVal).trigger("change");
         } else {
-          jQuery(citySelect).trigger("change");
+          citySelect.value = currentVal;
+          citySelect.dispatchEvent(new Event("change", { bubbles: true }));
         }
-      })
-      .catch((err) => {
-        console.error("City dropdown error:", err);
-      });
-  }
+      } else {
+        if (window.jQuery) {
+          jQuery(citySelect).val("").trigger("change");
+        } else {
+          citySelect.value = "";
+          citySelect.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+      }
+    })
+    .catch((err) => {
+      console.error("City dropdown error:", err);
+    });
+}
 
   waitForElementsAndInject();
 }
