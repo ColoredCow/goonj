@@ -2004,7 +2004,7 @@ class CollectionCampService extends AutoSubscriber {
       'toEmail' => $attendeeEmail,
       'replyTo' => self::getFromAddress(),
       'html' => self::getCampOutcomeAckEmailAfter5Days($attendeeName, $campAddress, $campStartDate, $totalAmount, $materialGeneratedHtml, $uniqueContributors, $campRating, $fundsGenerated, $campId, $campEndDate),
-      'CC' => $eventVolunteerCC,
+      'cc' => $eventVolunteerCC,
     ];
 
     $emailSendResult = \CRM_Utils_Mail::send($mailParams);
