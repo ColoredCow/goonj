@@ -7,6 +7,7 @@
 use Civi\Api4\Contact;
 use Civi\Api4\EckEntity;
 use Civi\Api4\OptionValue;
+use Civi\Api4\Activity;
 
 /**
  * Goonjcustom.VolunteerFeedbackCollectionCampCron API specification (optional)
@@ -68,6 +69,40 @@ function civicrm_api3_goonjcustom_volunteer_feedback_collection_camp_cron($param
       $initiatorId = $camp['Collection_Camp_Core_Details.Contact_Id'];
       $campAddress = $camp['Collection_Camp_Intent_Details.Location_Area_of_camp'];
 
+      // Fetch Event Volunteer
+      $volunteeringActivities = Activity::get(FALSE)
+      ->addSelect('activity_contact.contact_id')
+      ->addJoin('ActivityContact AS activity_contact', 'LEFT')
+      ->addWhere('activity_type_id:name', '=', 'Volunteering')
+      ->addWhere('Volunteering_Activity.Collection_Camp', '=', $collectionCampId)
+      ->addWhere('activity_contact.record_type_id', '=', 3)
+      ->execute();
+
+      // Collect volunteer contact IDs
+      $volunteerContactIds = [];
+      foreach ($volunteeringActivities as $volunteer) {
+          $volunteerContactIds[] = $volunteer['activity_contact.contact_id'];
+      }
+
+      // Fetch volunteer emails (if any volunteers found)
+      $eventVolunteerEmails = [];
+      if (!empty($volunteerContactIds)) {
+          $volunteerContacts = Contact::get(FALSE)
+              ->addSelect('email.email')
+              ->addJoin('Email AS email', 'LEFT')
+              ->addWhere('id', 'IN', $volunteerContactIds)
+              ->execute();
+
+          foreach ($volunteerContacts as $contact) {
+              if (!empty($contact['email.email'])) {
+                  $eventVolunteerEmails[] = $contact['email.email'];
+              }
+          }
+      }
+
+      // Convert to comma-separated string for CC
+      $eventVolunteerCC = implode(',', $eventVolunteerEmails);
+
       // Get recipient email and name.
       $campAttendedBy = Contact::get(TRUE)
         ->addSelect('email.email', 'display_name')
@@ -86,6 +121,7 @@ function civicrm_api3_goonjcustom_volunteer_feedback_collection_camp_cron($param
           'toEmail' => $contactEmailId,
           'replyTo' => $from,
           'html' => goonjcustom_volunteer_feedback_collection_camp_email_html($organizingContactName, $collectionCampId, $campAddress),
+          'cc' => $eventVolunteerCC,
         ];
         $feedbackEmailSendResult = CRM_Utils_Mail::send($mailParams);
 
@@ -113,7 +149,7 @@ function goonjcustom_volunteer_feedback_collection_camp_email_html($organizingCo
   $homeUrl = \CRM_Utils_System::baseCMSURL();
 
   // URL for the volunteer feedback form.
-  $campVolunteerFeedback = $homeUrl . 'volunteer-camp-feedback/#?Eck_Collection_Camp1=' . $collectionCampId;
+  $campVolunteerFeedback = $homeUrl . 'volunteer-camp-feedback/#?Collection_Source_Feedback.Collection_Camp_Code=' . $collectionCampId . '&Collection_Source_Feedback.Collection_Camp_Address=' . urlencode($campAddress);
 
   $html = "
       <p>Dear $organizingContactName,</p>
