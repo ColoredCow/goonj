@@ -289,8 +289,8 @@ class CollectionCampService extends AutoSubscriber {
       ],
       'campFeedback' => [
         'title' => ts('Volunteer Feedback'),
-        'module' => 'afsearchVolunteerFeedback',
-        'directive' => 'afsearch-volunteer-feedback',
+        'module' => 'afsearchVolunteerFeedback1',
+        'directive' => 'afsearch-volunteer-feedback1',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp/Feedback.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts'],
       ],
