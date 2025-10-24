@@ -345,6 +345,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const cityFieldWrapper =
       document.querySelector('af-field[name="city"]') ||
+      document.querySelector('af-field[name="Collection_Camp_Intent_Details.City"]') ||
       document.querySelector('af-field[name="Goonj_Activities.City"]') ||
       document.getElementById("editrow-city-Primary") ||
       Array.from(document.querySelectorAll("label"))
