@@ -1,4 +1,67 @@
-// Consolidated DOMContentLoaded listener
+(function injectCityDropdownCSS() {
+  const css = `
+    .citydd { position: relative; font-family: inherit; }
+
+    .citydd-toggle {
+      -webkit-appearance: none; appearance: none;   /* prevent UA button styles (blue fills) */
+      width: 100%;
+      min-height: 40px;
+      border: 1px solid #c9c9c9;
+      border-radius: 10px;
+      padding: 10px 36px 10px 12px;
+      background: #f7f7f7;                          /* locked neutral background */
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      line-height: 1.2;
+      outline: none;                                /* we add our own focus */
+      -webkit-tap-highlight-color: transparent;     /* remove mobile blue flash */
+    }
+
+    .crm-container .citydd-toggle {
+    background: #fff !important;
+    border: 1px solid #c9c9c9;
+    }
+
+    .citydd-toggle::-moz-focus-inner { border: 0; }
+
+    /* Custom accessible focus ring WITHOUT blue fill */
+    .citydd-toggle:focus,
+    .citydd-toggle:focus-visible,
+    .citydd-toggle:active {
+      box-shadow: none !important;
+      outline: 2px solid #808080;
+      outline-offset: 2px;
+    }
+
+    .citydd-toggle .citydd-caret { position:absolute; right:12px; pointer-events:none; }
+
+    .citydd-panel {
+      position: absolute; z-index: 1000; top: calc(100% + 4px); left: 0; right: 0;
+      background: #fff; border: 1px solid #ccc; border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.12); display: none;
+    }
+    .citydd.open .citydd-panel { display: block; }
+
+    .citydd-search {
+      width: 100% !important; border: 0; padding: 12px;
+      border-top-left-radius: 10px; border-top-right-radius: 10px;
+      font-size: 14px;
+    }
+    .citydd-list { max-height: 260px; overflow: auto; margin: 0; padding: 6px 0; list-style: none; padding-left: 0 !important; }
+    .citydd-item { padding: 10px 12px; cursor: pointer; }
+    .citydd-item[aria-selected="true"] { font-weight: 600; }
+    .citydd-item:hover, .citydd-item[aria-current="true"] { background: #f5f5f5; }
+    .citydd-empty { padding: 12px; color: #777; }
+    .citydd .citydd-label { color: #111; }          /* selected text color like native input */
+  `;
+  const style = document.createElement('style');
+  style.textContent = css;
+  document.head.appendChild(style);
+})();
+
+/* ---------- Consolidated DOMContentLoaded listener ---------- */
 document.addEventListener("DOMContentLoaded", function () {
   // Message handling
   handleUrlMessages();
@@ -30,9 +93,7 @@ function handleUrlMessages() {
 					  <p class="fw-600 font-sans fz-20 mb-6">You are not registered as a volunteer with us.</p>
 					  <p class="fw-400 font-sans fz-16 mt-0 mb-24">To set up a collection camp, please take a moment to fill out the volunteer registration form below. We can't wait to have you on board!</p>
 				  `;
-      } else if (
-        message === "waiting-induction-collection-camp"
-      ) {
+      } else if (message === "waiting-induction-collection-camp") {
         messageDiv.innerHTML = `
 		  <p class="fw-600 font-sans fz-20 mb-6">your induction is pending.</p>
 		  <p class="fw-400 font-sans fz-16 mt-0 mb-24"></p>
@@ -120,26 +181,27 @@ function setupFormValidation() {
 
       if (input) {
         const form = input.closest("form");
+        if (!form) return;
 
         if (form) {
-          form.addEventListener("submit", function (event) {
-            const value = input.value.trim();
+        form.addEventListener("submit", function (event) {
+          const value = input.value.trim();
 
-            // If the field is required, validate it
-            if (field.required && !value) {
-              event.preventDefault();
-              alert(`${field.labelText} is required.`);
-              input.focus();
-              return;
-            }
+          // If the field is required, validate it
+          if (field.required && !value) {
+            event.preventDefault();
+            alert(`${field.labelText} is required.`);
+            input.focus();
+            return;
+          }
 
-            // If the field has a regex validation, apply it only when value is present
-            if (value && field.regex && !field.regex.test(value)) {
-              event.preventDefault();
-              alert(field.errorMessage);
-              input.focus();
-            }
-          });
+          // If the field has a regex validation, apply it only when value is present
+          if (value && field.regex && !field.regex.test(value)) {
+            event.preventDefault();
+            alert(field.errorMessage);
+            input.focus();
+          }
+        });
         }
       }
     }
@@ -266,19 +328,11 @@ document.addEventListener("DOMContentLoaded", function () {
     const stateFieldWrapper =
       document.querySelector('af-field[name="state_province_id"]') ||
       document.getElementById("editrow-state_province-Primary") ||
-      document.querySelector(
-        'af-field[name="Institution_Collection_Camp_Intent.State"]'
-      ) ||
-      document.querySelector(
-        'af-field[name="Institution_Dropping_Center_Intent.State"]'
-      ) ||
-      document.querySelector(
-        'af-field[name="Collection_Camp_Intent_Details.State"]'
-      ) ||
+      document.querySelector('af-field[name="Institution_Collection_Camp_Intent.State"]') ||
+      document.querySelector('af-field[name="Institution_Dropping_Center_Intent.State"]') ||
+      document.querySelector('af-field[name="Collection_Camp_Intent_Details.State"]') ||
       document.querySelector('af-field[name="Dropping_Centre.State"]') ||
-      document.querySelector(
-        'af-field[name="Institution_Goonj_Activities.State"]'
-      ) ||
+      document.querySelector('af-field[name="Institution_Goonj_Activities.State"]') ||
       document.querySelector('af-field[name="Goonj_Activities.State"]') ||
       document.querySelector('af-field[name="Urban_Planned_Visit.State"]') ||
       Array.from(document.querySelectorAll("label"))
@@ -304,57 +358,21 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    if (!cityFieldWrapper.querySelector('select[name="city-dropdown"]')) {
-      cityInput.style.display = "none";
+    // Keep the original input hidden: we sync its value from the custom dropdown.
+    cityInput.style.display = "none";
 
-      const citySelect = document.createElement("select");
-      citySelect.className = "form-control";
-      citySelect.name = "city-dropdown";
-      citySelect.style.width = "100%";
-      citySelect.style.maxWidth = "100%";
-      citySelect.innerHTML = `
-        <option value="">Select a city</option>
-        <option value="Other">Other</option>
-      `;
-      cityInput.parentElement.appendChild(citySelect);
-
-      function applySelect2() {
-        if (window.jQuery && jQuery.fn.select2) {
-          jQuery(citySelect).select2("destroy");
-          jQuery(citySelect).select2({
-            placeholder: "Select a city",
-            allowClear: true,
-            width: "resolve",
-            minimumResultsForSearch: 0,
-            dropdownAutoWidth: true,
-          });
-
-          jQuery(citySelect).next(".select2-container").css({
-            width: "100%",
-            "max-width": "100%",
-          });
-        }
-      }
-
-      applySelect2();
-
-      citySelect.addEventListener("change", () => {
-        cityInput.value = citySelect.value;
-        cityInput.dispatchEvent(new Event("input", { bubbles: true }));
-      });
+    if (!cityFieldWrapper.querySelector(".citydd")) {
+      const dd = buildCityDropdown(cityInput);
+      cityInput.parentElement.appendChild(dd.wrapper);
     }
 
-    const citySelect = cityFieldWrapper.querySelector(
-      'select[name="city-dropdown"]'
-    );
+    const ddRefs = getCityDropdownRefs(cityFieldWrapper);
     let lastState = chosenSpan.textContent.trim();
 
-    // Function to fetch and populate cities
     function fetchAndPopulateCities(stateName, preselectValue = null) {
       if (!stateName) return;
 
       const baseUrl = `${window.location.origin}/wp-admin/admin-ajax.php`;
-
       fetch(baseUrl, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -365,39 +383,15 @@ document.addEventListener("DOMContentLoaded", function () {
       })
         .then((res) => res.json())
         .then((data) => {
-          citySelect.innerHTML = `<option value="">Select a city</option>`;
-          if (data.success && data.data?.cities?.length) {
-            data.data.cities.forEach((city) => {
-              const opt = document.createElement("option");
-              opt.value = city.name;
-              opt.textContent = city.name;
-              citySelect.appendChild(opt);
-            });
-          }
-
-          citySelect.appendChild(new Option("Other", "Other"));
-
-          applySelect2();
-
-          // If there's a preselect value (e.g., from initial cityInput.value), set it
-          if (preselectValue) {
-            // Check if the preselectValue exists in the options
-            const optionExists = Array.from(citySelect.options).some(
-              (opt) => opt.value === preselectValue
-            );
-            if (optionExists) {
-              jQuery(citySelect).val(preselectValue).trigger("change");
-            } else {
-              // If not found, select "Other" and set the input value manually
-              jQuery(citySelect).val("Other").trigger("change");
-              cityInput.value = preselectValue;
-              cityInput.dispatchEvent(new Event("input", { bubbles: true }));
-            }
-          } else {
-            jQuery(citySelect).trigger("change");
-          }
+          const cityList =
+            data && data.success && data.data?.cities?.length
+              ? data.data.cities.map((c) => c.name)
+              : [];
+          if (!cityList.includes("Other")) cityList.push("Other");
+          populateCityDropdown(ddRefs, cityList, preselectValue);
         })
-        .catch((err) => {
+        .catch(() => {
+          populateCityDropdown(ddRefs, ["Other"], preselectValue);
         });
     }
 
@@ -409,11 +403,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
 
-    observer.observe(chosenSpan, {
-      characterData: true,
-      childList: true,
-      subtree: true,
-    });
+    observer.observe(chosenSpan, { characterData: true, childList: true, subtree: true });
 
     // Initial fetch if state is already selected
     const initialState = chosenSpan.textContent.trim();
@@ -424,6 +414,170 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
+  function buildCityDropdown(hiddenInput) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "citydd";
+    wrapper.setAttribute("data-citydd", "1");
+
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "citydd-toggle";
+    toggle.setAttribute("aria-haspopup", "listbox");
+    toggle.setAttribute("aria-expanded", "false");
+    toggle.innerHTML = `<span class="citydd-label">Select a city</span><span class="citydd-caret">▾</span>`;
+
+    const panel = document.createElement("div");
+    panel.className = "citydd-panel";
+
+    const search = document.createElement("input");
+    search.type = "text";
+    search.className = "citydd-search";
+    search.placeholder = "Search city...";
+
+    const list = document.createElement("ul");
+    list.className = "citydd-list";
+    list.setAttribute("role", "listbox");
+
+    const empty = document.createElement("div");
+    empty.className = "citydd-empty";
+    empty.textContent = "No matches";
+
+    panel.appendChild(search);
+    panel.appendChild(list);
+    panel.appendChild(empty);
+    wrapper.appendChild(toggle);
+    wrapper.appendChild(panel);
+
+    function open() {
+      wrapper.classList.add("open");
+      toggle.setAttribute("aria-expanded", "true");
+      setTimeout(() => search.focus(), 0);
+    }
+    function close() {
+      wrapper.classList.remove("open");
+      toggle.setAttribute("aria-expanded", "false");
+      toggle.focus();
+    }
+
+    toggle.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (wrapper.classList.contains("open")) close(); else open();
+    });
+
+    toggle.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowDown" || e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        open();
+      }
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!wrapper.contains(e.target) && wrapper.classList.contains("open")) close();
+    });
+
+    return { wrapper, toggle, panel, search, list, empty, hiddenInput };
+  }
+
+  function getCityDropdownRefs(container) {
+    const wrapper = container.querySelector(".citydd");
+    return {
+      wrapper,
+      toggle: wrapper.querySelector(".citydd-toggle"),
+      panel: wrapper.querySelector(".citydd-panel"),
+      search: wrapper.querySelector(".citydd-search"),
+      list: wrapper.querySelector(".citydd-list"),
+      empty: wrapper.querySelector(".citydd-empty"),
+      labelEl: wrapper.querySelector(".citydd-label"),
+      hiddenInput: container.querySelector('input[type="text"]'),
+    };
+  }
+
+  /* ---------- Populate & wire up behavior ---------- */
+  function populateCityDropdown(dd, cities, preselectValue) {
+    dd.list.innerHTML = "";
+
+    const items = cities.map((name) => {
+      const li = document.createElement("li");
+      li.className = "citydd-item";
+      li.setAttribute("role", "option");
+      li.setAttribute("tabindex", "-1");
+      li.textContent = name;
+      li.dataset.value = name;
+      dd.list.appendChild(li);
+      return li;
+    });
+
+    const filter = (q) => {
+      const query = q.trim().toLowerCase();
+      items.forEach((li) => {
+        const match = li.textContent.toLowerCase().includes(query);
+        li.style.display = match ? "" : "none";
+        li.removeAttribute("aria-current");
+      });
+      const firstVisible = items.find((li) => li.style.display !== "none");
+      dd.empty.style.display = firstVisible ? "none" : "block";
+      if (firstVisible) firstVisible.setAttribute("aria-current", "true");
+    };
+
+    dd.search.value = "";
+    dd.empty.style.display = "none";
+    filter("");
+
+    function selectValue(value, fromKeyboard = false) {
+      dd.hiddenInput.value = value;
+      dd.hiddenInput.dispatchEvent(new Event("input", { bubbles: true }));
+      dd.labelEl.textContent = value;
+
+      Array.from(dd.list.children).forEach((li) => {
+        li.setAttribute("aria-selected", li.dataset.value === value ? "true" : "false");
+      });
+
+      dd.wrapper.classList.remove("open");
+      dd.toggle.setAttribute("aria-expanded", "false");
+      if (!fromKeyboard) dd.toggle.focus();
+    }
+
+    items.forEach((li) => {
+      li.addEventListener("click", () => selectValue(li.dataset.value));
+    });
+
+    dd.search.addEventListener("keydown", (e) => {
+      const visibleItems = items.filter((li) => li.style.display !== "none");
+      const currentIdx = visibleItems.findIndex((li) => li.getAttribute("aria-current") === "true");
+
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        const next = visibleItems[Math.min(currentIdx + 1, visibleItems.length - 1)];
+        visibleItems.forEach((li) => li.removeAttribute("aria-current"));
+        if (next) next.setAttribute("aria-current", "true");
+        next?.scrollIntoView({ block: "nearest" });
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        const prev = visibleItems[Math.max(currentIdx - 1, 0)];
+        visibleItems.forEach((li) => li.removeAttribute("aria-current"));
+        if (prev) prev.setAttribute("aria-current", "true");
+        prev?.scrollIntoView({ block: "nearest" });
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        const current = visibleItems[currentIdx >= 0 ? currentIdx : 0];
+        if (current) selectValue(current.dataset.value, true);
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        dd.wrapper.classList.remove("open");
+        dd.toggle.setAttribute("aria-expanded", "false");
+        dd.toggle.focus();
+      }
+    });
+
+    dd.search.addEventListener("input", (e) => filter(e.target.value));
+
+    if (preselectValue) {
+      const exists = items.some((li) => li.dataset.value === preselectValue);
+      selectValue(exists ? preselectValue : "Other");
+    } else {
+      dd.labelEl.textContent = "Select a city";
+    }
+  }
+
   requestAnimationFrame(waitForFieldsAndInit);
 });
-
