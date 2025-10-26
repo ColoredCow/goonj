@@ -324,38 +324,146 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 document.addEventListener("DOMContentLoaded", function () {
+  function findAllStateCityPairs() {
+    const pairs = [];
+    
+    const stateSelectors = [
+      'af-field[name="state_province_id"]',
+      'af-field[name="Institution_Collection_Camp_Intent.State"]',
+      'af-field[name="Institution_Dropping_Center_Intent.State"]',
+      'af-field[name="Collection_Camp_Intent_Details.State"]',
+      'af-field[name="Dropping_Centre.State"]',
+      'af-field[name="Institution_Goonj_Activities.State"]',
+      'af-field[name="Goonj_Activities.State"]',
+      'af-field[name="Urban_Planned_Visit.State"]',
+    ];
+    
+    const citySelectors = [
+      'af-field[name="city"]',
+      'af-field[name="Collection_Camp_Intent_Details.City"]',
+      'af-field[name="Goonj_Activities.City"]',
+      'af-field[name="Institution_Dropping_Center_Intent.District_City"]',
+    ];
+
+    // Collect all state fields
+    const stateFields = [];
+    stateSelectors.forEach(selector => {
+      const elements = document.querySelectorAll(selector);
+      elements.forEach(el => {
+        if (!stateFields.includes(el)) {
+          stateFields.push(el);
+        }
+      });
+    });
+
+    // Also find by label
+    const stateLabelFields = Array.from(document.querySelectorAll("label"))
+      .filter((label) => label.textContent.trim() === "State" || label.textContent.trim() === "State *")
+      .map(label => label.closest("af-field"))
+      .filter(field => field && !stateFields.includes(field));
+    
+    stateFields.push(...stateLabelFields);
+
+    const cityFields = [];
+    citySelectors.forEach(selector => {
+      const elements = document.querySelectorAll(selector);
+      elements.forEach(el => {
+        if (!cityFields.includes(el)) {
+          cityFields.push(el);
+        }
+      });
+    });
+
+    const cityLabelFields = Array.from(document.querySelectorAll("label"))
+      .filter((label) => {
+        const text = label.textContent.trim();
+        return text.startsWith("City") || text.startsWith("District");
+      })
+      .map(label => label.closest("af-field"))
+      .filter(field => field && !cityFields.includes(field));
+    
+    cityFields.push(...cityLabelFields);
+
+    // Also check for standard editrow fields
+    const stateEditRow = document.getElementById("editrow-state_province-Primary");
+    if (stateEditRow && !stateFields.includes(stateEditRow)) {
+      stateFields.push(stateEditRow);
+    }
+    const cityEditRow = document.getElementById("editrow-city-Primary");
+    if (cityEditRow && !cityFields.includes(cityEditRow)) {
+      cityFields.push(cityEditRow);
+    }
+
+    // Match state and city fields by proximity (same parent or nearby in DOM)
+    stateFields.forEach(stateField => {
+      const chosenSpan = stateField?.querySelector(".select2-chosen") || 
+                        stateField?.querySelector('span[id^="select2-chosen"]');
+      
+      if (!chosenSpan) return;
+
+      let closestCity = null;
+      let minDistance = Infinity;
+
+      cityFields.forEach(cityField => {
+        const cityInput = cityField?.querySelector('input[type="text"]');
+        if (!cityInput || cityField.querySelector(".citydd")) return; // Skip if already initialized
+
+        const distance = Math.abs(
+          getDepth(stateField) - getDepth(cityField)
+        );
+
+        const sameParent = stateField.closest('fieldset') === cityField.closest('fieldset') ||
+                          stateField.closest('af-fieldset') === cityField.closest('af-fieldset');
+
+        if (sameParent && distance < minDistance) {
+          minDistance = distance;
+          closestCity = cityField;
+        } else if (!closestCity && distance < minDistance) {
+          minDistance = distance;
+          closestCity = cityField;
+        }
+      });
+
+      if (closestCity) {
+        const cityInput = closestCity.querySelector('input[type="text"]');
+        pairs.push({
+          stateFieldWrapper: stateField,
+          stateChosenSpan: chosenSpan,
+          cityFieldWrapper: closestCity,
+          cityInput: cityInput
+        });
+      }
+    });
+
+    return pairs;
+  }
+
+  function getDepth(element) {
+    let depth = 0;
+    let current = element;
+    while (current.parentElement) {
+      depth++;
+      current = current.parentElement;
+    }
+    return depth;
+  }
+
   function waitForFieldsAndInit() {
-    const stateFieldWrapper =
-      document.querySelector('af-field[name="state_province_id"]') ||
-      document.getElementById("editrow-state_province-Primary") ||
-      document.querySelector('af-field[name="Institution_Collection_Camp_Intent.State"]') ||
-      document.querySelector('af-field[name="Institution_Dropping_Center_Intent.State"]') ||
-      document.querySelector('af-field[name="Collection_Camp_Intent_Details.State"]') ||
-      document.querySelector('af-field[name="Dropping_Centre.State"]') ||
-      document.querySelector('af-field[name="Institution_Goonj_Activities.State"]') ||
-      document.querySelector('af-field[name="Goonj_Activities.State"]') ||
-      document.querySelector('af-field[name="Urban_Planned_Visit.State"]') ||
-      Array.from(document.querySelectorAll("label"))
-        .find((label) => label.textContent.trim() === "State")
-        ?.closest("af-field");
+    const pairs = findAllStateCityPairs();
 
-    const chosenSpan =
-      stateFieldWrapper?.querySelector(".select2-chosen") ||
-      stateFieldWrapper?.querySelector('span[id^="select2-chosen"]');
-
-    const cityFieldWrapper =
-      document.querySelector('af-field[name="city"]') ||
-      document.querySelector('af-field[name="Collection_Camp_Intent_Details.City"]') ||
-      document.querySelector('af-field[name="Goonj_Activities.City"]') ||
-      document.getElementById("editrow-city-Primary") ||
-      Array.from(document.querySelectorAll("label"))
-        .find((label) => label.textContent.trim().startsWith("City"))
-        ?.closest("af-field");
-
-    const cityInput = cityFieldWrapper?.querySelector('input[type="text"]');
-
-    if (!stateFieldWrapper || !chosenSpan || !cityFieldWrapper || !cityInput) {
+    if (pairs.length === 0) {
       requestAnimationFrame(waitForFieldsAndInit);
+      return;
+    }
+
+    // Initialize each pair
+    pairs.forEach(pair => {
+      initializeCityDropdown(pair);
+    });
+  }
+
+  function initializeCityDropdown({ stateFieldWrapper, stateChosenSpan, cityFieldWrapper, cityInput }) {
+    if (!stateFieldWrapper || !stateChosenSpan || !cityFieldWrapper || !cityInput) {
       return;
     }
 
@@ -368,7 +476,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     const ddRefs = getCityDropdownRefs(cityFieldWrapper);
-    let lastState = chosenSpan.textContent.trim();
+    let lastState = stateChosenSpan.textContent.trim();
 
     function fetchAndPopulateCities(stateName, preselectValue = null) {
       if (!stateName) return;
@@ -397,17 +505,17 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     const observer = new MutationObserver(() => {
-      const currentState = chosenSpan.textContent.trim();
+      const currentState = stateChosenSpan.textContent.trim();
       if (currentState !== lastState && currentState !== "") {
         lastState = currentState;
         fetchAndPopulateCities(currentState);
       }
     });
 
-    observer.observe(chosenSpan, { characterData: true, childList: true, subtree: true });
+    observer.observe(stateChosenSpan, { characterData: true, childList: true, subtree: true });
 
     // Initial fetch if state is already selected
-    const initialState = chosenSpan.textContent.trim();
+    const initialState = stateChosenSpan.textContent.trim();
     const initialCity = cityInput.value.trim();
     if (initialState !== "") {
       lastState = initialState;
