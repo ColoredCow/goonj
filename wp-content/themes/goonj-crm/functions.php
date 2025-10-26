@@ -50,13 +50,13 @@ function goonj_enqueue_admin_scripts() {
 		'goonj-admin-style',
 		get_template_directory_uri() . '/admin-style.css',
 		array(),
-		wp_get_theme()->get( 'Version' )
+		filemtime( get_template_directory() . '/admin-style.css' ),
 	);
 	wp_enqueue_script(
 		'goonj-admin-script',
 		get_template_directory_uri() . '/admin-script.js',
 		array( 'jquery' ),
-		wp_get_theme()->get( 'Version' ),
+		filemtime( get_template_directory() . '/admin-script.js' ),
 		true
 	);
 }
