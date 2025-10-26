@@ -59,69 +59,6 @@ setTimeout(function () {
   });
 }, 1500);
 
-(function injectCityDropdownCSS() {
-  const css = `
-    .citydd { position: relative; font-family: inherit; }
-
-    .citydd-toggle {
-      -webkit-appearance: none; appearance: none; 
-      width: 100%;
-      min-height: 40px;
-      border: 1px solid #c9c9c9;
-      border-radius: 10px;
-      padding: 10px 36px 10px 12px;
-      background: #f7f7f7;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      line-height: 1.2;
-      outline: none;
-      -webkit-tap-highlight-color: transparent;     /* remove mobile blue flash */
-    }
-
-    .crm-container .citydd-toggle {
-      background: #fff !important;
-      border: 1px solid #c9c9c9;
-    }
-
-    .citydd-toggle::-moz-focus-inner { border: 0; }
-
-    /* Custom accessible focus ring WITHOUT blue fill */
-    .citydd-toggle:focus,
-    .citydd-toggle:focus-visible,
-    .citydd-toggle:active {
-      box-shadow: none !important;
-      outline: 2px solid #808080;
-      outline-offset: 2px;
-    }
-
-    .citydd-toggle .citydd-caret { position:absolute; right:12px; pointer-events:none; }
-
-    .citydd-panel {
-      position: absolute; z-index: 1000; top: calc(100% + 4px); left: 0; right: 0;
-      background: #fff; border: 1px solid #ccc; border-radius: 10px;
-      box-shadow: 0 8px 24px rgba(0,0,0,.12); display: none;
-    }
-    .citydd.open .citydd-panel { display: block; }
-
-    .citydd-search {
-      width: 100% !important; border: 0; padding: 12px;
-      border-top-left-radius: 10px; border-top-right-radius: 10px;
-      font-size: 14px;
-    }
-    .citydd-list { max-height: 260px; overflow: auto; margin: 0; padding: 6px 0; list-style: none; padding-left: 0 !important; }
-    .citydd-item { padding: 10px 12px; cursor: pointer; }
-    .citydd-item[aria-selected="true"] { font-weight: 600; }
-    .citydd-item:hover, .citydd-item[aria-current="true"] { background: #f5f5f5; }
-    .citydd-empty { padding: 12px; color: #777; }
-    .citydd .citydd-label { color: #111; }          /* selected text color like native input */
-  `;
-  const style = document.createElement('style');
-  style.textContent = css;
-  document.head.appendChild(style);
-})();
-
 function injectCityDropdown() {
   function cleanLabelText(text) {
     return text.trim().replace(/\*$/, '').trim();
