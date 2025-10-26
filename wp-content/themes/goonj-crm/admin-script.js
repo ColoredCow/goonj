@@ -64,19 +64,19 @@ setTimeout(function () {
     .citydd { position: relative; font-family: inherit; }
 
     .citydd-toggle {
-      -webkit-appearance: none; appearance: none;   /* prevent UA button styles (blue fills) */
+      -webkit-appearance: none; appearance: none; 
       width: 100%;
       min-height: 40px;
       border: 1px solid #c9c9c9;
       border-radius: 10px;
       padding: 10px 36px 10px 12px;
-      background: #f7f7f7;                          /* locked neutral background */
+      background: #f7f7f7;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: space-between;
       line-height: 1.2;
-      outline: none;                                /* we add our own focus */
+      outline: none;
       -webkit-tap-highlight-color: transparent;     /* remove mobile blue flash */
     }
 
