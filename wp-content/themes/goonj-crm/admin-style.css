@@ -15,7 +15,7 @@
 }
 
 /* City Dropdown Styles */
-.citydd { position: relative; font-family: inherit; }
+.citydd { position: relative; font-family: inherit; border: 1px solid; border-color: grey !important; }
 
 .citydd-toggle {
   -webkit-appearance: none; appearance: none; 
