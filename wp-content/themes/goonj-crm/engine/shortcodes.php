@@ -546,7 +546,7 @@ function goonj_induction_slot_details() {
       ->execute()->single();
 
     // Exit if no activity found or the status is not "To be Scheduled".
-    if (!$inductionActivity || ($inductionActivity['status_id:name'] !== 'To be scheduled' && $inductionActivity['status_id:name'] !== 'Not Visited')) {
+    if (!$inductionActivity || ($inductionActivity['status_id:name'] !== 'To be scheduled' && $inductionActivity['status_id:name'] !== 'Not Visited' && $inductionActivity['status_id:name'] !== 'No_show')) {
       \Civi::log()->info('No valid activity found or status is not To be Scheduled', ['contact_id' => $source_contact_id]);
       return;
     }
