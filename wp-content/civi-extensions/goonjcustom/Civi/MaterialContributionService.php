@@ -282,8 +282,8 @@ class MaterialContributionService extends AutoSubscriber {
             <td style="text-align: center;">{$activity['contact.display_name']}</td>
           </tr>
           <tr>
-            <td class="table-header">Contribution Venue</td>
-            <td style="text-align: center;">{$locationAreaOfCamp}</td>
+            <td class="table-header">Address</td>
+            <td style="text-align: center;">{$contributorAddress}</td>
           </tr>
           <tr>
             <td class="table-header">Email</td>
@@ -294,8 +294,8 @@ class MaterialContributionService extends AutoSubscriber {
             <td style="text-align: center;">{$phone}</td>
           </tr>
           <tr>
-            <td class="table-header">Contributor Address</td>
-            <td style="text-align: center;">{$contributorAddress}</td>
+            <td class="table-header">Contribution Venue</td>
+            <td style="text-align: center;">{$locationAreaOfCamp}</td>
           </tr>
           {$deliveredByRow}
         </tr>
