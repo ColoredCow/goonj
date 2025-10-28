@@ -32,7 +32,7 @@ function handleUrlMessages() {
 				  `;
       } else if (message === "waiting-induction-collection-camp") {
         messageDiv.innerHTML = `
-		  <p class="fw-600 font-sans fz-20 mb-6">your induction is pending.</p>
+		  <p class="fw-600 font-sans fz-20 mb-6">Your induction is pending.</p>
 		  <p class="fw-400 font-sans fz-16 mt-0 mb-24"></p>
 		  `;
       }  
