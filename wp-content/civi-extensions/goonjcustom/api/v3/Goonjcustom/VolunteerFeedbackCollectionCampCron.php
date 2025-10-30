@@ -120,7 +120,7 @@ function civicrm_api3_goonjcustom_volunteer_feedback_collection_camp_cron($param
           'from' => $from,
           'toEmail' => $contactEmailId,
           'replyTo' => $from,
-          'html' => goonjcustom_volunteer_feedback_collection_camp_email_html($organizingContactName, $collectionCampId, $campAddress),
+          'html' => goonjcustom_volunteer_feedback_collection_camp_email_html($organizingContactName, $collectionCampId, $campAddress, $initiatorId),
           'cc' => $eventVolunteerCC,
         ];
         $feedbackEmailSendResult = CRM_Utils_Mail::send($mailParams);
@@ -145,11 +145,11 @@ function civicrm_api3_goonjcustom_volunteer_feedback_collection_camp_cron($param
 /**
  *
  */
-function goonjcustom_volunteer_feedback_collection_camp_email_html($organizingContactName, $collectionCampId, $campAddress) {
+function goonjcustom_volunteer_feedback_collection_camp_email_html($organizingContactName, $collectionCampId, $campAddress, $initiatorId) {
   $homeUrl = \CRM_Utils_System::baseCMSURL();
 
   // URL for the volunteer feedback form.
-  $campVolunteerFeedback = $homeUrl . 'volunteer-camp-feedback/#?Collection_Source_Feedback.Collection_Camp_Code=' . $collectionCampId . '&Collection_Source_Feedback.Collection_Camp_Address=' . urlencode($campAddress);
+  $campVolunteerFeedback = $homeUrl . 'volunteer-camp-feedback/#?Collection_Source_Feedback.Collection_Camp_Code=' . $collectionCampId . '&Collection_Source_Feedback.Collection_Camp_Address=' . urlencode($campAddress) . '&Collection_Source_Feedback.Filled_By=' . $initiatorId;
 
   $html = "
       <p>Dear $organizingContactName,</p>
