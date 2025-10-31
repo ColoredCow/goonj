@@ -21,7 +21,6 @@ function civicrm_api3_goonjcustom_update_collection_camp_status_cron($params) {
   $returnValues = [];
   $now = new DateTimeImmutable();
   $endOfDay = $now->setTime(23, 59, 59)->format('Y-m-d H:i:s');
-  $from = HelperService::getDefaultFromEmail();
 
   // Get all relevant collection camps.
   $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
