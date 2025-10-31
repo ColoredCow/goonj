@@ -29,7 +29,7 @@ function civicrm_api3_goonjcustom_update_institute_collection_camp_status_cron($
     ->addWhere('Camp_Outcome.Rate_the_camp', 'IS NOT NULL')
     ->addWhere('Collection_Camp_Core_Details.Status', '=', 'authorized')
     ->addWhere('Institution_Collection_Camp_Intent.Collections_will_end_on_Date_', '<=', $endOfDay)
-    ->addWhere('Institution_collection_camp_Review.Camp_Status', '=', 'planned')
+    ->addWhere('Institution_collection_camp_Review.Camp_Status', '=', 1)
     ->execute();
 
   foreach ($collectionCamps as $camp) {
@@ -52,7 +52,7 @@ function civicrm_api3_goonjcustom_update_institute_collection_camp_status_cron($
       $currentDate = date('Y-m-d');
       EckEntity::update('Collection_Camp', FALSE)
         ->addWhere('id', '=', $collectionCampId)
-        ->addValue('Institution_collection_camp_Review.Camp_Status', 'completed')
+        ->addValue('Institution_collection_camp_Review.Camp_Status', 3)
         ->execute();
 
       $returnValues[] = [
