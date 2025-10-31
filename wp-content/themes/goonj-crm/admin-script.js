@@ -130,6 +130,7 @@ function injectCityDropdown() {
       document.querySelector('af-field[name="Institution_Goonj_Activities.State"]') ||
       document.querySelector('af-field[name="Goonj_Activities.State"]') ||
       document.querySelector('af-field[name="Urban_Planned_Visit.State"]') ||
+      document.getElementById('editrow-state_province-Primary') ||
       document.querySelector('.editrow_state_province-Primary-section') ||
       Array.from(document.querySelectorAll("label"))
         .find((label) => cleanLabelText(label.textContent) === "State")
@@ -143,8 +144,8 @@ function injectCityDropdown() {
       document.querySelector('af-field[name="city"]') ||
       document.querySelector('af-field[name="Institution_Dropping_Center_Intent.District_City"]') ||
       document.querySelector('af-field[name="Goonj_Activities.City"]') ||
-      document.querySelector('.editrow_city-Primary-section') ||
       document.getElementById("editrow-city-Primary") ||
+      document.querySelector('.editrow_city-Primary-section') ||
       Array.from(document.querySelectorAll("label"))
         .find((label) => cleanLabelText(label.textContent) === "City")
         ?.closest("af-field") ||
@@ -160,7 +161,10 @@ function injectCityDropdown() {
         stateFieldWrapper?.querySelector('span[id^="select2-chosen"]');
 
       const cityFieldWrapper = findCityFieldWrapper();
-      const cityInput = cityFieldWrapper?.querySelector('input[type="text"]');
+      const cityInput = 
+        cityFieldWrapper?.querySelector('input[type="text"]') ||
+        cityFieldWrapper?.querySelector('input[id*="city"]') ||
+        document.getElementById("city-Primary");
 
       console.log({ stateFieldWrapper, stateChosenSpan, cityFieldWrapper, cityInput });
 
