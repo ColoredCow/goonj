@@ -56,7 +56,6 @@ class CollectionCampService extends AutoSubscriber {
       ['individualCreated'],
       ['assignChapterGroupToIndividual'],
       ['reGenerateCollectionCampQr'],
-      ['updateCampStatusOnOutcomeAndAckFilled'],
       ['assignChapterGroupToIndividualForContribution'],
       ['updateCampaignForCollectionSourceContribution'],
       ['generateInvoiceIdForContribution'],
@@ -1293,63 +1292,6 @@ class CollectionCampService extends AutoSubscriber {
         error_log('results: ' . print_r($results, TRUE));
 
       }
-    }
-  }
-
-  /**
-   * This hook is called after a db write on entities.
-   *
-   * @param string $op
-   *   The type of operation being performed.
-   * @param string $objectName
-   *   The name of the object.
-   * @param int $objectId
-   *   The unique identifier for the object.
-   * @param object $objectRef
-   *   The reference to the object.
-   */
-  public static function updateCampStatusOnOutcomeAndAckFilled(string $op, string $objectName, int $objectId, &$objectRef) {
-    if ($objectName !== 'AfformSubmission') {
-      return;
-    }
-
-    $afformName = $objectRef->afform_name;
-    if ($afformName !== 'afformFrontFacingAcknowledgementFormForLogistics' &&
-    $afformName !== 'afformAcknowledgementFormForLogistics') {
-      return;
-    }
-
-    $jsonData = $objectRef->data;
-    $dataArray = json_decode($jsonData, TRUE);
-
-    $collectionCampId = $dataArray['Eck_Collection_Source_Vehicle_Dispatch1'][0]['fields']['Camp_Vehicle_Dispatch.Collection_Camp'];
-
-    if (!$collectionCampId) {
-      return;
-    }
-
-    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Camp_Outcome.Rate_the_camp')
-      ->addWhere('id', '=', $collectionCampId)
-      ->execute()->first();
-
-    $campOutcome = $collectionCamp['Camp_Outcome.Rate_the_camp'] ?? NULL;
-
-    if (!$campOutcome) {
-      return;
-    }
-
-    try {
-      $currentDate = date('Y-m-d');
-      EckEntity::update('Collection_Camp', FALSE)
-        ->addWhere('id', '=', $collectionCampId)
-        ->addValue('Collection_Camp_Intent_Details.Camp_Status', 'completed')
-        ->addValue('Camp_Outcome.Camp_Status_Completion_Date', $currentDate)
-        ->execute();
-
-    }
-    catch (\Exception $e) {
-      \Civi::log()->error("Exception occurred while updating camp status for campId: $collectionCampId. Error: " . $e->getMessage());
     }
   }
 
