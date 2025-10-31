@@ -44,7 +44,7 @@ function civicrm_api3_goonjcustom_update_collection_camp_status_cron($params) {
         ->execute();
 
       // Skip this camp if no dispatch found.
-      if (empty($collectionSourceVehicleDispatches)) {
+      if (!$collectionSourceVehicleDispatches->count()) {
         continue;
       }
 
