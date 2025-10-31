@@ -2003,7 +2003,7 @@ class CollectionCampService extends AutoSubscriber {
       'from' => self::getFromAddress(),
       'toEmail' => $attendeeEmail,
       'replyTo' => self::getFromAddress(),
-      'html' => self::getCampOutcomeAckEmailAfter5Days($attendeeName, $campAddress, $campStartDate, $totalAmount, $materialGeneratedHtml, $uniqueContributors, $campRating, $fundsGenerated, $campId, $campEndDate),
+      'html' => self::getCampOutcomeAckEmailAfter5Days($attendeeName, $campAddress, $campStartDate, $totalAmount, $materialGeneratedHtml, $uniqueContributors, $campRating, $fundsGenerated, $campId, $campEndDate, $campOrganiserId),
       'cc' => $eventVolunteerCC,
     ];
 
@@ -2044,9 +2044,9 @@ class CollectionCampService extends AutoSubscriber {
   /**
    *
    */
-public static function getCampOutcomeAckEmailAfter5Days($attendeeName, $campAddress, $campStartDate, $totalAmount, $materialGeneratedHtml, $uniqueContributors, $campRating, $fundsGenerated, $campId, $campEndDate) {
+public static function getCampOutcomeAckEmailAfter5Days($attendeeName, $campAddress, $campStartDate, $totalAmount, $materialGeneratedHtml, $uniqueContributors, $campRating, $fundsGenerated, $campId, $campEndDate, $campOrganiserId) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
-    $campVolunteerFeedback = $homeUrl . 'volunteer-camp-feedback/#?Eck_Collection_Camp1=' . $campId;
+    $campVolunteerFeedback = $homeUrl . 'volunteer-camp-feedback/#?Collection_Source_Feedback.Collection_Camp_Code=' . $campId . '&Collection_Source_Feedback.Collection_Camp_Address=' . urlencode($campAddress) . '&Collection_Source_Feedback.Filled_By=' . $campOrganiserId;
     // Conditionally include funds raised
     $fundsGeneratedHtml = '';
     if (!empty($fundsGenerated)) {
