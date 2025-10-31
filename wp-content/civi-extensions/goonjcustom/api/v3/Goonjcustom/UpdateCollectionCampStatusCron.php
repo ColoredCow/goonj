@@ -32,7 +32,7 @@ function _civicrm_api3_goonjcustom_update_collection_camp_status_cron_spec(&$spe
  *
  * @throws \CRM_Core_Exception
  */
-function civicrm_api3_goonjcustom_collection_camp_outcome_reminder_cron($params) {
+function civicrm_api3_goonjcustom_update_collection_camp_status_cron($params) {
   $returnValues = [];
   $now = new DateTimeImmutable();
   $endOfDay = $now->setTime(23, 59, 59)->format('Y-m-d H:i:s');
@@ -81,5 +81,5 @@ function civicrm_api3_goonjcustom_collection_camp_outcome_reminder_cron($params)
     }
   }
 
-  return civicrm_api3_create_success($returnValues, $params, 'Goonjcustom', 'collection_camp_outcome_reminder_cron');
+  return civicrm_api3_create_success($returnValues, $params, 'Goonjcustom', 'update_collection_camp_status_cron');
 }
