@@ -261,10 +261,10 @@ class MaterialContributionService extends AutoSubscriber {
           </div>
         </div>
         <br><br>
-        <div style="font-weight: bold; font-style: italic; margin-top:-30px; margin-bottom: 6px; font-size: 15px;">
+        <div style="font-weight: bold; font-style: italic; margin-top:-30px; margin-bottom: 6px; font-size: 13px;">
           "We appreciate your contribution of pre-used/new material. Goonj makes sure that the material reaches people with dignity and care."
         </div>
-        <table border="1" cellpadding="10" cellspacing="0" style="width: 100%; border-collapse: collapse; table-layout:fixed; word-wrap:break-word;">
+        <table border="1" cellpadding="10" cellspacing="0" style="width: 100%; border-collapse: collapse; table-layout:fixed; word-wrap:break-word; font-size: 13px;">
           <style>
             .table-header {
               text-align: left;
