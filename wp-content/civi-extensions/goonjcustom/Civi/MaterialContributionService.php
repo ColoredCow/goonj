@@ -90,7 +90,7 @@ class MaterialContributionService extends AutoSubscriber {
     }
 
     $contactData = Contact::get(FALSE)
-      ->addSelect('email_primary.email', 'phone_primary.phone')
+      ->addSelect('email_primary.email', 'phone_primary.phone', 'address_primary.street_address')
       ->addWhere('id', '=', $params['contactId'])
       ->execute()->single();
 
@@ -98,13 +98,14 @@ class MaterialContributionService extends AutoSubscriber {
 
     $email = $contactData['email_primary.email'] ?? 'N/A';
     $phone = $contactData['phone_primary.phone'] ?? 'N/A';
+    $contributorAddress = $contactData['address_primary.street_address'] ?? 'N/A';
 
     if (!$contribution) {
       return;
     }
     $eventId = $contribution['Material_Contribution.Event'];
 
-    $html = self::generateContributionReceiptHtml($contribution, $email, $phone, $locationAreaOfCamp, $contributionDate, $subtype, $eventId, $goonjOfficeId);
+    $html = self::generateContributionReceiptHtml($contribution, $email, $phone, $locationAreaOfCamp, $contributionDate, $subtype, $eventId, $goonjOfficeId, $contributorAddress);
     $fileName = 'material_contribution_' . $contribution['id'] . '.pdf';
     $params['attachments'][] = \CRM_Utils_Mail::appendPDF($fileName, $html);
   }
@@ -197,7 +198,7 @@ class MaterialContributionService extends AutoSubscriber {
    * @return string
    *   The generated HTML.
    */
-  public static function generateContributionReceiptHtml($activity, $email, $phone, $locationAreaOfCamp, $contributionDate, $subtype, $eventId, $goonjOfficeId) {
+  public static function generateContributionReceiptHtml($activity, $email, $phone, $locationAreaOfCamp, $contributionDate, $subtype, $eventId, $goonjOfficeId, $contributorAddress) {
     $activityDate = date("F j, Y", strtotime($activity['activity_date_time']));
     $receivedOnDate = !empty($contributionDate)
     ? date("F j, Y", strtotime($contributionDate))
@@ -249,21 +250,21 @@ class MaterialContributionService extends AutoSubscriber {
 
     $html = <<<HTML
     <html>
-      <body style="font-family: Arial, sans-serif;">
-        <div style="text-align: center; margin-bottom: 16px;">
+      <body style="font-family: Arial, sans-serif; width: 100%;">
+        <div style="text-align: center; margin-bottom: 8px; margin-top:-32px;">
           <img src="data:image/png;base64,{$imageData['logo']}" alt="Goonj Logo" style="width: 95px; height: 80px;">
         </div>
         
-        <div style="width: 100%; font-size: 14px;">
+        <div style="width: 100%; font-size: 11px;">
           <div style="float: left; text-align: left;">
             Material Acknowledgment# {$activity['id']}
           </div>
         </div>
         <br><br>
-        <div style="font-weight: bold; font-style: italic; margin-top: 6px; margin-bottom: 6px;">
+        <div style="font-weight: bold; font-style: italic; margin-top:-30px; margin-bottom: 6px; font-size: 13px;">
           "We appreciate your contribution of pre-used/new material. Goonj makes sure that the material reaches people with dignity and care."
         </div>
-        <table border="1" cellpadding="10" cellspacing="0" style="width: 100%; border-collapse: collapse;">
+        <table border="1" cellpadding="10" cellspacing="0" style="width: 100%; border-collapse: collapse; table-layout:fixed; word-wrap:break-word; font-size: 13px;">
           <style>
             .table-header {
               text-align: left;
@@ -281,8 +282,8 @@ class MaterialContributionService extends AutoSubscriber {
             <td style="text-align: center;">{$activity['contact.display_name']}</td>
           </tr>
           <tr>
-            <td class="table-header">Contribution Venue</td>
-            <td style="text-align: center;">{$locationAreaOfCamp}</td>
+            <td class="table-header">Address</td>
+            <td style="text-align: center;">{$contributorAddress}</td>
           </tr>
           <tr>
             <td class="table-header">Email</td>
@@ -292,39 +293,43 @@ class MaterialContributionService extends AutoSubscriber {
             <td class="table-header">Phone</td>
             <td style="text-align: center;">{$phone}</td>
           </tr>
+          <tr>
+            <td class="table-header">Contribution Venue</td>
+            <td style="text-align: center;">{$locationAreaOfCamp}</td>
+          </tr>
           {$deliveredByRow}
         </tr>
 
         </table>
-        <div style="width: 100%; margin-top: 16px;">
-        <div style="float: left; width: 60%; font-size: 14px;">
+        <div style="width: 100%; margin-top: 7px;">
+        <div style="float: left; width: 60%; font-size: 11px;">
         <p>Join us, by encouraging your friends, relatives, colleagues, and neighbours to join the journey as all of us have a lot to give.</p>
         <p style="margin-top: 8px;">
         <strong>With Material Money Matters</strong> Your monetary contribution is needed too for sorting, packing, transportation to implementation. (Financial contributions are tax-exempted u/s 80G of IT Act)
       </p>
-      <p style="margin-top: 10px; font-size: 12px; float: left">* Received material has 'No Commercial Value' for Goonj.</p>
+      <p style="margin-top: 10px; font-size: 9px; float: left">* Received material has 'No Commercial Value' for Goonj.</p>
     </div>
-    <div style="float: right; width: 40%; text-align: right; font-size: 12px; font-style: italic;">
+    <div style="float: right; width: 40%; text-align: right; font-size: 9px; font-style: italic;">
     <p>To contribute, please scan the code.</p>
     <img src="data:image/png;base64,{$imageData['qrCode']}" alt="QR Code" style="width: 80px; height: 70px; margin-top: 2px"></div>
         </div>
-        <div style="clear: both; margin-top: 20px;"></div>
-        <div style="width: 100%; margin-top: 15px; background-color: #f2f2f2; padding: 16px; font-weight: 300; color: #000000">
-          <div style="font-size: 14px; margin-bottom: 20px;">
+        <div style="clear: both; margin-top: 10px;"></div>
+        <div style="width: 100%; margin-top: 10px; background-color: #f2f2f2; padding: 16px; font-weight: 300; color: #000000">
+          <div style="font-size: 11px; margin-bottom: 20px;">
             <div style="position: relative; height: 24px;">
-              <div style="font-size: 14px; float: left; color:">
+              <div style="font-size: 11px; float: left; color:">
                 Goonj, C-544, 1st Floor, C-Pocket, Sarita Vihar,<br>
                 New Delhi-110076
               </div>
-              <div style="font-size: 14px; float: right;">
+              <div style="font-size: 11px; float: right;">
                 <img src="data:image/png;base64,{$imageData['callIcon']}" alt="Phone" style="width: 16px; height: 16px; margin-right: 5px;">
                 011-26972351/41401216
               </div>
             </div>
           </div>
     
-          <div style="text-align: center; width: 100%; font-size: 14px; margin-bottom: 20px;">
-              <div style="font-size: 14px;">
+          <div style="text-align: center; width: 100%; font-size: 11px; margin-bottom: 20px;">
+              <div style="font-size: 11px;">
                 <img src="data:image/png;base64,{$imageData['emailIcon']}" alt="Email" style="width: 16px; height: 16px; display: inline;">
                 <span style="display: inline; margin-left: 0;">mail@goonj.org</span>
                 <img src="data:image/png;base64,{$imageData['domainIcon']}" alt="Website" style="width: 16px; height: 16px; margin-right: 5px;">
@@ -340,7 +345,7 @@ class MaterialContributionService extends AutoSubscriber {
             <a href="https://www.youtube.com/channel/UCCq8iYlmjT7rrgPI1VHzIHg" target="_blank"><img src="data:image/webp;base64,{$imageData['youtubeIcon']}" alt="YouTube" style="width: 24px; height: 24px; margin-right: 10px;"></a>
           </div>
         </div>
-        <p style="margin-bottom: 2px; text-align: center; font-size: 12px;">* This is a computer-generated acknowledgement, signature is not required.</p>
+        <p style="margin-bottom: 2px; text-align: center; font-size: 9px;">* This is a computer-generated acknowledgement, signature is not required.</p>
       </body>
     </html>
     HTML;

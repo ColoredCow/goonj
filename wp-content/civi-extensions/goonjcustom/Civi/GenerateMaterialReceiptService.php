@@ -252,16 +252,17 @@ class GenerateMaterialReceiptService extends AutoSubscriber {
     $contactId = $contribution['source_contact_id'];
 
     $contactData = Contact::get(FALSE)
-      ->addSelect('email_primary.email', 'phone_primary.phone')
+      ->addSelect('email_primary.email', 'phone_primary.phone', 'address_primary.street_address')
       ->addWhere('id', '=', $contactId)
       ->execute()->single();
 
     $email = $contactData['email_primary.email'] ?? 'N/A';
     $phone = $contactData['phone_primary.phone'] ?? 'N/A';
+    $contributorAddress = $contactData['address_primary.street_address'] ?? 'N/A';
 
     $entityId = $contribution['id'];
 
-    QrCodeable::generatePdfForCollectionCamp($entityId, $contribution, $email, $phone, $contributionVenue, $contributionDate, $subtype, $eventId, $puId);
+    QrCodeable::generatePdfForCollectionCamp($entityId, $contribution, $email, $phone, $contributionVenue, $contributionDate, $subtype, $eventId, $puId, $contributorAddress);
 
   }
 
