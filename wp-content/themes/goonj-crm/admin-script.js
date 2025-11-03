@@ -1,5 +1,7 @@
 setTimeout(function () {
   const iframe = document.querySelector("iframe");
+  if (!iframe) return;
+  
   const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
 
   // Create a style element
@@ -113,43 +115,48 @@ setTimeout(function () {
   anchors.forEach(function (anchor) {
     anchor.style.setProperty("font-family", fontFamily, "important");
   });
+
+  // Also run city dropdown in iframe context
+  setTimeout(() => {
+    injectCityDropdownInContext(iframeDoc, iframeDoc.body);
+  }, 500);
 }, 1500);
 
-function injectCityDropdown() {
+// Helper function to run city dropdown in any context (iframe or main document)
+function injectCityDropdownInContext(doc, rootElement) {
   function cleanLabelText(text) {
     return text.trim().replace(/\*$/, '').trim();
   }
 
   function findStateFieldWrapper() {
     return (
-      document.querySelector('af-field[name="state_province_id"]') ||
-      document.querySelector('af-field[name="Institution_Collection_Camp_Intent.State"]') ||
-      document.querySelector('af-field[name="Institution_Dropping_Center_Intent.State"]') ||
-      document.querySelector('af-field[name="Collection_Camp_Intent_Details.State"]') ||
-      document.querySelector('af-field[name="Dropping_Centre.State"]') ||
-      document.querySelector('af-field[name="Institution_Goonj_Activities.State"]') ||
-      document.querySelector('af-field[name="Goonj_Activities.State"]') ||
-      document.querySelector('af-field[name="Urban_Planned_Visit.State"]') ||
-      document.getElementById('editrow-state_province-Primary') ||
-      document.querySelector('.editrow_state_province-Primary-section') ||
-      Array.from(document.querySelectorAll("label"))
+      doc.querySelector('af-field[name="state_province_id"]') ||
+      doc.querySelector('af-field[name="Institution_Collection_Camp_Intent.State"]') ||
+      doc.querySelector('af-field[name="Institution_Dropping_Center_Intent.State"]') ||
+      doc.querySelector('af-field[name="Collection_Camp_Intent_Details.State"]') ||
+      doc.querySelector('af-field[name="Dropping_Centre.State"]') ||
+      doc.querySelector('af-field[name="Institution_Goonj_Activities.State"]') ||
+      doc.querySelector('af-field[name="Goonj_Activities.State"]') ||
+      doc.querySelector('af-field[name="Urban_Planned_Visit.State"]') ||
+      doc.querySelector('.editrow_state_province-Primary-section') ||
+      Array.from(doc.querySelectorAll("label"))
         .find((label) => cleanLabelText(label.textContent) === "State")
         ?.closest("af-field") ||
-      document.querySelector('.crm-summary-row[id*="state_province"]')
+      doc.querySelector('.crm-summary-row[id*="state_province"]')
     );
   }
 
   function findCityFieldWrapper() {
     return (
-      document.querySelector('af-field[name="city"]') ||
-      document.querySelector('af-field[name="Institution_Dropping_Center_Intent.District_City"]') ||
-      document.querySelector('af-field[name="Goonj_Activities.City"]') ||
-      document.getElementById("editrow-city-Primary") ||
-      document.querySelector('.editrow_city-Primary-section') ||
-      Array.from(document.querySelectorAll("label"))
+      doc.querySelector('af-field[name="city"]') ||
+      doc.querySelector('af-field[name="Institution_Dropping_Center_Intent.District_City"]') ||
+      doc.querySelector('af-field[name="Goonj_Activities.City"]') ||
+      doc.querySelector('.editrow_city-Primary-section') ||
+      doc.getElementById("editrow-city-Primary") ||
+      Array.from(doc.querySelectorAll("label"))
         .find((label) => cleanLabelText(label.textContent) === "City")
         ?.closest("af-field") ||
-      document.querySelector('.crm-summary-row[id*="city"]')
+      doc.querySelector('.crm-summary-row[id*="city"]')
     );
   }
 
@@ -161,21 +168,12 @@ function injectCityDropdown() {
         stateFieldWrapper?.querySelector('span[id^="select2-chosen"]');
 
       const cityFieldWrapper = findCityFieldWrapper();
-      const cityInput = 
-        cityFieldWrapper?.querySelector('input[type="text"]') ||
-        cityFieldWrapper?.querySelector('input[id*="city"]') ||
-        document.getElementById("city-Primary");
+      const cityInput = cityFieldWrapper?.querySelector('input[type="text"]');
 
       console.log({ stateFieldWrapper, stateChosenSpan, cityFieldWrapper, cityInput });
 
       if (stateFieldWrapper && stateChosenSpan && cityFieldWrapper && cityInput) {
         clearInterval(interval);
-        
-        // If input is already initialized but dropdown doesn't exist, re-initialize
-        if (cityInput.hasAttribute('data-citydd-initialized') && !cityFieldWrapper.querySelector('.citydd')) {
-          cityInput.removeAttribute('data-citydd-initialized');
-        }
-        
         setupDropdown({
           stateFieldWrapper,
           stateChosenSpan,
@@ -189,11 +187,7 @@ function injectCityDropdown() {
   }
 
   function setupDropdown({ stateFieldWrapper, stateChosenSpan, cityFieldWrapper, cityInput }) {
-    // Check if dropdown already exists for this specific input
-    if (cityInput.hasAttribute('data-citydd-initialized')) return;
-    
-    // Mark this input as initialized
-    cityInput.setAttribute('data-citydd-initialized', 'true');
+    if (cityFieldWrapper.querySelector('.citydd')) return;
 
     cityInput.style.display = "none";
 
@@ -203,13 +197,13 @@ function injectCityDropdown() {
     const ddRefs = getCityDropdownRefs(cityFieldWrapper);
 
     let lastState = stateChosenSpan.textContent.trim();
-    if (lastState !== "" && lastState !== "- select State/Province -") {
+    if (lastState !== "") {
       loadCities(lastState, ddRefs, cityInput.value.trim());
     }
 
     const stateObserver = new MutationObserver(() => {
       const currentState = stateChosenSpan.textContent.trim();
-      if (currentState !== lastState && currentState !== "" && currentState !== "- select State/Province -") {
+      if (currentState !== lastState && currentState !== "") {
         lastState = currentState;
         // Pass the current city value to preserve it if it's not in the new list
         const currentCityValue = cityInput.value.trim();
@@ -290,12 +284,6 @@ function injectCityDropdown() {
 
   function getCityDropdownRefs(container) {
     const wrapper = container.querySelector(".citydd");
-    const hiddenInput = 
-      container.querySelector('input[type="text"][data-citydd-initialized]') ||
-      container.querySelector('input[type="text"]') ||
-      container.querySelector('input[id*="city"]') ||
-      document.getElementById("city-Primary");
-    
     return {
       wrapper,
       toggle: wrapper.querySelector(".citydd-toggle"),
@@ -304,7 +292,7 @@ function injectCityDropdown() {
       list: wrapper.querySelector(".citydd-list"),
       empty: wrapper.querySelector(".citydd-empty"),
       labelEl: wrapper.querySelector(".citydd-label"),
-      hiddenInput: hiddenInput,
+      hiddenInput: container.querySelector('input[type="text"]'),
     };
   }
 
@@ -346,7 +334,7 @@ function injectCityDropdown() {
 
     // If there's an incorrect city, add it to the beginning of the list
     if (hasExistingIncorrectCity) {
-      const incorrectLi = document.createElement("li");
+      const incorrectLi = doc.createElement("li");
       incorrectLi.className = "citydd-item";
       incorrectLi.setAttribute("role", "option");
       incorrectLi.setAttribute("tabindex", "-1");
@@ -359,7 +347,7 @@ function injectCityDropdown() {
     }
 
     const items = cities.map((name) => {
-      const li = document.createElement("li");
+      const li = doc.createElement("li");
       li.className = "citydd-item";
       li.setAttribute("role", "option");
       li.setAttribute("tabindex", "-1");
@@ -450,28 +438,39 @@ function injectCityDropdown() {
   }
 
   waitForElementsAndInject();
+
+  // Also observe for new modals/popups being added dynamically
+  const modalObserver = new MutationObserver(() => {
+    // Check if there are any city fields without dropdowns
+    const cityFields = doc.querySelectorAll('af-field[name="city"], af-field[name="Institution_Dropping_Center_Intent.District_City"], af-field[name="Goonj_Activities.City"]');
+    cityFields.forEach(field => {
+      if (!field.querySelector('.citydd')) {
+        waitForElementsAndInject();
+      }
+    });
+  });
+  modalObserver.observe(rootElement, { childList: true, subtree: true });
 }
 
-// Initial injection
-injectCityDropdown();
+// Also run in parent context for non-iframe forms
+injectCityDropdownInContext(document, document.body);
 
-// Watch for page updates (e.g., after save and re-edit)
-const bodyObserver = new MutationObserver((mutations) => {
-  // Check if city input exists but dropdown doesn't
-  const cityInput = 
-    document.querySelector('.editrow_city-Primary-section input[type="text"]') ||
-    document.getElementById("city-Primary");
-  
-  if (cityInput && !cityInput.hasAttribute('data-citydd-initialized')) {
-    // Small delay to ensure DOM is fully ready
-    setTimeout(() => injectCityDropdown(), 100);
+// Watch for iframes and inject into them
+const iframeWatcher = setInterval(() => {
+  const iframe = document.querySelector("iframe");
+  if (iframe) {
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+    if (iframeDoc && iframeDoc.body) {
+      // Only inject if not already done
+      if (!iframeDoc.body.hasAttribute('data-city-dropdown-injected')) {
+        iframeDoc.body.setAttribute('data-city-dropdown-injected', 'true');
+        setTimeout(() => {
+          injectCityDropdownInContext(iframeDoc, iframeDoc.body);
+        }, 500);
+      }
+    }
   }
-});
+}, 1000);
 
-bodyObserver.observe(document.body, { 
-  childList: true, 
-  subtree: true 
-});
-
-// Keep observer active for longer to handle multiple edit sessions
-setTimeout(() => bodyObserver.disconnect(), 60000);
+// Stop watching after 30 seconds
+setTimeout(() => clearInterval(iframeWatcher), 30000);
