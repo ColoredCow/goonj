@@ -55,7 +55,6 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       ],
       '&hook_civicrm_post' => [
         ['updateNameOfTheInstitution'],
-        ['updateCampStatusOnOutcomeAndACKFilled'],
         ['updateInstitutionDispatchDetails'],
       ],
       '&hook_civicrm_custom' => [
@@ -109,53 +108,6 @@ class InstitutionCollectionCampService extends AutoSubscriber {
           continue;
         }
       }
-    }
-  }
-
-  /**
-   *
-   */
-  public static function updateCampStatusOnOutcomeAndACKFilled(string $op, string $objectName, int $objectId, &$objectRef) {
-    if ($objectName !== 'AfformSubmission') {
-      return;
-    }
-
-    $afformName = $objectRef->afform_name;
-
-    if ($afformName !== 'afformInstitutionAcknowledgementForm' &&
-    $afformName !== 'afformInstitutionCampAcknowledgementFormForLogistics') {
-      return;
-    }
-
-    $jsonData = $objectRef->data;
-    $dataArray = json_decode($jsonData, TRUE);
-
-    $collectionCampId = $dataArray['Eck_Collection_Source_Vehicle_Dispatch1'][0]['fields']['Camp_Vehicle_Dispatch.Institution_Collection_Camp'];
-
-    if (!$collectionCampId) {
-      return;
-    }
-
-    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Camp_Outcome.Rate_the_camp')
-      ->addWhere('id', '=', $collectionCampId)
-      ->execute()->first();
-
-    $campOutcome = $collectionCamp['Camp_Outcome.Rate_the_camp'] ?? NULL;
-
-    if (!$campOutcome) {
-      return;
-    }
-
-    try {
-      EckEntity::update('Collection_Camp', FALSE)
-        ->addWhere('id', '=', $collectionCampId)
-        ->addValue('Institution_collection_camp_Review.Camp_Status', '3')
-        ->execute();
-
-    }
-    catch (\Exception $e) {
-      \Civi::log()->error("Exception occurred while updating camp status for campId: $collectionCampId. Error: " . $e->getMessage());
     }
   }
 
