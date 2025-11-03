@@ -1,5 +1,7 @@
 setTimeout(function () {
   const iframe = document.querySelector("iframe");
+  if (!iframe) return;
+  
   const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
 
   // Create a style element
@@ -113,42 +115,48 @@ setTimeout(function () {
   anchors.forEach(function (anchor) {
     anchor.style.setProperty("font-family", fontFamily, "important");
   });
+
+  // Also run city dropdown in iframe context
+  setTimeout(() => {
+    injectCityDropdownInContext(iframeDoc, iframeDoc.body);
+  }, 500);
 }, 1500);
 
-function injectCityDropdown() {
+// Helper function to run city dropdown in any context (iframe or main document)
+function injectCityDropdownInContext(doc, rootElement) {
   function cleanLabelText(text) {
     return text.trim().replace(/\*$/, '').trim();
   }
 
   function findStateFieldWrapper() {
     return (
-      document.querySelector('af-field[name="state_province_id"]') ||
-      document.querySelector('af-field[name="Institution_Collection_Camp_Intent.State"]') ||
-      document.querySelector('af-field[name="Institution_Dropping_Center_Intent.State"]') ||
-      document.querySelector('af-field[name="Collection_Camp_Intent_Details.State"]') ||
-      document.querySelector('af-field[name="Dropping_Centre.State"]') ||
-      document.querySelector('af-field[name="Institution_Goonj_Activities.State"]') ||
-      document.querySelector('af-field[name="Goonj_Activities.State"]') ||
-      document.querySelector('af-field[name="Urban_Planned_Visit.State"]') ||
-      document.querySelector('.editrow_state_province-Primary-section') ||
-      Array.from(document.querySelectorAll("label"))
+      doc.querySelector('af-field[name="state_province_id"]') ||
+      doc.querySelector('af-field[name="Institution_Collection_Camp_Intent.State"]') ||
+      doc.querySelector('af-field[name="Institution_Dropping_Center_Intent.State"]') ||
+      doc.querySelector('af-field[name="Collection_Camp_Intent_Details.State"]') ||
+      doc.querySelector('af-field[name="Dropping_Centre.State"]') ||
+      doc.querySelector('af-field[name="Institution_Goonj_Activities.State"]') ||
+      doc.querySelector('af-field[name="Goonj_Activities.State"]') ||
+      doc.querySelector('af-field[name="Urban_Planned_Visit.State"]') ||
+      doc.querySelector('.editrow_state_province-Primary-section') ||
+      Array.from(doc.querySelectorAll("label"))
         .find((label) => cleanLabelText(label.textContent) === "State")
         ?.closest("af-field") ||
-      document.querySelector('.crm-summary-row[id*="state_province"]')
+      doc.querySelector('.crm-summary-row[id*="state_province"]')
     );
   }
 
   function findCityFieldWrapper() {
     return (
-      document.querySelector('af-field[name="city"]') ||
-      document.querySelector('af-field[name="Institution_Dropping_Center_Intent.District_City"]') ||
-      document.querySelector('af-field[name="Goonj_Activities.City"]') ||
-      document.querySelector('.editrow_city-Primary-section') ||
-      document.getElementById("editrow-city-Primary") ||
-      Array.from(document.querySelectorAll("label"))
+      doc.querySelector('af-field[name="city"]') ||
+      doc.querySelector('af-field[name="Institution_Dropping_Center_Intent.District_City"]') ||
+      doc.querySelector('af-field[name="Goonj_Activities.City"]') ||
+      doc.querySelector('.editrow_city-Primary-section') ||
+      doc.getElementById("editrow-city-Primary") ||
+      Array.from(doc.querySelectorAll("label"))
         .find((label) => cleanLabelText(label.textContent) === "City")
         ?.closest("af-field") ||
-      document.querySelector('.crm-summary-row[id*="city"]')
+      doc.querySelector('.crm-summary-row[id*="city"]')
     );
   }
 
@@ -326,7 +334,7 @@ function injectCityDropdown() {
 
     // If there's an incorrect city, add it to the beginning of the list
     if (hasExistingIncorrectCity) {
-      const incorrectLi = document.createElement("li");
+      const incorrectLi = doc.createElement("li");
       incorrectLi.className = "citydd-item";
       incorrectLi.setAttribute("role", "option");
       incorrectLi.setAttribute("tabindex", "-1");
@@ -339,7 +347,7 @@ function injectCityDropdown() {
     }
 
     const items = cities.map((name) => {
-      const li = document.createElement("li");
+      const li = doc.createElement("li");
       li.className = "citydd-item";
       li.setAttribute("role", "option");
       li.setAttribute("tabindex", "-1");
@@ -430,14 +438,39 @@ function injectCityDropdown() {
   }
 
   waitForElementsAndInject();
+
+  // Also observe for new modals/popups being added dynamically
+  const modalObserver = new MutationObserver(() => {
+    // Check if there are any city fields without dropdowns
+    const cityFields = doc.querySelectorAll('af-field[name="city"], af-field[name="Institution_Dropping_Center_Intent.District_City"], af-field[name="Goonj_Activities.City"]');
+    cityFields.forEach(field => {
+      if (!field.querySelector('.citydd')) {
+        waitForElementsAndInject();
+      }
+    });
+  });
+  modalObserver.observe(rootElement, { childList: true, subtree: true });
 }
 
-injectCityDropdown();
+// Also run in parent context for non-iframe forms
+injectCityDropdownInContext(document, document.body);
 
-const bodyObserver = new MutationObserver(() => {
-  if (!document.querySelector('.citydd')) {
-    injectCityDropdown();
+// Watch for iframes and inject into them
+const iframeWatcher = setInterval(() => {
+  const iframe = document.querySelector("iframe");
+  if (iframe) {
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+    if (iframeDoc && iframeDoc.body) {
+      // Only inject if not already done
+      if (!iframeDoc.body.hasAttribute('data-city-dropdown-injected')) {
+        iframeDoc.body.setAttribute('data-city-dropdown-injected', 'true');
+        setTimeout(() => {
+          injectCityDropdownInContext(iframeDoc, iframeDoc.body);
+        }, 500);
+      }
+    }
   }
-});
-bodyObserver.observe(document.body, { childList: true, subtree: true });
-setTimeout(() => bodyObserver.disconnect(), 30000);
+}, 1000);
+
+// Stop watching after 30 seconds
+setTimeout(() => clearInterval(iframeWatcher), 30000);
