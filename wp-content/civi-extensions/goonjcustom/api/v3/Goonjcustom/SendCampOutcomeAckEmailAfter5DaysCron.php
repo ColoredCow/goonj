@@ -54,10 +54,10 @@ function civicrm_api3_goonjcustom_send_camp_outcome_ack_email_after_5_days_cron(
       // // Calculate difference in days.
       $diff = $today->diff($campCompletionDate)->days;
       // Only send if 5 or more days have passed.
-      // if ($diff < 5) {
-      //   // Skip this camp.
-      //   continue;
-      // }
+      if ($diff < 5) {
+        // Skip this camp.
+        continue;
+      }
 
       CollectionCampService::sendCampOutcomeAckEmailAfter5Days($collectionCamp);
     }
