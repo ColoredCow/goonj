@@ -684,7 +684,6 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
         'template' => 'CRM/Goonjcustom/Tabs/Events/MonetaryContribution.tpl',
         'entity' => ['id' => $eventID],
         'permissions' => ['goonj_chapter_admin', 'ho_account'],
-
       ],
     ];
 
