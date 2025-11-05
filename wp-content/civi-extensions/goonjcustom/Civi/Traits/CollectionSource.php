@@ -97,6 +97,7 @@ trait CollectionSource {
     if (!$statusDetails) {
       return;
     }
+    error_log('Institution CC code generation working');
 
     $newStatus = $statusDetails['newStatus'];
     $currentStatus = $statusDetails['currentStatus'];
@@ -104,11 +105,13 @@ trait CollectionSource {
     if ($currentStatus !== $newStatus) {
       if ($newStatus === 'authorized') {
         $subtypeId = $objectRef['subtype'] ?? NULL;
+        error_log('subtype:' . print_r($subtypeId, TRUE));
         if (!$subtypeId) {
           return;
         }
 
         $sourceId = $objectRef['id'] ?? NULL;
+        error_log('sourceId:' . print_r($sourceId, TRUE));
         if (!$sourceId) {
           return;
         }
@@ -118,12 +121,14 @@ trait CollectionSource {
           ->execute()->single();
 
         $collectionSourceCreatedDate = $collectionSource['created_date'] ?? NULL;
+        error_log('collectionSourceCreatedDate:' . print_r($collectionSourceCreatedDate, TRUE));
 
         $sourceTitle = $collectionSource['title'] ?? NULL;
 
         $year = date('Y', strtotime($collectionSourceCreatedDate));
 
         $stateId = self::getStateIdForSourceType($objectRef, $subtypeId, $sourceTitle);
+        error_log('stateId:' . print_r($stateId, TRUE));
 
         if (!$stateId) {
           return;
@@ -132,6 +137,7 @@ trait CollectionSource {
         $stateProvince = StateProvince::get(FALSE)
           ->addWhere('id', '=', $stateId)
           ->execute()->single();
+        error_log('stateProvince:' . print_r($stateProvince, TRUE));
 
         if (empty($stateProvince)) {
           return;
@@ -153,6 +159,7 @@ trait CollectionSource {
 
         // Modify the title to include the year, state code, event code, and camp Id.
         $newTitle = $year . '/' . $stateCode . '/' . $eventCode . '/' . $sourceId;
+        error_log('newTitle:' . print_r($newTitle, TRUE));
         $objectRef['title'] = $newTitle;
 
         // Save the updated title back to the Collection Camp entity.
