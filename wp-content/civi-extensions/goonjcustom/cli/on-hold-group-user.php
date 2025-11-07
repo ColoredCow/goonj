@@ -71,19 +71,23 @@ function setContactOnHold(int $contactId): void {
     }
 
     foreach ($emails as $emailRow) {
-      try {
-        // Set email on hold.
-        Email::update(FALSE)
-          ->addValue('on_hold', 1)
-          ->addWhere('id', '=', $emailRow['id'])
-          ->execute();
-
-        echo "Set on-hold for email {$emailRow['email']} (Contact ID: $contactId)\n";
-      }
-      catch (Exception $e) {
-        echo "Failed to set email on hold for contact $contactId: " . $e->getMessage() . "\n";
-      }
-    }
+        try {
+          if (empty($emailRow['email'])) {
+            echo "Skipping empty email for Contact ID: $contactId\n";
+            continue;
+          }
+      
+          Email::update(FALSE)
+            ->addValue('on_hold', 1)
+            ->addWhere('id', '=', $emailRow['id'])
+            ->execute();
+      
+          echo "Set on-hold for email {$emailRow['email']} (Contact ID: $contactId)\n";
+        }
+        catch (Exception $e) {
+          echo "Failed to set email on hold for contact $contactId: " . $e->getMessage() . "\n";
+        }
+      }      
 
   }
   catch (Exception $e) {
