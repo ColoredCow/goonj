@@ -41,7 +41,7 @@ class CollectionCampService extends AutoSubscriber {
   const ENTITY_SUBTYPE_NAME = 'Collection_Camp';
   const MATERIAL_RELATIONSHIP_TYPE_NAME = 'Material Management Team of';
   const DEFAULT_FINANCIAL_TYPE_ID = 1;
-  const ACCOUNTS_TEAM_EMAIL = '"Goonj Accounts Team" <accounts@goonj.org>';
+  const ACCOUNTS_TEAM_EMAIL = '"Goonj" <accounts@goonj.org>';
 
   private static $individualId = NULL;
   private static $collectionCampAddress = NULL;
