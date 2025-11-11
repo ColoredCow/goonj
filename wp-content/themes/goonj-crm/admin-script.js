@@ -149,6 +149,11 @@ function injectCityDropdownInContext(doc, rootElement) {
   function findCityFieldWrapper() {
     return (
       doc.querySelector('af-field[name="city"]') ||
+      doc.querySelector('af-field[name="Collection_Camp_Intent_Details.City"]') ||
+      doc.querySelector('af-field[name="Institution_Collection_Camp_Intent.District_City"]') ||
+      doc.querySelector('af-field[name="Dropping_Centre.District_City"]') ||
+      doc.querySelector('af-field[name="Institution_Goonj_Activities.City"]') ||
+      doc.querySelector('af-field[name="Urban_Planned_Visit.City"]') ||
       doc.querySelector('af-field[name="Institution_Dropping_Center_Intent.District_City"]') ||
       doc.querySelector('af-field[name="Goonj_Activities.City"]') ||
       doc.querySelector('.editrow_city-Primary-section') ||
