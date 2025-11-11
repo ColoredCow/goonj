@@ -87,7 +87,7 @@ function setContactOnHold(int $contactId): void {
         catch (Exception $e) {
           echo "Failed to set email on hold for contact $contactId: " . $e->getMessage() . "\n";
         }
-      }      
+      }
 
   }
   catch (Exception $e) {
