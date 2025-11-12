@@ -875,7 +875,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     . '&Eck_Collection_Camp1=' . $collectionCampId
     . '&Camp_Institution_Data.Address=' . $addressOfInstitution
     . '&Camp_Institution_Data.Name_of_the_institution=' . $nameOfInstitution
-    . '&Camp_Institution_Data.Email==' . $pocEmail
+    . '&Camp_Institution_Data.Email=' . $pocEmail
     . '&Camp_Institution_Data.Contact_Number=' . $pocContactNumber
     . '&Institution_Collection_Camp_Intent.Collection_Camp_Address=' . $campAddress;
 
