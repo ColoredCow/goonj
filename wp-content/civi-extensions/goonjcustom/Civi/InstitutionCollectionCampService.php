@@ -819,7 +819,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     . '&Camp_Vehicle_Dispatch.Filled_by=' . $institutionPOCId
     . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice
     . '&Eck_Collection_Camp1=' . $collectionCampId
-    . '&Camp_Institution_Data.Name_of_the_institution=' . $nameOfInstitution
+    . '&Camp_Institution_Data.Name_of_the_institution=' . urlencode($nameOfInstitution)
     . '&Camp_Institution_Data.Address=' . urlencode($addressOfInstitution)
     . '&Camp_Institution_Data.Email=' . $pocEmail
     . '&Camp_Institution_Data.Contact_Number=' . $pocContactNumber
@@ -873,6 +873,10 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     . '&Camp_Vehicle_Dispatch.Filled_by=' . $campAttendedById
     . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice
     . '&Eck_Collection_Camp1=' . $collectionCampId
+    . '&Camp_Institution_Data.Address=' . $addressOfInstitution
+    . '&Camp_Institution_Data.Name_of_the_institution=' . $nameOfInstitution
+    . '&Camp_Institution_Data.Email==' . $pocEmail
+    . '&Camp_Institution_Data.Contact_Number=' . $pocContactNumber
     . '&Institution_Collection_Camp_Intent.Collection_Camp_Address=' . $campAddress;
 
     $campOutcomeFormUrl = $homeUrl . '/institution-camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $campAttendedById . '&Institution_Collection_Camp_Intent.Collection_Camp_Address=' . $campAddress;
