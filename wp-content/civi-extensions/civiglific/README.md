@@ -52,7 +52,7 @@ Civiglific.civicrm_glific_contact_sync_cron
    ```
 2. **Create a custom field** (Alphanumeric, Radio Buttons type) for **Contributions** to identify which contributors should receive WhatsApp messages or receipts.
 3. Create message template on glific end, fetch those id and added it to step 1.
-3. **Send messages or receipts automatically:** When submitting a contribution form, simply select the configured field, the message or receipt will be automatically sent to the contributor’s WhatsApp number using the Glific integration.
+4. **Send messages or receipts automatically:** When submitting a contribution form, simply select the configured field, the message or receipt will be automatically sent to the contributor’s WhatsApp number using the Glific integration.
 
 
 ## Usage
