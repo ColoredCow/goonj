@@ -33,6 +33,11 @@ There are two main setup configurations you can perform with this extension:
    ```
 3. **Open the “Rule Mapping” page** from the navigation menu. Here, you can map your **CiviCRM contact groups** to their corresponding **Glific groups** to enable synchronized messaging.
 
+4. Add cron job to automatically migrate the contacts
+``` php
+Civiglific.civicrm_glific_contact_sync_cron
+```
+
 ### 💬 Setup 2: Send Receipts or Messages to Monetary Contributors
 
 1. **Add the following configurations in your `settings.php` file:**
