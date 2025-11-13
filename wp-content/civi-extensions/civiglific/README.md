@@ -38,7 +38,7 @@ There are two main setup configurations you can perform with this extension:
 Civiglific.civicrm_glific_contact_sync_cron
 ```
 
-### 💬 Setup 2: Send Receipts or Messages to Monetary Contributors
+### Setup 2: Send Receipts or Messages to Monetary Contributors
 
 1. **Add the following configurations in your `settings.php` file:**
    ```php
@@ -55,7 +55,7 @@ Civiglific.civicrm_glific_contact_sync_cron
 3. **Send messages or receipts automatically:** When submitting a contribution form, simply select the configured field, the message or receipt will be automatically sent to the contributor’s WhatsApp number using the Glific integration.
 
 
-## 🚀 Usage
+## Usage
 
 Once the extension is installed and configured:
 
