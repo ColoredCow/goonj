@@ -1619,7 +1619,7 @@ class CollectionCampService extends AutoSubscriber {
       }
 
       $contribution = Contribution::get(FALSE)
-        ->addSelect('Contribution_Details.Source', 'campaign_id', 'Contribution_Details.Events')
+        ->addSelect('Contribution_Details.Source', 'Contribution_Details.Events', 'campaign_id')
         ->addWhere('id', '=', $contributionId)
         ->execute()->first();
 
@@ -1627,70 +1627,68 @@ class CollectionCampService extends AutoSubscriber {
         return;
       }
 
+      // Collection Camp ID.
       $sourceID = $contribution['Contribution_Details.Source'];
+      // Event ID.
       $eventID = $contribution['Contribution_Details.Events'];
-      error_log('eventID: ' . print_r($eventID, TRUE));
+      $existingCampaignId = $contribution['campaign_id'];
 
-
-      $contributionCampaignId = $contribution['campaign_id'];
-      if ($contributionCampaignId) {
-        return;
-      }
-      error_log('coming here after:' );
-
-      $event = Event::get(FALSE)
-        ->addSelect('campaign_id')
-        ->addWhere('id', '=', $eventID)
-        ->execute()->first();
-      error_log('event: ' . print_r($event, TRUE));
-
-
-      $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
-        ->addSelect('Collection_Camp_Intent_Details.Campaign')
-        ->addWhere('id', '=', $sourceID)
-        ->execute()->single();
-      error_log('collectionCamp: ' . print_r($collectionCamp, TRUE));
-
-
-      if (!$collectionCamp) {
-        $eventCampaignId = $event['campaign_id'];
-      error_log('eventCampaignId: ' . print_r($eventCampaignId, TRUE));
-      error_log('contributionId: ' . print_r($contributionId, TRUE));
-
-
-
-        Contribution::update(FALSE)
-        ->addValue('campaign_id', $eventCampaignId)
-        ->addWhere('id', '=', $contributionId)
-        ->execute();
-
+      if ($existingCampaignId) {
         return;
       }
 
-      $campaignId = $collectionCamp['Collection_Camp_Intent_Details.Campaign'];
+      /**
+       * ------------------------------------------------------
+       * 1️⃣ If a Collection Camp is selected → use its campaign
+       * ------------------------------------------------------
+       */
+      if (!empty($sourceID)) {
+        $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+          ->addSelect('Collection_Camp_Intent_Details.Campaign')
+          ->addWhere('id', '=', $sourceID)
+          ->execute()->single();
 
-      if (!$campaignId) {
-        return;
+        if (!empty($collectionCamp)) {
+          $campaignId = $collectionCamp['Collection_Camp_Intent_Details.Campaign'];
+
+          if (!empty($campaignId)) {
+            Contribution::update(FALSE)
+              ->addValue('campaign_id', $campaignId)
+              ->addWhere('id', '=', $contributionId)
+              ->execute();
+          }
+
+          // Stop after collection camp flow.
+          return;
+        }
       }
 
-      if ($contributionCampaignId) {
-        return;
-      }
+      /**
+       * ------------------------------------------------------
+       * 2️⃣ If no collection camp, fallback to Event campaign
+       * ------------------------------------------------------
+       */
+      if (!empty($eventID)) {
+        $event = Event::get(FALSE)
+          ->addSelect('campaign_id')
+          ->addWhere('id', '=', $eventID)
+          ->execute()->first();
 
-      Contribution::update(FALSE)
-        ->addValue('campaign_id', $campaignId)
-        ->addWhere('id', '=', $contributionId)
-        ->execute();
+        if (!empty($event['campaign_id'])) {
+          Contribution::update(FALSE)
+            ->addValue('campaign_id', $event['campaign_id'])
+            ->addWhere('id', '=', $contributionId)
+            ->execute();
+        }
+      }
 
     }
-
     catch (\Exception $e) {
-      \Civi::log()->error("Exception occurred in updateCampaignForCollectionSourceContribution.", [
+      \Civi::log()->error("Exception in updateCampaignForCollectionSourceContribution", [
         'Message' => $e->getMessage(),
-        'Stack Trace' => $e->getTraceAsString(),
+        'Trace'   => $e->getTraceAsString(),
       ]);
     }
-
   }
 
   /**
