@@ -21,6 +21,7 @@ use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
 use Civi\InductionService;
+use Civi\Api4\Event;
 
 /**
  *
@@ -1618,7 +1619,7 @@ class CollectionCampService extends AutoSubscriber {
       }
 
       $contribution = Contribution::get(FALSE)
-        ->addSelect('Contribution_Details.Source', 'campaign_id')
+        ->addSelect('Contribution_Details.Source', 'campaign_id', 'Contribution_Details.Events')
         ->addWhere('id', '=', $contributionId)
         ->execute()->first();
 
@@ -1627,7 +1628,9 @@ class CollectionCampService extends AutoSubscriber {
       }
 
       $sourceID = $contribution['Contribution_Details.Source'];
-      if (!$sourceID) {
+      $eventID = $contribution['Contribution_Details.Events'];
+
+      if (empty($sourceID) && empty($eventID)) {
         return;
       }
 
@@ -1636,12 +1639,24 @@ class CollectionCampService extends AutoSubscriber {
         return;
       }
 
+      $event = Event::get(FALSE)
+        ->addSelect('campaign_id')
+        ->addWhere('id', '=', $eventID)
+        ->execute()->first();
+
       $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
         ->addSelect('Collection_Camp_Intent_Details.Campaign')
         ->addWhere('id', '=', $sourceID)
         ->execute()->single();
 
       if (!$collectionCamp) {
+        $eventCampaignId = $event['campaign_id'];
+
+        Contribution::update(FALSE)
+        ->addValue('campaign_id', $eventCampaignId)
+        ->addWhere('id', '=', $contributionId)
+        ->execute();
+
         return;
       }
 
