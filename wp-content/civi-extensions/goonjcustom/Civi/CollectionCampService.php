@@ -1631,14 +1631,12 @@ class CollectionCampService extends AutoSubscriber {
       $eventID = $contribution['Contribution_Details.Events'];
       error_log('eventID: ' . print_r($eventID, TRUE));
 
-      if (empty($sourceID) && empty($eventID)) {
-        return;
-      }
 
       $contributionCampaignId = $contribution['campaign_id'];
       if (!$contributionCampaignId) {
         return;
       }
+      error_log('coming here after:' );
 
       $event = Event::get(FALSE)
         ->addSelect('campaign_id')
