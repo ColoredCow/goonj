@@ -1629,6 +1629,7 @@ class CollectionCampService extends AutoSubscriber {
 
       $sourceID = $contribution['Contribution_Details.Source'];
       $eventID = $contribution['Contribution_Details.Events'];
+      error_log('eventID: ' . print_r($eventID, TRUE));
 
       if (empty($sourceID) && empty($eventID)) {
         return;
@@ -1643,14 +1644,22 @@ class CollectionCampService extends AutoSubscriber {
         ->addSelect('campaign_id')
         ->addWhere('id', '=', $eventID)
         ->execute()->first();
+      error_log('event: ' . print_r($event, TRUE));
+
 
       $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
         ->addSelect('Collection_Camp_Intent_Details.Campaign')
         ->addWhere('id', '=', $sourceID)
         ->execute()->single();
+      error_log('collectionCamp: ' . print_r($collectionCamp, TRUE));
+
 
       if (!$collectionCamp) {
         $eventCampaignId = $event['campaign_id'];
+      error_log('eventCampaignId: ' . print_r($eventCampaignId, TRUE));
+      error_log('contributionId: ' . print_r($contributionId, TRUE));
+
+
 
         Contribution::update(FALSE)
         ->addValue('campaign_id', $eventCampaignId)
