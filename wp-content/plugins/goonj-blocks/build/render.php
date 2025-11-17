@@ -10,6 +10,9 @@ use Civi\Api4\CustomField;
 
 $target            = get_query_var('target');
 $action_target     = get_query_var('action_target');
+if (!is_array($action_target)) {
+    $action_target = [];
+}
 $source_contact_id = $action_target['id'] ?? NULL;
 
 if ($target === 'induction-schedule') {
