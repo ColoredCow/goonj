@@ -21,6 +21,7 @@ use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
 use Civi\InductionService;
+use Civi\Api4\Event;
 
 /**
  *
@@ -1618,7 +1619,7 @@ class CollectionCampService extends AutoSubscriber {
       }
 
       $contribution = Contribution::get(FALSE)
-        ->addSelect('Contribution_Details.Source', 'campaign_id')
+        ->addSelect('Contribution_Details.Source', 'Contribution_Details.Events', 'campaign_id')
         ->addWhere('id', '=', $contributionId)
         ->execute()->first();
 
@@ -1626,49 +1627,68 @@ class CollectionCampService extends AutoSubscriber {
         return;
       }
 
+      // Collection Camp ID.
       $sourceID = $contribution['Contribution_Details.Source'];
-      if (!$sourceID) {
+      // Event ID.
+      $eventID = $contribution['Contribution_Details.Events'];
+      $existingCampaignId = $contribution['campaign_id'];
+
+      if ($existingCampaignId) {
         return;
       }
 
-      $contributionCampaignId = $contribution['campaign_id'];
-      if (!$contributionCampaignId) {
-        return;
+      /**
+       * ------------------------------------------------------
+       * 1️⃣ If a Collection Camp is selected → use its campaign
+       * ------------------------------------------------------
+       */
+      if (!empty($sourceID)) {
+        $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+          ->addSelect('Collection_Camp_Intent_Details.Campaign')
+          ->addWhere('id', '=', $sourceID)
+          ->execute()->single();
+
+        if (!empty($collectionCamp)) {
+          $campaignId = $collectionCamp['Collection_Camp_Intent_Details.Campaign'];
+
+          if (!empty($campaignId)) {
+            Contribution::update(FALSE)
+              ->addValue('campaign_id', $campaignId)
+              ->addWhere('id', '=', $contributionId)
+              ->execute();
+          }
+
+          // Stop after collection camp flow.
+          return;
+        }
       }
 
-      $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
-        ->addSelect('Collection_Camp_Intent_Details.Campaign')
-        ->addWhere('id', '=', $sourceID)
-        ->execute()->single();
+      /**
+       * ------------------------------------------------------
+       * 2️⃣ If no collection camp, fallback to Event campaign
+       * ------------------------------------------------------
+       */
+      if (!empty($eventID)) {
+        $event = Event::get(FALSE)
+          ->addSelect('campaign_id')
+          ->addWhere('id', '=', $eventID)
+          ->execute()->first();
 
-      if (!$collectionCamp) {
-        return;
+        if (!empty($event['campaign_id'])) {
+          Contribution::update(FALSE)
+            ->addValue('campaign_id', $event['campaign_id'])
+            ->addWhere('id', '=', $contributionId)
+            ->execute();
+        }
       }
-
-      $campaignId = $collectionCamp['Collection_Camp_Intent_Details.Campaign'];
-
-      if (!$campaignId) {
-        return;
-      }
-
-      if ($contributionCampaignId) {
-        return;
-      }
-
-      Contribution::update(FALSE)
-        ->addValue('campaign_id', $campaignId)
-        ->addWhere('id', '=', $contributionId)
-        ->execute();
 
     }
-
     catch (\Exception $e) {
-      \Civi::log()->error("Exception occurred in updateCampaignForCollectionSourceContribution.", [
+      \Civi::log()->error("Exception in updateCampaignForCollectionSourceContribution", [
         'Message' => $e->getMessage(),
-        'Stack Trace' => $e->getTraceAsString(),
+        'Trace'   => $e->getTraceAsString(),
       ]);
     }
-
   }
 
   /**
