@@ -1633,7 +1633,7 @@ class CollectionCampService extends AutoSubscriber {
 
 
       $contributionCampaignId = $contribution['campaign_id'];
-      if (!$contributionCampaignId) {
+      if ($contributionCampaignId) {
         return;
       }
       error_log('coming here after:' );
