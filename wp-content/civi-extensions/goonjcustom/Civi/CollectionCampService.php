@@ -1199,7 +1199,7 @@ class CollectionCampService extends AutoSubscriber {
 
         if ($selfManaged) {
           $emailHtml = self::getSelfLogisticsEmailHtml($campOrganiserattendeeName, $campId, $campOrganiser, $campOffice, $campCode, $campAddress);
-          $emailOutcomeHtml = self::getSelfOutcomeLogisticsEmailHtml($attendeeEmail, $campId, $campOrganiser, $campOffice, $campCode, $campAddress);
+          $emailOutcomeHtml = self::getSelfOutcomeLogisticsEmailHtml($attendeeName, $campId, $campOrganiser, $campOffice, $campCode, $campAddress);
           // Send to organiser.
           $toEmail = $campOrganiserEmail;
 
@@ -1278,11 +1278,10 @@ class CollectionCampService extends AutoSubscriber {
 
     $html = "
     <p>Dear $contactName,</p>
-    <p>Thank you for attending the camp <strong>$campCode</strong> at <strong>$campAddress</strong>. There are two forms that require your attention during and after the camp:</p>
+    <p>Thank you for attending the camp <strong>$campCode</strong> at <strong>$campAddress</strong>. Please complete the following form during the camp:</p>
     <ol>
         <li><a href=\"$selfCampVehicleDispatchFormUrl\">Dispatch Form</a><br>
         Please complete this form from the camp location once the vehicle is being loaded and ready for dispatch to the Goonj's processing center.</li>
-        This feedback form should be filled out after the camp/drive ends, once you have an overview of the event's outcomes.</li>
     </ol>
     <p>We appreciate your cooperation.</p>
     <p>Warm Regards,<br>Urban Relations Team</p>";
@@ -1300,7 +1299,7 @@ class CollectionCampService extends AutoSubscriber {
 
     $html = "
     <p>Dear $contactName,</p>
-    <p>Thank you for attending the camp <strong>$campCode</strong> at <strong>$campAddress</strong>. There are two forms that require your attention during and after the camp:</p>
+    <p>Thank you for attending the camp <strong>$campCode</strong> at <strong>$campAddress</strong>. Please complete the following form after the camp:</p>
     <ol>
         <li><a href=\"$campOutcomeFormUrl\">Camp Outcome Form</a><br>
         This feedback form should be filled out after the camp/drive ends, once you have an overview of the event's outcomes.</li>
