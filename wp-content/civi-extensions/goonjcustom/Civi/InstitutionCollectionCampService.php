@@ -1214,6 +1214,13 @@ class InstitutionCollectionCampService extends AutoSubscriber {
         'template' => 'CRM/Goonjcustom/Tabs/MonetaryContribution.tpl',
         'permissions' => ['goonj_chapter_admin', 'ho_account'],
       ],
+      'InstituteMaterialContribution' => [
+        'title' => ts('Monetary Contribution'),
+        'module' => 'afsearchAutofillInstitutionMaterialContributions',
+        'directive' => 'afsearch-autofill-institution-material-contributions',
+        'template' => 'CRM/Goonjcustom/Tabs/MonetaryContribution.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter', 'urban_ops_and_accounts_chapter_team', 'mmt_and_accounts_chapter_team', 'project_ho_and_accounts'],
+      ],
       // 'monetaryContributionForUrbanOps' => [
       //   'title' => ts('Monetary Contribution'),
       //   'module' => 'afsearchMonetaryContributionForUrbanOps',
