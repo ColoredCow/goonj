@@ -1165,6 +1165,18 @@ class CollectionCampService extends AutoSubscriber {
       $campAddress = $collectionCamp['Collection_Camp_Intent_Details.Location_Area_of_camp'];
       $campAttendedById = $collectionCamp['Logistics_Coordination.Camp_to_be_attended_by'];
       $logisticEmailSent = $collectionCamp['Logistics_Coordination.Email_Sent'];
+      $selfManaged = $collectionCamp['Logistics_Coordination.Self_Managed_By_Camp_Organiser'];
+      $campOrganiser = $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
+
+      // Get organiser details.
+      $campOrganiserBy = Contact::get(FALSE)
+        ->addSelect('email.email', 'display_name')
+        ->addJoin('Email AS email', 'LEFT')
+        ->addWhere('id', '=', $campOrganiser)
+        ->execute()->first();
+
+      $campOrganiserEmail = $campOrganiserBy['email.email'];
+      $campOrganiserattendeeName = $campOrganiserBy['display_name'];
 
       $startDate = new \DateTime($collectionCamp['Collection_Camp_Intent_Details.Start_Date']);
 
@@ -1185,12 +1197,33 @@ class CollectionCampService extends AutoSubscriber {
           throw new \Exception('Attendee email missing');
         }
 
+        if ($selfManaged) {
+          $emailHtml = self::getSelfLogisticsEmailHtml($campOrganiserattendeeName, $campId, $campOrganiser, $campOffice, $campCode, $campAddress);
+          $emailOutcomeHtml = self::getSelfOutcomeLogisticsEmailHtml($attendeeName, $campId, $campOrganiser, $campOffice, $campCode, $campAddress);
+          // Send to organiser.
+          $toEmail = $campOrganiserEmail;
+
+          $mailParams = [
+            'subject' => 'Collection Camp Notification: ' . $campCode . ' at ' . $campAddress,
+            'from' => self::getFromAddress(),
+            'toEmail' => $attendeeEmail,
+            'replyTo' => self::getFromAddress(),
+            'html' => $emailOutcomeHtml,
+          ];
+          $emailSendResult = \CRM_Utils_Mail::send($mailParams);
+        }
+        else {
+          $emailHtml = self::getLogisticsEmailHtml($attendeeName, $campId, $campAttendedById, $campOffice, $campCode, $campAddress);
+          // Send to attendee.
+          $toEmail = $attendeeEmail;
+        }
+
         $mailParams = [
           'subject' => 'Collection Camp Notification: ' . $campCode . ' at ' . $campAddress,
           'from' => self::getFromAddress(),
-          'toEmail' => $attendeeEmail,
+          'toEmail' => $toEmail,
           'replyTo' => self::getFromAddress(),
-          'html' => self::getLogisticsEmailHtml($attendeeName, $campId, $campAttendedById, $campOffice, $campCode, $campAddress),
+          'html' => $emailHtml,
         ];
 
         $emailSendResult = \CRM_Utils_Mail::send($mailParams);
@@ -1226,6 +1259,48 @@ class CollectionCampService extends AutoSubscriber {
     <ol>
         <li><a href=\"$campVehicleDispatchFormUrl\">Dispatch Form</a><br>
         Please complete this form from the camp location once the vehicle is being loaded and ready for dispatch to the Goonj's processing center.</li>
+        <li><a href=\"$campOutcomeFormUrl\">Camp Outcome Form</a><br>
+        This feedback form should be filled out after the camp/drive ends, once you have an overview of the event's outcomes.</li>
+    </ol>
+    <p>We appreciate your cooperation.</p>
+    <p>Warm Regards,<br>Urban Relations Team</p>";
+
+    return $html;
+  }
+
+   /**
+   *
+   */
+  private static function getSelfLogisticsEmailHtml($contactName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress) {
+    $homeUrl = \CRM_Utils_System::baseCMSURL();
+    // Construct the full URLs for the forms.
+    $selfCampVehicleDispatchFormUrl = $homeUrl . 'self-camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp=' . $collectionCampId . '&Camp_Vehicle_Dispatch.Filled_by=' . $campAttendedById . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice . '&Eck_Collection_Camp1=' . $collectionCampId;
+
+    $html = "
+    <p>Dear $contactName,</p>
+    <p>Thank you for attending the camp <strong>$campCode</strong> at <strong>$campAddress</strong>. Please complete the following form during the camp:</p>
+    <ol>
+        <li><a href=\"$selfCampVehicleDispatchFormUrl\">Dispatch Form</a><br>
+        Please complete this form from the camp location once the vehicle is being loaded and ready for dispatch to the Goonj's processing center.</li>
+    </ol>
+    <p>We appreciate your cooperation.</p>
+    <p>Warm Regards,<br>Urban Relations Team</p>";
+
+    return $html;
+  }
+
+  /**
+   *
+   */
+  private static function getSelfOutcomeLogisticsEmailHtml($contactName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress) {
+    $homeUrl = \CRM_Utils_System::baseCMSURL();
+    // Construct the full URLs for the forms.
+    $campOutcomeFormUrl = $homeUrl . '/camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $campAttendedById;
+
+    $html = "
+    <p>Dear $contactName,</p>
+    <p>Thank you for attending the camp <strong>$campCode</strong> at <strong>$campAddress</strong>. Please complete the following form after the camp:</p>
+    <ol>
         <li><a href=\"$campOutcomeFormUrl\">Camp Outcome Form</a><br>
         This feedback form should be filled out after the camp/drive ends, once you have an overview of the event's outcomes.</li>
     </ol>
