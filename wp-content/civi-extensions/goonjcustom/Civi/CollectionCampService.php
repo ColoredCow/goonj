@@ -1167,6 +1167,17 @@ class CollectionCampService extends AutoSubscriber {
       $logisticEmailSent = $collectionCamp['Logistics_Coordination.Email_Sent'];
       $selfManaged = $collectionCamp['Logistics_Coordination.Self_Managed_By_Camp_Organiser'];
       $campOrganiser = $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
+      $poc = $collectionCamp['Collection_Camp_Intent_Details.Coordinating_Urban_POC'];
+
+      // Get poc details.
+      $campPocBy = Contact::get(FALSE)
+        ->addSelect('email.email', 'display_name')
+        ->addJoin('Email AS email', 'LEFT')
+        ->addWhere('id', '=', $poc)
+        ->execute()->first();
+
+      $campPocEmail = $campPocBy['email.email'];
+      $campPocName = $campPocBy['display_name'];
 
       // Get organiser details.
       $campOrganiserBy = Contact::get(FALSE)
@@ -1199,14 +1210,14 @@ class CollectionCampService extends AutoSubscriber {
 
         if ($selfManaged) {
           $emailHtml = self::getSelfLogisticsEmailHtml($campOrganiserattendeeName, $campId, $campOrganiser, $campOffice, $campCode, $campAddress);
-          $emailOutcomeHtml = self::getSelfOutcomeLogisticsEmailHtml($attendeeName, $campId, $campOrganiser, $campOffice, $campCode, $campAddress);
+          $emailOutcomeHtml = self::getSelfOutcomeLogisticsEmailHtml($campPocName, $campId, $campOrganiser, $campOffice, $campCode, $campAddress);
           // Send to organiser.
           $toEmail = $campOrganiserEmail;
 
           $mailParams = [
             'subject' => 'Collection Camp Notification: ' . $campCode . ' at ' . $campAddress,
             'from' => self::getFromAddress(),
-            'toEmail' => $attendeeEmail,
+            'toEmail' => $campPocEmail,
             'replyTo' => self::getFromAddress(),
             'html' => $emailOutcomeHtml,
           ];
@@ -1292,13 +1303,13 @@ class CollectionCampService extends AutoSubscriber {
   /**
    *
    */
-  private static function getSelfOutcomeLogisticsEmailHtml($contactName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress) {
+  private static function getSelfOutcomeLogisticsEmailHtml($pocName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
     // Construct the full URLs for the forms.
     $campOutcomeFormUrl = $homeUrl . '/camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $campAttendedById;
 
     $html = "
-    <p>Dear $contactName,</p>
+    <p>Dear $pocName,</p>
     <p>Thank you for attending the camp <strong>$campCode</strong> at <strong>$campAddress</strong>. Please complete the following form after the camp:</p>
     <ol>
         <li><a href=\"$campOutcomeFormUrl\">Camp Outcome Form</a><br>
