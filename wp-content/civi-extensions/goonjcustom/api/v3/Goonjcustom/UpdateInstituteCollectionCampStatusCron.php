@@ -8,7 +8,7 @@ use Civi\Api4\EckEntity;
 use Civi\Api4\Activity;
 
 /**
- * API spec.
+ *
  */
 function _civicrm_api3_goonjcustom_update_institute_collection_camp_status_cron_spec(&$spec) {
   // No params.
@@ -22,34 +22,15 @@ function civicrm_api3_goonjcustom_update_institute_collection_camp_status_cron($
   $now = new DateTimeImmutable();
   $endOfDay = $now->setTime(23, 59, 59)->format('Y-m-d H:i:s');
 
-  $campIdsToUpdate = [];
-
   /**
-   * -------------------------------------------
-   * CASE 1: Activity-based camp completion
-   * -------------------------------------------
+   * --------------------------------------------------------------
+   * STEP 1 — Fetch eligible camps (Outcome filled, authorized, etc.)
+   * --------------------------------------------------------------
    */
-  $activities = Activity::get(FALSE)
-    ->addSelect('Institution_Material_Contribution.Collection_Camp')
-    ->addWhere('activity_type_id:label', '=', 'Institution Material Contribution')
-    ->addWhere('Institution_Material_Contribution.Material_Type', 'IS NOT EMPTY')
-    ->addWhere('Institution_Material_Contribution.Collection_Camp', 'IS NOT EMPTY')
-    ->execute();
 
-  foreach ($activities as $activity) {
-    $campId = $activity['Institution_Material_Contribution.Collection_Camp'];
-    if (!empty($campId)) {
-      // Add to unique list.
-      $campIdsToUpdate[$campId] = TRUE;
-    }
-  }
+  $eligibleCampIds = [];
 
-  /**
-   * -------------------------------------------
-   * CASE 2: Vehicle Dispatch–based completion
-   * -------------------------------------------
-   */
-  $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
+  $eligibleCampsQuery = EckEntity::get('Collection_Camp', FALSE)
     ->addSelect('id')
     ->addWhere('subtype:name', '=', 'Institution_Collection_Camp')
     ->addWhere('Camp_Outcome.Rate_the_camp', 'IS NOT NULL')
@@ -58,9 +39,25 @@ function civicrm_api3_goonjcustom_update_institute_collection_camp_status_cron($
     ->addWhere('Institution_collection_camp_Review.Camp_Status', '=', 1)
     ->execute();
 
-  foreach ($collectionCamps as $camp) {
-    $campId = $camp['id'];
+  foreach ($eligibleCampsQuery as $camp) {
+    $eligibleCampIds[] = $camp['id'];
+  }
 
+  $campIdsToUpdate = [];
+
+  /**
+   * --------------------------------------------------------------
+   * STEP 2 — For each eligible camp, check Dispatch OR IMC Activity
+   * --------------------------------------------------------------
+   */
+
+  foreach ($eligibleCampIds as $campId) {
+
+    $markComplete = FALSE;
+
+    /**
+     * CONDITION A — Outcome + Dispatch Acknowledgement exists
+     */
     $dispatches = EckEntity::get('Collection_Source_Vehicle_Dispatch', FALSE)
       ->addSelect('id')
       ->addWhere('subtype:name', '=', 'Vehicle_Dispatch')
@@ -68,18 +65,41 @@ function civicrm_api3_goonjcustom_update_institute_collection_camp_status_cron($
       ->addWhere('Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office', 'IS NOT NULL')
       ->execute();
 
-    if ($dispatches->count()) {
-      // Add to unique list.
-      $campIdsToUpdate[$campId] = TRUE;
+    if ($dispatches->count() > 0) {
+      $markComplete = TRUE;
+    }
+
+    /**
+     * CONDITION B — Outcome + IMC Activity exists
+     * (Evaluate only if dispatch condition not met)
+     */
+    if (!$markComplete) {
+      $activities = Activity::get(FALSE)
+        ->addSelect('id')
+        ->addWhere('activity_type_id:label', '=', 'Institution Material Contribution')
+        ->addWhere('Institution_Material_Contribution.Collection_Camp', '=', $campId)
+        ->addWhere('Institution_Material_Contribution.Material_Type', 'IS NOT EMPTY')
+        ->execute();
+
+      if ($activities->count() > 0) {
+        $markComplete = TRUE;
+      }
+    }
+
+    /**
+     * Add to update queue
+     */
+    if ($markComplete) {
+      $campIdsToUpdate[] = $campId;
     }
   }
 
   /**
-   * -------------------------------------------
-   * UPDATE CAMPS (unique list)
-   * -------------------------------------------
+   * --------------------------------------------------------------
+   * STEP 3 — Update all qualified camps to Completed (3)
+   * --------------------------------------------------------------
    */
-  foreach (array_keys($campIdsToUpdate) as $campId) {
+  foreach ($campIdsToUpdate as $campId) {
     try {
       EckEntity::update('Collection_Camp', FALSE)
         ->addWhere('id', '=', $campId)
@@ -87,16 +107,16 @@ function civicrm_api3_goonjcustom_update_institute_collection_camp_status_cron($
         ->execute();
 
       $returnValues[] = [
-        'camp_id' => $campId,
-        'status' => 'updated',
+        'camp_id'  => $campId,
+        'status'   => 'updated',
       ];
     }
     catch (\Exception $e) {
       \Civi::log()->error("Error processing campId: {$campId}. Error: " . $e->getMessage());
       $returnValues[] = [
-        'camp_id' => $campId,
-        'status' => 'error',
-        'message' => $e->getMessage(),
+        'camp_id'  => $campId,
+        'status'   => 'error',
+        'message'  => $e->getMessage(),
       ];
     }
   }
