@@ -37,10 +37,10 @@ function civicrm_api3_goonjcustom_monthly_summary_for_institute_dropping_center_
 
   $today   = new \DateTime();
   // Calculate the 2nd day of the *next* month.
-  $secondOfNextMonth = (new \DateTime('first day of next month'))->modify('+1 day');
+  $secondOfCurrentMonth = (new \DateTime('first day of this month' ))->modify('+1 day');
 
   // Run this only on the 2nd day of next month.
-  if ($today->format('Y-m-d') !== $secondOfNextMonth->format('Y-m-d')) {
+  if ($today->format('Y-m-d') !== $secondOfCurrentMonth->format('Y-m-d')) {
     \Civi::log()->info('MonthlySummaryForInstituteDroppingCenterCron skipped (not 2nd day of next month)');
     return civicrm_api3_create_success([], $params, 'Goonjcustom', 'monthly_summary_for_institute_dropping_center_cron');
   }
