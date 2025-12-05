@@ -39,10 +39,10 @@ function civicrm_api3_goonjcustom_monthly_summary_for_dropping_center_cron($para
   $secondOfCurrentMonth = (new \DateTime('first day of this month' ))->modify('+1 day');
 
   // Run this only on the 2nd day of next month.
-  // if ($today->format('Y-m-d') !== $secondOfCurrentMonth->format('Y-m-d')) {
-  //   \Civi::log()->info('MonthlySummaryForDroppingCenterCron skipped (not 2nd day of next month)');
-  //   return civicrm_api3_create_success([], $params, 'Goonjcustom', 'monthly_summary_for_dropping_center_cron');
-  // }
+  if ($today->format('Y-m-d') !== $secondOfCurrentMonth->format('Y-m-d')) {
+    \Civi::log()->info('MonthlySummaryForDroppingCenterCron skipped (not 2nd day of next month)');
+    return civicrm_api3_create_success([], $params, 'Goonjcustom', 'monthly_summary_for_dropping_center_cron');
+  }
 
   $limit  = 20;
   $offset = 0;
