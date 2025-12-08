@@ -80,7 +80,7 @@ function generate_induction_slots($contactId = null, $days = 30) {
         // List of states with both physical and online inductions based on cities
         $statesWithMixedInductionTypes = \Civi\Api4\StateProvince::get(FALSE)
             ->addWhere('country_id.name', '=', 'India')
-            ->addWhere('name', 'IN', ['Bihar', 'Jharkhand', 'Orissa'])
+            ->addWhere('name', 'IN', ['Bihar', 'Jharkhand', 'Odisha'])
             ->execute()
             ->column('id');
 
