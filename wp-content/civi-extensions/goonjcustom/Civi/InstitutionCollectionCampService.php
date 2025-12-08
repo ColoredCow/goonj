@@ -1187,7 +1187,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
         'permissions' => ['goonj_chapter_admin', 'urbanops', 'mmt', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter', 'data_entry', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts'],
       ],
       'institutionMaterialContribution' => [
-        'title' => ts('Institution Material Contribution'),
+        'title' => ts('Dispatch Ack at GCOC'),
         'module' => 'afsearchInstitutionMaterialContributions',
         'directive' => 'afsearch-institution-material-contributions',
         'template' => 'CRM/Goonjcustom/Tabs/InstitutionCollectionCamp/InstitutionMaterialContribution.tpl',
