@@ -58,7 +58,6 @@ class AssignImportedIndividualToGroupChapter extends AutoSubscriber {
 				->addValue('status', 'Added')
 				->execute();
 		}
-		civicrm_api3('System', 'flush', []);
 	}
 
 	/**
