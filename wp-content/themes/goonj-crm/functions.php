@@ -42,6 +42,19 @@ function goonj_enqueue_scripts() {
 			true
 		);
 	}
+
+	$current_url = $_SERVER['REQUEST_URI'];
+	$is_contribution_page = strpos($current_url, 'contribute') !== false || is_page('team-5000');
+	
+	if (!$is_contribution_page) {
+		wp_enqueue_script(
+			'city-dropdown',
+			get_template_directory_uri() . '/city-dropdown.js',
+			array(),
+			filemtime( get_template_directory() . '/city-dropdown.js' ),
+			true
+		);
+	}
 }
 
 add_action( 'admin_enqueue_scripts', 'goonj_enqueue_admin_scripts' );
@@ -50,13 +63,13 @@ function goonj_enqueue_admin_scripts() {
 		'goonj-admin-style',
 		get_template_directory_uri() . '/admin-style.css',
 		array(),
-		wp_get_theme()->get( 'Version' )
+		filemtime( get_template_directory() . '/admin-style.css' ),
 	);
 	wp_enqueue_script(
 		'goonj-admin-script',
 		get_template_directory_uri() . '/admin-script.js',
 		array( 'jquery' ),
-		wp_get_theme()->get( 'Version' ),
+		filemtime( get_template_directory() . '/admin-script.js' ),
 		true
 	);
 }

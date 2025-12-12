@@ -35,11 +35,12 @@ function civicrm_api3_goonjcustom_monthly_summary_for_dropping_center_cron($para
   $returnValues = [];
 
   $today   = new \DateTime();
-  $lastDay = new \DateTime('last day of this month');
+  // Calculate the 2nd day of the *next* month.
+  $secondOfCurrentMonth = (new \DateTime('first day of this month' ))->modify('+1 day');
 
-  // Run this last day of month only.
-  if ($today->format('Y-m-d') !== $lastDay->format('Y-m-d')) {
-    \Civi::log()->info('MonthlySummaryForDroppingCenterCron skipped (not last day of month)');
+  // Run this only on the 2nd day of next month.
+  if ($today->format('Y-m-d') !== $secondOfCurrentMonth->format('Y-m-d')) {
+    \Civi::log()->info('MonthlySummaryForDroppingCenterCron skipped (not 2nd day of next month)');
     return civicrm_api3_create_success([], $params, 'Goonjcustom', 'monthly_summary_for_dropping_center_cron');
   }
 

@@ -55,7 +55,6 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       ],
       '&hook_civicrm_post' => [
         ['updateNameOfTheInstitution'],
-        ['updateCampStatusOnOutcomeAndACKFilled'],
         ['updateInstitutionDispatchDetails'],
       ],
       '&hook_civicrm_custom' => [
@@ -109,53 +108,6 @@ class InstitutionCollectionCampService extends AutoSubscriber {
           continue;
         }
       }
-    }
-  }
-
-  /**
-   *
-   */
-  public static function updateCampStatusOnOutcomeAndACKFilled(string $op, string $objectName, int $objectId, &$objectRef) {
-    if ($objectName !== 'AfformSubmission') {
-      return;
-    }
-
-    $afformName = $objectRef->afform_name;
-
-    if ($afformName !== 'afformInstitutionAcknowledgementForm' &&
-    $afformName !== 'afformInstitutionCampAcknowledgementFormForLogistics') {
-      return;
-    }
-
-    $jsonData = $objectRef->data;
-    $dataArray = json_decode($jsonData, TRUE);
-
-    $collectionCampId = $dataArray['Eck_Collection_Source_Vehicle_Dispatch1'][0]['fields']['Camp_Vehicle_Dispatch.Institution_Collection_Camp'];
-
-    if (!$collectionCampId) {
-      return;
-    }
-
-    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Camp_Outcome.Rate_the_camp')
-      ->addWhere('id', '=', $collectionCampId)
-      ->execute()->first();
-
-    $campOutcome = $collectionCamp['Camp_Outcome.Rate_the_camp'] ?? NULL;
-
-    if (!$campOutcome) {
-      return;
-    }
-
-    try {
-      EckEntity::update('Collection_Camp', FALSE)
-        ->addWhere('id', '=', $collectionCampId)
-        ->addValue('Institution_collection_camp_Review.Camp_Status', '3')
-        ->execute();
-
-    }
-    catch (\Exception $e) {
-      \Civi::log()->error("Exception occurred while updating camp status for campId: $collectionCampId. Error: " . $e->getMessage());
     }
   }
 
@@ -867,7 +819,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     . '&Camp_Vehicle_Dispatch.Filled_by=' . $institutionPOCId
     . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice
     . '&Eck_Collection_Camp1=' . $collectionCampId
-    . '&Camp_Institution_Data.Name_of_the_institution=' . $nameOfInstitution
+    . '&Camp_Institution_Data.Name_of_the_institution=' . urlencode($nameOfInstitution)
     . '&Camp_Institution_Data.Address=' . urlencode($addressOfInstitution)
     . '&Camp_Institution_Data.Email=' . $pocEmail
     . '&Camp_Institution_Data.Contact_Number=' . $pocContactNumber
@@ -921,6 +873,10 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     . '&Camp_Vehicle_Dispatch.Filled_by=' . $campAttendedById
     . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice
     . '&Eck_Collection_Camp1=' . $collectionCampId
+    . '&Camp_Institution_Data.Address=' . $addressOfInstitution
+    . '&Camp_Institution_Data.Name_of_the_institution=' . $nameOfInstitution
+    . '&Camp_Institution_Data.Email=' . $pocEmail
+    . '&Camp_Institution_Data.Contact_Number=' . $pocContactNumber
     . '&Institution_Collection_Camp_Intent.Collection_Camp_Address=' . $campAddress;
 
     $campOutcomeFormUrl = $homeUrl . '/institution-camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $campAttendedById . '&Institution_Collection_Camp_Intent.Collection_Camp_Address=' . $campAddress;
@@ -1230,6 +1186,13 @@ class InstitutionCollectionCampService extends AutoSubscriber {
         'template' => 'CRM/Goonjcustom/Tabs/InstitutionCollectionCamp/MaterialContribution.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops', 'mmt', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter', 'data_entry', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts'],
       ],
+      'institutionMaterialContribution' => [
+        'title' => ts('Dispatch Ack at GCOC'),
+        'module' => 'afsearchInstitutionMaterialContributions',
+        'directive' => 'afsearch-institution-material-contributions',
+        'template' => 'CRM/Goonjcustom/Tabs/InstitutionCollectionCamp/InstitutionMaterialContribution.tpl',
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'mmt', 'urban_ops_admin', 's2s_ho_team', 'project_team_ho', 'project_team_chapter', 'data_entry', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts'],
+      ],
       'campOutcome' => [
         'title' => ts('Camp Outcome'),
         'module' => 'afsearchInstitutionCampOutcome',
@@ -1249,7 +1212,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
         'module' => 'afsearchMonetaryContribution',
         'directive' => 'afsearch-monetary-contribution',
         'template' => 'CRM/Goonjcustom/Tabs/MonetaryContribution.tpl',
-        'permissions' => ['mmt_and_accounts_chapter_team', 'urban_ops_and_accounts_chapter_team', 'account_team', 'ho_account', 'project_ho_and_accounts'],
+        'permissions' => ['goonj_chapter_admin', 'ho_account'],
       ],
       'InstituteMaterialContribution' => [
         'title' => ts('Monetary Contribution'),

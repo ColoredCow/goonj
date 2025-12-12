@@ -10,6 +10,9 @@ use Civi\Api4\CustomField;
 
 $target            = get_query_var('target');
 $action_target     = get_query_var('action_target');
+if (!is_array($action_target)) {
+    $action_target = [];
+}
 $source_contact_id = $action_target['id'] ?? NULL;
 
 if ($target === 'induction-schedule') {
@@ -386,18 +389,6 @@ if (in_array($target, ['collection-camp', 'institution-collection-camp', 'droppi
                 echo esc_html__('Induction Date and Time: ', 'goonj-blocks') . esc_html($slots['date']);
                 ?>
             </p>
-        <?php elseif ($slots['status'] === 'No_show') : ?>
-            <p>To schedule your Induction/Orientation please get in touch with the Goonj team on :</p>
-                <div class="contact-info">
-                    <div class="contact-item">
-                        <a href="mailto:mail@goonj.org" class="contact-link">mail@goonj.org</a>
-                    </div>
-                    <div class="contact-item">
-                        <a href="tel:01141401216" class="contact-link">011-41401216</a>
-                    </div>
-                </div>
-            <p>Warm regards,</p>
-            <p> Team Goonj..</p>
         <?php else : ?>
             <h2 class="wp-block-gb-heading"><?php esc_html_e('Available Induction Slots', 'goonj-blocks'); ?></h2>
             <div class="wp-block-gb-slots-grid">

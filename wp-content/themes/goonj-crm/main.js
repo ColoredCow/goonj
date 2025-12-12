@@ -1,4 +1,9 @@
-// Consolidated DOMContentLoaded listener
+(function injectCityDropdownCSS() {
+  // City dropdown CSS moved to city-dropdown.js
+  // This file is conditionally loaded based on page type
+})();
+
+/* ---------- Consolidated DOMContentLoaded listener ---------- */
 document.addEventListener("DOMContentLoaded", function () {
   // Message handling
   handleUrlMessages();
@@ -30,15 +35,13 @@ function handleUrlMessages() {
 					  <p class="fw-600 font-sans fz-20 mb-6">You are not registered as a volunteer with us.</p>
 					  <p class="fw-400 font-sans fz-16 mt-0 mb-24">To set up a collection camp, please take a moment to fill out the volunteer registration form below. We can't wait to have you on board!</p>
 				  `;
-      } else if (
-        message === "waiting-induction-collection-camp"
-      ) {
+      } else if (message === "waiting-induction-collection-camp") {
         messageDiv.innerHTML = `
-		  <p class="fw-600 font-sans fz-20 mb-6">your induction is pending.</p>
+		  <p class="fw-600 font-sans fz-20 mb-6">Your induction is pending.</p>
 		  <p class="fw-400 font-sans fz-16 mt-0 mb-24"></p>
 		  `;
       }  
-      else if (
+        else if (
         message === "dropping-center" ||
         message === "dropping-center-individual-user"
       ) {
@@ -120,26 +123,27 @@ function setupFormValidation() {
 
       if (input) {
         const form = input.closest("form");
+        if (!form) return;
 
         if (form) {
-          form.addEventListener("submit", function (event) {
-            const value = input.value.trim();
+        form.addEventListener("submit", function (event) {
+          const value = input.value.trim();
 
-            // If the field is required, validate it
-            if (field.required && !value) {
-              event.preventDefault();
-              alert(`${field.labelText} is required.`);
-              input.focus();
-              return;
-            }
+          // If the field is required, validate it
+          if (field.required && !value) {
+            event.preventDefault();
+            alert(`${field.labelText} is required.`);
+            input.focus();
+            return;
+          }
 
-            // If the field has a regex validation, apply it only when value is present
-            if (value && field.regex && !field.regex.test(value)) {
-              event.preventDefault();
-              alert(field.errorMessage);
-              input.focus();
-            }
-          });
+          // If the field has a regex validation, apply it only when value is present
+          if (value && field.regex && !field.regex.test(value)) {
+            event.preventDefault();
+            alert(field.errorMessage);
+            input.focus();
+          }
+        });
         }
       }
     }
@@ -261,169 +265,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 });
 
-// document.addEventListener("DOMContentLoaded", function () {
-//   function waitForFieldsAndInit() {
-//     const stateFieldWrapper =
-//       document.querySelector('af-field[name="state_province_id"]') ||
-//       document.getElementById("editrow-state_province-Primary") ||
-//       document.querySelector(
-//         'af-field[name="Institution_Collection_Camp_Intent.State"]'
-//       ) ||
-//       document.querySelector(
-//         'af-field[name="Institution_Dropping_Center_Intent.State"]'
-//       ) ||
-//       document.querySelector(
-//         'af-field[name="Collection_Camp_Intent_Details.State"]'
-//       ) ||
-//       document.querySelector('af-field[name="Dropping_Centre.State"]') ||
-//       document.querySelector(
-//         'af-field[name="Institution_Goonj_Activities.State"]'
-//       ) ||
-//       document.querySelector('af-field[name="Goonj_Activities.State"]') ||
-//       document.querySelector('af-field[name="Urban_Planned_Visit.State"]') ||
-//       Array.from(document.querySelectorAll("label"))
-//         .find((label) => label.textContent.trim() === "State")
-//         ?.closest("af-field");
-
-//     const chosenSpan =
-//       stateFieldWrapper?.querySelector(".select2-chosen") ||
-//       stateFieldWrapper?.querySelector('span[id^="select2-chosen"]');
-
-//     const cityFieldWrapper =
-//       document.querySelector('af-field[name="city"]') ||
-//       document.querySelector('af-field[name="Goonj_Activities.City"]') ||
-//       document.getElementById("editrow-city-Primary") ||
-//       Array.from(document.querySelectorAll("label"))
-//         .find((label) => label.textContent.trim().startsWith("City"))
-//         ?.closest("af-field");
-
-//     const cityInput = cityFieldWrapper?.querySelector('input[type="text"]');
-
-//     if (!stateFieldWrapper || !chosenSpan || !cityFieldWrapper || !cityInput) {
-//       requestAnimationFrame(waitForFieldsAndInit);
-//       return;
-//     }
-
-//     if (!cityFieldWrapper.querySelector('select[name="city-dropdown"]')) {
-//       cityInput.style.display = "none";
-
-//       const citySelect = document.createElement("select");
-//       citySelect.className = "form-control";
-//       citySelect.name = "city-dropdown";
-//       citySelect.style.width = "100%";
-//       citySelect.style.maxWidth = "100%";
-//       citySelect.innerHTML = `
-//         <option value="">Select a city</option>
-//         <option value="Other">Other</option>
-//       `;
-//       cityInput.parentElement.appendChild(citySelect);
-
-//       function applySelect2() {
-//         if (window.jQuery && jQuery.fn.select2) {
-//           jQuery(citySelect).select2("destroy");
-//           jQuery(citySelect).select2({
-//             placeholder: "Select a city",
-//             allowClear: true,
-//             width: "resolve",
-//             minimumResultsForSearch: 0,
-//             dropdownAutoWidth: true,
-//           });
-
-//           jQuery(citySelect).next(".select2-container").css({
-//             width: "100%",
-//             "max-width": "100%",
-//           });
-//         }
-//       }
-
-//       applySelect2();
-
-//       citySelect.addEventListener("change", () => {
-//         cityInput.value = citySelect.value;
-//         cityInput.dispatchEvent(new Event("input", { bubbles: true }));
-//       });
-//     }
-
-//     const citySelect = cityFieldWrapper.querySelector(
-//       'select[name="city-dropdown"]'
-//     );
-//     let lastState = chosenSpan.textContent.trim();
-
-//     // Function to fetch and populate cities
-//     function fetchAndPopulateCities(stateName, preselectValue = null) {
-//       if (!stateName) return;
-
-//       const baseUrl = `${window.location.origin}/wp-admin/admin-ajax.php`;
-
-//       fetch(baseUrl, {
-//         method: "POST",
-//         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-//         body: new URLSearchParams({
-//           action: "get_cities_by_state",
-//           state_name: stateName,
-//         }),
-//       })
-//         .then((res) => res.json())
-//         .then((data) => {
-//           citySelect.innerHTML = `<option value="">Select a city</option>`;
-//           if (data.success && data.data?.cities?.length) {
-//             data.data.cities.forEach((city) => {
-//               const opt = document.createElement("option");
-//               opt.value = city.name;
-//               opt.textContent = city.name;
-//               citySelect.appendChild(opt);
-//             });
-//           }
-
-//           citySelect.appendChild(new Option("Other", "Other"));
-
-//           applySelect2();
-
-//           // If there's a preselect value (e.g., from initial cityInput.value), set it
-//           if (preselectValue) {
-//             // Check if the preselectValue exists in the options
-//             const optionExists = Array.from(citySelect.options).some(
-//               (opt) => opt.value === preselectValue
-//             );
-//             if (optionExists) {
-//               jQuery(citySelect).val(preselectValue).trigger("change");
-//             } else {
-//               // If not found, select "Other" and set the input value manually
-//               jQuery(citySelect).val("Other").trigger("change");
-//               cityInput.value = preselectValue;
-//               cityInput.dispatchEvent(new Event("input", { bubbles: true }));
-//             }
-//           } else {
-//             jQuery(citySelect).trigger("change");
-//           }
-//         })
-//         .catch((err) => {
-//         });
-//     }
-
-//     const observer = new MutationObserver(() => {
-//       const currentState = chosenSpan.textContent.trim();
-//       if (currentState !== lastState && currentState !== "") {
-//         lastState = currentState;
-//         fetchAndPopulateCities(currentState);
-//       }
-//     });
-
-//     observer.observe(chosenSpan, {
-//       characterData: true,
-//       childList: true,
-//       subtree: true,
-//     });
-
-//     // Initial fetch if state is already selected
-//     const initialState = chosenSpan.textContent.trim();
-//     const initialCity = cityInput.value.trim();
-//     if (initialState !== "") {
-//       lastState = initialState;
-//       fetchAndPopulateCities(initialState, initialCity);
-//     }
-//   }
-
-//   requestAnimationFrame(waitForFieldsAndInit);
-// });
-
+document.addEventListener("DOMContentLoaded", function () {
+  // City dropdown functionality moved to city-dropdown.js
+  // which is conditionally loaded based on page type (excluded from contribution pages)
+});
