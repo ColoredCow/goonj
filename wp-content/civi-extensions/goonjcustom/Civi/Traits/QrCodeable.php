@@ -551,11 +551,11 @@ trait QrCodeable {
   /**
    *
    */
-  public static function generatePdfForCollectionCamp($entityId, $activity, $email, $phone, $locationAreaOfCamp, $contributionDate, $subtype, $eventId, $goonjOfficeId) {
+  public static function generatePdfForCollectionCamp($entityId, $activity, $email, $phone, $locationAreaOfCamp, $contributionDate, $subtype, $eventId, $goonjOfficeId, $contributorAddress) {
     try {
       $dompdf = new Dompdf(['isRemoteEnabled' => TRUE]);
 
-      $html = MaterialContributionService::generateContributionReceiptHtml($activity, $email, $phone, $locationAreaOfCamp, $contributionDate, $subtype, $eventId, $goonjOfficeId);
+      $html = MaterialContributionService::generateContributionReceiptHtml($activity, $email, $phone, $locationAreaOfCamp, $contributionDate, $subtype, $eventId, $goonjOfficeId, $contributorAddress);
 
       $dompdf->loadHtml($html);
       $dompdf->setPaper('A4', 'portrait');

@@ -48,7 +48,7 @@ class CRM_Goonjcustom_Form_InstitutionCollectionCampLinks extends CRM_Core_Form 
     $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
       ->addSelect('Institution_Collection_Camp_Intent.Organization_Name', 'Institution_Collection_Camp_Intent.Institution_POC')
       ->addWhere('id', '=', $this->_collectionCampId)
-      ->execute()->single();
+      ->execute()->first();
     
     $organizationId = $collectionCamps['Institution_Collection_Camp_Intent.Organization_Name'];
     $institutionPOCId = $collectionCamps['Institution_Collection_Camp_Intent.Institution_POC'];
@@ -56,14 +56,14 @@ class CRM_Goonjcustom_Form_InstitutionCollectionCampLinks extends CRM_Core_Form 
     $this->_organization = Organization::get(FALSE)
       ->addSelect('display_name', 'email_primary.email', 'phone_primary.phone', 'address_primary.street_address')
       ->addWhere('id', '=', $organizationId)
-      ->execute()->single();
+      ->execute()->first();
 
     $this->_contact = Contact::get(FALSE)
       ->addSelect('email.email', 'phone.phone')
       ->addJoin('Email AS email', 'LEFT')
       ->addJoin('Phone AS phone', 'LEFT')
       ->addWhere('id', '=', $institutionPOCId)
-      ->execute()->single();
+      ->execute()->first();
 
     $this->setTitle('Institution Collection Camp Links');
     parent::preProcess();
@@ -115,7 +115,7 @@ class CRM_Goonjcustom_Form_InstitutionCollectionCampLinks extends CRM_Core_Form 
           "&Eck_Collection_Camp1={$this->_collectionCampId}" .
           "&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent={$this->_processingCenterId}" .
           "&Camp_Vehicle_Dispatch.Filled_by={$contactId}" .
-          "&Camp_Institution_Data.Name_of_the_institution={$nameOfInstitution}" .
+          "&Camp_Institution_Data.Name_of_the_institution=" . urlencode($nameOfInstitution) .
           "&Camp_Institution_Data.Address=" . urlencode($address) .
           "&Camp_Institution_Data.Email={$pocEmail}" .
           "&Camp_Institution_Data.Contact_Number={$pocContactNumber}",
@@ -130,7 +130,7 @@ class CRM_Goonjcustom_Form_InstitutionCollectionCampLinks extends CRM_Core_Form 
           "&Eck_Collection_Camp1={$this->_collectionCampId}" .
           "&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent={$this->_processingCenterId}" .
           "&Camp_Vehicle_Dispatch.Filled_by={$contactId}" .
-          "&Camp_Institution_Data.Name_of_the_institution={$nameOfInstitution}" .
+          "&Camp_Institution_Data.Name_of_the_institution=" . urlencode($nameOfInstitution) .
           "&Camp_Institution_Data.Address=" . urlencode($address) .
           "&Camp_Institution_Data.Email={$pocEmail}" .
           "&Camp_Institution_Data.Contact_Number={$pocContactNumber}",

@@ -21,6 +21,7 @@ use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
 use Civi\InductionService;
+use Civi\Api4\Event;
 
 /**
  *
@@ -41,7 +42,7 @@ class CollectionCampService extends AutoSubscriber {
   const ENTITY_SUBTYPE_NAME = 'Collection_Camp';
   const MATERIAL_RELATIONSHIP_TYPE_NAME = 'Material Management Team of';
   const DEFAULT_FINANCIAL_TYPE_ID = 1;
-  const ACCOUNTS_TEAM_EMAIL = '"Goonj Accounts Team" <accounts@goonj.org>';
+  const ACCOUNTS_TEAM_EMAIL = '"Goonj" <accounts@goonj.org>';
 
   private static $individualId = NULL;
   private static $collectionCampAddress = NULL;
@@ -56,7 +57,6 @@ class CollectionCampService extends AutoSubscriber {
       ['individualCreated'],
       ['assignChapterGroupToIndividual'],
       ['reGenerateCollectionCampQr'],
-      ['updateCampStatusOnOutcomeAndAckFilled'],
       ['assignChapterGroupToIndividualForContribution'],
       ['updateCampaignForCollectionSourceContribution'],
       ['generateInvoiceIdForContribution'],
@@ -289,8 +289,8 @@ class CollectionCampService extends AutoSubscriber {
       ],
       'campFeedback' => [
         'title' => ts('Volunteer Feedback'),
-        'module' => 'afsearchVolunteerFeedback',
-        'directive' => 'afsearch-volunteer-feedback',
+        'module' => 'afsearchVolunteerFeedback1',
+        'directive' => 'afsearch-volunteer-feedback1',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp/Feedback.tpl',
         'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts'],
       ],
@@ -299,15 +299,15 @@ class CollectionCampService extends AutoSubscriber {
         'module' => 'afsearchMonetaryContribution',
         'directive' => 'afsearch-monetary-contribution',
         'template' => 'CRM/Goonjcustom/Tabs/MonetaryContribution.tpl',
-        'permissions' => ['account_team', 'ho_account', 'mmt_and_accounts_chapter_team', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts'],
+        'permissions' => ['goonj_chapter_admin', 'ho_account'],
       ],
-      'monetaryContributionForUrbanOps' => [
-        'title' => ts('Monetary Contribution'),
-        'module' => 'afsearchMonetaryContributionForUrbanOps',
-        'directive' => 'afsearch-monetary-contribution-for-urban-ops',
-        'template' => 'CRM/Goonjcustom/Tabs/MonetaryContributionForUrbanOps.tpl',
-        'permissions' => ['goonj_chapter_admin'],
-      ],
+      // 'monetaryContributionForUrbanOps' => [
+      //   'title' => ts('Monetary Contribution'),
+      //   'module' => 'afsearchMonetaryContributionForUrbanOps',
+      //   'directive' => 'afsearch-monetary-contribution-for-urban-ops',
+      //   'template' => 'CRM/Goonjcustom/Tabs/MonetaryContributionForUrbanOps.tpl',
+      //   'permissions' => ['goonj_chapter_admin'],
+      // ],
     ];
 
     foreach ($tabConfigs as $key => $config) {
@@ -1165,6 +1165,29 @@ class CollectionCampService extends AutoSubscriber {
       $campAddress = $collectionCamp['Collection_Camp_Intent_Details.Location_Area_of_camp'];
       $campAttendedById = $collectionCamp['Logistics_Coordination.Camp_to_be_attended_by'];
       $logisticEmailSent = $collectionCamp['Logistics_Coordination.Email_Sent'];
+      $selfManaged = $collectionCamp['Logistics_Coordination.Self_Managed_By_Camp_Organiser'];
+      $campOrganiser = $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
+      $poc = $collectionCamp['Collection_Camp_Intent_Details.Coordinating_Urban_POC'];
+
+      // Get poc details.
+      $campPocBy = Contact::get(FALSE)
+        ->addSelect('email.email', 'display_name')
+        ->addJoin('Email AS email', 'LEFT')
+        ->addWhere('id', '=', $poc)
+        ->execute()->first();
+
+      $campPocEmail = $campPocBy['email.email'];
+      $campPocName = $campPocBy['display_name'];
+
+      // Get organiser details.
+      $campOrganiserBy = Contact::get(FALSE)
+        ->addSelect('email.email', 'display_name')
+        ->addJoin('Email AS email', 'LEFT')
+        ->addWhere('id', '=', $campOrganiser)
+        ->execute()->first();
+
+      $campOrganiserEmail = $campOrganiserBy['email.email'];
+      $campOrganiserattendeeName = $campOrganiserBy['display_name'];
 
       $startDate = new \DateTime($collectionCamp['Collection_Camp_Intent_Details.Start_Date']);
 
@@ -1185,12 +1208,33 @@ class CollectionCampService extends AutoSubscriber {
           throw new \Exception('Attendee email missing');
         }
 
+        if ($selfManaged) {
+          $emailHtml = self::getSelfLogisticsEmailHtml($campOrganiserattendeeName, $campId, $campOrganiser, $campOffice, $campCode, $campAddress);
+          $emailOutcomeHtml = self::getSelfOutcomeLogisticsEmailHtml($campPocName, $campId, $campOrganiser, $campOffice, $campCode, $campAddress);
+          // Send to organiser.
+          $toEmail = $campOrganiserEmail;
+
+          $mailParams = [
+            'subject' => 'Collection Camp Notification: ' . $campCode . ' at ' . $campAddress,
+            'from' => self::getFromAddress(),
+            'toEmail' => $campPocEmail,
+            'replyTo' => self::getFromAddress(),
+            'html' => $emailOutcomeHtml,
+          ];
+          $emailSendResult = \CRM_Utils_Mail::send($mailParams);
+        }
+        else {
+          $emailHtml = self::getLogisticsEmailHtml($attendeeName, $campId, $campAttendedById, $campOffice, $campCode, $campAddress);
+          // Send to attendee.
+          $toEmail = $attendeeEmail;
+        }
+
         $mailParams = [
           'subject' => 'Collection Camp Notification: ' . $campCode . ' at ' . $campAddress,
           'from' => self::getFromAddress(),
-          'toEmail' => $attendeeEmail,
+          'toEmail' => $toEmail,
           'replyTo' => self::getFromAddress(),
-          'html' => self::getLogisticsEmailHtml($attendeeName, $campId, $campAttendedById, $campOffice, $campCode, $campAddress),
+          'html' => $emailHtml,
         ];
 
         $emailSendResult = \CRM_Utils_Mail::send($mailParams);
@@ -1226,6 +1270,48 @@ class CollectionCampService extends AutoSubscriber {
     <ol>
         <li><a href=\"$campVehicleDispatchFormUrl\">Dispatch Form</a><br>
         Please complete this form from the camp location once the vehicle is being loaded and ready for dispatch to the Goonj's processing center.</li>
+        <li><a href=\"$campOutcomeFormUrl\">Camp Outcome Form</a><br>
+        This feedback form should be filled out after the camp/drive ends, once you have an overview of the event's outcomes.</li>
+    </ol>
+    <p>We appreciate your cooperation.</p>
+    <p>Warm Regards,<br>Urban Relations Team</p>";
+
+    return $html;
+  }
+
+   /**
+   *
+   */
+  private static function getSelfLogisticsEmailHtml($contactName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress) {
+    $homeUrl = \CRM_Utils_System::baseCMSURL();
+    // Construct the full URLs for the forms.
+    $selfCampVehicleDispatchFormUrl = $homeUrl . 'self-camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp=' . $collectionCampId . '&Camp_Vehicle_Dispatch.Filled_by=' . $campAttendedById . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice . '&Eck_Collection_Camp1=' . $collectionCampId;
+
+    $html = "
+    <p>Dear $contactName,</p>
+    <p>Thank you for attending the camp <strong>$campCode</strong> at <strong>$campAddress</strong>. Please complete the following form during the camp:</p>
+    <ol>
+        <li><a href=\"$selfCampVehicleDispatchFormUrl\">Dispatch Form</a><br>
+        Please complete this form from the camp location once the vehicle is being loaded and ready for dispatch to the Goonj's processing center.</li>
+    </ol>
+    <p>We appreciate your cooperation.</p>
+    <p>Warm Regards,<br>Urban Relations Team</p>";
+
+    return $html;
+  }
+
+  /**
+   *
+   */
+  private static function getSelfOutcomeLogisticsEmailHtml($pocName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress) {
+    $homeUrl = \CRM_Utils_System::baseCMSURL();
+    // Construct the full URLs for the forms.
+    $campOutcomeFormUrl = $homeUrl . '/camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $campAttendedById;
+
+    $html = "
+    <p>Dear $pocName,</p>
+    <p>Thank you for attending the camp <strong>$campCode</strong> at <strong>$campAddress</strong>. Please complete the following form after the camp:</p>
+    <ol>
         <li><a href=\"$campOutcomeFormUrl\">Camp Outcome Form</a><br>
         This feedback form should be filled out after the camp/drive ends, once you have an overview of the event's outcomes.</li>
     </ol>
@@ -1293,63 +1379,6 @@ class CollectionCampService extends AutoSubscriber {
         error_log('results: ' . print_r($results, TRUE));
 
       }
-    }
-  }
-
-  /**
-   * This hook is called after a db write on entities.
-   *
-   * @param string $op
-   *   The type of operation being performed.
-   * @param string $objectName
-   *   The name of the object.
-   * @param int $objectId
-   *   The unique identifier for the object.
-   * @param object $objectRef
-   *   The reference to the object.
-   */
-  public static function updateCampStatusOnOutcomeAndAckFilled(string $op, string $objectName, int $objectId, &$objectRef) {
-    if ($objectName !== 'AfformSubmission') {
-      return;
-    }
-
-    $afformName = $objectRef->afform_name;
-    if ($afformName !== 'afformFrontFacingAcknowledgementFormForLogistics' &&
-    $afformName !== 'afformAcknowledgementFormForLogistics') {
-      return;
-    }
-
-    $jsonData = $objectRef->data;
-    $dataArray = json_decode($jsonData, TRUE);
-
-    $collectionCampId = $dataArray['Eck_Collection_Source_Vehicle_Dispatch1'][0]['fields']['Camp_Vehicle_Dispatch.Collection_Camp'];
-
-    if (!$collectionCampId) {
-      return;
-    }
-
-    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Camp_Outcome.Rate_the_camp')
-      ->addWhere('id', '=', $collectionCampId)
-      ->execute()->first();
-
-    $campOutcome = $collectionCamp['Camp_Outcome.Rate_the_camp'] ?? NULL;
-
-    if (!$campOutcome) {
-      return;
-    }
-
-    try {
-      $currentDate = date('Y-m-d');
-      EckEntity::update('Collection_Camp', FALSE)
-        ->addWhere('id', '=', $collectionCampId)
-        ->addValue('Collection_Camp_Intent_Details.Camp_Status', 'completed')
-        ->addValue('Camp_Outcome.Camp_Status_Completion_Date', $currentDate)
-        ->execute();
-
-    }
-    catch (\Exception $e) {
-      \Civi::log()->error("Exception occurred while updating camp status for campId: $collectionCampId. Error: " . $e->getMessage());
     }
   }
 
@@ -1676,7 +1705,7 @@ class CollectionCampService extends AutoSubscriber {
       }
 
       $contribution = Contribution::get(FALSE)
-        ->addSelect('Contribution_Details.Source', 'campaign_id')
+        ->addSelect('Contribution_Details.Source', 'Contribution_Details.Events', 'campaign_id')
         ->addWhere('id', '=', $contributionId)
         ->execute()->first();
 
@@ -1684,49 +1713,68 @@ class CollectionCampService extends AutoSubscriber {
         return;
       }
 
+      // Collection Camp ID.
       $sourceID = $contribution['Contribution_Details.Source'];
-      if (!$sourceID) {
+      // Event ID.
+      $eventID = $contribution['Contribution_Details.Events'];
+      $existingCampaignId = $contribution['campaign_id'];
+
+      if ($existingCampaignId) {
         return;
       }
 
-      $contributionCampaignId = $contribution['campaign_id'];
-      if (!$contributionCampaignId) {
-        return;
+      /**
+       * ------------------------------------------------------
+       * 1️⃣ If a Collection Camp is selected → use its campaign
+       * ------------------------------------------------------
+       */
+      if (!empty($sourceID)) {
+        $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+          ->addSelect('Collection_Camp_Intent_Details.Campaign')
+          ->addWhere('id', '=', $sourceID)
+          ->execute()->single();
+
+        if (!empty($collectionCamp)) {
+          $campaignId = $collectionCamp['Collection_Camp_Intent_Details.Campaign'];
+
+          if (!empty($campaignId)) {
+            Contribution::update(FALSE)
+              ->addValue('campaign_id', $campaignId)
+              ->addWhere('id', '=', $contributionId)
+              ->execute();
+          }
+
+          // Stop after collection camp flow.
+          return;
+        }
       }
 
-      $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
-        ->addSelect('Collection_Camp_Intent_Details.Campaign')
-        ->addWhere('id', '=', $sourceID)
-        ->execute()->single();
+      /**
+       * ------------------------------------------------------
+       * 2️⃣ If no collection camp, fallback to Event campaign
+       * ------------------------------------------------------
+       */
+      if (!empty($eventID)) {
+        $event = Event::get(FALSE)
+          ->addSelect('campaign_id')
+          ->addWhere('id', '=', $eventID)
+          ->execute()->first();
 
-      if (!$collectionCamp) {
-        return;
+        if (!empty($event['campaign_id'])) {
+          Contribution::update(FALSE)
+            ->addValue('campaign_id', $event['campaign_id'])
+            ->addWhere('id', '=', $contributionId)
+            ->execute();
+        }
       }
-
-      $campaignId = $collectionCamp['Collection_Camp_Intent_Details.Campaign'];
-
-      if (!$campaignId) {
-        return;
-      }
-
-      if ($contributionCampaignId) {
-        return;
-      }
-
-      Contribution::update(FALSE)
-        ->addValue('campaign_id', $campaignId)
-        ->addWhere('id', '=', $contributionId)
-        ->execute();
 
     }
-
     catch (\Exception $e) {
-      \Civi::log()->error("Exception occurred in updateCampaignForCollectionSourceContribution.", [
+      \Civi::log()->error("Exception in updateCampaignForCollectionSourceContribution", [
         'Message' => $e->getMessage(),
-        'Stack Trace' => $e->getTraceAsString(),
+        'Trace'   => $e->getTraceAsString(),
       ]);
     }
-
   }
 
   /**
@@ -1896,8 +1944,41 @@ class CollectionCampService extends AutoSubscriber {
   public static function sendCampOutcomeAckEmailAfter5Days($collectionCamp) {
     $campId = $collectionCamp['id'];
 
-    $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
+    // Fetch Event Volunteer
+    $volunteeringActivities = Activity::get(FALSE)
+    ->addSelect('activity_contact.contact_id')
+    ->addJoin('ActivityContact AS activity_contact', 'LEFT')
+    ->addWhere('activity_type_id:name', '=', 'Volunteering')
+    ->addWhere('Volunteering_Activity.Collection_Camp', '=', $campId)
+    ->addWhere('activity_contact.record_type_id', '=', 3)
+    ->execute();
 
+    // Collect volunteer contact IDs
+    $volunteerContactIds = [];
+    foreach ($volunteeringActivities as $volunteer) {
+        $volunteerContactIds[] = $volunteer['activity_contact.contact_id'];
+    }
+
+    // Fetch volunteer emails (if any volunteers found)
+    $eventVolunteerEmails = [];
+    if (!empty($volunteerContactIds)) {
+        $volunteerContacts = Contact::get(FALSE)
+            ->addSelect('email.email')
+            ->addJoin('Email AS email', 'LEFT')
+            ->addWhere('id', 'IN', $volunteerContactIds)
+            ->execute();
+
+        foreach ($volunteerContacts as $contact) {
+            if (!empty($contact['email.email'])) {
+                $eventVolunteerEmails[] = $contact['email.email'];
+            }
+        }
+    }
+
+    // Convert to comma-separated string for CC
+    $eventVolunteerCC = implode(',', $eventVolunteerEmails);
+
+    $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
       ->addSelect('Collection_Camp_Intent_Details.Location_Area_of_camp', 'Core_Contribution_Details.Number_of_unique_contributors', 'Camp_Outcome.Rate_the_camp', 'Camp_Outcome.Total_Fundraised_form_Activity', 'Collection_Camp_Intent_Details.Start_Date', 'title', 'Collection_Camp_Intent_Details.End_Date')
       ->addWhere('id', '=', $campId)
       ->execute()->single();
@@ -1970,7 +2051,8 @@ class CollectionCampService extends AutoSubscriber {
       'from' => self::getFromAddress(),
       'toEmail' => $attendeeEmail,
       'replyTo' => self::getFromAddress(),
-      'html' => self::getCampOutcomeAckEmailAfter5Days($attendeeName, $campAddress, $campStartDate, $totalAmount, $materialGeneratedHtml, $uniqueContributors, $campRating, $fundsGenerated, $campId, $campEndDate),
+      'html' => self::getCampOutcomeAckEmailAfter5Days($attendeeName, $campAddress, $campStartDate, $totalAmount, $materialGeneratedHtml, $uniqueContributors, $campRating, $fundsGenerated, $campId, $campEndDate, $campOrganiserId),
+      'cc' => $eventVolunteerCC,
     ];
 
     $emailSendResult = \CRM_Utils_Mail::send($mailParams);
@@ -2010,9 +2092,9 @@ class CollectionCampService extends AutoSubscriber {
   /**
    *
    */
-public static function getCampOutcomeAckEmailAfter5Days($attendeeName, $campAddress, $campStartDate, $totalAmount, $materialGeneratedHtml, $uniqueContributors, $campRating, $fundsGenerated, $campId, $campEndDate) {
+public static function getCampOutcomeAckEmailAfter5Days($attendeeName, $campAddress, $campStartDate, $totalAmount, $materialGeneratedHtml, $uniqueContributors, $campRating, $fundsGenerated, $campId, $campEndDate, $campOrganiserId) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
-    $campVolunteerFeedback = $homeUrl . 'volunteer-camp-feedback/#?Eck_Collection_Camp1=' . $campId;
+    $campVolunteerFeedback = $homeUrl . 'volunteer-camp-feedback/#?Collection_Source_Feedback.Collection_Camp_Code=' . $campId . '&Collection_Source_Feedback.Collection_Camp_Address=' . urlencode($campAddress) . '&Collection_Source_Feedback.Filled_By=' . $campOrganiserId;
     // Conditionally include funds raised
     $fundsGeneratedHtml = '';
     if (!empty($fundsGenerated)) {
@@ -2036,7 +2118,6 @@ public static function getCampOutcomeAckEmailAfter5Days($attendeeName, $campAddr
         <ul>
             $materialGeneratedHtml
             <li>Footfall: $uniqueContributors</li>
-            <li>Camp rating from our team: $campRating</li>
             $fundsGeneratedHtml
         </ul>
         <p>If you haven’t filled the feedback form yet, you can share your thoughts here: <a href='$campVolunteerFeedback'>Feedback Form</a></p>

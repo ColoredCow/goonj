@@ -44,7 +44,7 @@ class CollectionCampVolunteerFeedbackService {
     // Check if feedback form is not filled and 24 hours have passed since camp end.
     if ($hoursSinceCampEnd >= 24 && !$lastReminderSent) {
       // Send the first reminder email to the volunteer.
-      self::sendVolunteerFeedbackReminderEmail($initiatorEmail, $from, $campAddress, $collectionCampId, $endDate, $initiatorName);
+      self::sendVolunteerFeedbackReminderEmail($initiatorEmail, $from, $campAddress, $collectionCampId, $endDate, $initiatorName, $initiatorId);
 
       // Update the Last_Reminder_Sent field in the database.
       EckEntity::update('Collection_Camp', TRUE)
@@ -63,13 +63,13 @@ class CollectionCampVolunteerFeedbackService {
    * @param int $collectionCampId
    * @param \DateTime $endDate
    */
-  public static function sendVolunteerFeedbackReminderEmail($initiatorEmail, $from, $campAddress, $collectionCampId, $endDate, $initiatorName) {
+  public static function sendVolunteerFeedbackReminderEmail($initiatorEmail, $from, $campAddress, $collectionCampId, $endDate, $initiatorName, $initiatorId) {
     $mailParams = [
       'subject' => 'Reminder to share your feedback for ' . $campAddress . ' on ' . $endDate->format('Y-m-d'),
       'from' => $from,
       'toEmail' => $initiatorEmail,
       'replyTo' => $from,
-      'html' => self::getVolunteerFeedbackReminderEmailHtml($initiatorName, $collectionCampId),
+      'html' => self::getVolunteerFeedbackReminderEmailHtml($initiatorName, $collectionCampId, $initiatorId, $campAddress),
     ];
 
     $emailSendResult = \CRM_Utils_Mail::send($mailParams);
@@ -91,9 +91,10 @@ class CollectionCampVolunteerFeedbackService {
    *
    * @return string
    */
-  public static function getVolunteerFeedbackReminderEmailHtml($initiatorName, $collectionCampId) {
+  public static function getVolunteerFeedbackReminderEmailHtml($initiatorName, $collectionCampId, $initiatorId, $campAddress) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
-    $feedbackFormUrl = $homeUrl . 'volunteer-camp-feedback/#?Eck_Collection_Camp1=' . $collectionCampId;
+    $campVolunteerFeedback = $homeUrl . 'volunteer-camp-feedback/#?Collection_Source_Feedback.Collection_Camp_Code=' . $collectionCampId . '&Collection_Source_Feedback.Collection_Camp_Address=' . urlencode($campAddress) . '&Collection_Source_Feedback.Filled_By=' . $initiatorId;
+
 
     $html = "
       <p>Dear $initiatorName,</p>

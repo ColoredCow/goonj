@@ -36,14 +36,16 @@ $is_individual_collection_camp = ($purpose === 'individual-collection-camp');
         <input type="hidden" name="city" value="<?php echo esc_attr($city); ?>" />
 
         <?php if ($is_individual_collection_camp) : ?>
-            <div class="d-grid">
-                <label class="font-sans" for="first_name">First Name <span class="required-indicator">*</span></label>
-                <input type="text" id="first_name" name="first_name" required value="<?php echo isset($_POST['first_name']) ? esc_attr(sanitize_text_field($_POST['first_name'])) : ''; ?>">
-            </div>
-            <br>
-            <div class="d-grid">
-                <label class="font-sans" for="last_name">Last Name</label>
-                <input type="text" id="last_name" name="last_name" value="<?php echo isset($_POST['last_name']) ? esc_attr(sanitize_text_field($_POST['last_name'])) : ''; ?>">
+            <div class="d-xl-flex gap-10">
+                <div class="d-grid w-100p">
+                    <label class="font-sans" for="first_name">First Name <span class="required-indicator">*</span></label>
+                    <input type="text" id="first_name" name="first_name" required value="<?php echo isset($_POST['first_name']) ? esc_attr(sanitize_text_field($_POST['first_name'])) : ''; ?>">
+                </div>
+                <br>
+                <div class="d-grid w-100p">
+                    <label class="font-sans" for="last_name">Last Name</label>
+                    <input type="text" id="last_name" name="last_name" value="<?php echo isset($_POST['last_name']) ? esc_attr(sanitize_text_field($_POST['last_name'])) : ''; ?>">
+                </div>
             </div>
             <br>
         <?php endif; ?>

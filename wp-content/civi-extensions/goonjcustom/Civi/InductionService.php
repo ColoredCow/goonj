@@ -1230,7 +1230,7 @@ class InductionService extends AutoSubscriber {
     // States with mixed induction types.
     $statesWithMixedInductionTypes = StateProvince::get(FALSE)
       ->addWhere('country_id.name', '=', 'India')
-      ->addWhere('name', 'IN', ['Bihar', 'Jharkhand', 'Orissa'])
+      ->addWhere('name', 'IN', ['Bihar', 'Jharkhand', 'Odisha'])
       ->execute()
       ->column('id');
 

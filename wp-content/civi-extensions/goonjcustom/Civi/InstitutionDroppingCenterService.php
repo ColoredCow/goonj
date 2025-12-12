@@ -695,7 +695,7 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $goonjOffice
     . '&Camp_Vehicle_Dispatch.Goonj_Office_Name=' . $goonjOfficeName
     . '&Eck_Collection_Camp1=' . $droppingCenterId
-    . '&Camp_Institution_Data.Name_of_the_institution=' . $nameOfInstitution
+    . '&Camp_Institution_Data.Name_of_the_institution=' . urlencode($nameOfInstitution)
     . "&Camp_Institution_Data.Address=" . urlencode($address)
     . "&Camp_Institution_Data.Email=" . $email
     . "&Camp_Institution_Data.Contact_Number=" . $phone;
@@ -1041,9 +1041,9 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
     $attendeeName  = $campAttendedBy['display_name'];
 
     // Define last month’s range.
-    $startDate = (new \DateTime('first day of this month'))->format('Y-m-d');
-    $endDate   = (new \DateTime('last day of this month'))->format('Y-m-d');
-    $monthName = (new \DateTime('first day of this month'))->format('F Y');
+    $startDate = (new \DateTime('first day of last month'))->format('Y-m-d');
+    $endDate   = (new \DateTime('last day of last month'))->format('Y-m-d');
+    $monthName = (new \DateTime('first day of last month'))->format('F Y');
 
     $dispatches = EckEntity::get('Collection_Source_Vehicle_Dispatch', FALSE)
       ->addSelect('Camp_Vehicle_Dispatch.Date_Time_of_Dispatch', 'Camp_Vehicle_Dispatch.Number_of_Bags_loaded_in_vehicle', 'Camp_Vehicle_Dispatch.Vehicle_Category', 'Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office')
