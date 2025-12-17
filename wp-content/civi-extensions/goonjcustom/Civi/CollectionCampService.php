@@ -1191,7 +1191,8 @@ class CollectionCampService extends AutoSubscriber {
       $campOrganiserEmail = $campOrganiserBy['email.email'];
       $campOrganiserattendeeName = $campOrganiserBy['display_name'];
 
-      $startDate = new \DateTime($collectionCamp['Collection_Camp_Intent_Details.Start_Date']);
+      $startDateObj = new \DateTime($collectionCamp['Collection_Camp_Intent_Details.Start_Date']);
+      $startDate = $startDateObj->format('d M Y');
 
       $today = new \DateTimeImmutable();
       $endOfToday = $today->setTime(23, 59, 59);

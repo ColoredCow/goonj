@@ -71,7 +71,7 @@ function civicrm_api3_goonjcustom_volunteer_feedback_collection_camp_cron($param
       $selfManaged = $camp['Logistics_Coordination.Self_Managed_By_Camp_Organiser'];
       if ($selfManaged) {
         // Skip sending reminder for self-managed camps.
-        return;
+        continue;
       }
 
       // Fetch Event Volunteer
