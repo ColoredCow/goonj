@@ -1315,42 +1315,41 @@ class CollectionCampService extends AutoSubscriber {
   
       <ol>
         <li>
-          <strong>Dispatch Form</strong> –
-          <a href=\"$selfCampVehicleDispatchFormUrl\">$selfCampVehicleDispatchFormUrl</a>
-          Please fill this from the venue once the vehicle is loaded and ready to leave for the Goonj centre.
-          This helps us track the materials smoothly and ensures you receive a timely acknowledgment of what was collected.
-        </li>
-        <br>
-        <li>
-          <strong>Feedback Form</strong> –
-          <a href=\"$campVolunteerFeedback\">$campVolunteerFeedback</a><br>
-          We would love to hear about your experience—your reflections, highlights, suggestions,
-          or anything you feel could make future drives even better.
-          Your feedback helps us grow and co-create stronger initiatives.
-        </li>
-      </ol>
-  
-      <p>
-        If you face any difficulty or need any guidance while filling the forms,
-        feel free to reach out to <strong>$campPocName</strong> at <strong>$campPocPhone</strong>.
-      </p>
-  
-      <p>
-        Looking forward to many more meaningful journeys together!
-      </p>
-  
-      <p>
-        Warm regards,<br>
-        Team Goonj
-      </p>
-    ";
-  
-    return $html;
-  }
+            <a href=\"{$selfCampVehicleDispatchFormUrl}\"><strong>Dispatch Form</strong></a> – 
+            Please fill this from the venue once the vehicle is loaded and ready to leave for the Goonj centre.
+            This helps us track the materials smoothly and ensures you receive a timely acknowledgment of what was collected.
+          </li>
+
+          <br>
+          <li>
+            <a href=\"{$campVolunteerFeedback}\"><strong>Feedback Form</strong></a><br>
+            We would love to hear about your experience—your reflections, highlights, suggestions,
+            or anything you feel could make future drives even better.
+            Your feedback helps us grow and co-create stronger initiatives.
+          </li>
+        </ol>
+    
+        <p>
+          If you face any difficulty or need any guidance while filling the forms,
+          feel free to reach out to <strong>$campPocName</strong> at <strong>$campPocPhone</strong>.
+        </p>
+    
+        <p>
+          Looking forward to many more meaningful journeys together!
+        </p>
+    
+        <p>
+          Warm regards,<br>
+          Team Goonj
+        </p>
+      ";
+    
+      return $html;
+    }
 
   /**
- *
- */
+   *
+   */
   private static function getSelfOutcomeLogisticsEmailHtml($pocName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
 
@@ -1371,12 +1370,9 @@ class CollectionCampService extends AutoSubscriber {
         the Camp Outcome Form after the camp concludes:
       </p>
 
-      <ol>
-        <li>
-          <a href=\"$campOutcomeFormUrl\">$campOutcomeFormUrl</a><br>
-          Your feedback is essential in helping us improve and streamline future campaigns.
-        </li>
-      </ol>
+      <p>
+        <a href=\"{$campOutcomeFormUrl}\"><strong>Complete the Camp Outcome Form</strong></a>
+      </p>
 
       <p>
         If you face any issues or need assistance, please write on Discord.
