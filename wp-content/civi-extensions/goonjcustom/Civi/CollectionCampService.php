@@ -1315,7 +1315,7 @@ class CollectionCampService extends AutoSubscriber {
   
       <ol>
         <li>
-            <a href=\"{$selfCampVehicleDispatchFormUrl}\"><strong>Dispatch Form</strong></a> – 
+            <a href=\"{$selfCampVehicleDispatchFormUrl}\"><strong>Dispatch Form</strong></a><br>
             Please fill this from the venue once the vehicle is loaded and ready to leave for the Goonj centre.
             This helps us track the materials smoothly and ensures you receive a timely acknowledgment of what was collected.
           </li>
