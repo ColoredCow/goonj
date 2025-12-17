@@ -50,7 +50,7 @@ function civicrm_api3_goonjcustom_volunteer_feedback_collection_camp_cron($param
   $todayFormatted = $today->format('Y-m-d');
 
   $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
-    ->addSelect('Collection_Camp_Intent_Details.End_Date', 'Logistics_Coordination.Feedback_Email_Sent', 'Collection_Camp_Core_Details.Contact_Id', 'Collection_Camp_Intent_Details.Location_Area_of_camp')
+    ->addSelect('Collection_Camp_Intent_Details.End_Date', 'Logistics_Coordination.Feedback_Email_Sent', 'Collection_Camp_Core_Details.Contact_Id', 'Collection_Camp_Intent_Details.Location_Area_of_camp', 'Logistics_Coordination.Self_Managed_By_Camp_Organiser')
     ->addWhere('Collection_Camp_Core_Details.Status', '=', 'authorized')
     ->addWhere('subtype', '=', $collectionCampSubtype)
     ->addWhere('Collection_Camp_Intent_Details.End_Date', '<=', $endOfDay)
@@ -68,6 +68,11 @@ function civicrm_api3_goonjcustom_volunteer_feedback_collection_camp_cron($param
       $feedbackEmailSent = $camp['Logistics_Coordination.Feedback_Email_Sent'];
       $initiatorId = $camp['Collection_Camp_Core_Details.Contact_Id'];
       $campAddress = $camp['Collection_Camp_Intent_Details.Location_Area_of_camp'];
+      $selfManaged = $camp['Logistics_Coordination.Self_Managed_By_Camp_Organiser'];
+      if ($selfManaged) {
+        // Skip sending reminder for self-managed camps.
+        return;
+      }
 
       // Fetch Event Volunteer
       $volunteeringActivities = Activity::get(FALSE)
