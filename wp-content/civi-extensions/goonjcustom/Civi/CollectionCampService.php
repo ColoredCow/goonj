@@ -1197,7 +1197,7 @@ class CollectionCampService extends AutoSubscriber {
       $today = new \DateTimeImmutable();
       $endOfToday = $today->setTime(23, 59, 59);
 
-      if (!$logisticEmailSent && $startDate <= $endOfToday) {
+      if (!$logisticEmailSent && $startDateObj <= $endOfToday) {
         $campAttendedBy = Contact::get(FALSE)
           ->addSelect('email.email', 'display_name')
           ->addJoin('Email AS email', 'LEFT')
@@ -1216,7 +1216,7 @@ class CollectionCampService extends AutoSubscriber {
           $emailOutcomeHtml = self::getSelfOutcomeLogisticsEmailHtml($campPocName, $campId, $campOrganiser, $campOffice, $campCode, $campAddress);
           // Send to organiser.
           $toEmail = $campOrganiserEmail;
-          $subject = "Thank You for organising the Collection Drive! A Few Quick Next Steps..";
+          $subject = "Thank You for organising the Collection Drive! A Few Quick Next Steps.";
 
           $mailParams = [
             'subject' => 'Collection Camp Notification: ' . $campCode . ' at ' . $campAddress,
