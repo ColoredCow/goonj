@@ -1316,14 +1316,14 @@ class CollectionCampService extends AutoSubscriber {
       <ol>
         <li>
           <strong>Dispatch Form</strong> –
-          <a href=\"$selfCampVehicleDispatchFormUrl\">Click here</a><br>
+          <a href=\"$selfCampVehicleDispatchFormUrl\">$selfCampVehicleDispatchFormUrl</a>
           Please fill this from the venue once the vehicle is loaded and ready to leave for the Goonj centre.
           This helps us track the materials smoothly and ensures you receive a timely acknowledgment of what was collected.
         </li>
         <br>
         <li>
           <strong>Feedback Form</strong> –
-          <a href=\"$campVolunteerFeedback\">Click here</a><br>
+          <a href=\"$campVolunteerFeedback\">$campVolunteerFeedback</a><br>
           We would love to hear about your experience—your reflections, highlights, suggestions,
           or anything you feel could make future drives even better.
           Your feedback helps us grow and co-create stronger initiatives.
@@ -1373,7 +1373,7 @@ class CollectionCampService extends AutoSubscriber {
 
       <ol>
         <li>
-          <a href=\"$campOutcomeFormUrl\">Complete the Camp Outcome Form</a><br>
+          <a href=\"$campOutcomeFormUrl\">$campOutcomeFormUrl</a><br>
           Your feedback is essential in helping us improve and streamline future campaigns.
         </li>
       </ol>
