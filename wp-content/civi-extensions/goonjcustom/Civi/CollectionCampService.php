@@ -1171,13 +1171,15 @@ class CollectionCampService extends AutoSubscriber {
 
       // Get poc details.
       $campPocBy = Contact::get(FALSE)
-        ->addSelect('email.email', 'display_name')
+        ->addSelect('email.email', 'display_name', 'phone.phone')
         ->addJoin('Email AS email', 'LEFT')
+        ->addJoin('Phone AS phone', 'LEFT')
         ->addWhere('id', '=', $poc)
         ->execute()->first();
 
       $campPocEmail = $campPocBy['email.email'];
       $campPocName = $campPocBy['display_name'];
+      $campPocPhone = $campPocBy['phone.phone'];
 
       // Get organiser details.
       $campOrganiserBy = Contact::get(FALSE)
@@ -1189,12 +1191,13 @@ class CollectionCampService extends AutoSubscriber {
       $campOrganiserEmail = $campOrganiserBy['email.email'];
       $campOrganiserattendeeName = $campOrganiserBy['display_name'];
 
-      $startDate = new \DateTime($collectionCamp['Collection_Camp_Intent_Details.Start_Date']);
+      $startDateObj = new \DateTime($collectionCamp['Collection_Camp_Intent_Details.Start_Date']);
+      $startDate = $startDateObj->format('d M Y');
 
       $today = new \DateTimeImmutable();
       $endOfToday = $today->setTime(23, 59, 59);
 
-      if (!$logisticEmailSent && $startDate <= $endOfToday) {
+      if (!$logisticEmailSent && $startDateObj <= $endOfToday) {
         $campAttendedBy = Contact::get(FALSE)
           ->addSelect('email.email', 'display_name')
           ->addJoin('Email AS email', 'LEFT')
@@ -1209,10 +1212,11 @@ class CollectionCampService extends AutoSubscriber {
         }
 
         if ($selfManaged) {
-          $emailHtml = self::getSelfLogisticsEmailHtml($campOrganiserattendeeName, $campId, $campOrganiser, $campOffice, $campCode, $campAddress);
+          $emailHtml = self::getSelfLogisticsEmailHtml($campOrganiserattendeeName, $campId, $campOrganiser, $campOffice, $campCode, $campAddress, $startDate, $campPocName, $campPocPhone);
           $emailOutcomeHtml = self::getSelfOutcomeLogisticsEmailHtml($campPocName, $campId, $campOrganiser, $campOffice, $campCode, $campAddress);
           // Send to organiser.
           $toEmail = $campOrganiserEmail;
+          $subject = "Thank You for organising the Collection Drive! A Few Quick Next Steps.";
 
           $mailParams = [
             'subject' => 'Collection Camp Notification: ' . $campCode . ' at ' . $campAddress,
@@ -1227,10 +1231,11 @@ class CollectionCampService extends AutoSubscriber {
           $emailHtml = self::getLogisticsEmailHtml($attendeeName, $campId, $campAttendedById, $campOffice, $campCode, $campAddress);
           // Send to attendee.
           $toEmail = $attendeeEmail;
+          $subject = 'Collection Camp Notification: ' . $campCode . ' at ' . $campAddress;
         }
 
         $mailParams = [
-          'subject' => 'Collection Camp Notification: ' . $campCode . ' at ' . $campAddress,
+          'subject' => $subject,
           'from' => self::getFromAddress(),
           'toEmail' => $toEmail,
           'replyTo' => self::getFromAddress(),
@@ -1282,41 +1287,106 @@ class CollectionCampService extends AutoSubscriber {
    /**
    *
    */
-  private static function getSelfLogisticsEmailHtml($contactName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress) {
+  private static function getSelfLogisticsEmailHtml($contactName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress, $startDate, $campPocName, $campPocPhone) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
-    // Construct the full URLs for the forms.
-    $selfCampVehicleDispatchFormUrl = $homeUrl . 'self-camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp=' . $collectionCampId . '&Camp_Vehicle_Dispatch.Filled_by=' . $campAttendedById . '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice . '&Eck_Collection_Camp1=' . $collectionCampId;
-
+  
+    // URLs
+    $selfCampVehicleDispatchFormUrl = $homeUrl . 'self-camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp=' . $collectionCampId .
+      '&Camp_Vehicle_Dispatch.Filled_by=' . $campAttendedById .
+      '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice .
+      '&Eck_Collection_Camp1=' . $collectionCampId;
+  
+    $campVolunteerFeedback = $homeUrl . 'volunteer-camp-feedback/#?Collection_Source_Feedback.Collection_Camp_Code=' . $collectionCampId .
+      '&Collection_Source_Feedback.Collection_Camp_Address=' . urlencode($campAddress) .
+      '&Collection_Source_Feedback.Filled_By=' . $campAttendedById;
+  
     $html = "
-    <p>Dear $contactName,</p>
-    <p>Thank you for attending the camp <strong>$campCode</strong> at <strong>$campAddress</strong>. Please complete the following form during the camp:</p>
-    <ol>
-        <li><a href=\"$selfCampVehicleDispatchFormUrl\">Dispatch Form</a><br>
-        Please complete this form from the camp location once the vehicle is being loaded and ready for dispatch to the Goonj's processing center.</li>
-    </ol>
-    <p>We appreciate your cooperation.</p>
-    <p>Warm Regards,<br>Urban Relations Team</p>";
+      <p>Dear $contactName,</p>
+  
+      <p>
+        Thank you for taking the initiative to organise the collection drive at
+        <strong>$campAddress</strong> on <strong>$startDate</strong>!
+        We hope the experience was just as meaningful and enjoyable for you as it was impactful for the community.
+      </p>
+  
+      <p>
+        As part of wrapping up the camp <strong>$campCode</strong>, we request you to kindly fill out the following two forms:
+      </p>
+  
+      <ol>
+        <li>
+            <a href=\"{$selfCampVehicleDispatchFormUrl}\"><strong>Dispatch Form</strong></a><br>
+            Please fill this from the venue once the vehicle is loaded and ready to leave for the Goonj centre.
+            This helps us track the materials smoothly and ensures you receive a timely acknowledgment of what was collected.
+          </li>
 
-    return $html;
-  }
+          <br>
+          <li>
+            <a href=\"{$campVolunteerFeedback}\"><strong>Feedback Form</strong></a><br>
+            We would love to hear about your experience—your reflections, highlights, suggestions,
+            or anything you feel could make future drives even better.
+            Your feedback helps us grow and co-create stronger initiatives.
+          </li>
+        </ol>
+    
+        <p>
+          If you face any difficulty or need any guidance while filling the forms,
+          feel free to reach out to <strong>$campPocName</strong> at <strong>$campPocPhone</strong>.
+        </p>
+    
+        <p>
+          Looking forward to many more meaningful journeys together!
+        </p>
+    
+        <p>
+          Warm regards,<br>
+          Team Goonj
+        </p>
+      ";
+    
+      return $html;
+    }
 
   /**
    *
    */
   private static function getSelfOutcomeLogisticsEmailHtml($pocName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
-    // Construct the full URLs for the forms.
+
+    // Construct the full URL for the outcome form.
     $campOutcomeFormUrl = $homeUrl . '/camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $campAttendedById;
 
     $html = "
-    <p>Dear $pocName,</p>
-    <p>Thank you for attending the camp <strong>$campCode</strong> at <strong>$campAddress</strong>. Please complete the following form after the camp:</p>
-    <ol>
-        <li><a href=\"$campOutcomeFormUrl\">Camp Outcome Form</a><br>
-        This feedback form should be filled out after the camp/drive ends, once you have an overview of the event's outcomes.</li>
-    </ol>
-    <p>We appreciate your cooperation.</p>
-    <p>Warm Regards,<br>Urban Relations Team</p>";
+      <p>Dear $pocName,</p>
+
+      <p>
+        Thank you for coordinating the collection camp/drive <strong>$campCode</strong> at
+        <strong>$campAddress</strong>. Your efforts have been instrumental in driving positive change
+        and supporting Goonj’s initiatives.
+      </p>
+
+      <p>
+        To help us gather insights and feedback on the outcomes of the camp, we request you to complete
+        the Camp Outcome Form after the camp concludes:
+      </p>
+
+      <p>
+        <a href=\"{$campOutcomeFormUrl}\"><strong>Complete the Camp Outcome Form</strong></a>
+      </p>
+
+      <p>
+        If you face any issues or need assistance, please write on Discord.
+      </p>
+
+      <p>
+        Thank you once again for your valuable support.
+      </p>
+
+      <p>
+        Warm Regards,<br>
+        Urban Relations Team
+      </p>
+    ";
 
     return $html;
   }
