@@ -1916,10 +1916,27 @@ class CollectionCampService extends AutoSubscriber {
      */
     if (!empty($fields['payment_instrument_id']) && $fields['payment_instrument_id'] == 4) {
 
+      $bankField = CustomField::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('custom_group_id:name', '=', 'Cheque_Number')
+      ->addWhere('name', '=', 'Bank_Name')
+      ->execute()->single();
+
+      $bankFieldId = 'custom_' . $bankField['id'] . '_-1';
+
+
+      $checkDateField = CustomField::get(FALSE)
+        ->addSelect('id')
+        ->addWhere('custom_group_id:name', '=', 'Cheque_Number')
+        ->addWhere('name', '=', 'Cheque_Date')
+        ->execute()->single();
+
+      $checkDateFieldId = 'custom_' . $checkDateField['id'] . '_-1';
+
       $requiredFields = [
         'check_number'   => ts('Please provide a cheque number.'),
-        'custom_820_-1'  => ts('Please provide the bank name.'),
-        'custom_821_-1'  => ts('Please select the cheque date.'),
+        $bankFieldId  => ts('Please provide the bank name.'),
+        $checkDateFieldId  => ts('Please select the cheque date.'),
       ];
 
       foreach ($requiredFields as $fieldName => $message) {
@@ -1982,9 +1999,27 @@ class CollectionCampService extends AutoSubscriber {
      */
     if (!empty($fields['payment_instrument_id']) && $fields['payment_instrument_id'] == 5) {
 
+      $transactionIdField = CustomField::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('custom_group_id:name', '=', 'Wire_Transfer')
+      ->addWhere('name', '=', 'Transaction_Id')
+      ->execute()->single();
+
+      $transactionIdFieldId = 'custom_' . $transactionIdField['id'] . '_-1';
+
+
+      $transferDataField = CustomField::get(FALSE)
+        ->addSelect('id')
+        ->addWhere('custom_group_id:name', '=', 'Wire_Transfer')
+        ->addWhere('name', '=', 'Transfer_Date')
+        ->execute()->single();
+
+      $transferDataFieldId = 'custom_' . $transferDataField['id'] . '_-1';
+      
+
       $requiredFields = [
-        'custom_818_-1' => ts('Please provide the Transaction ID.'),
-        'custom_819_-1' => ts('Please select the Transfer Date.'),
+        $transactionIdFieldId => ts('Please provide the Transaction ID.'),
+        $transferDataFieldId => ts('Please select the Transfer Date.'),
       ];
 
       foreach ($requiredFields as $fieldName => $message) {
