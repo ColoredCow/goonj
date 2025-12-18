@@ -1905,33 +1905,135 @@ class CollectionCampService extends AutoSubscriber {
    * @param array $errors
    */
   public function validateCheckNumber($formName, &$fields, &$files, &$form, &$errors) {
-    if ($formName == 'CRM_Contribute_Form_Contribution') {
-      if (isset($fields['payment_instrument_id']) && $fields['payment_instrument_id'] == 4) {
-        if (empty($fields['check_number'])) {
-          $message = ts('Please provide a cheque number.');
-          $form->setElementError('check_number', NULL);
-          $errors['check_number'] = $message;
-          $form->setElementError('check_number', $message);
+    if ($formName !== 'CRM_Contribute_Form_Contribution') {
+      return;
+    }
 
-          \CRM_Core_Resources::singleton()->addScript("
-                    (function($) {
-                        function ensureErrorVisible() {
-                            var errorField = $('#check_number-error');
-                            var inputField = $('#check_number');
-                            $('.crm-error').hide();
-                            if (!errorField.length) {
-                                inputField.after('<div id=\"check_number-error\" class=\"crm-error\">' + " . json_encode($message) . " + '</div>');
-                            } else {
-                                errorField.show();
-                            }
-                        }
+    if (empty($fields['payment_instrument_id'])) {
+      return;
+    }
 
-                        $(document).ajaxComplete(ensureErrorVisible);
-                        $(document).ready(ensureErrorVisible);
-                    })(CRM.$);
-                ");
-        }
+    /**
+     * =========================
+     * CHEQUE (payment_instrument_id = 4)
+     * =========================
+     */
+    if ($fields['payment_instrument_id'] == 4) {
+
+      $bankField = CustomField::get(FALSE)
+        ->addSelect('id')
+        ->addWhere('custom_group_id:name', '=', 'Cheque_Number')
+        ->addWhere('name', '=', 'Bank_Name')
+        ->execute()->single();
+
+      $checkDateField = CustomField::get(FALSE)
+        ->addSelect('id')
+        ->addWhere('custom_group_id:name', '=', 'Cheque_Number')
+        ->addWhere('name', '=', 'Cheque_Date')
+        ->execute()->single();
+
+      $this->validateRequiredFields(
+        [
+          'check_number' => ts('Please provide a cheque number.'),
+          'custom_' . $bankField['id'] . '_-1' => ts('Please provide the bank name.'),
+          'custom_' . $checkDateField['id'] . '_-1' => ts('Please select the cheque date.'),
+        ],
+        $fields,
+        $form,
+        $errors
+      );
+    }
+
+    /**
+     * =========================
+     * WIRE TRANSFER (payment_instrument_id = 5)
+     * =========================
+     */
+    if ($fields['payment_instrument_id'] == 5) {
+
+      $transactionIdField = CustomField::get(FALSE)
+        ->addSelect('id')
+        ->addWhere('custom_group_id:name', '=', 'Wire_Transfer')
+        ->addWhere('name', '=', 'Transaction_Id')
+        ->execute()->single();
+
+      $transferDateField = CustomField::get(FALSE)
+        ->addSelect('id')
+        ->addWhere('custom_group_id:name', '=', 'Wire_Transfer')
+        ->addWhere('name', '=', 'Transfer_Date')
+        ->execute()->single();
+
+      $this->validateRequiredFields(
+        [
+          'custom_' . $transactionIdField['id'] . '_-1' => ts('Please provide the Transaction ID.'),
+          'custom_' . $transferDateField['id'] . '_-1' => ts('Please select the Transfer Date.'),
+        ],
+        $fields,
+        $form,
+        $errors
+      );
+    }
+  }
+
+  /**
+   *
+   */
+  private function validateRequiredFields(array $requiredFields, &$fields, $form, &$errors) {
+    foreach ($requiredFields as $fieldName => $message) {
+
+      if (!empty($fields[$fieldName])) {
+        continue;
       }
+
+      // PHP validation.
+      $errors[$fieldName] = $message;
+      $form->setElementError($fieldName, $message);
+
+      $jsSafeName = preg_replace('/[^a-zA-Z0-9_]/', '_', $fieldName);
+
+      \CRM_Core_Resources::singleton()->addScript("
+        (function($) {
+  
+          function showError_{$jsSafeName}() {
+            var errorId = '{$fieldName}-error';
+            var errorHtml =
+              '<div id=\"' + errorId + '\" class=\"crm-error\">' +
+              " . json_encode($message) . " +
+              '</div>';
+  
+            // Core field
+            var input = $('#{$fieldName}');
+            if (input.length) {
+              if (!$('#' + errorId).length) {
+                input.after(errorHtml);
+              } else {
+                $('#' + errorId).show();
+              }
+              return;
+            }
+  
+            // Custom field row
+            var row = $('tr.custom_field-row[class*=\"{$fieldName}\"]');
+            if (row.length) {
+  
+              var details = row.closest('details');
+              if (details.length && !details.prop('open')) {
+                details.prop('open', true);
+              }
+  
+              if (!$('#' + errorId).length) {
+                row.find('td.html-adjust').append(errorHtml);
+              } else {
+                $('#' + errorId).show();
+              }
+            }
+          }
+  
+          $(document).ready(showError_{$jsSafeName});
+          $(document).ajaxComplete(showError_{$jsSafeName});
+  
+        })(CRM.$);
+      ");
     }
   }
 
