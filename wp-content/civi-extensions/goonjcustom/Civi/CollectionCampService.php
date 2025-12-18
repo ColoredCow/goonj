@@ -1905,32 +1905,138 @@ class CollectionCampService extends AutoSubscriber {
    * @param array $errors
    */
   public function validateCheckNumber($formName, &$fields, &$files, &$form, &$errors) {
-    if ($formName == 'CRM_Contribute_Form_Contribution') {
-      if (isset($fields['payment_instrument_id']) && $fields['payment_instrument_id'] == 4) {
-        if (empty($fields['check_number'])) {
-          $message = ts('Please provide a cheque number.');
-          $form->setElementError('check_number', NULL);
-          $errors['check_number'] = $message;
-          $form->setElementError('check_number', $message);
+    if ($formName !== 'CRM_Contribute_Form_Contribution') {
+      return;
+    }
 
-          \CRM_Core_Resources::singleton()->addScript("
-                    (function($) {
-                        function ensureErrorVisible() {
-                            var errorField = $('#check_number-error');
-                            var inputField = $('#check_number');
-                            $('.crm-error').hide();
-                            if (!errorField.length) {
-                                inputField.after('<div id=\"check_number-error\" class=\"crm-error\">' + " . json_encode($message) . " + '</div>');
-                            } else {
-                                errorField.show();
-                            }
-                        }
+    /**
+     * =========================
+     * CHEQUE (payment_instrument_id = 4)
+     * =========================
+     */
+    if (!empty($fields['payment_instrument_id']) && $fields['payment_instrument_id'] == 4) {
 
-                        $(document).ajaxComplete(ensureErrorVisible);
-                        $(document).ready(ensureErrorVisible);
-                    })(CRM.$);
-                ");
+      $requiredFields = [
+        'check_number'   => ts('Please provide a cheque number.'),
+        'custom_820_-1'  => ts('Please provide the bank name.'),
+        'custom_821_-1'  => ts('Please select the cheque date.'),
+      ];
+
+      foreach ($requiredFields as $fieldName => $message) {
+        if (!empty($fields[$fieldName])) {
+          continue;
         }
+
+        $errors[$fieldName] = $message;
+        $form->setElementError($fieldName, $message);
+
+        $jsSafeName = preg_replace('/[^a-zA-Z0-9_]/', '_', $fieldName);
+
+        \CRM_Core_Resources::singleton()->addScript("
+          (function($) {
+  
+            function showError_{$jsSafeName}() {
+              var errorId = '{$fieldName}-error';
+              var errorHtml =
+                '<div id=\"' + errorId + '\" class=\"crm-error\">' +
+                " . json_encode($message) . " +
+                '</div>';
+  
+              var input = $('#{$fieldName}');
+              if (input.length) {
+                if (!$('#' + errorId).length) {
+                  input.after(errorHtml);
+                } else {
+                  $('#' + errorId).show();
+                }
+                return;
+              }
+  
+              var row = $('tr.custom_field-row[class*=\"{$fieldName}\"]');
+              if (row.length) {
+                var details = row.closest('details');
+                if (details.length && !details.prop('open')) {
+                  details.prop('open', true);
+                }
+  
+                if (!$('#' + errorId).length) {
+                  row.find('td.html-adjust').append(errorHtml);
+                } else {
+                  $('#' + errorId).show();
+                }
+              }
+            }
+  
+            $(document).ready(showError_{$jsSafeName});
+            $(document).ajaxComplete(showError_{$jsSafeName});
+  
+          })(CRM.$);
+        ");
+      }
+    }
+
+    /**
+     * =========================
+     * WIRE TRANSFER (payment_instrument_id = 5)
+     * =========================
+     */
+    if (!empty($fields['payment_instrument_id']) && $fields['payment_instrument_id'] == 5) {
+
+      $requiredFields = [
+        'custom_818_-1' => ts('Please provide the Transaction ID.'),
+        'custom_819_-1' => ts('Please select the Transfer Date.'),
+      ];
+
+      foreach ($requiredFields as $fieldName => $message) {
+        if (!empty($fields[$fieldName])) {
+          continue;
+        }
+
+        $errors[$fieldName] = $message;
+        $form->setElementError($fieldName, $message);
+
+        $jsSafeName = preg_replace('/[^a-zA-Z0-9_]/', '_', $fieldName);
+
+        \CRM_Core_Resources::singleton()->addScript("
+          (function($) {
+  
+            function showError_{$jsSafeName}() {
+              var errorId = '{$fieldName}-error';
+              var errorHtml =
+                '<div id=\"' + errorId + '\" class=\"crm-error\">' +
+                " . json_encode($message) . " +
+                '</div>';
+  
+              var input = $('#{$fieldName}');
+              if (input.length) {
+                if (!$('#' + errorId).length) {
+                  input.after(errorHtml);
+                } else {
+                  $('#' + errorId).show();
+                }
+                return;
+              }
+  
+              var row = $('tr.custom_field-row[class*=\"{$fieldName}\"]');
+              if (row.length) {
+                var details = row.closest('details');
+                if (details.length && !details.prop('open')) {
+                  details.prop('open', true);
+                }
+  
+                if (!$('#' + errorId).length) {
+                  row.find('td.html-adjust').append(errorHtml);
+                } else {
+                  $('#' + errorId).show();
+                }
+              }
+            }
+  
+            $(document).ready(showError_{$jsSafeName});
+            $(document).ajaxComplete(showError_{$jsSafeName});
+  
+          })(CRM.$);
+        ");
       }
     }
   }
