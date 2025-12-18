@@ -2008,18 +2008,18 @@ class CollectionCampService extends AutoSubscriber {
       $transactionIdFieldId = 'custom_' . $transactionIdField['id'] . '_-1';
 
 
-      $transferDataField = CustomField::get(FALSE)
+      $transferDateField = CustomField::get(FALSE)
         ->addSelect('id')
         ->addWhere('custom_group_id:name', '=', 'Wire_Transfer')
         ->addWhere('name', '=', 'Transfer_Date')
         ->execute()->single();
 
-      $transferDataFieldId = 'custom_' . $transferDataField['id'] . '_-1';
+      $transferDateFieldId = 'custom_' . $transferDateField['id'] . '_-1';
       
 
       $requiredFields = [
         $transactionIdFieldId => ts('Please provide the Transaction ID.'),
-        $transferDataFieldId => ts('Please select the Transfer Date.'),
+        $transferDateFieldId => ts('Please select the Transfer Date.'),
       ];
 
       foreach ($requiredFields as $fieldName => $message) {
