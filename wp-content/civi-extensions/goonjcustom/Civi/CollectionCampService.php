@@ -2174,7 +2174,7 @@ class CollectionCampService extends AutoSubscriber {
       $form->setElementError($fieldName, $message);
 
       // Use the existing helper to display inline JS error
-+     $this->addInlineJsError($fieldName, $message);
+      $this->addInlineJsError($fieldName, $message);
     }
   }
 
