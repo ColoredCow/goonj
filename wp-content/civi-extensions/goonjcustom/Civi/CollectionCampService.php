@@ -99,7 +99,7 @@ class CollectionCampService extends AutoSubscriber {
     ];
   }
 
-    /**
+  /**
    *
    */
   public function validateReceiptFromEmail($formName, &$fields, &$files, &$form, &$errors) {
