@@ -139,6 +139,28 @@ class CollectionCampService extends AutoSubscriber {
     // Today (without time)
     $today = new \DateTime('today');
 
+    $now = new \DateTime('now');
+
+    if (!empty($fields['receive_date'])) {
+      $contributionDate = new \DateTime($fields['receive_date']);
+    
+      if ($contributionDate > $now) {
+        $message = ts('Contribution Date cannot be in the future.');
+        $errors['receive_date'] = $message;
+        $form->setElementError('receive_date', $message);
+      }
+    }
+    
+    if (!empty($fields['receipt_date'])) {
+      $receiptDate = new \DateTime($fields['receipt_date']);
+    
+      if ($receiptDate > $now) {
+        $message = ts('Receipt Date cannot be in the future.');
+        $errors['receipt_date'] = $message;
+        $form->setElementError('receipt_date', $message);
+      }
+    }
+
     /**
      * =========================
      * CHEQUE (payment_instrument_id = 4)
