@@ -69,8 +69,6 @@ class CollectionCampService extends AutoSubscriber {
         ['linkCollectionCampToContact'],
         ['createActivityForCollectionCamp'],
         ['updateCampStatusAfterAuth'],
-        ['lockReceiptFromPre'],
-
       ],
       '&hook_civicrm_custom' => [
       ['setOfficeDetails'],
@@ -100,6 +98,7 @@ class CollectionCampService extends AutoSubscriber {
 
     ];
   }
+
   public function validateReceiptFromEmail($formName, &$fields, &$files, &$form, &$errors) {
 
     if ($formName !== 'CRM_Contribute_Form_Contribution') {
@@ -107,7 +106,7 @@ class CollectionCampService extends AutoSubscriber {
     }
 
     $fieldName = 'from_email_address';
-    $expectedId = 9860; // the ID of ACCOUNTS_TEAM_EMAIL
+    $expectedId = ACCOUNTS_TEAM_EMAIL_ID;
 
     if (empty($fields[$fieldName]) || $fields[$fieldName] != $expectedId) {
         $message = ts(
@@ -117,24 +116,8 @@ class CollectionCampService extends AutoSubscriber {
         $errors[$fieldName] = $message;
         $form->setElementError($fieldName, $message);
 
-        // Remove JS inline error call
-        // $this->addInlineJsError($fieldName, $message); <-- comment this
     }
-}
-
-  public function debugReceiptFromField($formName, &$fields, &$files, &$form, &$errors) {
-    if ($formName !== 'CRM_Contribute_Form_Contribution') {
-        return;
-    }
-
-    // Log all submitted fields
-    \Civi::log()->debug('Submitted fields:', $fields);
-
-    // Optional: stop execution so we can check log immediately
-    die("Check the debug log for submitted fields.");
-}
-
-  
+  }
 
   public function validatePaymentDateNotFuture($formName, &$fields, &$files, &$form, &$errors) {
 
