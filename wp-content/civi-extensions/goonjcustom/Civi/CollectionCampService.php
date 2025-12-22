@@ -89,9 +89,170 @@ class CollectionCampService extends AutoSubscriber {
       ['alterReceiptMail'],
       ['handleOfflineReceipt'],
       ],
-      '&hook_civicrm_validateForm' => 'validateCheckNumber',
+      '&hook_civicrm_validateForm' => [
+      ['validateCheckNumber'],
+      ['validatePaymentDateNotFuture'],
+      ['validateReceiptFromEmail'],
+
+      ],
 
     ];
+  }
+
+  /**
+   *
+   */
+  public function validateReceiptFromEmail($formName, &$fields, &$files, &$form, &$errors) {
+
+    if ($formName !== 'CRM_Contribute_Form_Contribution') {
+      return;
+    }
+
+    $fieldName = 'from_email_address';
+    $expectedId = ACCOUNTS_TEAM_EMAIL_ID;
+
+    if (empty($fields[$fieldName]) || $fields[$fieldName] != $expectedId) {
+      $message = ts(
+            "Invalid 'Receipt From' email selected. Please select the correct account email."
+        );
+
+      $errors[$fieldName] = $message;
+      $form->setElementError($fieldName, $message);
+
+    }
+  }
+
+  /**
+   *
+   */
+  public function validatePaymentDateNotFuture($formName, &$fields, &$files, &$form, &$errors) {
+
+    if ($formName !== 'CRM_Contribute_Form_Contribution') {
+      return;
+    }
+
+    if (empty($fields['payment_instrument_id'])) {
+      return;
+    }
+
+    // Today (without time)
+    $today = new \DateTime('today');
+
+    /**
+     * =========================
+     * CHEQUE (payment_instrument_id = 4)
+     * =========================
+     */
+    if ($fields['payment_instrument_id'] == 4) {
+
+      $checkDateField = CustomField::get(FALSE)
+        ->addSelect('id')
+        ->addWhere('custom_group_id:name', '=', 'Cheque_Number')
+        ->addWhere('name', '=', 'Cheque_Date')
+        ->execute()->single();
+
+      $fieldName = 'custom_' . $checkDateField['id'] . '_-1';
+
+      if (!empty($fields[$fieldName])) {
+
+        $selectedDate = new \DateTime($fields[$fieldName]);
+
+        if ($selectedDate > $today) {
+
+          $message = ts('Cheque Date cannot be a future date.');
+
+          $errors[$fieldName] = $message;
+          $form->setElementError($fieldName, $message);
+
+          // JS inline error (same behavior as required-field validation)
+          $this->addInlineJsError($fieldName, $message);
+        }
+      }
+    }
+
+    /**
+     * =========================
+     * WIRE TRANSFER (payment_instrument_id = 5)
+     * =========================
+     */
+    if ($fields['payment_instrument_id'] == 5) {
+
+      $transferDateField = CustomField::get(FALSE)
+        ->addSelect('id')
+        ->addWhere('custom_group_id:name', '=', 'Wire_Transfer')
+        ->addWhere('name', '=', 'Transfer_Date')
+        ->execute()->single();
+
+      $fieldName = 'custom_' . $transferDateField['id'] . '_-1';
+
+      if (!empty($fields[$fieldName])) {
+
+        $selectedDate = new \DateTime($fields[$fieldName]);
+
+        if ($selectedDate > $today) {
+
+          $message = ts('Transfer Date cannot be a future date.');
+
+          $errors[$fieldName] = $message;
+          $form->setElementError($fieldName, $message);
+
+          // JS inline error.
+          $this->addInlineJsError($fieldName, $message);
+        }
+      }
+    }
+  }
+
+  /**
+   *
+   */
+  private function addInlineJsError($fieldName, $message) {
+
+    $jsSafeName = preg_replace('/[^a-zA-Z0-9_]/', '_', $fieldName);
+
+    \CRM_Core_Resources::singleton()->addScript("
+      (function($) {
+  
+        function showError_{$jsSafeName}() {
+          var errorId = '{$fieldName}-error';
+          var errorHtml =
+            '<div id=\"' + errorId + '\" class=\"crm-error\">' +
+            " . json_encode($message) . " +
+            '</div>';
+  
+          // Core field
+          var input = $('#{$fieldName}');
+          if (input.length) {
+            if (!$('#' + errorId).length) {
+              input.after(errorHtml);
+            } else {
+              $('#' + errorId).show();
+            }
+            return;
+          }
+  
+          // Custom field row
+          var row = $('tr.custom_field-row[class*=\"{$fieldName}\"]');
+          if (row.length) {
+  
+            var details = row.closest('details');
+            if (details.length && !details.prop('open')) {
+              details.prop('open', true);
+            }
+  
+            if (!$('#' + errorId).length) {
+              row.find('td.html-adjust').append(errorHtml);
+            } else {
+              $('#' + errorId).show();
+            }
+          }
+        }
+  
+        $(document).ready(showError_{$jsSafeName});
+        $(document).ajaxComplete(showError_{$jsSafeName});
+  
+      })(CRM.$);
+    ");
   }
 
   /**
@@ -1989,51 +2150,8 @@ class CollectionCampService extends AutoSubscriber {
       $errors[$fieldName] = $message;
       $form->setElementError($fieldName, $message);
 
-      $jsSafeName = preg_replace('/[^a-zA-Z0-9_]/', '_', $fieldName);
-
-      \CRM_Core_Resources::singleton()->addScript("
-        (function($) {
-  
-          function showError_{$jsSafeName}() {
-            var errorId = '{$fieldName}-error';
-            var errorHtml =
-              '<div id=\"' + errorId + '\" class=\"crm-error\">' +
-              " . json_encode($message) . " +
-              '</div>';
-  
-            // Core field
-            var input = $('#{$fieldName}');
-            if (input.length) {
-              if (!$('#' + errorId).length) {
-                input.after(errorHtml);
-              } else {
-                $('#' + errorId).show();
-              }
-              return;
-            }
-  
-            // Custom field row
-            var row = $('tr.custom_field-row[class*=\"{$fieldName}\"]');
-            if (row.length) {
-  
-              var details = row.closest('details');
-              if (details.length && !details.prop('open')) {
-                details.prop('open', true);
-              }
-  
-              if (!$('#' + errorId).length) {
-                row.find('td.html-adjust').append(errorHtml);
-              } else {
-                $('#' + errorId).show();
-              }
-            }
-          }
-  
-          $(document).ready(showError_{$jsSafeName});
-          $(document).ajaxComplete(showError_{$jsSafeName});
-  
-        })(CRM.$);
-      ");
+      // Use the existing helper to display inline JS error
++     $this->addInlineJsError($fieldName, $message);
     }
   }
 
