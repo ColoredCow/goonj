@@ -99,7 +99,7 @@ class CollectionCampService extends AutoSubscriber {
     ];
   }
 
-  /**
+    /**
    *
    */
   public function validateReceiptFromEmail($formName, &$fields, &$files, &$form, &$errors) {
@@ -107,18 +107,19 @@ class CollectionCampService extends AutoSubscriber {
     if ($formName !== 'CRM_Contribute_Form_Contribution') {
       return;
     }
-
+  
     $fieldName = 'from_email_address';
-    $expectedId = ACCOUNTS_TEAM_EMAIL_ID;
-
-    if (empty($fields[$fieldName]) || $fields[$fieldName] != $expectedId) {
+  
+    if (
+      empty($fields[$fieldName]) ||
+      trim($fields[$fieldName]) !== self::ACCOUNTS_TEAM_EMAIL
+    ) {
       $message = ts(
-            "Invalid 'Receipt From' email selected. Please select the correct account email."
-        );
-
+        "Invalid 'Receipt From' email selected. Please select the correct account email."
+      );
+  
       $errors[$fieldName] = $message;
       $form->setElementError($fieldName, $message);
-
     }
   }
 
