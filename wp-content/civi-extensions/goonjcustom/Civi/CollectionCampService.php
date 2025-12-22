@@ -2150,51 +2150,8 @@ class CollectionCampService extends AutoSubscriber {
       $errors[$fieldName] = $message;
       $form->setElementError($fieldName, $message);
 
-      $jsSafeName = preg_replace('/[^a-zA-Z0-9_]/', '_', $fieldName);
-
-      \CRM_Core_Resources::singleton()->addScript("
-        (function($) {
-  
-          function showError_{$jsSafeName}() {
-            var errorId = '{$fieldName}-error';
-            var errorHtml =
-              '<div id=\"' + errorId + '\" class=\"crm-error\">' +
-              " . json_encode($message) . " +
-              '</div>';
-  
-            // Core field
-            var input = $('#{$fieldName}');
-            if (input.length) {
-              if (!$('#' + errorId).length) {
-                input.after(errorHtml);
-              } else {
-                $('#' + errorId).show();
-              }
-              return;
-            }
-  
-            // Custom field row
-            var row = $('tr.custom_field-row[class*=\"{$fieldName}\"]');
-            if (row.length) {
-  
-              var details = row.closest('details');
-              if (details.length && !details.prop('open')) {
-                details.prop('open', true);
-              }
-  
-              if (!$('#' + errorId).length) {
-                row.find('td.html-adjust').append(errorHtml);
-              } else {
-                $('#' + errorId).show();
-              }
-            }
-          }
-  
-          $(document).ready(showError_{$jsSafeName});
-          $(document).ajaxComplete(showError_{$jsSafeName});
-  
-        })(CRM.$);
-      ");
+      // Use the existing helper to display inline JS error
++     $this->addInlineJsError($fieldName, $message);
     }
   }
 
