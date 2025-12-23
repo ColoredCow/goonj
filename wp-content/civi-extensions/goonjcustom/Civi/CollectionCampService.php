@@ -99,7 +99,7 @@ class CollectionCampService extends AutoSubscriber {
     ];
   }
 
-    /**
+  /**
    *
    */
   public function validateReceiptFromEmail($formName, &$fields, &$files, &$form, &$errors) {
@@ -138,6 +138,28 @@ class CollectionCampService extends AutoSubscriber {
 
     // Today (without time)
     $today = new \DateTime('today');
+
+    $now = new \DateTime('now');
+
+    if (!empty($fields['receive_date'])) {
+      $contributionDate = new \DateTime($fields['receive_date']);
+    
+      if ($contributionDate > $now) {
+        $message = ts('Contribution Date cannot be in the future.');
+        $errors['receive_date'] = $message;
+        $form->setElementError('receive_date', $message);
+      }
+    }
+    
+    if (!empty($fields['receipt_date'])) {
+      $receiptDate = new \DateTime($fields['receipt_date']);
+    
+      if ($receiptDate > $now) {
+        $message = ts('Receipt Date cannot be in the future.');
+        $errors['receipt_date'] = $message;
+        $form->setElementError('receipt_date', $message);
+      }
+    }
 
     /**
      * =========================
@@ -2152,7 +2174,7 @@ class CollectionCampService extends AutoSubscriber {
       $form->setElementError($fieldName, $message);
 
       // Use the existing helper to display inline JS error
-+     $this->addInlineJsError($fieldName, $message);
+      $this->addInlineJsError($fieldName, $message);
     }
   }
 
