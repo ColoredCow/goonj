@@ -585,9 +585,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
 
     $groupId = self::getChapterGroupForState($stateProvinceId);
 
-    if ($groupId & $contactId) {
-
-
+    if ($groupId && $contactId) {
       GroupContact::create(FALSE)
         ->addValue('contact_id', $contactId)
         ->addValue('group_id', $groupId)
