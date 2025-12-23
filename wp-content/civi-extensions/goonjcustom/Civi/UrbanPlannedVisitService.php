@@ -585,6 +585,26 @@ class UrbanPlannedVisitService extends AutoSubscriber {
 
     $groupId = self::getChapterGroupForState($stateProvinceId);
 
+    $existingGroups = GroupContact::get(FALSE)
+    ->addSelect('group_id')
+    ->addWhere('contact_id', '=', $contactId)
+    ->addWhere('status', '=', 'Added')
+    ->execute();
+
+    $alreadyInGroup = FALSE;
+
+    foreach ($existingGroups as $existingGroup) {
+      if ((int) $existingGroup['group_id'] === (int) $groupId) {
+        $alreadyInGroup = TRUE;
+        break;
+      }
+    }
+
+    // If group already assigned → do nothing
+    if ($alreadyInGroup) {
+      return;
+    }
+
     if ($groupId && $contactId) {
       GroupContact::create(FALSE)
         ->addValue('contact_id', $contactId)
@@ -628,6 +648,26 @@ class UrbanPlannedVisitService extends AutoSubscriber {
 
     $stateProvinceId = $addresses['state_province_id'] ?? NULL;
     $groupId = self::getChapterGroupForState($stateProvinceId);
+
+    $existingGroups = GroupContact::get(FALSE)
+    ->addSelect('group_id')
+    ->addWhere('contact_id', '=', $contactId)
+    ->addWhere('status', '=', 'Added')
+    ->execute();
+
+    $alreadyInGroup = FALSE;
+
+    foreach ($existingGroups as $existingGroup) {
+      if ((int) $existingGroup['group_id'] === (int) $groupId) {
+        $alreadyInGroup = TRUE;
+        break;
+      }
+    }
+
+    // If group already assigned → do nothing
+    if ($alreadyInGroup) {
+      return;
+    }
 
     if ($groupId && $contactId) {
       GroupContact::create(FALSE)
