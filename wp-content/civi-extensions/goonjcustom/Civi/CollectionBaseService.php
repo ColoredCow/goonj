@@ -84,16 +84,11 @@ class CollectionBaseService extends AutoSubscriber {
         ->execute()
         ->first();
 
-      error_log("ACL: Fetched team group contact: " . print_r($teamGroupContact, TRUE));
-
       if (!$teamGroupContact) {
-        error_log("ACL: User $userId has no chapter team group.");
         return FALSE;
       }
 
       $groupId = $teamGroupContact['group_id'];
-      error_log("groupId: " . print_r($groupId, TRUE));
-
 
       $group = Group::get(FALSE)
         ->addSelect('Chapter_Contact_Group.States_controlled')
@@ -102,16 +97,13 @@ class CollectionBaseService extends AutoSubscriber {
         ->first();
 
       $statesControlled = $group['Chapter_Contact_Group.States_controlled'] ?? [];
-      error_log("statesControlled: " . print_r($statesControlled, TRUE));
 
       if (empty($statesControlled)) {
-        error_log("ACL: Group $groupId controls no states.");
         $clauses['id'][] = 'IN (null)';
         return TRUE;
       }
 
       $statesControlled = array_unique($statesControlled);
-      error_log('ACL: Controlled states: ' . print_r($statesControlled, TRUE));
 
       // Step 1: Fetch all camps as array.
       try {
@@ -122,18 +114,14 @@ class CollectionBaseService extends AutoSubscriber {
         $camps = iterator_to_array($campsResult);
       }
       catch (\Exception $e) {
-        error_log("ACL: Unable to fetch Institution_Visit: " . $e->getMessage());
         $clauses['id'][] = 'IN (null)';
         return TRUE;
       }
-
-      error_log('API4: Fetched camps: ' . print_r($camps, TRUE));
 
       // Step 2: Extract unique processing center IDs.
       $processingCenterIds = array_unique(array_map(function ($camp) {
           return $camp['Urban_Planned_Visit.Which_Goonj_Processing_Center_do_you_wish_to_visit_'] ?? NULL;
       }, $camps));
-      error_log('API4: Processing Center IDs: ' . print_r($processingCenterIds, TRUE));
 
       if (empty($processingCenterIds)) {
         $clauses['id'][] = 'IN (null)';
@@ -147,16 +135,11 @@ class CollectionBaseService extends AutoSubscriber {
         ->addWhere('contact_id', 'IN', $processingCenterIds)
         ->execute();
 
-      // <-- Works too
       $addresses = iterator_to_array($addressesResult);
-      error_log('API4: Fetched addresses: ' . print_r($addresses, TRUE));
-
       $contactStates = [];
       foreach ($addresses as $addr) {
         $contactStates[$addr['contact_id']] = $addr['state_province_id'];
       }
-
-      error_log('ACL: Contact states: ' . print_r($contactStates, TRUE));
 
       // Step 4: Filter camps based on group-controlled states.
       $allowedCampIds = [];
@@ -174,8 +157,6 @@ class CollectionBaseService extends AutoSubscriber {
         return TRUE;
       }
 
-      error_log('ACL: Allowed camp IDs: ' . print_r($allowedCampIds, TRUE));
-
       // Step 5: Add allowed camp IDs to ACL clauses.
       if (!empty($allowedCampIds)) {
         // Instead of pushing into array, directly set the clause string:
@@ -190,7 +171,6 @@ class CollectionBaseService extends AutoSubscriber {
     }
     catch (\Exception $e) {
       \Civi::log()->warning("ACL: Unable to apply ACL on $entity for user $userId. " . $e->getMessage());
-      error_log("ACL Exception: " . $e->getMessage());
       return FALSE;
     }
   }
