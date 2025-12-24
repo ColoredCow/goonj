@@ -2,6 +2,7 @@
 
 namespace Civi;
 
+use Civi\Api4\Address;
 use Civi\Api4\Activity;
 use Civi\Api4\Contribution;
 use Civi\Api4\CustomField;
@@ -33,7 +34,10 @@ class CollectionBaseService extends AutoSubscriber {
    */
   public static function getSubscribedEvents() {
     return [
-      '&hook_civicrm_selectWhereClause' => 'aclCollectionCamp',
+      '&hook_civicrm_selectWhereClause' => [
+        ['aclCollectionCamp'],
+        ['aclUrbanPlanningVisit'],
+      ],
       '&hook_civicrm_pre' => [
         ['handleAuthorizationEmails'],
         ['checkIfPosterNeedsToBeGenerated'],
@@ -51,6 +55,124 @@ class CollectionBaseService extends AutoSubscriber {
       ],
       '&hook_civicrm_fieldOptions' => 'setIndianStateOptions',
     ];
+  }
+
+  /**
+   *
+   */
+  public static function aclUrbanPlanningVisit($entity, &$clauses, $userId, $conditions = []) {
+    if (!in_array($entity, ['Eck_Institution_Visit'])) {
+      return FALSE;
+    }
+
+    $restrictedRoles = [
+      'admin', 'urban_ops_admin', 'ho_account',
+      'project_team_ho', 's2s_ho_team', 'njpc_ho_team', 'project_ho_and_accounts',
+    ];
+
+    if (\CRM_Core_Permission::checkAnyPerm($restrictedRoles)) {
+      return;
+    }
+
+    try {
+      // Step 0: Get user's group-controlled states.
+      $teamGroupContact = GroupContact::get(FALSE)
+        ->addSelect('group_id')
+        ->addWhere('contact_id', '=', $userId)
+        ->addWhere('status', '=', 'Added')
+        ->addWhere('group_id.Chapter_Contact_Group.Use_Case', '=', 'chapter-team')
+        ->execute()
+        ->first();
+
+      if (!$teamGroupContact) {
+        return FALSE;
+      }
+
+      $groupId = $teamGroupContact['group_id'];
+
+      $group = Group::get(FALSE)
+        ->addSelect('Chapter_Contact_Group.States_controlled')
+        ->addWhere('id', '=', $groupId)
+        ->execute()
+        ->first();
+
+      $statesControlled = $group['Chapter_Contact_Group.States_controlled'] ?? [];
+
+      if (empty($statesControlled)) {
+        $clauses['id'][] = 'IN (null)';
+        return TRUE;
+      }
+
+      $statesControlled = array_unique($statesControlled);
+
+      // Step 1: Fetch all camps as array.
+      try {
+        $campsResult = EckEntity::get('Institution_Visit', FALSE)
+          ->addSelect('Urban_Planned_Visit.Which_Goonj_Processing_Center_do_you_wish_to_visit_')
+          ->execute();
+
+        $camps = iterator_to_array($campsResult);
+      }
+      catch (\Exception $e) {
+        $clauses['id'][] = 'IN (null)';
+        return TRUE;
+      }
+
+      // Step 2: Extract unique processing center IDs.
+      $processingCenterIds = array_unique(array_map(function ($camp) {
+          return $camp['Urban_Planned_Visit.Which_Goonj_Processing_Center_do_you_wish_to_visit_'] ?? NULL;
+      }, $camps));
+
+      if (empty($processingCenterIds)) {
+        $clauses['id'][] = 'IN (null)';
+        return TRUE;
+      }
+
+      // Step 3: Fetch states of processing center contacts as array.
+      $addressesResult = Address::get(FALSE)
+        ->addSelect('contact_id')
+        ->addSelect('state_province_id')
+        ->addWhere('contact_id', 'IN', $processingCenterIds)
+        ->execute();
+
+      $addresses = iterator_to_array($addressesResult);
+      $contactStates = [];
+      foreach ($addresses as $addr) {
+        $contactStates[$addr['contact_id']] = $addr['state_province_id'];
+      }
+
+      // Step 4: Filter camps based on group-controlled states.
+      $allowedCampIds = [];
+      foreach ($camps as $camp) {
+        $contactId = $camp['Urban_Planned_Visit.Which_Goonj_Processing_Center_do_you_wish_to_visit_'] ?? NULL;
+        $campId = $camp['id'] ?? NULL;
+
+        if ($contactId && $campId && isset($contactStates[$contactId]) && in_array($contactStates[$contactId], $statesControlled)) {
+          $allowedCampIds[] = $campId;
+        }
+      }
+
+      if (empty($allowedCampIds)) {
+        $clauses['id'][] = 'IN (null)';
+        return TRUE;
+      }
+
+      // Step 5: Add allowed camp IDs to ACL clauses.
+      if (!empty($allowedCampIds)) {
+        // Instead of pushing into array, directly set the clause string:
+        $clauses['id'] = ['IN (' . implode(',', array_map('intval', $allowedCampIds)) . ')'];
+      }
+      else {
+        $clauses['id'] = ['IN (null)'];
+      }
+
+      return TRUE;
+
+    }
+    catch (\Exception $e) {
+      \Civi::log()->warning("ACL: Unable to apply ACL on $entity for user $userId. " . $e->getMessage());
+      return FALSE;
+    }
   }
 
   /**
@@ -726,7 +848,7 @@ class CollectionBaseService extends AutoSubscriber {
    *
    */
   public static function aclCollectionCamp($entity, &$clauses, $userId, $conditions) {
-    if (!in_array($entity, ['Eck_Collection_Camp', 'Eck_Institution_Visit'])) {
+    if (!in_array($entity, ['Eck_Collection_Camp'])) {
       return FALSE;
     }
 
