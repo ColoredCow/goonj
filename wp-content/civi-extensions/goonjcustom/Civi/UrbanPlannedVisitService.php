@@ -12,6 +12,7 @@ use Civi\Api4\Relationship;
 use Civi\Api4\StateProvince;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
+use Civi\Api4\Address;
 
 /**
  *
@@ -35,6 +36,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         ['fillExternalCoordinatingPoc'],
         ['autoAssignExternalCoordinatingPoc'],
         ['autoAssignExternalCoordinatingPocFromIndividual'],
+        ['assignCenterGroupToIndividual'],
       ],
       '&hook_civicrm_tabset' => 'urbanVisitTabset',
     ];
@@ -582,32 +584,99 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     }
 
     $groupId = self::getChapterGroupForState($stateProvinceId);
-    // Check if already assigned to group chapter.
-    $groupContacts = GroupContact::get(FALSE)
-      ->addWhere('contact_id', '=', $contactId)
-      ->addWhere('group_id', '=', $groupId)
-      ->execute()->first();
 
-    if (!empty($groupContacts)) {
+    $existingGroups = GroupContact::get(FALSE)
+    ->addSelect('group_id')
+    ->addWhere('contact_id', '=', $contactId)
+    ->addWhere('status', '=', 'Added')
+    ->execute();
+
+    $alreadyInGroup = FALSE;
+
+    foreach ($existingGroups as $existingGroup) {
+      if ((int) $existingGroup['group_id'] === (int) $groupId) {
+        $alreadyInGroup = TRUE;
+        break;
+      }
+    }
+
+    // If group already assigned → do nothing
+    if ($alreadyInGroup) {
       return;
     }
 
-    if ($groupId & $contactId) {
-      $groupContacts = GroupContact::get(FALSE)
-        ->addWhere('contact_id', '=', $contactId)
-        ->addWhere('group_id', '=', $groupId)
-        ->execute()->first();
-
-      if (!empty($groupContacts)) {
-        return;
-      }
-
+    if ($groupId && $contactId) {
       GroupContact::create(FALSE)
         ->addValue('contact_id', $contactId)
         ->addValue('group_id', $groupId)
         ->addValue('status', 'Added')
         ->execute();
     }
+  }
+
+  /**
+   * Assigns a contact to the state/province group of a given center.
+   *
+   * @param int $contactId ID of the individual contact.
+   * @param int $centerProvinceId Contact ID of the center to get state/province.
+   */
+  public static function assignCenterGroupToIndividual(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($op !== 'edit' || $objectName !== 'AfformSubmission') {
+      return FALSE;
+    }
+
+    if (empty($objectRef['data']['Eck_Institution_Visit1'])) {
+      return FALSE;
+    }
+
+    $individualData = $objectRef['data']['Individual1'];
+    $visitData = $objectRef['data']['Eck_Institution_Visit1'];
+
+    foreach ($individualData as $individual) {
+      $contactId = $individual['id'] ?? NULL;
+    }
+
+    foreach ($visitData as $visit) {
+      $fields = $visit['fields'] ?? [];
+      $centerProvinceId = $fields['Urban_Planned_Visit.Which_Goonj_Processing_Center_do_you_wish_to_visit_'] ?? NULL;
+    }
+
+    $addresses = Address::get(FALSE)
+    ->addSelect('state_province_id')
+    ->addWhere('contact_id', '=', $centerProvinceId)
+    ->execute()->first();
+
+    $stateProvinceId = $addresses['state_province_id'] ?? NULL;
+    $groupId = self::getChapterGroupForState($stateProvinceId);
+
+    $existingGroups = GroupContact::get(FALSE)
+    ->addSelect('group_id')
+    ->addWhere('contact_id', '=', $contactId)
+    ->addWhere('status', '=', 'Added')
+    ->execute();
+
+    $alreadyInGroup = FALSE;
+
+    foreach ($existingGroups as $existingGroup) {
+      if ((int) $existingGroup['group_id'] === (int) $groupId) {
+        $alreadyInGroup = TRUE;
+        break;
+      }
+    }
+
+    // If group already assigned → do nothing
+    if ($alreadyInGroup) {
+      return;
+    }
+
+    if ($groupId && $contactId) {
+      GroupContact::create(FALSE)
+        ->addValue('contact_id', $contactId)
+        ->addValue('group_id', $groupId)
+        ->addValue('status', 'Added')
+        ->execute();
+    }
+
   }
 
   /**
