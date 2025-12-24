@@ -89,9 +89,193 @@ class CollectionCampService extends AutoSubscriber {
       ['alterReceiptMail'],
       ['handleOfflineReceipt'],
       ],
-      '&hook_civicrm_validateForm' => 'validateCheckNumber',
+      '&hook_civicrm_validateForm' => [
+      ['validateCheckNumber'],
+      ['validatePaymentDateNotFuture'],
+      ['validateReceiptFromEmail'],
+
+      ],
 
     ];
+  }
+
+  /**
+   *
+   */
+  public function validateReceiptFromEmail($formName, &$fields, &$files, &$form, &$errors) {
+
+    if ($formName !== 'CRM_Contribute_Form_Contribution') {
+      return;
+    }
+  
+    $fieldName = 'from_email_address';
+  
+    if (
+      empty($fields[$fieldName]) ||
+      trim($fields[$fieldName]) !== self::ACCOUNTS_TEAM_EMAIL
+    ) {
+      $message = ts(
+        "Invalid 'Receipt From' email selected. Please select the correct account email."
+      );
+  
+      $errors[$fieldName] = $message;
+      $form->setElementError($fieldName, $message);
+    }
+  }
+
+  /**
+   *
+   */
+  public function validatePaymentDateNotFuture($formName, &$fields, &$files, &$form, &$errors) {
+
+    if ($formName !== 'CRM_Contribute_Form_Contribution') {
+      return;
+    }
+
+    if (empty($fields['payment_instrument_id'])) {
+      return;
+    }
+
+    // Today (without time)
+    $today = new \DateTime('today');
+
+    $now = new \DateTime('now');
+
+    if (!empty($fields['receive_date'])) {
+      $contributionDate = new \DateTime($fields['receive_date']);
+    
+      if ($contributionDate > $now) {
+        $message = ts('Contribution Date cannot be in the future.');
+        $errors['receive_date'] = $message;
+        $form->setElementError('receive_date', $message);
+      }
+    }
+    
+    if (!empty($fields['receipt_date'])) {
+      $receiptDate = new \DateTime($fields['receipt_date']);
+    
+      if ($receiptDate > $now) {
+        $message = ts('Receipt Date cannot be in the future.');
+        $errors['receipt_date'] = $message;
+        $form->setElementError('receipt_date', $message);
+      }
+    }
+
+    /**
+     * =========================
+     * CHEQUE (payment_instrument_id = 4)
+     * =========================
+     */
+    if ($fields['payment_instrument_id'] == 4) {
+
+      $checkDateField = CustomField::get(FALSE)
+        ->addSelect('id')
+        ->addWhere('custom_group_id:name', '=', 'Cheque_Number')
+        ->addWhere('name', '=', 'Cheque_Date')
+        ->execute()->single();
+
+      $fieldName = 'custom_' . $checkDateField['id'] . '_-1';
+
+      if (!empty($fields[$fieldName])) {
+
+        $selectedDate = new \DateTime($fields[$fieldName]);
+
+        if ($selectedDate > $today) {
+
+          $message = ts('Cheque Date cannot be a future date.');
+
+          $errors[$fieldName] = $message;
+          $form->setElementError($fieldName, $message);
+
+          // JS inline error (same behavior as required-field validation)
+          $this->addInlineJsError($fieldName, $message);
+        }
+      }
+    }
+
+    /**
+     * =========================
+     * WIRE TRANSFER (payment_instrument_id = 5)
+     * =========================
+     */
+    if ($fields['payment_instrument_id'] == 5) {
+
+      $transferDateField = CustomField::get(FALSE)
+        ->addSelect('id')
+        ->addWhere('custom_group_id:name', '=', 'Wire_Transfer')
+        ->addWhere('name', '=', 'Transfer_Date')
+        ->execute()->single();
+
+      $fieldName = 'custom_' . $transferDateField['id'] . '_-1';
+
+      if (!empty($fields[$fieldName])) {
+
+        $selectedDate = new \DateTime($fields[$fieldName]);
+
+        if ($selectedDate > $today) {
+
+          $message = ts('Transfer Date cannot be a future date.');
+
+          $errors[$fieldName] = $message;
+          $form->setElementError($fieldName, $message);
+
+          // JS inline error.
+          $this->addInlineJsError($fieldName, $message);
+        }
+      }
+    }
+  }
+
+  /**
+   *
+   */
+  private function addInlineJsError($fieldName, $message) {
+
+    $jsSafeName = preg_replace('/[^a-zA-Z0-9_]/', '_', $fieldName);
+
+    \CRM_Core_Resources::singleton()->addScript("
+      (function($) {
+  
+        function showError_{$jsSafeName}() {
+          var errorId = '{$fieldName}-error';
+          var errorHtml =
+            '<div id=\"' + errorId + '\" class=\"crm-error\">' +
+            " . json_encode($message) . " +
+            '</div>';
+  
+          // Core field
+          var input = $('#{$fieldName}');
+          if (input.length) {
+            if (!$('#' + errorId).length) {
+              input.after(errorHtml);
+            } else {
+              $('#' + errorId).show();
+            }
+            return;
+          }
+  
+          // Custom field row
+          var row = $('tr.custom_field-row[class*=\"{$fieldName}\"]');
+          if (row.length) {
+  
+            var details = row.closest('details');
+            if (details.length && !details.prop('open')) {
+              details.prop('open', true);
+            }
+  
+            if (!$('#' + errorId).length) {
+              row.find('td.html-adjust').append(errorHtml);
+            } else {
+              $('#' + errorId).show();
+            }
+          }
+        }
+  
+        $(document).ready(showError_{$jsSafeName});
+        $(document).ajaxComplete(showError_{$jsSafeName});
+  
+      })(CRM.$);
+    ");
   }
 
   /**
@@ -1235,6 +1419,113 @@ class CollectionCampService extends AutoSubscriber {
     return $html;
   }
 
+   /**
+   *
+   */
+  // private static function getSelfLogisticsEmailHtml($contactName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress, $startDate, $campPocName, $campPocPhone) {
+  //   $homeUrl = \CRM_Utils_System::baseCMSURL();
+  
+  //   // URLs
+  //   $selfCampVehicleDispatchFormUrl = $homeUrl . 'self-camp-vehicle-dispatch-form/#?Camp_Vehicle_Dispatch.Collection_Camp=' . $collectionCampId .
+  //     '&Camp_Vehicle_Dispatch.Filled_by=' . $campAttendedById .
+  //     '&Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent=' . $collectionCampGoonjOffice .
+  //     '&Eck_Collection_Camp1=' . $collectionCampId;
+  
+  //   $campVolunteerFeedback = $homeUrl . 'volunteer-camp-feedback/#?Collection_Source_Feedback.Collection_Camp_Code=' . $collectionCampId .
+  //     '&Collection_Source_Feedback.Collection_Camp_Address=' . urlencode($campAddress) .
+  //     '&Collection_Source_Feedback.Filled_By=' . $campAttendedById;
+  
+  //   $html = "
+  //     <p>Dear $contactName,</p>
+  
+  //     <p>
+  //       Thank you for taking the initiative to organise the collection drive at
+  //       <strong>$campAddress</strong> on <strong>$startDate</strong>!
+  //       We hope the experience was just as meaningful and enjoyable for you as it was impactful for the community.
+  //     </p>
+  
+  //     <p>
+  //       As part of wrapping up the camp <strong>$campCode</strong>, we request you to kindly fill out the following two forms:
+  //     </p>
+  
+  //     <ol>
+  //       <li>
+  //           <a href=\"{$selfCampVehicleDispatchFormUrl}\"><strong>Dispatch Form</strong></a><br>
+  //           Please fill this from the venue once the vehicle is loaded and ready to leave for the Goonj centre.
+  //           This helps us track the materials smoothly and ensures you receive a timely acknowledgment of what was collected.
+  //         </li>
+
+  //         <br>
+  //         <li>
+  //           <a href=\"{$campVolunteerFeedback}\"><strong>Feedback Form</strong></a><br>
+  //           We would love to hear about your experience—your reflections, highlights, suggestions,
+  //           or anything you feel could make future drives even better.
+  //           Your feedback helps us grow and co-create stronger initiatives.
+  //         </li>
+  //       </ol>
+    
+  //       <p>
+  //         If you face any difficulty or need any guidance while filling the forms,
+  //         feel free to reach out to <strong>$campPocName</strong> at <strong>$campPocPhone</strong>.
+  //       </p>
+    
+  //       <p>
+  //         Looking forward to many more meaningful journeys together!
+  //       </p>
+    
+  //       <p>
+  //         Warm regards,<br>
+  //         Team Goonj
+  //       </p>
+  //     ";
+    
+  //     return $html;
+  //   }
+
+  // /**
+  //  *
+  //  */
+  // private static function getSelfOutcomeLogisticsEmailHtml($pocName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress) {
+  //   $homeUrl = \CRM_Utils_System::baseCMSURL();
+
+  //   // Construct the full URL for the outcome form.
+  //   $campOutcomeFormUrl = $homeUrl . '/camp-outcome-form/#?Eck_Collection_Camp1=' . $collectionCampId . '&Camp_Outcome.Filled_By=' . $campAttendedById;
+
+  //   $html = "
+  //     <p>Dear $pocName,</p>
+
+  //     <p>
+  //       Thank you for coordinating the collection camp/drive <strong>$campCode</strong> at
+  //       <strong>$campAddress</strong>. Your efforts have been instrumental in driving positive change
+  //       and supporting Goonj’s initiatives.
+  //     </p>
+
+  //     <p>
+  //       To help us gather insights and feedback on the outcomes of the camp, we request you to complete
+  //       the Camp Outcome Form after the camp concludes:
+  //     </p>
+
+  //     <p>
+  //       <a href=\"{$campOutcomeFormUrl}\"><strong>Complete the Camp Outcome Form</strong></a>
+  //     </p>
+
+  //     <p>
+  //       If you face any issues or need assistance, please write on Discord.
+  //     </p>
+
+  //     <p>
+  //       Thank you once again for your valuable support.
+  //     </p>
+
+  //     <p>
+  //       Warm Regards,<br>
+  //       Urban Relations Team
+  //     </p>
+  //   ";
+
+  //   return $html;
+  // }
+
   /**
    *
    */
@@ -1749,33 +2040,92 @@ class CollectionCampService extends AutoSubscriber {
    * @param array $errors
    */
   public function validateCheckNumber($formName, &$fields, &$files, &$form, &$errors) {
-    if ($formName == 'CRM_Contribute_Form_Contribution') {
-      if (isset($fields['payment_instrument_id']) && $fields['payment_instrument_id'] == 4) {
-        if (empty($fields['check_number'])) {
-          $message = ts('Please provide a cheque number.');
-          $form->setElementError('check_number', NULL);
-          $errors['check_number'] = $message;
-          $form->setElementError('check_number', $message);
+    if ($formName !== 'CRM_Contribute_Form_Contribution') {
+      return;
+    }
 
-          \CRM_Core_Resources::singleton()->addScript("
-                    (function($) {
-                        function ensureErrorVisible() {
-                            var errorField = $('#check_number-error');
-                            var inputField = $('#check_number');
-                            $('.crm-error').hide();
-                            if (!errorField.length) {
-                                inputField.after('<div id=\"check_number-error\" class=\"crm-error\">' + " . json_encode($message) . " + '</div>');
-                            } else {
-                                errorField.show();
-                            }
-                        }
+    if (empty($fields['payment_instrument_id'])) {
+      return;
+    }
 
-                        $(document).ajaxComplete(ensureErrorVisible);
-                        $(document).ready(ensureErrorVisible);
-                    })(CRM.$);
-                ");
-        }
+    /**
+     * =========================
+     * CHEQUE (payment_instrument_id = 4)
+     * =========================
+     */
+    if ($fields['payment_instrument_id'] == 4) {
+
+      $bankField = CustomField::get(FALSE)
+        ->addSelect('id')
+        ->addWhere('custom_group_id:name', '=', 'Cheque_Number')
+        ->addWhere('name', '=', 'Bank_Name')
+        ->execute()->single();
+
+      $checkDateField = CustomField::get(FALSE)
+        ->addSelect('id')
+        ->addWhere('custom_group_id:name', '=', 'Cheque_Number')
+        ->addWhere('name', '=', 'Cheque_Date')
+        ->execute()->single();
+
+      $this->validateRequiredFields(
+        [
+          'check_number' => ts('Please provide a cheque number.'),
+          'custom_' . $bankField['id'] . '_-1' => ts('Please provide the bank name.'),
+          'custom_' . $checkDateField['id'] . '_-1' => ts('Please select the cheque date.'),
+        ],
+        $fields,
+        $form,
+        $errors
+      );
+    }
+
+    /**
+     * =========================
+     * WIRE TRANSFER (payment_instrument_id = 5)
+     * =========================
+     */
+    if ($fields['payment_instrument_id'] == 5) {
+
+      $transactionIdField = CustomField::get(FALSE)
+        ->addSelect('id')
+        ->addWhere('custom_group_id:name', '=', 'Wire_Transfer')
+        ->addWhere('name', '=', 'Transaction_Id')
+        ->execute()->single();
+
+      $transferDateField = CustomField::get(FALSE)
+        ->addSelect('id')
+        ->addWhere('custom_group_id:name', '=', 'Wire_Transfer')
+        ->addWhere('name', '=', 'Transfer_Date')
+        ->execute()->single();
+
+      $this->validateRequiredFields(
+        [
+          'custom_' . $transactionIdField['id'] . '_-1' => ts('Please provide the Transaction ID.'),
+          'custom_' . $transferDateField['id'] . '_-1' => ts('Please select the Transfer Date.'),
+        ],
+        $fields,
+        $form,
+        $errors
+      );
+    }
+  }
+
+  /**
+   *
+   */
+  private function validateRequiredFields(array $requiredFields, &$fields, $form, &$errors) {
+    foreach ($requiredFields as $fieldName => $message) {
+
+      if (!empty($fields[$fieldName])) {
+        continue;
       }
+
+      // PHP validation.
+      $errors[$fieldName] = $message;
+      $form->setElementError($fieldName, $message);
+
+      // Use the existing helper to display inline JS error
+      $this->addInlineJsError($fieldName, $message);
     }
   }
 
