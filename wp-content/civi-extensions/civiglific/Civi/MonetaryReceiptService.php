@@ -91,7 +91,7 @@ class MonetaryReceiptService extends AutoSubscriber {
         $templateId = CIVICRM_GLIFIC_TEMPLATE_ID_TEAM5000;
       }
       else {
-        $templateId = CIVICRM_GLIFIC_TEMPLATE_ID_DEFAULT;
+        $templateId = \Civi::settings()->get('civiglific_template_id_default');
       }
 
       $input = [
