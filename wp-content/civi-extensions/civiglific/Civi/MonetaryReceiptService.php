@@ -88,7 +88,7 @@ class MonetaryReceiptService extends AutoSubscriber {
 
       $contributionPageName = $contributionData['contribution_page_id:name'] ?? '';
       if ($contributionPageName === 'Team_5000') {
-        $templateId = CIVICRM_GLIFIC_TEMPLATE_ID_TEAM5000;
+        $templateId = \Civi::settings()->get('civiglific_template_id_team5000');
       }
       else {
         $templateId = \Civi::settings()->get('civiglific_template_id_default');
