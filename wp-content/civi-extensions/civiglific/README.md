@@ -3,6 +3,7 @@
 Integrates Glific with CiviCRM, enabling you to send messages to users directly from CiviCRM and sync your group contacts between CiviCRM and Glific.
 
 Latest releases can be found in the [CiviCRM extensions directory](https://lab.civicrm.org/dashboard/projects/personal)
+
 ## Documentation
 
 ### Installation
@@ -11,7 +12,7 @@ Latest releases can be found in the [CiviCRM extensions directory](https://lab.c
 2. Put it in your CiviCRM extension directory
 3. Go to `CiviCRM > Administer > System Settings > Extensions`
 4. Find `civiglific` in the extension list and enable it
-5. Optionally, you can also use `cv` command-line tool to perform step 3 and 4
+5. Optionally, you can also use the `cv` command-line tool to perform steps 3 and 4
 
 ## Setup
 
@@ -21,12 +22,20 @@ There are two main setup configurations you can perform with this extension:
 
 ### Setup 1: Migrate CiviCRM Group Contacts to Glific Groups
 
-1. **Add configuration details in your `settings.php` file** to connect Glific with CiviCRM:
-   ```php
-   define('CIVICRM_GLIFIC_PHONE', 'XXXXXXXXXX');
-   define('CIVICRM_GLIFIC_PASSWORD', 'ABC');
-   define('CIVICRM_GLIFIC_API_BASE_URL', 'https://api.abs.com');
+1. **Configure Glific credentials in CiviCRM Settings UI**
+
+   Go to:
+
    ```
+   Administer → System Settings → Civiglific Settings
+   ```
+
+   Add the following values:
+
+   * Glific Phone Number
+   * Glific Password
+   * Glific API Base URL
+
 2. **Add a navigation menu entry** in CiviCRM to access the Group Mapping screen. You can use the following URL:
    ```
    civicrm/group-mapping
@@ -40,16 +49,21 @@ Civiglific.civicrm_glific_contact_sync_cron
 
 ### Setup 2: Send Receipts or Messages to Monetary Contributors
 
-1. **Add the following configurations in your `settings.php` file:**
-   ```php
-   // Glific Template IDs
-   define('CIVICRM_GLIFIC_TEMPLATE_ID_DEFAULT', 111111);
-   define('CIVICRM_GLIFIC_TEMPLATE_ID_TEAM5000', 111111);
+1. **Configure Template IDs and PDF paths in CiviCRM Settings UI**
 
-   // Persistent PDF storage
-   define('CIVICRM_PERSIST_PDF_PATH', '');
-   define('CIVICRM_SAVED_PDF_PATH', '');
+   Go to:
+
    ```
+   Administer → System Settings → Civiglific Settings
+   ```
+
+   Configure:
+
+   * Default Glific Template ID
+   * Team 5000 Template ID
+   * Persistent PDF Path (private storage path)
+   * Saved PDF Path (public access path)
+
 2. **Create a custom field** (Alphanumeric, Radio Buttons type) for **Contributions** to identify which contributors should receive WhatsApp messages or receipts.
 3. Create message template on glific end, fetch those id and added it to step 1.
 4. **Send messages or receipts automatically:** When submitting a contribution form, simply select the configured field, the message or receipt will be automatically sent to the contributor’s WhatsApp number using the Glific integration.
@@ -70,11 +84,11 @@ Once the extension is installed and configured:
 
 3. **Template Management**
    - Update your Glific template IDs in `settings.php` if you need to use different message templates for various campaigns or donor tiers.
-   - The system will automatically pick the correct template ID during message sending.
 
-4. **PDF Receipts**
-   - If you’ve configured persistent PDF paths in your `settings.php`, a copy of the sent receipt PDF will be saved for each transaction..
+### 4. PDF Receipts
 
+* If persistent PDF paths are configured in **Civiglific Settings**,
+  a copy of the sent receipt PDF will be stored for each transaction.
 
 ## Maintainers
 
