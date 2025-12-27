@@ -152,7 +152,7 @@ class MonetaryReceiptService extends AutoSubscriber {
 
       // Save PDF to persistent location.
       $uploadBase = defined('WP_CONTENT_DIR') ? rtrim(WP_CONTENT_DIR, '/') : rtrim($_SERVER['DOCUMENT_ROOT'] ?? __DIR__, '/');
-      $saveDir = $uploadBase . CIVICRM_PERSIST_PDF_PATH;
+      $saveDir = $uploadBase . \Civi::settings()->get('civiglific_persist_pdf_path');
 
       if (!file_exists($saveDir)) {
         mkdir($saveDir, 0755, TRUE);
