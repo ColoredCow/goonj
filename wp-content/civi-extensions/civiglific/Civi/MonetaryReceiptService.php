@@ -164,7 +164,7 @@ class MonetaryReceiptService extends AutoSubscriber {
       }
 
       $baseUrl = rtrim(\CRM_Core_Config::singleton()->userFrameworkBaseURL, '/');
-      $pdfUrl  = $baseUrl . CIVICRM_SAVED_PDF_PATH . $fileNameForPdf;
+      $pdfUrl = $baseUrl . \Civi::settings()->get('civiglific_saved_pdf_path') . $fileNameForPdf;
 
       $contributionContactId = $contributionData['contact_id'];
 
