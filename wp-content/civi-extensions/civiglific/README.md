@@ -82,8 +82,6 @@ Once the extension is installed and configured:
 2. **Automated Message Sending**
    - When a new contribution is recorded in CiviCRM and the configured custom field is selected, an automated WhatsApp message or receipt will be sent to the contributor using the linked Glific template.
 
-3. **Template Management**
-   - Update your Glific template IDs in `settings.php` if you need to use different message templates for various campaigns or donor tiers.
 
 ### 4. PDF Receipts
 
