@@ -1391,10 +1391,6 @@ class CollectionCampService extends AutoSubscriber {
         $attendeeEmail = $campAttendedBy['email.email'];
         $attendeeName = $campAttendedBy['display_name'];
 
-        if (!$attendeeEmail) {
-          throw new \Exception('Attendee email missing');
-        }
-
         if ($selfManaged) {
           $emailHtml = self::getSelfLogisticsEmailHtml($campOrganiserattendeeName, $campId, $campOrganiser, $campOffice, $campCode, $campAddress, $startDate, $campPocName, $campPocPhone);
           $emailOutcomeHtml = self::getSelfOutcomeLogisticsEmailHtml($campPocName, $campId, $campOrganiser, $campOffice, $campCode, $campAddress);
