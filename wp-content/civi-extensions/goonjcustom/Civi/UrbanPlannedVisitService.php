@@ -37,6 +37,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         ['autoAssignExternalCoordinatingPoc'],
         ['autoAssignExternalCoordinatingPocFromIndividual'],
         ['assignCenterGroupToIndividual'],
+        ['assignBackendCenterGroupToIndividual'],
       ],
       '&hook_civicrm_tabset' => 'urbanVisitTabset',
     ];
@@ -678,6 +679,68 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     }
 
   }
+
+  /**
+   * Assigns a contact/institute to the state/province group of a given center.
+   *
+   * @param int $contactId ID of the individual contact.
+   * @param int $centerProvinceId Contact ID of the center to get state/province.
+   */
+  public static function assignBackendCenterGroupToIndividual(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($op !== 'edit' || $objectName !== 'AfformSubmission') {
+      return FALSE;
+    }
+  
+    if (empty($objectRef['data']['Eck_Institution_Visit1'][0]['fields'])) {
+      return FALSE;
+    }
+  
+    $fields = $objectRef['data']['Eck_Institution_Visit1'][0]['fields'];
+  
+    $contactId = $fields['Urban_Planned_Visit.Select_Individual'] ?? $fields['Urban_Planned_Visit.Institution_POC'] ?? NULL;
+    $centerContactId = $fields['Urban_Planned_Visit.Which_Goonj_Processing_Center_do_you_wish_to_visit_'] ?? NULL;
+  
+    if (!$contactId || !$centerContactId) {
+      return FALSE;
+    }
+  
+    // Fetch state of the processing center
+    $address = Address::get(FALSE)
+      ->addSelect('state_province_id')
+      ->addWhere('contact_id', '=', $centerContactId)
+      ->execute()
+      ->first();
+  
+    $stateProvinceId = $address['state_province_id'] ?? NULL;
+  
+    if (!$stateProvinceId) {
+      return FALSE;
+    }
+  
+    $groupId = self::getChapterGroupForState($stateProvinceId);
+  
+    if (!$groupId) {
+      return FALSE;
+    }
+  
+    $existingGroups = GroupContact::get(FALSE)
+      ->addSelect('group_id')
+      ->addWhere('contact_id', '=', $contactId)
+      ->addWhere('status', '=', 'Added')
+      ->execute();
+  
+    foreach ($existingGroups as $existingGroup) {
+      if ((int) $existingGroup['group_id'] === (int) $groupId) {
+        return;
+      }
+    }
+  
+    GroupContact::create(FALSE)
+      ->addValue('contact_id', $contactId)
+      ->addValue('group_id', $groupId)
+      ->addValue('status', 'Added')
+      ->execute();
+  }  
 
   /**
    *
