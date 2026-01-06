@@ -1269,21 +1269,15 @@ class UrbanPlannedVisitService extends AutoSubscriber {
 
       $year = date('Y', strtotime($visitSourceCreatedDate));
 
-      $stateId = $objectRef['Urban_Planned_Visit.State'];
+      $goonjOfficeId = $objectRef['Urban_Planned_Visit.Which_Goonj_Processing_Center_do_you_wish_to_visit_'];
 
-      if (!$stateId) {
-        return;
-      }
-
-      $stateProvince = StateProvince::get(FALSE)
-        ->addWhere('id', '=', $stateId)
+      $addresses = Address::get(FALSE)
+        ->addSelect('state_province_id:abbr')
+        ->addWhere('contact_id', '=', $goonjOfficeId)
         ->execute()->first();
 
-      if (empty($stateProvince)) {
-        return;
-      }
+      $stateAbbreviation = $addresses['state_province_id:abbr'] ?? NULL;
 
-      $stateAbbreviation = $stateProvince['abbreviation'] ?? NULL;
       if (!$stateAbbreviation) {
         return;
       }
