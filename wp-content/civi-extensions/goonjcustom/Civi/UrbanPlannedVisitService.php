@@ -37,7 +37,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         ['autoAssignExternalCoordinatingPoc'],
         ['autoAssignExternalCoordinatingPocFromIndividual'],
         ['assignCenterGroupToIndividual'],
-        ['assignBackendCenterGroupToIndividual'],
+        ['assignBackendCenterGroupToIndividualAndInstitute'],
       ],
       '&hook_civicrm_tabset' => 'urbanVisitTabset',
     ];
@@ -686,7 +686,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
    * @param int $contactId ID of the individual contact.
    * @param int $centerProvinceId Contact ID of the center to get state/province.
    */
-  public static function assignBackendCenterGroupToIndividual(string $op, string $objectName, $objectId, &$objectRef) {
+  public static function assignBackendCenterGroupToIndividualAndInstitute(string $op, string $objectName, $objectId, &$objectRef) {
     if ($op !== 'edit' || $objectName !== 'AfformSubmission') {
       return FALSE;
     }
@@ -697,10 +697,16 @@ class UrbanPlannedVisitService extends AutoSubscriber {
   
     $fields = $objectRef['data']['Eck_Institution_Visit1'][0]['fields'];
   
-    $contactId = $fields['Urban_Planned_Visit.Select_Individual'] ?? $fields['Urban_Planned_Visit.Institution_POC'] ?? NULL;
+    // Collect all possible contacts
+    $contactIds = array_filter([
+      $fields['Urban_Planned_Visit.Select_Individual'] ?? NULL,
+      $fields['Urban_Planned_Visit.Institution_POC'] ?? NULL,
+      $fields['Urban_Planned_Visit.Institution'] ?? NULL,
+    ]);
+  
     $centerContactId = $fields['Urban_Planned_Visit.Which_Goonj_Processing_Center_do_you_wish_to_visit_'] ?? NULL;
   
-    if (!$contactId || !$centerContactId) {
+    if (empty($contactIds) || !$centerContactId) {
       return FALSE;
     }
   
@@ -723,24 +729,34 @@ class UrbanPlannedVisitService extends AutoSubscriber {
       return FALSE;
     }
   
-    $existingGroups = GroupContact::get(FALSE)
-      ->addSelect('group_id')
-      ->addWhere('contact_id', '=', $contactId)
-      ->addWhere('status', '=', 'Added')
-      ->execute();
+    // Assign group to each contact
+    foreach ($contactIds as $contactId) {
   
-    foreach ($existingGroups as $existingGroup) {
-      if ((int) $existingGroup['group_id'] === (int) $groupId) {
-        return;
+      $existingGroups = GroupContact::get(FALSE)
+        ->addSelect('group_id')
+        ->addWhere('contact_id', '=', $contactId)
+        ->addWhere('status', '=', 'Added')
+        ->execute();
+  
+      $alreadyAdded = FALSE;
+      foreach ($existingGroups as $existingGroup) {
+        if ((int) $existingGroup['group_id'] === (int) $groupId) {
+          $alreadyAdded = TRUE;
+          break;
+        }
       }
-    }
   
-    GroupContact::create(FALSE)
-      ->addValue('contact_id', $contactId)
-      ->addValue('group_id', $groupId)
-      ->addValue('status', 'Added')
-      ->execute();
-  }  
+      if ($alreadyAdded) {
+        continue;
+      }
+  
+      GroupContact::create(FALSE)
+        ->addValue('contact_id', $contactId)
+        ->addValue('group_id', $groupId)
+        ->addValue('status', 'Added')
+        ->execute();
+    }
+  }
 
   /**
    *
@@ -1269,21 +1285,15 @@ class UrbanPlannedVisitService extends AutoSubscriber {
 
       $year = date('Y', strtotime($visitSourceCreatedDate));
 
-      $stateId = $objectRef['Urban_Planned_Visit.State'];
+      $goonjOfficeId = $objectRef['Urban_Planned_Visit.Which_Goonj_Processing_Center_do_you_wish_to_visit_'];
 
-      if (!$stateId) {
-        return;
-      }
-
-      $stateProvince = StateProvince::get(FALSE)
-        ->addWhere('id', '=', $stateId)
+      $addresses = Address::get(FALSE)
+        ->addSelect('state_province_id:abbr')
+        ->addWhere('contact_id', '=', $goonjOfficeId)
         ->execute()->first();
 
-      if (empty($stateProvince)) {
-        return;
-      }
+      $stateAbbreviation = $addresses['state_province_id:abbr'] ?? NULL;
 
-      $stateAbbreviation = $stateProvince['abbreviation'] ?? NULL;
       if (!$stateAbbreviation) {
         return;
       }
