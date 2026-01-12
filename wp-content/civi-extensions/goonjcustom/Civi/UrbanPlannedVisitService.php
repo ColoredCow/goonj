@@ -1351,6 +1351,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
 
     $processingCenterId = $dataArray['Eck_Institution_Visit1'][0]['fields']['Urban_Planned_Visit.Which_Goonj_Processing_Center_do_you_wish_to_visit_'];
     $stateProvinceId = $dataArray['Eck_Institution_Visit1'][0]['fields']['Urban_Planned_Visit.State'];
+    $cityName = $dataArray['Eck_Institution_Visit1'][0]['fields']['Urban_Planned_Visit.City'];
 
     if (!$processingCenterId) {
       return;
@@ -1377,6 +1378,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     if ($address) {
       Address::update(FALSE)
         ->addValue('state_province_id', $stateProvinceId)
+        ->addValue('city', $cityName)
         ->addWhere('id', '=', $address['id'])
         ->execute();
 
@@ -1386,6 +1388,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
       ->addValue('state_province_id', $stateProvinceId)
       ->addValue('is_primary', TRUE)
       ->addValue('location_type_id', 1)
+      ->addValue('city', $cityName)
       ->execute();
     }
 
