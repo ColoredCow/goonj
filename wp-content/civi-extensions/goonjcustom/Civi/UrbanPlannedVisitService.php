@@ -656,6 +656,11 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     ->addWhere('status', '=', 'Added')
     ->execute();
 
+    $updateState = Address::update(FALSE)
+      ->addValue('state_province_id', $stateProvinceId)
+      ->addWhere('contact_id', '=', $contactId)
+      ->execute();
+
     $alreadyInGroup = FALSE;
 
     foreach ($existingGroups as $existingGroup) {
