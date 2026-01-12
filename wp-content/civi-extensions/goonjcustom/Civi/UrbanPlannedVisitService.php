@@ -656,11 +656,6 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     ->addWhere('status', '=', 'Added')
     ->execute();
 
-    $updateState = Address::update(FALSE)
-      ->addValue('state_province_id', $stateProvinceId)
-      ->addWhere('contact_id', '=', $contactId)
-      ->execute();
-
     $alreadyInGroup = FALSE;
 
     foreach ($existingGroups as $existingGroup) {
@@ -1355,6 +1350,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     }
 
     $processingCenterId = $dataArray['Eck_Institution_Visit1'][0]['fields']['Urban_Planned_Visit.Which_Goonj_Processing_Center_do_you_wish_to_visit_'];
+    $stateProvinceId = $dataArray['Eck_Institution_Visit1'][0]['fields']['Urban_Planned_Visit.State'];
 
     if (!$processingCenterId) {
       return;
@@ -1371,6 +1367,28 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     if (!$urbanVisitId) {
       return;
     }
+
+    $address = Address::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('contact_id', '=', $individualId)
+      ->addWhere('is_primary', '=', TRUE)
+      ->execute()->first();
+
+    if ($address) {
+      Address::update(FALSE)
+        ->addValue('state_province_id', $stateProvinceId)
+        ->addWhere('id', '=', $address['id'])
+        ->execute();
+
+    } else {
+    Address::create(FALSE)
+      ->addValue('contact_id', $individualId)
+      ->addValue('state_province_id', $stateProvinceId)
+      ->addValue('is_primary', TRUE)
+      ->addValue('location_type_id', 1)
+      ->execute();
+    }
+
 
     $results = EckEntity::update('Institution_Visit', FALSE)
       ->addValue('Urban_Planned_Visit.External_Coordinating_PoC', $individualId)
