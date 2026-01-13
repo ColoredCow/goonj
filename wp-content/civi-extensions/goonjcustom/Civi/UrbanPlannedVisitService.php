@@ -12,6 +12,7 @@ use Civi\Api4\Relationship;
 use Civi\Api4\StateProvince;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
+use Civi\Api4\Address;
 
 /**
  *
@@ -35,6 +36,8 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         ['fillExternalCoordinatingPoc'],
         ['autoAssignExternalCoordinatingPoc'],
         ['autoAssignExternalCoordinatingPocFromIndividual'],
+        ['assignCenterGroupToIndividual'],
+        ['assignBackendCenterGroupToIndividualAndInstitute'],
       ],
       '&hook_civicrm_tabset' => 'urbanVisitTabset',
     ];
@@ -582,32 +585,179 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     }
 
     $groupId = self::getChapterGroupForState($stateProvinceId);
-    // Check if already assigned to group chapter.
-    $groupContacts = GroupContact::get(FALSE)
-      ->addWhere('contact_id', '=', $contactId)
-      ->addWhere('group_id', '=', $groupId)
-      ->execute()->first();
 
-    if (!empty($groupContacts)) {
+    $existingGroups = GroupContact::get(FALSE)
+    ->addSelect('group_id')
+    ->addWhere('contact_id', '=', $contactId)
+    ->addWhere('status', '=', 'Added')
+    ->execute();
+
+    $alreadyInGroup = FALSE;
+
+    foreach ($existingGroups as $existingGroup) {
+      if ((int) $existingGroup['group_id'] === (int) $groupId) {
+        $alreadyInGroup = TRUE;
+        break;
+      }
+    }
+
+    // If group already assigned → do nothing
+    if ($alreadyInGroup) {
       return;
     }
 
-    if ($groupId & $contactId) {
-      $groupContacts = GroupContact::get(FALSE)
-        ->addWhere('contact_id', '=', $contactId)
-        ->addWhere('group_id', '=', $groupId)
-        ->execute()->first();
-
-      if (!empty($groupContacts)) {
-        return;
-      }
-
+    if ($groupId && $contactId) {
       GroupContact::create(FALSE)
         ->addValue('contact_id', $contactId)
         ->addValue('group_id', $groupId)
         ->addValue('status', 'Added')
         ->execute();
     }
+  }
+
+  /**
+   * Assigns a contact to the state/province group of a given center.
+   *
+   * @param int $contactId ID of the individual contact.
+   * @param int $centerProvinceId Contact ID of the center to get state/province.
+   */
+  public static function assignCenterGroupToIndividual(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($op !== 'edit' || $objectName !== 'AfformSubmission') {
+      return FALSE;
+    }
+
+    if (empty($objectRef['data']['Eck_Institution_Visit1'])) {
+      return FALSE;
+    }
+
+    $individualData = $objectRef['data']['Individual1'];
+    $visitData = $objectRef['data']['Eck_Institution_Visit1'];
+
+    foreach ($individualData as $individual) {
+      $contactId = $individual['id'] ?? NULL;
+    }
+
+    foreach ($visitData as $visit) {
+      $fields = $visit['fields'] ?? [];
+      $centerProvinceId = $fields['Urban_Planned_Visit.Which_Goonj_Processing_Center_do_you_wish_to_visit_'] ?? NULL;
+    }
+
+    $addresses = Address::get(FALSE)
+    ->addSelect('state_province_id')
+    ->addWhere('contact_id', '=', $centerProvinceId)
+    ->execute()->first();
+
+    $stateProvinceId = $addresses['state_province_id'] ?? NULL;
+    $groupId = self::getChapterGroupForState($stateProvinceId);
+
+    $existingGroups = GroupContact::get(FALSE)
+    ->addSelect('group_id')
+    ->addWhere('contact_id', '=', $contactId)
+    ->addWhere('status', '=', 'Added')
+    ->execute();
+
+    $alreadyInGroup = FALSE;
+
+    foreach ($existingGroups as $existingGroup) {
+      if ((int) $existingGroup['group_id'] === (int) $groupId) {
+        $alreadyInGroup = TRUE;
+        break;
+      }
+    }
+
+    // If group already assigned → do nothing
+    if ($alreadyInGroup) {
+      return;
+    }
+
+    if ($groupId && $contactId) {
+      GroupContact::create(FALSE)
+        ->addValue('contact_id', $contactId)
+        ->addValue('group_id', $groupId)
+        ->addValue('status', 'Added')
+        ->execute();
+    }
+    civicrm_api3('System', 'flush', []);
+
+  }
+
+  /**
+   * Assigns a contact/institute to the state/province group of a given center.
+   *
+   * @param int $contactId ID of the individual contact.
+   * @param int $centerProvinceId Contact ID of the center to get state/province.
+   */
+  public static function assignBackendCenterGroupToIndividualAndInstitute(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($op !== 'edit' || $objectName !== 'AfformSubmission') {
+      return FALSE;
+    }
+  
+    if (empty($objectRef['data']['Eck_Institution_Visit1'][0]['fields'])) {
+      return FALSE;
+    }
+  
+    $fields = $objectRef['data']['Eck_Institution_Visit1'][0]['fields'];
+  
+    // Collect all possible contacts
+    $contactIds = array_filter([
+      $fields['Urban_Planned_Visit.Select_Individual'] ?? NULL,
+      $fields['Urban_Planned_Visit.Institution_POC'] ?? NULL,
+      $fields['Urban_Planned_Visit.Institution'] ?? NULL,
+    ]);
+  
+    $centerContactId = $fields['Urban_Planned_Visit.Which_Goonj_Processing_Center_do_you_wish_to_visit_'] ?? NULL;
+  
+    if (empty($contactIds) || !$centerContactId) {
+      return FALSE;
+    }
+  
+    // Fetch state of the processing center
+    $address = Address::get(FALSE)
+      ->addSelect('state_province_id')
+      ->addWhere('contact_id', '=', $centerContactId)
+      ->execute()
+      ->first();
+  
+    $stateProvinceId = $address['state_province_id'] ?? NULL;
+  
+    if (!$stateProvinceId) {
+      return FALSE;
+    }
+  
+    $groupId = self::getChapterGroupForState($stateProvinceId);
+  
+    if (!$groupId) {
+      return FALSE;
+    }
+  
+    // Assign group to each contact
+    foreach ($contactIds as $contactId) {
+  
+      $existingGroups = GroupContact::get(FALSE)
+        ->addSelect('group_id')
+        ->addWhere('contact_id', '=', $contactId)
+        ->addWhere('status', '=', 'Added')
+        ->execute();
+  
+      $alreadyAdded = FALSE;
+      foreach ($existingGroups as $existingGroup) {
+        if ((int) $existingGroup['group_id'] === (int) $groupId) {
+          $alreadyAdded = TRUE;
+          break;
+        }
+      }
+  
+      if ($alreadyAdded) {
+        continue;
+      }
+  
+      GroupContact::create(FALSE)
+        ->addValue('contact_id', $contactId)
+        ->addValue('group_id', $groupId)
+        ->addValue('status', 'Added')
+        ->execute();
+    }
+    civicrm_api3('System', 'flush', []);
   }
 
   /**
@@ -1137,21 +1287,15 @@ class UrbanPlannedVisitService extends AutoSubscriber {
 
       $year = date('Y', strtotime($visitSourceCreatedDate));
 
-      $stateId = $objectRef['Urban_Planned_Visit.State'];
+      $goonjOfficeId = $objectRef['Urban_Planned_Visit.Which_Goonj_Processing_Center_do_you_wish_to_visit_'];
 
-      if (!$stateId) {
-        return;
-      }
-
-      $stateProvince = StateProvince::get(FALSE)
-        ->addWhere('id', '=', $stateId)
+      $addresses = Address::get(FALSE)
+        ->addSelect('state_province_id:abbr')
+        ->addWhere('contact_id', '=', $goonjOfficeId)
         ->execute()->first();
 
-      if (empty($stateProvince)) {
-        return;
-      }
+      $stateAbbreviation = $addresses['state_province_id:abbr'] ?? NULL;
 
-      $stateAbbreviation = $stateProvince['abbreviation'] ?? NULL;
       if (!$stateAbbreviation) {
         return;
       }
@@ -1208,6 +1352,8 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     }
 
     $processingCenterId = $dataArray['Eck_Institution_Visit1'][0]['fields']['Urban_Planned_Visit.Which_Goonj_Processing_Center_do_you_wish_to_visit_'];
+    $stateProvinceId = $dataArray['Eck_Institution_Visit1'][0]['fields']['Urban_Planned_Visit.State'];
+    $cityName = $dataArray['Eck_Institution_Visit1'][0]['fields']['Urban_Planned_Visit.City'];
 
     if (!$processingCenterId) {
       return;
@@ -1224,6 +1370,30 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     if (!$urbanVisitId) {
       return;
     }
+
+    $address = Address::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('contact_id', '=', $individualId)
+      ->addWhere('is_primary', '=', TRUE)
+      ->execute()->first();
+
+    if ($address) {
+      Address::update(FALSE)
+        ->addValue('state_province_id', $stateProvinceId)
+        ->addValue('city', $cityName)
+        ->addWhere('id', '=', $address['id'])
+        ->execute();
+
+    } else {
+    Address::create(FALSE)
+      ->addValue('contact_id', $individualId)
+      ->addValue('state_province_id', $stateProvinceId)
+      ->addValue('is_primary', TRUE)
+      ->addValue('location_type_id', 1)
+      ->addValue('city', $cityName)
+      ->execute();
+    }
+
 
     $results = EckEntity::update('Institution_Visit', FALSE)
       ->addValue('Urban_Planned_Visit.External_Coordinating_PoC', $individualId)

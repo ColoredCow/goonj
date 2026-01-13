@@ -2,7 +2,7 @@
 
 Integrates Glific with CiviCRM, enabling you to send messages to users directly from CiviCRM and sync your group contacts between CiviCRM and Glific.
 
-Latest releases can be found in the [CiviCRM extensions directory]()
+Latest releases can be found in the [CiviCRM extensions directory](https://lab.civicrm.org/dashboard/projects/personal)
 ## Documentation
 
 ### Installation
