@@ -1490,7 +1490,7 @@ class CollectionCampService extends AutoSubscriber {
       </p>
   
       <p>
-        As part of wrapping up the camp <strong>$campCode</strong>, we request you to kindly fill out the following two forms:
+        As part of wrapping up the camp, we request you to kindly fill out the following two forms:
       </p>
   
       <ol>
