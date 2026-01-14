@@ -1376,7 +1376,17 @@ class CollectionCampService extends AutoSubscriber {
       $campOrganiserattendeeName = $campOrganiserBy['display_name'];
 
       $startDateObj = new \DateTime($collectionCamp['Collection_Camp_Intent_Details.Start_Date']);
+      $endDateObj = new \DateTime($collectionCamp['Collection_Camp_Intent_Details.End_Date']);
+
       $startDate = $startDateObj->format('d M Y');
+      $endDate = $endDateObj->format('d M Y');
+
+      // Date string to display in email
+      if ($startDateObj->format('Y-m-d') === $endDateObj->format('Y-m-d')) {
+        $displayDate = $startDate;                      // same date
+      } else {
+        $displayDate = $startDate . ' - ' . $endDate;   // range
+      }
 
       $today = new \DateTimeImmutable();
       $endOfToday = $today->setTime(23, 59, 59);
@@ -1392,7 +1402,7 @@ class CollectionCampService extends AutoSubscriber {
         $attendeeName = $campAttendedBy['display_name'];
 
         if ($selfManaged) {
-          $emailHtml = self::getSelfLogisticsEmailHtml($campOrganiserattendeeName, $campId, $campOrganiser, $campOffice, $campCode, $campAddress, $startDate, $campPocName, $campPocPhone);
+          $emailHtml = self::getSelfLogisticsEmailHtml($campOrganiserattendeeName, $campId, $campOrganiser, $campOffice, $campCode, $campAddress, $displayDate, $campPocName, $campPocPhone);
           $emailOutcomeHtml = self::getSelfOutcomeLogisticsEmailHtml($campPocName, $campId, $campOrganiser, $campOffice, $campCode, $campAddress);
           // Send to organiser.
           $toEmail = $campOrganiserEmail;
@@ -1467,7 +1477,7 @@ class CollectionCampService extends AutoSubscriber {
    /**
    *
    */
-  private static function getSelfLogisticsEmailHtml($contactName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress, $startDate, $campPocName, $campPocPhone) {
+  private static function getSelfLogisticsEmailHtml($contactName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress, $displayDate, $campPocName, $campPocPhone) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
   
     // URLs
@@ -1485,7 +1495,7 @@ class CollectionCampService extends AutoSubscriber {
   
       <p>
         Thank you for taking the initiative to organise the collection drive at
-        <strong>$campAddress</strong> on <strong>$startDate</strong>!
+        <strong>$campAddress</strong> on <strong>$displayDate</strong>!
         We hope the experience was just as meaningful and enjoyable for you as it was impactful for the community.
       </p>
   
