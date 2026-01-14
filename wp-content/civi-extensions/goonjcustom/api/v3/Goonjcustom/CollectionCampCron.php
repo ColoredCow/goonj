@@ -51,6 +51,7 @@ function civicrm_api3_goonjcustom_collection_camp_cron($params) {
       'title',
       'Logistics_Coordination.Camp_to_be_attended_by',
       'Collection_Camp_Intent_Details.Start_Date',
+      'Collection_Camp_Intent_Details.End_Date',
       'Logistics_Coordination.Email_Sent',
       'Collection_Camp_Intent_Details.Goonj_Office',
       'Collection_Camp_Intent_Details.Location_Area_of_camp',

@@ -427,56 +427,56 @@ class CollectionCampService extends AutoSubscriber {
         'module' => 'afformCollectionCampIntentEdit',
         'directive' => 'afform-collection-camp-intent-edit',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp/Edit.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt_and_accounts_chapter_team', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'mmt_and_accounts_chapter_team', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts', 'project_team_ho'],
       ],
       'logistics' => [
         'title' => ts('Logistics'),
         'module' => 'afsearchCollectionCampLogistics',
         'directive' => 'afsearch-collection-camp-logistics',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp/Logistics.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts', 'project_team_ho'],
       ],
       'eventVolunteers' => [
         'title' => ts('Event Volunteers'),
         'module' => 'afsearchEventVolunteer',
         'directive' => 'afsearch-event-volunteer',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp/EventVolunteers.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts', 'project_team_ho'],
       ],
       'vehicleDispatch' => [
         'title' => ts('Dispatch'),
         'module' => 'afsearchCampVehicleDispatchData',
         'directive' => 'afsearch-camp-vehicle-dispatch-data',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp/VehicleDispatch.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts', 'project_team_ho'],
       ],
       'materialAuthorization' => [
         'title' => ts('Material Authorization'),
         'module' => 'afsearchAcknowledgementForLogisticsData',
         'directive' => 'afsearch-acknowledgement-for-logistics-data',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp/MaterialAuthorization.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts', 'project_team_ho'],
       ],
       'materialContribution' => [
         'title' => ts('Material Contribution'),
         'module' => 'afsearchCollectionCampMaterialContributions',
         'directive' => 'afsearch-collection-camp-material-contributions',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp/MaterialContribution.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'mmt', 'urban_ops_admin', 'data_entry', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'mmt', 'urban_ops_admin', 'data_entry', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts', 'project_team_ho'],
       ],
       'campOutcome' => [
         'title' => ts('Camp Outcome'),
         'module' => 'afsearchCampOutcome',
         'directive' => 'afsearch-camp-outcome',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp/Outcome.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts', 'project_team_ho'],
       ],
       'campFeedback' => [
         'title' => ts('Volunteer Feedback'),
         'module' => 'afsearchVolunteerFeedback1',
         'directive' => 'afsearch-volunteer-feedback1',
         'template' => 'CRM/Goonjcustom/Tabs/CollectionCamp/Feedback.tpl',
-        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts'],
+        'permissions' => ['goonj_chapter_admin', 'urbanops', 'urban_ops_admin', 'urban_ops_and_accounts_chapter_team', 'project_ho_and_accounts', 'project_team_ho'],
       ],
       'monetaryContribution' => [
         'title' => ts('Monetary Contribution'),
@@ -1376,7 +1376,17 @@ class CollectionCampService extends AutoSubscriber {
       $campOrganiserattendeeName = $campOrganiserBy['display_name'];
 
       $startDateObj = new \DateTime($collectionCamp['Collection_Camp_Intent_Details.Start_Date']);
+      $endDateObj = new \DateTime($collectionCamp['Collection_Camp_Intent_Details.End_Date']);
+
       $startDate = $startDateObj->format('d M Y');
+      $endDate = $endDateObj->format('d M Y');
+
+      // Date string to display in email
+      if ($startDateObj->format('Y-m-d') === $endDateObj->format('Y-m-d')) {
+        $displayDate = $startDate;                      // same date
+      } else {
+        $displayDate = $startDate . ' - ' . $endDate;   // range
+      }
 
       $today = new \DateTimeImmutable();
       $endOfToday = $today->setTime(23, 59, 59);
@@ -1392,7 +1402,7 @@ class CollectionCampService extends AutoSubscriber {
         $attendeeName = $campAttendedBy['display_name'];
 
         if ($selfManaged) {
-          $emailHtml = self::getSelfLogisticsEmailHtml($campOrganiserattendeeName, $campId, $campOrganiser, $campOffice, $campCode, $campAddress, $startDate, $campPocName, $campPocPhone);
+          $emailHtml = self::getSelfLogisticsEmailHtml($campOrganiserattendeeName, $campId, $campOrganiser, $campOffice, $campCode, $campAddress, $displayDate, $campPocName, $campPocPhone);
           $emailOutcomeHtml = self::getSelfOutcomeLogisticsEmailHtml($campPocName, $campId, $campOrganiser, $campOffice, $campCode, $campAddress);
           // Send to organiser.
           $toEmail = $campOrganiserEmail;
@@ -1467,7 +1477,7 @@ class CollectionCampService extends AutoSubscriber {
    /**
    *
    */
-  private static function getSelfLogisticsEmailHtml($contactName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress, $startDate, $campPocName, $campPocPhone) {
+  private static function getSelfLogisticsEmailHtml($contactName, $collectionCampId, $campAttendedById, $collectionCampGoonjOffice, $campCode, $campAddress, $displayDate, $campPocName, $campPocPhone) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
   
     // URLs
@@ -1485,12 +1495,12 @@ class CollectionCampService extends AutoSubscriber {
   
       <p>
         Thank you for taking the initiative to organise the collection drive at
-        <strong>$campAddress</strong> on <strong>$startDate</strong>!
+        <strong>$campAddress</strong> on <strong>$displayDate</strong>!
         We hope the experience was just as meaningful and enjoyable for you as it was impactful for the community.
       </p>
   
       <p>
-        As part of wrapping up the camp <strong>$campCode</strong>, we request you to kindly fill out the following two forms:
+        As part of wrapping up the camp, we request you to kindly fill out the following two forms:
       </p>
   
       <ol>
