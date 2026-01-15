@@ -22,6 +22,7 @@ use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
 use Civi\InductionService;
 use Civi\Api4\Event;
+use Civi\Core\Event\GenericHookEvent;
 
 /**
  *
@@ -95,9 +96,149 @@ class CollectionCampService extends AutoSubscriber {
       ['validateReceiptFromEmail'],
 
       ],
+      'hook_civicrm_postSave_civicrm_file' => [
+      ['renameAfformUploadedImages', 0],
+    ],
 
     ];
   }
+
+
+  public static function renameAfformUploadedImages(\Civi\Core\Event\GenericHookEvent $event): void {
+    error_log('renameAfformUploadedImages: START');
+  
+    static $inProgress = [];
+  
+    $dao = $event->getHookValues()[0] ?? NULL;
+  
+    if (!$dao) {
+      error_log('renameAfformUploadedImages: dao is NULL, returning');
+      return;
+    }
+  
+    // Basic fields
+    $id = $dao->id ?? NULL;
+    $uri = $dao->uri ?? NULL;
+    $mime = $dao->mime_type ?? NULL;
+  
+    error_log('renameAfformUploadedImages: dao.id=' . print_r($id, TRUE));
+    error_log('renameAfformUploadedImages: dao.uri=' . print_r($uri, TRUE));
+    error_log('renameAfformUploadedImages: dao.mime=' . print_r($mime, TRUE));
+  
+    if (empty($id) || empty($uri) || empty($mime)) {
+      error_log('renameAfformUploadedImages: missing id/uri/mime, returning');
+      return;
+    }
+  
+    if (strpos($mime, 'image/') !== 0) {
+      error_log('renameAfformUploadedImages: not an image, returning');
+      return;
+    }
+  
+    if (!empty($inProgress[$id])) {
+      error_log("renameAfformUploadedImages: inProgress for file_id=$id, returning");
+      return;
+    }
+  
+    $prefix = 'testing-image-coloredcow-';
+    $baseName = basename($uri);
+  
+    if (strpos($baseName, $prefix) === 0) {
+      error_log("renameAfformUploadedImages: already renamed ($baseName), returning");
+      return;
+    }
+  
+    $inProgress[$id] = TRUE;
+  
+    try {
+      $ext = pathinfo($baseName, PATHINFO_EXTENSION);
+      $dir = dirname($uri);
+      $newBaseName = $prefix . $id . ($ext ? ('.' . $ext) : '');
+      $newUri = ($dir === '.' ? '' : ($dir . '/')) . $newBaseName;
+  
+      error_log('renameAfformUploadedImages: baseName=' . $baseName);
+      error_log('renameAfformUploadedImages: ext=' . $ext);
+      error_log('renameAfformUploadedImages: dir=' . $dir);
+      error_log('renameAfformUploadedImages: newBaseName=' . $newBaseName);
+      error_log('renameAfformUploadedImages: newUri=' . $newUri);
+  
+      // Base path (usually .../uploads/civicrm/)
+      $basePath = \Civi::paths()->getPath('[civicrm.files]/');
+      $basePath = rtrim($basePath, '/') . '/';
+  
+      error_log('renameAfformUploadedImages: basePath=' . $basePath);
+  
+      // Candidate old paths:
+      // 1) basePath + uri
+      // 2) basePath + "custom/" + basename(uri)   (common for custom files dir)
+      $oldPath1 = $basePath . ltrim($uri, '/');
+      $oldPath2 = $basePath . 'custom/' . $baseName;
+  
+      // Candidate new paths:
+      // If we rename inside "custom/", keep it inside custom/ too.
+      $newPath1 = $basePath . ltrim($newUri, '/');
+      $newPath2 = $basePath . 'custom/' . $newBaseName;
+  
+      error_log('renameAfformUploadedImages: oldPath1=' . $oldPath1 . ' exists=' . (file_exists($oldPath1) ? 'YES' : 'NO'));
+      error_log('renameAfformUploadedImages: oldPath2=' . $oldPath2 . ' exists=' . (file_exists($oldPath2) ? 'YES' : 'NO'));
+  
+      $renameOk = FALSE;
+  
+      if (file_exists($oldPath1)) {
+        error_log('renameAfformUploadedImages: attempting rename oldPath1 -> newPath1');
+        $renameOk = @rename($oldPath1, $newPath1);
+        error_log('renameAfformUploadedImages: rename result=' . ($renameOk ? 'OK' : 'FAILED'));
+        error_log('renameAfformUploadedImages: newPath1 exists=' . (file_exists($newPath1) ? 'YES' : 'NO'));
+  
+        if ($renameOk) {
+          // DB uri should match location relative to basePath
+          // (If you want to preserve subdir, newUri already has it)
+          civicrm_api4('File', 'update', [
+            'where' => [['id', '=', (int) $id]],
+            'values' => ['uri' => $newUri],
+            'checkPermissions' => FALSE,
+          ]);
+          error_log('renameAfformUploadedImages: DB updated uri=' . $newUri);
+        }
+      }
+      elseif (file_exists($oldPath2)) {
+        error_log('renameAfformUploadedImages: attempting rename oldPath2 -> newPath2 (custom/)');
+        $renameOk = @rename($oldPath2, $newPath2);
+        error_log('renameAfformUploadedImages: rename result=' . ($renameOk ? 'OK' : 'FAILED'));
+        error_log('renameAfformUploadedImages: newPath2 exists=' . (file_exists($newPath2) ? 'YES' : 'NO'));
+  
+        if ($renameOk) {
+          // IMPORTANT: In this case, the uri should include 'custom/'
+          $dbUri = 'custom/' . $newBaseName;
+  
+          civicrm_api4('File', 'update', [
+            'where' => [['id', '=', (int) $id]],
+            'values' => ['uri' => $dbUri],
+            'checkPermissions' => FALSE,
+          ]);
+          error_log('renameAfformUploadedImages: DB updated uri=' . $dbUri);
+        }
+      }
+      else {
+        error_log('renameAfformUploadedImages: file not found in either location. NOT updating DB to avoid broken uri.');
+        error_log('renameAfformUploadedImages: expected locations were:');
+        error_log('  - ' . $oldPath1);
+        error_log('  - ' . $oldPath2);
+      }
+    }
+    catch (\Throwable $e) {
+      error_log('renameAfformUploadedImages: EXCEPTION ' . $e->getMessage());
+      \Civi::log()->error('File rename failed: ' . $e->getMessage(), [
+        'file_id' => $id ?? NULL,
+        'uri' => $uri ?? NULL,
+      ]);
+    }
+    finally {
+      unset($inProgress[$id]);
+      error_log('renameAfformUploadedImages: END');
+    }
+  }
+  
 
   /**
    *
