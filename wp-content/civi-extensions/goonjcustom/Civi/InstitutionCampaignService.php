@@ -31,7 +31,7 @@ class InstitutionCampaignService extends AutoSubscriber {
       return;
     }
 
-    $institutionCampaign = Campaign::get(TRUE)
+    $institutionCampaign = Campaign::get(FALSE)
       ->addSelect(
           'id',
           'Additional_Details.Institution',
