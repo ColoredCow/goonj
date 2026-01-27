@@ -107,7 +107,12 @@ class CollectionCampService extends AutoSubscriber {
     if ($formName !== 'CRM_Contribute_Form_Contribution') {
       return;
     }
-  
+
+    // Only validate when "Send Receipt?" is checked.
+    if (empty($fields['is_email_receipt'])) {
+      return;
+    }
+
     $fieldName = 'from_email_address';
   
     if (
