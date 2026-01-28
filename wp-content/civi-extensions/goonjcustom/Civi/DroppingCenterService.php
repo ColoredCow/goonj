@@ -55,7 +55,92 @@ class DroppingCenterService extends AutoSubscriber {
         ['setOfficeDetails'],
         ['mailNotificationToMmt'],
       ],
+      '&hook_civicrm_post' => [
+      ['sendEmailToOrganizerAfterAcknowledgement'],
+      ],
     ];
+  }
+
+  /**
+   *
+  */
+  public static function sendEmailToOrganizerAfterAcknowledgement(string $op, string $objectName, int $objectId, &$objectRef) {
+    if (
+    $op !== 'create' ||
+    $objectName !== 'AfformSubmission' ||
+    empty($objectRef->afform_name) ||
+    (
+        $objectRef->afform_name !== 'afformDroppingCenterAcknowledgementForm' &&
+        $objectRef->afform_name !== 'afformDroppingCenterAcknowledgementFormForLogistics'
+    )
+    ) {
+      return;
+    }
+
+    $data = json_decode($objectRef->data, TRUE);
+
+    $droppingCenterId = $data['Eck_Collection_Source_Vehicle_Dispatch1'][0]['fields']['Camp_Vehicle_Dispatch.Dropping_Center'] ?? NULL;
+
+    $materialDescription = $data['Eck_Collection_Source_Vehicle_Dispatch1'][0]['fields']['Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office'] ?? 'N/A';
+
+    $droppingCenter = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect('Dropping_Centre.When_do_you_wish_to_open_center_Date_', 'Dropping_Centre.Goonj_Office.display_name', 'title', 'Collection_Camp_Core_Details.Contact_Id', 'Dropping_Centre.Coordinating_Urban_POC')
+      ->addWhere('subtype:name', '=', 'Dropping_Center')
+      ->addWhere('id', '=', $droppingCenterId)
+      ->execute()->first();
+
+    $droppingCenterCode = $droppingCenter['title'] ?? 'N/A';
+    $droppingCenterDate = $droppingCenter['Dropping_Centre.When_do_you_wish_to_open_center_Date_'] ?? 'N/A';
+    $goonjOfficeName = $droppingCenter['Dropping_Centre.Goonj_Office.display_name'] ?? 'N/A';
+    $contactId = $droppingCenter['Collection_Camp_Core_Details.Contact_Id'] ?? NULL;
+    $coordinatingUrbanPoc = $droppingCenter['Dropping_Centre.Coordinating_Urban_POC'] ?? NULL;
+
+    if (!$contactId) {
+      return;
+    }
+
+    $contactInfo = Contact::get(FALSE)
+      ->addSelect('email_primary.email', 'display_name')
+      ->addWhere('id', '=', $contactId)
+      ->execute()->first();
+
+    $organizerEmail = $contactInfo['email_primary.email'] ?? NULL;
+    $organizerName = $contactInfo['display_name'] ?? 'N/A';
+
+    if (!$organizerEmail) {
+      return;
+    }
+
+    $coordinatingInfo = Contact::get(FALSE)
+      ->addSelect('email_primary.email', 'display_name')
+      ->addWhere('id', '=', $coordinatingUrbanPoc)
+      ->execute()->first();
+    $coordinatorEmail = $coordinatingInfo['email_primary.email'] ?? NULL;
+
+    $from = HelperService::getDefaultFromEmail();
+    $mailParams = [
+      'subject' => 'Acknowledgment of Materials Received – Thank You!',
+      'from' => $from,
+      'toEmail' => $organizerEmail,
+      'html' => self::getAcknowledgementEmailHtml($organizerName, $materialDescription, $droppingCenterDate, $goonjOfficeName, $droppingCenterCode),
+      'CC' => $coordinatorEmail,
+    ];
+    \CRM_Utils_Mail::send($mailParams);
+
+  }
+
+  /**
+   *
+   */
+  public static function getAcknowledgementEmailHtml($organizerName, $materialDescription, $droppingCenterDate, $goonjOfficeName, $droppingCenterCode) {
+    $html = "
+    <p>Dear <strong>{$organizerName}</strong>,</p>
+    <p>We are happy to share that we have received <strong>{$materialDescription}</strong> on <strong>{$droppingCenterDate}</strong> at <strong>{$goonjOfficeName}</strong> from <strong>{$droppingCenterCode}</strong>.</p>
+    <p>Thank you for your time, coordination, and thoughtful effort. We are glad to have you as a valuable part of the Goonj family.</p>
+    <p>Warm regards,<br><strong>Team Goonj</strong></p>
+    ";
+
+    return $html;
   }
 
   /**
