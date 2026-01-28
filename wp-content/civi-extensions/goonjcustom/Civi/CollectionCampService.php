@@ -62,6 +62,7 @@ class CollectionCampService extends AutoSubscriber {
       ['generateInvoiceIdForContribution'],
       ['generateInvoiceNumber'],
       ['sendInductionEmailToCollectionCampUser'],
+      ['sendEmailToOrganizerAfterAcknowledgement'],
       ],
       '&hook_civicrm_pre' => [
         ['generateCollectionCampQr'],
@@ -97,6 +98,111 @@ class CollectionCampService extends AutoSubscriber {
       ],
 
     ];
+  }
+
+  /**
+   *
+  */
+  public static function sendEmailToOrganizerAfterAcknowledgement(string $op, string $objectName, int $objectId, &$objectRef) {
+    if (
+    $op !== 'create' ||
+    $objectName !== 'AfformSubmission' ||
+    empty($objectRef->afform_name) ||
+    (
+        $objectRef->afform_name !== 'afformFrontFacingAcknowledgementFormForLogistics' &&
+        $objectRef->afform_name !== 'afformAcknowledgementFormForLogistics'
+    )
+    ) {
+      return;
+    }
+
+    $data = json_decode($objectRef->data, TRUE);
+
+    $collectionCampId = $data['Eck_Collection_Source_Vehicle_Dispatch1'][0]['fields']['Camp_Vehicle_Dispatch.Collection_Camp'] ?? NULL;
+    $ackId = $data['Eck_Collection_Source_Vehicle_Dispatch1'][0]['fields']['id'] ?? NULL;
+
+    $materialDescription = $data['Eck_Collection_Source_Vehicle_Dispatch1'][0]['fields']['Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office'] ?? 'N/A';
+
+    $collectionSourceVehicleDispatches = EckEntity::get('Collection_Source_Vehicle_Dispatch', FALSE)
+      ->addSelect('Acknowledgement_For_Logistics.Ack_Email_Sent')
+      ->addWhere('id', '=', $ackId)
+      ->execute()->first();
+
+    $ackEmailSent = $collectionSourceVehicleDispatches['Acknowledgement_For_Logistics.Ack_Email_Sent'];
+    if ($ackEmailSent) {
+      return;
+    }
+
+    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect('Collection_Camp_Intent_Details.Location_Area_of_camp', 'Collection_Camp_Core_Details.Contact_Id', 'Collection_Camp_Intent_Details.Coordinating_Urban_POC')
+      ->addWhere('subtype:name', '=', 'Collection_Camp')
+      ->addWhere('id', '=', $collectionCampId)
+      ->execute()->first();
+
+    $collectionCampDispatch = EckEntity::get('Collection_Source_Vehicle_Dispatch', FALSE)
+      ->addSelect('Camp_Vehicle_Dispatch.Date_Time_of_Dispatch', 'Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent.display_name')
+      ->addWhere('id', '=', $ackId)
+      ->execute()->first();
+    
+    $collectionCampDate = $collectionCampDispatch['Camp_Vehicle_Dispatch.Date_Time_of_Dispatch'] ?? 'N/A';
+    $goonjOfficeName = $collectionCampDispatch['Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent.display_name'] ?? 'N/A';
+    $contactId = $collectionCamp['Collection_Camp_Core_Details.Contact_Id'] ?? NULL;
+    $coordinatingUrbanPoc = $collectionCamp['Collection_Camp_Intent_Details.Coordinating_Urban_POC'] ?? NULL;
+    $venue = $collectionCamp['Collection_Camp_Intent_Details.Location_Area_of_camp'] ?? 'N/A';
+
+    if (!$contactId) {
+      return;
+    }
+
+    $contactInfo = Contact::get(FALSE)
+      ->addSelect('email_primary.email', 'display_name')
+      ->addWhere('id', '=', $contactId)
+      ->execute()->first();
+
+    $organizerEmail = $contactInfo['email_primary.email'] ?? NULL;
+    $organizerName = $contactInfo['display_name'] ?? 'N/A';
+
+    if (!$organizerEmail) {
+      return;
+    }
+
+    $coordinatingInfo = Contact::get(FALSE)
+      ->addSelect('email_primary.email', 'display_name')
+      ->addWhere('id', '=', $coordinatingUrbanPoc)
+      ->execute()->first();
+    $coordinatorEmail = $coordinatingInfo['email_primary.email'] ?? NULL;
+
+    $from = HelperService::getDefaultFromEmail();
+    $mailParams = [
+      'subject' => 'Acknowledgment of Materials Received – Thank You!',
+      'from' => $from,
+      'toEmail' => $organizerEmail,
+      'html' => self::getAcknowledgementEmailHtml($organizerName, $materialDescription, $collectionCampDate, $goonjOfficeName, $venue),
+      'cc' => $coordinatorEmail,
+    ];
+    $emailSendResult = \CRM_Utils_Mail::send($mailParams);
+
+    if ($emailSendResult) {
+      EckEntity::update('Collection_Source_Vehicle_Dispatch', FALSE)
+        ->addValue('Acknowledgement_For_Logistics.Ack_Email_Sent', 1)
+        ->addWhere('id', '=', $collectionSourceVehicleDispatches['id'])
+        ->execute();
+    }
+
+  }
+
+  /**
+   *
+   */
+  public static function getAcknowledgementEmailHtml($organizerName, $materialDescription, $collectionCampDate, $goonjOfficeName, $venue) {
+    $html = "
+    <p>Dear <strong>{$organizerName}</strong>,</p>
+    <p>We are happy to share that we have received <strong>{$materialDescription}</strong> on <strong>{$collectionCampDate}</strong> at <strong>{$goonjOfficeName}</strong> from <strong>{$venue}</strong>.</p>
+    <p>Thank you for your time, coordination, and thoughtful effort. We are glad to have you as a valuable part of the Goonj family.</p>
+    <p>Warm regards,<br><strong>Team Goonj</strong></p>
+    ";
+
+    return $html;
   }
 
   /**
