@@ -95,13 +95,18 @@ class DroppingCenterService extends AutoSubscriber {
     }
 
     $droppingCenter = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Dropping_Centre.When_do_you_wish_to_open_center_Date_', 'Dropping_Centre.Goonj_Office.display_name', 'title', 'Collection_Camp_Core_Details.Contact_Id', 'Dropping_Centre.Coordinating_Urban_POC')
+      ->addSelect('Dropping_Centre.Goonj_Office.display_name', 'title', 'Collection_Camp_Core_Details.Contact_Id', 'Dropping_Centre.Coordinating_Urban_POC')
       ->addWhere('subtype:name', '=', 'Dropping_Center')
       ->addWhere('id', '=', $droppingCenterId)
       ->execute()->first();
     
+    $droppingCenterDispatch = EckEntity::get('Collection_Source_Vehicle_Dispatch', FALSE)
+    ->addSelect('Camp_Vehicle_Dispatch.Date_Time_of_Dispatch')
+    ->addWhere('id', '=', $ackId)
+    ->execute()->first();
+    
     $droppingCenterCode = $droppingCenter['title'] ?? 'N/A';
-    $droppingCenterDate = $droppingCenter['Dropping_Centre.When_do_you_wish_to_open_center_Date_'] ?? 'N/A';
+    $droppingCenterDate = $droppingCenterDispatch['Camp_Vehicle_Dispatch.Date_Time_of_Dispatch'] ?? 'N/A';
     $goonjOfficeName = $droppingCenter['Dropping_Centre.Goonj_Office.display_name'] ?? 'N/A';
     $contactId = $droppingCenter['Collection_Camp_Core_Details.Contact_Id'] ?? NULL;
     $coordinatingUrbanPoc = $droppingCenter['Dropping_Centre.Coordinating_Urban_POC'] ?? NULL;
