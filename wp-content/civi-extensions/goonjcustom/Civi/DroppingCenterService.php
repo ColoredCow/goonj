@@ -84,10 +84,15 @@ class DroppingCenterService extends AutoSubscriber {
     $materialDescription = $data['Eck_Collection_Source_Vehicle_Dispatch1'][0]['fields']['Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office'] ?? 'N/A';
 
     $droppingCenter = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Dropping_Centre.When_do_you_wish_to_open_center_Date_', 'Dropping_Centre.Goonj_Office.display_name', 'title', 'Collection_Camp_Core_Details.Contact_Id', 'Dropping_Centre.Coordinating_Urban_POC')
+      ->addSelect('Dropping_Centre.When_do_you_wish_to_open_center_Date_', 'Dropping_Centre.Goonj_Office.display_name', 'title', 'Collection_Camp_Core_Details.Contact_Id', 'Dropping_Centre.Coordinating_Urban_POC', 'Dropping_Centre.Ack_Email_Sent')
       ->addWhere('subtype:name', '=', 'Dropping_Center')
       ->addWhere('id', '=', $droppingCenterId)
       ->execute()->first();
+
+    $ackEmailSent = $droppingCenter['Dropping_Centre.Ack_Email_Sent'];
+    if ($ackEmailSent) {
+      return;
+    }
 
     $droppingCenterCode = $droppingCenter['title'] ?? 'N/A';
     $droppingCenterDate = $droppingCenter['Dropping_Centre.When_do_you_wish_to_open_center_Date_'] ?? 'N/A';
@@ -123,9 +128,16 @@ class DroppingCenterService extends AutoSubscriber {
       'from' => $from,
       'toEmail' => $organizerEmail,
       'html' => self::getAcknowledgementEmailHtml($organizerName, $materialDescription, $droppingCenterDate, $goonjOfficeName, $droppingCenterCode),
-      'CC' => $coordinatorEmail,
+      'cc' => $coordinatorEmail,
     ];
-    \CRM_Utils_Mail::send($mailParams);
+    $emailSendResult = \CRM_Utils_Mail::send($mailParams);
+
+    if ($emailSendResult) {
+      EckEntity::update('Collection_Camp', FALSE)
+        ->addValue('Dropping_Centre.Ack_Email_Sent', 1)
+        ->addWhere('id', '=', $droppingCenterId)
+        ->execute();
+    }
 
   }
 
