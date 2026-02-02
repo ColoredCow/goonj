@@ -168,7 +168,7 @@ class DroppingCenterService extends AutoSubscriber {
     $html = "
     <p>Dear <strong>{$organizerName}</strong>,</p>
     <p>We are happy to share that we have received <strong>{$materialDescription}</strong> on <strong>{$droppingCenterDate}</strong> at <strong>{$goonjOfficeName}</strong> from <strong>{$droppingCenterAddress}</strong>, {$droppingCenterDistrict}.</p>
-    <p>Thank you for your time, coordination, and thoughtful effort. We are glad to have you as a valuable part of the Goonj family.</p>
+    <p>Thank you for your time, coordination, and thoughtful efforts. We are glad to have you as a valuable part of the Goonj family.</p>
     <p>Warm regards,<br><strong>Team Goonj</strong></p>
     ";
 
