@@ -95,7 +95,7 @@ class DroppingCenterService extends AutoSubscriber {
     }
 
     $droppingCenter = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Dropping_Centre.Goonj_Office.display_name', 'title', 'Collection_Camp_Core_Details.Contact_Id', 'Dropping_Centre.Coordinating_Urban_POC')
+      ->addSelect('Dropping_Centre.Goonj_Office.display_name', 'title', 'Collection_Camp_Core_Details.Contact_Id', 'Dropping_Centre.Coordinating_Urban_POC', 'Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_')
       ->addWhere('subtype:name', '=', 'Dropping_Center')
       ->addWhere('id', '=', $droppingCenterId)
       ->execute()->first();
@@ -110,6 +110,7 @@ class DroppingCenterService extends AutoSubscriber {
     $goonjOfficeName = $droppingCenter['Dropping_Centre.Goonj_Office.display_name'] ?? 'N/A';
     $contactId = $droppingCenter['Collection_Camp_Core_Details.Contact_Id'] ?? NULL;
     $coordinatingUrbanPoc = $droppingCenter['Dropping_Centre.Coordinating_Urban_POC'] ?? NULL;
+    $droppingCenterAddress = $droppingCenter['Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_'] ?? NULL;
 
     if (!$contactId) {
       return;
@@ -138,7 +139,7 @@ class DroppingCenterService extends AutoSubscriber {
       'subject' => 'Acknowledgment of Materials Received – Thank You!',
       'from' => $from,
       'toEmail' => $organizerEmail,
-      'html' => self::getAcknowledgementEmailHtml($organizerName, $materialDescription, $droppingCenterDate, $goonjOfficeName, $droppingCenterCode),
+      'html' => self::getAcknowledgementEmailHtml($organizerName, $materialDescription, $droppingCenterDate, $goonjOfficeName, $droppingCenterCode, $droppingCenterAddress),
       'cc' => $coordinatorEmail,
     ];
     $emailSendResult = \CRM_Utils_Mail::send($mailParams);
@@ -155,10 +156,10 @@ class DroppingCenterService extends AutoSubscriber {
   /**
    *
    */
-  public static function getAcknowledgementEmailHtml($organizerName, $materialDescription, $droppingCenterDate, $goonjOfficeName, $droppingCenterCode) {
+  public static function getAcknowledgementEmailHtml($organizerName, $materialDescription, $droppingCenterDate, $goonjOfficeName, $droppingCenterCode, $droppingCenterAddress) {
     $html = "
     <p>Dear <strong>{$organizerName}</strong>,</p>
-    <p>We are happy to share that we have received <strong>{$materialDescription}</strong> on <strong>{$droppingCenterDate}</strong> at <strong>{$goonjOfficeName}</strong> from <strong>{$droppingCenterCode}</strong>.</p>
+    <p>We are happy to share that we have received <strong>{$materialDescription}</strong> on <strong>{$droppingCenterDate}</strong> at <strong>{$goonjOfficeName}</strong> from <strong>{$droppingCenterAddress}</strong>.</p>
     <p>Thank you for your time, coordination, and thoughtful effort. We are glad to have you as a valuable part of the Goonj family.</p>
     <p>Warm regards,<br><strong>Team Goonj</strong></p>
     ";
