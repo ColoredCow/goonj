@@ -167,7 +167,7 @@ class DroppingCenterService extends AutoSubscriber {
   public static function getAcknowledgementEmailHtml($organizerName, $materialDescription, $droppingCenterDate, $goonjOfficeName, $droppingCenterCode, $droppingCenterAddress, $droppingCenterDistrict) {
     $html = "
     <p>Dear <strong>{$organizerName}</strong>,</p>
-    <p>We are happy to share that we have received <strong>{$materialDescription}</strong> on <strong>{$droppingCenterDate}</strong> at <strong>{$goonjOfficeName}</strong> from <strong>{$droppingCenterAddress}</strong>, {$droppingCenterDistrict}.</p>
+    <p>We are happy to share that we have received <strong>{$materialDescription}</strong> on <strong>{$droppingCenterDate}</strong> at <strong>{$goonjOfficeName}</strong> from <strong>{$droppingCenterAddress}</strong>, <strong>{$droppingCenterDistrict}</strong>.</p>
     <p>Thank you for your time, coordination, and thoughtful efforts. We are glad to have you as a valuable part of the Goonj family.</p>
     <p>Warm regards,<br><strong>Team Goonj</strong></p>
     ";
