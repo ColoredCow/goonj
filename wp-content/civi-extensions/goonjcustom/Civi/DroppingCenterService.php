@@ -106,7 +106,14 @@ class DroppingCenterService extends AutoSubscriber {
     ->execute()->first();
     
     $droppingCenterCode = $droppingCenter['title'] ?? 'N/A';
-    $droppingCenterDate = $droppingCenterDispatch['Camp_Vehicle_Dispatch.Date_Time_of_Dispatch'] ?? 'N/A';
+    $droppingCenterDateRaw = $droppingCenterDispatch['Camp_Vehicle_Dispatch.Date_Time_of_Dispatch'] ?? 'N/A';
+    $droppingCenterDate = $droppingCenterDateRaw;
+    if ($droppingCenterDateRaw && $droppingCenterDateRaw !== 'N/A') {
+      $timestamp = strtotime($droppingCenterDateRaw);
+      if ($timestamp) {
+        $droppingCenterDate = date('d/m/Y', $timestamp);
+      }
+    }
     $goonjOfficeName = $droppingCenter['Dropping_Centre.Goonj_Office.display_name'] ?? 'N/A';
     $contactId = $droppingCenter['Collection_Camp_Core_Details.Contact_Id'] ?? NULL;
     $coordinatingUrbanPoc = $droppingCenter['Dropping_Centre.Coordinating_Urban_POC'] ?? NULL;

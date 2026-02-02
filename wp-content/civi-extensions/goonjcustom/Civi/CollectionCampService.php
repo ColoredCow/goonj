@@ -144,7 +144,14 @@ class CollectionCampService extends AutoSubscriber {
       ->addWhere('id', '=', $ackId)
       ->execute()->first();
     
-    $collectionCampDate = $collectionCampDispatch['Camp_Vehicle_Dispatch.Date_Time_of_Dispatch'] ?? 'N/A';
+    $collectionCampDateRaw = $collectionCampDispatch['Camp_Vehicle_Dispatch.Date_Time_of_Dispatch'] ?? 'N/A';
+    $collectionCampDate = $collectionCampDateRaw;
+    if ($collectionCampDateRaw && $collectionCampDateRaw !== 'N/A') {
+      $timestamp = strtotime($collectionCampDateRaw);
+      if ($timestamp) {
+        $collectionCampDate = date('d/m/Y', $timestamp);
+      }
+    }
     $goonjOfficeName = $collectionCampDispatch['Camp_Vehicle_Dispatch.To_which_PU_Center_material_is_being_sent.display_name'] ?? 'N/A';
     $contactId = $collectionCamp['Collection_Camp_Core_Details.Contact_Id'] ?? NULL;
     $coordinatingUrbanPoc = $collectionCamp['Collection_Camp_Intent_Details.Coordinating_Urban_POC'] ?? NULL;
