@@ -134,7 +134,7 @@ class CollectionCampService extends AutoSubscriber {
     }
 
     $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Collection_Camp_Intent_Details.Location_Area_of_camp', 'Collection_Camp_Core_Details.Contact_Id', 'Collection_Camp_Intent_Details.Coordinating_Urban_POC')
+      ->addSelect('Collection_Camp_Intent_Details.Location_Area_of_camp', 'Collection_Camp_Core_Details.Contact_Id', 'Collection_Camp_Intent_Details.Coordinating_Urban_POC', 'Collection_Camp_Intent_Details.City')
       ->addWhere('subtype:name', '=', 'Collection_Camp')
       ->addWhere('id', '=', $collectionCampId)
       ->execute()->first();
@@ -156,6 +156,7 @@ class CollectionCampService extends AutoSubscriber {
     $contactId = $collectionCamp['Collection_Camp_Core_Details.Contact_Id'] ?? NULL;
     $coordinatingUrbanPoc = $collectionCamp['Collection_Camp_Intent_Details.Coordinating_Urban_POC'] ?? NULL;
     $venue = $collectionCamp['Collection_Camp_Intent_Details.Location_Area_of_camp'] ?? 'N/A';
+    $city = $collectionCamp['Collection_Camp_Intent_Details.City'] ?? 'N/A';
 
     if (!$contactId) {
       return;
@@ -184,7 +185,7 @@ class CollectionCampService extends AutoSubscriber {
       'subject' => 'Acknowledgment of Materials Received – Thank You!',
       'from' => $from,
       'toEmail' => $organizerEmail,
-      'html' => self::getAcknowledgementEmailHtml($organizerName, $materialDescription, $collectionCampDate, $goonjOfficeName, $venue),
+      'html' => self::getAcknowledgementEmailHtml($organizerName, $materialDescription, $collectionCampDate, $goonjOfficeName, $venue, $city),
       'cc' => $coordinatorEmail,
     ];
     $emailSendResult = \CRM_Utils_Mail::send($mailParams);
@@ -201,10 +202,10 @@ class CollectionCampService extends AutoSubscriber {
   /**
    *
    */
-  public static function getAcknowledgementEmailHtml($organizerName, $materialDescription, $collectionCampDate, $goonjOfficeName, $venue) {
+  public static function getAcknowledgementEmailHtml($organizerName, $materialDescription, $collectionCampDate, $goonjOfficeName, $venue, $city) {
     $html = "
     <p>Dear <strong>{$organizerName}</strong>,</p>
-    <p>We are happy to share that we have received <strong>{$materialDescription}</strong> on <strong>{$collectionCampDate}</strong> at <strong>{$goonjOfficeName}</strong> from <strong>{$venue}</strong>.</p>
+    <p>We are happy to share that we have received <strong>{$materialDescription}</strong> on <strong>{$collectionCampDate}</strong> at <strong>{$goonjOfficeName}</strong> from <strong>{$venue}</strong>, {$city}.</p>
     <p>Thank you for your time, coordination, and thoughtful effort. We are glad to have you as a valuable part of the Goonj family.</p>
     <p>Warm regards,<br><strong>Team Goonj</strong></p>
     ";
