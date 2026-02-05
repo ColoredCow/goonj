@@ -1165,14 +1165,14 @@ class CollectionBaseService extends AutoSubscriber {
    *
    */
   public static function setIndianStateOptions(string $entity, string $field, ?array &$options, array $params) {
-    if (!in_array($entity, ['Eck_Collection_Camp', 'Eck_Institution_Visit', 'Meetings_Sessions'])) {
+    if (!in_array($entity, ['Eck_Collection_Camp', 'Eck_Institution_Visit', 'Eck_Meetings_Sessions'])) {
       return FALSE;
     }
 
     if ($entity == 'Eck_Institution_Visit') {
       $stateGroupNameMapper = self::getStateGroupNameMapperForUrbanVisit();
     }
-    elseif ($entity == 'Meetings_Sessions') {
+    elseif ($entity == 'Eck_Meetings_Sessions') {
       $stateGroupNameMapper = self::getStateGroupNameMapperForMeeting();
     }
     else {
