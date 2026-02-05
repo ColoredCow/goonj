@@ -1165,12 +1165,15 @@ class CollectionBaseService extends AutoSubscriber {
    *
    */
   public static function setIndianStateOptions(string $entity, string $field, ?array &$options, array $params) {
-    if (!in_array($entity, ['Eck_Collection_Camp', 'Eck_Institution_Visit'])) {
+    if (!in_array($entity, ['Eck_Collection_Camp', 'Eck_Institution_Visit', 'Meetings_Sessions'])) {
       return FALSE;
     }
 
     if ($entity == 'Eck_Institution_Visit') {
       $stateGroupNameMapper = self::getStateGroupNameMapperForUrbanVisit();
+    }
+    elseif ($entity == 'Meetings_Sessions') {
+      $stateGroupNameMapper = self::getStateGroupNameMapperForMeeting();
     }
     else {
       $stateGroupNameMapper = self::getStateGroupNameMapper();
@@ -1234,6 +1237,15 @@ class CollectionBaseService extends AutoSubscriber {
   private static function getStateGroupNameMapperForUrbanVisit() {
     return [
       'Institution_Visit' => 'Urban_Planned_Visit',
+    ];
+  }
+
+  /**
+   *
+   */
+  private static function getStateGroupNameMapperForMeeting() {
+    return [
+      'Meetings_Sessions' => 'Urban_Meetings',
     ];
   }
 
