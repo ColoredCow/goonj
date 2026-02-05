@@ -1165,7 +1165,7 @@ class CollectionBaseService extends AutoSubscriber {
    *
    */
   public static function setIndianStateOptions(string $entity, string $field, ?array &$options, array $params) {
-    if (!in_array($entity, ['Eck_Collection_Camp', 'Eck_Institution_Visit', 'Meetings_Sessions'])) {
+    if (!in_array($entity, ['Eck_Collection_Camp', 'Eck_Institution_Visit', 'Eck_Meetings_Sessions'])) {
       return FALSE;
     }
 
