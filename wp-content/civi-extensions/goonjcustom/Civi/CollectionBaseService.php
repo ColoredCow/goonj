@@ -1172,7 +1172,7 @@ class CollectionBaseService extends AutoSubscriber {
     if ($entity == 'Eck_Institution_Visit') {
       $stateGroupNameMapper = self::getStateGroupNameMapperForUrbanVisit();
     }
-    elseif ($entity == 'Meetings_Sessions') {
+    elseif ($entity == 'Eck_Meetings_Sessions') {
       $stateGroupNameMapper = self::getStateGroupNameMapperForMeeting();
     }
     else {
