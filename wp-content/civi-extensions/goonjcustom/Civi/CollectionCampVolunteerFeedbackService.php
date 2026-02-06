@@ -36,7 +36,7 @@ class CollectionCampVolunteerFeedbackService {
     $campAddress = $camp['Collection_Camp_Intent_Details.Location_Area_of_camp'];
 
     // Check last reminder sent.
-    $lastReminderSent = $camp['Volunteer_Camp_Feedback.Last_Reminder_Sent'] ? new \DateTime($camp['Volunteer_Camp_Feedback.Last_Reminder_Sent']) : NULL;
+    $lastReminderSent = $camp['Collection_Source_Feedback.Last_Reminder_Sent'] ? new \DateTime($camp['Collection_Source_Feedback.Last_Reminder_Sent']) : NULL;
 
     // Calculate hours since camp ended.
     $hoursSinceCampEnd = abs($now->getTimestamp() - $endDate->getTimestamp()) / 3600;
@@ -49,7 +49,7 @@ class CollectionCampVolunteerFeedbackService {
       // Update the Last_Reminder_Sent field in the database.
       EckEntity::update('Collection_Camp', TRUE)
         ->addWhere('id', '=', $collectionCampId)
-        ->addValue('Volunteer_Camp_Feedback.Last_Reminder_Sent', $now->format('Y-m-d H:i:s'))
+        ->addValue('Collection_Source_Feedback.Last_Reminder_Sent', $now->format('Y-m-d H:i:s'))
         ->execute();
     }
   }
