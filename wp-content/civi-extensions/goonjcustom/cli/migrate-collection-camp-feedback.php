@@ -66,6 +66,36 @@ function as_int($value, int $default): int {
   return max(0, (int) $value);
 }
 
+function has_any_volunteer_feedback_value(array $collectionCamp): bool {
+  $fields = [
+    'Volunteer_Camp_Feedback.Give_Rating_to_your_camp',
+    'Volunteer_Camp_Feedback.How_many_rating_do_you_give_to_our_goonj_member_who_attended_cam',
+    'Volunteer_Camp_Feedback.Do_you_faced_any_difficulty_challenges_while_organising_or_on_ca',
+    'Volunteer_Camp_Feedback.Any_remark_feedback_for_Goonj_what_can_be_improve_',
+    'Volunteer_Camp_Feedback.Photo_Byte_Max_4_',
+    'Volunteer_Camp_Feedback.Image_2',
+    'Volunteer_Camp_Feedback.Image_3',
+    'Volunteer_Camp_Feedback.Image_4',
+    'Volunteer_Camp_Feedback.Image_5',
+    'Volunteer_Camp_Feedback.Last_Reminder_Sent',
+    'Volunteer_Camp_Feedback.What_was_the_most_meaningful_part_of_this_engagement_for_you_',
+    'Volunteer_Camp_Feedback.How_did_this_engagement_make_you_feel_and_why_',
+    'Volunteer_Camp_Feedback.Filled_by',
+  ];
+
+  foreach ($fields as $field) {
+    $value = $collectionCamp[$field] ?? NULL;
+    if (is_string($value)) {
+      $value = trim($value);
+    }
+    if ($value !== NULL && $value !== '') {
+      return TRUE;
+    }
+  }
+
+  return FALSE;
+}
+
 function get_existing_feedback_id_for_camp(int $collectionCampId): ?int {
   $existing = \Civi\Api4\EckEntity::get('Collection_Source_Feedback', FALSE)
     ->addSelect('id')
@@ -164,7 +194,7 @@ function main(): void {
   $processed = 0;
   $created = 0;
   $skippedExisting = 0;
-  $skippedNoRating = 0;
+  $skippedNoFeedback = 0;
   $errors = 0;
 
   $lastSeenId = $startAfterId;
@@ -190,8 +220,6 @@ function main(): void {
         'title'
       )
       ->addWhere('subtype:name', '=', 'Collection_Camp')
-      // Only camps where rating exists (this was the original filter).
-      ->addWhere('Volunteer_Camp_Feedback.Give_Rating_to_your_camp', 'IS NOT NULL')
       ->addWhere('id', '>', $lastSeenId)
       ->addOrderBy('id', 'ASC')
       ->setLimit($limit)
@@ -210,9 +238,8 @@ function main(): void {
         $maxIdInBatch = $campId;
       }
 
-      $rating = $collectionCamp['Volunteer_Camp_Feedback.Give_Rating_to_your_camp'] ?? NULL;
-      if ($rating === NULL || $rating === '') {
-        $skippedNoRating++;
+      if (!has_any_volunteer_feedback_value($collectionCamp)) {
+        $skippedNoFeedback++;
         continue;
       }
 
@@ -253,10 +280,10 @@ function main(): void {
     }
 
     $lastSeenId = $maxIdInBatch;
-    echo "Progress: processed={$processed}, created={$created}, skipped_existing={$skippedExisting}, errors={$errors}, next_start_after_id={$lastSeenId}\n";
+    echo "Progress: processed={$processed}, created={$created}, skipped_existing={$skippedExisting}, skipped_no_feedback={$skippedNoFeedback}, errors={$errors}, next_start_after_id={$lastSeenId}\n";
   }
 
-  echo "Done. processed={$processed}, created={$created}, skipped_existing={$skippedExisting}, skipped_no_rating={$skippedNoRating}, errors={$errors}\n";
+  echo "Done. processed={$processed}, created={$created}, skipped_existing={$skippedExisting}, skipped_no_feedback={$skippedNoFeedback}, errors={$errors}\n";
 }
 
 main();
