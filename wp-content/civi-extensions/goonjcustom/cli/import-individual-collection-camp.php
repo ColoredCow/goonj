@@ -167,7 +167,7 @@ function main() {
   ->addValue('Collection_Camp_Intent_Details.Camp_Type', $data['Type of Camp'])
   ->addValue('Collection_Camp_Core_Details.Contact_Id', $initiatorId)
   ->addWhere('Camp_Outcome.Last_Reminder_Sent', '=', '2025-08-09')
-  ->addWhere('Volunteer_Camp_Feedback.Last_Reminder_Sent', '=', '2025-08-09')
+  ->addWhere('Collection_Source_Feedback.Last_Reminder_Sent', '=', '2025-08-09')
   ->addWhere('Camp_Outcome.Final_Reminder_Sent', '=', '2025-08-11')
   ->addWhere('Logistics_Coordination.Email_Sent', '=', TRUE)
   ->execute();
