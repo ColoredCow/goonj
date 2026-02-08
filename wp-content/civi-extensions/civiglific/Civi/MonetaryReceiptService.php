@@ -88,10 +88,10 @@ class MonetaryReceiptService extends AutoSubscriber {
 
       $contributionPageName = $contributionData['contribution_page_id:name'] ?? '';
       if ($contributionPageName === 'Team_5000') {
-        $templateId = CIVICRM_GLIFIC_TEMPLATE_ID_TEAM5000;
+        $templateId = \Civi::settings()->get('civiglific_template_id_team5000');
       }
       else {
-        $templateId = CIVICRM_GLIFIC_TEMPLATE_ID_DEFAULT;
+        $templateId = \Civi::settings()->get('civiglific_template_id_default');
       }
 
       $input = [
@@ -152,7 +152,7 @@ class MonetaryReceiptService extends AutoSubscriber {
 
       // Save PDF to persistent location.
       $uploadBase = defined('WP_CONTENT_DIR') ? rtrim(WP_CONTENT_DIR, '/') : rtrim($_SERVER['DOCUMENT_ROOT'] ?? __DIR__, '/');
-      $saveDir = $uploadBase . CIVICRM_PERSIST_PDF_PATH;
+      $saveDir = $uploadBase . \Civi::settings()->get('civiglific_persist_pdf_path');
 
       if (!file_exists($saveDir)) {
         mkdir($saveDir, 0755, TRUE);
@@ -164,7 +164,7 @@ class MonetaryReceiptService extends AutoSubscriber {
       }
 
       $baseUrl = rtrim(\CRM_Core_Config::singleton()->userFrameworkBaseURL, '/');
-      $pdfUrl  = $baseUrl . CIVICRM_SAVED_PDF_PATH . $fileNameForPdf;
+      $pdfUrl = $baseUrl . \Civi::settings()->get('civiglific_saved_pdf_path') . $fileNameForPdf;
 
       $contributionContactId = $contributionData['contact_id'];
 

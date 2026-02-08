@@ -50,7 +50,7 @@ class CRM_Civiglific_Page_GroupMapping extends CRM_Core_Page {
    *
    */
   protected function fetchGlificGroups($token) {
-    $url = rtrim(CIVICRM_GLIFIC_API_BASE_URL, '/') . '/api/';
+    $url = rtrim(\Civi::settings()->get('civiglific_api_base_url'), '/') . '/api/';
     $client = new Client();
 
     try {
