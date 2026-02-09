@@ -167,10 +167,6 @@ class NavigationPermissionService extends AutoSubscriber {
       ],
       'urban_ops_admin' => [
         'hide_menus' => [
-          'MMT - Individuals',
-          'MMT - Institutes',
-          'MMT - Offices',
-          'MMT - Urban Visits',
           'Account - Individuals',
           'Account - Institutions',
           'eck_entities',
