@@ -745,8 +745,9 @@ class CollectionBaseService extends AutoSubscriber {
         ->addWhere('status', '=', 'Added')
         ->addWhere('group_id.Chapter_Contact_Group.Use_Case', '=', 'chapter-team')
         ->execute();
-
       $teamGroupContact = $teamGroupContacts->first();
+        error_log("teamGroupContact: " . print_r($teamGroupContact, TRUE));
+
 
       if (!$teamGroupContact) {
         // @todo we should handle it in a better way.
@@ -763,8 +764,13 @@ class CollectionBaseService extends AutoSubscriber {
         ->addWhere('id', '=', $groupId)
         ->execute();
 
+
       $group = $chapterGroups->first();
+        error_log("group: " . print_r($group, TRUE));
+
       $statesControlled = $group['Chapter_Contact_Group.States_controlled'];
+        error_log("statesControlled: " . print_r($statesControlled, TRUE));
+
 
       if (empty($statesControlled)) {
         // Handle the case when the group is not controlling any state.

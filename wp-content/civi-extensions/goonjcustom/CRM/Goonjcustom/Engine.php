@@ -10,8 +10,11 @@ class CRM_Goonjcustom_Engine {
   /**
    *
    */
-  public static function processQueue($params) {
-    $returnValues = [];
+  public static function processQueue(int $maxSeconds = 60): array {
+    $returnValues = [
+      'processed' => 0,
+      'results' => [],
+    ];
 
     $queue = \CRM_Queue_Service::singleton()->create([
       'name' => self::QUEUE_NAME,
@@ -24,7 +27,8 @@ class CRM_Goonjcustom_Engine {
       'errorMode' => CRM_Queue_Runner::ERROR_CONTINUE,
     ]);
 
-    $maxRunTime = time() + 30;
+    $maxSeconds = max(1, (int) $maxSeconds);
+    $maxRunTime = time() + $maxSeconds;
     $continue = TRUE;
 
     // Loop to process the queue items.
@@ -35,10 +39,18 @@ class CRM_Goonjcustom_Engine {
         $continue = FALSE;
       }
 
-      $returnValues[] = $result;
+      if (isset($result['exception']) && $result['exception'] instanceof \Throwable) {
+        $result['exception'] = [
+          'type' => get_class($result['exception']),
+          'message' => $result['exception']->getMessage(),
+        ];
+      }
+
+      $returnValues['results'][] = $result;
+      $returnValues['processed']++;
     }
 
-    return civicrm_api3_create_success($returnValues, $params, 'SendAuthorizationQueue', 'Run');
+    return $returnValues;
   }
 
 }
