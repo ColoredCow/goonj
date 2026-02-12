@@ -131,6 +131,18 @@ function goonj_login_form_validation_errors( $string ) {
 	return $string;
 }
 
+add_filter( 'login_form_bottom', 'goonj_login_form_lost_password_link' );
+function goonj_login_form_lost_password_link( $string ) {
+	$link_text = __( 'Lost your password?', 'goonj-crm' );
+	$link_url  = wp_lostpassword_url();
+
+	return $string . sprintf(
+		'<p class="goonj-login-lost-password"><a class="goonj-login-lost-password__link" href="%s">%s</a></p>',
+		esc_url( $link_url ),
+		esc_html( $link_text )
+	);
+}
+
 add_action( 'login_form_rp', 'goonj_custom_reset_password_form' );
 function goonj_custom_reset_password_form() {
 	get_template_part( 'templates/password-reset' );
