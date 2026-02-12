@@ -58,3 +58,11 @@ When working on a task linked to a GitHub issue:
 1. Fetch the issue context: `gh issue view <number> --repo ColoredCow/goonj-crm`
 2. Reference it in your PR description as `ColoredCow/goonj-crm#<number>`
 3. Use `Closes ColoredCow/goonj-crm#<number>` in PR descriptions to auto-close issues on merge
+
+## Custom Agents
+
+Custom agents are defined in `.claude/agents/`. Use them via the Task tool with the matching `subagent_type`.
+
+| Agent | When to Use |
+|-------|-------------|
+| `implementation-planner` | When the user asks for an implementation plan, technical breakdown, or task planning for a feature or issue. Accepts a GitHub issue URL/number, explores the codebase, creates a detailed plan with 4-hour task breakdowns, and posts it as a comment on the GitHub issue. |
