@@ -133,7 +133,7 @@ function goonj_login_form_validation_errors( $string ) {
 
 add_filter( 'login_form_bottom', 'goonj_login_form_lost_password_link' );
 function goonj_login_form_lost_password_link( $string ) {
-	$link_text = __( 'Lost your password?', 'goonj-crm' );
+	$link_text = __( 'Forgot Password?', 'goonj-crm' );
 	$link_url  = wp_lostpassword_url();
 
 	return $string . sprintf(
