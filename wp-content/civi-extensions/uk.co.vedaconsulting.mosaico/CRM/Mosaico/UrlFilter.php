@@ -50,12 +50,25 @@ class CRM_Mosaico_UrlFilter extends \Civi\FlexMailer\Listener\BaseListener {
       }
     };
 
-    $htmls = preg_replace_callback(';(\<img [^>]*src *= *")([^">]+)(");i', $callback, $htmls);
-    $htmls = preg_replace_callback(';(\<img [^>]*src *= *\')([^">]+)(\');i', $callback, $htmls);
-    $htmls = preg_replace_callback(';(\<table [^>]*background *= *")([^">]+)(");i', $callback, $htmls);
-    $htmls = preg_replace_callback(';(\<table [^>]*background *= *")([^\'>]+)(\');i', $callback, $htmls);
-    // WISHLIST: CSS backgrounds?
-    return $htmls;
+    $filterOne = function ($html) use ($callback) {
+      $html = preg_replace_callback(';(\<img [^>]*src *= *")([^">]+)(");i', $callback, $html);
+      $html = preg_replace_callback(';(\<img [^>]*src *= *\')([^">]+)(\');i', $callback, $html);
+      $html = preg_replace_callback(';(\<table [^>]*background *= *")([^">]+)(");i', $callback, $html);
+      $html = preg_replace_callback(';(\<table [^>]*background *= *\')([^">]+)(\');i', $callback, $html);
+      // WISHLIST: CSS backgrounds?
+      return $html;
+    };
+
+    // preg_replace_callback() supports arrays, but processing a large batch as a single array
+    // may spike memory usage. Process items one-by-one to reduce peak memory.
+    if (is_array($htmls)) {
+      foreach ($htmls as $k => $v) {
+        $htmls[$k] = $filterOne($v);
+      }
+      return $htmls;
+    }
+
+    return $filterOne($htmls);
   }
 
   /**
