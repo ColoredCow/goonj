@@ -94,6 +94,15 @@ body p {
   }
 }
 
+.goonj-login-lost-password__link {
+  text-decoration: none !important;
+}
+
+.goonj-login-lost-password__link:hover,
+.goonj-login-lost-password__link:focus {
+  text-decoration: none !important;
+}
+
 form input {
   height: 29px !important;
   border: 1px solid rgba(0, 0, 0, 0.3) !important;
