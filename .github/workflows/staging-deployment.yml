@@ -32,6 +32,3 @@ jobs:
             git fetch --prune origin dev
             git reset --hard origin/dev
 
-            # Run WP/Civi commands as the web/PHP user (nginx) so Civi can write to templates_c.
-            sudo -n -u nginx -H -- wp theme activate goonj-crm --path="$SSH_BUILD_DIRECTORY"
-            sudo -n -u nginx -H -- cv updb
