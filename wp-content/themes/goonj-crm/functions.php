@@ -617,14 +617,6 @@ function goonj_handle_user_identification_form() {
 
 		$initiator_name = $found_contacts['display_name'];
 
-		if ( goonj_is_volunteer_inducted( $found_contacts ) ) {
-			if ( $purpose === 'individual-collection-camp' ) {
-				$redirect_url = get_home_url() . '/collection-camp/intent/#?Collection_Camp_Core_Details.Contact_Id=' . $found_contacts['id'] . '&message=collection-camp-page&Collection_Camp_Intent_Details.Name=' . $initiator_name . '&Collection_Camp_Intent_Details.Contact_Number=' . $phone;
-				wp_redirect( $redirect_url );
-				exit;
-			}
-		}
-
 		// If we are here, then it means Volunteer exists in our system.
 		// Now we need to check if the volunteer is inducted or not.
 		// If the volunteer is not inducted,
