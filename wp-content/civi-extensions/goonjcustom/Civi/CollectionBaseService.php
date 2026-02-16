@@ -658,11 +658,20 @@ class CollectionBaseService extends AutoSubscriber {
       }
     }
 
-    EckEntity::update('Collection_Camp', FALSE)
-      ->addWhere('id', '=', $campId)
-      ->addValue('Core_Contribution_Details.Total_online_monetary_contributions', $onlineTotal)
-      ->addValue('Core_Contribution_Details.Total_cash_cheque_monetary_contributions', $cashChequeTotal)
-      ->execute();
+    try {
+      EckEntity::update('Collection_Camp', FALSE)
+        ->addWhere('id', '=', $campId)
+        ->addValue('Core_Contribution_Details.Total_online_monetary_contributions', $onlineTotal)
+        ->addValue('Core_Contribution_Details.Total_cash_cheque_monetary_contributions', $cashChequeTotal)
+        ->execute();
+    }
+    catch (\Exception $e) {
+      \Civi::log()->error('Failed to update monetary contribution totals', [
+        'camp_id' => $campId,
+        'contribution_id' => $contributionId,
+        'message' => $e->getMessage(),
+      ]);
+    }
   }
 
   /**
