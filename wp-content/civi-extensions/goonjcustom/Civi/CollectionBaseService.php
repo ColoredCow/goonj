@@ -635,36 +635,34 @@ class CollectionBaseService extends AutoSubscriber {
       return;
     }
 
-    $campId = $contribution['Contribution_Details.Source.id'];
-    $totalAmount = (float) $contribution['total_amount'];
-    $paymentMethod = $contribution['payment_instrument_id:name'];
+    $campId = (int) $contribution['Contribution_Details.Source.id'];
 
-    $existing = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect(
-        'Core_Contribution_Details.Total_online_monetary_contributions',
-        'Core_Contribution_Details.Total_cash_cheque_monetary_contributions'
-      )
+    $allCampContributions = Contribution::get(FALSE)
+      ->addSelect('total_amount', 'payment_instrument_id:name')
+      ->addWhere('Contribution_Details.Source.id', '=', $campId)
+      ->addWhere('contribution_status_id:name', '=', 'Completed')
+      ->execute();
+
+    $onlineTotal = 0.0;
+    $cashChequeTotal = 0.0;
+
+    foreach ($allCampContributions as $item) {
+      $amount = (float) ($item['total_amount'] ?? 0);
+      $method = $item['payment_instrument_id:name'] ?? '';
+
+      if ($method === 'Credit Card') {
+        $onlineTotal += $amount;
+      }
+      elseif (in_array($method, ['Cash', 'Check'], TRUE)) {
+        $cashChequeTotal += $amount;
+      }
+    }
+
+    EckEntity::update('Collection_Camp', FALSE)
       ->addWhere('id', '=', $campId)
-      ->execute()
-      ->first();
-
-    $onlineCurrent = (float) ($existing['Core_Contribution_Details.Total_online_monetary_contributions'] ?? 0);
-    $cashCurrent = (float) ($existing['Core_Contribution_Details.Total_cash_cheque_monetary_contributions'] ?? 0);
-
-    $update = EckEntity::update('Collection_Camp', FALSE)
-      ->addWhere('id', '=', $campId);
-
-    if ($paymentMethod === 'Credit Card') {
-      $onlineNew = $onlineCurrent + $totalAmount;
-      $update->addValue('Core_Contribution_Details.Total_online_monetary_contributions', $onlineNew);
-    }
-
-    if (in_array($paymentMethod, ['Cash', 'Check'], TRUE)) {
-      $cashNew = $cashCurrent + $totalAmount;
-      $update->addValue('Core_Contribution_Details.Total_cash_cheque_monetary_contributions', $cashNew);
-    }
-
-    $update->execute();
+      ->addValue('Core_Contribution_Details.Total_online_monetary_contributions', $onlineTotal)
+      ->addValue('Core_Contribution_Details.Total_cash_cheque_monetary_contributions', $cashChequeTotal)
+      ->execute();
   }
 
   /**
