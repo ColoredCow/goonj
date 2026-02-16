@@ -635,36 +635,43 @@ class CollectionBaseService extends AutoSubscriber {
       return;
     }
 
-    $campId = $contribution['Contribution_Details.Source.id'];
-    $totalAmount = (float) $contribution['total_amount'];
-    $paymentMethod = $contribution['payment_instrument_id:name'];
+    $campId = (int) $contribution['Contribution_Details.Source.id'];
 
-    $existing = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect(
-        'Core_Contribution_Details.Total_online_monetary_contributions',
-        'Core_Contribution_Details.Total_cash_cheque_monetary_contributions'
-      )
-      ->addWhere('id', '=', $campId)
-      ->execute()
-      ->first();
+    $allCampContributions = Contribution::get(FALSE)
+      ->addSelect('total_amount', 'payment_instrument_id:name')
+      ->addWhere('Contribution_Details.Source.id', '=', $campId)
+      ->addWhere('contribution_status_id:name', '=', 'Completed')
+      ->execute();
 
-    $onlineCurrent = (float) ($existing['Core_Contribution_Details.Total_online_monetary_contributions'] ?? 0);
-    $cashCurrent = (float) ($existing['Core_Contribution_Details.Total_cash_cheque_monetary_contributions'] ?? 0);
+    $onlineTotal = 0.0;
+    $cashChequeTotal = 0.0;
 
-    $update = EckEntity::update('Collection_Camp', FALSE)
-      ->addWhere('id', '=', $campId);
+    foreach ($allCampContributions as $item) {
+      $amount = (float) ($item['total_amount'] ?? 0);
+      $method = $item['payment_instrument_id:name'] ?? '';
 
-    if ($paymentMethod === 'Credit Card') {
-      $onlineNew = $onlineCurrent + $totalAmount;
-      $update->addValue('Core_Contribution_Details.Total_online_monetary_contributions', $onlineNew);
+      if ($method === 'Credit Card') {
+        $onlineTotal += $amount;
+      }
+      elseif (in_array($method, ['Cash', 'Check'], TRUE)) {
+        $cashChequeTotal += $amount;
+      }
     }
 
-    if (in_array($paymentMethod, ['Cash', 'Check'], TRUE)) {
-      $cashNew = $cashCurrent + $totalAmount;
-      $update->addValue('Core_Contribution_Details.Total_cash_cheque_monetary_contributions', $cashNew);
+    try {
+      EckEntity::update('Collection_Camp', FALSE)
+        ->addWhere('id', '=', $campId)
+        ->addValue('Core_Contribution_Details.Total_online_monetary_contributions', $onlineTotal)
+        ->addValue('Core_Contribution_Details.Total_cash_cheque_monetary_contributions', $cashChequeTotal)
+        ->execute();
     }
-
-    $update->execute();
+    catch (\Exception $e) {
+      \Civi::log()->error('Failed to update monetary contribution totals', [
+        'camp_id' => $campId,
+        'contribution_id' => $contributionId,
+        'message' => $e->getMessage(),
+      ]);
+    }
   }
 
   /**
