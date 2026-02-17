@@ -136,7 +136,6 @@ class GoonjActivitiesService extends AutoSubscriber {
           'entityId' => $entityID,
           'groupId' => $groupID,
         ]);
-        return;
       }
 
       $collectionCampId = $contactId['entity_id'];
@@ -160,7 +159,6 @@ class GoonjActivitiesService extends AutoSubscriber {
           'campId' => $collectionCampId,
           'entityId' => $entityID,
         ]);
-        return;
       }
 
       $optionValue = OptionValue::get(FALSE)
@@ -173,7 +171,6 @@ class GoonjActivitiesService extends AutoSubscriber {
           'campId' => $collectionCampId,
           'contactId' => $contactId,
         ]);
-        return;
       }
 
       $activityTypeId = $optionValue['value'];
@@ -192,7 +189,6 @@ class GoonjActivitiesService extends AutoSubscriber {
           'campId' => $collectionCampId,
           'contactId' => $contactId,
         ]);
-        return;
       }
 
       EckEntity::update('Collection_Camp', FALSE)

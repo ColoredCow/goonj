@@ -466,7 +466,6 @@ class CollectionCampService extends AutoSubscriber {
           'campId' => $campId,
           'objectId' => $objectId,
         ]);
-        return FALSE;
       }
 
       $subtype = $collectionCamps['subtype:name'] ?? NULL;
@@ -509,7 +508,6 @@ class CollectionCampService extends AutoSubscriber {
           'volunteerId' => $volunteerId,
           'objectId' => $objectId,
         ]);
-        return FALSE;
       }
   
       $activityTypeId = $optionValue['value'];
@@ -530,7 +528,6 @@ class CollectionCampService extends AutoSubscriber {
           'volunteerId' => $volunteerId,
           'objectId' => $objectId,
         ]);
-        return FALSE;
       }
   
       EckEntity::update('Collection_Camp', FALSE)
@@ -1179,7 +1176,6 @@ class CollectionCampService extends AutoSubscriber {
           'entityId' => $entityID,
           'groupId' => $groupID,
         ]);
-        return;
       }
 
       $collectionCampId = $contactId['entity_id'];
@@ -1194,7 +1190,6 @@ class CollectionCampService extends AutoSubscriber {
           'campId' => $collectionCampId,
           'entityId' => $entityID,
         ]);
-        return;
       }
 
       $contactId = $collectionCamp['Collection_Camp_Core_Details.Contact_Id'] ?? NULL;
@@ -1203,7 +1198,6 @@ class CollectionCampService extends AutoSubscriber {
           'campId' => $collectionCampId,
           'entityId' => $entityID,
         ]);
-        return;
       }
 
       $optionValue = OptionValue::get(FALSE)
@@ -1216,7 +1210,6 @@ class CollectionCampService extends AutoSubscriber {
           'campId' => $collectionCampId,
           'contactId' => $contactId,
         ]);
-        return;
       }
 
       $activityTypeId = $optionValue['value'];
@@ -1235,7 +1228,6 @@ class CollectionCampService extends AutoSubscriber {
           'campId' => $collectionCampId,
           'contactId' => $contactId,
         ]);
-        return;
       }
 
       EckEntity::update('Collection_Camp', FALSE)
