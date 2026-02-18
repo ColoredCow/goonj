@@ -130,40 +130,90 @@ class GoonjActivitiesService extends AutoSubscriber {
       return;
     }
 
-    if (!($contactId = self::findGoonjActivitiesInitiatorContact($params))) {
-      return;
+    try {
+      if (!($contactId = self::findGoonjActivitiesInitiatorContact($params))) {
+        \Civi::log()->info('[GoonjActivities:LinkInduction] Initiator contact field not found in params', [
+          'entityId' => $entityID,
+          'groupId' => $groupID,
+        ]);
+        return;
+      }
+
+      $collectionCampId = $contactId['entity_id'];
+
+      $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+        ->addSelect('Collection_Camp_Core_Details.Contact_Id', 'Collection_Camp_Intent_Details.State', 'custom.*')
+        ->addWhere('id', '=', $collectionCampId)
+        ->execute()->first();
+
+      if (!$collectionCamp) {
+        \Civi::log()->info('[GoonjActivities:LinkInduction] Camp not found', [
+          'campId' => $collectionCampId,
+          'entityId' => $entityID,
+        ]);
+        return;
+      }
+
+      $contactId = $collectionCamp['Collection_Camp_Core_Details.Contact_Id'] ?? NULL;
+      if (!$contactId) {
+        \Civi::log()->info('[GoonjActivities:LinkInduction] Contact_Id missing on entity', [
+          'campId' => $collectionCampId,
+          'entityId' => $entityID,
+        ]);
+        return;
+      }
+
+      $optionValue = OptionValue::get(FALSE)
+        ->addWhere('option_group_id:name', '=', 'activity_type')
+        ->addWhere('label', '=', 'Induction')
+        ->execute()->first();
+
+      if (!$optionValue) {
+        \Civi::log()->info('[GoonjActivities:LinkInduction] Induction activity type missing', [
+          'campId' => $collectionCampId,
+          'contactId' => $contactId,
+        ]);
+        return;
+      }
+
+      $activityTypeId = $optionValue['value'];
+
+      $induction = Activity::get(FALSE)
+        ->addSelect('id')
+        ->addWhere('target_contact_id', '=', $contactId)
+        ->addWhere('activity_type_id', '=', $activityTypeId)
+        ->addOrderBy('created_date', 'DESC')
+        ->setLimit(1)
+        ->execute()->first();
+
+      $inductionId = $induction['id'] ?? NULL;
+      if (!$inductionId) {
+        \Civi::log()->info('[GoonjActivities:LinkInduction] Induction not found for contact', [
+          'campId' => $collectionCampId,
+          'contactId' => $contactId,
+        ]);
+        return;
+      }
+
+      EckEntity::update('Collection_Camp', FALSE)
+        ->addValue('Collection_Camp_Intent_Details.Initiator_Induction_Id', $inductionId)
+        ->addWhere('id', '=', $collectionCampId)
+        ->execute();
+
+      \Civi::log()->info('[GoonjActivities:LinkInduction] Entity linked with induction', [
+        'campId' => $collectionCampId,
+        'contactId' => $contactId,
+        'inductionId' => $inductionId,
+      ]);
     }
-
-    $collectionCampId = $contactId['entity_id'];
-
-    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Collection_Camp_Core_Details.Contact_Id', 'custom.*')
-      ->addWhere('id', '=', $collectionCampId)
-      ->execute()->single();
-
-    $contactId = $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
-
-    $optionValue = OptionValue::get(FALSE)
-      ->addWhere('option_group_id:name', '=', 'activity_type')
-      ->addWhere('label', '=', 'Induction')
-      ->execute()->single();
-
-    $activityTypeId = $optionValue['value'];
-
-    $induction = Activity::get(FALSE)
-      ->addSelect('id')
-      ->addWhere('target_contact_id', '=', $contactId)
-      ->addWhere('activity_type_id', '=', $activityTypeId)
-      ->addOrderBy('created_date', 'DESC')
-      ->setLimit(1)
-      ->execute()->single();
-
-    $inductionId = $induction['id'];
-
-    EckEntity::update('Collection_Camp', FALSE)
-      ->addValue('Collection_Camp_Intent_Details.Initiator_Induction_Id', $inductionId)
-      ->addWhere('id', '=', $collectionCampId)
-      ->execute();
+    catch (\Throwable $e) {
+      \Civi::log()->error('[GoonjActivities:LinkInduction] Failed', [
+        'entityId' => $entityID,
+        'groupId' => $groupID,
+        'error' => $e->getMessage(),
+        'trace' => $e->getTraceAsString(),
+      ]);
+    }
   }
 
   /**
