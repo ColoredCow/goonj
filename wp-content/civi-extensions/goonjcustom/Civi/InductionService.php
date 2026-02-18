@@ -3,6 +3,7 @@
 namespace Civi;
 
 use Civi\Api4\Activity;
+use Civi\Api4\Address;
 use Civi\Api4\Contact;
 use Civi\Api4\CustomField;
 use Civi\Api4\Email;
@@ -479,16 +480,63 @@ class InductionService extends AutoSubscriber {
       'objectId' => $objectId,
       'hookContactId' => $objectRef->contact_id ?? NULL,
       'volunteerId' => self::$volunteerId,
+      'transitionedVolunteerId' => self::$transitionedVolunteerId,
       'isPrimary' => $objectRef->is_primary ?? NULL,
     ]);
 
-    if ($op !== 'create' || $objectName !== 'Address' || self::$volunteerId !== $objectRef->contact_id || !$objectRef->is_primary) {
-      \Civi::log()->info('[Induction:Hook] createInductionForVolunteer skipped: guard condition failed', [
+    // Check if this is Address operation for either a new volunteer OR a transitioned volunteer
+    // For new volunteers: only handle 'create' operations
+    // For transitioned volunteers: handle both 'create' and 'edit' operations (when address gets updated with state)
+    if ($objectName !== 'Address' || !$objectRef->is_primary) {
+      \Civi::log()->info('[Induction:Hook] createInductionForVolunteer skipped: not a primary address', [
         'op' => $op,
         'objectName' => $objectName,
         'hookContactId' => $objectRef->contact_id ?? NULL,
         'volunteerId' => self::$volunteerId,
+        'transitionedVolunteerId' => self::$transitionedVolunteerId,
         'isPrimary' => $objectRef->is_primary ?? NULL,
+      ]);
+      return FALSE;
+    }
+
+    // For new volunteers, only process 'create' operations
+    // For transitioned volunteers, process both 'create' and 'edit' operations
+    $isNewVolunteerCreate = ($op === 'create' && self::$volunteerId);
+    $isTransitionedVolunteerOperation = (($op === 'create' || $op === 'edit') && self::$transitionedVolunteerId);
+
+    if (!$isNewVolunteerCreate && !$isTransitionedVolunteerOperation) {
+      \Civi::log()->info('[Induction:Hook] createInductionForVolunteer skipped: operation not relevant', [
+        'op' => $op,
+        'volunteerId' => self::$volunteerId,
+        'transitionedVolunteerId' => self::$transitionedVolunteerId,
+        'isNewVolunteerCreate' => $isNewVolunteerCreate,
+        'isTransitionedVolunteerOperation' => $isTransitionedVolunteerOperation,
+      ]);
+      return FALSE;
+    }
+
+    // Determine which volunteer ID to use (new volunteer or transitioned volunteer)
+    $contactId = NULL;
+    if (self::$volunteerId && self::$volunteerId === $objectRef->contact_id) {
+      $contactId = self::$volunteerId;
+      \Civi::log()->info('[Induction:Hook] Address created for NEW volunteer', [
+        'contactId' => $contactId,
+        'addressId' => $objectId,
+      ]);
+    }
+    elseif (self::$transitionedVolunteerId && self::$transitionedVolunteerId === $objectRef->contact_id) {
+      $contactId = self::$transitionedVolunteerId;
+      \Civi::log()->info('[Induction:Hook] Address created for TRANSITIONED volunteer', [
+        'contactId' => $contactId,
+        'addressId' => $objectId,
+      ]);
+    }
+
+    if (!$contactId) {
+      \Civi::log()->info('[Induction:Hook] createInductionForVolunteer skipped: contact ID mismatch', [
+        'addressContactId' => $objectRef->contact_id,
+        'volunteerId' => self::$volunteerId,
+        'transitionedVolunteerId' => self::$transitionedVolunteerId,
       ]);
       return FALSE;
     }
@@ -496,16 +544,34 @@ class InductionService extends AutoSubscriber {
     $stateId = $objectRef->state_province_id;
 
     if (!$stateId) {
-      \Civi::log()->info('state not found', ['VolunteerId' => self::$volunteerId, 'stateId' => $stateId]);
+      \Civi::log()->error('[Induction:Hook] Address created but no state found', [
+        'contactId' => $contactId,
+        'addressId' => $objectId,
+        'stateId' => $stateId
+      ]);
       return FALSE;
     }
 
-    if (self::$volunteerId && $stateId) {
-      \Civi::log()->info('[Induction:Hook] createInductionForVolunteer creating induction', [
-        'contactId' => self::$volunteerId,
+    \Civi::log()->info('[Induction:Hook] Creating induction for volunteer', [
+      'contactId' => $contactId,
+      'stateId' => $stateId,
+      'addressId' => $objectId,
+    ]);
+
+    try {
+      self::createInduction($contactId, $stateId);
+      \Civi::log()->info('[Induction:Hook] SUCCESS: Induction created for volunteer', [
+        'contactId' => $contactId,
         'stateId' => $stateId,
       ]);
-      self::createInduction(self::$volunteerId, $stateId);
+    }
+    catch (\Exception $e) {
+      \Civi::log()->error('[Induction:Hook] FAILED: Exception during induction creation', [
+        'contactId' => $contactId,
+        'stateId' => $stateId,
+        'error' => $e->getMessage(),
+        'trace' => $e->getTraceAsString(),
+      ]);
     }
   }
 
@@ -808,7 +874,11 @@ class InductionService extends AutoSubscriber {
       ->addWhere('id', '=', $inductionFields['Assign']['value'])
       ->addWhere('email.is_primary', '=', TRUE)
       ->setLimit(1)
-      ->execute()->single();
+      ->execute()->first();
+
+    if (!$assignee) {
+      return;
+    }
 
     self::$volunteerInductionAssigneeEmail = $assignee['email.email'];
 
@@ -968,29 +1038,87 @@ class InductionService extends AutoSubscriber {
       return FALSE;
     }
 
-    $contact = Contact::get(FALSE)
-      ->addSelect('address.state_province_id')
-      ->addJoin('Address AS address', 'LEFT')
-      ->addWhere('id', '=', $objectId)
-      ->execute()->first();
+    // Log all addresses for this contact for debugging
+    $allAddresses = Address::get(FALSE)
+      ->addSelect('id', 'state_province_id', 'is_primary', 'street_address', 'city')
+      ->addWhere('contact_id', '=', $objectId)
+      ->execute();
 
-    if (!$contact) {
-      \Civi::log()->info('[Induction:Transitioned] Contact not found', ['contactId' => $objectId]);
+    \Civi::log()->info('[Induction:Transitioned] All addresses for contact', [
+      'contactId' => $objectId,
+      'addressCount' => count($allAddresses),
+      'addresses' => $allAddresses->getArrayCopy(),
+    ]);
+
+    // Fetch the primary address directly to get the state
+    // This handles multiple scenarios:
+    // 1. Contact with existing address + state (works: new contact flow)
+    // 2. Contact with no address (new address just created) (works: new contact flow)
+    // 3. Contact with old address BUT no state (new address with state just created) (edge case: existing contact)
+    $address = Address::get(FALSE)
+      ->addSelect('state_province_id', 'contact_id', 'id', 'street_address', 'city')
+      ->addWhere('contact_id', '=', $objectId)
+      ->addWhere('is_primary', '=', TRUE)
+      ->addOrderBy('id', 'DESC')  // Get the newest primary address
+      ->setLimit(1)
+      ->execute()
+      ->first();
+
+    if (!$address) {
+      \Civi::log()->error('[Induction:Transitioned] FAILED: No primary address found', [
+        'contactId' => $objectId,
+        'transitionedVolunteerId' => self::$transitionedVolunteerId,
+      ]);
       return FALSE;
     }
 
-    $stateId = $contact['address.state_province_id'];
+    \Civi::log()->info('[Induction:Transitioned] Found primary address', [
+      'contactId' => $objectId,
+      'addressId' => $address['id'],
+      'stateId' => $address['state_province_id'] ?? 'NULL',
+      'city' => $address['city'] ?? 'NULL',
+      'street' => $address['street_address'] ?? 'NULL',
+    ]);
+
+    $stateId = $address['state_province_id'] ?? NULL;
     if (!$stateId) {
-      \Civi::log()->info(['State not found :', ['contactId' => $contact['id'], 'StateId' => $stateId]]);
+      \Civi::log()->error('[Induction:Transitioned] FAILED: Primary address has no state', [
+        'contactId' => $objectId,
+        'addressId' => $address['id'],
+        'transitionedVolunteerId' => self::$transitionedVolunteerId,
+      ]);
       return FALSE;
     }
 
     if (self::$transitionedVolunteerId && $stateId) {
-      \Civi::log()->info('[Induction:Hook] createInductionForTransitionedVolunteer creating induction', [
+      \Civi::log()->info('[Induction:Transitioned] Attempting to create induction', [
         'contactId' => self::$transitionedVolunteerId,
         'stateId' => $stateId,
+        'addressId' => $address['id'],
       ]);
-      self::createInduction(self::$transitionedVolunteerId, $stateId);
+
+      try {
+        self::createInduction(self::$transitionedVolunteerId, $stateId);
+
+        \Civi::log()->info('[Induction:Transitioned] SUCCESS: Induction created', [
+          'contactId' => self::$transitionedVolunteerId,
+          'stateId' => $stateId,
+        ]);
+      }
+      catch (\Exception $e) {
+        \Civi::log()->error('[Induction:Transitioned] FAILED: Exception during induction creation', [
+          'contactId' => self::$transitionedVolunteerId,
+          'stateId' => $stateId,
+          'error' => $e->getMessage(),
+          'trace' => $e->getTraceAsString(),
+        ]);
+      }
+    }
+    else {
+      \Civi::log()->warning('[Induction:Transitioned] Skipped: Missing transitionedVolunteerId or stateId', [
+        'transitionedVolunteerId' => self::$transitionedVolunteerId,
+        'stateId' => $stateId ?? 'NULL',
+      ]);
     }
   }
 
