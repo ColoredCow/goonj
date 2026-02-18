@@ -445,7 +445,11 @@ class CollectionCampService extends AutoSubscriber {
 
     try {
       $data = $objectRef['data'] ?? [];
-        \Civi::log()->info('fetching data', ['data' => $data]);
+      \Civi::log()->info('[CollectionCamp:AssignInitiator] Hook triggered', [
+        'op' => $op,
+        'objectName' => $objectName,
+        'objectId' => $objectId,
+      ]);
       if (!$data) {
         return;
       }
@@ -453,9 +457,17 @@ class CollectionCampService extends AutoSubscriber {
       $campId = $data['Eck_Collection_Camp1'][0]['id'] ?? NULL;
 
       $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
-        ->addSelect('subtype:name')
+        ->addSelect('id', 'subtype:name')
         ->addWhere('id', '=', $campId)
-        ->execute()->single();
+        ->execute()->first();
+
+      if (!$collectionCamps) {
+        \Civi::log()->info('[CollectionCamp:AssignInitiator] Camp not found', [
+          'campId' => $campId,
+          'objectId' => $objectId,
+        ]);
+        return FALSE;
+      }
 
       $subtype = $collectionCamps['subtype:name'] ?? NULL;
       if ($subtype !== 'Collection_Camp') {
@@ -476,15 +488,29 @@ class CollectionCampService extends AutoSubscriber {
         return;
       }
 
+      \Civi::log()->info('[CollectionCamp:AssignInitiator] Updating camp initiator', [
+        'campId' => $campId,
+        'volunteerId' => $volunteerId,
+        'objectId' => $objectId,
+      ]);
       EckEntity::update('Collection_Camp', FALSE)
         ->addValue('Collection_Camp_Core_Details.Contact_Id', $volunteerId)
         ->addWhere('id', '=', $campId)
         ->execute();
       
       $optionValue = OptionValue::get(FALSE)
-      ->addWhere('option_group_id:name', '=', 'activity_type')
-      ->addWhere('label', '=', 'Induction')
-      ->execute()->single();
+        ->addWhere('option_group_id:name', '=', 'activity_type')
+        ->addWhere('label', '=', 'Induction')
+        ->execute()->first();
+
+      if (!$optionValue) {
+        \Civi::log()->info('[CollectionCamp:AssignInitiator] Induction activity type missing', [
+          'campId' => $campId,
+          'volunteerId' => $volunteerId,
+          'objectId' => $objectId,
+        ]);
+        return FALSE;
+      }
   
       $activityTypeId = $optionValue['value'];
   
@@ -494,14 +520,30 @@ class CollectionCampService extends AutoSubscriber {
         ->addWhere('activity_type_id', '=', $activityTypeId)
         ->addOrderBy('created_date', 'DESC')
         ->setLimit(1)
-        ->execute()->single();
+        ->execute()->first();
   
-      $inductionId = $induction['id'];
+      $inductionId = $induction['id'] ?? NULL;
+
+      if (!$inductionId) {
+        \Civi::log()->info('[CollectionCamp:AssignInitiator] Induction not found; Initiator_Induction_Id not set', [
+          'campId' => $campId,
+          'volunteerId' => $volunteerId,
+          'objectId' => $objectId,
+        ]);
+        return FALSE;
+      }
   
       EckEntity::update('Collection_Camp', FALSE)
         ->addValue('Collection_Camp_Intent_Details.Initiator_Induction_Id', $inductionId)
         ->addWhere('id', '=', $campId)
         ->execute();
+
+      \Civi::log()->info('[CollectionCamp:AssignInitiator] Initiator linked to induction', [
+        'campId' => $campId,
+        'volunteerId' => $volunteerId,
+        'inductionId' => $inductionId,
+        'objectId' => $objectId,
+      ]);
     }
     catch (\Throwable $e) {
       \Civi::log()->error('assignVolunteerAsCampInitiator failed', [
@@ -758,7 +800,7 @@ class CollectionCampService extends AutoSubscriber {
       return;
     }
 
-    if ($groupId & self::$individualId) {
+    if ($groupId && self::$individualId) {
       GroupContact::create(FALSE)
         ->addValue('contact_id', self::$individualId)
         ->addValue('group_id', $groupId)
@@ -801,7 +843,7 @@ class CollectionCampService extends AutoSubscriber {
         return;
       }
 
-      if ($groupId & self::$individualId) {
+      if ($groupId && self::$individualId) {
         GroupContact::create(FALSE)
           ->addValue('contact_id', self::$individualId)
           ->addValue('group_id', $groupId)
@@ -1125,40 +1167,96 @@ class CollectionCampService extends AutoSubscriber {
       return;
     }
 
-    if (!($contactId = self::findCollectionCampInitiatorContact($params))) {
-      return;
+    try {
+      \Civi::log()->info('[CollectionCamp:LinkInduction] Hook triggered', [
+        'op' => $op,
+        'entityId' => $entityID,
+        'groupId' => $groupID,
+      ]);
+
+      if (!($contactId = self::findCollectionCampInitiatorContact($params))) {
+        \Civi::log()->info('[CollectionCamp:LinkInduction] Initiator contact field not found in params', [
+          'entityId' => $entityID,
+          'groupId' => $groupID,
+        ]);
+        return;
+      }
+
+      $collectionCampId = $contactId['entity_id'];
+
+      $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+        ->addSelect('Collection_Camp_Core_Details.Contact_Id', 'Collection_Camp_Intent_Details.State', 'custom.*')
+        ->addWhere('id', '=', $collectionCampId)
+        ->execute()->first();
+
+      if (!$collectionCamp) {
+        \Civi::log()->info('[CollectionCamp:LinkInduction] Camp not found', [
+          'campId' => $collectionCampId,
+          'entityId' => $entityID,
+        ]);
+        return;
+      }
+
+      $contactId = $collectionCamp['Collection_Camp_Core_Details.Contact_Id'] ?? NULL;
+      if (!$contactId) {
+        \Civi::log()->info('[CollectionCamp:LinkInduction] Contact_Id missing on camp', [
+          'campId' => $collectionCampId,
+          'entityId' => $entityID,
+        ]);
+        return;
+      }
+
+      $optionValue = OptionValue::get(FALSE)
+        ->addWhere('option_group_id:name', '=', 'activity_type')
+        ->addWhere('label', '=', 'Induction')
+        ->execute()->first();
+
+      if (!$optionValue) {
+        \Civi::log()->info('[CollectionCamp:LinkInduction] Induction activity type missing', [
+          'campId' => $collectionCampId,
+          'contactId' => $contactId,
+        ]);
+        return;
+      }
+
+      $activityTypeId = $optionValue['value'];
+
+      $induction = Activity::get(FALSE)
+        ->addSelect('id')
+        ->addWhere('target_contact_id', '=', $contactId)
+        ->addWhere('activity_type_id', '=', $activityTypeId)
+        ->addOrderBy('created_date', 'DESC')
+        ->setLimit(1)
+        ->execute()->first();
+
+      $inductionId = $induction['id'] ?? NULL;
+      if (!$inductionId) {
+        \Civi::log()->info('[CollectionCamp:LinkInduction] Induction not found for contact', [
+          'campId' => $collectionCampId,
+          'contactId' => $contactId,
+        ]);
+        return;
+      }
+
+      EckEntity::update('Collection_Camp', FALSE)
+        ->addValue('Collection_Camp_Intent_Details.Initiator_Induction_Id', $inductionId)
+        ->addWhere('id', '=', $collectionCampId)
+        ->execute();
+
+      \Civi::log()->info('[CollectionCamp:LinkInduction] Camp linked with induction', [
+        'campId' => $collectionCampId,
+        'contactId' => $contactId,
+        'inductionId' => $inductionId,
+      ]);
     }
-
-    $collectionCampId = $contactId['entity_id'];
-
-    $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('Collection_Camp_Core_Details.Contact_Id', 'custom.*')
-      ->addWhere('id', '=', $collectionCampId)
-      ->execute()->single();
-
-    $contactId = $collectionCamp['Collection_Camp_Core_Details.Contact_Id'];
-
-    $optionValue = OptionValue::get(FALSE)
-      ->addWhere('option_group_id:name', '=', 'activity_type')
-      ->addWhere('label', '=', 'Induction')
-      ->execute()->single();
-
-    $activityTypeId = $optionValue['value'];
-
-    $induction = Activity::get(FALSE)
-      ->addSelect('id')
-      ->addWhere('target_contact_id', '=', $contactId)
-      ->addWhere('activity_type_id', '=', $activityTypeId)
-      ->addOrderBy('created_date', 'DESC')
-      ->setLimit(1)
-      ->execute()->single();
-
-    $inductionId = $induction['id'];
-
-    EckEntity::update('Collection_Camp', FALSE)
-      ->addValue('Collection_Camp_Intent_Details.Initiator_Induction_Id', $inductionId)
-      ->addWhere('id', '=', $collectionCampId)
-      ->execute();
+    catch (\Throwable $e) {
+      \Civi::log()->error('[CollectionCamp:LinkInduction] Failed', [
+        'entityId' => $entityID,
+        'groupId' => $groupID,
+        'error' => $e->getMessage(),
+        'trace' => $e->getTraceAsString(),
+      ]);
+    }
   }
 
   /**
