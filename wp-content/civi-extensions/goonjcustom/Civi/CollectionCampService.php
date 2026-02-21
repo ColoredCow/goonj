@@ -801,11 +801,24 @@ class CollectionCampService extends AutoSubscriber {
     }
 
     if ($groupId && self::$individualId) {
-      GroupContact::create(FALSE)
-        ->addValue('contact_id', self::$individualId)
-        ->addValue('group_id', $groupId)
-        ->addValue('status', 'Added')
-        ->execute();
+      try {
+        GroupContact::create(FALSE)
+          ->addValue('contact_id', self::$individualId)
+          ->addValue('group_id', $groupId)
+          ->addValue('status', 'Added')
+          ->execute();
+      }
+      catch (\Exception $e) {
+        if (str_contains($e->getMessage(), 'already exists')) {
+          \Civi::log()->info('GroupContact already exists, skipping creation.', [
+            'contact_id' => self::$individualId,
+            'group_id' => $groupId,
+          ]);
+        }
+        else {
+          throw $e;
+        }
+      }
     }
   }
 
@@ -844,11 +857,24 @@ class CollectionCampService extends AutoSubscriber {
       }
 
       if ($groupId && self::$individualId) {
-        GroupContact::create(FALSE)
-          ->addValue('contact_id', self::$individualId)
-          ->addValue('group_id', $groupId)
-          ->addValue('status', 'Added')
-          ->execute();
+        try {
+          GroupContact::create(FALSE)
+            ->addValue('contact_id', self::$individualId)
+            ->addValue('group_id', $groupId)
+            ->addValue('status', 'Added')
+            ->execute();
+        }
+        catch (\Exception $e) {
+          if (str_contains($e->getMessage(), 'already exists')) {
+            \Civi::log()->info('GroupContact already exists, skipping creation.', [
+              'contact_id' => self::$individualId,
+              'group_id' => $groupId,
+            ]);
+          }
+          else {
+            throw $e;
+          }
+        }
       }
     }
   }
