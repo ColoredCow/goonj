@@ -52,11 +52,24 @@ class AssignImportedIndividualToGroupChapter extends AutoSubscriber {
 		}
 
 		if ($groupId && $contactId) {
-			$result = GroupContact::create(FALSE)
-				->addValue('contact_id', $contactId)
-				->addValue('group_id', $groupId)
-				->addValue('status', 'Added')
-				->execute();
+			try {
+				$result = GroupContact::create(FALSE)
+					->addValue('contact_id', $contactId)
+					->addValue('group_id', $groupId)
+					->addValue('status', 'Added')
+					->execute();
+			}
+			catch (\Exception $e) {
+				if (str_contains($e->getMessage(), 'already exists')) {
+					\Civi::log()->info('GroupContact already exists, skipping creation.', [
+						'contact_id' => $contactId,
+						'group_id' => $groupId,
+					]);
+				}
+				else {
+					throw $e;
+				}
+			}
 		}
 		civicrm_api3('System', 'flush', []);
 	}

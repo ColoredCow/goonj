@@ -309,13 +309,26 @@ class InstitutionDroppingCenterService extends AutoSubscriber {
             ->execute()->first();
 
           if (!$groupContacts) {
-            GroupContact::create(FALSE)
-              ->addValue('contact_id', $contactId)
-              ->addValue('group_id', $groupId)
-              ->addValue('status', 'Added')
-              ->execute();
+            try {
+              GroupContact::create(FALSE)
+                ->addValue('contact_id', $contactId)
+                ->addValue('group_id', $groupId)
+                ->addValue('status', 'Added')
+                ->execute();
 
-            \Civi::log()->info("Contact ID $contactId added to Group ID $groupId.");
+              \Civi::log()->info("Contact ID $contactId added to Group ID $groupId.");
+            }
+            catch (\Exception $e) {
+              if (str_contains($e->getMessage(), 'already exists')) {
+                \Civi::log()->info('GroupContact already exists, skipping creation.', [
+                  'contact_id' => $contactId,
+                  'group_id' => $groupId,
+                ]);
+              }
+              else {
+                throw $e;
+              }
+            }
           }
         }
       }
