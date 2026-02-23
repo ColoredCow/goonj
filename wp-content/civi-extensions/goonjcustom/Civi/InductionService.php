@@ -404,7 +404,7 @@ class InductionService extends AutoSubscriber {
   /**
    * Common logic for creating an induction.
    */
-  private static function createInduction(int $contactId, int $stateId) {
+  public static function createInduction(int $contactId, int $stateId) {
     if (self::inductionExists($contactId)) {
       \Civi::log()->info('Induction already exists for contact', ['id' => $contactId]);
       return FALSE;
