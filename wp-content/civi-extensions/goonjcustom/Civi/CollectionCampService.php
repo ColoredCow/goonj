@@ -538,12 +538,6 @@ class CollectionCampService extends AutoSubscriber {
 
         $stateId = $contact['address_primary.state_province_id'] ?? NULL;
 
-        \Civi::log()->info('tarun', [
-            'contact' => $contact,
-            'stateId' => $stateId,
-
-          ]);
-
         if (!$stateId) {
           \Civi::log()->info('[CollectionCamp:AssignInitiator] Fallback failed: no state found for volunteer', [
             'campId' => $campId,
