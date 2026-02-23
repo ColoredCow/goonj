@@ -375,6 +375,9 @@ class InductionService extends AutoSubscriber {
     $subTypes = $objectRef->contact_sub_type;
 
     if (empty($subTypes)) {
+      \Civi::log()->info('[Induction:Hook] volunteerCreated skipped: empty subtypes', [
+        'contactId' => $objectId,
+      ]);
       return FALSE;
     }
 
@@ -384,6 +387,10 @@ class InductionService extends AutoSubscriber {
     $subtypes = array_filter($subtypes);
 
     if (!in_array('Volunteer', $subtypes)) {
+      \Civi::log()->info('[Induction:Hook] volunteerCreated skipped: not Volunteer subtype', [
+        'contactId' => $objectId,
+        'subtypes' => $subtypes,
+      ]);
       return FALSE;
     }
 
@@ -457,10 +464,28 @@ class InductionService extends AutoSubscriber {
    * Handles induction creation for a volunteer.
    */
   public static function createInductionForVolunteer(string $op, string $objectName, int $objectId, &$objectRef) {
+    \Civi::log()->info('[Induction:Hook] createInductionForVolunteer triggered', [
+      'op' => $op,
+      'objectName' => $objectName,
+      'objectId' => $objectId,
+      'hookContactId' => $objectRef->contact_id ?? NULL,
+      'volunteerId' => self::$volunteerId,
+      'transitionedVolunteerId' => self::$transitionedVolunteerId,
+      'isPrimary' => $objectRef->is_primary ?? NULL,
+    ]);
+
     // Check if this is Address operation for either a new volunteer OR a transitioned volunteer
     // For new volunteers: only handle 'create' operations
     // For transitioned volunteers: handle both 'create' and 'edit' operations (when address gets updated with state)
     if ($objectName !== 'Address' || !$objectRef->is_primary) {
+      \Civi::log()->info('[Induction:Hook] createInductionForVolunteer skipped: not a primary address', [
+        'op' => $op,
+        'objectName' => $objectName,
+        'hookContactId' => $objectRef->contact_id ?? NULL,
+        'volunteerId' => self::$volunteerId,
+        'transitionedVolunteerId' => self::$transitionedVolunteerId,
+        'isPrimary' => $objectRef->is_primary ?? NULL,
+      ]);
       return FALSE;
     }
 
@@ -470,6 +495,13 @@ class InductionService extends AutoSubscriber {
     $isTransitionedVolunteerOperation = (($op === 'create' || $op === 'edit') && self::$transitionedVolunteerId);
 
     if (!$isNewVolunteerCreate && !$isTransitionedVolunteerOperation) {
+      \Civi::log()->info('[Induction:Hook] createInductionForVolunteer skipped: operation not relevant', [
+        'op' => $op,
+        'volunteerId' => self::$volunteerId,
+        'transitionedVolunteerId' => self::$transitionedVolunteerId,
+        'isNewVolunteerCreate' => $isNewVolunteerCreate,
+        'isTransitionedVolunteerOperation' => $isTransitionedVolunteerOperation,
+      ]);
       return FALSE;
     }
 
@@ -491,6 +523,11 @@ class InductionService extends AutoSubscriber {
     }
 
     if (!$contactId) {
+      \Civi::log()->info('[Induction:Hook] createInductionForVolunteer skipped: contact ID mismatch', [
+        'addressContactId' => $objectRef->contact_id,
+        'volunteerId' => self::$volunteerId,
+        'transitionedVolunteerId' => self::$transitionedVolunteerId,
+      ]);
       return FALSE;
     }
 
@@ -715,6 +752,13 @@ class InductionService extends AutoSubscriber {
    */
   public static function sendInductionEmailToVolunteer(string $op, string $objectName, int $objectId, &$objectRef) {
     if ($op !== 'create' || $objectName !== 'Email' || !$objectId || $objectRef->contact_id !== self::$volunteerId) {
+      \Civi::log()->info('[Induction:Hook] sendInductionEmailToVolunteer skipped: guard condition failed', [
+        'op' => $op,
+        'objectName' => $objectName,
+        'objectId' => $objectId,
+        'hookContactId' => $objectRef->contact_id ?? NULL,
+        'volunteerId' => self::$volunteerId,
+      ]);
       return;
     }
 
@@ -726,6 +770,12 @@ class InductionService extends AutoSubscriber {
    */
   public static function sendInductionEmailForTransitionedVolunteer(string $op, string $objectName, int $objectId, &$objectRef) {
     if ($op !== 'edit' || $objectName !== 'Individual' || (int) self::$transitionedVolunteerId !== (int) $objectRef->id) {
+      \Civi::log()->info('[Induction:Hook] sendInductionEmailForTransitionedVolunteer skipped: guard condition failed', [
+        'op' => $op,
+        'objectName' => $objectName,
+        'transitionedVolunteerId' => self::$transitionedVolunteerId,
+        'hookRefId' => $objectRef->id ?? NULL,
+      ]);
       return FALSE;
     }
 
@@ -884,6 +934,10 @@ class InductionService extends AutoSubscriber {
    */
   public static function hasIndividualChangedToVolunteer($op, $objectName, $id, &$params) {
     if ($op !== 'edit' || $objectName !== 'Individual') {
+      \Civi::log()->info('[Induction:Hook] hasIndividualChangedToVolunteer skipped: op/objectName mismatch', [
+        'op' => $op,
+        'objectName' => $objectName,
+      ]);
       return FALSE;
     }
     // Check if 'entryURL' is set and contains '/contribute'.
@@ -922,6 +976,12 @@ class InductionService extends AutoSubscriber {
    */
   public static function createInductionForTransitionedVolunteer(string $op, string $objectName, int $objectId, &$objectRef) {
     if ($op !== 'edit' || $objectName !== 'Individual' || (int) self::$transitionedVolunteerId !== (int) $objectRef->id) {
+      \Civi::log()->info('[Induction:Hook] createInductionForTransitionedVolunteer skipped: guard condition failed', [
+        'op' => $op,
+        'objectName' => $objectName,
+        'transitionedVolunteerId' => self::$transitionedVolunteerId,
+        'hookRefId' => $objectRef->id ?? NULL,
+      ]);
       return FALSE;
     }
 
