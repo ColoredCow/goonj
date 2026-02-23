@@ -546,7 +546,16 @@ class CollectionCampService extends AutoSubscriber {
           return FALSE;
         }
 
-        InductionService::createInduction($volunteerId, $stateId);
+        $created = InductionService::createInduction($volunteerId, $stateId);
+
+        if (!$created) {
+          \Civi::log()->info('[CollectionCamp:AssignInitiator] Fallback failed: createInduction returned false', [
+            'campId' => $campId,
+            'volunteerId' => $volunteerId,
+            'stateId' => $stateId,
+          ]);
+          return FALSE;
+        }
 
         $induction = Activity::get(FALSE)
           ->addSelect('id')
@@ -559,7 +568,7 @@ class CollectionCampService extends AutoSubscriber {
         $inductionId = $induction['id'] ?? NULL;
 
         if (!$inductionId) {
-          \Civi::log()->info('[CollectionCamp:AssignInitiator] Fallback failed: induction still not created', [
+          \Civi::log()->info('[CollectionCamp:AssignInitiator] Fallback failed: induction still not created after successful createInduction', [
             'campId' => $campId,
             'volunteerId' => $volunteerId,
             'stateId' => $stateId,
@@ -1318,7 +1327,16 @@ class CollectionCampService extends AutoSubscriber {
           return;
         }
 
-        InductionService::createInduction($contactId, $stateId);
+        $created = InductionService::createInduction($contactId, $stateId);
+
+        if (!$created) {
+          \Civi::log()->info('[CollectionCamp:LinkInduction] Fallback failed: createInduction returned false', [
+            'campId' => $collectionCampId,
+            'contactId' => $contactId,
+            'stateId' => $stateId,
+          ]);
+          return;
+        }
 
         $induction = Activity::get(FALSE)
           ->addSelect('id')
@@ -1331,7 +1349,7 @@ class CollectionCampService extends AutoSubscriber {
         $inductionId = $induction['id'] ?? NULL;
 
         if (!$inductionId) {
-          \Civi::log()->info('[CollectionCamp:LinkInduction] Fallback failed: induction still not created', [
+          \Civi::log()->info('[CollectionCamp:LinkInduction] Fallback failed: induction still not created after successful createInduction', [
             'campId' => $collectionCampId,
             'contactId' => $contactId,
             'stateId' => $stateId,
