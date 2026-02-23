@@ -525,12 +525,59 @@ class CollectionCampService extends AutoSubscriber {
       $inductionId = $induction['id'] ?? NULL;
 
       if (!$inductionId) {
-        \Civi::log()->info('[CollectionCamp:AssignInitiator] Induction not found; Initiator_Induction_Id not set', [
+        \Civi::log()->info('[CollectionCamp:AssignInitiator] Induction not found; attempting fallback creation', [
           'campId' => $campId,
           'volunteerId' => $volunteerId,
           'objectId' => $objectId,
         ]);
-        return FALSE;
+
+        $contact = Contact::get(FALSE)
+          ->addSelect('address_primary.state_province_id')
+          ->addWhere('id', '=', $volunteerId)
+          ->execute()->first();
+
+        $stateId = $contact['address_primary.state_province_id'] ?? NULL;
+
+        \Civi::log()->info('tarun', [
+            'contact' => $contact,
+            'stateId' => $stateId,
+
+          ]);
+
+        if (!$stateId) {
+          \Civi::log()->info('[CollectionCamp:AssignInitiator] Fallback failed: no state found for volunteer', [
+            'campId' => $campId,
+            'volunteerId' => $volunteerId,
+          ]);
+          return FALSE;
+        }
+
+        InductionService::createInduction($volunteerId, $stateId);
+
+        $induction = Activity::get(FALSE)
+          ->addSelect('id')
+          ->addWhere('target_contact_id', '=', $volunteerId)
+          ->addWhere('activity_type_id', '=', $activityTypeId)
+          ->addOrderBy('created_date', 'DESC')
+          ->setLimit(1)
+          ->execute()->first();
+
+        $inductionId = $induction['id'] ?? NULL;
+
+        if (!$inductionId) {
+          \Civi::log()->info('[CollectionCamp:AssignInitiator] Fallback failed: induction still not created', [
+            'campId' => $campId,
+            'volunteerId' => $volunteerId,
+            'stateId' => $stateId,
+          ]);
+          return FALSE;
+        }
+
+        \Civi::log()->info('[CollectionCamp:AssignInitiator] Fallback succeeded: induction created', [
+          'campId' => $campId,
+          'volunteerId' => $volunteerId,
+          'inductionId' => $inductionId,
+        ]);
       }
   
       EckEntity::update('Collection_Camp', FALSE)
@@ -1257,11 +1304,52 @@ class CollectionCampService extends AutoSubscriber {
 
       $inductionId = $induction['id'] ?? NULL;
       if (!$inductionId) {
-        \Civi::log()->info('[CollectionCamp:LinkInduction] Induction not found for contact', [
+        \Civi::log()->info('[CollectionCamp:LinkInduction] Induction not found; attempting fallback creation', [
           'campId' => $collectionCampId,
           'contactId' => $contactId,
         ]);
-        return;
+
+        $contact = Contact::get(FALSE)
+          ->addSelect('address_primary.state_province_id')
+          ->addWhere('id', '=', $contactId)
+          ->execute()->first();
+
+        $stateId = $contact['address_primary.state_province_id'] ?? NULL;
+
+        if (!$stateId) {
+          \Civi::log()->info('[CollectionCamp:LinkInduction] Fallback failed: no state found for volunteer', [
+            'campId' => $collectionCampId,
+            'contactId' => $contactId,
+          ]);
+          return;
+        }
+
+        InductionService::createInduction($contactId, $stateId);
+
+        $induction = Activity::get(FALSE)
+          ->addSelect('id')
+          ->addWhere('target_contact_id', '=', $contactId)
+          ->addWhere('activity_type_id', '=', $activityTypeId)
+          ->addOrderBy('created_date', 'DESC')
+          ->setLimit(1)
+          ->execute()->first();
+
+        $inductionId = $induction['id'] ?? NULL;
+
+        if (!$inductionId) {
+          \Civi::log()->info('[CollectionCamp:LinkInduction] Fallback failed: induction still not created', [
+            'campId' => $collectionCampId,
+            'contactId' => $contactId,
+            'stateId' => $stateId,
+          ]);
+          return;
+        }
+
+        \Civi::log()->info('[CollectionCamp:LinkInduction] Fallback succeeded: induction created', [
+          'campId' => $collectionCampId,
+          'contactId' => $contactId,
+          'inductionId' => $inductionId,
+        ]);
       }
 
       EckEntity::update('Collection_Camp', FALSE)
