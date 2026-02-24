@@ -66,3 +66,4 @@ Custom agents are defined in `.claude/agents/`. Use them via the Task tool with 
 | Agent | When to Use |
 |-------|-------------|
 | `implementation-planner` | When the user asks for an implementation plan, technical breakdown, or task planning for a feature or issue. Accepts a GitHub issue URL/number, explores the codebase, creates a detailed plan with 4-hour task breakdowns, and posts it as a comment on the GitHub issue. |
+| `bug-investigator` | When the user reports a bug, wants to investigate unexpected behavior, or needs root-cause analysis for a defect. Accepts a GitHub issue URL/number, investigates the codebase, and posts an investigation report with reproduction steps, root cause, and solution options to the GitHub issue. |
