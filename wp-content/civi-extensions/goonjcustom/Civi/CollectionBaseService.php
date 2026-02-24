@@ -857,7 +857,7 @@ class CollectionBaseService extends AutoSubscriber {
 
       $stateFields = self::getStateFieldDbDetails($entity);
 
-      $clausesArray = [];
+      $selectQueries = [];
       foreach ($stateFields as $stateField) {
         $selectQueries[] = sprintf(
             'SELECT entity_id FROM `%1$s` WHERE `%2$s` IN (%3$s)',
@@ -865,6 +865,11 @@ class CollectionBaseService extends AutoSubscriber {
             $stateField['columnName'],
             $statesList,
         );
+      }
+
+      if (empty($selectQueries)) {
+        $clauses['id'][] = 'IN (null)';
+        return TRUE;
       }
 
       $concatenatedQuery = implode(' UNION ', $selectQueries);
@@ -891,7 +896,7 @@ class CollectionBaseService extends AutoSubscriber {
       ->addWhere('group_id.Chapter_Contact_Group.Use_Case', '=', 'chapter-team')
       ->execute();
 
-    $groupIds = array_column((array) $teamGroupContacts, 'group_id');
+    $groupIds = $teamGroupContacts->column('group_id');
 
     if (empty($groupIds)) {
       \Civi::log()->debug('ACL multi-group: No chapter-team groups found for user.', ['userId' => $userId]);
