@@ -76,34 +76,12 @@ class CollectionBaseService extends AutoSubscriber {
 
     try {
       // Step 0: Get user's group-controlled states.
-      $teamGroupContact = GroupContact::get(FALSE)
-        ->addSelect('group_id')
-        ->addWhere('contact_id', '=', $userId)
-        ->addWhere('status', '=', 'Added')
-        ->addWhere('group_id.Chapter_Contact_Group.Use_Case', '=', 'chapter-team')
-        ->execute()
-        ->first();
-
-      if (!$teamGroupContact) {
-        return FALSE;
-      }
-
-      $groupId = $teamGroupContact['group_id'];
-
-      $group = Group::get(FALSE)
-        ->addSelect('Chapter_Contact_Group.States_controlled')
-        ->addWhere('id', '=', $groupId)
-        ->execute()
-        ->first();
-
-      $statesControlled = $group['Chapter_Contact_Group.States_controlled'] ?? [];
+      $statesControlled = self::getStatesControlledByUser($userId);
 
       if (empty($statesControlled)) {
         $clauses['id'][] = 'IN (null)';
         return TRUE;
       }
-
-      $statesControlled = array_unique($statesControlled);
 
       // Step 1: Fetch all camps as array.
       try {
@@ -868,45 +846,18 @@ class CollectionBaseService extends AutoSubscriber {
     }
 
     try {
-      $teamGroupContacts = GroupContact::get(FALSE)
-        ->addSelect('group_id')
-        ->addWhere('contact_id', '=', $userId)
-        ->addWhere('status', '=', 'Added')
-        ->addWhere('group_id.Chapter_Contact_Group.Use_Case', '=', 'chapter-team')
-        ->execute();
-
-      $teamGroupContact = $teamGroupContacts->first();
-
-      if (!$teamGroupContact) {
-        // @todo we should handle it in a better way.
-        // if there is no chapter assigned to the contact
-        // then ideally she should not see any collection camp which
-        // can be done but then it limits for the admin user as well.
-        return FALSE;
-      }
-
-      $groupId = $teamGroupContact['group_id'];
-
-      $chapterGroups = Group::get(FALSE)
-        ->addSelect('Chapter_Contact_Group.States_controlled')
-        ->addWhere('id', '=', $groupId)
-        ->execute();
-
-      $group = $chapterGroups->first();
-      $statesControlled = $group['Chapter_Contact_Group.States_controlled'];
+      $statesControlled = self::getStatesControlledByUser($userId);
 
       if (empty($statesControlled)) {
-        // Handle the case when the group is not controlling any state.
         $clauses['id'][] = 'IN (null)';
         return TRUE;
       }
 
-      $statesControlled = array_unique($statesControlled);
       $statesList = implode(',', array_map('intval', $statesControlled));
 
       $stateFields = self::getStateFieldDbDetails($entity);
 
-      $clausesArray = [];
+      $selectQueries = [];
       foreach ($stateFields as $stateField) {
         $selectQueries[] = sprintf(
             'SELECT entity_id FROM `%1$s` WHERE `%2$s` IN (%3$s)',
@@ -914,6 +865,11 @@ class CollectionBaseService extends AutoSubscriber {
             $stateField['columnName'],
             $statesList,
         );
+      }
+
+      if (empty($selectQueries)) {
+        $clauses['id'][] = 'IN (null)';
+        return TRUE;
       }
 
       $concatenatedQuery = implode(' UNION ', $selectQueries);
@@ -927,6 +883,49 @@ class CollectionBaseService extends AutoSubscriber {
     }
 
     return TRUE;
+  }
+
+  /**
+   * Get all state IDs controlled by all chapter-team groups the user belongs to.
+   */
+  private static function getStatesControlledByUser(int $userId): array {
+    $teamGroupContacts = GroupContact::get(FALSE)
+      ->addSelect('group_id')
+      ->addWhere('contact_id', '=', $userId)
+      ->addWhere('status', '=', 'Added')
+      ->addWhere('group_id.Chapter_Contact_Group.Use_Case', '=', 'chapter-team')
+      ->execute();
+
+    $groupIds = $teamGroupContacts->column('group_id');
+
+    if (empty($groupIds)) {
+      \Civi::log()->debug('ACL multi-group: No chapter-team groups found for user.', ['userId' => $userId]);
+      return [];
+    }
+
+    $groups = Group::get(FALSE)
+      ->addSelect('id', 'Chapter_Contact_Group.States_controlled')
+      ->addWhere('id', 'IN', $groupIds)
+      ->execute();
+
+    $allStates = [];
+    foreach ($groups as $group) {
+      $states = $group['Chapter_Contact_Group.States_controlled'] ?? [];
+      if (!empty($states)) {
+        $allStates = array_merge($allStates, $states);
+      }
+    }
+
+    $allStates = array_unique($allStates);
+
+    \Civi::log()->debug('ACL multi-group: Resolved states for user.', [
+      'userId' => $userId,
+      'groupCount' => count($groupIds),
+      'groupIds' => $groupIds,
+      'stateCount' => count($allStates),
+    ]);
+
+    return $allStates;
   }
 
   /**
