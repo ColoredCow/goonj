@@ -68,6 +68,46 @@ function goonjcustom_civicrm_container(ContainerBuilder $container) {
   )->setPublic(TRUE);
 }
 
+/**
+ * Implements hook_civicrm_links().
+ *
+ * Hides the payment edit action when the user lacks financial type ACL
+ * permission to edit the parent contribution. The core financialacls
+ * extension only filters Contribution and MembershipType object links,
+ * but the payment edit pencil uses objectName 'Payment' which is not handled.
+ */
+function goonjcustom_civicrm_links($op, $objectName, $objectID, &$links, &$mask, &$values) {
+  if ($objectName !== 'Payment' || $op !== 'Payment.edit.action') {
+    return;
+  }
+
+  if (!CRM_Financial_BAO_FinancialType::isACLFinancialTypeStatus()) {
+    return;
+  }
+
+  $contributionId = $values['contribution_id'] ?? NULL;
+  if (!$contributionId) {
+    return;
+  }
+
+  $lineItems = CRM_Price_BAO_LineItem::getLineItemsByContributionID((int) $contributionId);
+  foreach ($lineItems as $item) {
+    $financialType = CRM_Core_PseudoConstant::getName(
+      'CRM_Contribute_BAO_Contribution',
+      'financial_type_id',
+      $item['financial_type_id']
+    );
+    if (!CRM_Core_Permission::check('edit contributions of type ' . $financialType)) {
+      foreach ($links as $index => $link) {
+        if ($link['name'] === 'Edit Payment') {
+          unset($links[$index]);
+        }
+      }
+      return;
+    }
+  }
+}
+
 function goonjcustom_civicrm_apiWrappers(&$wrappers, $apiRequest) {
   $apiUserId = \CRM_Core_Session::getLoggedInContactID();
 
