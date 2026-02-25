@@ -72,11 +72,11 @@ function civicrm_api3_goonjcustom_import_contact_without_group_cron($params) {
         // Remove contact from any chapter "Team" or "Contact" groups.
         $existingChapterGroups = GroupContact::get(FALSE)
           ->addSelect('id', 'group_id')
-          ->addJoin('Group AS grp', 'INNER', ['group_id', '=', 'grp.id'])
+          ->addJoin('Group AS group', 'LEFT')
           ->addWhere('contact_id', '=', $contactId)
           ->addClause('OR',
-            ['grp.title', 'LIKE', '%Team'],
-            ['grp.title', 'LIKE', '%Contacts']
+            ['group.title', 'LIKE', '%Team'],
+            ['group.title', 'LIKE', '%Contacts']
           )
           ->execute();
 
