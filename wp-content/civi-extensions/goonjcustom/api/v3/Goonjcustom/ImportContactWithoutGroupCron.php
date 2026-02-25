@@ -67,9 +67,10 @@ function civicrm_api3_goonjcustom_import_contact_without_group_cron($params) {
 
     foreach ($entityTags as $entityTag) {
       $contactId = $entityTag['entity_id'];
+      $entityTagId = $entityTag['id'];
 
       try {
-        // Remove contact from any chapter "Team" or "Contact" groups.
+        // Remove contact from any chapter "Team" or "Contacts" groups.
         $existingChapterGroups = GroupContact::get(FALSE)
           ->addSelect('id', 'group_id')
           ->addJoin('Group AS group', 'LEFT')
@@ -91,6 +92,22 @@ function civicrm_api3_goonjcustom_import_contact_without_group_cron($params) {
           ]);
         }
 
+        // Remove the "Contacts_Without_Group" tag from this contact.
+        EntityTag::delete(FALSE)
+          ->addWhere('entity_table', '=', 'civicrm_contact')
+          ->addWhere('entity_id', '=', $contactId)
+          ->addWhere('tag_id:name', '=', 'Contacts_Without_Group')
+          ->execute();
+
+        // Add the "Ungrouped_Contacts" tag only if groups were actually removed.
+        if ($existingChapterGroups->count() > 0) {
+          EntityTag::create(FALSE)
+            ->addValue('entity_id', $contactId)
+            ->addValue('entity_table', 'civicrm_contact')
+            ->addValue('tag_id:name', 'Ungrouped_Contacts')
+            ->execute();
+        }
+
         $processedCount++;
       }
       catch (\Exception $e) {
@@ -99,10 +116,9 @@ function civicrm_api3_goonjcustom_import_contact_without_group_cron($params) {
           'contact_id' => $contactId,
           'error' => $e->getMessage(),
         ]);
+        $offset++;
       }
     }
-
-    $offset += $limit;
   } while ($batchCount === $limit);
 
   \Civi::log()->info('[ImportContactWithoutGroupCron] Cron completed', [
