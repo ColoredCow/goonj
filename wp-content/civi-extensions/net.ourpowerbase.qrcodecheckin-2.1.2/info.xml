@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<extension key="net.ourpowerbase.qrcodecheckin" type="module">
+  <file>qrcodecheckin</file>
+  <name>QR Code Checkin</name>
+  <description>QR Code Checkin allows you to send QR codes to event participants that can be scanned for faster checkin at the event.</description>
+  <license>AGPL-3.0</license>
+  <maintainer>
+    <author>Jamie McClelland</author>
+    <email>jamie@progressivetech.org</email>
+  </maintainer>
+  <urls>
+    <url desc="Main Extension Page">https://github.com/progressivetech/net.ourpowerbase.qrcodecheckin</url>
+    <url desc="Documentation">https://github.com/progressivetech/net.ourpowerbase.qrcodecheckin</url>
+    <url desc="Support">https://github.com/progressivetech/net.ourpowerbase.qrcodecheckin/issues</url>
+    <url desc="Licensing">http://www.gnu.org/licenses/agpl-3.0.html</url>
+  </urls>
+  <releaseDate>2024-04-19</releaseDate>
+  <version>2.1.2</version>
+  <develStage>stable</develStage>
+  <compatibility>
+    <ver>5.69</ver>
+  </compatibility>
+  <civix>
+    <namespace>CRM/Qrcodecheckin</namespace>
+    <format>23.02.1</format>
+  </civix>
+  <mixins>
+    <mixin>menu-xml@1.0.0</mixin>
+    <mixin>setting-php@1.0.0</mixin>
+    <mixin>smarty-v2@1.0.1</mixin>
+  </mixins>
+  <classloader>
+    <psr0 prefix="CRM_" path="."/>
+    <psr4 prefix="Civi\" path="Civi"/>
+  </classloader>
+  <upgrader>CRM_Qrcodecheckin_Upgrader</upgrader>
+</extension>
