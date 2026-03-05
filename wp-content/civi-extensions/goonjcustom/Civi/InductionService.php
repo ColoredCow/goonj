@@ -1429,6 +1429,11 @@ class InductionService extends AutoSubscriber {
   public static function sendInductionEmailToCollectionCampInitiator($volunteerId) {
     \Civi::log()->info('Initiating induction email process', ['volunteerId' => $volunteerId]);
 
+    if (self::isEmailAlreadySent($volunteerId)) {
+      \Civi::log()->info('sendInductionEmailToCollectionCampInitiator: Induction email already sent, skipping', ['volunteerId' => $volunteerId]);
+      return FALSE;
+    }
+
     $contact = Contact::get(FALSE)
       ->addSelect('address_primary.state_province_id')
       ->addWhere('id', '=', $volunteerId)
@@ -1486,6 +1491,12 @@ class InductionService extends AutoSubscriber {
 
     \Civi::log()->info('Queuing induction email');
     self::queueInductionEmail($emailParams);
+
+    \Civi::log()->info('Marking email as sent in custom field');
+    Contact::update(FALSE)
+      ->addValue('Individual_fields.Volunteer_Registration_Email_Sent', 1)
+      ->addWhere('id', '=', $volunteerId)
+      ->execute();
 
     \Civi::log()->info('Induction email process completed', ['volunteerId' => $volunteerId]);
     return TRUE;
