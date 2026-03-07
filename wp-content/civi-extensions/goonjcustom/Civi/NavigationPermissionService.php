@@ -279,6 +279,10 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Institutes',
           'MMT - Offices',
           'MMT - Urban Visits',
+          'Search',
+        ],
+        'hide_child_menus' => [
+        'Manage Groups',
         ],
       ],
       'project_team_chapter' => [
@@ -301,11 +305,13 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Institutes',
           'MMT - Offices',
           'MMT - Urban Visits',
+          'Search',
         ],
         'hide_child_menus' => [
           'Institution Collection Camps',
           'Material Contributions',
           'Dropping Center',
+          'Manage Groups',
         ],
       ],
       's2s_ho_team' => [
