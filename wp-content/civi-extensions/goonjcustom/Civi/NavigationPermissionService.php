@@ -155,6 +155,10 @@ class NavigationPermissionService extends AutoSubscriber {
           'Volunteers',
           'Individuals',
           'Offices',
+          'Search',
+        ],
+        'hide_child_menus' => [
+          'Manage Groups',
         ],
       ],
       'goonj_chapter_admin' => [
@@ -203,6 +207,10 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Offices',
           'MMT - Urban Visits',
           'My Office',
+          'Search',       
+        ],
+        'hide_child_menus' => [
+          'Manage Groups',
         ],
       ],
       'communications_team' => [
@@ -216,12 +224,18 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Offices',
           'MMT - Urban Visits',
           'Inductions',
+          'Search',
+          'Campaigns',
+          'Administer',
+          'Glific Integration',
         ],
         'hide_child_menus' => [
           'Material Contributions',
           'Institution Collection Camps',
           'Dropping Center',
           'Institution Goonj Activities',
+          'Manage Groups',
+          'Manage Duplicates',
         ],
       ],
       'sanjha_team' => [
@@ -235,9 +249,11 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Institutes',
           'MMT - Offices',
           'MMT - Urban Visits',
+          'Search',
         ],
         'hide_child_menus' => [
           'Institution Collection Camps',
+          'Manage Groups',
         ],
       ],
       'data_team' => [
@@ -301,6 +317,10 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Institutes',
           'MMT - Offices',
           'MMT - Urban Visits',
+          'Search',
+        ],
+        'hide_child_menus' => [
+          'Manage Groups',
         ],
       ],
       'data_entry' => [
@@ -318,6 +338,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Induction Tab',
           'Induction',
           'Inductions',
+          'Search',
         ],
       ],
       'mmt_and_accounts_chapter_team' => [
@@ -331,6 +352,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Inductions',
           'Institutes',
           'My Office',
+          'Search',
         ],
         'hide_child_menus' => [
           'Dashboard',
@@ -343,6 +365,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Premiums',
           'Manage Price Sets',
           'Find Contributions',
+          'Manage Groups',
         ],
       ],
       'urban_ops_and_accounts_chapter_team' => [
@@ -355,6 +378,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'My Office',
           'Account - Individuals',
           'Account - Institutions',
+          'Search',
         ],
         'hide_child_menus' => [
           'Contribution Reports',
@@ -367,6 +391,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Premiums',
           'Manage Price Sets',
           'Find Contributions',
+          'Manage Groups',
         ],
       ],
       'project_ho_and_accounts' => [
@@ -382,6 +407,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Urban Visits',
           'Account - Individuals',
           'Account - Institutions',
+          'Search',
         ],
         'hide_child_menus' => [
           'New Contribution',
@@ -393,6 +419,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Premiums',
           'Manage Price Sets',
           'Find Contributions',
+          'Manage Groups',
         ],
       ]
     ];
