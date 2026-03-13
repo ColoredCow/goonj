@@ -19,6 +19,7 @@ class NavigationPermissionService extends AutoSubscriber {
         ['hideButtonsForMMT'],
         ['hideAPIKeyTab'],
         ['hideContributionFields'],
+        ['hideSearchIconForMMT'],
       ],
     ];
   }
@@ -92,6 +93,25 @@ class NavigationPermissionService extends AutoSubscriber {
                 });
             ");
       }
+    }
+  }
+
+  /**
+   *
+   */
+  public function hideSearchIconForMMT() {
+    $rolesWithHiddenSearch = ['mmt', 'admin', 'communications_team'];
+    $shouldHide = false;
+    foreach ($rolesWithHiddenSearch as $role) {
+      if (\CRM_Core_Permission::check($role)) {
+        $shouldHide = true;
+        break;
+      }
+    }
+    if ($shouldHide) {
+      \CRM_Core_Resources::singleton()->addStyle("
+        #crm-qsearch { display: none !important; }
+      ");
     }
   }
 
