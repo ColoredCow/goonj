@@ -97,7 +97,7 @@ trait CollectionSource {
     if (!$statusDetails) {
       return;
     }
-    error_log('Institution CC code generation working');
+    \Civi::log()->debug('generateCollectionSourceCode code is running');
 
     $newStatus = $statusDetails['newStatus'];
     $currentStatus = $statusDetails['currentStatus'];
@@ -105,13 +105,13 @@ trait CollectionSource {
     if ($currentStatus !== $newStatus) {
       if ($newStatus === 'authorized') {
         $subtypeId = $objectRef['subtype'] ?? NULL;
-        error_log('subtype:' . print_r($subtypeId, TRUE));
+        \Civi::log()->debug('[CodeGen] subtypeId', ['subtypeId' => $subtypeId]);
         if (!$subtypeId) {
           return;
         }
 
         $sourceId = $objectRef['id'] ?? NULL;
-        error_log('sourceId:' . print_r($sourceId, TRUE));
+        \Civi::log()->debug('[CodeGen] sourceId', ['sourceId' => $sourceId]);
         if (!$sourceId) {
           return;
         }
@@ -121,52 +121,47 @@ trait CollectionSource {
           ->execute()->single();
 
         $collectionSourceCreatedDate = $collectionSource['created_date'] ?? NULL;
-        error_log('collectionSourceCreatedDate:' . print_r($collectionSourceCreatedDate, TRUE));
+        \Civi::log()->debug('[CodeGen] createdDate', ['createdDate' => $collectionSourceCreatedDate]);
 
         $sourceTitle = $collectionSource['title'] ?? NULL;
 
         $year = date('Y', strtotime($collectionSourceCreatedDate));
 
         $stateId = self::getStateIdForSourceType($objectRef, $subtypeId, $sourceTitle);
-        error_log('stateId:' . print_r($stateId, TRUE));
+        \Civi::log()->debug('[CodeGen] stateId', ['stateId' => $stateId]);
 
         if (!$stateId) {
+          \Civi::log()->debug('[CodeGen] Aborting: stateId missing', ['sourceId' => $sourceId]);
           return;
         }
 
         $stateProvince = StateProvince::get(FALSE)
           ->addWhere('id', '=', $stateId)
           ->execute()->single();
-        error_log('stateProvince:' . print_r($stateProvince, TRUE));
 
         if (empty($stateProvince)) {
+          \Civi::log()->debug('[CodeGen] Aborting: stateProvince not found', ['stateId' => $stateId]);
           return;
         }
 
         $stateAbbreviation = $stateProvince['abbreviation'] ?? NULL;
         if (!$stateAbbreviation) {
+          \Civi::log()->debug('[CodeGen] Aborting: stateAbbreviation missing', ['stateId' => $stateId]);
           return;
         }
 
-        // Fetch the Goonj-specific state code.
         $config = self::getConfig();
         $stateCode = $config['state_codes'][$stateAbbreviation] ?? 'UNKNOWN';
-        // Get the current event title.
-        $currentTitle = $sourceTitle ?? 'Collection Camp';
+        $sourceTypeName = self::getSourceTypeName($subtypeId);
+        $sourceTypeTitle = str_replace('_', ' ', $sourceTypeName);
+        $eventCode = $config['event_codes'][$sourceTypeTitle] ?? 'UNKNOWN';
+        \Civi::log()->debug('[CodeGen] eventCode', ['sourceTypeName' => $sourceTypeName, 'sourceTypeTitle' => $sourceTypeTitle, 'eventCode' => $eventCode]);
 
-        // Fetch the event code.
-        $eventCode = $config['event_codes'][$currentTitle] ?? 'UNKNOWN';
-
-        // Modify the title to include the year, state code, event code, and camp Id.
         $newTitle = $year . '/' . $stateCode . '/' . $eventCode . '/' . $sourceId;
-        error_log('newTitle:' . print_r($newTitle, TRUE));
+        \Civi::log()->info('[CodeGen] newTitle', ['newTitle' => $newTitle]);
         $objectRef['title'] = $newTitle;
 
-        // Save the updated title back to the Collection Camp entity.
-        EckEntity::update('Collection_Camp')
-          ->addWhere('id', '=', $sourceId)
-          ->addValue('title', $newTitle)
-          ->execute();
+        \Civi::log()->info('[CodeGen] Camp code generated', ['sourceId' => $sourceId, 'newTitle' => $newTitle]);
       }
     }
   }
