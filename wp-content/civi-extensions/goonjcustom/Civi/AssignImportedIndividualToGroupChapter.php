@@ -71,7 +71,7 @@ class AssignImportedIndividualToGroupChapter extends AutoSubscriber {
 				}
 			}
 		}
-		civicrm_api3('System', 'flush', []);
+		// civicrm_api3('System', 'flush', []);
 	}
 
 	/**
