@@ -331,7 +331,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'S2S Institution Collection Camp',
           'S2S Institution Dropping Center',
           'Material Contributions',
-          'Institution Goonj Activities'
+          'Institution Goonj Activities',
         ],
       ],
       'data_team' => [
