@@ -178,7 +178,6 @@ class NavigationPermissionService extends AutoSubscriber {
           'Offices',
           'Search',
           'Contacts',
-          'Search',
           'Events',
           'Urban Visits',
           'Reports',
