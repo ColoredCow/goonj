@@ -100,7 +100,7 @@ class NavigationPermissionService extends AutoSubscriber {
    *
    */
   public function hideSearchIcon() {
-    $rolesWithHiddenSearch = ['communications_team', 'mmt', 'mmt_and_accounts_chapter_team'];
+    $rolesWithHiddenSearch = ['communications_team', 'mmt', 'mmt_and_accounts_chapter_team', 'njpc_ho_team'];
     foreach ($rolesWithHiddenSearch as $role) {
       if (\CRM_Core_Permission::check($role)) {
         \CRM_Core_Resources::singleton()->addStyle("
@@ -336,12 +336,19 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Offices',
           'MMT - Urban Visits',
           'Search',
+          'Contacts',
+          'Reports',
+          'Offices',
+          'Urban Visits',
+          'Events',
         ],
         'hide_child_menus' => [
-          'Institution Collection Camps',
           'Material Contributions',
-          'Dropping Center',
           'Manage Groups',
+        ],
+        'hide_child_menus_under' => [
+          'Individuals' => ['Collection Camps', 'Dropping Centers'],
+          'Institutes' => ['Institution Collection Camps', 'Dropping Center'],
         ],
       ],
       's2s_ho_team' => [
@@ -468,6 +475,7 @@ class NavigationPermissionService extends AutoSubscriber {
       if (\CRM_Core_Permission::check($role)) {
         $menusToHide = $menuConfig['hide_menus'] ?? [];
         $childMenusToHide = $menuConfig['hide_child_menus'] ?? [];
+        $childMenusUnder = $menuConfig['hide_child_menus_under'] ?? [];
 
         foreach ($params as $key => &$menu) {
           // Hide top-level menu.
@@ -477,8 +485,14 @@ class NavigationPermissionService extends AutoSubscriber {
 
           // Hide child menus.
           if (isset($menu['child']) && is_array($menu['child'])) {
+            $parentName = $menu['attributes']['name'] ?? '';
             foreach ($menu['child'] as $childKey => &$child) {
-              if (isset($child['attributes']['name']) && in_array($child['attributes']['name'], $childMenusToHide)) {
+              $childName = $child['attributes']['name'] ?? '';
+              if (in_array($childName, $childMenusToHide)) {
+                $child['attributes']['active'] = 0;
+              }
+              // Hide child menus scoped to a specific parent.
+              if (isset($childMenusUnder[$parentName]) && in_array($childName, $childMenusUnder[$parentName])) {
                 $child['attributes']['active'] = 0;
               }
             }
