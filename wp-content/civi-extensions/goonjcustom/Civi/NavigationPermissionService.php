@@ -155,6 +155,8 @@ class NavigationPermissionService extends AutoSubscriber {
           'Manage Price Sets',
           'Find Contributions',
           'NJPC Institution Goonj Activities',
+          'S2S Collection Camp',
+          'S2S Dropping Center',
           ],
       ],
       'mmt' => [
@@ -182,6 +184,8 @@ class NavigationPermissionService extends AutoSubscriber {
         'hide_child_menus' => [
           'Manage Groups',
           'NJPC Institution Goonj Activities',
+          'S2S Collection Camp',
+          'S2S Dropping Center',
         ],
       ],
       'goonj_chapter_admin' => [
@@ -193,6 +197,8 @@ class NavigationPermissionService extends AutoSubscriber {
         ],
         'hide_child_menus' => [
           'NJPC Institution Goonj Activities',
+          'S2S Collection Camp',
+          'S2S Dropping Center',
         ],
       ],
       'urban_ops_admin' => [
@@ -205,6 +211,8 @@ class NavigationPermissionService extends AutoSubscriber {
         ],
         'hide_child_menus' => [
           'NJPC Institution Goonj Activities',
+          'S2S Collection Camp',
+          'S2S Dropping Center',
         ],
       ],
       'urbanops' => [
@@ -220,6 +228,8 @@ class NavigationPermissionService extends AutoSubscriber {
           'Manage Groups',
           'Manage Duplicates',
           'NJPC Institution Goonj Activities',
+          'S2S Collection Camp',
+          'S2S Dropping Center',
         ],
       ],
       'ho_account' => [
@@ -243,6 +253,8 @@ class NavigationPermissionService extends AutoSubscriber {
         'hide_child_menus' => [
           'Manage Groups',
           'NJPC Institution Goonj Activities',
+          'S2S Collection Camp',
+          'S2S Dropping Center',
         ],
         'hide_child_menus_under' => [
           'Account - Institutions' => ['Add New'],
@@ -277,6 +289,8 @@ class NavigationPermissionService extends AutoSubscriber {
           'Manage Groups',
           'Manage Duplicates',
           'NJPC Institution Goonj Activities',
+          'S2S Collection Camp',
+          'S2S Dropping Center',
         ],
       ],
       'sanjha_team' => [
@@ -296,6 +310,8 @@ class NavigationPermissionService extends AutoSubscriber {
           'Institution Collection Camps',
           'Manage Groups',
           'NJPC Institution Goonj Activities',
+          'S2S Collection Camp',
+          'S2S Dropping Center',
         ],
       ],
       'data_team' => [
@@ -314,6 +330,8 @@ class NavigationPermissionService extends AutoSubscriber {
         ],
         'hide_child_menus' => [
           'NJPC Institution Goonj Activities',
+          'S2S Collection Camp',
+          'S2S Dropping Center',
         ],
       ],
       'project_team_ho' => [
@@ -335,6 +353,8 @@ class NavigationPermissionService extends AutoSubscriber {
         'hide_child_menus' => [
           'Manage Groups',
           'NJPC Institution Goonj Activities',
+          'S2S Collection Camp',
+          'S2S Dropping Center',
         ],
       ],
       'project_team_chapter' => [
@@ -349,6 +369,8 @@ class NavigationPermissionService extends AutoSubscriber {
         ],
         'hide_child_menus' => [
           'NJPC Institution Goonj Activities',
+          'S2S Collection Camp',
+          'S2S Dropping Center',
         ],
       ],
       'njpc_ho_team' => [
@@ -370,6 +392,8 @@ class NavigationPermissionService extends AutoSubscriber {
         'hide_child_menus' => [
           'Material Contributions',
           'Manage Groups',
+          'S2S Collection Camp',
+          'S2S Dropping Center',
         ],
         'hide_child_menus_under' => [
           'Individuals' => ['Collection Camps', 'Dropping Centers'],
@@ -393,6 +417,9 @@ class NavigationPermissionService extends AutoSubscriber {
           'Manage Groups',
           'NJPC Institution Goonj Activities',
         ],
+        'hide_child_menus_under' => [
+          'Institutes' => ['Institution Collection Camps', 'Dropping Center'],
+        ],
       ],
       'data_entry' => [
         'hide_menus' => [
@@ -413,6 +440,8 @@ class NavigationPermissionService extends AutoSubscriber {
         ],
         'hide_child_menus' => [
           'NJPC Institution Goonj Activities',
+          'S2S Collection Camp',
+          'S2S Dropping Center',
         ],
       ],
       'mmt_and_accounts_chapter_team' => [
@@ -445,6 +474,8 @@ class NavigationPermissionService extends AutoSubscriber {
           'Find Contributions',
           'Manage Groups',
           'NJPC Institution Goonj Activities',
+          'S2S Collection Camp',
+          'S2S Dropping Center',
         ],
       ],
       'urban_ops_and_accounts_chapter_team' => [
@@ -472,6 +503,8 @@ class NavigationPermissionService extends AutoSubscriber {
           'Find Contributions',
           'Manage Groups',
           'NJPC Institution Goonj Activities',
+          'S2S Collection Camp',
+          'S2S Dropping Center',
         ],
       ],
       'project_ho_and_accounts' => [
@@ -505,6 +538,8 @@ class NavigationPermissionService extends AutoSubscriber {
           'Find Contributions',
           'Manage Groups',
           'NJPC Institution Goonj Activities',
+          'S2S Collection Camp',
+          'S2S Dropping Center',
         ],
       ]
     ];
