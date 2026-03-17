@@ -100,7 +100,7 @@ class NavigationPermissionService extends AutoSubscriber {
    *
    */
   public function hideSearchIcon() {
-    $rolesWithHiddenSearch = ['communications_team', 'mmt', 'mmt_and_accounts_chapter_team', 'njpc_ho_team'];
+    $rolesWithHiddenSearch = ['communications_team', 'mmt', 'mmt_and_accounts_chapter_team', 'njpc_ho_team', 's2s_ho_team', 'project_team_ho'];
     foreach ($rolesWithHiddenSearch as $role) {
       if (\CRM_Core_Permission::check($role)) {
         \CRM_Core_Resources::singleton()->addStyle("
@@ -325,6 +325,12 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Offices',
           'MMT - Urban Visits',
           'Search',
+          'Contacts',
+          'Events',
+          'Campaigns',
+          'Reports',
+          'Support',
+          'Individuals',
         ],
         'hide_child_menus' => [
           'Manage Groups',
@@ -380,6 +386,8 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Offices',
           'MMT - Urban Visits',
           'Search',
+          'Contacts',
+          'Reports',
         ],
         'hide_child_menus' => [
           'Manage Groups',
