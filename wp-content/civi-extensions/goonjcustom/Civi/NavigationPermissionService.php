@@ -19,7 +19,7 @@ class NavigationPermissionService extends AutoSubscriber {
         ['hideButtonsForMMT'],
         ['hideAPIKeyTab'],
         ['hideContributionFields'],
-        ['hideSearchIcon'],
+        // ['hideSearchIcon'],
       ],
     ];
   }
