@@ -223,10 +223,13 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Offices',
           'MMT - Urban Visits',
           'My Office',
-          'Search',       
+          'Search',
         ],
         'hide_child_menus' => [
           'Manage Groups',
+        ],
+        'hide_child_menus_under' => [
+          'Account - Institutions' => ['Add New'],
         ],
       ],
       'communications_team' => [
