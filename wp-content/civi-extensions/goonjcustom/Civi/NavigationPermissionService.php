@@ -19,6 +19,7 @@ class NavigationPermissionService extends AutoSubscriber {
         ['hideButtonsForMMT'],
         ['hideAPIKeyTab'],
         ['hideContributionFields'],
+        ['hideSearchIcon'],
       ],
     ];
   }
@@ -98,6 +99,21 @@ class NavigationPermissionService extends AutoSubscriber {
   /**
    *
    */
+  public function hideSearchIcon() {
+    $rolesWithHiddenSearch = ['communications_team', 'mmt', 'mmt_and_accounts_chapter_team', 'njpc_ho_team', 's2s_ho_team', 'project_team_ho', 'sanjha_team'];
+    foreach ($rolesWithHiddenSearch as $role) {
+      if (\CRM_Core_Permission::check($role)) {
+        \CRM_Core_Resources::singleton()->addStyle("
+          #crm-qsearch { display: none !important; }
+        ");
+        break;
+      }
+    }
+  }
+
+  /**
+   *
+   */
   public function hideNavForRoles(&$params) {
     $isAdmin = \CRM_Core_Permission::check('admin');
     if ($isAdmin) {
@@ -125,6 +141,8 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Offices',
           'MMT - Urban Visits',
           'My Office',
+          'Project HO Institutes',
+          'Sanjha Institute List',
         ],
         'hide_child_menus' => [
           'Material Contributions',
@@ -138,6 +156,9 @@ class NavigationPermissionService extends AutoSubscriber {
           'Premiums',
           'Manage Price Sets',
           'Find Contributions',
+          'NJPC Institution Goonj Activities',
+          'S2S Institution Collection Camp',
+          'S2S Institution Dropping Center',
           ],
       ],
       'mmt' => [
@@ -156,9 +177,18 @@ class NavigationPermissionService extends AutoSubscriber {
           'Individuals',
           'Offices',
           'Search',
+          'Contacts',
+          'Events',
+          'Urban Visits',
+          'Reports',
+          'Project HO Institutes',
+          'Sanjha Institute List',
         ],
         'hide_child_menus' => [
           'Manage Groups',
+          'NJPC Institution Goonj Activities',
+          'S2S Institution Collection Camp',
+          'S2S Institution Dropping Center',
         ],
       ],
       'goonj_chapter_admin' => [
@@ -167,6 +197,13 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Institutes',
           'MMT - Offices',
           'MMT - Urban Visits',
+          'Project HO Institutes',
+          'Sanjha Institute List',
+        ],
+        'hide_child_menus' => [
+          'NJPC Institution Goonj Activities',
+          'S2S Institution Collection Camp',
+          'S2S Institution Dropping Center',
         ],
       ],
       'urban_ops_admin' => [
@@ -176,6 +213,13 @@ class NavigationPermissionService extends AutoSubscriber {
           'eck_entities',
           'My Office',
           'Contributions',
+          'Project HO Institutes',
+          'Sanjha Institute List',
+        ],
+        'hide_child_menus' => [
+          'NJPC Institution Goonj Activities',
+          'S2S Institution Collection Camp',
+          'S2S Institution Dropping Center',
         ],
       ],
       'urbanops' => [
@@ -186,10 +230,15 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Urban Visits',
           'Contributions',
           'Mailings',
+          'Project HO Institutes',
+          'Sanjha Institute List',
         ],
         'hide_child_menus' => [
           'Manage Groups',
           'Manage Duplicates',
+          'NJPC Institution Goonj Activities',
+          'S2S Institution Collection Camp',
+          'S2S Institution Dropping Center',
         ],
       ],
       'ho_account' => [
@@ -207,10 +256,19 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Offices',
           'MMT - Urban Visits',
           'My Office',
-          'Search',       
+          'Search',
+          'Reports',
+          'Project HO Institutes',
+          'Sanjha Institute List',
         ],
         'hide_child_menus' => [
           'Manage Groups',
+          'NJPC Institution Goonj Activities',
+          'S2S Institution Collection Camp',
+          'S2S Institution Dropping Center',
+        ],
+        'hide_child_menus_under' => [
+          'Account - Institutions' => ['Add New'],
         ],
       ],
       'communications_team' => [
@@ -228,6 +286,13 @@ class NavigationPermissionService extends AutoSubscriber {
           'Campaigns',
           'Administer',
           'Glific Integration',
+          'Support',
+          'Institutes',
+          'Urban Visits',
+          'Contacts',
+          'Reports',
+          'Project HO Institutes',
+          'Sanjha Institute List',
         ],
         'hide_child_menus' => [
           'Material Contributions',
@@ -236,6 +301,9 @@ class NavigationPermissionService extends AutoSubscriber {
           'Institution Goonj Activities',
           'Manage Groups',
           'Manage Duplicates',
+          'NJPC Institution Goonj Activities',
+          'S2S Institution Collection Camp',
+          'S2S Institution Dropping Center',
         ],
       ],
       'sanjha_team' => [
@@ -250,10 +318,20 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Offices',
           'MMT - Urban Visits',
           'Search',
+          'Contacts',
+          'Reports',
+          'Urban Visits',
+          'Project HO Institutes',
+          'Institutes',
         ],
         'hide_child_menus' => [
           'Institution Collection Camps',
           'Manage Groups',
+          'NJPC Institution Goonj Activities',
+          'S2S Institution Collection Camp',
+          'S2S Institution Dropping Center',
+          'Material Contributions',
+          'Institution Goonj Activities',
         ],
       ],
       'data_team' => [
@@ -269,6 +347,13 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Institutes',
           'MMT - Offices',
           'MMT - Urban Visits',
+          'Project HO Institutes',
+          'Sanjha Institute List',
+        ],
+        'hide_child_menus' => [
+          'NJPC Institution Goonj Activities',
+          'S2S Institution Collection Camp',
+          'S2S Institution Dropping Center',
         ],
       ],
       'project_team_ho' => [
@@ -280,9 +365,20 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Offices',
           'MMT - Urban Visits',
           'Search',
+          'Contacts',
+          'Events',
+          'Campaigns',
+          'Reports',
+          'Support',
+          'Individuals',
+          'Institutes',
+          'Sanjha Institute List',
         ],
         'hide_child_menus' => [
-        'Manage Groups',
+          'Manage Groups',
+          'NJPC Institution Goonj Activities',
+          'S2S Institution Collection Camp',
+          'S2S Institution Dropping Center',
         ],
       ],
       'project_team_chapter' => [
@@ -294,6 +390,13 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Institutes',
           'MMT - Offices',
           'MMT - Urban Visits',
+          'Project HO Institutes',
+          'Sanjha Institute List',
+        ],
+        'hide_child_menus' => [
+          'NJPC Institution Goonj Activities',
+          'S2S Institution Collection Camp',
+          'S2S Institution Dropping Center',
         ],
       ],
       'njpc_ho_team' => [
@@ -306,12 +409,23 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Offices',
           'MMT - Urban Visits',
           'Search',
+          'Contacts',
+          'Reports',
+          'Offices',
+          'Urban Visits',
+          'Events',
+          'Project HO Institutes',
+          'Sanjha Institute List',
         ],
         'hide_child_menus' => [
-          'Institution Collection Camps',
           'Material Contributions',
-          'Dropping Center',
           'Manage Groups',
+          'S2S Institution Collection Camp',
+          'S2S Institution Dropping Center',
+        ],
+        'hide_child_menus_under' => [
+          'Individuals' => ['Collection Camps', 'Dropping Centers'],
+          'Institutes' => ['Institution Collection Camps', 'Dropping Center', 'Institution Goonj Activities'],
         ],
       ],
       's2s_ho_team' => [
@@ -324,9 +438,17 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Offices',
           'MMT - Urban Visits',
           'Search',
+          'Contacts',
+          'Reports',
+          'Project HO Institutes',
+          'Sanjha Institute List',
         ],
         'hide_child_menus' => [
           'Manage Groups',
+          'NJPC Institution Goonj Activities',
+        ],
+        'hide_child_menus_under' => [
+          'Institutes' => ['Institution Collection Camps', 'Dropping Center'],
         ],
       ],
       'data_entry' => [
@@ -345,6 +467,13 @@ class NavigationPermissionService extends AutoSubscriber {
           'Induction',
           'Inductions',
           'Search',
+          'Project HO Institutes',
+          'Sanjha Institute List',
+        ],
+        'hide_child_menus' => [
+          'NJPC Institution Goonj Activities',
+          'S2S Institution Collection Camp',
+          'S2S Institution Dropping Center',
         ],
       ],
       'mmt_and_accounts_chapter_team' => [
@@ -359,6 +488,12 @@ class NavigationPermissionService extends AutoSubscriber {
           'Institutes',
           'My Office',
           'Search',
+          'Contacts',
+          'Events',
+          'Reports',
+          'Urban Visits',
+          'Project HO Institutes',
+          'Sanjha Institute List',
         ],
         'hide_child_menus' => [
           'Dashboard',
@@ -372,6 +507,9 @@ class NavigationPermissionService extends AutoSubscriber {
           'Manage Price Sets',
           'Find Contributions',
           'Manage Groups',
+          'NJPC Institution Goonj Activities',
+          'S2S Institution Collection Camp',
+          'S2S Institution Dropping Center',
         ],
       ],
       'urban_ops_and_accounts_chapter_team' => [
@@ -385,6 +523,8 @@ class NavigationPermissionService extends AutoSubscriber {
           'Account - Individuals',
           'Account - Institutions',
           'Search',
+          'Project HO Institutes',
+          'Sanjha Institute List',
         ],
         'hide_child_menus' => [
           'Contribution Reports',
@@ -398,6 +538,9 @@ class NavigationPermissionService extends AutoSubscriber {
           'Manage Price Sets',
           'Find Contributions',
           'Manage Groups',
+          'NJPC Institution Goonj Activities',
+          'S2S Institution Collection Camp',
+          'S2S Institution Dropping Center',
         ],
       ],
       'project_ho_and_accounts' => [
@@ -414,6 +557,12 @@ class NavigationPermissionService extends AutoSubscriber {
           'Account - Individuals',
           'Account - Institutions',
           'Search',
+          'Events',
+          'Campaigns',
+          'Reports',
+          'Offices',
+          'Project HO Institutes',
+          'Sanjha Institute List',
         ],
         'hide_child_menus' => [
           'New Contribution',
@@ -426,6 +575,9 @@ class NavigationPermissionService extends AutoSubscriber {
           'Manage Price Sets',
           'Find Contributions',
           'Manage Groups',
+          'NJPC Institution Goonj Activities',
+          'S2S Institution Collection Camp',
+          'S2S Institution Dropping Center',
         ],
       ]
     ];
@@ -434,6 +586,7 @@ class NavigationPermissionService extends AutoSubscriber {
       if (\CRM_Core_Permission::check($role)) {
         $menusToHide = $menuConfig['hide_menus'] ?? [];
         $childMenusToHide = $menuConfig['hide_child_menus'] ?? [];
+        $childMenusUnder = $menuConfig['hide_child_menus_under'] ?? [];
 
         foreach ($params as $key => &$menu) {
           // Hide top-level menu.
@@ -443,8 +596,14 @@ class NavigationPermissionService extends AutoSubscriber {
 
           // Hide child menus.
           if (isset($menu['child']) && is_array($menu['child'])) {
+            $parentName = $menu['attributes']['name'] ?? '';
             foreach ($menu['child'] as $childKey => &$child) {
-              if (isset($child['attributes']['name']) && in_array($child['attributes']['name'], $childMenusToHide)) {
+              $childName = $child['attributes']['name'] ?? '';
+              if (in_array($childName, $childMenusToHide)) {
+                $child['attributes']['active'] = 0;
+              }
+              // Hide child menus scoped to a specific parent.
+              if (isset($childMenusUnder[$parentName]) && in_array($childName, $childMenusUnder[$parentName])) {
                 $child['attributes']['active'] = 0;
               }
             }
