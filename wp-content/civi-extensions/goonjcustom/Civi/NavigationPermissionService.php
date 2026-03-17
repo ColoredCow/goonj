@@ -358,8 +358,8 @@ class NavigationPermissionService extends AutoSubscriber {
         'hide_child_menus' => [
           'Manage Groups',
           'NJPC Institution Goonj Activities',
-          'S2S Collection Camp',
-          'S2S Dropping Center',
+          'S2S Institution Collection Camp',
+          'S2S Institution Dropping Center',
         ],
       ],
       'project_team_chapter' => [
