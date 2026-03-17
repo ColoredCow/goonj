@@ -480,6 +480,10 @@ class NavigationPermissionService extends AutoSubscriber {
           'Account - Individuals',
           'Account - Institutions',
           'Search',
+          'Events',
+          'Campaigns',
+          'Reports',
+          'Offices',
         ],
         'hide_child_menus' => [
           'New Contribution',
