@@ -19,7 +19,7 @@ class NavigationPermissionService extends AutoSubscriber {
         ['hideButtonsForMMT'],
         ['hideAPIKeyTab'],
         ['hideContributionFields'],
-        // ['hideSearchIcon'],
+        ['hideSearchIcon'],
       ],
     ];
   }
@@ -100,6 +100,10 @@ class NavigationPermissionService extends AutoSubscriber {
    *
    */
   public function hideSearchIcon() {
+    $isAdmin = \CRM_Core_Permission::check('admin');
+    if ($isAdmin) {
+      return;
+    }
     $rolesWithHiddenSearch = ['communications_team', 'mmt', 'mmt_and_accounts_chapter_team', 'njpc_ho_team', 's2s_ho_team', 'project_team_ho', 'sanjha_team'];
     foreach ($rolesWithHiddenSearch as $role) {
       if (\CRM_Core_Permission::check($role)) {
