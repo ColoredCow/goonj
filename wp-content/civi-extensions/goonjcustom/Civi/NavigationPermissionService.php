@@ -175,6 +175,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Contacts',
           'Search',
           'Events',
+          'Urban Visits',
         ],
         'hide_child_menus' => [
           'Manage Groups',
