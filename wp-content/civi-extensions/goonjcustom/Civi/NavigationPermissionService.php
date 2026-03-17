@@ -100,7 +100,7 @@ class NavigationPermissionService extends AutoSubscriber {
    *
    */
   public function hideSearchIcon() {
-    $rolesWithHiddenSearch = ['communications_team', 'mmt', 'mmt_and_accounts_chapter_team', 'njpc_ho_team', 's2s_ho_team', 'project_team_ho'];
+    $rolesWithHiddenSearch = ['communications_team', 'mmt', 'mmt_and_accounts_chapter_team', 'njpc_ho_team', 's2s_ho_team', 'project_team_ho', 'sanjha_team'];
     foreach ($rolesWithHiddenSearch as $role) {
       if (\CRM_Core_Permission::check($role)) {
         \CRM_Core_Resources::singleton()->addStyle("
@@ -305,6 +305,9 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Offices',
           'MMT - Urban Visits',
           'Search',
+          'Contacts',
+          'Reports',
+          'Urban Visits',
         ],
         'hide_child_menus' => [
           'Institution Collection Camps',
@@ -312,6 +315,8 @@ class NavigationPermissionService extends AutoSubscriber {
           'NJPC Institution Goonj Activities',
           'S2S Collection Camp',
           'S2S Dropping Center',
+          'Material Contributions',
+          'Institution Goonj Activities'
         ],
       ],
       'data_team' => [
