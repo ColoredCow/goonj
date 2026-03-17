@@ -19,6 +19,7 @@ class NavigationPermissionService extends AutoSubscriber {
         ['hideButtonsForMMT'],
         ['hideAPIKeyTab'],
         ['hideContributionFields'],
+        ['hideSearchIconForMMT'],
       ],
     ];
   }
@@ -91,6 +92,21 @@ class NavigationPermissionService extends AutoSubscriber {
                     });
                 });
             ");
+      }
+    }
+  }
+
+  /**
+   *
+   */
+  public function hideSearchIconForMMT() {
+    $rolesWithHiddenSearch = ['communications_team'];
+    foreach ($rolesWithHiddenSearch as $role) {
+      if (\CRM_Core_Permission::check($role)) {
+        \CRM_Core_Resources::singleton()->addStyle("
+          #crm-qsearch { display: none !important; }
+        ");
+        break;
       }
     }
   }
@@ -228,6 +244,10 @@ class NavigationPermissionService extends AutoSubscriber {
           'Campaigns',
           'Administer',
           'Glific Integration',
+          'Support',
+          'Institutes',
+          'Urban Visits',
+          'Contacts',
         ],
         'hide_child_menus' => [
           'Material Contributions',
