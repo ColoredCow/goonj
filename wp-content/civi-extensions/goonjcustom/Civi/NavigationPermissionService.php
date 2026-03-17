@@ -142,6 +142,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Urban Visits',
           'My Office',
           'Project HO Institutes',
+          'Sanjha Institute List',
         ],
         'hide_child_menus' => [
           'Material Contributions',
@@ -182,6 +183,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Urban Visits',
           'Reports',
           'Project HO Institutes',
+          'Sanjha Institute List',
         ],
         'hide_child_menus' => [
           'Manage Groups',
@@ -197,6 +199,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Offices',
           'MMT - Urban Visits',
           'Project HO Institutes',
+          'Sanjha Institute List',
         ],
         'hide_child_menus' => [
           'NJPC Institution Goonj Activities',
@@ -212,6 +215,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'My Office',
           'Contributions',
           'Project HO Institutes',
+          'Sanjha Institute List',
         ],
         'hide_child_menus' => [
           'NJPC Institution Goonj Activities',
@@ -228,6 +232,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Contributions',
           'Mailings',
           'Project HO Institutes',
+          'Sanjha Institute List',
         ],
         'hide_child_menus' => [
           'Manage Groups',
@@ -255,6 +260,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Search',
           'Reports',
           'Project HO Institutes',
+          'Sanjha Institute List',
         ],
         'hide_child_menus' => [
           'Manage Groups',
@@ -287,6 +293,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Contacts',
           'Reports',
           'Project HO Institutes',
+          'Sanjha Institute List',
         ],
         'hide_child_menus' => [
           'Material Contributions',
@@ -316,6 +323,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Reports',
           'Urban Visits',
           'Project HO Institutes',
+          'Institutes',
         ],
         'hide_child_menus' => [
           'Institution Collection Camps',
@@ -341,6 +349,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Offices',
           'MMT - Urban Visits',
           'Project HO Institutes',
+          'Sanjha Institute List',
         ],
         'hide_child_menus' => [
           'NJPC Institution Goonj Activities',
@@ -364,6 +373,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Support',
           'Individuals',
           'Institutes',
+          'Sanjha Institute List',
         ],
         'hide_child_menus' => [
           'Manage Groups',
@@ -382,6 +392,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Offices',
           'MMT - Urban Visits',
           'Project HO Institutes',
+          'Sanjha Institute List',
         ],
         'hide_child_menus' => [
           'NJPC Institution Goonj Activities',
@@ -405,6 +416,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Urban Visits',
           'Events',
           'Project HO Institutes',
+          'Sanjha Institute List',
         ],
         'hide_child_menus' => [
           'Material Contributions',
@@ -430,6 +442,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Contacts',
           'Reports',
           'Project HO Institutes',
+          'Sanjha Institute List',
         ],
         'hide_child_menus' => [
           'Manage Groups',
@@ -456,6 +469,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Inductions',
           'Search',
           'Project HO Institutes',
+          'Sanjha Institute List',
         ],
         'hide_child_menus' => [
           'NJPC Institution Goonj Activities',
@@ -480,6 +494,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Reports',
           'Urban Visits',
           'Project HO Institutes',
+          'Sanjha Institute List',
         ],
         'hide_child_menus' => [
           'Dashboard',
@@ -510,6 +525,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Account - Institutions',
           'Search',
           'Project HO Institutes',
+          'Sanjha Institute List',
         ],
         'hide_child_menus' => [
           'Contribution Reports',
@@ -547,6 +563,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Reports',
           'Offices',
           'Project HO Institutes',
+          'Sanjha Institute List',
         ],
         'hide_child_menus' => [
           'New Contribution',
