@@ -141,6 +141,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Offices',
           'MMT - Urban Visits',
           'My Office',
+          'Project HO Institutes',
         ],
         'hide_child_menus' => [
           'Material Contributions',
@@ -180,6 +181,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Events',
           'Urban Visits',
           'Reports',
+          'Project HO Institutes',
         ],
         'hide_child_menus' => [
           'Manage Groups',
@@ -194,6 +196,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Institutes',
           'MMT - Offices',
           'MMT - Urban Visits',
+          'Project HO Institutes',
         ],
         'hide_child_menus' => [
           'NJPC Institution Goonj Activities',
@@ -208,6 +211,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'eck_entities',
           'My Office',
           'Contributions',
+          'Project HO Institutes',
         ],
         'hide_child_menus' => [
           'NJPC Institution Goonj Activities',
@@ -223,6 +227,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Urban Visits',
           'Contributions',
           'Mailings',
+          'Project HO Institutes',
         ],
         'hide_child_menus' => [
           'Manage Groups',
@@ -249,6 +254,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'My Office',
           'Search',
           'Reports',
+          'Project HO Institutes',
         ],
         'hide_child_menus' => [
           'Manage Groups',
@@ -280,6 +286,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Urban Visits',
           'Contacts',
           'Reports',
+          'Project HO Institutes',
         ],
         'hide_child_menus' => [
           'Material Contributions',
@@ -308,6 +315,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Contacts',
           'Reports',
           'Urban Visits',
+          'Project HO Institutes',
         ],
         'hide_child_menus' => [
           'Institution Collection Camps',
@@ -332,6 +340,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Institutes',
           'MMT - Offices',
           'MMT - Urban Visits',
+          'Project HO Institutes',
         ],
         'hide_child_menus' => [
           'NJPC Institution Goonj Activities',
@@ -354,6 +363,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Reports',
           'Support',
           'Individuals',
+          'Institutes',
         ],
         'hide_child_menus' => [
           'Manage Groups',
@@ -371,6 +381,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Institutes',
           'MMT - Offices',
           'MMT - Urban Visits',
+          'Project HO Institutes',
         ],
         'hide_child_menus' => [
           'NJPC Institution Goonj Activities',
@@ -393,6 +404,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Offices',
           'Urban Visits',
           'Events',
+          'Project HO Institutes',
         ],
         'hide_child_menus' => [
           'Material Contributions',
@@ -417,6 +429,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Search',
           'Contacts',
           'Reports',
+          'Project HO Institutes',
         ],
         'hide_child_menus' => [
           'Manage Groups',
@@ -442,6 +455,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Induction',
           'Inductions',
           'Search',
+          'Project HO Institutes',
         ],
         'hide_child_menus' => [
           'NJPC Institution Goonj Activities',
@@ -465,6 +479,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Events',
           'Reports',
           'Urban Visits',
+          'Project HO Institutes',
         ],
         'hide_child_menus' => [
           'Dashboard',
@@ -494,6 +509,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Account - Individuals',
           'Account - Institutions',
           'Search',
+          'Project HO Institutes',
         ],
         'hide_child_menus' => [
           'Contribution Reports',
@@ -530,6 +546,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Campaigns',
           'Reports',
           'Offices',
+          'Project HO Institutes',
         ],
         'hide_child_menus' => [
           'New Contribution',
