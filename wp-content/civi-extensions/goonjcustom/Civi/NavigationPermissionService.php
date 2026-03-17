@@ -154,6 +154,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Premiums',
           'Manage Price Sets',
           'Find Contributions',
+          'NJPC Institution Goonj Activities',
           ],
       ],
       'mmt' => [
@@ -180,6 +181,7 @@ class NavigationPermissionService extends AutoSubscriber {
         ],
         'hide_child_menus' => [
           'Manage Groups',
+          'NJPC Institution Goonj Activities',
         ],
       ],
       'goonj_chapter_admin' => [
@@ -189,6 +191,9 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Offices',
           'MMT - Urban Visits',
         ],
+        'hide_child_menus' => [
+          'NJPC Institution Goonj Activities',
+        ],
       ],
       'urban_ops_admin' => [
         'hide_menus' => [
@@ -197,6 +202,9 @@ class NavigationPermissionService extends AutoSubscriber {
           'eck_entities',
           'My Office',
           'Contributions',
+        ],
+        'hide_child_menus' => [
+          'NJPC Institution Goonj Activities',
         ],
       ],
       'urbanops' => [
@@ -211,6 +219,7 @@ class NavigationPermissionService extends AutoSubscriber {
         'hide_child_menus' => [
           'Manage Groups',
           'Manage Duplicates',
+          'NJPC Institution Goonj Activities',
         ],
       ],
       'ho_account' => [
@@ -233,6 +242,7 @@ class NavigationPermissionService extends AutoSubscriber {
         ],
         'hide_child_menus' => [
           'Manage Groups',
+          'NJPC Institution Goonj Activities',
         ],
         'hide_child_menus_under' => [
           'Account - Institutions' => ['Add New'],
@@ -266,6 +276,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Institution Goonj Activities',
           'Manage Groups',
           'Manage Duplicates',
+          'NJPC Institution Goonj Activities',
         ],
       ],
       'sanjha_team' => [
@@ -284,6 +295,7 @@ class NavigationPermissionService extends AutoSubscriber {
         'hide_child_menus' => [
           'Institution Collection Camps',
           'Manage Groups',
+          'NJPC Institution Goonj Activities',
         ],
       ],
       'data_team' => [
@@ -300,6 +312,9 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Offices',
           'MMT - Urban Visits',
         ],
+        'hide_child_menus' => [
+          'NJPC Institution Goonj Activities',
+        ],
       ],
       'project_team_ho' => [
         'hide_menus' => [
@@ -312,7 +327,8 @@ class NavigationPermissionService extends AutoSubscriber {
           'Search',
         ],
         'hide_child_menus' => [
-        'Manage Groups',
+          'Manage Groups',
+          'NJPC Institution Goonj Activities',
         ],
       ],
       'project_team_chapter' => [
@@ -324,6 +340,9 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Institutes',
           'MMT - Offices',
           'MMT - Urban Visits',
+        ],
+        'hide_child_menus' => [
+          'NJPC Institution Goonj Activities',
         ],
       ],
       'njpc_ho_team' => [
@@ -348,7 +367,7 @@ class NavigationPermissionService extends AutoSubscriber {
         ],
         'hide_child_menus_under' => [
           'Individuals' => ['Collection Camps', 'Dropping Centers'],
-          'Institutes' => ['Institution Collection Camps', 'Dropping Center'],
+          'Institutes' => ['Institution Collection Camps', 'Dropping Center', 'Institution Goonj Activities'],
         ],
       ],
       's2s_ho_team' => [
@@ -364,6 +383,7 @@ class NavigationPermissionService extends AutoSubscriber {
         ],
         'hide_child_menus' => [
           'Manage Groups',
+          'NJPC Institution Goonj Activities',
         ],
       ],
       'data_entry' => [
@@ -382,6 +402,9 @@ class NavigationPermissionService extends AutoSubscriber {
           'Induction',
           'Inductions',
           'Search',
+        ],
+        'hide_child_menus' => [
+          'NJPC Institution Goonj Activities',
         ],
       ],
       'mmt_and_accounts_chapter_team' => [
@@ -413,6 +436,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Manage Price Sets',
           'Find Contributions',
           'Manage Groups',
+          'NJPC Institution Goonj Activities',
         ],
       ],
       'urban_ops_and_accounts_chapter_team' => [
@@ -439,6 +463,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Manage Price Sets',
           'Find Contributions',
           'Manage Groups',
+          'NJPC Institution Goonj Activities',
         ],
       ],
       'project_ho_and_accounts' => [
@@ -467,6 +492,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'Manage Price Sets',
           'Find Contributions',
           'Manage Groups',
+          'NJPC Institution Goonj Activities',
         ],
       ]
     ];
