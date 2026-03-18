@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<menu>
+  <item>
+    <path>civicrm/ses/webhook</path>
+    <page_callback>CRM_Ses_Page_Webhook</page_callback>
+    <title>Amazon SES Webhook</title>
+    <access_callback>1</access_callback>
+    <is_public>true</is_public>
+  </item>
+</menu>
