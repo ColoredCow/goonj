@@ -20,6 +20,7 @@ class NavigationPermissionService extends AutoSubscriber {
         ['hideAPIKeyTab'],
         ['hideContributionFields'],
         ['hideSearchIcon'],
+        ['hideDownloadSpreadsheet'],
       ],
     ];
   }
@@ -113,6 +114,36 @@ class NavigationPermissionService extends AutoSubscriber {
         break;
       }
     }
+  }
+
+  /**
+   * Hides the "Download Spreadsheet" action from SearchKit displays
+   * for all roles except admin, urban_ops_admin, and ho_account.
+   */
+  public function hideDownloadSpreadsheet() {
+    $allowedRoles = ['admin', 'urban_ops_admin', 'ho_account'];
+    foreach ($allowedRoles as $role) {
+      if (\CRM_Core_Permission::check($role)) {
+        return;
+      }
+    }
+
+    \CRM_Core_Resources::singleton()->addScript("
+      (function() {
+        function removeDownloadSpreadsheet() {
+          document.querySelectorAll('.dropdown-menu li, .crm-search-tasks li').forEach(function(li) {
+            var el = li.querySelector('a, button');
+            if (el && el.textContent.trim() === 'Download Spreadsheet') {
+              li.style.display = 'none';
+            }
+          });
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+          removeDownloadSpreadsheet();
+          new MutationObserver(removeDownloadSpreadsheet).observe(document.body, { childList: true, subtree: true });
+        });
+      })();
+    ");
   }
 
   /**
