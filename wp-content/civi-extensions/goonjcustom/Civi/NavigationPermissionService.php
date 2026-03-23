@@ -21,6 +21,7 @@ class NavigationPermissionService extends AutoSubscriber {
         ['hideContributionFields'],
         ['hideSearchIcon'],
         ['hideDownloadSpreadsheet'],
+        ['hideDashlets'],
       ],
     ];
   }
@@ -144,6 +145,24 @@ class NavigationPermissionService extends AutoSubscriber {
         });
       })();
     ");
+  }
+
+  /**
+   * Hides the dashlet controls and all opened dashlets on the CiviCRM dashboard
+   * for roles that should not manage or view dashlets (e.g. mmt).
+   */
+  public function hideDashlets() {
+    $rolesWithHiddenDashlets = ['mmt', 'communications_team', 'data_entry', 'admin'];
+    foreach ($rolesWithHiddenDashlets as $role) {
+      if (\CRM_Core_Permission::check($role)) {
+        \CRM_Core_Resources::singleton()->addStyle("
+          .crm-inactive-dashlet-fieldset,
+          .crm-dashlet,
+          #refreshall { display: none !important; }
+        ");
+        break;
+      }
+    }
   }
 
   /**
