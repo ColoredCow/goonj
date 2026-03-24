@@ -152,6 +152,9 @@ class NavigationPermissionService extends AutoSubscriber {
    * for roles that should not manage or view dashlets (e.g. mmt).
    */
   public function hideDashlets() {
+    if (\CRM_Core_Permission::check('admin')) {
+      return;
+    }
     $rolesWithHiddenDashlets = [
       'mmt',
       'ho_account',
