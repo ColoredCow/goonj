@@ -35,7 +35,7 @@ class PanVerificationService extends AutoSubscriber {
    * Returns an array with keys 'pan_number' and 'pan_status', or null if not found.
    */
   public static function getContactPan(int $contactId): ?array {
-    $result = Contact::get(TRUE)
+    $result = Contact::get(FALSE)
       ->addSelect(
         'PAN_Card_Details.PAN_Card_Number',
         'PAN_Card_Details.PAN_Verification_Status:name'
@@ -60,7 +60,7 @@ class PanVerificationService extends AutoSubscriber {
    * Status should be one of the PAN_STATUS_* constants.
    */
   public static function saveContactPan(int $contactId, string $pan, string $status): void {
-    Contact::update(TRUE)
+    Contact::update(FALSE)
       ->addWhere('id', '=', $contactId)
       ->addValue('PAN_Card_Details.PAN_Card_Number', strtoupper(trim($pan)))
       ->addValue('PAN_Card_Details.PAN_Verification_Status:name', $status)
@@ -73,7 +73,7 @@ class PanVerificationService extends AutoSubscriber {
   public static function updateContributionPanVerified(int $contributionId, bool $verified): void {
     $status = $verified ? self::PAN_STATUS_VERIFIED : self::PAN_STATUS_NOT_VERIFIED;
 
-    Contribution::update(TRUE)
+    Contribution::update(FALSE)
       ->addWhere('id', '=', $contributionId)
       ->addValue('Contribution_Details.PAN_Card_Verified:name', $status)
       ->execute();
@@ -84,7 +84,7 @@ class PanVerificationService extends AutoSubscriber {
    * Returns the PAN string or null if not set.
    */
   public static function getContributionPanNumber(int $contributionId): ?string {
-    $result = Contribution::get(TRUE)
+    $result = Contribution::get(FALSE)
       ->addSelect('Contribution_Details.PAN_Card_Number')
       ->addWhere('id', '=', $contributionId)
       ->setLimit(1)
