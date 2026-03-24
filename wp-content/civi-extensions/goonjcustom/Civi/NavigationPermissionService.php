@@ -118,7 +118,7 @@ class NavigationPermissionService extends AutoSubscriber {
   }
 
   /**
-   * Hides the "Download Spreadsheet" action from SearchKit displays
+   * Hides the "Download Spreadsheet" and "Export Activities" actions from SearchKit displays
    * for all roles except admin, urban_ops_admin, and ho_account.
    */
   public function hideDownloadSpreadsheet() {
@@ -131,17 +131,18 @@ class NavigationPermissionService extends AutoSubscriber {
 
     \CRM_Core_Resources::singleton()->addScript("
       (function() {
-        function removeDownloadSpreadsheet() {
+        var labelsToHide = ['Download Spreadsheet', 'Export Activities'];
+        function removeRestrictedActions() {
           document.querySelectorAll('.dropdown-menu li, .crm-search-tasks li').forEach(function(li) {
             var el = li.querySelector('a, button');
-            if (el && el.textContent.trim() === 'Download Spreadsheet') {
+            if (el && labelsToHide.indexOf(el.textContent.trim()) !== -1) {
               li.style.display = 'none';
             }
           });
         }
         document.addEventListener('DOMContentLoaded', function() {
-          removeDownloadSpreadsheet();
-          new MutationObserver(removeDownloadSpreadsheet).observe(document.body, { childList: true, subtree: true });
+          removeRestrictedActions();
+          new MutationObserver(removeRestrictedActions).observe(document.body, { childList: true, subtree: true });
         });
       })();
     ");
