@@ -152,7 +152,19 @@ class NavigationPermissionService extends AutoSubscriber {
    * for roles that should not manage or view dashlets (e.g. mmt).
    */
   public function hideDashlets() {
-    $rolesWithHiddenDashlets = ['mmt', 'communications_team', 'data_entry', 'admin'];
+    $rolesWithHiddenDashlets = [
+      'mmt',
+      'ho_account',
+      'communications_team',
+      'sanjha_team',
+      'project_team_ho',
+      'project_team_chapter',
+      's2s_ho_team',
+      'njpc_ho_team',
+      'data_entry',
+      'mmt_and_accounts_chapter_team',
+      'project_ho_and_accounts',
+    ];
     foreach ($rolesWithHiddenDashlets as $role) {
       if (\CRM_Core_Permission::check($role)) {
         \CRM_Core_Resources::singleton()->addStyle("
