@@ -516,7 +516,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'S2S Institution Goonj Activities',
         ],
         'hide_child_menus_under' => [
-          'Individuals' => ['Collection Camps', 'Dropping Centers'],
+          'Individuals' => ['Collection Camps', 'Dropping Centers', 'Goonj Activities'],
           'Institutes' => ['Institution Collection Camps', 'Dropping Center', 'Institution Goonj Activities'],
         ],
       ],
@@ -541,7 +541,7 @@ class NavigationPermissionService extends AutoSubscriber {
           'NJPC Individual Goonj Activities',
         ],
         'hide_child_menus_under' => [
-          'Institutes' => ['Institution Collection Camps', 'Dropping Center'],
+          'Institutes' => ['Institution Collection Camps', 'Dropping Center', 'Institution Goonj Activities'],
         ],
       ],
       'data_entry' => [
