@@ -289,15 +289,6 @@ class NavigationPermissionService extends AutoSubscriber {
           'eck_entities',
           'My Office',
           'Contributions',
-          'Project HO Institutes',
-          'Sanjha Institute List',
-        ],
-        'hide_child_menus' => [
-          'NJPC Institution Goonj Activities',
-          'S2S Institution Collection Camp',
-          'NJPC Individual Goonj Activities',
-          'S2S Institution Dropping Center',
-          'S2S Institution Goonj Activities',
         ],
       ],
       'urbanops' => [
