@@ -55,7 +55,7 @@ class Team5000SubscriptionReminderService {
       ->addWhere('is_test', '=', TRUE)
       ->execute();
 
-    \Civi::log()->log('Team 5000: Active recurs to process: ' . $recurringContributions->count());
+    \Civi::log()->info('Team 5000: Active recurs to process: ' . $recurringContributions->count());
 
     foreach ($recurringContributions as $recur) {
       try {
@@ -75,7 +75,7 @@ class Team5000SubscriptionReminderService {
    */
   private static function processSubscription(array $recur, \DateTimeImmutable $now, string $from): void {
     if (empty($recur['start_date']) || empty($recur['installments'])) {
-      \Civi::log()->log('Team 5000: Skipping recur {id} — missing start_date or installments', [
+      \Civi::log()->info('Team 5000: Skipping recur {id} — missing start_date or installments', [
         'id' => $recur['id'],
       ]);
       return;
@@ -169,7 +169,7 @@ class Team5000SubscriptionReminderService {
       ->first();
 
     if (empty($contact['email.email'])) {
-      \Civi::log()->warning('Team 5000: Skipping reminder — no email for contact {id}', [
+      \Civi::log()->info('Team 5000: Skipping reminder — no email for contact {id}', [
         'id' => $contactId,
         'recur_id' => $recur['id'],
         'days_before' => $daysBefore,
