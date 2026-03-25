@@ -27,45 +27,63 @@ class Team5000SubscriptionReminderService {
    * each one for due reminders.
    */
   public static function processReminders(\DateTimeImmutable $now, string $from): void {
-    // Get unique recur IDs linked to the Team 5000 contribution page.
+    error_log('[Team5000Reminder] Cron started. Today: ' . $now->format('Y-m-d'));
+
+    // Get unique recur IDs via the first contribution of each Team 5000 subscription.
+    // The first contribution always has contribution_page_id = 7.
+    // Subsequent Razorpay payments have contribution_page_id = null, but we only
+    // need one match per recur — after that we work directly on civicrm_contribution_recur.
     $contributions = Contribution::get(FALSE)
       ->addSelect('contribution_recur_id')
       ->addWhere('contribution_page_id', '=', self::CONTRIBUTION_PAGE_ID)
       ->addWhere('contribution_recur_id', 'IS NOT NULL')
+      ->addWhere('is_test', '=', TRUE)
       ->execute();
 
     $recurIds = array_unique(array_column((array) $contributions, 'contribution_recur_id'));
+
+    error_log('[Team5000Reminder] Found ' . count($recurIds) . ' unique recur IDs for Team 5000');
 
     if (empty($recurIds)) {
       \Civi::log()->warning('Team 5000: No recurring contributions found for contribution page ID ' . self::CONTRIBUTION_PAGE_ID);
       return;
     }
 
-    // Fetch active recurring contributions (status_id = 2 is "In Progress" for recur).
+    // Fetch active recurring contributions.
+    // Status 2 = Pending (set by Razorpay on older subs), 5 = In Progress (standard CiviCRM active).
     $recurringContributions = ContributionRecur::get(FALSE)
-      ->addSelect('id', 'contact_id', 'start_date', 'installments', 'frequency_interval', 'frequency_unit', 'amount')
+      ->addSelect('id', 'contact_id', 'start_date', 'installments', 'frequency_interval', 'frequency_unit', 'amount', 'contribution_status_id')
       ->addWhere('id', 'IN', $recurIds)
-      ->addWhere('contribution_status_id', '=', 2)
+      ->addWhere('contribution_status_id:name', '=', 'In Progress')
+     ->addWhere('is_test', '=', TRUE)
       ->execute();
+
+    error_log('[Team5000Reminder] Active recurs to process: ' . $recurringContributions->count());
 
     foreach ($recurringContributions as $recur) {
       try {
         self::processSubscription($recur, $now, $from);
       }
       catch (\Exception $e) {
+        error_log('[Team5000Reminder] Exception for recur_id ' . $recur['id'] . ': ' . $e->getMessage());
         \Civi::log()->error('Team 5000: Error processing subscription reminder', [
           'recur_id' => $recur['id'],
           'error' => $e->getMessage(),
         ]);
       }
     }
+
+    error_log('[Team5000Reminder] Cron finished.');
   }
 
   /**
    * Checks if any reminder is due for the given subscription and sends it.
    */
   private static function processSubscription(array $recur, \DateTimeImmutable $now, string $from): void {
+    error_log('[Team5000Reminder] Processing recur_id=' . $recur['id'] . ' contact_id=' . $recur['contact_id'] . ' status=' . $recur['contribution_status_id']);
+
     if (empty($recur['start_date']) || empty($recur['installments'])) {
+      error_log('[Team5000Reminder] Skipping recur_id=' . $recur['id'] . ' — missing start_date or installments');
       \Civi::log()->warning('Team 5000: Skipping recur ID {id} — missing start_date or installments', [
         'id' => $recur['id'],
       ]);
@@ -80,15 +98,20 @@ class Team5000SubscriptionReminderService {
     );
 
     $today = $now->format('Y-m-d');
+    error_log('[Team5000Reminder] recur_id=' . $recur['id'] . ' start_date=' . $recur['start_date'] . ' installments=' . $recur['installments'] . ' calculated end_date=' . $endDate . ' today=' . $today);
 
     foreach (self::REMINDER_DAYS as $daysBefore) {
       $triggerDate = (new \DateTimeImmutable($endDate))->modify("-{$daysBefore} days")->format('Y-m-d');
+      error_log('[Team5000Reminder] recur_id=' . $recur['id'] . ' checking ' . $daysBefore . '-day window: trigger_date=' . $triggerDate);
 
       if ($today !== $triggerDate) {
         continue;
       }
 
+      error_log('[Team5000Reminder] recur_id=' . $recur['id'] . ' — ' . $daysBefore . '-day reminder is DUE today');
+
       if (self::hasReminderBeenSent($recur['id'], $recur['contact_id'], $daysBefore)) {
+        error_log('[Team5000Reminder] recur_id=' . $recur['id'] . ' — ' . $daysBefore . '-day reminder already sent, skipping');
         continue;
       }
 
@@ -135,7 +158,7 @@ class Team5000SubscriptionReminderService {
       ->addWhere('activity_type_id:name', '=', self::ACTIVITY_TYPE_NAME)
       ->addWhere('target_contact_id', '=', $contactId)
       ->addWhere('subject', 'LIKE', '%recur_id:' . $recurId . '%')
-      ->addWhere('subject', 'LIKE', '%-' . $daysBefore . ' days%')
+      ->addWhere('subject', 'LIKE', '%- ' . $daysBefore . ' days%')
       ->execute()
       ->first();
 
@@ -177,9 +200,12 @@ class Team5000SubscriptionReminderService {
       'html' => self::getReminderEmailHtml($donorName, $endDate, $daysBefore, $recur['amount'] ?? NULL),
     ];
 
+    error_log('[Team5000Reminder] Sending ' . $daysBefore . '-day reminder to ' . $donorEmail . ' for recur_id=' . $recur['id']);
+
     $emailResult = \CRM_Utils_Mail::send($mailParams);
 
     if (!$emailResult) {
+      error_log('[Team5000Reminder] FAILED to send email to ' . $donorEmail . ' for recur_id=' . $recur['id']);
       \Civi::log()->error('Team 5000: Failed to send reminder email', [
         'contact_id' => $contactId,
         'email' => $donorEmail,
@@ -188,6 +214,8 @@ class Team5000SubscriptionReminderService {
       ]);
       return;
     }
+
+    error_log('[Team5000Reminder] Email sent successfully to ' . $donorEmail . ' for recur_id=' . $recur['id'] . ' (' . $daysBefore . ' days)');
 
     self::createReminderActivity($contactId, $recur['id'], $daysBefore);
   }
