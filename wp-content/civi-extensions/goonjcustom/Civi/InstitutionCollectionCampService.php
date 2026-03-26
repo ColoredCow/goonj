@@ -76,9 +76,33 @@ class InstitutionCollectionCampService extends AutoSubscriber {
 
     $dataArray = $objectRef['data'] ?? [];
     $eckCollectionCampId = $dataArray['Eck_Collection_Camp1'][0]['id'] ?? NULL;
-    $organizationId = $dataArray['Organization1'][0]['id'] ?? NULL;
+    $organizationId = $dataArray['Organization1'][0]['id']
+      ?? $dataArray['Organization1'][0]['fields']['id']
+      ?? NULL;
 
     if (!$eckCollectionCampId || !$organizationId) {
+      return;
+    }
+
+    $campFields = $dataArray['Eck_Collection_Camp1'][0]['fields'] ?? [];
+
+    $fieldGroupMapping = [
+      'Institution_Collection_Camp_Intent' => 'Institution_Collection_Camp_Intent.You_wish_to_register_as:name',
+      'Institution_Dropping_Center_Intent' => 'Institution_Dropping_Center_Intent.You_wish_to_register_as:name',
+      'Institution_Goonj_Activities'       => 'Institution_Goonj_Activities.You_wish_to_register_as:name',
+    ];
+
+    $registerAsField = NULL;
+    foreach ($campFields as $fieldKey => $_) {
+      foreach ($fieldGroupMapping as $prefix => $field) {
+        if (str_starts_with($fieldKey, $prefix . '.')) {
+          $registerAsField = $field;
+          break 2;
+        }
+      }
+    }
+
+    if (!$registerAsField) {
       return;
     }
 
@@ -110,7 +134,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       }
 
       EckEntity::update('Collection_Camp', FALSE)
-        ->addValue('Institution_Collection_Camp_Intent.You_wish_to_register_as:name', $registerAs)
+        ->addValue($registerAsField, $registerAs)
         ->addWhere('id', '=', $eckCollectionCampId)
         ->execute();
 
