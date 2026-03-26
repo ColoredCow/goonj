@@ -22,25 +22,41 @@ if (php_sapi_name() != 'cli') {
 
 // Delay in microseconds between API calls to avoid rate limiting (0.5 seconds).
 define('API_CALL_DELAY_US', 500000);
+define('VERIFICATION_LOG_PATH', __DIR__ . '/pan-verification-log.csv');
 
 $stats = [
-  'total'       => 0,
-  'verified'    => 0,
+  'total'        => 0,
+  'verified'     => 0,
   'not_verified' => 0,
-  'api_error'   => 0,
+  'api_error'    => 0,
 ];
 
 /**
- * Fetch contacts who have a PAN card saved on their profile and API has not been called yet.
- * No need to go through contributions — PAN was already populated by the backfill script.
+ * Fetch contacts who:
+ * - Have a PAN card saved on their Contact record
+ * - PAN_API_Status = Not_Called (API not yet called)
+ * - PAN_Verification_Status = Not_Verified
  */
 function fetchContactsToVerify(): array {
   return Contact::get(FALSE)
     ->addSelect('id', 'display_name', 'PAN_Card_Details.PAN_Card_Number')
     ->addWhere('PAN_Card_Details.PAN_Card_Number', 'IS NOT EMPTY')
     ->addWhere('PAN_Card_Details.PAN_API_Status:name', '=', 'Not_Called')
+    ->addWhere('PAN_Card_Details.PAN_Verification_Status:name', '=', PanVerificationService::PAN_STATUS_NOT_VERIFIED)
     ->execute()
     ->getArrayCopy();
+}
+
+/**
+ * Write the verification log CSV.
+ */
+function writeVerificationLog(array $log): void {
+  $file = fopen(VERIFICATION_LOG_PATH, 'w');
+  fputcsv($file, ['Contact ID', 'Contact Name', 'PAN Number', 'Result', 'Message']);
+  foreach ($log as $row) {
+    fputcsv($file, $row);
+  }
+  fclose($file);
 }
 
 /**
@@ -49,17 +65,19 @@ function fetchContactsToVerify(): array {
 function runBulkVerification(array &$stats): void {
   $contacts = fetchContactsToVerify();
   $stats['total'] = count($contacts);
-  echo "Contacts with unverified PAN to process: {$stats['total']}\n\n";
+  echo "Contacts to process: {$stats['total']}\n\n";
 
   if (empty($contacts)) {
     echo "Nothing to process.\n";
     return;
   }
 
+  $log = [];
+
   foreach ($contacts as $contact) {
     $contactId = $contact['id'];
-    $pan = $contact['PAN_Card_Details.PAN_Card_Number'];
-    $name = $contact['display_name'];
+    $pan       = $contact['PAN_Card_Details.PAN_Card_Number'];
+    $name      = $contact['display_name'];
 
     echo "Processing contact ID $contactId ($name) — PAN: $pan ... ";
 
@@ -68,6 +86,7 @@ function runBulkVerification(array &$stats): void {
     if (!empty($result['api_error'])) {
       echo "API ERROR: {$result['message']}\n";
       $stats['api_error']++;
+      $log[] = [$contactId, $name, $pan, 'API Error', $result['message']];
       // Do NOT mark as Called — leave as Not_Called so it is retried on next run.
       usleep(API_CALL_DELAY_US);
       continue;
@@ -77,11 +96,13 @@ function runBulkVerification(array &$stats): void {
       PanVerificationService::saveContactPan($contactId, $pan, PanVerificationService::PAN_STATUS_VERIFIED);
       echo "VERIFIED ✓\n";
       $stats['verified']++;
+      $log[] = [$contactId, $name, $pan, 'Verified', $result['message']];
     }
     else {
-      // PAN_Verification_Status stays Not_Verified — no change needed.
+      // PAN_Verification_Status stays Not_Verified — no update needed.
       echo "NOT VERIFIED ✗ — {$result['message']}\n";
       $stats['not_verified']++;
+      $log[] = [$contactId, $name, $pan, 'Not Verified', $result['message']];
     }
 
     // Mark API as called — contact will never be processed again on rerun.
@@ -90,16 +111,18 @@ function runBulkVerification(array &$stats): void {
       ->addValue('PAN_Card_Details.PAN_API_Status:name', 'Called')
       ->execute();
 
-    // Delay between API calls to respect rate limits.
     usleep(API_CALL_DELAY_US);
   }
+
+  writeVerificationLog($log);
+  echo "\nLog saved to: " . realpath(dirname(VERIFICATION_LOG_PATH)) . "/pan-verification-log.csv\n";
 }
 
 // Run the process.
-echo "=== Starting Bulk PAN Verification (FY 2025-2026) ===\n\n";
+echo "=== Starting Bulk PAN Verification ===\n\n";
 runBulkVerification($stats);
 
-echo "\n=== Bulk Verification Complete ===\n";
+echo "\n=== Complete ===\n";
 echo "Total processed : {$stats['total']}\n";
 echo "Verified        : {$stats['verified']}\n";
 echo "Not Verified    : {$stats['not_verified']}\n";
