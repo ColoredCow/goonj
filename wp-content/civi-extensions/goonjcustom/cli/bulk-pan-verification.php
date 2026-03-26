@@ -41,7 +41,10 @@ function fetchContactsToVerify(): array {
   return Contact::get(FALSE)
     ->addSelect('id', 'display_name', 'PAN_Card_Details.PAN_Card_Number')
     ->addWhere('PAN_Card_Details.PAN_Card_Number', 'IS NOT EMPTY')
-    ->addWhere('PAN_Card_Details.PAN_API_Status:name', '=', 'Not_Called')
+    ->addClause('OR',
+      ['PAN_Card_Details.PAN_API_Status:name', '=', 'Not_Called'],
+      ['PAN_Card_Details.PAN_API_Status', 'IS NULL']
+    )
     ->addWhere('PAN_Card_Details.PAN_Verification_Status:name', '=', PanVerificationService::PAN_STATUS_NOT_VERIFIED)
     ->execute()
     ->getArrayCopy();
