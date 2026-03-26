@@ -80,6 +80,14 @@ class PanVerificationService extends AutoSubscriber {
   }
 
   /**
+   * Call the PAN verification API and return a standardized result.
+   * Delegates to PanApiClient — no HTTP logic lives here.
+   */
+  public static function verifyPanViaApi(string $pan): array {
+    return PanApiClient::verify($pan);
+  }
+
+  /**
    * Fetch the PAN number stored against a specific Contribution record.
    * Returns the PAN string or null if not set.
    */
