@@ -2528,6 +2528,30 @@ class CollectionCampService extends AutoSubscriber {
   }
 
   /**
+   * Returns the invoice sequence name for the current Indian financial year (Apr–Mar).
+   * E.g., returns 'GNJCRM_26_27' from 1 Apr 2026 to 31 Mar 2027.
+   */
+  private static function getCurrentFinancialYearSequenceName(): string {
+    $now = new \DateTime('now', new \DateTimeZone('Asia/Kolkata'));
+    $year = (int) $now->format('Y');
+    $month = (int) $now->format('n');
+
+    if ($month < 4) {
+      $fyStart = $year - 1;
+      $fyEnd = $year;
+    }
+    else {
+      $fyStart = $year;
+      $fyEnd = $year + 1;
+    }
+
+    $startShort = substr((string) $fyStart, 2);
+    $endShort = substr((string) $fyEnd, 2);
+
+    return "GNJCRM_{$startShort}_{$endShort}";
+  }
+
+  /**
    *
    */
   public static function generateInvoiceNumber(string $op, string $objectName, int $objectId, &$objectRef) {
@@ -2551,7 +2575,7 @@ class CollectionCampService extends AutoSubscriber {
         return;
       }
 
-      $invoiceSeqName = 'GNJCRM_25_26';
+      $invoiceSeqName = self::getCurrentFinancialYearSequenceName();
 
       \CRM_Core_DAO::executeQuery('START TRANSACTION');
 
