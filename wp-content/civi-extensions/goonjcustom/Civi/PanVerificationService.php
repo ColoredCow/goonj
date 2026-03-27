@@ -57,10 +57,25 @@ class PanVerificationService extends AutoSubscriber {
       return;
     }
 
-    $contactId = $form->getVar('_contactID');
+    $contactId = self::resolveContactIdFromFormFields($fields);
 
     if (!$contactId) {
-      \Civi::log()->warning('PanVerification: could not resolve contact_id on contribution form, skipping verification.');
+      // New contact — contact doesn't exist yet in CiviCRM. Still verify PAN via API.
+      $email      = self::extractEmailFromFields($fields);
+      $result     = self::verifyPanViaApi($enteredPan);
+      $panFieldKey = self::getPanFieldKey();
+
+      if ($result['verified']) {
+        \Civi::log()->info('PanVerification: new donor, PAN verified via API — pending contact creation.', [
+          'email' => $email,
+        ]);
+        self::$pendingPanVerification['email:' . $email] = ['verified' => TRUE, 'pan' => $enteredPan];
+      }
+      else {
+        if ($panFieldKey) {
+          $errors[$panFieldKey] = 'PAN card verification failed. ' . (!empty($result['message']) ? $result['message'] : 'Please enter a valid PAN card to proceed.');
+        }
+      }
       return;
     }
 
@@ -125,18 +140,40 @@ class PanVerificationService extends AutoSubscriber {
 
     $contactId = $contribution['contact_id'];
 
-    if (!isset(self::$pendingPanVerification[$contactId])) {
+    // Existing contact path — keyed by contact_id.
+    if (isset(self::$pendingPanVerification[$contactId])) {
+      \Civi::log()->info('PanVerification: marking contribution PAN as verified.', [
+        'contribution_id' => $objectId,
+        'contact_id'      => $contactId,
+      ]);
+      $verified = self::$pendingPanVerification[$contactId]['verified'];
+      unset(self::$pendingPanVerification[$contactId]);
+      self::updateContributionPanVerified($objectId, $verified);
       return;
     }
 
-    \Civi::log()->info('PanVerification: marking contribution PAN as verified.', [
-      'contribution_id' => $objectId,
-      'contact_id'      => $contactId,
-    ]);
+    // New contact path — keyed by email (contact was created after validateForm).
+    $contact = Contact::get(FALSE)
+      ->addSelect('email_primary.email')
+      ->addWhere('id', '=', $contactId)
+      ->setLimit(1)
+      ->execute()
+      ->first();
 
-    $verified = self::$pendingPanVerification[$contactId]['verified'];
-    unset(self::$pendingPanVerification[$contactId]);
-    self::updateContributionPanVerified($objectId, $verified);
+    $emailKey = $contact && !empty($contact['email_primary.email'])
+      ? 'email:' . $contact['email_primary.email']
+      : NULL;
+
+    if ($emailKey && isset(self::$pendingPanVerification[$emailKey])) {
+      $pending = self::$pendingPanVerification[$emailKey];
+      unset(self::$pendingPanVerification[$emailKey]);
+      \Civi::log()->info('PanVerification: new contact created, saving PAN and marking contribution as verified.', [
+        'contribution_id' => $objectId,
+        'contact_id'      => $contactId,
+      ]);
+      self::saveContactPan($contactId, $pending['pan'], self::PAN_STATUS_VERIFIED);
+      self::updateContributionPanVerified($objectId, $pending['verified']);
+    }
   }
 
   /**
@@ -159,6 +196,46 @@ class PanVerificationService extends AutoSubscriber {
     }
 
     return $panFieldKey ?: NULL;
+  }
+
+  /**
+   * Attempt to resolve a contact ID from the submitted form fields using email + first_name.
+   * Used for all contribution form submissions (both logged-in and anonymous).
+   * Returns the contact ID if an existing contact is found, or NULL for new donors.
+   */
+  private static function resolveContactIdFromFormFields(array $fields): ?int {
+    $email     = self::extractEmailFromFields($fields);
+    $firstName = $fields['first_name'] ?? NULL;
+
+    if (!$email) {
+      return NULL;
+    }
+
+    $query = Contact::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('email_primary.email', '=', $email)
+      ->addWhere('is_deleted', '=', FALSE);
+
+    if ($firstName) {
+      $query->addWhere('first_name', '=', $firstName);
+    }
+
+    $contact = $query->setLimit(1)->execute()->first();
+
+    return $contact ? (int) $contact['id'] : NULL;
+  }
+
+  /**
+   * Extract the first email value from a form fields array.
+   * Email field names vary (e.g. 'email-5', 'email_1') so we match by key prefix.
+   */
+  private static function extractEmailFromFields(array $fields): ?string {
+    foreach (array_keys($fields) as $key) {
+      if (strpos($key, 'email') !== FALSE && !empty($fields[$key])) {
+        return $fields[$key];
+      }
+    }
+    return NULL;
   }
 
   /**
