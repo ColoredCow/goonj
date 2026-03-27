@@ -42,7 +42,6 @@ class PanVerificationService extends AutoSubscriber {
     }
 
     $pan = self::getPanFromParams($fields);
-    error_log('[PanVerification] validateForm — PAN: ' . ($pan ?? 'NULL'));
 
     if (empty($pan)) {
       return;
@@ -51,7 +50,6 @@ class PanVerificationService extends AutoSubscriber {
     $enteredPan = strtoupper(trim($pan));
 
     if (!self::isValidPanFormat($enteredPan)) {
-      error_log('[PanVerification] validateForm — invalid format: ' . $enteredPan);
       $panFieldKey = self::getPanFieldKey();
       if ($panFieldKey) {
         $errors[$panFieldKey] = 'Invalid PAN card format. Correct format: ABCDE1234F (5 letters, 4 digits, 1 letter).';
@@ -60,26 +58,21 @@ class PanVerificationService extends AutoSubscriber {
     }
 
     $contactId = $form->getVar('_contactID');
-    error_log('[PanVerification] validateForm — contact_id: ' . ($contactId ?? 'NULL') . ', PAN: ' . $enteredPan);
 
     if (!$contactId) {
-      error_log('[PanVerification] validateForm — could not resolve contact_id, skipping verification');
+      \Civi::log()->warning('PanVerification: could not resolve contact_id on contribution form, skipping verification.');
       return;
     }
 
     $contactPan  = self::getContactPan($contactId);
     $existingPan = strtoupper(trim($contactPan['pan_number'] ?? ''));
 
-    error_log('[PanVerification] validateForm — contact check: entered=' . $enteredPan . ', existing=' . $existingPan . ', status=' . ($contactPan['pan_status'] ?? 'NULL'));
-
     // Same PAN already saved on Contact.
     if ($existingPan === $enteredPan && !empty($existingPan)) {
       if ($contactPan['pan_status'] === self::PAN_STATUS_VERIFIED) {
-        error_log('[PanVerification] validateForm — already verified on contact, skipping API. contact_id: ' . $contactId);
         self::$pendingPanVerification[$contactId] = ['verified' => TRUE];
         return;
       }
-      error_log('[PanVerification] validateForm — same PAN not verified, blocking. contact_id: ' . $contactId);
       $panFieldKey = self::getPanFieldKey();
       if ($panFieldKey) {
         $errors[$panFieldKey] = 'PAN card verification failed. Your PAN card could not be verified. Please enter a valid PAN card to proceed.';
@@ -88,16 +81,16 @@ class PanVerificationService extends AutoSubscriber {
     }
 
     // New or different PAN — call API.
-    error_log('[PanVerification] validateForm — calling API. contact_id: ' . $contactId . ', PAN: ' . $enteredPan);
     $result = self::verifyPanViaApi($enteredPan);
 
     if ($result['verified']) {
-      error_log('[PanVerification] validateForm — API verified, saving to contact. contact_id: ' . $contactId);
+      \Civi::log()->info('PanVerification: PAN verified via API and saved to contact.', [
+        'contact_id' => $contactId,
+      ]);
       self::saveContactPan($contactId, $enteredPan, self::PAN_STATUS_VERIFIED);
       self::$pendingPanVerification[$contactId] = ['verified' => TRUE];
     }
     else {
-      error_log('[PanVerification] validateForm — API not verified. contact_id: ' . $contactId . ', message: ' . ($result['message'] ?? ''));
       $panFieldKey = self::getPanFieldKey();
       if ($panFieldKey) {
         $errors[$panFieldKey] = 'PAN card verification failed. ' . (!empty($result['message']) ? $result['message'] : 'Please enter a valid PAN card to proceed.');
@@ -126,7 +119,7 @@ class PanVerificationService extends AutoSubscriber {
       ->first();
 
     if (!$contribution) {
-      error_log('[PanVerification] post hook — contribution not found: contribution_id=' . $objectId);
+      \Civi::log()->warning('PanVerification: contribution not found in post hook.', ['contribution_id' => $objectId]);
       return;
     }
 
@@ -136,7 +129,10 @@ class PanVerificationService extends AutoSubscriber {
       return;
     }
 
-    error_log('[PanVerification] post hook — marking contribution as verified. contribution_id=' . $objectId . ', contact_id=' . $contactId);
+    \Civi::log()->info('PanVerification: marking contribution PAN as verified.', [
+      'contribution_id' => $objectId,
+      'contact_id'      => $contactId,
+    ]);
 
     $verified = self::$pendingPanVerification[$contactId]['verified'];
     unset(self::$pendingPanVerification[$contactId]);
