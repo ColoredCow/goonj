@@ -208,8 +208,9 @@ class PanVerificationService extends AutoSubscriber {
 
     error_log('[PanVerification] post hook — marking contribution as verified. contribution_id=' . $objectId . ', contact_id=' . $contactId);
 
-    self::updateContributionPanVerified($objectId, self::$pendingPanVerification[$contactId]['verified']);
+    $verified = self::$pendingPanVerification[$contactId]['verified'];
     unset(self::$pendingPanVerification[$contactId]);
+    self::updateContributionPanVerified($objectId, $verified);
   }
 
   /**
