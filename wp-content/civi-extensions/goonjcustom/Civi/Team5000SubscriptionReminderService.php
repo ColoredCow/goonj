@@ -16,7 +16,7 @@ use Civi\Api4\ContributionRecur;
 class Team5000SubscriptionReminderService {
 
   const ACTIVITY_TYPE_NAME = 'Team 5000 Subscription Reminder';
-  const CONTRIBUTION_PAGE_ID = 7;
+  const CONTRIBUTION_PAGE_NAME = 'Team_5000';
   const REMINDER_DAYS = [7, 3, 1];
   const CC_RECIPIENTS = 'priyanka@goonj.org, accounts@goonj.org';
 
@@ -34,7 +34,7 @@ class Team5000SubscriptionReminderService {
     // need one match per recur — after that we work directly on civicrm_contribution_recur.
     $contributions = Contribution::get(FALSE)
       ->addSelect('contribution_recur_id')
-      ->addWhere('contribution_page_id', '=', self::CONTRIBUTION_PAGE_ID)
+      ->addWhere('contribution_page_id:name', '=', self::CONTRIBUTION_PAGE_NAME)
       ->addWhere('contribution_recur_id', 'IS NOT NULL')
       ->addWhere('is_test', '=', TRUE)
       ->execute();
@@ -42,7 +42,7 @@ class Team5000SubscriptionReminderService {
     $recurIds = array_unique(array_column((array) $contributions, 'contribution_recur_id'));
 
     if (empty($recurIds)) {
-      \Civi::log()->warning('Team 5000: No recurring contributions found for contribution page ID ' . self::CONTRIBUTION_PAGE_ID);
+      \Civi::log()->warning('Team 5000: No recurring contributions found for contribution page: ' . self::CONTRIBUTION_PAGE_NAME);
       return;
     }
 
