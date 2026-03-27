@@ -14,6 +14,7 @@ class PanVerificationService extends AutoSubscriber {
 
   const PAN_STATUS_NOT_VERIFIED = 'Not_Verified';
   const PAN_STATUS_VERIFIED = 'Verified';
+  const PAN_VERIFICATION_FAILED_MESSAGE = 'Your PAN card could not be verified. Please double-check your PAN number. If you do not have a valid PAN card, please uncheck the 80G tax exemption option to proceed with your donation without it.';
 
   /**
    * Stores PAN verification result between validateForm/pre and post hooks.
@@ -73,7 +74,7 @@ class PanVerificationService extends AutoSubscriber {
       }
       else {
         if ($panFieldKey) {
-          $errors[$panFieldKey] = 'PAN card verification failed. ' . (!empty($result['message']) ? $result['message'] : 'Please enter a valid PAN card to proceed.');
+          $errors[$panFieldKey] = self::PAN_VERIFICATION_FAILED_MESSAGE;
         }
       }
       return;
@@ -90,7 +91,7 @@ class PanVerificationService extends AutoSubscriber {
       }
       $panFieldKey = self::getPanFieldKey();
       if ($panFieldKey) {
-        $errors[$panFieldKey] = 'PAN card verification failed. Your PAN card could not be verified. Please enter a valid PAN card to proceed.';
+        $errors[$panFieldKey] = self::PAN_VERIFICATION_FAILED_MESSAGE;
       }
       return;
     }
@@ -108,7 +109,7 @@ class PanVerificationService extends AutoSubscriber {
     else {
       $panFieldKey = self::getPanFieldKey();
       if ($panFieldKey) {
-        $errors[$panFieldKey] = 'PAN card verification failed. ' . (!empty($result['message']) ? $result['message'] : 'Please enter a valid PAN card to proceed.');
+        $errors[$panFieldKey] = self::PAN_VERIFICATION_FAILED_MESSAGE;
       }
     }
   }
