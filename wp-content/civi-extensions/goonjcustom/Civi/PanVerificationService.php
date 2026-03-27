@@ -38,7 +38,6 @@ class PanVerificationService extends AutoSubscriber {
    * Sets $pendingPanVerification so the post hook can mark the contribution.
    */
   public static function onContributionFormValidate($formName, &$fields, &$files, &$form, &$errors): void {
-    error_log('running this function');
     if ($formName !== 'CRM_Contribute_Form_Contribution_Main') {
       return;
     }
@@ -185,6 +184,10 @@ class PanVerificationService extends AutoSubscriber {
    */
   public static function onContributionPostSave($op, $objectName, $objectId, &$objectRef): void {
     if ($objectName !== 'Contribution' || ($op !== 'create' && $op !== 'edit')) {
+      return;
+    }
+
+    if (empty(self::$pendingPanVerification)) {
       return;
     }
 
