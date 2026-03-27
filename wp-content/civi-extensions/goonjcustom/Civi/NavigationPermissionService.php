@@ -471,7 +471,6 @@ class NavigationPermissionService extends AutoSubscriber {
           'MMT - Institutes',
           'MMT - Offices',
           'MMT - Urban Visits',
-          'Project HO Institutes',
           'Sanjha Institute List',
           'Search',
           'Contacts',

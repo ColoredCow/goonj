@@ -48,6 +48,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
         ['updateInstitutionCampStatusAfterAuth'],
         ['updateCampaignType'],
         ['updateInstitutionPointOfContact'],
+        ['updateRegisterAsField'],
       ],
       'civi.afform.submit' => [
         ['setInstitutionCollectionCampAddress', 9],
@@ -65,6 +66,92 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     ];
   }
 
+  /**
+   *
+   */
+  public static function updateRegisterAsField(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($objectName !== 'AfformSubmission') {
+      return;
+    }
+
+    $dataArray = $objectRef['data'] ?? [];
+    $eckCollectionCampId = $dataArray['Eck_Collection_Camp1'][0]['id'] ?? NULL;
+    $organizationId = $dataArray['Organization1'][0]['id']
+      ?? $dataArray['Organization1'][0]['fields']['id']
+      ?? NULL;
+
+    if (!$eckCollectionCampId || !$organizationId) {
+      return;
+    }
+
+    $campFields = $dataArray['Eck_Collection_Camp1'][0]['fields'] ?? [];
+
+    $fieldGroupMapping = [
+      'Institution_Collection_Camp_Intent' => 'Institution_Collection_Camp_Intent.You_wish_to_register_as:name',
+      'Institution_Dropping_Center_Intent' => 'Institution_Dropping_Center_Intent.You_wish_to_register_as:name',
+      'Institution_Goonj_Activities'       => 'Institution_Goonj_Activities.You_wish_to_register_as:name',
+    ];
+
+    $registerAsField = NULL;
+    foreach ($campFields as $fieldKey => $_) {
+      foreach ($fieldGroupMapping as $prefix => $field) {
+        if (str_starts_with($fieldKey, $prefix . '.')) {
+          $registerAsField = $field;
+          break 2;
+        }
+      }
+    }
+
+    if (!$registerAsField) {
+      return;
+    }
+
+    try {
+      $organization = Organization::get(FALSE)
+        ->addSelect('Institute_Registration.Type_of_Institution:name')
+        ->addWhere('id', '=', $organizationId)
+        ->execute()->first();
+
+      $orgType = $organization['Institute_Registration.Type_of_Institution:name'] ?? NULL;
+
+      $typeMapping = [
+        'Corporate'             => 'Corporate',
+        'Educational_Institute' => 'School',
+        'Association'           => 'Association',
+        'Foundation'            => 'Foundation',
+        'Other'                 => 'Other',
+      ];
+
+      $registerAs = $typeMapping[$orgType] ?? NULL;
+
+      if (!$registerAs) {
+        \Civi::log()->warning('updateRegisterAsField: No mapping found for org type', [
+          'orgType' => $orgType,
+          'organizationId' => $organizationId,
+          'campId' => $eckCollectionCampId,
+        ]);
+        return;
+      }
+
+      EckEntity::update('Collection_Camp', FALSE)
+        ->addValue($registerAsField, $registerAs)
+        ->addWhere('id', '=', $eckCollectionCampId)
+        ->execute();
+
+      \Civi::log()->info('updateRegisterAsField: Register as field updated', [
+        'campId' => $eckCollectionCampId,
+        'organizationId' => $organizationId,
+        'registerAs' => $registerAs,
+      ]);
+    }
+    catch (\Exception $e) {
+      \Civi::log()->error('updateRegisterAsField: Failed to update register as field', [
+        'error' => $e->getMessage(),
+        'campId' => $eckCollectionCampId,
+        'organizationId' => $organizationId,
+      ]);
+    }
+  }
   /**
    *
    */
