@@ -27,7 +27,6 @@ class PanVerificationService extends AutoSubscriber {
   public static function getSubscribedEvents() {
     return [
       '&hook_civicrm_validateForm' => 'onContributionFormValidate',
-      '&hook_civicrm_pre'          => 'onContributionPreSave',
       '&hook_civicrm_post'         => 'onContributionPostSave',
     ];
   }
@@ -103,78 +102,6 @@ class PanVerificationService extends AutoSubscriber {
       if ($panFieldKey) {
         $errors[$panFieldKey] = 'PAN card verification failed. ' . (!empty($result['message']) ? $result['message'] : 'Please enter a valid PAN card to proceed.');
       }
-    }
-  }
-
-  /**
-   * Fires before a Contribution is saved (back-office / admin entry).
-   * For frontend contributions, PAN is handled via validateForm — this is a no-op.
-   * For back-office admin entry, PAN may appear in contribution params directly.
-   */
-  public static function onContributionPreSave($op, $objectName, $id, &$params): void {
-    if ($objectName !== 'Contribution' || ($op !== 'create' && $op !== 'edit')) {
-      return;
-    }
-
-    $pan = self::getPanFromParams($params);
-    error_log('[PanVerification] pre hook — op: ' . $op . ', PAN: ' . ($pan ?? 'NULL'));
-
-    if (empty($pan)) {
-      return;
-    }
-
-    $enteredPan = strtoupper(trim($pan));
-
-    if (!self::isValidPanFormat($enteredPan)) {
-      error_log('[PanVerification] pre hook — invalid format: ' . $enteredPan);
-      throw new \CRM_Core_Exception('Invalid PAN card format. Correct format: ABCDE1234F (5 letters, 4 digits, 1 letter).');
-    }
-
-    // For create: contact_id is in params. For edit: fetch from contribution.
-    $contactId = $params['contact_id'] ?? NULL;
-    if (!$contactId && $id) {
-      $contribution = Contribution::get(FALSE)
-        ->addSelect('contact_id')
-        ->addWhere('id', '=', $id)
-        ->setLimit(1)
-        ->execute()
-        ->first();
-      $contactId = $contribution['contact_id'] ?? NULL;
-    }
-
-    if (!$contactId) {
-      error_log('[PanVerification] pre hook — could not resolve contact_id, skipping');
-      return;
-    }
-
-    $contactPan  = self::getContactPan($contactId);
-    $existingPan = strtoupper(trim($contactPan['pan_number'] ?? ''));
-
-    error_log('[PanVerification] pre hook — contact check: contact_id=' . $contactId . ', entered=' . $enteredPan . ', existing=' . $existingPan . ', status=' . ($contactPan['pan_status'] ?? 'NULL'));
-
-    // Same PAN already saved on Contact.
-    if ($existingPan === $enteredPan && !empty($existingPan)) {
-      if ($contactPan['pan_status'] === self::PAN_STATUS_VERIFIED) {
-        error_log('[PanVerification] pre hook — already verified on contact, skipping API. contact_id: ' . $contactId);
-        self::$pendingPanVerification[$contactId] = ['verified' => TRUE];
-        return;
-      }
-      error_log('[PanVerification] pre hook — same PAN not verified, blocking. contact_id: ' . $contactId);
-      throw new \CRM_Core_Exception('PAN card verification failed. Your PAN card could not be verified. Please enter a valid PAN card to proceed.');
-    }
-
-    // New or different PAN — call API once.
-    error_log('[PanVerification] pre hook — calling API. contact_id: ' . $contactId . ', PAN: ' . $enteredPan);
-    $result = self::verifyPanViaApi($enteredPan);
-
-    if ($result['verified']) {
-      error_log('[PanVerification] pre hook — API verified, saving to contact. contact_id: ' . $contactId);
-      self::saveContactPan($contactId, $enteredPan, self::PAN_STATUS_VERIFIED);
-      self::$pendingPanVerification[$contactId] = ['verified' => TRUE];
-    }
-    else {
-      error_log('[PanVerification] pre hook — API not verified, blocking. contact_id: ' . $contactId . ', message: ' . ($result['message'] ?? ''));
-      throw new \CRM_Core_Exception('PAN card verification failed. ' . (!empty($result['message']) ? $result['message'] : 'Please enter a valid PAN card to proceed.'));
     }
   }
 
