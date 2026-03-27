@@ -47,7 +47,6 @@ class Team5000SubscriptionReminderService {
     }
 
     // Fetch active recurring contributions.
-    // Status 5 = Razorpay active recurring. Status 2 = Pending (older subs).
     $recurringContributions = ContributionRecur::get(FALSE)
       ->addSelect('id', 'contact_id', 'start_date', 'installments', 'frequency_interval', 'frequency_unit', 'amount', 'contribution_status_id')
       ->addWhere('id', 'IN', $recurIds)
