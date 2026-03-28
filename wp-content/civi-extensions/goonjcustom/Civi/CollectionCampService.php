@@ -2582,6 +2582,13 @@ class CollectionCampService extends AutoSubscriber {
         2 => [$dao->id, 'Integer'],
       ]);
 
+      // TEMPORARY: Widen race window for testing issue coloredcow-admin/goonj-crm#305.
+      // This sleep holds the FOR UPDATE lock and delays the nested
+      // Contribution::update(), making it trivial to reproduce the
+      // CRM_Utils_Cache_SqlGroup duplicate-INSERT race with concurrent webhooks.
+      // Remove before merging.
+      sleep(3);
+
       Contribution::update(FALSE)
         ->addValue('invoice_number', $newInvoice)
         ->addWhere('id', '=', $contributionId)
