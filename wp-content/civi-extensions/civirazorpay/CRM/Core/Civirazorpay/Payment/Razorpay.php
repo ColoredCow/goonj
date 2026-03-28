@@ -488,37 +488,19 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
       ]);
 
       if (!$pendingContribution) {
-        $maxRetries = 3;
-        $contributionToUpdate = NULL;
-        for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
-          try {
-            $contributionToUpdate = civicrm_api3('Contribution', 'create', [
-              'contact_id' => $contactId,
-              'financial_type_id' => $financialTypeId,
-              'total_amount' => $amount,
-              'contribution_recur_id' => $recurringContribution['id'],
-              'contribution_status_id' => self::CONTRIB_STATUS_COMPLETED,
-              'trxn_id' => $paymentId,
-              'receive_date' => date('Y-m-d H:i:s'),
-              'is_test' => $recurringContribution['is_test'],
-              'payment_instrument_id' => $recurringContribution['payment_instrument_id'] ?? NULL,
-              $sourceFieldId  => $panCard,
-              'campaign_id' => $campaignId,
-            ]);
-            break;
-          }
-          catch (Exception $e) {
-            $isDeadlock = stripos($e->getMessage(), 'deadlock') !== FALSE
-              || stripos($e->getMessage(), 'constraint violation') !== FALSE;
-            if ($attempt === $maxRetries || !$isDeadlock) {
-              throw $e;
-            }
-            \Civi::log()->warning("Retrying Contribution::create for subscription {$subscriptionId} after deadlock (attempt {$attempt})", [
-              'error' => $e->getMessage(),
-            ]);
-            usleep(100000 * $attempt);
-          }
-        }
+        $contributionToUpdate = civicrm_api3('Contribution', 'create', [
+          'contact_id' => $contactId,
+          'financial_type_id' => $financialTypeId,
+          'total_amount' => $amount,
+          'contribution_recur_id' => $recurringContribution['id'],
+          'contribution_status_id' => self::CONTRIB_STATUS_COMPLETED,
+          'trxn_id' => $paymentId,
+          'receive_date' => date('Y-m-d H:i:s'),
+          'is_test' => $recurringContribution['is_test'],
+          'payment_instrument_id' => $recurringContribution['payment_instrument_id'] ?? NULL,
+          $sourceFieldId  => $panCard,
+          'campaign_id' => $campaignId,
+        ]);
       }
       else {
         $contributionToUpdate = $pendingContribution;
