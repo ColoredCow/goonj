@@ -386,24 +386,62 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
     $amount = $params['payload']['payment']['entity']['amount'] / 100;
     $last4CardDigits = $params['payload']['payment']['entity']['card']['last4'] ?? NULL;
 
+    \Civi::log()->info('processOneTimePayment: received payment.captured', [
+      'orderId' => $razorpayOrderId,
+      'paymentId' => $razorpayPaymentId,
+      'amount' => $amount,
+    ]);
+
     $contribution = $this->getContributionByOrderId($razorpayOrderId);
 
     if ($contribution) {
       $contributionID = $contribution['id'];
       $contactID = $contribution['contact_id'];
 
-      civicrm_api3('Payment', 'create', [
-        'contribution_id' => $contributionID,
-        'total_amount' => $amount,
-        'payment_instrument_id' => $this->_paymentProcessor['payment_instrument_id'],
-        'trxn_id' => $razorpayPaymentId,
-        'credit_card_pan' => $last4CardDigits,
+      \Civi::log()->info('processOneTimePayment: matched contribution, recording payment', [
+        'contributionId' => $contributionID,
+        'contactId' => $contactID,
+        'paymentId' => $razorpayPaymentId,
+        'amount' => $amount,
       ]);
 
-      civicrm_api3('Contribution', 'create', [
-        'id' => $contributionID,
-        'contribution_status_id' => self::CONTRIB_STATUS_COMPLETED,
+      try {
+        civicrm_api3('Payment', 'create', [
+          'contribution_id' => $contributionID,
+          'total_amount' => $amount,
+          'payment_instrument_id' => $this->_paymentProcessor['payment_instrument_id'],
+          'trxn_id' => $razorpayPaymentId,
+          'credit_card_pan' => $last4CardDigits,
+        ]);
+
+        civicrm_api3('Contribution', 'create', [
+          'id' => $contributionID,
+          'contribution_status_id' => self::CONTRIB_STATUS_COMPLETED,
+        ]);
+
+        \Civi::log()->info('processOneTimePayment: payment recorded successfully', [
+          'contributionId' => $contributionID,
+          'paymentId' => $razorpayPaymentId,
+        ]);
+      }
+      catch (Exception $e) {
+        \Civi::log()->error('processOneTimePayment: failed to record payment', [
+          'contributionId' => $contributionID,
+          'paymentId' => $razorpayPaymentId,
+          'orderId' => $razorpayOrderId,
+          'error' => $e->getMessage(),
+        ]);
+        // Return 500 so Razorpay retries the webhook instead of marking it as delivered.
+        http_response_code(500);
+        CRM_Utils_System::civiExit();
+      }
+    }
+    else {
+      \Civi::log()->error('processOneTimePayment: no contribution found for order', [
+        'orderId' => $razorpayOrderId,
+        'paymentId' => $razorpayPaymentId,
       ]);
+      http_response_code(500);
     }
 
     CRM_Utils_System::civiExit();
