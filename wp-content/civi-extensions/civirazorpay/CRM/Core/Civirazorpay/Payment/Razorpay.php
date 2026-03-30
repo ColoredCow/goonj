@@ -442,7 +442,6 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
       // Return 500 so Razorpay retries the webhook instead of marking it as delivered.
       http_response_code(500);
       CRM_Utils_System::civiExit();
-      return;
     }
 
     CRM_Utils_System::civiExit();
