@@ -2535,6 +2535,7 @@ class CollectionCampService extends AutoSubscriber {
       return;
     }
 
+    $transactionStarted = FALSE;
     try {
       $contributionId = $objectRef->id;
 
@@ -2554,6 +2555,7 @@ class CollectionCampService extends AutoSubscriber {
       $invoiceSeqName = 'GNJCRM_25_26';
 
       \CRM_Core_DAO::executeQuery('START TRANSACTION');
+      $transactionStarted = TRUE;
 
       $dao = \CRM_Core_DAO::executeQuery("
         SELECT ov.id, ov.value, ov.label
@@ -2582,17 +2584,25 @@ class CollectionCampService extends AutoSubscriber {
         2 => [$dao->id, 'Integer'],
       ]);
 
-      Contribution::update(FALSE)
-        ->addValue('invoice_number', $newInvoice)
-        ->addWhere('id', '=', $contributionId)
-        ->execute();
+      \CRM_Core_DAO::executeQuery("
+        UPDATE civicrm_contribution
+        SET invoice_number = %1
+        WHERE id = %2
+          AND (invoice_number IS NULL OR invoice_number = '')
+      ", [
+        1 => [$newInvoice, 'String'],
+        2 => [$contributionId, 'Integer'],
+      ]);
 
       \CRM_Core_DAO::executeQuery('COMMIT');
+      $transactionStarted = FALSE;
 
       \Civi::log()->info("Assigned invoice number {$newInvoice} to contribution ID: {$contributionId}");
     }
     catch (\Exception $e) {
-      \CRM_Core_DAO::executeQuery('ROLLBACK');
+      if ($transactionStarted) {
+        \CRM_Core_DAO::executeQuery('ROLLBACK');
+      }
       \Civi::log()->error("Invoice number generation failed.", [
         'message' => $e->getMessage(),
         'trace' => $e->getTraceAsString(),
