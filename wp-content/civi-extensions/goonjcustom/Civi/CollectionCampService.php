@@ -2552,7 +2552,7 @@ class CollectionCampService extends AutoSubscriber {
         return;
       }
 
-      $invoiceSeqName = 'GNJCRM_25_26';
+      $invoiceSeqName = 'GNJCRM_26_27';
 
       \CRM_Core_DAO::executeQuery('START TRANSACTION');
       $transactionStarted = TRUE;
