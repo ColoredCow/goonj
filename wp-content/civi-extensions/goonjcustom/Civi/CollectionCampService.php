@@ -21,6 +21,7 @@ use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 use Civi\Traits\QrCodeable;
 use Civi\InductionService;
+use Civi\Api4\Campaign;
 use Civi\Api4\Event;
 
 /**
@@ -43,6 +44,7 @@ class CollectionCampService extends AutoSubscriber {
   const MATERIAL_RELATIONSHIP_TYPE_NAME = 'Material Management Team of';
   const DEFAULT_FINANCIAL_TYPE_ID = 1;
   const ACCOUNTS_TEAM_EMAIL = '"Goonj" <accounts@goonj.org>';
+  const GOONJ_IT_CAMPAIGN_NAME = 'Goonj_It';
 
   private static $individualId = NULL;
   private static $collectionCampAddress = NULL;
@@ -85,6 +87,7 @@ class CollectionCampService extends AutoSubscriber {
       ['autofillMonetaryFormSource'],
       ['autofillFinancialType'],
       ['autofillReceiptFrom'],
+      ['filterCampaignDropdownOnContributionPage'],
       ],
       '&hook_civicrm_alterMailParams' => [
       ['alterReceiptMail'],
@@ -2285,6 +2288,56 @@ class CollectionCampService extends AutoSubscriber {
   }
 
   /**
+   * Implements hook_civicrm_buildForm().
+   *
+   * Filters the campaign dropdown on the public contribution page to only show
+   * campaigns that have Campaign_Contribution_Settings.Show_On_Contribution_Page = TRUE.
+   * Only runs on the processing-center (office QR) URL; no-op for CC/DC/event pages.
+   *
+   * @param string $formName
+   * @param object $form
+   */
+  public function filterCampaignDropdownOnContributionPage($formName, &$form) {
+    if ($formName !== 'CRM_Contribute_Form_Contribution_Main') {
+      return;
+    }
+
+    $puSourceField = CustomField::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('custom_group_id:name', '=', 'Contribution_Details')
+      ->addWhere('name', '=', 'PU_Source')
+      ->execute()->single();
+
+    $puSourceFieldId = 'custom_' . $puSourceField['id'];
+
+    if (!isset($_GET[$puSourceFieldId])) {
+      return;
+    }
+
+    if (!$form->elementExists('contribution_campaign_id')) {
+      return;
+    }
+
+    $campaigns = Campaign::get(FALSE)
+      ->addSelect('id', 'title')
+      ->addWhere('Campaign_Contribution_Settings.Show_On_Contribution_Page', 'IS NOT NULL')
+      ->addWhere('Campaign_Contribution_Settings.Show_On_Contribution_Page', '=', TRUE)
+      ->addWhere('is_active', '=', TRUE)
+      ->execute();
+
+    $options = ['' => ts('- select Campaign -')];
+    foreach ($campaigns as $campaign) {
+      $options[$campaign['id']] = $campaign['title'];
+    }
+
+    $element = $form->getElement('contribution_campaign_id');
+    $element->_options = [];
+    foreach ($options as $value => $label) {
+      $element->addOption($label, $value);
+    }
+  }
+
+  /**
    * This hook is called after a db write on entities.
    *
    * @param string $op
@@ -2308,7 +2361,7 @@ class CollectionCampService extends AutoSubscriber {
       }
 
       $contribution = Contribution::get(FALSE)
-        ->addSelect('Contribution_Details.Source', 'Contribution_Details.Events', 'campaign_id')
+        ->addSelect('Contribution_Details.Source', 'Contribution_Details.Events', 'Contribution_Details.PU_Source', 'campaign_id')
         ->addWhere('id', '=', $contributionId)
         ->execute()->first();
 
@@ -2366,6 +2419,30 @@ class CollectionCampService extends AutoSubscriber {
         if (!empty($event['campaign_id'])) {
           Contribution::update(FALSE)
             ->addValue('campaign_id', $event['campaign_id'])
+            ->addWhere('id', '=', $contributionId)
+            ->execute();
+        }
+
+        // Stop after event flow.
+        return;
+      }
+
+      /**
+       * ------------------------------------------------------
+       * 3️⃣ If PU Source (office QR), assign "Goonj It" as
+       *    default when user selected no campaign.
+       * ------------------------------------------------------
+       */
+      $puSource = $contribution['Contribution_Details.PU_Source'] ?? NULL;
+      if (!empty($puSource)) {
+        $goonjItCampaign = Campaign::get(FALSE)
+          ->addSelect('id')
+          ->addWhere('name', '=', self::GOONJ_IT_CAMPAIGN_NAME)
+          ->execute()->first();
+
+        if (!empty($goonjItCampaign['id'])) {
+          Contribution::update(FALSE)
+            ->addValue('campaign_id', $goonjItCampaign['id'])
             ->addWhere('id', '=', $contributionId)
             ->execute();
         }
