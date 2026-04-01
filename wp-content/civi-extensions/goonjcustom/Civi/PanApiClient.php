@@ -79,6 +79,7 @@ class PanApiClient {
 
       return [
         'verified'         => FALSE,
+        'api_error'        => TRUE,
         'registered_name'  => NULL,
         'message'          => 'API request failed: ' . $e->getMessage(),
         'raw_response'     => [],
@@ -92,6 +93,7 @@ class PanApiClient {
 
       return [
         'verified'         => FALSE,
+        'api_error'        => TRUE,
         'registered_name'  => NULL,
         'message'          => 'Unexpected error: ' . $e->getMessage(),
         'raw_response'     => [],
