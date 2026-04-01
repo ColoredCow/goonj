@@ -2308,7 +2308,11 @@ class CollectionCampService extends AutoSubscriber {
       ->addSelect('id')
       ->addWhere('custom_group_id:name', '=', 'Contribution_Details')
       ->addWhere('name', '=', 'PU_Source')
-      ->execute()->single();
+      ->execute()->first();
+
+    if (empty($puSourceField['id'])) {
+      return;
+    }
 
     $puSourceFieldId = 'custom_' . $puSourceField['id'];
 
