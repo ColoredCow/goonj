@@ -912,6 +912,7 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
       }
 
       $params['cc'] = 'priyanka@goonj.org, accounts@goonj.org';
+      $params['from'] = 'Goonj <accounts@goonj.org>';
 
       try {
         $contribution = Contribution::get(FALSE)
@@ -956,6 +957,7 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
       $donorName = !empty($params['toName']) ? $params['toName'] : 'Valued Supporter';
       $contributionID = $params['tplParams']['contributionID'] ?? NULL;
       $params['cc'] = 'priyanka@goonj.org, accounts@goonj.org';
+      $params['from'] = 'Goonj <accounts@goonj.org>';
 
       try {
         $contribution = Contribution::get(FALSE)
