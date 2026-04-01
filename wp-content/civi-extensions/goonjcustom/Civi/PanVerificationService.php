@@ -66,6 +66,14 @@ class PanVerificationService extends AutoSubscriber {
       $result     = self::verifyPanViaApi($enteredPan);
       $panFieldKey = self::getPanFieldKey();
 
+      if (!empty($result['api_error'])) {
+        \Civi::log()->warning('PanVerification: API error for new donor, bypassing — contribution will be marked Not Verified.', [
+          'email' => $email,
+        ]);
+        self::$pendingPanVerification['email:' . $email] = ['verified' => FALSE, 'pan' => $enteredPan];
+        return;
+      }
+
       if ($result['verified']) {
         \Civi::log()->info('PanVerification: new donor, PAN verified via API — pending contact creation.', [
           'email' => $email,
@@ -98,6 +106,14 @@ class PanVerificationService extends AutoSubscriber {
 
     // New or different PAN — call API.
     $result = self::verifyPanViaApi($enteredPan);
+
+    if (!empty($result['api_error'])) {
+      \Civi::log()->warning('PanVerification: API error, bypassing validation — contribution will be marked Not Verified.', [
+        'contact_id' => $contactId,
+      ]);
+      self::$pendingPanVerification[$contactId] = ['verified' => FALSE];
+      return;
+    }
 
     if ($result['verified']) {
       \Civi::log()->info('PanVerification: PAN verified via API and saved to contact.', [
@@ -143,12 +159,13 @@ class PanVerificationService extends AutoSubscriber {
 
     // Existing contact path — keyed by contact_id.
     if (isset(self::$pendingPanVerification[$contactId])) {
-      \Civi::log()->info('PanVerification: marking contribution PAN as verified.', [
-        'contribution_id' => $objectId,
-        'contact_id'      => $contactId,
-      ]);
       $verified = self::$pendingPanVerification[$contactId]['verified'];
       unset(self::$pendingPanVerification[$contactId]);
+      \Civi::log()->info('PanVerification: contribution PAN status updated.', [
+        'contribution_id' => $objectId,
+        'contact_id'      => $contactId,
+        'status'          => $verified ? self::PAN_STATUS_VERIFIED : self::PAN_STATUS_NOT_VERIFIED,
+      ]);
       self::updateContributionPanVerified($objectId, $verified);
       return;
     }

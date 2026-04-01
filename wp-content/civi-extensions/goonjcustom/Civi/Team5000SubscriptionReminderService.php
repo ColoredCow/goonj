@@ -104,6 +104,15 @@ class Team5000SubscriptionReminderService {
         continue;
       }
 
+      // Skip if donor has already renewed their Team 5000 subscription.
+      if (self::hasRenewed($recur['contact_id'], $recur['id'])) {
+        \Civi::log()->info('Team 5000: Donor has already renewed, skipping reminder', [
+          'recur_id' => $recur['id'],
+          'days_before' => $daysBefore,
+        ]);
+        continue;
+      }
+
       self::sendReminderAndLog($recur, $endDate, $daysBefore, $from);
     }
   }
@@ -152,6 +161,39 @@ class Team5000SubscriptionReminderService {
       ->first();
 
     return !empty($existing);
+  }
+
+  /**
+   * Checks if the donor has started a new Team 5000 subscription (renewal).
+   *
+   * Looks for another active recurring contribution on the Team 5000 page
+   * for the same contact, excluding the current expiring recur.
+   */
+  private static function hasRenewed(int $contactId, int $currentRecurId): bool {
+    $contributions = Contribution::get(FALSE)
+      ->addSelect('contribution_recur_id')
+      ->addWhere('contribution_page_id:name', '=', self::CONTRIBUTION_PAGE_NAME)
+      ->addWhere('contact_id', '=', $contactId)
+      ->addWhere('contribution_recur_id', 'IS NOT NULL')
+      ->addWhere('contribution_recur_id', '!=', $currentRecurId)
+      ->addWhere('is_test', '=', TRUE)
+      ->execute();
+
+    $recurIds = array_unique(array_column((array) $contributions, 'contribution_recur_id'));
+
+    if (empty($recurIds)) {
+      return FALSE;
+    }
+
+    $newActiveRecur = ContributionRecur::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('id', 'IN', $recurIds)
+      ->addWhere('contribution_status_id:name', '=', 'In Progress')
+      ->addWhere('is_test', '=', TRUE)
+      ->execute()
+      ->first();
+
+    return !empty($newActiveRecur);
   }
 
   /**
