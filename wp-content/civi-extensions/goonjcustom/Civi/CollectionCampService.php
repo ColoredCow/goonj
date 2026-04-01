@@ -2197,6 +2197,8 @@ class CollectionCampService extends AutoSubscriber {
       $donorName = !empty($params['toName']) ? $params['toName'] : 'Valued Supporter';
       $contributionID = !empty($params['contributionId']) ? $params['contributionId'] : NULL;
       $params['cc'] = 'priyanka@goonj.org, accounts@goonj.org';
+      $params['from'] = 'Goonj <accounts@goonj.org>';
+
       $contribution = Contribution::get(FALSE)
         ->addSelect('invoice_number', 'contribution_page_id:label')
         ->addWhere('id', '=', $contributionID)
