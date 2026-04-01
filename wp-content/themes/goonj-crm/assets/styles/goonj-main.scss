@@ -242,6 +242,12 @@
   }
 }
 
+// Hide campaign field on all contribution pages by default.
+// Shown only on processing-center (office QR) pages via goonj-contribution.js.
+.crm-contribution-main-form-block .editrow_contribution_campaign_id-section {
+  display: none !important;
+}
+
 .crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options {
   display: contents;
 }

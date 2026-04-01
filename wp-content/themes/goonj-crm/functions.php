@@ -41,6 +41,9 @@ function goonj_enqueue_scripts() {
 			filemtime( get_template_directory() . '/goonj-contribution.js' ),
 			true
 		);
+		wp_localize_script('contribution', 'goonjContribution', [
+			'puSourceFieldId' => goonj_get_contribution_source_field_id_for_processing_unit(),
+		]);
 	}
 
 	$current_url = $_SERVER['REQUEST_URI'];
