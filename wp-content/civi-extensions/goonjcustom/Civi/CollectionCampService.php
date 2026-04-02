@@ -2497,13 +2497,6 @@ class CollectionCampService extends AutoSubscriber {
       $uniqueId = uniqid();
       $invoiceId = hash('sha256', $timestamp . $uniqueId);
 
-      // TEMPORARY: Widen race window for testing issue coloredcow-admin/goonj-crm#305.
-      // This sleep ensures multiple concurrent Contribution::update() calls
-      // overlap inside the unlocked generateInvoiceIdForContribution() hook,
-      // triggering the CRM_Utils_Cache_SqlGroup duplicate-INSERT race.
-      // Remove before merging.
-      sleep(3);
-
       Contribution::update(FALSE)
         ->addValue('invoice_id', $invoiceId)
         ->addWhere('id', '=', $contributionId)
