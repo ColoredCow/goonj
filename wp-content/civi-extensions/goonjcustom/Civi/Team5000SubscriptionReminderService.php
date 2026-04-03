@@ -17,7 +17,7 @@ class Team5000SubscriptionReminderService {
 
   const ACTIVITY_TYPE_NAME = 'Team 5000 Subscription Reminder';
   const CONTRIBUTION_PAGE_NAME = 'Team_5000';
-  const REMINDER_DAYS = [7, 3, 1];
+  const REMINDER_DAYS = [30, 7, 2];
   const CC_RECIPIENTS = 'priyanka@goonj.org, accounts@goonj.org';
 
   /**
@@ -228,7 +228,7 @@ class Team5000SubscriptionReminderService {
       'toName' => $donorName,
       'replyTo' => $from,
       'cc' => self::CC_RECIPIENTS,
-      'html' => self::getReminderEmailHtml($donorName, $endDate, $daysBefore, $recur['amount'] ?? NULL),
+      'html' => self::getReminderEmailHtml($endDate),
     ];
 
     $emailResult = \CRM_Utils_Mail::send($mailParams);
@@ -270,10 +270,13 @@ class Team5000SubscriptionReminderService {
    * Returns the email subject line based on how many days remain.
    */
   private static function getEmailSubject(int $daysBefore): string {
-    if ($daysBefore === 1) {
-      return 'Last Reminder: Your Team 5000 Membership Expires Tomorrow';
-    }
-    return "Reminder: Your Team 5000 Membership Expires in {$daysBefore} Days";
+    $labels = [
+      30 => '1 Month',
+      7  => '7 Days',
+      2  => '2 Days',
+    ];
+    $label = $labels[$daysBefore] ?? "{$daysBefore} Days";
+    return "Reminder: Your Team 5000 Membership Expires in {$label}";
   }
 
   /**
@@ -281,35 +284,18 @@ class Team5000SubscriptionReminderService {
    *
    * Note: Template content is a placeholder — final copy to be confirmed with the client.
    */
-  private static function getReminderEmailHtml(string $donorName, string $endDate, int $daysBefore, ?float $amount): string {
+  private static function getReminderEmailHtml(string $endDate): string {
     $formattedDate = (new \DateTime($endDate))->format('F j, Y');
 
-    $amountLine = '';
-    if ($amount) {
-      $amountLine = '<p>Your monthly contribution of <strong>₹' . number_format($amount, 0) . '</strong> has been making a real difference — helping us reach communities that need it most.</p>';
-    }
-
-    if ($daysBefore === 7) {
-      $urgencyLine = 'We wanted to give you an early heads-up so you have plenty of time to plan your renewal.';
-    }
-    elseif ($daysBefore === 3) {
-      $urgencyLine = 'Just a gentle nudge — your membership is expiring in 3 days and we\'d love for you to stay with us.';
-    }
-    else {
-      $urgencyLine = 'This is your final reminder — your membership expires tomorrow and we wouldn\'t want you to miss a beat.';
-    }
-
     return "
-      <p>Dear <strong>{$donorName}</strong>,</p>
       <p>Greetings from Goonj!</p>
-      <p>{$urgencyLine}</p>
-      <p>Your Team 5000 membership is set to expire on <strong>{$formattedDate}</strong>.</p>
-      {$amountLine}
-      <p>Your generosity has been a cornerstone of our work — empowering communities, restoring dignity, and creating lasting change. We truly value your commitment to this journey.</p>
-      <p>To continue your support and ensure your membership stays active, we warmly invite you to renew your Team 5000 membership at your earliest convenience.</p>
-      <p>For any questions or assistance, please feel free to write to us at <a href='mailto:accounts@goonj.org'>accounts@goonj.org</a>.</p>
-      <p>Thank you for being a vital part of Team 5000 — together, we are making a difference!</p>
-      <p>Warm regards,<br>Team Goonj</p>
+      <p>Just a gentle reminder that your Team 5000 membership is set to expire in a few days (on <strong>{$formattedDate}</strong>).</p>
+      <p>We truly hope you'll continue this journey with us.</p>
+      <p>Your contribution has been making a meaningful difference, helping us reach communities that need it most.</p>
+      <p>We warmly invite you to renew your Team 5000 membership at your earliest convenience by clicking this link <a href='https://goonj.org/donate/campaign/team-5000-new'>https://goonj.org/donate/campaign/team-5000-new</a></p>
+      <p>Kindly ignore if you have already renewed your contribution. If you have any questions or need assistance, please feel free to write to us at <a href='mailto:priyanka@goonj.org'>priyanka@goonj.org</a>.</p>
+      <p>Thank you for being such an important part of Team 5000. Together, we are creating real impact.</p>
+      <p>Warm regards<br>Team Goonj</p>
     ";
   }
 
