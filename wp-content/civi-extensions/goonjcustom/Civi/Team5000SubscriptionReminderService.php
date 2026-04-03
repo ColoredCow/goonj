@@ -228,7 +228,7 @@ class Team5000SubscriptionReminderService {
       'toName' => $donorName,
       'replyTo' => $from,
       'cc' => self::CC_RECIPIENTS,
-      'html' => self::getReminderEmailHtml($donorName, $endDate, $daysBefore),
+      'html' => self::getReminderEmailHtml($endDate),
     ];
 
     $emailResult = \CRM_Utils_Mail::send($mailParams);
@@ -284,7 +284,7 @@ class Team5000SubscriptionReminderService {
    *
    * Note: Template content is a placeholder — final copy to be confirmed with the client.
    */
-  private static function getReminderEmailHtml(string $donorName, string $endDate, int $daysBefore): string {
+  private static function getReminderEmailHtml(string $endDate): string {
     $formattedDate = (new \DateTime($endDate))->format('F j, Y');
 
     return "
