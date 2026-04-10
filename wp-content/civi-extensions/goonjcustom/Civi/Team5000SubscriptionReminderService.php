@@ -8,7 +8,7 @@ use Civi\Api4\Contribution;
 use Civi\Api4\ContributionRecur;
 
 /**
- * Handles subscription expiry reminder emails for Team 5000 donors.
+ * Handles subscription expiry reminder emails for Team 5000 donors. 
  *
  * Sends reminders at 7, 3, and 1 day(s) before the calculated subscription
  * end date. Logs a CiviCRM activity after each send to prevent duplicates.
