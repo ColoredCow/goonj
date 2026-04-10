@@ -837,9 +837,10 @@ class CollectionBaseService extends AutoSubscriber {
       return FALSE;
     }
 
-    $restrictedRoles = ['admin', 'urban_ops_admin', 'ho_account', 'project_team_ho', 's2s_ho_team', 'njpc_ho_team', 'project_ho_and_accounts', 'dalgo_api_readonly'];
+    $restrictedRoles = ['admin', 'urban_ops_admin', 'ho_account', 'project_team_ho', 's2s_ho_team', 'njpc_ho_team', 'project_ho_and_accounts'];
 
-    $hasRestrictedRole = \CRM_Core_Permission::checkAnyPerm($restrictedRoles);
+    $hasRestrictedRole = \CRM_Core_Permission::checkAnyPerm($restrictedRoles)
+      || \CRM_Core_Permission::check('view any eck entity');
 
     if ($hasRestrictedRole) {
       return;
