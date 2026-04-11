@@ -4,21 +4,20 @@ API access to Goonj CRM data for the Dalgo data platform.
 
 ## Getting Started
 
-1. **Get your API key** from the Goonj team (shared via secure one-time link)
-2. **Import the Postman collection** — download [`Goonj-Collection-Camp-API.postman_collection.json`](Goonj-Collection-Camp-API.postman_collection.json) and import into Postman
-3. **Create a Postman environment** with these variables:
+1. Get your API key from the Goonj team (shared via secure one-time link)
+2. Import these files into Postman:
+   - [`Goonj-Collection-Camp-API.postman_collection.json`](Goonj-Collection-Camp-API.postman_collection.json) — the API requests
+   - [`Goonj-CRM-Staging.postman_environment.json`](Goonj-CRM-Staging.postman_environment.json) — staging environment
+   - [`Goonj-CRM-Production.postman_environment.json`](Goonj-CRM-Production.postman_environment.json) — production environment
+3. Select the **Goonj CRM - Staging** environment (top-right dropdown in Postman)
+4. Open the environment and paste your API key into the `API_KEY` variable
+5. Run **Collection Camp > Get Total Count** — if you see `countMatched` in the response, you're connected
 
-   | Variable | Value |
-   |----------|-------|
-   | `BASE_URL` | `https://crm.goonj.org` |
-   | `API_KEY` | *(your API key)* |
-
-4. **Select the environment** from the top-right dropdown in Postman
-5. **Run "Get Total Count"** — if you see `countMatched` in the response, you're connected
+> **Two environments are provided.** Start with **Staging** for development and testing. Switch to **Production** only when your integration is verified and ready for live data. The API key is different per environment — the Goonj team will provide both.
 
 ## Authentication
 
-Every request requires these headers:
+Every request requires these headers (pre-configured in the Postman collection):
 
 | Header | Value |
 |--------|-------|
@@ -26,89 +25,60 @@ Every request requires these headers:
 | `X-Requested-With` | `XMLHttpRequest` |
 | `Content-Type` | `application/x-www-form-urlencoded; charset=UTF-8` |
 
-## Request Format
-
-All requests are `POST` with a `params` body field containing JSON:
-
-```
-params={"select":["*","custom.*"],"where":[...],"orderBy":{"id":"ASC"},"limit":25,"offset":0}
-```
-
-> **Note:** The body format is `raw` text (not JSON). The value of `params` is JSON, but the body itself is form-encoded.
-
 ## Pagination
 
-Use `limit` and `offset`:
-
+Use `limit` and `offset` in the params:
 - Page 1: `"limit":25,"offset":0`
 - Page 2: `"limit":25,"offset":25`
-- Page 3: `"limit":25,"offset":50`
 - Stop when `values` returns an empty array
 
-To get the total count without fetching data: `"select":["row_count"],"limit":0` — check `countMatched` in the response.
+To get the total count without fetching data, use `"select":["row_count"],"limit":0` and check `countMatched` in the response.
 
 ## Incremental Sync
 
-Filter by `modified_date` to fetch only records changed since your last sync:
-
-```
-"where":[["subtype:name","=","Collection_Camp"],["modified_date",">=","2026-03-01"]]
-```
-
-Replace the date with your last sync timestamp.
+Filter by `modified_date` to fetch only records changed since your last sync. Replace the date with your last sync timestamp.
 
 ## Field Discovery
 
-Use the **Get Field Definitions** request in the Postman collection. It returns the full schema for every field — name, label, data type, and which custom group it belongs to. This is always up-to-date with the live system.
+Use the **Get Field Definitions** request in the Postman collection. It returns the full schema — field name, label, data type, and custom group. Always up-to-date with the live system.
 
 ---
 
-## Entities
+## Collection Camp
 
-### Collection Camp
+Collection drives organized by volunteers across India. Tracks the full lifecycle: registration, logistics, outcome, and feedback.
 
-**Entity:** `Eck_Collection_Camp` | **Subtype filter:** `["subtype:name","=","Collection_Camp"]`
+1. **Get Total Count** — total number of collection camp records
+2. **Get All Data (Page 1)** — all fields, paginated, ordered by ID
+3. **Filter: Modified since date** — records changed after a given date (for incremental sync)
+4. **Get Field Definitions** — full field schema for this entity
 
-Collection drives organized by volunteers across India. Each record tracks the full lifecycle: intent/registration, logistics coordination, camp outcome, and volunteer feedback.
+## Institution Collection Camp
 
-**Postman requests:** Get Total Count, Get All Data, Filter by Modified Date, Get Field Definitions
+Collection drives organized by institutions (schools, corporates, etc.).
 
-### Institution Collection Camp
+*Coming soon — same API pattern, different subtype filter.*
 
-**Entity:** `Eck_Collection_Camp` | **Subtype filter:** `["subtype:name","=","Institution_Collection_Camp"]`
+## Dropping Center
 
-Collection drives organized by institutions (schools, corporates, etc.). Same entity, different subtype.
+Permanent material drop-off points run by volunteers.
 
-*TBA — same API pattern as Collection Camp, change the subtype filter.*
+*Coming soon*
 
-### Dropping Center
-
-**Entity:** `Eck_Collection_Camp` | **Subtype filter:** `["subtype:name","=","Dropping_Center"]`
-
-Permanent material drop-off points.
-
-*TBA*
-
-### Institution Dropping Center
-
-**Entity:** `Eck_Collection_Camp` | **Subtype filter:** `["subtype:name","=","Institution_Dropping_Center"]`
+## Institution Dropping Center
 
 Institutional drop-off points.
 
-*TBA*
+*Coming soon*
 
-### Goonj Activities
+## Goonj Activities
 
-**Entity:** `Eck_Collection_Camp` | **Subtype filter:** `["subtype:name","=","Goonj_Activities"]`
+Community engagement activities organized by Goonj.
 
-Goonj-organized community engagement activities.
+*Coming soon*
 
-*TBA*
+## Institution Goonj Activities
 
-### Institution Goonj Activities
+Activities organized by institutions in partnership with Goonj.
 
-**Entity:** `Eck_Collection_Camp` | **Subtype filter:** `["subtype:name","=","Institution_Goonj_Activities"]`
-
-Institution-organized activities in partnership with Goonj.
-
-*TBA*
+*Coming soon*
