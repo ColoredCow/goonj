@@ -5,10 +5,7 @@ API access to Goonj CRM data for the Dalgo data platform.
 ## Getting Started
 
 1. Get your API key from the Goonj team (shared via secure one-time link)
-2. Import these files into Postman:
-   - [`Goonj-Collection-Camp-API.postman_collection.json`](Goonj-Collection-Camp-API.postman_collection.json) — the API requests
-   - [`Goonj-CRM-Staging.postman_environment.json`](Goonj-CRM-Staging.postman_environment.json) — staging environment
-   - [`Goonj-CRM-Production.postman_environment.json`](Goonj-CRM-Production.postman_environment.json) — production environment
+2. Import the Postman collection and environment files (shared via Google Drive — ask the Goonj team for access)
 3. Select the **Goonj CRM - Staging** environment (top-right dropdown in Postman)
 4. Open the environment and paste your API key into the `API_KEY` variable
 5. Run **Collection Camp > Get Total Count** — if you see `countMatched` in the response, you're connected
