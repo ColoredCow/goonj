@@ -51,7 +51,7 @@ Returns all fields for Collection Camp records, paginated.
 |-----------|-------------|-------------|
 | `limit` | Yes | Number of records per page (default: 25) |
 | `offset` | Yes | Starting position for pagination (default: 0) |
-| `orderBy` | Yes | Sort field and direction (default: `{"id":"ASC"}`) |
+| `orderBy` | Yes | Sort field and direction. Field: `id`, `created_date`, `modified_date`, `title`. Direction: `ASC`, `DESC`. Default: `{"id":"ASC"}` |
 
 ### Filter: Modified since date
 
@@ -59,7 +59,7 @@ Returns records modified after a given date. Use for incremental syncs.
 
 | Parameter | Configurable | Description |
 |-----------|-------------|-------------|
-| `modified_date` | Yes | ISO date string, e.g. `2026-03-01`. Replace with your last sync timestamp. |
+| `modified_date` | Yes | ISO date string, e.g. `2026-03-01`. Operator: `>=`, `<=`, `>`, `<`, `=`. Replace with your last sync timestamp. |
 | `limit` | Yes | Number of records per page (default: 25) |
 | `offset` | Yes | Starting position for pagination (default: 0) |
 
@@ -81,13 +81,13 @@ Collection drives organized by institutions (schools, corporates, etc.). Same fi
 |-----------|-------------|-------------|
 | `limit` | Yes | Number of records per page (default: 25) |
 | `offset` | Yes | Starting position for pagination (default: 0) |
-| `orderBy` | Yes | Sort field and direction (default: `{"id":"ASC"}`) |
+| `orderBy` | Yes | Sort field and direction. Field: `id`, `created_date`, `modified_date`, `title`. Direction: `ASC`, `DESC`. Default: `{"id":"ASC"}` |
 
 ### Filter: Modified since date
 
 | Parameter | Configurable | Description |
 |-----------|-------------|-------------|
-| `modified_date` | Yes | Replace with your last sync timestamp |
+| `modified_date` | Yes | ISO date string. Operator: `>=`, `<=`, `>`, `<`, `=`. Replace with your last sync timestamp. |
 | `limit` | Yes | Number of records per page (default: 25) |
 | `offset` | Yes | Starting position for pagination (default: 0) |
 
@@ -109,13 +109,13 @@ Permanent material drop-off points run by volunteers.
 |-----------|-------------|-------------|
 | `limit` | Yes | Number of records per page (default: 25) |
 | `offset` | Yes | Starting position for pagination (default: 0) |
-| `orderBy` | Yes | Sort field and direction (default: `{"id":"ASC"}`) |
+| `orderBy` | Yes | Sort field and direction. Field: `id`, `created_date`, `modified_date`, `title`. Direction: `ASC`, `DESC`. Default: `{"id":"ASC"}` |
 
 ### Filter: Modified since date
 
 | Parameter | Configurable | Description |
 |-----------|-------------|-------------|
-| `modified_date` | Yes | Replace with your last sync timestamp |
+| `modified_date` | Yes | ISO date string. Operator: `>=`, `<=`, `>`, `<`, `=`. Replace with your last sync timestamp. |
 | `limit` | Yes | Number of records per page (default: 25) |
 | `offset` | Yes | Starting position for pagination (default: 0) |
 
@@ -137,13 +137,13 @@ Institutional drop-off points.
 |-----------|-------------|-------------|
 | `limit` | Yes | Number of records per page (default: 25) |
 | `offset` | Yes | Starting position for pagination (default: 0) |
-| `orderBy` | Yes | Sort field and direction (default: `{"id":"ASC"}`) |
+| `orderBy` | Yes | Sort field and direction. Field: `id`, `created_date`, `modified_date`, `title`. Direction: `ASC`, `DESC`. Default: `{"id":"ASC"}` |
 
 ### Filter: Modified since date
 
 | Parameter | Configurable | Description |
 |-----------|-------------|-------------|
-| `modified_date` | Yes | Replace with your last sync timestamp |
+| `modified_date` | Yes | ISO date string. Operator: `>=`, `<=`, `>`, `<`, `=`. Replace with your last sync timestamp. |
 | `limit` | Yes | Number of records per page (default: 25) |
 | `offset` | Yes | Starting position for pagination (default: 0) |
 
@@ -165,13 +165,13 @@ Community engagement activities organized by Goonj.
 |-----------|-------------|-------------|
 | `limit` | Yes | Number of records per page (default: 25) |
 | `offset` | Yes | Starting position for pagination (default: 0) |
-| `orderBy` | Yes | Sort field and direction (default: `{"id":"ASC"}`) |
+| `orderBy` | Yes | Sort field and direction. Field: `id`, `created_date`, `modified_date`, `title`. Direction: `ASC`, `DESC`. Default: `{"id":"ASC"}` |
 
 ### Filter: Modified since date
 
 | Parameter | Configurable | Description |
 |-----------|-------------|-------------|
-| `modified_date` | Yes | Replace with your last sync timestamp |
+| `modified_date` | Yes | ISO date string. Operator: `>=`, `<=`, `>`, `<`, `=`. Replace with your last sync timestamp. |
 | `limit` | Yes | Number of records per page (default: 25) |
 | `offset` | Yes | Starting position for pagination (default: 0) |
 
@@ -193,12 +193,12 @@ Activities organized by institutions in partnership with Goonj.
 |-----------|-------------|-------------|
 | `limit` | Yes | Number of records per page (default: 25) |
 | `offset` | Yes | Starting position for pagination (default: 0) |
-| `orderBy` | Yes | Sort field and direction (default: `{"id":"ASC"}`) |
+| `orderBy` | Yes | Sort field and direction. Field: `id`, `created_date`, `modified_date`, `title`. Direction: `ASC`, `DESC`. Default: `{"id":"ASC"}` |
 
 ### Filter: Modified since date
 
 | Parameter | Configurable | Description |
 |-----------|-------------|-------------|
-| `modified_date` | Yes | Replace with your last sync timestamp |
+| `modified_date` | Yes | ISO date string. Operator: `>=`, `<=`, `>`, `<`, `=`. Replace with your last sync timestamp. |
 | `limit` | Yes | Number of records per page (default: 25) |
 | `offset` | Yes | Starting position for pagination (default: 0) |
