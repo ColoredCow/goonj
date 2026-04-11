@@ -15,16 +15,6 @@ API access to Goonj CRM data for the Dalgo data platform.
 
 > **Two environments are provided.** Start with **Staging** for development and testing. Switch to **Production** only when your integration is verified and ready for live data. The API key is different per environment — the Goonj team will provide both.
 
-## Authentication
-
-Every request requires these headers (pre-configured in the Postman collection):
-
-| Header | Value |
-|--------|-------|
-| `X-Civi-Auth` | `Bearer <API_KEY>` |
-| `X-Requested-With` | `XMLHttpRequest` |
-| `Content-Type` | `application/x-www-form-urlencoded; charset=UTF-8` |
-
 ## Pagination
 
 Use `limit` and `offset` in the params:
