@@ -706,6 +706,7 @@ AND    status IN ( 'Scheduled', 'Running', 'Paused' )
 
       // Create the activity only once per mailing, then reuse the cached ID.
       if ($cachedActivityID === NULL) {
+        Civi::log()->info('[writeToDB] FIRST CALL: Creating activity via API for mailing_id=' . $this->mailing_id);
         $activity = [
           'source_contact_id' => $mailing->scheduled_id,
           'activity_type_id' => $activityTypeID,
@@ -736,15 +737,20 @@ AND    civicrm_activity.source_record_id = %2
         try {
           $activityResult = civicrm_api3('Activity', 'create', $activity);
           $cachedActivityID = $activityResult['id'];
+          Civi::log()->info('[writeToDB] Activity created/found with ID=' . $cachedActivityID);
         }
         catch (Exception $e) {
           $result = FALSE;
         }
       }
+      else {
+        Civi::log()->info('[writeToDB] CACHED: Reusing activity ID=' . $cachedActivityID . ', skipping API call. Targets count=' . count($activityTargets));
+      }
 
       if ($cachedActivityID && !empty($activityTargets)) {
         // CRM-9519
         if (CRM_Core_BAO_Email::isMultipleBulkMail()) {
+          Civi::log()->info('[writeToDB] BATCHED duplicate check: 1 query for ' . count($activityTargets) . ' contacts (instead of ' . count($activityTargets) . ' individual queries)');
           // Remove targets that already have an activity contact record.
           $existingContactIds = [];
           $contactIdList = implode(',', array_column($activityTargets, 'contact_id'));
