@@ -663,6 +663,8 @@ AND    status IN ( 'Scheduled', 'Running', 'Paused' )
   ) {
     static $activityTypeID = NULL;
     static $writeActivity = NULL;
+    static $cachedActivityID = NULL;
+    static $targetRecordID = NULL;
 
     if (!empty($deliveredParams)) {
       CRM_Mailing_Event_BAO_MailingEventDelivered::bulkCreate($deliveredParams);
@@ -693,64 +695,85 @@ AND    status IN ( 'Scheduled', 'Running', 'Paused' )
         }
       }
 
-      $activity = [
-        'source_contact_id' => $mailing->scheduled_id,
-        'activity_type_id' => $activityTypeID,
-        'source_record_id' => $this->mailing_id,
-        'activity_date_time' => $job_date,
-        'subject' => $mailing->subject,
-        'status_id' => 'Completed',
-        'campaign_id' => $mailing->campaign_id,
-      ];
-
-      //check whether activity is already created for this mailing.
-      //if yes then create only target contact record.
-      $query = "
-SELECT id
-FROM   civicrm_activity
-WHERE  civicrm_activity.activity_type_id = %1
-AND    civicrm_activity.source_record_id = %2
-";
-
-      $queryParams = [
-        1 => [$activityTypeID, 'Integer'],
-        2 => [$this->mailing_id, 'Integer'],
-      ];
-      $activityID = CRM_Core_DAO::singleValueQuery($query, $queryParams);
-      $targetRecordID = CRM_Core_PseudoConstant::getKey('CRM_Activity_BAO_ActivityContact', 'record_type_id', 'Activity Targets');
+      if ($targetRecordID === NULL) {
+        $targetRecordID = CRM_Core_PseudoConstant::getKey('CRM_Activity_BAO_ActivityContact', 'record_type_id', 'Activity Targets');
+      }
 
       $activityTargets = [];
       foreach ($targetParams as $id) {
         $activityTargets[$id] = ['contact_id' => (int) $id];
       }
-      if ($activityID) {
-        $activity['id'] = $activityID;
 
-        // CRM-9519
-        if (CRM_Core_BAO_Email::isMultipleBulkMail()) {
-          // make sure we don't attempt to duplicate the target activity
-          // @todo - we don't have to do one contact at a time....
-          foreach ($activityTargets as $key => $target) {
-            $sql = "
+      // Create the activity only once per mailing, then reuse the cached ID.
+      if ($cachedActivityID === NULL) {
+        $activity = [
+          'source_contact_id' => $mailing->scheduled_id,
+          'activity_type_id' => $activityTypeID,
+          'source_record_id' => $this->mailing_id,
+          'activity_date_time' => $job_date,
+          'subject' => $mailing->subject,
+          'status_id' => 'Completed',
+          'campaign_id' => $mailing->campaign_id,
+        ];
+
+        //check whether activity is already created for this mailing.
+        $query = "
 SELECT id
-FROM   civicrm_activity_contact
-WHERE  activity_id = $activityID
-AND    contact_id = {$target['contact_id']}
-AND    record_type_id = $targetRecordID
+FROM   civicrm_activity
+WHERE  civicrm_activity.activity_type_id = %1
+AND    civicrm_activity.source_record_id = %2
 ";
-            if (CRM_Core_DAO::singleValueQuery($sql)) {
-              unset($activityTargets[$key]);
-            }
-          }
+        $queryParams = [
+          1 => [$activityTypeID, 'Integer'],
+          2 => [$this->mailing_id, 'Integer'],
+        ];
+        $cachedActivityID = CRM_Core_DAO::singleValueQuery($query, $queryParams);
+
+        if ($cachedActivityID) {
+          $activity['id'] = $cachedActivityID;
+        }
+
+        try {
+          $activityResult = civicrm_api3('Activity', 'create', $activity);
+          $cachedActivityID = $activityResult['id'];
+        }
+        catch (Exception $e) {
+          $result = FALSE;
         }
       }
 
-      try {
-        $activity = civicrm_api3('Activity', 'create', $activity);
-        ActivityContact::save(FALSE)->setRecords($activityTargets)->setDefaults(['activity_id' => $activity['id'], 'record_type_id' => $targetRecordID])->execute();
-      }
-      catch (Exception $e) {
-        $result = FALSE;
+      if ($cachedActivityID && !empty($activityTargets)) {
+        // CRM-9519
+        if (CRM_Core_BAO_Email::isMultipleBulkMail()) {
+          // Remove targets that already have an activity contact record.
+          $existingContactIds = [];
+          $contactIdList = implode(',', array_column($activityTargets, 'contact_id'));
+          if ($contactIdList) {
+            $sql = "
+SELECT contact_id
+FROM   civicrm_activity_contact
+WHERE  activity_id = {$cachedActivityID}
+AND    contact_id IN ({$contactIdList})
+AND    record_type_id = {$targetRecordID}
+";
+            $dao = CRM_Core_DAO::executeQuery($sql);
+            while ($dao->fetch()) {
+              $existingContactIds[$dao->contact_id] = TRUE;
+            }
+            foreach ($activityTargets as $key => $target) {
+              if (isset($existingContactIds[$target['contact_id']])) {
+                unset($activityTargets[$key]);
+              }
+            }
+          }
+        }
+
+        try {
+          ActivityContact::save(FALSE)->setRecords($activityTargets)->setDefaults(['activity_id' => $cachedActivityID, 'record_type_id' => $targetRecordID])->execute();
+        }
+        catch (Exception $e) {
+          $result = FALSE;
+        }
       }
 
       $targetParams = [];
