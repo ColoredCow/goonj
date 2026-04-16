@@ -554,8 +554,17 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       return;
     }
 
+    \Civi::log()->info('[InstitutionCamp:QR] Hook triggered', [
+      'op' => $op,
+      'objectId' => $objectId,
+      'hasAddress' => isset($objectRef['Institution_Collection_Camp_Intent.Collection_Camp_Address']),
+      'address' => $objectRef['Institution_Collection_Camp_Intent.Collection_Camp_Address'] ?? 'NOT SET',
+      'hasStatus' => isset($objectRef['Collection_Camp_Core_Details.Status']),
+    ]);
+
     $newStatus = $objectRef['Collection_Camp_Core_Details.Status'] ?? '';
     if (!$newStatus) {
+      \Civi::log()->info('[InstitutionCamp:QR] No status in objectRef, returning');
       return;
     }
 
