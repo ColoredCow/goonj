@@ -21,6 +21,12 @@ trait QrCodeable {
    *
    */
   public static function generateQrCode($data, $entityId, $saveOptions, $objectRef) {
+    \Civi::log()->info('[QR:generateQrCode] START', [
+      'entityId' => $entityId,
+      'data' => $data,
+      'customGroup' => $saveOptions['customGroupName'] ?? 'NONE',
+      'customField' => $saveOptions['customFieldName'] ?? 'NONE',
+    ]);
     try {
       $options = new QROptions([
         'version'    => 5,
@@ -52,6 +58,12 @@ trait QrCodeable {
 
         $campStatus = $campData['subtype:name'];
 
+        \Civi::log()->info('[QR:generateQrCode] campData fetched from DB', [
+          'entityId' => $entityId,
+          'campStatus' => $campStatus,
+          'objectRefKeys' => array_keys($objectRef),
+        ]);
+
         if ($campStatus == 'Collection_Camp') {
           $address = $objectRef['Collection_Camp_Intent_Details.Location_Area_of_camp'] ?? '';
           $city = $objectRef['Collection_Camp_Intent_Details.City'] ?? $objectRef['Collection_Camp_Intent_Details.Other_City'];
@@ -72,6 +84,12 @@ trait QrCodeable {
         elseif ($campStatus == 'Institution_Collection_Camp') {
           $address = $objectRef['Institution_Collection_Camp_Intent.Collection_Camp_Address'] ?? '';
           $city = $objectRef['Institution_Collection_Camp_Intent.District_City'] ?? $objectRef['Institution_Collection_Camp_Intent.Other_Type'] ?? '';
+          \Civi::log()->info('[QR:InstitutionCamp] Address resolution', [
+            'entityId' => $entityId,
+            'addressFromObjectRef' => $address,
+            'cityFromObjectRef' => $city,
+            'addressFromDB' => $campData['Institution_Collection_Camp_Intent.Collection_Camp_Address'] ?? 'NOT IN DB RESULT',
+          ]);
         }
         elseif ($campStatus == 'Institution_Dropping_Center') {
           $address = $objectRef['Institution_Dropping_Center_Intent.Dropping_Center_Address'] ?? '';
@@ -91,6 +109,12 @@ trait QrCodeable {
           throw new \Exception('Invalid entity type for QR code generation.');
         }
       }
+
+      \Civi::log()->info('[QR:generateQrCode] Final address for QR image', [
+        'entityId' => $entityId,
+        'address' => $address ?? 'NOT SET',
+        'city' => $city ?? 'NOT SET',
+      ]);
 
       // Generate QR.
       $qrcode = (new QRCode($options))->render($data);
@@ -291,6 +315,10 @@ trait QrCodeable {
       $baseFileName = "qr_code_{$entityId}.png";
       $saveOptions['baseFileName'] = $baseFileName;
       $saveOptions['entityId'] = $entityId;
+      \Civi::log()->info('[QR:generateQrCode] Saving QR image', [
+        'entityId' => $entityId,
+        'fileName' => $baseFileName,
+      ]);
       self::saveQrCode($finalImage, $saveOptions);
     }
     catch (\Exception $e) {
