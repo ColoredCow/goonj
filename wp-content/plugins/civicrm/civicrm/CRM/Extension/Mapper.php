@@ -491,9 +491,6 @@ class CRM_Extension_Mapper {
    * @return CRM_Core_Module[]
    */
   public function getModules() {
-    if (isset(\Civi::$statics[__CLASS__]['modules'])) {
-      return \Civi::$statics[__CLASS__]['modules'];
-    }
     $result = [];
     $dao = new CRM_Core_DAO_Extension();
     $dao->type = 'module';
@@ -501,7 +498,6 @@ class CRM_Extension_Mapper {
     while ($dao->fetch()) {
       $result[] = new CRM_Core_Module($dao->full_name, $dao->is_active, $dao->label);
     }
-    \Civi::$statics[__CLASS__]['modules'] = $result;
     return $result;
   }
 
