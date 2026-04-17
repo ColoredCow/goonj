@@ -15,7 +15,10 @@ use Civi\Core\Service\AutoSubscriber;
  */
 class UrbanExternalMeetingService extends AutoSubscriber {
 
-  const FORM_NAME = 'afformUrbanExternalMeetingSession';
+  const FORM_NAMES = [
+    'afformUrbanExternalMeetingSession',
+    'afformUrbanExternalMeeting',
+  ];
   const ACTIVITY_TYPE_NAME = 'Urban External Meeting Session';
   const ACTIVITY_STATUS = 'Completed';
   const ACTIVITY_SUBJECT = 'Urban External Meeting Session';
@@ -38,7 +41,7 @@ class UrbanExternalMeetingService extends AutoSubscriber {
     $afform = $event->getAfform();
     $formName = $afform['name'];
 
-    if ($formName !== self::FORM_NAME) {
+    if (!in_array($formName, self::FORM_NAMES)) {
       return;
     }
 
