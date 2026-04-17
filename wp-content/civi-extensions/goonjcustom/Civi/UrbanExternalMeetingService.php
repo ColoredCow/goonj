@@ -35,20 +35,14 @@ class UrbanExternalMeetingService extends AutoSubscriber {
    * Creates meeting activities in contact profiles on form submission.
    */
   public static function createMeetingActivity(AfformSubmitEvent $event) {
-    error_log('working1');
     $afform = $event->getAfform();
     $formName = $afform['name'];
-
-
-    error_log('Form submitted: ' . $formName);
 
     if ($formName !== self::FORM_NAME) {
       return;
     }
 
     $entityType = $event->getEntityType();
-    error_log('entityType: ' . $entityType);
-
 
     if ($entityType !== 'Eck_Meetings_Sessions') {
       return;
@@ -56,13 +50,8 @@ class UrbanExternalMeetingService extends AutoSubscriber {
 
     foreach ($event->records as $record) {
       $fields = $record['fields'];
-      error_log('Record fields: ' . print_r($fields, TRUE));
-
       $individualOrPocId = $fields['Urban_Meetings.Select_Individual'] ?? NULL;
-      error_log('individualOrPocId: ' . print_r($individualOrPocId, TRUE));
       $institutionId = $fields['Urban_Meetings.Institution'] ?? NULL;
-      error_log('institutionId: ' . print_r($institutionId, TRUE));
-
 
       if ($individualOrPocId) {
         self::createActivityForContact($individualOrPocId);
