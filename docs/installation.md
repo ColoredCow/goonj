@@ -16,21 +16,6 @@
 
 First we will setup a WordPress site on top of which we will setup CiviCRM. For creating the WordPress site we will require a database.
 
-1. Login to the MySQL terminal
-   ```sh
-   mysql -u root -p
-   ```
-
-1. From the MySQL terminal, create a database
-   ```sql
-   create database goonj;
-   exit
-   ```
-
-1. Download the database dump from here [LINK](https://drive.google.com/drive/folders/13h9c76wD6Po6ezYDPEaFXlYGgnier-iW)
-
-1. After importing the database, run the `wp search-replace //goonj-crm.staging.coloredcow.com //goonj-civicrm.test` command to update the UAT URLs to your local URLs.
-
 1. Clone this repository
    ```sh
    git clone https://github.com/ColoredCow/goonj.git
@@ -41,7 +26,33 @@ First we will setup a WordPress site on top of which we will setup CiviCRM. For 
    cd goonj
    ```
 
-1. Delete the existing uploads folder in wp-content and replace it with the new one downloaded and unzipped from [Here](https://drive.google.com/drive/folders/13h9c76wD6Po6ezYDPEaFXlYGgnier-iW)
+1. Login to the MySQL terminal
+   ```sh
+   mysql -u root -p
+   ```
+
+1. From the MySQL terminal, create two databases — one for WordPress and one for CiviCRM
+   ```sql
+   create database goonj;
+   create database goonj_civicrm;
+   exit
+   ```
+
+1. Download the database dumps from [here](https://drive.google.com/drive/folders/10E8JVAfhLZvzOigkqiAe0I2y94_c-6f9). Inside the shared folder, open the `database` folder — you will find two dump files: one for WordPress and one for CiviCRM.
+
+1. Import both dumps into their respective databases
+   ```sh
+   mysql -u root -p goonj < wordpress.sql
+   mysql -u root -p goonj_civicrm < civicrm.sql
+   ```
+   > _Note: Replace `wordpress.sql` and `civicrm.sql` with the actual filenames from the downloaded dumps._
+
+1. After importing the databases, run the search-replace command to update the staging URLs to your local URLs
+   ```sh
+   wp search-replace 'https://goonj-crm.staging.coloredcow.com' 'https://goonj.test'
+   ```
+
+1. Delete the existing uploads folder in wp-content and replace it with the new one downloaded and unzipped from the same [shared folder](https://drive.google.com/drive/folders/10E8JVAfhLZvzOigkqiAe0I2y94_c-6f9)
 
 1. Open `wp-content/uploads/civicrm/civicrm.settings.php`. Search and replace 3 things:
    1. All the staging URLs: `https://goonj-crm.staging.coloredcow.com` to your local URL.

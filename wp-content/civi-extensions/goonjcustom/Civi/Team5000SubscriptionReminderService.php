@@ -8,7 +8,7 @@ use Civi\Api4\Contribution;
 use Civi\Api4\ContributionRecur;
 
 /**
- * Handles subscription expiry reminder emails for Team 5000 donors.
+ * Handles subscription expiry reminder emails for Team 5000 donors. 
  *
  * Sends reminders at 7, 3, and 1 day(s) before the calculated subscription
  * end date. Logs a CiviCRM activity after each send to prevent duplicates.
@@ -36,7 +36,6 @@ class Team5000SubscriptionReminderService {
       ->addSelect('contribution_recur_id')
       ->addWhere('contribution_page_id:name', '=', self::CONTRIBUTION_PAGE_NAME)
       ->addWhere('contribution_recur_id', 'IS NOT NULL')
-      ->addWhere('is_test', '=', TRUE)
       ->execute();
 
     $recurIds = array_unique(array_column((array) $contributions, 'contribution_recur_id'));
@@ -51,7 +50,6 @@ class Team5000SubscriptionReminderService {
       ->addSelect('id', 'contact_id', 'start_date', 'installments', 'frequency_interval', 'frequency_unit', 'amount', 'contribution_status_id')
       ->addWhere('id', 'IN', $recurIds)
       ->addWhere('contribution_status_id:name', '=', 'In Progress')
-      ->addWhere('is_test', '=', TRUE)
       ->execute();
 
     \Civi::log()->info('Team 5000: Active recurs to process: ' . $recurringContributions->count());
@@ -176,7 +174,6 @@ class Team5000SubscriptionReminderService {
       ->addWhere('contact_id', '=', $contactId)
       ->addWhere('contribution_recur_id', 'IS NOT NULL')
       ->addWhere('contribution_recur_id', '!=', $currentRecurId)
-      ->addWhere('is_test', '=', TRUE)
       ->execute();
 
     $recurIds = array_unique(array_column((array) $contributions, 'contribution_recur_id'));
@@ -189,7 +186,6 @@ class Team5000SubscriptionReminderService {
       ->addSelect('id')
       ->addWhere('id', 'IN', $recurIds)
       ->addWhere('contribution_status_id:name', '=', 'In Progress')
-      ->addWhere('is_test', '=', TRUE)
       ->execute()
       ->first();
 
