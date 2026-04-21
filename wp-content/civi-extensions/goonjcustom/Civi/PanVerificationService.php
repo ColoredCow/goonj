@@ -34,7 +34,7 @@ class PanVerificationService extends AutoSubscriber {
 
   /**
    * Fires during form validation for the frontend contribution form.
-   * Verifies PAN against the CashFree API and blocks submission if invalid.
+   * Verifies PAN against the SurePass API and blocks submission if invalid.
    * Sets $pendingPanVerification so the post hook can mark the contribution.
    */
   public static function onContributionFormValidate($formName, &$fields, &$files, &$form, &$errors): void {

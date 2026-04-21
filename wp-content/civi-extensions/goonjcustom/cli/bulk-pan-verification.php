@@ -2,7 +2,7 @@
 
 /**
  * @file
- * CLI Script to bulk verify PAN card numbers via CashFree API.
+ * CLI Script to bulk verify PAN card numbers via SurePass API.
  *
  * Fetches contacts who have a PAN saved on their profile and API has not been called yet.
  * PAN was already populated on the Contact by the backfill-contact-pan.php script.

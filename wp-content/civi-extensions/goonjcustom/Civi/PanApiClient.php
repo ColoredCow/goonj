@@ -6,18 +6,19 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 
 /**
- * HTTP client for the CashFree PAN verification API.
+ * HTTP client for the SurePass PAN verification API.
  * Responsible only for making the API call and returning a standardized result.
  * Contains no CiviCRM business logic.
  */
 class PanApiClient {
 
   /**
-   * Verify a PAN number via the CashFree API.
+   * Verify a PAN number via the SurePass API.
    *
    * Returns a standardized result array:
-   *   - verified (bool): true if PAN is valid
-   *   - registered_name (string|null): name on PAN card, if returned by API
+   *   - verified (bool): true if PAN is valid and matched by SurePass
+   *   - api_error (bool): true if the API call itself failed (auth, network, 5xx)
+   *   - registered_name (string|null): full name on PAN card, if returned by API
    *   - message (string): human-readable result or error message
    *   - raw_response (array): full API response for audit logging
    */
@@ -27,36 +28,19 @@ class PanApiClient {
     try {
       $client = new Client();
 
-      $response = $client->post(CASHFREE_PAN_API_BASE_URL, [
+      $response = $client->post(SUREPASS_PAN_API_BASE_URL, [
         'headers' => [
-          'Content-Type'    => 'application/json',
-          'x-client-id'     => CASHFREE_PAN_CLIENT_ID,
-          'x-client-secret' => CASHFREE_PAN_CLIENT_SECRET,
+          'Content-Type'  => 'application/json',
+          'Authorization' => 'Bearer ' . SUREPASS_PAN_API_TOKEN,
         ],
         'json' => [
-          'pan' => $pan,
+          'id_number' => $pan,
         ],
         'timeout' => 10,
       ]);
 
-      $body = json_decode((string) $response->getBody(), TRUE) ?? [];
-
-      // API-level validation error (e.g. pan_length_short)
-      if (!empty($body['type']) && $body['type'] === 'validation_error') {
-        \Civi::log()->warning('PAN API validation error', [
-          'pan'  => $pan,
-          'body' => $body,
-        ]);
-
-        return [
-          'verified'         => FALSE,
-          'registered_name'  => NULL,
-          'message'          => $body['message'] ?? 'Validation error',
-          'raw_response'     => $body,
-        ];
-      }
-
-      $verified = !empty($body['valid']) && $body['valid'] === TRUE;
+      $body     = json_decode((string) $response->getBody(), TRUE) ?? [];
+      $verified = !empty($body['success']) && $body['success'] === TRUE;
 
       \Civi::log()->info('PAN API response', [
         'pan'      => $pan,
@@ -66,12 +50,36 @@ class PanApiClient {
 
       return [
         'verified'         => $verified,
-        'registered_name'  => $body['registered_name'] ?? NULL,
+        'registered_name'  => $body['data']['full_name'] ?? NULL,
         'message'          => $body['message'] ?? '',
         'raw_response'     => $body,
       ];
     }
     catch (RequestException $e) {
+      // Inspect the response to distinguish a legitimate "invalid PAN" (422)
+      // from an actual API error (auth/network/server).
+      if ($e->hasResponse()) {
+        $response   = $e->getResponse();
+        $statusCode = $response->getStatusCode();
+        $body       = json_decode((string) $response->getBody(), TRUE) ?? [];
+
+        // 422 = PAN is valid format but not found / not verifiable — legit "not verified" response.
+        if ($statusCode === 422) {
+          \Civi::log()->info('PAN API returned invalid PAN', [
+            'pan'  => $pan,
+            'body' => $body,
+          ]);
+
+          return [
+            'verified'         => FALSE,
+            'registered_name'  => $body['data']['full_name'] ?? NULL,
+            'message'          => $body['message'] ?? 'Invalid PAN',
+            'raw_response'     => $body,
+          ];
+        }
+      }
+
+      // 401 / 403 / 500 / network timeout — treat as api_error and bypass.
       \Civi::log()->error('PAN API request failed', [
         'pan'   => $pan,
         'error' => $e->getMessage(),
