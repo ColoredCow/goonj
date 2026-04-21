@@ -2392,12 +2392,16 @@ class CollectionCampService extends AutoSubscriber {
        */
       if (!empty($sourceID)) {
         $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
-          ->addSelect('Collection_Camp_Intent_Details.Campaign')
+          ->addSelect(
+            'Collection_Camp_Intent_Details.Campaign',
+            'Institution_collection_camp_Review.Campaign'
+          )
           ->addWhere('id', '=', $sourceID)
           ->execute()->single();
 
         if (!empty($collectionCamp)) {
-          $campaignId = $collectionCamp['Collection_Camp_Intent_Details.Campaign'];
+          $campaignId = $collectionCamp['Collection_Camp_Intent_Details.Campaign']
+            ?: $collectionCamp['Institution_collection_camp_Review.Campaign'];
 
           if (!empty($campaignId)) {
             Contribution::update(FALSE)
