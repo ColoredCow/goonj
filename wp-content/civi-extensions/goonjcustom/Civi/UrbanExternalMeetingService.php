@@ -19,9 +19,9 @@ class UrbanExternalMeetingService extends AutoSubscriber {
     'afformUrbanExternalMeetingSession',
     'afformUrbanExternalMeeting',
   ];
-  const ACTIVITY_TYPE_NAME = 'Urban External Meeting Session';
+  const ACTIVITY_TYPE_NAME = 'Urban External Meeting';
   const ACTIVITY_STATUS = 'Completed';
-  const ACTIVITY_SUBJECT = 'Urban External Meeting Session';
+  const ACTIVITY_SUBJECT = 'Urban External Meeting';
 
   /**
    *
@@ -55,13 +55,14 @@ class UrbanExternalMeetingService extends AutoSubscriber {
       $fields = $record['fields'];
       $individualOrPocId = $fields['Urban_Meetings.Select_Individual'] ?? NULL;
       $institutionId = $fields['Urban_Meetings.Institution'] ?? NULL;
+      $coordinatingPocId = $fields['Urban_Meetings.Coordinating_Goonj_POC'] ?? NULL;
 
       if ($individualOrPocId) {
-        self::createActivityForContact($individualOrPocId);
+        self::createActivityForContact($individualOrPocId, $coordinatingPocId);
       }
 
       if ($institutionId) {
-        self::createActivityForContact($institutionId);
+        self::createActivityForContact($institutionId, $coordinatingPocId);
       }
     }
   }
@@ -69,14 +70,14 @@ class UrbanExternalMeetingService extends AutoSubscriber {
   /**
    * Creates a meeting activity for the given contact.
    */
-  private static function createActivityForContact(int $contactId) {
+  private static function createActivityForContact(int $contactId, $sourceContactId = NULL) {
     try {
       Activity::create(FALSE)
         ->addValue('subject', self::ACTIVITY_SUBJECT)
         ->addValue('activity_type_id:name', self::ACTIVITY_TYPE_NAME)
         ->addValue('status_id:name', self::ACTIVITY_STATUS)
         ->addValue('activity_date_time', date('Y-m-d H:i:s'))
-        ->addValue('source_contact_id', $contactId)
+        ->addValue('source_contact_id', $sourceContactId ?: $contactId)
         ->addValue('target_contact_id', $contactId)
         ->execute();
     }
