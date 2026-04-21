@@ -87,6 +87,11 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         ->execute()->first();
 
       $visitDate = $visitData['Urban_Planned_Visit.When_do_you_wish_to_visit_Goonj'];
+
+      if (self::isVisitDateInPast($visitDate)) {
+        return;
+      }
+
       $visitTimeId = $visitData['Urban_Planned_Visit.What_time_do_you_wish_to_visit_'];
 
       $optionValue = OptionValue::get(FALSE)
@@ -291,6 +296,11 @@ class UrbanPlannedVisitService extends AutoSubscriber {
 
       $visitAtId = $visitData['Urban_Planned_Visit.Which_Goonj_Processing_Center_do_you_wish_to_visit_'];
       $visitDate = $visitData['Urban_Planned_Visit.When_do_you_wish_to_visit_Goonj'];
+
+      if (self::isVisitDateInPast($visitDate)) {
+        return;
+      }
+
       $visitTimeId = $visitData['Urban_Planned_Visit.What_time_do_you_wish_to_visit_'];
 
       $optionValue = OptionValue::get(FALSE)
@@ -437,6 +447,22 @@ class UrbanPlannedVisitService extends AutoSubscriber {
       'newAuthVisitStatus' => $newAuthVisitStatus,
       'currentAuthVisitStatus' => $currentAuthVisitStatus,
     ];
+  }
+
+  /**
+   * Returns TRUE when the visit date is earlier than today.
+   */
+  private static function isVisitDateInPast($visitDate) {
+    if (empty($visitDate)) {
+      return FALSE;
+    }
+
+    $timestamp = strtotime($visitDate);
+    if ($timestamp === FALSE) {
+      return FALSE;
+    }
+
+    return strtotime(date('Y-m-d', $timestamp)) < strtotime('today');
   }
 
   /**
