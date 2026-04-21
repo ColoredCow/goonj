@@ -45,6 +45,7 @@ function civicrm_api3_goonjcustom_assign_default_campaign_cron($params) {
     ->addWhere('campaign_id', 'IS NULL')
     ->addWhere('contribution_status_id:name', '=', 'Completed')
     ->addWhere('receive_date', '>=', '2026-04-01')
+    ->addWhere('is_test', '=', 1)
     ->execute();
 
   foreach ($contributions as $contribution) {
