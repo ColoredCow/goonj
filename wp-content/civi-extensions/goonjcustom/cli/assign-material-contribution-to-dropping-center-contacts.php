@@ -30,11 +30,13 @@ if (php_sapi_name() !== 'cli') {
  * Config
  * ========================= */
 
-// CSV path (as requested)
-const CSV_FILE_PATH = '/var/www/html/crm.goonj.org/wp-content/civi-extensions/goonjcustom/cli//Users/shubhambelwal/Sites/goonj/wp-content/civi-extensions/goonjcustom/cli/Final data cleanups - test (16).csv';
+// CSV path comes from civicrm.settings.php. Define there:
+//   define('GOONJ_DC_IMPORT_CSV', '/full/path/to/input.csv');
+// The log file is auto-created by this script next to the input CSV
+// (e.g. input.csv -> input-log-YYYYMMDD-HHMMSS.csv).
 
 // Custom field keys on Activity (adjust if your site uses different keys)
-const CF_DROPPING_CENTER   = 'Material_Contribution.Institution_Dropping_Center';
+const CF_DROPPING_CENTER   = 'Material_Contribution.Dropping_Center';
 const CF_CONTRIBUTION_DATE = 'Material_Contribution.Contribution_Date';
 
 // Set to TRUE to test without writing data
@@ -77,11 +79,14 @@ function getv(array $row, array $hmap, array $aliases): ?string {
   return null;
 }
 
-/** Parse "DD/MM/YY" or "DD/MM/YYYY" -> "YYYY-MM-DD 00:00:00" */
+/** Parse date -> "YYYY-MM-DD 00:00:00". Accepts DD/MM/YY, DD/MM/YYYY, YYYY/MM/DD, YYYY-MM-DD. */
 function parse_contribution_date(?string $d): ?string {
   $d = trim((string)$d);
   if ($d === '') return null;
-  $dt = \DateTime::createFromFormat('d/m/y', $d) ?: \DateTime::createFromFormat('d/m/Y', $d);
+  $dt = \DateTime::createFromFormat('Y/m/d', $d)
+     ?: \DateTime::createFromFormat('Y-m-d', $d)
+     ?: \DateTime::createFromFormat('d/m/Y', $d)
+     ?: \DateTime::createFromFormat('d/m/y', $d);
   return $dt ? $dt->format('Y-m-d 00:00:00') : null;
 }
 
@@ -173,10 +178,18 @@ function find_dropping_center_id(string $code): ?int {
  * ========================= */
 
 function main(): void {
-  // TODO: update path (kept exactly as you asked)
-  $csvFilePath = CSV_FILE_PATH;
+  if (!defined('GOONJ_DC_IMPORT_CSV')) {
+    exit("Error: GOONJ_DC_IMPORT_CSV is not defined in civicrm.settings.php.\n");
+  }
+  $csvFilePath = constant('GOONJ_DC_IMPORT_CSV');
+
+  // Auto-derive the log file path next to the input CSV, with a timestamp
+  $csvDir       = dirname($csvFilePath);
+  $csvBase      = pathinfo($csvFilePath, PATHINFO_FILENAME);
+  $logFilePath  = $csvDir . DIRECTORY_SEPARATOR . $csvBase . '-log-' . date('Ymd-His') . '.csv';
 
   echo "CSV File: $csvFilePath\n";
+  echo "Log File: $logFilePath\n";
   if (!file_exists($csvFilePath)) {
     exit("Error: File not found.\n");
   }
@@ -197,12 +210,43 @@ function main(): void {
 
   // Column aliases (match your sheet headers)
   $COL = [
-    'center_code' => ['Dropping Center Code', 'dropping_center', 'Dropping Center'],
-    'date'        => ['Contribution Date (DD/MM/YY)', 'Contribution Date (DD/MM/YYYY)', 'contribution_date'],
+    'center_code' => ['DC Code', 'Dropping Center Code', 'dropping_center', 'Dropping Center'],
+    'date'        => ['Contribution Date (YYYY/MM/DD)', 'Contribution Date (DD/MM/YY)', 'Contribution Date (DD/MM/YYYY)', 'Contribution Date', 'contribution_date'],
     'first_name'  => ['First Name', 'first_name'],
-    'email'       => ['Email', 'email'],
-    'phone'       => ['Mobile', 'Phone', 'phone'],
+    'last_name'   => ['Last Name', 'last_name'],
+    'email'       => ['E-Mail ID', 'Email', 'email'],
+    'phone'       => ['Contact No.', 'Mobile', 'Phone', 'phone'],
+    'material'    => [
+      'Description of Material (No. of Bags & Material) *',
+      'Description of Material (No. of Bags & Material)',
+      'Description of Material',
+      'description_of_material',
+    ],
   ];
+
+  // Open the log file for errors/skipped rows (auto-created next to the CSV)
+  $logHandle = fopen($logFilePath, 'w');
+  if ($logHandle === FALSE) {
+    echo "Warning: could not open log file at {$logFilePath}\n";
+  } else {
+    fputcsv($logHandle, ['Row #', 'DC Code', 'First Name', 'Last Name', 'Mobile', 'Email', 'Contribution Date', 'Description of Material', 'Status', 'Reason']);
+  }
+
+  $logRow = function(int $rowNum, array $data, string $status, string $reason) use ($logHandle, $COL, $hmap) {
+    if (!$logHandle) return;
+    fputcsv($logHandle, [
+      $rowNum,
+      getv($data, $hmap, $COL['center_code']) ?? '',
+      getv($data, $hmap, $COL['first_name']) ?? '',
+      getv($data, $hmap, $COL['last_name']) ?? '',
+      getv($data, $hmap, $COL['phone']) ?? '',
+      getv($data, $hmap, $COL['email']) ?? '',
+      getv($data, $hmap, $COL['date']) ?? '',
+      getv($data, $hmap, $COL['material']) ?? '',
+      $status,
+      $reason,
+    ]);
+  };
 
   $rowNum = 1;
   $created = 0; $skipped = 0; $errors = 0;
@@ -211,19 +255,22 @@ function main(): void {
     $rowNum++;
     if (count($row) !== count($header)) {
       echo "Row $rowNum: column mismatch — skipping.\n";
+      $logRow($rowNum, [], 'SKIPPED', 'Column count does not match header');
       $skipped++; continue;
     }
 
     $data = array_combine($header, $row) ?: [];
 
-    $code   = getv($data, $hmap, $COL['center_code']);
-    $date   = getv($data, $hmap, $COL['date']);
-    $first  = getv($data, $hmap, $COL['first_name']);
-    $email  = getv($data, $hmap, $COL['email']);
-    $phone  = getv($data, $hmap, $COL['phone']);
+    $code     = getv($data, $hmap, $COL['center_code']);
+    $date     = getv($data, $hmap, $COL['date']);
+    $first    = getv($data, $hmap, $COL['first_name']);
+    $email    = getv($data, $hmap, $COL['email']);
+    $phone    = getv($data, $hmap, $COL['phone']);
+    $material = getv($data, $hmap, $COL['material']);
 
     if (!$code) {
-      echo "Row $rowNum: missing Dropping Center Code — skipping.\n";
+      echo "Row $rowNum: missing DC Code — skipping.\n";
+      $logRow($rowNum, $data, 'SKIPPED', 'Missing DC Code');
       $skipped++; continue;
     }
 
@@ -236,6 +283,7 @@ function main(): void {
     $contactId = get_initiator_id($data) ?: find_contact_id_fallback($email, $phone);
     if (!$contactId) {
       echo "Row $rowNum ($code): contact not found (first: {$first}, email: {$email}, phone: {$phone}) — skipping.\n";
+      $logRow($rowNum, $data, 'SKIPPED', "Contact not found (first='{$first}', email='{$email}', phone='{$phone}')");
       $skipped++; continue;
     }
 
@@ -243,6 +291,7 @@ function main(): void {
     $centerId = find_dropping_center_id($code);
     if (!$centerId) {
       echo "Row $rowNum ($code): Dropping Center not found — skipping.\n";
+      $logRow($rowNum, $data, 'SKIPPED', "Dropping Center not found for code '{$code}'");
       $skipped++; continue;
     }
 
@@ -250,15 +299,19 @@ function main(): void {
     $activityDateTime = parse_contribution_date($date);
     if (!$activityDateTime) {
       echo "Row $rowNum ($code): invalid contribution date '{$date}' — skipping.\n";
+      $logRow($rowNum, $data, 'SKIPPED', "Invalid contribution date '{$date}'");
       $skipped++; continue;
     }
 
+    $subject = $material !== null && $material !== '' ? $material : 'Material Contribution';
+
     if (DRY_RUN) {
       echo "DRY-RUN Row $rowNum: would create Material Contribution for contact {$contactId}, center {$centerId}, date {$activityDateTime}\n";
+      $logRow($rowNum, $data, 'DRY_RUN', "Would create for contact={$contactId}, center={$centerId}");
       $created++; continue;
     }
 
-    // Create the activity (only this, as you requested)
+    // Create the activity
     try {
       Activity::create(FALSE)
         ->addValue('activity_type_id:name', 'Material Contribution')
@@ -266,6 +319,7 @@ function main(): void {
         ->addValue('activity_date_time', $activityDateTime)
         ->addValue('source_contact_id', $contactId)
         ->addValue('target_contact_id', $contactId)
+        ->addValue('subject', $subject)                     // material description
         ->addValue(CF_CONTRIBUTION_DATE, $activityDateTime) // custom field
         ->addValue(CF_DROPPING_CENTER, $centerId)           // custom field
         ->execute();
@@ -275,12 +329,17 @@ function main(): void {
     }
     catch (\Throwable $e) {
       echo "❌ Row $rowNum ($code): " . $e->getMessage() . "\n";
+      $logRow($rowNum, $data, 'ERROR', $e->getMessage());
       $errors++;
       continue;
     }
   }
 
   fclose($handle);
+  if ($logHandle) {
+    fclose($logHandle);
+    echo "Log written to: {$logFilePath}\n";
+  }
   echo "=== Done. Created: {$created}, Skipped: {$skipped}, Errors: {$errors} ===\n";
 }
 
