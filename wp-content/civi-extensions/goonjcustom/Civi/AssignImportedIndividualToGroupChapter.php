@@ -71,7 +71,32 @@ class AssignImportedIndividualToGroupChapter extends AutoSubscriber {
 				}
 			}
 		}
-		civicrm_api3('System', 'flush', []);
+
+		// Clear CiviCRM caches so the new chapter-group assignment is immediately
+		// visible in forms/ACLs — fix for ColoredCow/goonj-crm#269. Skipped during
+		// bulk imports because the Contact Import Parser fires this hook per row
+		// and a full System.flush per row makes 6K+ imports unusable and blocks
+		// concurrent users. After an import, caches refresh naturally on the
+		// next admin action or can be cleared manually.
+		if (!self::isRunningInBulkImport()) {
+			civicrm_api3('System', 'flush', []);
+		}
+	}
+
+	/**
+	 * Returns TRUE when this hook is firing inside a CiviCRM bulk-import run
+	 * (CRM_Contact_Import_Parser_Contact::createContact in the call stack).
+	 * Checked via backtrace because userJobID is not populated in session
+	 * during the AJAX queue-runner path.
+	 */
+	private static function isRunningInBulkImport(): bool {
+		foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 20) as $frame) {
+			$class = $frame['class'] ?? '';
+			if ($class !== '' && str_contains($class, 'Import_Parser')) {
+				return TRUE;
+			}
+		}
+		return FALSE;
 	}
 
 	/**
