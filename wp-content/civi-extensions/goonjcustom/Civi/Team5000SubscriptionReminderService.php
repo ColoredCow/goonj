@@ -67,6 +67,7 @@ class Team5000SubscriptionReminderService {
       ->addSelect('contribution_recur_id')
       ->addWhere('contribution_page_id:name', '=', self::TEAM_5000_PAGE_NAME)
       ->addWhere('contribution_recur_id', 'IS NOT NULL')
+      ->addWhere('is_test', '=', TRUE)
       ->execute();
 
     $team5000RecurIds = array_values(array_unique(array_column((array) $contributions, 'contribution_recur_id')));
@@ -80,6 +81,7 @@ class Team5000SubscriptionReminderService {
       ->addSelect('id', 'contact_id', 'start_date', 'installments', 'frequency_interval', 'frequency_unit', 'amount')
       ->addWhere('id', 'IN', $team5000RecurIds)
       ->addWhere('contribution_status_id:name', '=', 'In Progress')
+      ->addWhere('is_test', '=', TRUE)
       ->execute();
 
     \Civi::log()->info('Team 5000: Active recurs to process: ' . $recurs->count());
@@ -116,7 +118,8 @@ class Team5000SubscriptionReminderService {
     $query = ContributionRecur::get(FALSE)
       ->addSelect('id', 'contact_id', 'start_date', 'installments', 'frequency_interval', 'frequency_unit', 'amount')
       ->addWhere('contribution_status_id:name', '=', 'In Progress')
-      ->addWhere('installments', 'IS NOT NULL');
+      ->addWhere('installments', 'IS NOT NULL')
+      ->addWhere('is_test', '=', TRUE);
 
     if (!empty($team5000RecurIds)) {
       $query->addWhere('id', 'NOT IN', $team5000RecurIds);
@@ -154,6 +157,7 @@ class Team5000SubscriptionReminderService {
       ->addSelect('contribution_recur_id')
       ->addWhere('contribution_page_id:name', '=', self::TEAM_5000_PAGE_NAME)
       ->addWhere('contribution_recur_id', 'IS NOT NULL')
+      ->addWhere('is_test', '=', TRUE)
       ->execute();
 
     return array_values(array_unique(array_column((array) $contributions, 'contribution_recur_id')));
@@ -284,7 +288,8 @@ class Team5000SubscriptionReminderService {
       ->addWhere('contact_id', '=', $contactId)
       ->addWhere('id', '!=', $currentRecurId)
       ->addWhere('contribution_status_id:name', '=', 'In Progress')
-      ->addWhere('start_date', '>', $firstReminderDate);
+      ->addWhere('start_date', '>', $firstReminderDate)
+      ->addWhere('is_test', '=', TRUE);
 
     if ($config['is_team_5000']) {
       $otherTeam5000Ids = array_values(array_diff($config['team_5000_recur_ids'], [$currentRecurId]));
