@@ -8,58 +8,95 @@ use Civi\Api4\Contribution;
 use Civi\Api4\ContributionRecur;
 
 /**
- * Handles subscription expiry reminder emails for Team 5000 donors. 
+ * Handles subscription expiry reminder emails for recurring donations.
  *
- * Sends reminders at 7, 3, and 1 day(s) before the calculated subscription
+ * Sends reminders at 30, 7, and 2 days before the calculated subscription
  * end date. Logs a CiviCRM activity after each send to prevent duplicates.
+ *
+ * Two independent pipelines are processed in a single run:
+ *   1. Team 5000 recurs (contribution page = Team_5000)
+ *   2. Generic recurring donations (everything else)
  */
 class Team5000SubscriptionReminderService {
 
-  const ACTIVITY_TYPE_NAME = 'Team 5000 Subscription Reminder';
-  const CONTRIBUTION_PAGE_NAME = 'Team_5000';
   const REMINDER_DAYS = [30, 7, 2];
   const CC_RECIPIENTS = 'priyanka@goonj.org, accounts@goonj.org';
 
+  const TEAM_5000_PAGE_NAME = 'Team_5000';
+  const TEAM_5000_ACTIVITY_TYPE = 'Team 5000 Subscription Reminder';
+  const GENERIC_ACTIVITY_TYPE = 'Recurring Donation Reminder';
+
   /**
-   * Entry point called by the cron.
+   * Entry point called by the cron. Runs both pipelines.
    *
-   * Fetches all active Team 5000 recurring contributions and processes
-   * each one for due reminders.
+   * Each pipeline is wrapped in its own try/catch so a failure in one
+   * does not prevent the other from running.
    */
   public static function processReminders(\DateTimeImmutable $now, string $from): void {
+    try {
+      self::processTeam5000Pipeline($now, $from);
+    }
+    catch (\Exception $e) {
+      \Civi::log()->error('Team 5000: Pipeline failed', [
+        'error' => $e->getMessage(),
+      ]);
+    }
 
+    try {
+      self::processGenericPipeline($now, $from);
+    }
+    catch (\Exception $e) {
+      \Civi::log()->error('Recurring: Pipeline failed', [
+        'error' => $e->getMessage(),
+      ]);
+    }
+  }
+
+  /**
+   * Pipeline 1 — Team 5000.
+   *
+   * Finds all recurs whose first contribution is on the Team 5000
+   * contribution page, then sends reminders for any that are due.
+   */
+  private static function processTeam5000Pipeline(\DateTimeImmutable $now, string $from): void {
     // Get unique recur IDs via the first contribution of each Team 5000 subscription.
-    // The first contribution always has contribution_page_id = 7.
+    // The first contribution always has contribution_page_id = Team_5000.
     // Subsequent Razorpay payments have contribution_page_id = null, but we only
     // need one match per recur — after that we work directly on civicrm_contribution_recur.
     $contributions = Contribution::get(FALSE)
       ->addSelect('contribution_recur_id')
-      ->addWhere('contribution_page_id:name', '=', self::CONTRIBUTION_PAGE_NAME)
+      ->addWhere('contribution_page_id:name', '=', self::TEAM_5000_PAGE_NAME)
       ->addWhere('contribution_recur_id', 'IS NOT NULL')
       ->execute();
 
-    $recurIds = array_unique(array_column((array) $contributions, 'contribution_recur_id'));
+    $team5000RecurIds = array_values(array_unique(array_column((array) $contributions, 'contribution_recur_id')));
 
-    if (empty($recurIds)) {
-      \Civi::log()->warning('Team 5000: No recurring contributions found for contribution page: ' . self::CONTRIBUTION_PAGE_NAME);
+    if (empty($team5000RecurIds)) {
+      \Civi::log()->info('Team 5000: No recurring contributions found for contribution page: ' . self::TEAM_5000_PAGE_NAME);
       return;
     }
 
-    // Fetch active recurring contributions.
-    $recurringContributions = ContributionRecur::get(FALSE)
-      ->addSelect('id', 'contact_id', 'start_date', 'installments', 'frequency_interval', 'frequency_unit', 'amount', 'contribution_status_id')
-      ->addWhere('id', 'IN', $recurIds)
+    $recurs = ContributionRecur::get(FALSE)
+      ->addSelect('id', 'contact_id', 'start_date', 'installments', 'frequency_interval', 'frequency_unit', 'amount')
+      ->addWhere('id', 'IN', $team5000RecurIds)
       ->addWhere('contribution_status_id:name', '=', 'In Progress')
       ->execute();
 
-    \Civi::log()->info('Team 5000: Active recurs to process: ' . $recurringContributions->count());
+    \Civi::log()->info('Team 5000: Active recurs to process: ' . $recurs->count());
 
-    foreach ($recurringContributions as $recur) {
+    $config = [
+      'is_team_5000' => TRUE,
+      'activity_type_name' => self::TEAM_5000_ACTIVITY_TYPE,
+      'pipeline_label' => 'Team 5000',
+      'team_5000_recur_ids' => $team5000RecurIds,
+    ];
+
+    foreach ($recurs as $recur) {
       try {
-        self::processSubscription($recur, $now, $from);
+        self::processSubscription($recur, $now, $from, $config);
       }
       catch (\Exception $e) {
-        \Civi::log()->error('Team 5000: Error processing subscription reminder', [
+        \Civi::log()->error('Team 5000: Error processing reminder', [
           'recur_id' => $recur['id'],
           'error' => $e->getMessage(),
         ]);
@@ -68,12 +105,67 @@ class Team5000SubscriptionReminderService {
   }
 
   /**
+   * Pipeline 2 — Generic recurring donations.
+   *
+   * Finds all active recurs that are NOT linked to the Team 5000 page,
+   * then sends reminders for any that are due.
+   */
+  private static function processGenericPipeline(\DateTimeImmutable $now, string $from): void {
+    $team5000RecurIds = self::getTeam5000RecurIds();
+
+    $query = ContributionRecur::get(FALSE)
+      ->addSelect('id', 'contact_id', 'start_date', 'installments', 'frequency_interval', 'frequency_unit', 'amount')
+      ->addWhere('contribution_status_id:name', '=', 'In Progress')
+      ->addWhere('installments', 'IS NOT NULL');
+
+    if (!empty($team5000RecurIds)) {
+      $query->addWhere('id', 'NOT IN', $team5000RecurIds);
+    }
+
+    $recurs = $query->execute();
+
+    \Civi::log()->info('Recurring: Active recurs to process: ' . $recurs->count());
+
+    $config = [
+      'is_team_5000' => FALSE,
+      'activity_type_name' => self::GENERIC_ACTIVITY_TYPE,
+      'pipeline_label' => 'Recurring',
+      'team_5000_recur_ids' => $team5000RecurIds,
+    ];
+
+    foreach ($recurs as $recur) {
+      try {
+        self::processSubscription($recur, $now, $from, $config);
+      }
+      catch (\Exception $e) {
+        \Civi::log()->error('Recurring: Error processing reminder', [
+          'recur_id' => $recur['id'],
+          'error' => $e->getMessage(),
+        ]);
+      }
+    }
+  }
+
+  /**
+   * Helper used by the generic pipeline to know which recurs to exclude.
+   */
+  private static function getTeam5000RecurIds(): array {
+    $contributions = Contribution::get(FALSE)
+      ->addSelect('contribution_recur_id')
+      ->addWhere('contribution_page_id:name', '=', self::TEAM_5000_PAGE_NAME)
+      ->addWhere('contribution_recur_id', 'IS NOT NULL')
+      ->execute();
+
+    return array_values(array_unique(array_column((array) $contributions, 'contribution_recur_id')));
+  }
+
+  /**
    * Checks if any reminder is due for the given subscription and sends it.
    */
-  private static function processSubscription(array $recur, \DateTimeImmutable $now, string $from): void {
+  private static function processSubscription(array $recur, \DateTimeImmutable $now, string $from, array $config): void {
     if (empty($recur['start_date']) || empty($recur['installments'])) {
-      \Civi::log()->info('Team 5000: Skipping recur {id} — missing start_date or installments', [
-        'id' => $recur['id'],
+      \Civi::log()->info($config['pipeline_label'] . ': Skipping recur — missing start_date or installments', [
+        'recur_id' => $recur['id'],
       ]);
       return;
     }
@@ -94,24 +186,25 @@ class Team5000SubscriptionReminderService {
         continue;
       }
 
-      if (self::hasReminderBeenSent($recur['id'], $recur['contact_id'], $daysBefore)) {
-        \Civi::log()->info('Team 5000: Reminder already sent, skipping', [
+      if (self::hasReminderBeenSent($recur['id'], $recur['contact_id'], $daysBefore, $config['activity_type_name'])) {
+        \Civi::log()->info($config['pipeline_label'] . ': Reminder already sent, skipping', [
           'recur_id' => $recur['id'],
           'days_before' => $daysBefore,
         ]);
         continue;
       }
 
-      // Skip if donor has already renewed their Team 5000 subscription.
-      if (self::hasRenewed($recur['contact_id'], $recur['id'])) {
-        \Civi::log()->info('Team 5000: Donor has already renewed, skipping reminder', [
+      // Skip if donor has started a new subscription within the same pipeline
+      // after the first reminder was sent.
+      if (self::hasRenewed($recur['contact_id'], $recur['id'], $config)) {
+        \Civi::log()->info($config['pipeline_label'] . ': Donor renewed, skipping', [
           'recur_id' => $recur['id'],
           'days_before' => $daysBefore,
         ]);
         continue;
       }
 
-      self::sendReminderAndLog($recur, $endDate, $daysBefore, $from);
+      self::sendReminderAndLog($recur, $endDate, $daysBefore, $from, $config);
     }
   }
 
@@ -143,15 +236,12 @@ class Team5000SubscriptionReminderService {
   }
 
   /**
-   * Checks if a reminder for the given recur ID and day window was already sent.
-   *
-   * Idempotency is based on a matching activity record for this contact,
-   * recur_id, and days_before value encoded in the subject.
+   * Checks if a reminder for this recur and day window was already sent.
    */
-  private static function hasReminderBeenSent(int $recurId, int $contactId, int $daysBefore): bool {
+  private static function hasReminderBeenSent(int $recurId, int $contactId, int $daysBefore, string $activityTypeName): bool {
     $existing = Activity::get(FALSE)
       ->addSelect('id')
-      ->addWhere('activity_type_id:name', '=', self::ACTIVITY_TYPE_NAME)
+      ->addWhere('activity_type_id:name', '=', $activityTypeName)
       ->addWhere('target_contact_id', '=', $contactId)
       ->addWhere('subject', 'LIKE', '%recur_id:' . $recurId . '%')
       ->addWhere('subject', 'LIKE', '%- ' . $daysBefore . ' days%')
@@ -162,40 +252,61 @@ class Team5000SubscriptionReminderService {
   }
 
   /**
-   * Checks if the donor has started a new Team 5000 subscription (renewal).
-   *
-   * Looks for another active recurring contribution on the Team 5000 page
-   * for the same contact, excluding the current expiring recur.
+   * Returns the activity_date_time of the earliest reminder activity for
+   * this recur, or NULL if no reminder has been sent yet.
    */
-  private static function hasRenewed(int $contactId, int $currentRecurId): bool {
-    $contributions = Contribution::get(FALSE)
-      ->addSelect('contribution_recur_id')
-      ->addWhere('contribution_page_id:name', '=', self::CONTRIBUTION_PAGE_NAME)
-      ->addWhere('contact_id', '=', $contactId)
-      ->addWhere('contribution_recur_id', 'IS NOT NULL')
-      ->addWhere('contribution_recur_id', '!=', $currentRecurId)
-      ->execute();
-
-    $recurIds = array_unique(array_column((array) $contributions, 'contribution_recur_id'));
-
-    if (empty($recurIds)) {
-      return FALSE;
-    }
-
-    $newActiveRecur = ContributionRecur::get(FALSE)
-      ->addSelect('id')
-      ->addWhere('id', 'IN', $recurIds)
-      ->addWhere('contribution_status_id:name', '=', 'In Progress')
+  private static function getFirstReminderDate(int $recurId, int $contactId, string $activityTypeName): ?string {
+    $activity = Activity::get(FALSE)
+      ->addSelect('activity_date_time')
+      ->addWhere('activity_type_id:name', '=', $activityTypeName)
+      ->addWhere('target_contact_id', '=', $contactId)
+      ->addWhere('subject', 'LIKE', '%recur_id:' . $recurId . '%')
+      ->addOrderBy('activity_date_time', 'ASC')
+      ->setLimit(1)
       ->execute()
       ->first();
 
-    return !empty($newActiveRecur);
+    return $activity['activity_date_time'] ?? NULL;
+  }
+
+  /**
+   * Checks if the donor has started a new subscription within the same
+   * pipeline (Team 5000 OR generic) after the first reminder was sent.
+   */
+  private static function hasRenewed(int $contactId, int $currentRecurId, array $config): bool {
+    $firstReminderDate = self::getFirstReminderDate($currentRecurId, $contactId, $config['activity_type_name']);
+    if ($firstReminderDate === NULL) {
+      return FALSE;
+    }
+
+    $query = ContributionRecur::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('contact_id', '=', $contactId)
+      ->addWhere('id', '!=', $currentRecurId)
+      ->addWhere('contribution_status_id:name', '=', 'In Progress')
+      ->addWhere('start_date', '>', $firstReminderDate);
+
+    if ($config['is_team_5000']) {
+      $otherTeam5000Ids = array_values(array_diff($config['team_5000_recur_ids'], [$currentRecurId]));
+      if (empty($otherTeam5000Ids)) {
+        return FALSE;
+      }
+      $query->addWhere('id', 'IN', $otherTeam5000Ids);
+    }
+    else {
+      if (!empty($config['team_5000_recur_ids'])) {
+        $query->addWhere('id', 'NOT IN', $config['team_5000_recur_ids']);
+      }
+    }
+
+    $newRecur = $query->execute()->first();
+    return !empty($newRecur);
   }
 
   /**
    * Fetches contact details, sends the reminder email, and logs the activity.
    */
-  private static function sendReminderAndLog(array $recur, string $endDate, int $daysBefore, string $from): void {
+  private static function sendReminderAndLog(array $recur, string $endDate, int $daysBefore, string $from, array $config): void {
     $contactId = $recur['contact_id'];
 
     $contact = Contact::get(FALSE)
@@ -206,8 +317,8 @@ class Team5000SubscriptionReminderService {
       ->first();
 
     if (empty($contact['email.email'])) {
-      \Civi::log()->info('Team 5000: Skipping reminder — no email for contact {id}', [
-        'id' => $contactId,
+      \Civi::log()->info($config['pipeline_label'] . ': Skipping — no email for contact', [
+        'contact_id' => $contactId,
         'recur_id' => $recur['id'],
         'days_before' => $daysBefore,
       ]);
@@ -218,19 +329,21 @@ class Team5000SubscriptionReminderService {
     $donorEmail = $contact['email.email'];
 
     $mailParams = [
-      'subject' => self::getEmailSubject($daysBefore),
+      'subject' => self::getEmailSubject($daysBefore, $config['is_team_5000']),
       'from' => $from,
       'toEmail' => $donorEmail,
       'toName' => $donorName,
       'replyTo' => $from,
       'cc' => self::CC_RECIPIENTS,
-      'html' => self::getReminderEmailHtml($endDate),
+      'html' => $config['is_team_5000']
+        ? self::getTeam5000EmailHtml($endDate)
+        : self::getGenericEmailHtml($endDate),
     ];
 
     $emailResult = \CRM_Utils_Mail::send($mailParams);
 
     if (!$emailResult) {
-      \Civi::log()->error('Team 5000: Failed to send reminder email', [
+      \Civi::log()->error($config['pipeline_label'] . ': Failed to send reminder email', [
         'contact_id' => $contactId,
         'email' => $donorEmail,
         'recur_id' => $recur['id'],
@@ -239,25 +352,33 @@ class Team5000SubscriptionReminderService {
       return;
     }
 
-    \Civi::log()->info('Team 5000: Reminder email sent', [
+    \Civi::log()->info($config['pipeline_label'] . ': Reminder email sent', [
       'recur_id' => $recur['id'],
       'email' => $donorEmail,
       'days_before' => $daysBefore,
     ]);
 
-    self::createReminderActivity($contactId, $recur['id'], $daysBefore);
+    self::createReminderActivity($contactId, $recur['id'], $daysBefore, $config);
   }
 
   /**
    * Creates a CiviCRM activity to record that the reminder was sent.
+   *
+   * Subject prefix matches the original Team 5000 format ("Subscription
+   * Expiry Reminder") so existing activities and new ones stay consistent.
+   * Generic pipeline uses "Recurring Donation Reminder" as the subject prefix.
    */
-  private static function createReminderActivity(int $contactId, int $recurId, int $daysBefore): void {
+  private static function createReminderActivity(int $contactId, int $recurId, int $daysBefore, array $config): void {
+    $subjectPrefix = $config['is_team_5000']
+      ? 'Team 5000 Subscription Expiry Reminder'
+      : 'Recurring Donation Reminder';
+
     Activity::create(FALSE)
-      ->addValue('activity_type_id:name', self::ACTIVITY_TYPE_NAME)
+      ->addValue('activity_type_id:name', $config['activity_type_name'])
       ->addValue('status_id:name', 'Completed')
       ->addValue('source_contact_id', $contactId)
       ->addValue('target_contact_id', $contactId)
-      ->addValue('subject', 'Team 5000 Subscription Expiry Reminder - ' . $daysBefore . ' days (recur_id:' . $recurId . ')')
+      ->addValue('subject', $subjectPrefix . ' - ' . $daysBefore . ' days (recur_id:' . $recurId . ')')
       ->addValue('details', 'Automated reminder sent ' . $daysBefore . ' day(s) before subscription expiry.')
       ->execute();
   }
@@ -265,22 +386,23 @@ class Team5000SubscriptionReminderService {
   /**
    * Returns the email subject line based on how many days remain.
    */
-  private static function getEmailSubject(int $daysBefore): string {
+  private static function getEmailSubject(int $daysBefore, bool $isTeam5000): string {
     $labels = [
       30 => '1 Month',
       7  => '7 Days',
       2  => '2 Days',
     ];
     $label = $labels[$daysBefore] ?? "{$daysBefore} Days";
-    return "Reminder: Your Team 5000 Membership Expires in {$label}";
+    $product = $isTeam5000 ? 'Team 5000 Membership' : 'Recurring Donation';
+    return "Reminder: Your {$product} Expires in {$label}";
   }
 
   /**
-   * Builds the HTML email body for the reminder.
+   * Builds the HTML email body for Team 5000 reminders.
    *
-   * Note: Template content is a placeholder — final copy to be confirmed with the client.
+   * Template content is a placeholder — final copy to be confirmed with the client.
    */
-  private static function getReminderEmailHtml(string $endDate): string {
+  private static function getTeam5000EmailHtml(string $endDate): string {
     $formattedDate = (new \DateTime($endDate))->format('F j, Y');
 
     return "
@@ -291,6 +413,26 @@ class Team5000SubscriptionReminderService {
       <p>We warmly invite you to renew your Team 5000 membership at your earliest convenience by clicking this link <a href='https://goonj.org/donate/campaign/team-5000-new'>https://goonj.org/donate/campaign/team-5000-new</a></p>
       <p>Kindly ignore if you have already renewed your contribution. If you have any questions or need assistance, please feel free to write to us at <a href='mailto:priyanka@goonj.org'>priyanka@goonj.org</a>.</p>
       <p>Thank you for being such an important part of Team 5000. Together, we are creating real impact.</p>
+      <p>Warm regards<br>Team Goonj</p>
+    ";
+  }
+
+  /**
+   * Builds the HTML email body for generic recurring donation reminders.
+   *
+   * Template content is a placeholder — final copy to be confirmed with the client.
+   */
+  private static function getGenericEmailHtml(string $endDate): string {
+    $formattedDate = (new \DateTime($endDate))->format('F j, Y');
+
+    return "
+      <p>Greetings from Goonj!</p>
+      <p>Just a gentle reminder that your recurring donation is set to end in a few days (on <strong>{$formattedDate}</strong>).</p>
+      <p>We truly hope you'll continue this journey with us.</p>
+      <p>Your contribution has been making a meaningful difference, helping us reach communities that need it most.</p>
+      <p>We warmly invite you to renew your contribution at your earliest convenience.</p>
+      <p>Kindly ignore if you have already renewed your contribution. If you have any questions or need assistance, please feel free to write to us at <a href='mailto:accounts@goonj.org'>accounts@goonj.org</a>.</p>
+      <p>Thank you for being a part of the Goonj family. Together, we are creating real impact.</p>
       <p>Warm regards<br>Team Goonj</p>
     ";
   }
