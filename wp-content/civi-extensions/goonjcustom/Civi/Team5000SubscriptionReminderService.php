@@ -28,10 +28,28 @@ class Team5000SubscriptionReminderService {
 
   /**
    * Entry point called by the cron. Runs both pipelines.
+   *
+   * Each pipeline is wrapped in its own try/catch so a failure in one
+   * does not prevent the other from running.
    */
   public static function processReminders(\DateTimeImmutable $now, string $from): void {
-    self::processTeam5000Pipeline($now, $from);
-    self::processGenericPipeline($now, $from);
+    try {
+      self::processTeam5000Pipeline($now, $from);
+    }
+    catch (\Exception $e) {
+      \Civi::log()->error('Team 5000: Pipeline failed', [
+        'error' => $e->getMessage(),
+      ]);
+    }
+
+    try {
+      self::processGenericPipeline($now, $from);
+    }
+    catch (\Exception $e) {
+      \Civi::log()->error('Recurring: Pipeline failed', [
+        'error' => $e->getMessage(),
+      ]);
+    }
   }
 
   /**
@@ -340,19 +358,27 @@ class Team5000SubscriptionReminderService {
       'days_before' => $daysBefore,
     ]);
 
-    self::createReminderActivity($contactId, $recur['id'], $daysBefore, $config['activity_type_name']);
+    self::createReminderActivity($contactId, $recur['id'], $daysBefore, $config);
   }
 
   /**
    * Creates a CiviCRM activity to record that the reminder was sent.
+   *
+   * Subject prefix matches the original Team 5000 format ("Subscription
+   * Expiry Reminder") so existing activities and new ones stay consistent.
+   * Generic pipeline uses "Recurring Donation Reminder" as the subject prefix.
    */
-  private static function createReminderActivity(int $contactId, int $recurId, int $daysBefore, string $activityTypeName): void {
+  private static function createReminderActivity(int $contactId, int $recurId, int $daysBefore, array $config): void {
+    $subjectPrefix = $config['is_team_5000']
+      ? 'Team 5000 Subscription Expiry Reminder'
+      : 'Recurring Donation Reminder';
+
     Activity::create(FALSE)
-      ->addValue('activity_type_id:name', $activityTypeName)
+      ->addValue('activity_type_id:name', $config['activity_type_name'])
       ->addValue('status_id:name', 'Completed')
       ->addValue('source_contact_id', $contactId)
       ->addValue('target_contact_id', $contactId)
-      ->addValue('subject', $activityTypeName . ' - ' . $daysBefore . ' days (recur_id:' . $recurId . ')')
+      ->addValue('subject', $subjectPrefix . ' - ' . $daysBefore . ' days (recur_id:' . $recurId . ')')
       ->addValue('details', 'Automated reminder sent ' . $daysBefore . ' day(s) before subscription expiry.')
       ->execute();
   }
