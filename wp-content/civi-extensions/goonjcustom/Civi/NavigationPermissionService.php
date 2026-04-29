@@ -340,9 +340,6 @@ class NavigationPermissionService extends AutoSubscriber {
           'NJPC Individual Goonj Activities',
           'S2S Institution Goonj Activities',
         ],
-        'hide_child_menus_under' => [
-          'Account - Institutions' => ['Add New'],
-        ],
       ],
       'communications_team' => [
         'hide_menus' => [
