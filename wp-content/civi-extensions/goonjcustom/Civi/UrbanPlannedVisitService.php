@@ -612,33 +612,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
 
     $groupId = self::getChapterGroupForState($stateProvinceId);
 
-    $existingGroups = GroupContact::get(FALSE)
-    ->addSelect('group_id')
-    ->addWhere('contact_id', '=', $contactId)
-    ->addWhere('status', '=', 'Added')
-    ->execute();
-
-    $alreadyInGroup = FALSE;
-
-    foreach ($existingGroups as $existingGroup) {
-      if ((int) $existingGroup['group_id'] === (int) $groupId) {
-        $alreadyInGroup = TRUE;
-        break;
-      }
-    }
-
-    // If group already assigned → do nothing
-    if ($alreadyInGroup) {
-      return;
-    }
-
-    if ($groupId && $contactId) {
-      GroupContact::create(FALSE)
-        ->addValue('contact_id', $contactId)
-        ->addValue('group_id', $groupId)
-        ->addValue('status', 'Added')
-        ->execute();
-    }
+    self::ensureContactInGroup($contactId, $groupId);
   }
 
   /**
@@ -676,33 +650,8 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     $stateProvinceId = $addresses['state_province_id'] ?? NULL;
     $groupId = self::getChapterGroupForState($stateProvinceId);
 
-    $existingGroups = GroupContact::get(FALSE)
-    ->addSelect('group_id')
-    ->addWhere('contact_id', '=', $contactId)
-    ->addWhere('status', '=', 'Added')
-    ->execute();
+    self::ensureContactInGroup($contactId, $groupId);
 
-    $alreadyInGroup = FALSE;
-
-    foreach ($existingGroups as $existingGroup) {
-      if ((int) $existingGroup['group_id'] === (int) $groupId) {
-        $alreadyInGroup = TRUE;
-        break;
-      }
-    }
-
-    // If group already assigned → do nothing
-    if ($alreadyInGroup) {
-      return;
-    }
-
-    if ($groupId && $contactId) {
-      GroupContact::create(FALSE)
-        ->addValue('contact_id', $contactId)
-        ->addValue('group_id', $groupId)
-        ->addValue('status', 'Added')
-        ->execute();
-    }
     civicrm_api3('System', 'flush', []);
 
   }
@@ -758,30 +707,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
   
     // Assign group to each contact
     foreach ($contactIds as $contactId) {
-  
-      $existingGroups = GroupContact::get(FALSE)
-        ->addSelect('group_id')
-        ->addWhere('contact_id', '=', $contactId)
-        ->addWhere('status', '=', 'Added')
-        ->execute();
-  
-      $alreadyAdded = FALSE;
-      foreach ($existingGroups as $existingGroup) {
-        if ((int) $existingGroup['group_id'] === (int) $groupId) {
-          $alreadyAdded = TRUE;
-          break;
-        }
-      }
-  
-      if ($alreadyAdded) {
-        continue;
-      }
-  
-      GroupContact::create(FALSE)
-        ->addValue('contact_id', $contactId)
-        ->addValue('group_id', $groupId)
-        ->addValue('status', 'Added')
-        ->execute();
+      self::ensureContactInGroup($contactId, $groupId);
     }
     civicrm_api3('System', 'flush', []);
   }
@@ -812,6 +738,41 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     }
 
     return $stateContactGroup ? $stateContactGroup['id'] : NULL;
+  }
+
+  /**
+   * Ensures the contact is in the group with status "Added".
+   *
+   * Reactivates existing rows whose status is "Removed" or "Pending" instead of
+   * inserting a duplicate, which would violate the (group_id, contact_id)
+   * unique key.
+   */
+  private static function ensureContactInGroup($contactId, $groupId): void {
+    if (!$groupId || !$contactId) {
+      return;
+    }
+
+    $existing = GroupContact::get(FALSE)
+      ->addSelect('id', 'status')
+      ->addWhere('contact_id', '=', $contactId)
+      ->addWhere('group_id', '=', $groupId)
+      ->execute()->first();
+
+    if ($existing) {
+      if ($existing['status'] !== 'Added') {
+        GroupContact::update(FALSE)
+          ->addWhere('id', '=', $existing['id'])
+          ->addValue('status', 'Added')
+          ->execute();
+      }
+      return;
+    }
+
+    GroupContact::create(FALSE)
+      ->addValue('contact_id', $contactId)
+      ->addValue('group_id', $groupId)
+      ->addValue('status', 'Added')
+      ->execute();
   }
 
   /**
