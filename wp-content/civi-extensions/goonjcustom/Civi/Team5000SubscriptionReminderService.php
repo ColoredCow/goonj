@@ -256,39 +256,16 @@ class Team5000SubscriptionReminderService {
   }
 
   /**
-   * Returns the activity_date_time of the earliest reminder activity for
-   * this recur, or NULL if no reminder has been sent yet.
-   */
-  private static function getFirstReminderDate(int $recurId, int $contactId, string $activityTypeName): ?string {
-    $activity = Activity::get(FALSE)
-      ->addSelect('activity_date_time')
-      ->addWhere('activity_type_id:name', '=', $activityTypeName)
-      ->addWhere('target_contact_id', '=', $contactId)
-      ->addWhere('subject', 'LIKE', '%recur_id:' . $recurId . '%')
-      ->addOrderBy('activity_date_time', 'ASC')
-      ->setLimit(1)
-      ->execute()
-      ->first();
-
-    return $activity['activity_date_time'] ?? NULL;
-  }
-
-  /**
-   * Checks if the donor has started a new subscription within the same
-   * pipeline (Team 5000 OR generic) after the first reminder was sent.
+   * Checks if the donor has another active subscription within the same
+   * pipeline (Team 5000 OR generic). If yes, no reminder is sent for the
+   * expiring recur — the donor is already covered by the other one.
    */
   private static function hasRenewed(int $contactId, int $currentRecurId, array $config): bool {
-    $firstReminderDate = self::getFirstReminderDate($currentRecurId, $contactId, $config['activity_type_name']);
-    if ($firstReminderDate === NULL) {
-      return FALSE;
-    }
-
     $query = ContributionRecur::get(FALSE)
       ->addSelect('id')
       ->addWhere('contact_id', '=', $contactId)
       ->addWhere('id', '!=', $currentRecurId)
       ->addWhere('contribution_status_id:name', '=', 'In Progress')
-      ->addWhere('start_date', '>', $firstReminderDate)
       ->addWhere('is_test', '=', TRUE);
 
     if ($config['is_team_5000']) {
