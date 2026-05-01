@@ -198,9 +198,10 @@ class Team5000SubscriptionReminderService {
         continue;
       }
 
-      // Skip if donor has started a new subscription within the same pipeline
-      // after the first reminder was sent.
-      if (self::hasRenewed($recur['contact_id'], $recur['id'], $config)) {
+      // Skip if donor has another comfortably-active subscription within the
+      // same pipeline (one whose end_date is more than 30 days later than
+      // the current expiring recur's end_date).
+      if (self::hasRenewed($recur['contact_id'], $recur['id'], $config, $endDate)) {
         \Civi::log()->info($config['pipeline_label'] . ': Donor renewed, skipping', [
           'recur_id' => $recur['id'],
           'days_before' => $daysBefore,
@@ -256,13 +257,18 @@ class Team5000SubscriptionReminderService {
   }
 
   /**
-   * Checks if the donor has another active subscription within the same
-   * pipeline (Team 5000 OR generic). If yes, no reminder is sent for the
-   * expiring recur — the donor is already covered by the other one.
+   * Checks if the donor has another comfortably-active subscription in the
+   * same pipeline (Team 5000 OR generic). "Comfortably active" means the
+   * other recur's calculated end_date is more than 30 days LATER than the
+   * current expiring recur's end_date.
+   *
+   * - Other recur ends years after current → suppress reminder
+   * - Other recur ends around the same time as current → don't suppress
+   * - No other active recur → don't suppress
    */
-  private static function hasRenewed(int $contactId, int $currentRecurId, array $config): bool {
+  private static function hasRenewed(int $contactId, int $currentRecurId, array $config, string $currentEndDate): bool {
     $query = ContributionRecur::get(FALSE)
-      ->addSelect('id')
+      ->addSelect('id', 'start_date', 'installments', 'frequency_interval', 'frequency_unit')
       ->addWhere('contact_id', '=', $contactId)
       ->addWhere('id', '!=', $currentRecurId)
       ->addWhere('contribution_status_id:name', '=', 'In Progress')
@@ -281,8 +287,29 @@ class Team5000SubscriptionReminderService {
       }
     }
 
-    $newRecur = $query->execute()->first();
-    return !empty($newRecur);
+    $otherRecurs = $query->execute();
+    $threshold = (new \DateTimeImmutable($currentEndDate))
+      ->modify('+' . max(self::REMINDER_DAYS) . ' days')
+      ->format('Y-m-d');
+
+    foreach ($otherRecurs as $other) {
+      if (empty($other['start_date']) || empty($other['installments'])) {
+        continue;
+      }
+
+      $otherEndDate = self::calculateEndDate(
+        $other['start_date'],
+        (int) $other['installments'],
+        (int) $other['frequency_interval'],
+        $other['frequency_unit']
+      );
+
+      if ($otherEndDate > $threshold) {
+        return TRUE;
+      }
+    }
+
+    return FALSE;
   }
 
   /**
