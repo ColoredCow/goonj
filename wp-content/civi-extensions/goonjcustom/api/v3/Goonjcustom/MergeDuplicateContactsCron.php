@@ -75,6 +75,20 @@ function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
     \Civi::log()->{$civiLevel}('[MergeDuplicatesCron] ' . $msg);
   };
 
+  // Normalise Indian phone numbers to a canonical 10-digit form so different
+  // formats (+91-9876543210, 91 98765 43210, 09876543210, 9876543210) all
+  // group together.
+  $normalizePhone = function ($raw) {
+    $digits = preg_replace('/\D+/', '', (string) $raw);
+    if (strlen($digits) === 12 && strpos($digits, '91') === 0) {
+      $digits = substr($digits, 2);
+    }
+    if (strlen($digits) === 11 && $digits[0] === '0') {
+      $digits = substr($digits, 1);
+    }
+    return $digits;
+  };
+
   $log('info', 'Job started (background worker, PID ' . getmypid() . ')');
 
   $csvPath = ABSPATH . 'wp-content/uploads/2026/05/Copy-of-uttarkhand-Duplicate-Sheet1.csv';
@@ -109,39 +123,58 @@ function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
     }
 
     $contact = array_change_key_case(array_combine($header, $row), CASE_LOWER);
+    $contactId = (int) ($contact['contact_id'] ?? 0);
     $email = strtolower(trim($contact['email'] ?? ''));
     $firstName = strtolower(trim($contact['first_name'] ?? ''));
+    $phone = $normalizePhone($contact['phone'] ?? '');
     $status = trim($contact['status'] ?? '');
 
-    $key = $email . '|' . $firstName;
+    if (!$contactId || !$firstName || !in_array($status, ['Real', 'Duplicate'])) {
+      continue;
+    }
 
-    if (!$email || !$firstName || !in_array($status, ['Real', 'Duplicate'])) {
+    // Per-row priority: prefer email, fall back to phone.
+    if ($email) {
+      $key = 'email:' . $email . '|' . $firstName;
+      $matchedBy = 'email';
+    }
+    elseif ($phone) {
+      $key = 'phone:' . $phone . '|' . $firstName;
+      $matchedBy = 'phone';
+    }
+    else {
+      $log('warning', "Row #$rowIndex (cid=$contactId) has neither email nor phone. Skipping.");
       continue;
     }
 
     if (!isset($groups[$key])) {
-      $groups[$key] = ['real' => NULL, 'duplicates' => [], 'email' => $email];
+      $groups[$key] = ['real' => NULL, 'duplicates' => [], 'matched_by' => $matchedBy];
     }
 
     if ($status === 'Real') {
-      $groups[$key]['real'] = (int) $contact['contact_id'];
+      $groups[$key]['real'] = $contactId;
     }
     else {
-      $groups[$key]['duplicates'][] = (int) $contact['contact_id'];
+      $groups[$key]['duplicates'][] = $contactId;
     }
   }
 
   fclose($file);
 
-  $log('info', 'CSV parsed. Total groups: ' . count($groups));
+  $emailGroupCount = count(array_filter($groups, fn($g) => $g['matched_by'] === 'email'));
+  $phoneGroupCount = count(array_filter($groups, fn($g) => $g['matched_by'] === 'phone'));
+  $log('info', "CSV parsed. Total groups: " . count($groups) . " (by email: $emailGroupCount, by phone: $phoneGroupCount)");
 
   $mergedCount = 0;
   $failedCount = 0;
   $skippedGroups = 0;
+  $mergedByEmail = 0;
+  $mergedByPhone = 0;
 
   foreach ($groups as $key => $data) {
     $realId = $data['real'];
     $duplicates = $data['duplicates'];
+    $matchedBy = $data['matched_by'];
 
     if (!$realId || empty($duplicates)) {
       $skippedGroups++;
@@ -157,21 +190,29 @@ function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
           ->execute();
 
         $mergedCount++;
-        $log('info', "MERGED dup #$dupId -> real #$realId ($key)");
+        if ($matchedBy === 'email') {
+          $mergedByEmail++;
+        }
+        else {
+          $mergedByPhone++;
+        }
+        $log('info', "MERGED [$matchedBy] dup #$dupId -> real #$realId ($key)");
       }
-      catch (Exception $e) {
+      catch (\Throwable $e) {
         $failedCount++;
-        $log('error', "FAILED dup #$dupId -> real #$realId ($key): " . $e->getMessage());
+        $log('error', "FAILED [$matchedBy] dup #$dupId -> real #$realId ($key): " . $e->getMessage());
       }
     }
   }
 
-  $log('info', "Job finished. Merged: $mergedCount | Failed: $failedCount | Skipped groups: $skippedGroups");
+  $log('info', "Job finished. Merged: $mergedCount (email: $mergedByEmail, phone: $mergedByPhone) | Failed: $failedCount | Skipped groups: $skippedGroups");
 
   return civicrm_api3_create_success(
     [
       'log_file' => $logFile,
       'merged' => $mergedCount,
+      'merged_by_email' => $mergedByEmail,
+      'merged_by_phone' => $mergedByPhone,
       'failed' => $failedCount,
       'skipped_groups' => $skippedGroups,
     ],
