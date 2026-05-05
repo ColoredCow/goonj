@@ -67,7 +67,6 @@ class Team5000SubscriptionReminderService {
       ->addSelect('contribution_recur_id')
       ->addWhere('contribution_page_id:name', '=', self::TEAM_5000_PAGE_NAME)
       ->addWhere('contribution_recur_id', 'IS NOT NULL')
-      ->addWhere('is_test', '=', TRUE)
       ->execute();
 
     $team5000RecurIds = array_values(array_unique(array_column((array) $contributions, 'contribution_recur_id')));
@@ -81,7 +80,6 @@ class Team5000SubscriptionReminderService {
       ->addSelect('id', 'contact_id', 'start_date', 'installments', 'frequency_interval', 'frequency_unit', 'amount')
       ->addWhere('id', 'IN', $team5000RecurIds)
       ->addWhere('contribution_status_id:name', '=', 'In Progress')
-      ->addWhere('is_test', '=', TRUE)
       ->execute();
 
     \Civi::log()->info('Team 5000: Active recurs to process: ' . $recurs->count());
@@ -118,8 +116,7 @@ class Team5000SubscriptionReminderService {
     $query = ContributionRecur::get(FALSE)
       ->addSelect('id', 'contact_id', 'start_date', 'installments', 'frequency_interval', 'frequency_unit', 'amount')
       ->addWhere('contribution_status_id:name', '=', 'In Progress')
-      ->addWhere('installments', 'IS NOT NULL')
-      ->addWhere('is_test', '=', TRUE);
+      ->addWhere('installments', 'IS NOT NULL');
 
     if (!empty($team5000RecurIds)) {
       $query->addWhere('id', 'NOT IN', $team5000RecurIds);
@@ -157,7 +154,6 @@ class Team5000SubscriptionReminderService {
       ->addSelect('contribution_recur_id')
       ->addWhere('contribution_page_id:name', '=', self::TEAM_5000_PAGE_NAME)
       ->addWhere('contribution_recur_id', 'IS NOT NULL')
-      ->addWhere('is_test', '=', TRUE)
       ->execute();
 
     return array_values(array_unique(array_column((array) $contributions, 'contribution_recur_id')));
@@ -271,8 +267,7 @@ class Team5000SubscriptionReminderService {
       ->addSelect('id', 'start_date', 'installments', 'frequency_interval', 'frequency_unit')
       ->addWhere('contact_id', '=', $contactId)
       ->addWhere('id', '!=', $currentRecurId)
-      ->addWhere('contribution_status_id:name', '=', 'In Progress')
-      ->addWhere('is_test', '=', TRUE);
+      ->addWhere('contribution_status_id:name', '=', 'In Progress');
 
     if ($config['is_team_5000']) {
       $otherTeam5000Ids = array_values(array_diff($config['team_5000_recur_ids'], [$currentRecurId]));
@@ -436,7 +431,7 @@ class Team5000SubscriptionReminderService {
 
     return "
       <p>Greetings from Goonj!</p>
-      <p>Just a gentle reminder that your recurring donation is set to end in a few days (on <strong>{$formattedDate}</strong>).</p>
+      <p>Just a gentle reminder that your recurring donation is set to end in a few days (<strong>{$formattedDate}</strong>).</p>
       <p>We truly hope you'll continue this journey with us.</p>
       <p>Your contribution has been making a meaningful difference, helping us reach communities that need it most.</p>
       <p>We warmly invite you to renew your contribution at your earliest convenience using the link:- <a href='https://crm.goonj.org/contribute/website-user/'>https://crm.goonj.org/contribute/website-user/</a></p>
