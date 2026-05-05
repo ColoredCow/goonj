@@ -48,13 +48,28 @@ function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
       escapeshellarg($logFile),
       escapeshellarg($logFile)
     );
-    exec($cmd);
+    $execOutput = [];
+    $execExit = NULL;
+    exec($cmd, $execOutput, $execExit);
 
-    @file_put_contents(
-      $logFile,
-      '[' . date('Y-m-d H:i:s') . '] [INFO] Spawned background worker via cv api.' . PHP_EOL,
-      FILE_APPEND
-    );
+    if ($execExit === 0) {
+      @file_put_contents(
+        $logFile,
+        '[' . date('Y-m-d H:i:s') . '] [INFO] Spawned background worker via cv api.' . PHP_EOL,
+        FILE_APPEND
+      );
+    }
+    else {
+      $errLine = sprintf(
+        '[%s] [ERROR] Failed to spawn background worker. Shell exit code: %d. Output: %s%s',
+        date('Y-m-d H:i:s'),
+        (int) $execExit,
+        implode(' | ', $execOutput),
+        PHP_EOL
+      );
+      @file_put_contents($logFile, $errLine, FILE_APPEND);
+      return civicrm_api3_create_error("Failed to spawn merge worker. See log: $logFile");
+    }
 
     return civicrm_api3_create_success(
       [
@@ -93,6 +108,7 @@ function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
 
   $log('info', 'Job started (background worker, PID ' . getmypid() . ')');
 
+  try {
   // Pick the CSV to process:
   // 1. Explicit override via API param `csv_path` (for ad-hoc runs).
   // 2. Otherwise: most recent file matching `*duplicate*.csv` (case-insensitive)
@@ -145,6 +161,10 @@ function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
     $log('error', 'Invalid or malformed CSV header.');
     return civicrm_api3_create_error("Invalid or malformed CSV header.");
   }
+  // Strip UTF-8 BOM from first cell (Excel exports often include it) and trim
+  // any stray whitespace from each header — both can silently break key lookups.
+  $header[0] = preg_replace('/^\xEF\xBB\xBF/', '', $header[0]);
+  $header = array_map('trim', $header);
 
   $groups = [];
   $toDelete = [];
@@ -162,19 +182,19 @@ function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
     $email = strtolower(trim($contact['email'] ?? ''));
     $firstName = strtolower(trim($contact['first_name'] ?? ''));
     $phone = $normalizePhone($contact['phone'] ?? '');
-    $status = trim($contact['status'] ?? '');
+    $status = strtolower(trim($contact['status'] ?? ''));
 
     if (!$contactId) {
       continue;
     }
 
     // Status = Deleted -> permanent removal queue (no first_name needed).
-    if ($status === 'Deleted') {
+    if ($status === 'deleted') {
       $toDelete[$contactId] = $rowIndex;
       continue;
     }
 
-    if (!$firstName || !in_array($status, ['Real', 'Duplicate'])) {
+    if (!$firstName || !in_array($status, ['real', 'duplicate'])) {
       continue;
     }
 
@@ -196,7 +216,7 @@ function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
       $groups[$key] = ['real' => NULL, 'duplicates' => [], 'matched_by' => $matchedBy];
     }
 
-    if ($status === 'Real') {
+    if ($status === 'real') {
       $groups[$key]['real'] = $contactId;
     }
     else {
@@ -301,4 +321,13 @@ function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
     'Goonjcustom',
     'merge_duplicate_contacts_cron'
   );
+  }
+  catch (\Throwable $e) {
+    $log('error', 'UNEXPECTED FATAL: ' . get_class($e) . ': ' . $e->getMessage());
+    $log('error', 'At ' . $e->getFile() . ':' . $e->getLine());
+    $log('error', 'Trace: ' . $e->getTraceAsString());
+    return civicrm_api3_create_error(
+      'Fatal error during merge job: ' . $e->getMessage() . ' (see log: ' . $logFile . ')'
+    );
+  }
 }
