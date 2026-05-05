@@ -50,7 +50,11 @@ function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
     );
     exec($cmd);
 
-    \Civi::log()->info("[MergeDuplicatesCron] Spawned background worker. Log: $logFile");
+    @file_put_contents(
+      $logFile,
+      '[' . date('Y-m-d H:i:s') . '] [INFO] Spawned background worker via cv api.' . PHP_EOL,
+      FILE_APPEND
+    );
 
     return civicrm_api3_create_success(
       [
@@ -71,8 +75,6 @@ function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
   $log = function ($level, $msg) use ($logFile) {
     $line = '[' . date('Y-m-d H:i:s') . '] [' . strtoupper($level) . '] ' . $msg;
     @file_put_contents($logFile, $line . PHP_EOL, FILE_APPEND);
-    $civiLevel = in_array($level, ['info', 'warning', 'error', 'debug']) ? $level : 'info';
-    \Civi::log()->{$civiLevel}('[MergeDuplicatesCron] ' . $msg);
   };
 
   // Normalise Indian phone numbers to a canonical 10-digit form so different
@@ -91,7 +93,39 @@ function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
 
   $log('info', 'Job started (background worker, PID ' . getmypid() . ')');
 
-  $csvPath = ABSPATH . 'wp-content/uploads/2026/05/Copy-of-uttarkhand-Duplicate-Sheet1.csv';
+  // Pick the CSV to process:
+  // 1. Explicit override via API param `csv_path` (for ad-hoc runs).
+  // 2. Otherwise: most recent file matching `*duplicate*.csv` (case-insensitive)
+  //    in the current month's WP uploads folder, falling back to previous
+  //    month if current is empty. Ops just uploads the sheet via WP Media
+  //    Library (or SFTP into uploads/YYYY/MM/) — the script auto-picks it.
+  $csvPath = !empty($params['csv_path']) ? $params['csv_path'] : NULL;
+
+  if (!$csvPath) {
+    $candidates = [];
+    $monthDirs = [
+      ABSPATH . 'wp-content/uploads/' . date('Y/m') . '/',
+      ABSPATH . 'wp-content/uploads/' . date('Y/m', strtotime('-1 month')) . '/',
+    ];
+    foreach ($monthDirs as $dir) {
+      if (!is_dir($dir)) {
+        continue;
+      }
+      foreach (scandir($dir) as $entry) {
+        if (preg_match('/duplicate.*\.csv$/i', $entry)) {
+          $candidates[] = $dir . $entry;
+        }
+      }
+    }
+    if (empty($candidates)) {
+      $msg = "No CSV matching '*duplicate*.csv' found in uploads/" . date('Y/m') . "/ or previous month.";
+      $log('error', $msg);
+      return civicrm_api3_create_error($msg);
+    }
+    usort($candidates, fn($a, $b) => filemtime($b) - filemtime($a));
+    $csvPath = $candidates[0];
+    $log('info', "Auto-selected CSV (latest of " . count($candidates) . " candidate(s)): " . str_replace(ABSPATH, '', $csvPath));
+  }
   $log('info', "CSV path: $csvPath");
 
   if (!file_exists($csvPath)) {
@@ -113,6 +147,7 @@ function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
   }
 
   $groups = [];
+  $toDelete = [];
   $rowIndex = 1;
 
   while (($row = fgetcsv($file, 0, ",", '"', "\\")) !== FALSE) {
@@ -129,7 +164,17 @@ function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
     $phone = $normalizePhone($contact['phone'] ?? '');
     $status = trim($contact['status'] ?? '');
 
-    if (!$contactId || !$firstName || !in_array($status, ['Real', 'Duplicate'])) {
+    if (!$contactId) {
+      continue;
+    }
+
+    // Status = Deleted -> permanent removal queue (no first_name needed).
+    if ($status === 'Deleted') {
+      $toDelete[$contactId] = $rowIndex;
+      continue;
+    }
+
+    if (!$firstName || !in_array($status, ['Real', 'Duplicate'])) {
       continue;
     }
 
@@ -163,7 +208,40 @@ function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
 
   $emailGroupCount = count(array_filter($groups, fn($g) => $g['matched_by'] === 'email'));
   $phoneGroupCount = count(array_filter($groups, fn($g) => $g['matched_by'] === 'phone'));
-  $log('info', "CSV parsed. Total groups: " . count($groups) . " (by email: $emailGroupCount, by phone: $phoneGroupCount)");
+  $log('info', "CSV parsed. Merge groups: " . count($groups) . " (by email: $emailGroupCount, by phone: $phoneGroupCount). Permanent deletions queued: " . count($toDelete));
+
+  // Process permanent deletions first (Status = Deleted rows).
+  // useTrash=FALSE removes the contact entirely (skip-trash hard delete).
+  // We check existence first because Contact::delete() returns success even
+  // for non-existent IDs, which would otherwise hide CSV data quality issues.
+  $deletedCount = 0;
+  $failedDeleteCount = 0;
+  $deleteNoopCount = 0;
+  foreach ($toDelete as $contactId => $sourceRowIdx) {
+    try {
+      $existing = \Civi\Api4\Contact::get(FALSE)
+        ->addWhere('id', '=', $contactId)
+        ->addWhere('is_deleted', 'IN', [TRUE, FALSE])
+        ->addSelect('id')
+        ->execute();
+      if ($existing->count() === 0) {
+        $deleteNoopCount++;
+        $log('warning', "DELETE NOOP: contact #$contactId not found (row #$sourceRowIdx). Already deleted or invalid ID.");
+        continue;
+      }
+
+      \Civi\Api4\Contact::delete(FALSE)
+        ->addWhere('id', '=', $contactId)
+        ->setUseTrash(FALSE)
+        ->execute();
+      $deletedCount++;
+      $log('info', "DELETED contact #$contactId (status=Deleted, row #$sourceRowIdx)");
+    }
+    catch (\Throwable $e) {
+      $failedDeleteCount++;
+      $log('error', "FAILED DELETE contact #$contactId (row #$sourceRowIdx): " . $e->getMessage());
+    }
+  }
 
   $mergedCount = 0;
   $failedCount = 0;
@@ -205,7 +283,7 @@ function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
     }
   }
 
-  $log('info', "Job finished. Merged: $mergedCount (email: $mergedByEmail, phone: $mergedByPhone) | Failed: $failedCount | Skipped groups: $skippedGroups");
+  $log('info', "Job finished. Merged: $mergedCount (email: $mergedByEmail, phone: $mergedByPhone) | Failed merges: $failedCount | Deleted: $deletedCount | Delete noops: $deleteNoopCount | Failed deletes: $failedDeleteCount | Skipped groups: $skippedGroups");
 
   return civicrm_api3_create_success(
     [
@@ -214,6 +292,9 @@ function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
       'merged_by_email' => $mergedByEmail,
       'merged_by_phone' => $mergedByPhone,
       'failed' => $failedCount,
+      'deleted' => $deletedCount,
+      'delete_noops' => $deleteNoopCount,
+      'failed_deletes' => $failedDeleteCount,
       'skipped_groups' => $skippedGroups,
     ],
     $params,
