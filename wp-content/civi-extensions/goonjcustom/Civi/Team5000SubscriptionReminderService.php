@@ -439,8 +439,9 @@ class Team5000SubscriptionReminderService {
       <p>Just a gentle reminder that your recurring donation is set to end in a few days (on <strong>{$formattedDate}</strong>).</p>
       <p>We truly hope you'll continue this journey with us.</p>
       <p>Your contribution has been making a meaningful difference, helping us reach communities that need it most.</p>
-      <p>We warmly invite you to renew your contribution at your earliest convenience.</p>
-      <p>Kindly ignore if you have already renewed your contribution. If you have any questions or need assistance, please feel free to write to us at <a href='mailto:accounts@goonj.org'>accounts@goonj.org</a>.</p>
+      <p>We warmly invite you to renew your contribution at your earliest convenience using the link:- <a href='https://crm.goonj.org/contribute/website-user/'>https://crm.goonj.org/contribute/website-user/</a></p>
+      <p>Kindly ignore the email if you have already renewed your contribution.</p>
+      <p>If you have any questions or need assistance, please feel free to write to us at <a href='mailto:priyanka@goonj.org'>priyanka@goonj.org</a></p>
       <p>Thank you for being a part of the Goonj family. Together, we are creating real impact.</p>
       <p>Warm regards<br>Team Goonj</p>
     ";
