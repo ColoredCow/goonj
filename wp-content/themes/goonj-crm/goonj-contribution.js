@@ -178,3 +178,23 @@ document.addEventListener('DOMContentLoaded', function() {
     // Run on page load to set initial state
     toggleRecurringSection();
 });
+
+// Show the campaign field only on processing-center (office QR) pages.
+// On CC/DC/event source pages the field stays hidden (CSS default).
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof goonjContribution === 'undefined' || !goonjContribution.puSourceFieldId) {
+        return;
+    }
+
+    var urlParams = new URLSearchParams(window.location.search);
+    if (!urlParams.has(goonjContribution.puSourceFieldId)) {
+        return;
+    }
+
+    var campaignSection = document.querySelector(
+        '.crm-contribution-main-form-block .editrow_contribution_campaign_id-section'
+    );
+    if (campaignSection) {
+        campaignSection.style.setProperty('display', 'block', 'important');
+    }
+});
