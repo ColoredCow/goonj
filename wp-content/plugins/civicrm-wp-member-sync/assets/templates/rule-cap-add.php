@@ -39,7 +39,7 @@ defined( 'ABSPATH' ) || exit;
 
 	<p><?php esc_html_e( 'An additional Membership Status Capability will also be added to the WordPress User that is tied to the status of their Membership. This Capability will be of the form "civimember_ID_NUM", where "ID" is the numeric ID of the Membership Type and "NUM" is the numeric ID of the Membership Status. So, for Membership Type 2 with Membership Status 4, the Capability will be "civimember_2_4".', 'civicrm-wp-member-sync' ); ?></p>
 
-	<form method="post" id="civi_wp_member_sync_rules_form" action="<?php echo $this->admin_form_url_get(); ?>">
+	<form method="post" id="civi_wp_member_sync_rules_form" action="<?php echo esc_url( $this->admin_form_url_get() ); ?>">
 
 		<?php wp_nonce_field( 'civi_wp_member_sync_rule_action', 'civi_wp_member_sync_nonce' ); ?>
 
@@ -50,7 +50,7 @@ defined( 'ABSPATH' ) || exit;
 					<label class="civi_member_type_id_label" for="civi_member_type_id"><?php esc_html_e( 'Select CiviMember Membership Type(s)', 'civicrm-wp-member-sync' ); ?> <span class="required">*</span></label>
 				</th>
 				<td>
-					<select name="civi_member_type_id[]" id="civi_member_type_id" class ="required required-type" multiple="multiple" style="min-width: 240px;">
+					<select name="civi_member_type_id[]" id="civi_member_type_id" class="required required-type" multiple="multiple" style="min-width: 240px;">
 						<?php foreach ( $membership_types as $key => $value ) { ?>
 							<option value="<?php echo esc_attr( $key ); ?>"><?php echo esc_html( $value ); ?></option>
 						<?php } ?>
