@@ -1,5 +1,96 @@
 # CHANGELOG
 
+# Version 3.35.0 (2026-05-06)
+
+* Fix fatal error on add condition.
+
+# Version 3.34.0 (2026-04-13)
+
+* [!338](https://lab.civicrm.org/extensions/civirules/-/merge_requests/338) Remove related contact from group.
+* [!339](https://lab.civicrm.org/extensions/civirules/-/merge_requests/339) Partly revert MR 331 - prevent endless loops.
+
+# Version 3.33.0 (2026-04-03)
+
+* [!337](https://lab.civicrm.org/extensions/civirules/-/merge_requests/337) Ensure AfformSubmission triggerData entityData is complete.
+* [!335](https://lab.civicrm.org/extensions/civirules/-/merge_requests/335) Fix FormBuilder trigger firing on all submissions.
+* Fix minor issue with upcoming events.
+* [!333](https://lab.civicrm.org/extensions/civirules/-/merge_requests/333) Add composer publishing CI job.
+* [!336](https://lab.civicrm.org/extensions/civirules/-/merge_requests/336) Add help text to activity text matching conditions.
+* [!327](https://lab.civicrm.org/extensions/civirules/-/merge_requests/327) Validate string instead of array.
+* [!331](https://lab.civicrm.org/extensions/civirules/-/merge_requests/331) Fix memory leak in PreData::pre() and Activity trigger during bulk operations.
+* [!332](https://lab.civicrm.org/extensions/civirules/-/merge_requests/332) Fix Relationship End Action.
+* [!330](https://lab.civicrm.org/extensions/civirules/-/merge_requests/330) Fix passing null value to Field Value Comparison wih contains.
+* Update docs to reflect managed entity way of adding triggers/conditions/actions.
+* Cron trigger for event changed so it can run for events without participants.
+
+# Version 3.32.0 (2026-02-09)
+
+* Added condition for there are upcoming events.
+* Added cron trigger for weekly group membership.
+
+# Version 3.31.0 (2025-12-23)
+
+* Make the Participant Role and Participant Status conditions work with the Event Participant Payment trigger
+
+# Version 3.30.0 (2025-12-14)
+
+* Added for convenience select2 to the action 'Set Custom Field on an entity with data from another Custom Field' action.
+* Added user-friendly parameters to the action 'Set Custom Field on an entity with data from another Custom Field' action.
+* In the action 'Set Custom Field on an entity with data from another Custom Field' use the contact id for a field of contact reference type, instead of the display name.
+* Created a class for ParticipantPayment, for better entity data processing. For example, now you can use fields of the Participant.
+* Adding 'Failure Count Changed condition' and action to change next scheduled date
+
+# Version 3.29.0 (2025-11-27)
+
+* [!323](https://lab.civicrm.org/extensions/civirules/-/merge_requests/323) Update Create Case Activity action and AfformSubmission so we can create follow up activities from an activity in the Afform.
+* Set trigger in triggerData constructor where possible.
+
+# Version 3.28.0 (2025-11-26)
+
+* [!322](https://lab.civicrm.org/extensions/civirules/-/merge_requests/322) - Support for CiviRules as ManagedEntities (Can now export CiviRules with civix).
+* [!321](https://lab.civicrm.org/extensions/civirules/-/merge_requests/321) - Extend Afform support to more entities - now automatically loads all "Entity1" from the Form and can be used in context for conditions/actions - eg. Activity1, Individual1, Case1 etc.
+* Remove unused/duplicate upgrader function.
+* [!319](https://lab.civicrm.org/extensions/civirules/-/merge_requests/319) - Passing an empty string to the ts() function always returns an empty string.
+
+## Version 3.27.0 (2025-10-30)
+
+* Fix Contribution status changed (and maybe other status changed) condition not loading/saving multivalue correctly.
+* Fix loading of trigger description in some situations.
+* Link to 'edit form' in description for formbuilder trigger.
+* [!318](https://lab.civicrm.org/extensions/civirules/-/merge_requests/318) Add use statement where necessary.
+
+## Version 3.26.0 (2025-10-29)
+
+* [!302](https://lab.civicrm.org/extensions/civirules/-/merge_requests/302) Add FormBuilder Submission Triggers and Conditions.
+* Fix redirect when saving "Status Changed" conditions.
+* [!316](https://lab.civicrm.org/extensions/civirules/-/merge_requests/316) Fix concatenated variables in ts() (translation).
+* [!315](https://lab.civicrm.org/extensions/civirules/-/merge_requests/315) Replace reference to deprecated exception class.
+* [!314](https://lab.civicrm.org/extensions/civirules/-/merge_requests/314) Remove calls to deprecated CRM_Utils_Array::value.
+* [!313](https://lab.civicrm.org/extensions/civirules/-/merge_requests/313) Fix deprecation notice - mark $queue as nullable.
+
+## Version 3.25.0
+
+* Fix [#272](https://lab.civicrm.org/extensions/civirules/-/issues/272) Add trigger for X days since last activity on case
+
+## Version 3.24.0 (2025-07-23)
+
+* Fix [#265](https://lab.civicrm.org/extensions/civirules/-/issues/265) Navigation menu items out of place on install.
+* [!306](https://lab.civicrm.org/extensions/civirules/-/merge_requests/306) Add Contribution Recurring Cancel Action and FailureCount conditions.
+* [!305](https://lab.civicrm.org/extensions/civirules/-/merge_requests/305) Fix crash inline editing with CiviImport.
+
+## Version 3.23.0 (2025-07-07)
+
+* Added 'Case is created' trigger.
+* [!304](https://lab.civicrm.org/extensions/civirules/-/merge_requests/304) Add action: Set Field Value.
+* Update managedEntities/forms.
+* Only check active conditions.
+* Add a generic Trigger parameters form - allows you to configure the 'Trigger on create/edit|update' when available.
+* Add getFormattedExtraInputURL() function for triggers.
+* [!303](https://lab.civicrm.org/extensions/civirules/-/merge_requests/303) Remove error handling (try/catch) in Tag actions/conditions so we see more useful generic error including rule ID etc.
+  * Rework logError,logAction,logCondition messages so they are easier to read.
+  * Allow for log messages to be translated.
+* Drop API3 support for tags (API4 has been supported for a long time now!).
+
 ## Version 3.22.0 (2025-05-28)
 
 * Changed action Add Case role to add the triggering contact as a role on the case.

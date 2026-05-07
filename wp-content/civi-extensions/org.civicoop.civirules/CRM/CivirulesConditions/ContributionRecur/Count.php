@@ -107,27 +107,7 @@ WHERE contact_id = %1 AND civicrm_contribution.contribution_recur_id > %2 AND co
    * @access public
    */
   public function userFriendlyConditionParams() {
-    $operator = null;
-    switch ($this->conditionParams['operator']) {
-      case 1:
-        $operator = 'is not equal to';
-        break;
-      case 2:
-        $operator = 'more than';
-        break;
-      case 3:
-        $operator = 'more than or equal to';
-        break;
-      case 4:
-        $operator = 'less than';
-        break;
-      case 5:
-        $operator = 'less than or equal to';
-        break;
-      default:
-        $operator = 'is equal to';
-        break;
-    }
+    $operator = \CRM_CivirulesConditions_Utils_Period::generateFriendlyOperator($this->conditionParams['operator']);
     return 'Number of recurring contribution collections '.$operator.' '.$this->conditionParams['no_of_recurring'];
   }
 

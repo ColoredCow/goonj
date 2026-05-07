@@ -9,12 +9,13 @@ class CRM_Civirules_TriggerData_Edit extends CRM_Civirules_TriggerData_Post impl
    * @param int $objectId
    * @param array $data
    * @param array $originalData
+   * @param ?\CRM_Civirules_Trigger_Post $trigger
    *
    * @throws \CRM_Core_Exception
    * @throws \Civi\API\Exception\UnauthorizedException
    */
-  public function __construct($entity, $objectId, $data, $originalData) {
-    parent::__construct($entity, $objectId, $data);
+  public function __construct($entity, $objectId, $data, $originalData, ?CRM_Civirules_Trigger_Post $trigger = NULL) {
+    parent::__construct($entity, $objectId, $data, $trigger);
 
     if (!is_array($originalData)) {
       throw new Exception('Original data is not set or is not an array in EditTriggerData for CiviRules');

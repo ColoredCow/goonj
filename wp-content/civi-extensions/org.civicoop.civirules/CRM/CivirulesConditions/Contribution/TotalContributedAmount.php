@@ -40,7 +40,7 @@ class CRM_CivirulesConditions_Contribution_TotalContributedAmount extends CRM_Ci
           'value' => $params['contribution_status_id'],
           'option_group_id' => 'contribution_status',
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -52,7 +52,7 @@ class CRM_CivirulesConditions_Contribution_TotalContributedAmount extends CRM_Ci
             'id' => $gid,
             'option_group_id' => 'payment_instrument'
           ]);
-        } catch (CiviCRM_API3_Exception $e) {
+        } catch (CRM_Core_Exception $e) {
         }
       }
     }
@@ -81,7 +81,7 @@ class CRM_CivirulesConditions_Contribution_TotalContributedAmount extends CRM_Ci
           'name' => $condition_params['contribution_status_id'],
           'option_group_id' => 'contribution_status',
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -93,7 +93,7 @@ class CRM_CivirulesConditions_Contribution_TotalContributedAmount extends CRM_Ci
             'name' => $gid,
             'option_group_id' => 'payment_instrument'
           ]);
-        } catch (CiviCRM_API3_Exception $e) {
+        } catch (CRM_Core_Exception $e) {
         }
       }
     }
@@ -104,7 +104,7 @@ class CRM_CivirulesConditions_Contribution_TotalContributedAmount extends CRM_Ci
             'return' => 'name',
             'id' => $gid,
           ]);
-        } catch (CiviCRM_API3_Exception $e) {
+        } catch (CRM_Core_Exception $e) {
         }
       }
     }
@@ -115,7 +115,7 @@ class CRM_CivirulesConditions_Contribution_TotalContributedAmount extends CRM_Ci
             'return' => 'id',
             'name' => $gid,
           ]);
-        } catch (CiviCRM_API3_Exception $e) {
+        } catch (CRM_Core_Exception $e) {
         }
       }
     }

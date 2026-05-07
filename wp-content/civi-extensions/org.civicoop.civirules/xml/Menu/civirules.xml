@@ -217,6 +217,12 @@
     <access_arguments>administer CiviCRM; administer CiviRules</access_arguments>
   </item>
   <item>
+    <path>civicrm/civirule/form/condition/contribution_recur_failurecount</path>
+    <page_callback>CRM_CivirulesConditions_Form_ContributionRecur_FailureCount</page_callback>
+    <title>Recurring Contribution Failure Count</title>
+    <access_arguments>administer CiviCRM; administer CiviRules</access_arguments>
+  </item>
+  <item>
     <path>civicrm/civirule/form/condition/contribution_recur_xth_contribution</path>
     <page_callback>CRM_CivirulesConditions_Form_ContributionRecur_xthContribution</page_callback>
     <title>xth recurring contribution</title>
@@ -315,6 +321,12 @@
   <item>
     <path>civicrm/civirule/form/trigger/groupmembership</path>
     <page_callback>CRM_CivirulesCronTrigger_Form_GroupMembership</page_callback>
+    <title>Group membership</title>
+    <access_arguments>administer CiviCRM; administer CiviRules</access_arguments>
+  </item>
+  <item>
+    <path>civicrm/civirule/form/trigger/weeklygroupmembership</path>
+    <page_callback>CRM_CivirulesCronTrigger_Form_WeeklyGroupMembership</page_callback>
     <title>Group membership</title>
     <access_arguments>administer CiviCRM; administer CiviRules</access_arguments>
   </item>
@@ -530,9 +542,21 @@
     <access_arguments>administer CiviCRM; administer CiviRules</access_arguments>
   </item>
   <item>
+    <path>civicrm/civirule/form/condition/upcoming_events</path>
+    <page_callback>CRM_CivirulesConditions_Form_Event_UpcomingEvents</page_callback>
+    <title>Upcoming Events</title>
+    <access_arguments>administer CiviCRM; administer CiviRules</access_arguments>
+  </item>
+  <item>
     <path>civicrm/civirule/form/condition/participant_role</path>
     <page_callback>CRM_CivirulesConditions_Form_Participant_ParticipantRole</page_callback>
     <title>Participant Role</title>
+    <access_arguments>administer CiviCRM; administer CiviRules</access_arguments>
+  </item>
+    <item>
+    <path>civicrm/civirule/form/trigger/nocaseactivitysince</path>
+    <page_callback>CRM_CivirulesCronTrigger_Form_NoCaseActivitySince</page_callback>
+    <title>No Case Activity Since</title>
     <access_arguments>administer CiviCRM; administer CiviRules</access_arguments>
   </item>
   <item>
@@ -545,6 +569,18 @@
     <path>civicrm/civirule/form/trigger/activity</path>
     <page_callback>CRM_CivirulesPostTrigger_Form_Activity</page_callback>
     <title>Activity</title>
+    <access_arguments>administer CiviCRM; administer CiviRules</access_arguments>
+  </item>
+  <item>
+    <path>civicrm/civirule/form/trigger/post</path>
+    <page_callback>CRM_CivirulesPostTrigger_Form_Generic</page_callback>
+    <title>Generic</title>
+    <access_arguments>administer CiviCRM; administer CiviRules</access_arguments>
+  </item>
+  <item>
+    <path>civicrm/civirule/form/trigger/afformsubmission</path>
+    <page_callback>CRM_CivirulesPostTrigger_Form_AfformSubmission</page_callback>
+    <title>FormBuilder Submssion</title>
     <access_arguments>administer CiviCRM; administer CiviRules</access_arguments>
   </item>
   <item>
@@ -681,6 +717,18 @@
     <access_arguments>administer CiviCRM; administer CiviRules</access_arguments>
   </item>
   <item>
+    <path>civicrm/civirule/form/action/contributionrecur_cancel_recurring</path>
+    <page_callback>CRM_CivirulesActions_ContributionRecur_Form_CancelRecurring</page_callback>
+    <title>Cancel Recurring Contribution</title>
+    <access_arguments>administer CiviCRM; administer CiviRules</access_arguments>
+  </item>
+  <item>
+    <path>civicrm/civirule/form/action/contributionrecur_change_nextscheduledate</path>
+    <page_callback>CRM_CivirulesActions_ContributionRecur_Form_ChangeNextScheduleDate</page_callback>
+    <title>Change Next Schedule Date for Recurring Contribution</title>
+    <access_arguments>administer CiviCRM; administer CiviRules</access_arguments>
+  </item>
+  <item>
     <path>civicrm/civirule/form/action/contribution_update_status</path>
     <page_callback>CRM_CivirulesActions_Contribution_Form_UpdateStatus</page_callback>
     <title>Update Contribution Status</title>
@@ -692,5 +740,11 @@
     <title>Cancel Latest Membership</title>
     <access_arguments>access CiviCRM</access_arguments>
     <access_arguments>administer CiviCRM</access_arguments>
+  </item>
+  <item>
+    <path>civicrm/civirule/form/action/set_field_value</path>
+    <page_callback>CRM_CivirulesActions_Generic_Form_SetField</page_callback>
+    <title>Set Field Value</title>
+    <access_arguments>administer CiviCRM; administer CiviRules</access_arguments>
   </item>
 </menu>

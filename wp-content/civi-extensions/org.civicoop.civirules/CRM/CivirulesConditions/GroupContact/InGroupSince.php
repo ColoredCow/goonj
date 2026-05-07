@@ -104,7 +104,7 @@ class CRM_CivirulesConditions_GroupContact_InGroupSince extends CRM_Civirules_Co
           return TRUE;
         }
       }
-      catch (API_Exception $ex) {
+      catch (CRM_Core_Exception $ex) {
       }
 
     }
@@ -119,7 +119,7 @@ class CRM_CivirulesConditions_GroupContact_InGroupSince extends CRM_Civirules_Co
           return TRUE;
         }
       }
-      catch (CiviCRM_API3_Exception $ex) {
+      catch (CRM_Core_Exception $ex) {
       }
     }
     return FALSE;
@@ -200,7 +200,7 @@ class CRM_CivirulesConditions_GroupContact_InGroupSince extends CRM_Civirules_Co
           'return' => 'name',
           'id' => $params['group_id'],
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -220,7 +220,7 @@ class CRM_CivirulesConditions_GroupContact_InGroupSince extends CRM_Civirules_Co
           'return' => 'id',
           'name' => $condition_params['group_id'],
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }

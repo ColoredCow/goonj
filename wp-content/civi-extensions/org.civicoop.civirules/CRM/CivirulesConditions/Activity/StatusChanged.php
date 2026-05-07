@@ -27,7 +27,7 @@ class CRM_CivirulesConditions_Activity_StatusChanged extends CRM_CivirulesCondit
    * @param \CRM_Civirules_TriggerData_TriggerData $triggerData
    *
    * @return mixed|null
-   * @throws \CiviCRM_API3_Exception
+   * @throws \CRM_Core_Exception
    */
   protected function getFieldValue(CRM_Civirules_TriggerData_TriggerData $triggerData) {
     $field = $this->getEntityStatusFieldName();
@@ -84,7 +84,7 @@ class CRM_CivirulesConditions_Activity_StatusChanged extends CRM_CivirulesCondit
       foreach ($options as $option) {
         $return[$option['value']] = $option['name'];
       }
-    } catch (CiviCRM_API3_Exception $ex) {}
+    } catch (CRM_Core_Exception $ex) {}
 
     return $return;
   }

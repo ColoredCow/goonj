@@ -6,6 +6,11 @@
         <div class="clear"></div>
     </div>
     <div class="crm-section">
+        <div class="label">{$form.run_type.label}</div>
+        <div class="content">{$form.run_type.html}</div>
+        <div class="clear"></div>
+    </div>
+    <div class="crm-section">
         <div class="label">{$form.date_field.label}</div>
         <div class="content">{$form.date_field.html}</div>
         <div class="clear"></div>

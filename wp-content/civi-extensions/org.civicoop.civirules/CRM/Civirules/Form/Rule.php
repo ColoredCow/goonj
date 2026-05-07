@@ -265,34 +265,34 @@ class CRM_Civirules_Form_Rule extends CRM_Core_Form {
       $this->add('text', 'rule_created_date', E::ts('Created Date'));
       $this->add('text', 'rule_created_contact', E::ts('Created By'));
 
-      $triggerList = CiviRulesTrigger::get(FALSE)
-        ->addSelect('id', 'label', 'name', 'class_name', 'object_name', 'op')
-        ->addOrderBy('label', 'ASC')
-        ->addWhere('is_active', '=',TRUE)
-        ->execute()
-        ->indexBy('id');
-      foreach ($triggerList as $id => $detail) {
-        $description = '';
-        if (!empty($detail['class_name'])) {
-          try {
-            $description = (new $detail['class_name']($detail))->getHelpText('triggerDescription');
-          }
-          catch (Throwable $e) {
-            // Do nothing, we'll continue without description
-          }
-        }
-        $triggers[] = [
-          'id' => $id,
-          'text' => $detail['label'],
-          'description' => $description,
-        ];
-      }
-
       if ($this->getAction() === CRM_Core_Action::ADD) {
+        $triggerList = CiviRulesTrigger::get(FALSE)
+          ->addSelect('id', 'label', 'name', 'class_name', 'object_name', 'op')
+          ->addOrderBy('label', 'ASC')
+          ->addWhere('is_active', '=',TRUE)
+          ->execute()
+          ->indexBy('id');
+        foreach ($triggerList as $id => $detail) {
+          $description = '';
+          if (!empty($detail['class_name'])) {
+            try {
+              $description = (new $detail['class_name']($detail))->getHelpText('triggerDescription');
+            }
+            catch (Throwable $e) {
+              // Do nothing, we'll continue without description
+            }
+          }
+          $triggers[] = [
+            'id' => $id,
+            'text' => $detail['label'],
+            'description' => $description,
+          ];
+        }
         $this->add('select2', 'rule_trigger_select', E::ts('Select Trigger'), $triggers, TRUE, ['class' => 'huge']);
       }
       if ($this->_action == CRM_Core_Action::UPDATE) {
         $this->createUpdateFormElements();
+        $this->assign('triggerDescription', $this->triggerClass->getTriggerDescription());
       }
     }
     if ($this->_action == CRM_Core_Action::ADD) {

@@ -28,14 +28,20 @@ class CRM_CivirulesCronTrigger_EventDate extends CRM_Civirules_Trigger_Cron {
       }
     }
     if ($this->dao->fetch()) {
-      $participant = [];
-      CRM_Core_DAO::storeValues($this->dao, $participant);
-      $triggerData = new CRM_Civirules_TriggerData_Cron($this->dao->contact_id, 'Participant', $participant);
-      $triggerData->setTrigger($this);
-      if (!isset($_eventCache[$participant['event_id']])) {
-        $_eventCache[$participant['event_id']] = civicrm_api3('Event', 'getsingle', ['id' => $participant['event_id']]);
+      $data = [];
+      CRM_Core_DAO::storeValues($this->dao, $data);
+      if (!array_key_exists('run_type', $this->triggerParams) || $this->triggerParams['run_type'] == 'participant') {
+        $triggerData = new CRM_Civirules_TriggerData_Cron($this->dao->contact_id, 'Participant', $data, NULL, $this);
+        if (!isset($_eventCache[$data['event_id']])) {
+          $_eventCache[$data['event_id']] = civicrm_api3('Event', 'getsingle', ['id' => $data['event_id']]);
+        }
+        $triggerData->setEntityData('Event', $_eventCache[$data['event_id']]);
+      } else {
+        if (!isset($_eventCache[$data['id']])) {
+          $_eventCache[$data['id']] = civicrm_api3('Event', 'getsingle', ['id' => $data['id']]);
+        }
+        $triggerData = new CRM_Civirules_TriggerData_Cron(NULL, 'Event', $_eventCache[$data['id']], NULL, $this);
       }
-      $triggerData->setEntityData('Event', $_eventCache[$participant['event_id']]);
       return $triggerData;
     }
     return FALSE;
@@ -47,7 +53,11 @@ class CRM_CivirulesCronTrigger_EventDate extends CRM_Civirules_Trigger_Cron {
    * @return \CRM_Civirules_TriggerData_EntityDefinition
    */
   protected function reactOnEntity() {
-    return new CRM_Civirules_TriggerData_EntityDefinition('Participant', 'Participant', 'CRM_Event_DAO_Participant', 'Participant');
+    if (!array_key_exists('run_type', $this->triggerParams) || $this->triggerParams['run_type'] == 'participant') {
+      return new CRM_Civirules_TriggerData_EntityDefinition('Participant', 'Participant', 'CRM_Event_DAO_Participant', 'Participant');
+    } else {
+      return new CRM_Civirules_TriggerData_EntityDefinition('Event', 'Event', 'CRM_Event_DAO_Event', 'Event');
+    }
   }
 
   /**
@@ -91,7 +101,9 @@ class CRM_CivirulesCronTrigger_EventDate extends CRM_Civirules_Trigger_Cron {
       $sqlEventTypeID = 'AND `e`.`event_type_id` = %1';
       $params[1] = [$this->triggerParams['event_type_id'], 'Integer'];
     }
-    $sql = "SELECT `p`.*
+    if (!array_key_exists('run_type', $this->triggerParams) || $this->triggerParams['run_type'] == 'participant') {
+      $daoName = 'CRM_Event_DAO_Participant';
+      $sql = "SELECT `p`.*
             FROM `civicrm_participant` `p`
             INNER JOIN `civicrm_event` `e` ON `e`.`id` = `p`.`event_id`
             LEFT JOIN `civirule_rule_log` `rule_log` ON `rule_log`.entity_table = 'civicrm_participant' AND `rule_log`.entity_id = p.id AND `rule_log`.`contact_id` = `p`.`contact_id` AND `rule_log`.`rule_id` = %2
@@ -105,9 +117,24 @@ class CRM_CivirulesCronTrigger_EventDate extends CRM_Civirules_Trigger_Cron {
               FROM `civirule_rule_log` `rule_log2`
               WHERE `rule_log2`.`rule_id` = %2 and `rule_log2`.`entity_table` IS NULL AND `rule_log2`.`entity_id` IS NULL
             )";
-
+    } else {
+      $daoName = 'CRM_Event_DAO_Event';
+      $sql = "SELECT `e`.*
+            FROM `civicrm_event` `e` 
+            LEFT JOIN `civirule_rule_log` `rule_log` ON `rule_log`.entity_table = 'civicrm_event' AND `rule_log`.entity_id = e.id AND `rule_log`.`rule_id` = %2
+            LEFT JOIN `civirule_rule` `rule` ON `rule`.`id` = %2
+            WHERE {$dateExpression}
+            AND `e`.`is_active` = 1
+            AND `rule_log`.`id` IS NULL
+            {$sqlEventTypeID}
+            AND `e`.`id` NOT IN (
+              SELECT `rule_log2`.`entity_id`
+              FROM `civirule_rule_log` `rule_log2`
+              WHERE `rule_log2`.`rule_id` = %2 AND DATE(`rule_log2`.`log_date`) = DATE(NOW())
+            )";
+    }
     $params[2] = [$this->ruleId, 'Integer'];
-    $this->dao = CRM_Core_DAO::executeQuery($sql, $params, TRUE, 'CRM_Event_DAO_Participant');
+    $this->dao = CRM_Core_DAO::executeQuery($sql, $params, TRUE, $daoName);
 
     return TRUE;
   }

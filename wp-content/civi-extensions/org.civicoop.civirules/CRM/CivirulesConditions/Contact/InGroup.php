@@ -39,7 +39,7 @@ class CRM_CivirulesConditions_Contact_InGroup extends CRM_Civirules_Condition {
             'return' => 'name',
             'id' => $gid,
           ]);
-        } catch (CiviCRM_API3_Exception $e) {
+        } catch (CRM_Core_Exception $e) {
         }
       }
     }
@@ -60,7 +60,7 @@ class CRM_CivirulesConditions_Contact_InGroup extends CRM_Civirules_Condition {
             'return' => 'id',
             'name' => $gid,
           ]);
-        } catch (CiviCRM_API3_Exception $e) {
+        } catch (CRM_Core_Exception $e) {
         }
       }
     }

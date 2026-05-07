@@ -46,7 +46,7 @@ class CRM_CivirulesActions_Membership_UpdateStatus extends CRM_CivirulesActions_
         'return' => 'name',
         'id' => $action_params['membership_status_id'],
       ]);
-    } catch (CiviCRM_API3_Exception $e) {
+    } catch (CRM_Core_Exception $e) {
     }
     return $action_params;
   }
@@ -63,7 +63,7 @@ class CRM_CivirulesActions_Membership_UpdateStatus extends CRM_CivirulesActions_
         'return' => 'id',
         'name' => $action_params['membership_status_id'],
       ]);
-    } catch (CiviCRM_API3_Exception $e) {
+    } catch (CRM_Core_Exception $e) {
     }
     return parent::importActionParameters($action_params);
   }
@@ -87,7 +87,7 @@ class CRM_CivirulesActions_Membership_UpdateStatus extends CRM_CivirulesActions_
    *
    * @return string
    * @access public
-   * @throws \CiviCRM_API3_Exception
+   * @throws \CRM_Core_Exception
    */
   public function userFriendlyConditionParams() {
     $friendlyParams = '';

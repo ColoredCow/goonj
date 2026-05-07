@@ -26,7 +26,6 @@ return [
       'title' => E::ts('Name'),
       'sql_type' => 'varchar(80)',
       'input_type' => 'Text',
-      'readonly' => TRUE,
     ],
     'label' => [
       'title' => E::ts('Label'),
@@ -41,7 +40,6 @@ return [
       'title' => E::ts('Trigger ID'),
       'sql_type' => 'int unsigned',
       'input_type' => 'EntityRef',
-      'readonly' => TRUE,
       'default' => NULL,
       'input_attrs' => [
         'label' => E::ts('Trigger'),
@@ -61,7 +59,6 @@ return [
       'title' => E::ts('Trigger Params'),
       'sql_type' => 'text',
       'input_type' => 'TextArea',
-      'readonly' => TRUE,
       'default' => NULL,
     ],
     'is_active' => [
@@ -97,6 +94,7 @@ return [
       'required' => TRUE,
       'description' => E::ts('When was this item created'),
       'default' => 'CURRENT_TIMESTAMP',
+      'readonly' => TRUE,
     ],
     'created_user_id' => [
       'title' => E::ts('Created User ID'),

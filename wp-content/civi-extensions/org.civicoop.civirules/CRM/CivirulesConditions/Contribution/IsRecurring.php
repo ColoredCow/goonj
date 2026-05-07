@@ -62,7 +62,7 @@ class CRM_CivirulesConditions_Contribution_IsRecurring extends CRM_Civirules_Con
    * @access public
    */
   public function userFriendlyConditionParams() {
-    return ts('Contribution ' . $this->conditionParams['test']);
+    return ts('Contribution %1', [1 => $this->conditionParams['test']]);
   }
 
   /**

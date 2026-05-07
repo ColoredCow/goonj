@@ -596,6 +596,10 @@ class CRM_Civirules_Utils {
   public static function getObjectNameFromObject(\CRM_Core_DAO $object)
   {
     static $contact_types = []; // Array with contact ID and value the contact type.
+    $tableName = $object->getTableName();
+    if (empty($tableName)) {
+      return NULL;
+    }
     $objectName = CRM_Core_DAO_AllCoreTables::getEntityNameForTable($object->getTableName());
     if ($objectName == 'Contact' && isset($object->contact_type)) {
       $objectName = $object->contact_type;
@@ -616,6 +620,7 @@ class CRM_Civirules_Utils {
    * Method to check if Api4 is active in the current installation
    *
    * @return bool
+   * @deprecated
    */
   public static function isApi4Active() {
     if (function_exists('civicrm_api4')) {
@@ -673,7 +678,7 @@ class CRM_Civirules_Utils {
           return $group['title'];
         }
       }
-      catch (API_Exception $ex) {
+      catch (CRM_Core_Exception $ex) {
       }
     }
     else {
@@ -735,7 +740,7 @@ class CRM_Civirules_Utils {
           $units[$optionValue['value']] = $optionValue['label'];
         }
       }
-      catch (API_Exception $ex) {
+      catch (CRM_Core_Exception $ex) {
       }
     }
     else {
@@ -769,14 +774,14 @@ class CRM_Civirules_Utils {
         try {
           $events = \Civi\Api4\Event::get()
             ->addSelect('title')
-            ->addWhere('id', '=', 1)
+            ->addWhere('id', '=', $eventId)
             ->execute();
           $event = $events->first();
           if ($event['title']) {
             return $event['title'];
           }
         }
-        catch (API_Exception $ex) {
+        catch (CRM_Core_Exception $ex) {
         }
       }
       else {
@@ -849,7 +854,7 @@ class CRM_Civirules_Utils {
         $statusId = $membershipStatus['id'];
       }
     }
-    catch (\API_Exception $ex) {
+    catch (\CRM_Core_Exception $ex) {
     }
     return $statusId;
   }

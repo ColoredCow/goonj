@@ -177,7 +177,7 @@ class Exporter implements EntityExporter {
         unset($ruleCondition['condition_id']);
         $return[] = $ruleCondition;
       }
-    } catch (\CiviCRM_API3_Exception $e) {
+    } catch (\CRM_Core_Exception $e) {
       // Do nothing.
     }
     return $return;
@@ -208,7 +208,7 @@ class Exporter implements EntityExporter {
         unset($ruleAction['action_id']);
         $return[] = $ruleAction;
       }
-    } catch (\CiviCRM_API3_Exception $e) {
+    } catch (\CRM_Core_Exception $e) {
       // Do nothing.
     }
     return $return;

@@ -35,8 +35,8 @@ class CRM_CivirulesActions_Activity_Form_AddToCase extends CRM_CivirulesActions_
     }
 
     // add back previously removed fields as not required
-    $this->add('select', 'case_type_id', ts('Case type'), ['' => E::ts('-- Please select --')] + $case_types, true);
-    $this->add('select', 'case_status_id', ts('Case Status'), ['' => E::ts('-- Any status  --')] + CRM_Core_OptionGroup::values('case_status'), false);
+    $this->add('select', 'case_type_id', ts('Case type'), ['' => E::ts('-- Please select --')] + $case_types, FALSE);
+    $this->add('select', 'case_status_id', ts('Case Status'), ['' => E::ts('-- Any status  --')] + CRM_Core_OptionGroup::values('case_status'), FALSE);
   }
 
   /**

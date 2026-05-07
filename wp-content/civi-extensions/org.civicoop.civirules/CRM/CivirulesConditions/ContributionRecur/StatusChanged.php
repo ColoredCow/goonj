@@ -65,7 +65,7 @@ class CRM_CivirulesConditions_ContributionRecur_StatusChanged extends CRM_Civiru
       foreach ($options as $option) {
         $return[$option['value']] = $option['name'];
       }
-    } catch (CiviCRM_API3_Exception $ex) {}
+    } catch (CRM_Core_Exception $ex) {}
 
     return $return;
   }

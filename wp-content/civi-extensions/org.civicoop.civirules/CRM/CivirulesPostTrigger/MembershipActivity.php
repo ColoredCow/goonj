@@ -49,7 +49,7 @@ class CRM_CivirulesPostTrigger_MembershipActivity extends CRM_CivirulesPostTrigg
     }
 
     // Check if this trigger is enabled for this op
-    if (str_contains($this->triggerParams['trigger_op'], '$op')) {
+    if (!str_contains($this->triggerParams['trigger_op'], $op)) {
       // \Civi::log()->debug('CiviRules MembershipActivity trigger: Trigger op not enabled: ' . $op);
       return;
     }

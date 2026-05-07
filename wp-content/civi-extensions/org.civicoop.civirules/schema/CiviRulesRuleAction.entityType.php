@@ -91,6 +91,7 @@ return [
       'required' => TRUE,
       'description' => ts('RuleAction Created Date'),
       'default' => 'CURRENT_TIMESTAMP',
+      'readonly' => TRUE,
     ],
     'modified_date' => [
       'title' => ts('Modified Date'),

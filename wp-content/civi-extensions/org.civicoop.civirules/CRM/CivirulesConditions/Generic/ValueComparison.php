@@ -77,7 +77,7 @@ abstract class CRM_CivirulesConditions_Generic_ValueComparison extends CRM_Civir
    * Returns the value for the data comparison
    *
    * @return mixed
-   * @throws \CiviCRM_API3_Exception
+   * @throws \CRM_Core_Exception
    */
   protected function getComparisonValue() {
     if (empty($this->conditionParams['entity'])) {
@@ -124,7 +124,7 @@ abstract class CRM_CivirulesConditions_Generic_ValueComparison extends CRM_Civir
    * @param string $fieldname
    *
    * @return bool True if the field is a date.
-   * @throws \CiviCRM_API3_Exception
+   * @throws \CRM_Core_Exception
    */
   protected function isDateField($entity, $fieldname) {
     $dateType = CRM_Utils_Type::T_DATE;
@@ -327,11 +327,11 @@ abstract class CRM_CivirulesConditions_Generic_ValueComparison extends CRM_Civir
         }
         return true;
       case 'matches regex':
-        preg_match('/' . $rightValue . '/', $leftValue, $matches);
+        preg_match('/' . $rightValue . '/', $leftValue ?? '', $matches);
         return (!empty($matches));
         break;
       case 'not matches regex':
-        preg_match('/' . $rightValue . '/', $leftValue, $matches);
+        preg_match('/' . $rightValue . '/', $leftValue ?? '', $matches);
         return (empty($matches));
         break;
       default:

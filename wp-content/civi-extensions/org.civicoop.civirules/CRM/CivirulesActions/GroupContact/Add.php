@@ -8,16 +8,6 @@
  * @author Jaap Jansma (CiviCooP) <jaap.jansma@civicoop.org>
  * @license AGPL-3.0
  */
-
 class CRM_CivirulesActions_GroupContact_Add extends CRM_CivirulesActions_GroupContact_GroupContact {
-
-  /**
-   * Method to set the api action
-   *
-   * @return string
-   */
-  protected function getApiAction() {
-    return 'create';
-  }
 
 }

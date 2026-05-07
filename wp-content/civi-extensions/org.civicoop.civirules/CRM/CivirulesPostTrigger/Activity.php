@@ -63,6 +63,7 @@ class CRM_CivirulesPostTrigger_Activity extends CRM_Civirules_Trigger_Post {
         CRM_Core_DAO::storeValues($activityContact, $data);
         $activityContacts[] = $data;
       }
+      $activityContact->free();
     }
 
     foreach($activityContacts as $activityContact) {
@@ -101,6 +102,7 @@ class CRM_CivirulesPostTrigger_Activity extends CRM_Civirules_Trigger_Post {
       CRM_Core_DAO::storeValues($activityContact, $data);
       $activityContacts[] = $data;
     }
+    $activityContact->free();
     $data['activity_contacts'] = $activityContacts;
     return $data;
   }

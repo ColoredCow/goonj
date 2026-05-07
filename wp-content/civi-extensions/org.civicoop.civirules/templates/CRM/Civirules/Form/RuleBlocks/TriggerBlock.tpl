@@ -11,9 +11,7 @@
     <div class="crm-section">
       <div id="civirule_triggerBlock-wrapper">
         <p class="bold">{$form.rule_trigger_label.value}</p>
-        {if $triggerClass && $triggerClass->getTriggerDescription()}
-          <p class="description">{$triggerClass->getTriggerDescription()}</p>
-        {/if}
+        {if $triggerDescription}<p class="description">{$triggerDescription}</p>{/if}
         {if $trigger_edit_params}
           <br><a class="button edit-button" href="{$trigger_edit_params}">{icon icon="fa-pencil"}{/icon}{ts}Edit trigger parameters{/ts}</a>
         {/if}

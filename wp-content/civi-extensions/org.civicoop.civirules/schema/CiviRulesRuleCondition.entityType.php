@@ -84,6 +84,7 @@ return [
       'required' => TRUE,
       'description' => ts('RuleCondition Created Date'),
       'default' => 'CURRENT_TIMESTAMP',
+      'readonly' => TRUE,
     ],
     'modified_date' => [
       'title' => ts('Modified Date'),

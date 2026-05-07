@@ -41,6 +41,7 @@ class CRM_CivirulesCronTrigger_Form_EventDate extends CRM_CivirulesTrigger_Form_
       'class' => 'six',
     ], FALSE);
     $this->add('checkbox', 'enable_offset', E::ts('Give a date offset'), '', FALSE);
+    $this->add('select', 'run_type', E::ts('Trigger for'), ['participant' => E::ts('Every participant'), 'event' => E::ts('Once for each event')], TRUE);
 
     $this->addButtons([
       ['type' => 'next', 'name' => E::ts('Save'), 'isDefault' => TRUE],
@@ -75,6 +76,11 @@ class CRM_CivirulesCronTrigger_Form_EventDate extends CRM_CivirulesTrigger_Form_
     if (empty($data['offset'])) {
       $defaultValues['enable_offset'] = 0;
     }
+    if (!empty($data['run_type'])) {
+      $defaultValues['run_type'] = $data['run_type'];
+    } else {
+      $defaultValues['run_type'] = 'participant';
+    }
     return $defaultValues;
   }
 
@@ -84,6 +90,7 @@ class CRM_CivirulesCronTrigger_Form_EventDate extends CRM_CivirulesTrigger_Form_
    * @throws Exception when rule condition not found
    */
   public function postProcess() {
+    $this->triggerParams['run_type'] = $this->getSubmittedValue('run_type');
     $this->triggerParams['event_type_id'] = $this->getSubmittedValue('event_type_id');
     $this->triggerParams['date_field'] = $this->getSubmittedValue('date_field');
     if ($this->getSubmittedValue('enable_offset')) {

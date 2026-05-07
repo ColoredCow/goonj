@@ -19,12 +19,7 @@ class CRM_CivirulesActions_Tag_Form_EntityTag extends CRM_CivirulesActions_Form_
    * @access protected
    */
   protected function getEntityTags($tableName) {
-    if (CRM_Civirules_Utils::isApi4Active()) {
-      $tags = CRM_CivirulesActions_Tag_EntityTag::getApi4Tags($tableName);
-    }
-    else {
-      $tags = CRM_CivirulesActions_Tag_EntityTag::getApi3Tags($tableName);
-    }
+    $tags = CRM_CivirulesActions_Tag_EntityTag::getApi4Tags($tableName);
     return $tags;
   }
 

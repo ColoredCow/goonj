@@ -42,7 +42,7 @@ class CRM_CivirulesActions_Contact_Form_CommPref extends CRM_CivirulesActions_Fo
         $this->_commPrefs[$optionValue['value']] = $optionValue['label'];
       }
     }
-    catch (CiviCRM_API3_Exception $ex) {
+    catch (CRM_Core_Exception $ex) {
     }
     return;
   }

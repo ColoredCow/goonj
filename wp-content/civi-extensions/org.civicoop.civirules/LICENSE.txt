@@ -1,5 +1,5 @@
 Package: org.civicoop.civirules
-Copyright (C) 2015, Erik Hommel <hommel@ee-atwork.nl>
+Copyright (C) 2025, Erik Hommel <hommel@ee-atwork.nl>
 Licensed under the GNU Affero Public License 3.0 (below).
 
 -------------------------------------------------------------------------------

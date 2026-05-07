@@ -51,7 +51,7 @@ class CRM_CivirulesConditions_Case_OnlyOnce extends CRM_Civirules_Condition {
           }
         }
       }
-    } catch (CiviCRM_API3_Exception $ex) {}
+    } catch (CRM_Core_Exception $ex) {}
     return $isConditionValid;
   }
 

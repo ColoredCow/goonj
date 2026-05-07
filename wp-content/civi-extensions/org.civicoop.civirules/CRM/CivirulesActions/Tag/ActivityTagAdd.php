@@ -13,15 +13,9 @@ class CRM_CivirulesActions_Tag_ActivityTagAdd extends CRM_Civirules_Action {
     $entityId = $triggerData->getEntityId();
     $actionParams = $this->getActionParameters();
     $entityTable = "civicrm_activity";
-    $api4 = CRM_Civirules_Utils::isApi4Active();
     if (isset($actionParams['tag_id'])) {
       foreach ($actionParams['tag_id'] as $tagId) {
-        if ($api4) {
-          CRM_CivirulesActions_Tag_EntityTag::createApi4EntityTag($entityTable, $entityId, $tagId);
-        }
-        else {
-          CRM_CivirulesActions_Tag_EntityTag::createApi3EntityTag($entityTable, $entityId, $tagId);
-        }
+        CRM_CivirulesActions_Tag_EntityTag::createApi4EntityTag($entityTable, $entityId, $tagId);
       }
     }
   }
@@ -51,12 +45,7 @@ class CRM_CivirulesActions_Tag_ActivityTagAdd extends CRM_Civirules_Action {
     $actionParams = $this->getActionParameters();
     $labels = [];
     $tableName = "civicrm_activity";
-    if (CRM_Civirules_Utils::isApi4Active()) {
-      $tags = CRM_CivirulesActions_Tag_EntityTag::getApi4Tags($tableName);
-    }
-    else {
-      $tags = CRM_CivirulesActions_Tag_EntityTag::getApi3Tags($tableName);
-    }
+    $tags = CRM_CivirulesActions_Tag_EntityTag::getApi4Tags($tableName);
 
     if (isset($actionParams['tag_id'])) {
       foreach ($actionParams['tag_id'] as $tagId) {

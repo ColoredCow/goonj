@@ -221,7 +221,7 @@ class CRM_CivirulesConditions_Contribution_SpecificAmount extends CRM_Civirules_
           'return' => 'name',
           'id' => $params['financial_type_id'],
         ]);
-      } catch (CiviCRM_API3_Exception $e) {
+      } catch (CRM_Core_Exception $e) {
       }
     }
     return $params;
@@ -240,7 +240,7 @@ class CRM_CivirulesConditions_Contribution_SpecificAmount extends CRM_Civirules_
           'return' => 'id',
           'name' => $condition_params['financial_type_id'],
         ]);
-      } catch (CiviCRM_API3_Exception $e) {
+      } catch (CRM_Core_Exception $e) {
       }
     }
     return parent::importConditionParameters($condition_params);

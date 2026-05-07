@@ -99,7 +99,7 @@ class CRM_CivirulesActions_Activity_AddTargetContact extends CRM_Civirules_Actio
           'return' => 'name_a_b',
           'id' => $rel_type_id,
         ]);
-      } catch (CiviCRM_API3_Exception $e) {
+      } catch (CRM_Core_Exception $e) {
       }
       $action_params['rel_type_id'] .= $rel_dir . $rel_type_id;
     }
@@ -121,7 +121,7 @@ class CRM_CivirulesActions_Activity_AddTargetContact extends CRM_Civirules_Actio
           'return' => 'id',
           'name_a_b' => $rel_type_id,
         ]);
-      } catch (CiviCRM_API3_Exception $e) {
+      } catch (CRM_Core_Exception $e) {
       }
       $action_params['rel_type_id'] .= $rel_dir . $rel_type_id;
     }

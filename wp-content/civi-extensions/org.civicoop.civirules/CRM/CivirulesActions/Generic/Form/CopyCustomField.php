@@ -18,13 +18,13 @@ class CRM_CivirulesActions_Generic_Form_CopyCustomField extends CRM_CivirulesAct
   public function buildQuickForm() {
     $this->add('hidden', 'rule_action_id');
 
-    $this->add('select',
+    $this->add('select2',
       'copy_from_field_id',
       E::ts('Source Field'),
       $this->getEligibleCustomFields(),
       TRUE);
 
-    $this->add('select',
+    $this->add('select2',
       'field_id',
       E::ts('Target Field'),
       $this->getEligibleCustomFields(),
@@ -88,11 +88,12 @@ class CRM_CivirulesActions_Generic_Form_CopyCustomField extends CRM_CivirulesAct
           'return' => 'id,label,custom_group_id',
         ]);
         foreach ($field_query['values'] as $field) {
-          $field_list[$field['id']] = E::ts("Field '%1' (Entity '%3', Group '%2')", [
+          $field_list[$field['id']] = ['id' => $field['id'], 'label' => E::ts("Field '%1' (Entity '%3', Group '%2')", [
             1 => $field['label'],
             2 => $eligible_group_ids[$field['custom_group_id']],
             3 => $group_query['values'][$field['custom_group_id']]['extends'],
-          ]);
+           ])
+          ];
         }
       }
     }

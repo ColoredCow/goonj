@@ -8,17 +8,7 @@
  * @author Jaap Jansma (CiviCooP) <jaap.jansma@civicoop.org>
  * @license AGPL-3.0
  */
-
 class CRM_CivirulesActions_GroupContact_Remove extends CRM_CivirulesActions_GroupContact_GroupContact {
-
-  /**
-   * Method to set the api action
-   *
-   * @return string
-   */
-  protected function getApiAction() {
-    return 'delete';
-  }
 
   /**
    * Process the action
@@ -41,6 +31,7 @@ class CRM_CivirulesActions_GroupContact_Remove extends CRM_CivirulesActions_Grou
       if (CRM_CivirulesConditions_Utils_GroupContact::isContactInGroup($contactId, $group_id)) {
         $params = [];
         $params['group_id'] = $group_id;
+        $params['status'] = 'Removed';
 
         //alter parameters by subclass
         $params = $this->alterApiParameters($params, $triggerData);

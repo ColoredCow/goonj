@@ -118,7 +118,7 @@ class CRM_CivirulesConditions_Contact_InDomain extends CRM_Civirules_Condition {
 
   /**
    * @return array
-   * @throws \CiviCRM_API3_Exception
+   * @throws \CRM_Core_Exception
    */
   public static function domains() {
     $domains = [];
@@ -135,7 +135,7 @@ class CRM_CivirulesConditions_Contact_InDomain extends CRM_Civirules_Condition {
    * @param int $domain_id
    *
    * @return mixed
-   * @throws \CiviCRM_API3_Exception
+   * @throws \CRM_Core_Exception
    */
   public static function getDomainName($domain_id) {
     return self::domains()[$domain_id];
@@ -146,7 +146,7 @@ class CRM_CivirulesConditions_Contact_InDomain extends CRM_Civirules_Condition {
    * @param int $domain_id
    *
    * @return bool
-   * @throws \CiviCRM_API3_Exception
+   * @throws \CRM_Core_Exception
    */
   public static function isContactIndomain($contact_id, $domain_id) {
     $group_id = \Civi::settings($domain_id)->get('domain_group_id');
@@ -172,7 +172,7 @@ class CRM_CivirulesConditions_Contact_InDomain extends CRM_Civirules_Condition {
           'return' => 'name',
           'id' => $params['domain_id']
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -192,7 +192,7 @@ class CRM_CivirulesConditions_Contact_InDomain extends CRM_Civirules_Condition {
           'return' => 'id',
           'name' => $condition_params['domain_id']
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }

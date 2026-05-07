@@ -70,6 +70,7 @@ class CRM_CivirulesActions_Form_Form extends CRM_Core_Form {
 
     $this->triggerClass = CRM_Civirules_BAO_CiviRulesTrigger::getPostTriggerObjectByClassName($this->trigger->class_name);
     $this->triggerClass->setTriggerId($this->trigger->id);
+    $this->triggerClass->setTriggerParams($this->rule->trigger_params ?? '');
 
     //set user context
     $session = CRM_Core_Session::singleton();
