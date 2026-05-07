@@ -1,12 +1,6 @@
 #{civi-page('admin-access')} {
   #crm-container {
     @include civicrm-table;
-
-    table.report {
-      @include civicrm-panel;
-      overflow: hidden;
-      width: 100%;
-    }
   }
 }
 

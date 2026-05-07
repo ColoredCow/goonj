@@ -1,12 +1,6 @@
 /* stylelint-disable max-nesting-depth, selector-max-compound-selectors, selector-no-qualifying-type, selector-max-id, scss/at-extend-no-missing-placeholder */
 
 #{civi-page('survey')} {
-  .CRM_Campaign_Form_Survey_Main {
-    .help {
-      margin: $crm-status-bar-no-top;
-    }
-  }
-
   .CRM_Campaign_Form_Search {
     .crm-results-block {
       overflow-x: auto;

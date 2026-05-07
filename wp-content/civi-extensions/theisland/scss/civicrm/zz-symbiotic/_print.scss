@@ -1,0 +1,35 @@
+@media print {
+
+  // Hide the breadcrumb
+  // Works for Standalone and Drupal10
+  .breadcrumb,
+  // Sort icons on SearchKit and other results
+  .fa-sort,
+  .fa-sort-asc,
+  .fa-sort-desc,
+  // CiviCRM footer
+  .crm-container > .footer,
+  .crm-container > .crm-footer {
+    display: none !important;
+  }
+
+  // Hide the main CiviCRM menu
+  nav#civicrm-menu-nav {
+    display: none !important;
+  }
+
+  // SearchKit results
+  .crm-container .crm-search-display {
+    // Top action button
+    >div.form-inline,
+    // "Select all" checkbox
+    table th.crm-search-result-select,
+    // Checkboxes on each row
+    table td.crm-search-ctrl-column,
+    // Menu on each row (if present)
+    table td.crm-search-col-type-menu {
+      display: none !important;
+    }
+  }
+
+}

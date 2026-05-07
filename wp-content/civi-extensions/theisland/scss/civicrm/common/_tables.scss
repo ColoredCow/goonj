@@ -1,13 +1,18 @@
 table {
+  // CiviCRM often sets this in civicrm.css for some reason
+  font-size: $font-size-base;
+
   .crm-icon {
     @include contact-type-icons();
   }
   tr {
-    /* remove border from Claro theme */
+    // remove border from Claro theme
     border-bottom: none;
+    // override civicrm.css
+    font-size: $font-size-base;
   }
   td {
-    /* fixes 4rem height from Claro theme */
+    // fixes 4rem height from Claro theme
     height: auto;
   }
 }

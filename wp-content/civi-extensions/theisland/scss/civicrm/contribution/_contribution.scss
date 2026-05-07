@@ -1,0 +1,15 @@
+.crm-contribution-view-form-block {
+  .total_amount-section {
+    border: none;
+
+    // There is an amount due (PR#31603)
+    .crm-grid-row.bold {
+      background: yellow;
+    }
+
+    .crm-grid-cell {
+      border-right: none;
+      padding-left: 20px;
+    }
+  }
+}
