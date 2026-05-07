@@ -199,6 +199,27 @@ Tags: non-profit, crm, coloredcow
   margin-left: 22px !important;
 }
 
+#crm-main-content-wrapper form .crm-block.crm-contribution-main-form-block .crm-public-form-item .crm-profile {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 24px;
+}
+#crm-main-content-wrapper form .crm-block.crm-contribution-main-form-block .crm-public-form-item .crm-profile > .crm-section {
+  width: auto !important;
+}
+#crm-main-content-wrapper form .crm-block.crm-contribution-main-form-block .crm-public-form-item .crm-profile > .crm-section:has(textarea),
+#crm-main-content-wrapper form .crm-block.crm-contribution-main-form-block .crm-public-form-item .crm-profile > .crm-section:has(input[type=checkbox]),
+#crm-main-content-wrapper form .crm-block.crm-contribution-main-form-block .crm-public-form-item .crm-profile > .crm-section:has(input[type=radio]),
+#crm-main-content-wrapper form .crm-block.crm-contribution-main-form-block .crm-public-form-item .crm-profile > .crm-section:has(.crm-multiple-checkbox-radio-options),
+#crm-main-content-wrapper form .crm-block.crm-contribution-main-form-block .crm-public-form-item .crm-profile > .crm-section[class*=street_address] {
+  grid-column: 1/-1;
+}
+@media (max-width: 768px) {
+  #crm-main-content-wrapper form .crm-block.crm-contribution-main-form-block .crm-public-form-item .crm-profile {
+    grid-template-columns: 1fr;
+  }
+}
+
 #crm-container #crm-main-content-wrapper form .messages.crm-error ul {
   display: none !important;
 }
