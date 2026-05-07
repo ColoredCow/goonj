@@ -257,6 +257,34 @@
   margin-left: 22px !important;
 }
 
+// Two-column layout for contribution-page profile fields. Pairs simple text
+// inputs (First/Last Name, Email/Mobile, State/City, etc.) and keeps wide
+// fields (street address, checkboxes/radios) full-width via :has() rather
+// than pinning custom-field IDs (which differ between staging and prod).
+// Selector specificity matches the existing `.crm-profile { display: block }`
+// rule above to override it without !important on the grid setup.
+#crm-main-content-wrapper form .crm-block.crm-contribution-main-form-block .crm-public-form-item .crm-profile {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 24px;
+
+  > .crm-section {
+    width: auto !important;
+  }
+
+  > .crm-section:has(textarea),
+  > .crm-section:has(input[type="checkbox"]),
+  > .crm-section:has(input[type="radio"]),
+  > .crm-section:has(.crm-multiple-checkbox-radio-options),
+  > .crm-section[class*="street_address"] {
+    grid-column: 1 / -1;
+  }
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
 #crm-container #crm-main-content-wrapper form .messages.crm-error ul {
   display: none !important;
 }
