@@ -125,15 +125,9 @@ class CRM_Emailapi_CivirulesAction_SendToCustomFieldValue extends CRM_Civirules_
    * @return string
    */
   public function userFriendlyConditionParams() {
-    $template = 'unknown template';
     $params = $this->getActionParameters();
 
-    $messageTemplates = new CRM_Core_DAO_MessageTemplate();
-    $messageTemplates->id = $params['template_id'];
-    $messageTemplates->is_active = TRUE;
-    if ($messageTemplates->find(TRUE)) {
-      $template = $messageTemplates->msg_title;
-    }
+    $template = CRM_Emailapi_CivirulesAction_Send::getTemplateLink($params['template_id']);
 
     try {
       $to = civicrm_api3('CustomField', 'getvalue', ['return' => "label", 'id' => $params['custom_value']]);
@@ -150,7 +144,7 @@ class CRM_Emailapi_CivirulesAction_SendToCustomFieldValue extends CRM_Civirules_
     if (!empty($params['bcc'])) {
       $bcc = ts(' and bcc to %1', [1 => $params['bcc']]);
     }
-    return ts('Send e-mail from "%1 (%2)" with Template "%3" to %4 %5 %6', [
+    return ts("Send e-mail from '%1 (%2)' with Template '%3' to %4 %5 %6", [
       1 => $params['from_name'],
       2 => $params['from_email'],
       3 => $template,
