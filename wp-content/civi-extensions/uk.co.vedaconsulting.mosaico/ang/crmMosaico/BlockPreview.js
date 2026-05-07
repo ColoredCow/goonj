@@ -33,6 +33,7 @@
           });
         };
         scope.doSend = function doSend(recipient) {
+          recipient = JSON.parse(JSON.stringify(recipient).replace(/\,\s/g, ','));
           scope.$eval(attr.onSend, {
             preview: {recipient: recipient}
           });
@@ -59,7 +60,7 @@
             markup += '</ol>';
             markup = '<h4>' + ts('A test message will be sent to %1 people:', {1: count}) + '</h4>' + markup;
             if (!count) {
-              markup = '<div class="messages status"><i class="crm-i fa-exclamation-triangle"></i> ' +
+              markup = '<div class="messages status"><i class="crm-i fa-exclamation-triangle" role="img" aria-hidden="true"></i> ' +
               (data.contact.count ? ts('None of the contacts in this group have an email address.') : ts('Group is empty.')) +
               '</div>';
             }

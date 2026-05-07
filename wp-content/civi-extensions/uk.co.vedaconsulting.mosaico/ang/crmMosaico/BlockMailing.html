@@ -53,7 +53,7 @@
     <div class="form-group" ng-if="isUnsubGroupRequired(mailing)">
       <label for="inputUnsubscribeGroup" class="control-label required-mark">{{ts('Unsubscribe Group')}}</label>
       <input
-        crm-entityref="{entity: 'Group', api: {params: {is_hidden: 0, is_active: 1}}, select: {allowClear:true, minimumInputLength: 0}}"
+        crm-entityref="{entity: 'Group', api: {params: {is_hidden: 0, is_active: 1, group_type: {LIKE: '%2%'}}}, select: {allowClear:true, minimumInputLength: 0}}"
         class="form-control"
         id="inputUnsubscribeGroup"
         name="baseGroup"
