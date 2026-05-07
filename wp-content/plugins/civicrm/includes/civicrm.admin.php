@@ -391,8 +391,30 @@ class CiviCRM_For_WordPress_Admin {
      * file, we now know it is there.
      */
 
+    /**
+     * Fires before the CiviCRM settings file has been included.
+     *
+     * Plugins can use this action to define constants before they are set
+     * in the CiviCRM settings file. This is only effective when WordPress
+     * has not been externally bootstrapped e.g. via `extern/*.php`.
+     *
+     * @since 6.6.0
+     */
+    do_action('civicrm_before_settings_file_load');
+
     // Include settings file - returns int(1) on success.
     $error = include_once CIVICRM_SETTINGS_PATH;
+
+    /**
+     * Fires after the CiviCRM settings file has been included.
+     *
+     * Plugins can use this action to override settings that have been set in
+     * the CiviCRM settings file. This is only effective when WordPress has not
+     * been externally bootstrapped e.g. via `extern/*.php`.
+     *
+     * @since 6.6.0
+     */
+    do_action('civicrm_after_settings_file_load');
 
     /*
      * Bail if the settings file returns something other than int(1).
@@ -1003,6 +1025,30 @@ class CiviCRM_For_WordPress_Admin {
    */
   public function get_theme_compatibility_modes() {
     return ['loop', 'filter'];
+  }
+
+  /**
+   * Gets the CiviCRM Automatically Sign In User Setting.
+   *
+   * Defaults to TRUE to preserve existing behaviour.
+   *
+   * @since 6.4
+   *
+   * @return bool $automatically_sign_in_user Whether to Automatically Sign In the WP User after it is created.
+   */
+  public function get_auto_sign_in_user() {
+    return boolval(get_option('civicrm_automatically_sign_in_user', TRUE));
+  }
+
+  /**
+   * Sets the CiviCRM Automatically Sign In User Setting.
+   *
+   * @since 6.4
+   *
+   * @param bool $automatically_sign_in_user Whether to Automatically Sign In the WP User after it is created.
+   */
+  public function set_auto_sign_in_user($automatically_sign_in_user) {
+    update_option('civicrm_automatically_sign_in_user', $automatically_sign_in_user, FALSE);
   }
 
 }

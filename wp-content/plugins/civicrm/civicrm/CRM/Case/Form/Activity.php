@@ -393,7 +393,7 @@ class CRM_Case_Form_Activity extends CRM_Activity_Form_Activity {
     $params['activity_type_id'] = $this->_activityTypeId;
 
     // format with contact (target contact) values
-    if (isset($params['target_contact_id'])) {
+    if (!empty($params['target_contact_id'])) {
       $params['target_contact_id'] = explode(',', $params['target_contact_id']);
     }
     else {
@@ -402,27 +402,8 @@ class CRM_Case_Form_Activity extends CRM_Activity_Form_Activity {
 
     // format activity custom data
     if ($this->_activityId) {
-      // retrieve and include the custom data of old Activity
-      $oldActivity = civicrm_api3('Activity', 'getsingle', ['id' => $this->_activityId]);
-      $params = array_merge($oldActivity, $params);
-
-      // unset custom fields-id from params since we want custom
-      // fields to be saved for new activity.
-      foreach ($params as $key => $value) {
-        $match = [];
-        if (preg_match('/^(custom_\d+_)(\d+)$/', $key, $match)) {
-          $params[$match[1] . '-1'] = $params[$key];
-
-          // for autocomplete transfer hidden value instead of label
-          if ($params[$key] && isset($params[$key . '_id'])) {
-            $params[$match[1] . '-1_id'] = $params[$key . '_id'];
-            unset($params[$key . '_id']);
-          }
-          unset($params[$key]);
-        }
-      }
+      $params['id'] = $this->_activityId;
     }
-
     $params['custom'] = CRM_Core_BAO_CustomField::postProcess($params,
       $this->_activityId,
       'Activity'
@@ -525,8 +506,8 @@ class CRM_Case_Form_Activity extends CRM_Activity_Form_Activity {
         CRM_Core_BAO_EntityTag::create($tagParams, 'civicrm_activity', $vval['actId']);
 
         //save free tags
-        if (isset($params['taglist']) && !empty($params['taglist'])) {
-          CRM_Core_Form_Tag::postProcess($params['taglist'], $vval['actId'], 'civicrm_activity', $this);
+        if (isset($params['activity_taglist']) && !empty($params['activity_taglist'])) {
+          CRM_Core_Form_Tag::postProcess($params['activity_taglist'], $vval['actId'], 'civicrm_activity', $this);
         }
       }
 

@@ -108,6 +108,10 @@ class CRM_Contribute_Form_AdditionalPayment extends CRM_Contribute_Form_Abstract
 
     $this->_paymentType = $this->getPaymentType();
 
+    if ($this->isARefund() && !CRM_Core_Permission::check('refund contributions')) {
+      throw new CRM_Core_Exception('You do not have permission to refund contributions.');
+    }
+
     if (!empty($this->_mode) && $this->isARefund()) {
       throw new CRM_Core_Exception(ts('Credit card payment is not for Refund payments use'));
     }
@@ -220,7 +224,8 @@ class CRM_Contribute_Form_AdditionalPayment extends CRM_Contribute_Form_Abstract
       $eventID = CRM_Core_DAO::getFieldValue('CRM_Event_DAO_Participant', $this->_id, 'event_id', 'id');
     }
 
-    $this->add('select', 'from_email_address', ts('Receipt From'), CRM_Financial_BAO_Payment::getValidFromEmailsForPayment($eventID ?? NULL), FALSE, ['class' => 'crm-select2 huge']);
+    $fromEmailSelect = $this->add('select', 'from_email_address', ts('Receipt From'), CRM_Financial_BAO_Payment::getValidFromEmailsForPayment($eventID ?? NULL), FALSE, ['class' => 'crm-select2 huge']);
+    $fromEmailSelect->setOptionTextEscaped();
 
     $this->add('textarea', 'receipt_text', ts('Confirmation Message'));
 
@@ -408,11 +413,6 @@ class CRM_Contribute_Form_AdditionalPayment extends CRM_Contribute_Form_Abstract
         if (empty($paymentParams['financial_type_id'])) {
           $financialTypeID = CRM_Core_DAO::getFieldValue('CRM_Contribute_DAO_Contribution', $this->_contributionId, 'financial_type_id');
           $paymentParams['financial_type_id'] = CRM_Financial_BAO_FinancialAccount::getAccountingCode($financialTypeID);
-        }
-
-        if (empty($paymentParams['contributionType_accounting_code'])) {
-          // anticipate standardizing on 'financial_type_id' but until the payment processor code is updated, we need to set this param
-          $paymentParams['contributionType_accounting_code'] = $paymentParams['financial_type_id'];
         }
       }
 

@@ -53,7 +53,8 @@ trait CRM_Custom_Form_CustomDataTrait {
     // Reuse the same spec-gatherer from Api4.getFields
     $spec = new \Civi\Api4\Service\Spec\RequestSpec($entity, 'create', $filters);
     $fieldFilters = Civi::service('spec_gatherer')->getCustomGroupFilters($spec);
-    if ($fieldFilters === NULL) {
+    // dev/issue#5943 : ignore rebuilding custom fields when the form is submitted for deletion
+    if ($fieldFilters === NULL || ($this->_action & CRM_Core_Action::DELETE)) {
       return;
     }
     // Api4 normally filters out multivalued groups but forms include them
@@ -72,7 +73,8 @@ trait CRM_Custom_Form_CustomDataTrait {
         $groupField['custom_group_id.is_multiple'] = $customGroup['is_multiple'];
         $groupField['table_name'] = $customGroup['table_name'];
         $groupField['custom_field_id'] = $groupField['id'];
-        $groupField['required'] = $groupField['is_required'];
+        // dev/core#6124 QuickForms set 'required' based on other criteria
+        $groupField['required'] = FALSE;
         $groupField['input_type'] = $groupField['html_type'];
         $fields[$groupField['id']] = $groupField;
       }
@@ -176,7 +178,7 @@ trait CRM_Custom_Form_CustomDataTrait {
         }
       }
       else {
-        if (str_starts_with($label, 'custom_')) {
+        if (CRM_Core_BAO_CustomField::getKeyID($label)) {
           $fields[CRM_Core_BAO_CustomField::getLongNameFromShortName($label)] = $field;
         }
       }
@@ -192,7 +194,7 @@ trait CRM_Custom_Form_CustomDataTrait {
   protected function getSubmittedCustomFieldsForApi4(): array {
     $fields = [];
     foreach ($this->getSubmittedValues() as $label => $field) {
-      if (preg_match('/^custom_(\d+)_?(-?\d+)?$/', $label)) {
+      if (CRM_Core_BAO_CustomField::getKeyID($label)) {
         if ($new = CRM_Core_BAO_CustomField::getLongNameFromShortName($label)) {
           $fields[$new] = $field;
         }

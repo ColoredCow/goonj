@@ -20,7 +20,7 @@
   </div>
   {if $batchAmountMismatch}
     <div class="status message status-warning">
-      <i class="crm-i fa-exclamation-triangle" aria-hidden="true"></i> {ts}Total for amounts entered below does not match the expected batch total.{/ts}
+      <i class="crm-i fa-exclamation-triangle" role="img" aria-hidden="true"></i> {ts}Total for amounts entered below does not match the expected batch total.{/ts}
     </div>
     {$form._qf_Entry_upload_force.html}
     <div class="clear"></div>
@@ -496,11 +496,6 @@ function setDateFieldValue(fname, fieldValue, blockNo) {
     displayDateValue = cj.datepicker.formatDate(date_format, actualDateValue);
   }
   cj('[id^=field_' + blockNo + '_' + fname + '_display]').val(displayDateValue);
-
-  // need to fix time formatting
-  if (dateValues[1]) {
-    cj('#field_' + blockNo + '_' + fname + '_time').val(dateValues[1].substr(0, 5));
-  }
 }
 
 if (CRM.batch.type_id == 3){

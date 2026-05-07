@@ -24,10 +24,13 @@ class CRM_Case_Form_ActivityView extends CRM_Core_Form {
    * Process the view.
    */
   public function preProcess() {
-    $contactID = CRM_Utils_Request::retrieve('cid', 'Integer', $this, TRUE);
     $activityID = CRM_Utils_Request::retrieve('aid', 'Integer', $this, TRUE);
     $revs = CRM_Utils_Request::retrieve('revs', 'Boolean');
-    $caseID = CRM_Utils_Request::retrieve('caseID', 'Boolean');
+    $caseID = CRM_Utils_Request::retrieve('caseID', 'Integer');
+    if (!isset($caseID)) {
+      $caseID = CRM_Core_DAO::getFieldValue('CRM_Case_DAO_CaseActivity', $activityID, 'case_id', 'activity_id');
+    }
+    $contactID = CRM_Utils_Request::retrieve('cid', 'Integer', $this) ?: CRM_Case_BAO_Case::getCaseClients($caseID)[0];
     $activitySubject = CRM_Core_DAO::getFieldValue('CRM_Activity_DAO_Activity',
       $activityID,
       'subject'
@@ -116,10 +119,6 @@ class CRM_Case_Form_ActivityView extends CRM_Core_Form {
       $recentContactId = $contactID;
     }
 
-    if (!isset($caseID)) {
-      $caseID = CRM_Core_DAO::getFieldValue('CRM_Case_DAO_CaseActivity', $activityID, 'case_id', 'activity_id');
-    }
-
     $url = CRM_Utils_System::url('civicrm/case/activity/view',
       "reset=1&aid={$activityID}&cid={$recentContactId}&caseID={$caseID}&context=home"
     );
@@ -133,7 +132,7 @@ class CRM_Case_Form_ActivityView extends CRM_Core_Form {
       $title = $activitySubject . ' - ';
     }
 
-    $title = $title . $recentContactDisplay . ' (' . $activityTypes[$activityTypeID] . ')';
+    $title .= $recentContactDisplay . ' (' . $activityTypes[$activityTypeID] . ')';
 
     $recentOther = [];
     if (CRM_Case_BAO_Case::checkPermission($activityID, 'edit')) {

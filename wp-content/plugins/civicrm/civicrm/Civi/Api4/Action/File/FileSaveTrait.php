@@ -19,9 +19,24 @@ trait FileSaveTrait {
    */
   protected function write(array $items) {
     foreach ($items as &$file) {
+      // In update mode, the uri cannot be changed.
+      if (!empty($file['id']) && isset($file['uri'])) {
+        $existingUri = \CRM_Core_DAO_File::getDbVal('uri', $file['id']);
+        if ($existingUri !== $file['uri']) {
+          throw new \CRM_Core_Exception("Uri of existing file cannot be changed.");
+        }
+        unset($file['uri']);
+      }
+      // In create mode, uri cannot be set.
+      if (isset($file['uri'])) {
+        throw new \CRM_Core_Exception("Setting file URI is not permitted. Use file_name instead.");
+      }
       if (empty($file['id']) && !empty($file['file_name'])) {
         $file['uri'] = $this->makeFileUri($file['file_name']);
         if (!empty($file['move_file'])) {
+          if ($this->getCheckPermissions()) {
+            throw new \CRM_Core_Exception("The move_file option is only allowed in trusted operations. Set checkPermissions=0 to enable move_file.");
+          }
           $path = $this->getFilePath($file);
           if (!copy($file['move_file'], $path)) {
             throw new \CRM_Core_Exception("Cannot copy uploaded file {$file['move_file']} to $path");

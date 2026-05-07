@@ -272,8 +272,11 @@ class CRM_Utils_System_WordPress extends CRM_Utils_System_Base {
 
   /**
    * @inheritDoc
+   * @internal
+   * @deprecated
    */
   public function addHTMLHead($head) {
+    \CRM_Core_Error::deprecatedFunctionWarning('Civi::resources() or CRM_Core_Region::instance("html-header")');
     static $registered = FALSE;
     if (!$registered) {
       // front-end view
@@ -863,6 +866,18 @@ class CRM_Utils_System_WordPress extends CRM_Utils_System_Base {
       'role' => get_option('default_role'),
     ];
 
+    // dev/core#6411 check to see if the wordpress user has already been created via some other method
+    $user_name_check = get_user_by('login', $user_data['user_login']);
+    $email_check = get_user_by('email', $user_data['user_email']);
+    if ($user_name_check || $email_check) {
+      if ($email_check) {
+        /** @var WP_User $email_check */
+        return $email_check->ID;
+      }
+      /** @var WP_User $user_name_check */
+      return $user_name_check->ID;
+    }
+
     /*
      * The notify parameter was ignored on WordPress and default behaviour
      * was to always notify. Preserve that behaviour but allow the "notify"
@@ -938,13 +953,17 @@ class CRM_Utils_System_WordPress extends CRM_Utils_System_Base {
         $creds['user_password'] = $user_data['user_pass'];
         $creds['remember'] = TRUE;
 
-        // Authenticate and log the user in.
-        $user = wp_signon($creds, FALSE);
-        if (is_wp_error($user)) {
-          Civi::log()->error("Could not log the user in. WordPress returned: " . $user->get_error_message());
-        }
-        else {
-          $logged_in = TRUE;
+        $should_login_user = boolval(get_option('civicrm_automatically_sign_in_user', TRUE));
+        if (TRUE === $should_login_user) {
+          // Authenticate and log the user in.
+          $user = wp_signon($creds, FALSE);
+          if (is_wp_error($user)) {
+            Civi::log()
+              ->error("Could not log the user in. WordPress returned: " . $user->get_error_message());
+          }
+          else {
+            $logged_in = TRUE;
+          }
         }
       }
 
@@ -969,6 +988,10 @@ class CRM_Utils_System_WordPress extends CRM_Utils_System_Base {
      * @param bool $logged_in TRUE when the User has been auto-logged-in, FALSE otherwise.
      */
     do_action('civicrm_post_create_user', $uid, $params, $logged_in);
+
+    if (is_wp_error($uid)) {
+      $uid = FALSE;
+    }
 
     return $uid;
   }
@@ -1212,7 +1235,7 @@ class CRM_Utils_System_WordPress extends CRM_Utils_System_Base {
     if (CRM_Core_Session::singleton()
       ->get('userID') == $contactID || CRM_Core_Permission::checkAnyPerm(['cms:administer users'])
     ) {
-      return CRM_Core_Config::singleton()->userFrameworkBaseURL . "wp-admin/user-edit.php?user_id=" . $uid;
+      return Civi::paths()->getVariable('wp.backend.base', 'url') . 'user-edit.php?user_id=' . $uid;
     }
   }
 
@@ -1305,6 +1328,18 @@ class CRM_Utils_System_WordPress extends CRM_Utils_System_Base {
     }
     echo $response->getBody();
     CRM_Utils_System::civiExit();
+  }
+
+  /**
+   * Output JSON response to the client
+   *
+   * @param array $response
+   * @param int $httpResponseCode
+   *
+   * @return void
+   */
+  public static function sendJSONResponse(array $response, int $httpResponseCode): void {
+    wp_send_json($response, $httpResponseCode, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
   }
 
   /**
@@ -1646,7 +1681,7 @@ class CRM_Utils_System_WordPress extends CRM_Utils_System_Base {
       return [
         new CRM_Utils_Check_Message(
           __FUNCTION__,
-          ts('Could not load a clean page to check'),
+          ts('Could not load a clean page to check: %1', [1 => $page]),
           ts('Guzzle client error'),
           \Psr\Log\LogLevel::ERROR,
           'fa-wordpress'
@@ -1682,24 +1717,27 @@ class CRM_Utils_System_WordPress extends CRM_Utils_System_Base {
   /**
    * @inheritdoc
    */
-  public function theme(&$content, $print = FALSE, $maintenance = FALSE) {
-    if (!$print) {
-      if (!function_exists('is_admin')) {
-        throw new \Exception('Function "is_admin()" is missing, even though WordPress is the user framework.');
-      }
-      if (!defined('ABSPATH')) {
-        throw new \Exception('Constant "ABSPATH" is not defined, even though WordPress is the user framework.');
-      }
-      if (is_admin()) {
-        require_once ABSPATH . 'wp-admin/admin-header.php';
-      }
-      else {
-        // FIXME: we need to figure out to replace civicrm content on the frontend pages
-      }
+  public function theme($content, $print = FALSE, $maintenance = FALSE): void {
+    if ($maintenance) {
+      \CRM_Core_Error::deprecatedWarning('Calling CRM_Utils_Base::theme with $maintenance is deprecated - use renderMaintenanceMessage instead');
+      $this->renderMaintenanceMessage($content);
+      return;
     }
-
+    if (is_admin()) {
+      require_once ABSPATH . 'wp-admin/admin-header.php';
+    }
     print $content;
-    return NULL;
+  }
+
+  /**
+   * @inheritdoc
+   * be removed
+   */
+  public function renderMaintenanceMessage(string $content): void {
+    if (is_admin()) {
+      require_once ABSPATH . 'wp-admin/admin-header.php';
+    }
+    print $content;
   }
 
   /**

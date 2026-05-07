@@ -31,19 +31,8 @@ abstract class EntityMetadataBase implements EntityMetadataInterface {
     return EntityRepository::getEntity($this->entityName);
   }
 
-  public function getField(string $fieldName): ?array {
-    $field = $this->getFields()[$fieldName] ?? NULL;
-    // If not a core field, may be a custom field
-    if (!$field && str_contains($fieldName, '.')) {
-      [$customGroupName] = explode('.', $fieldName);
-      // Include disabled custom fields so that getOptions handles them consistently
-      $field = $this->getCustomFields(['name' => $customGroupName, 'is_active' => NULL])[$fieldName] ?? NULL;
-    }
-    return $field;
-  }
-
-  public function getOptions(string $fieldName, array $values = [], bool $includeDisabled = FALSE, bool $checkPermissions = FALSE, ?int $userId = NULL): ?array {
-    $field = $this->getField($fieldName);
+  public function getOptions(string $fieldName, array $values = [], bool $includeDisabled = FALSE, bool $checkPermissions = FALSE, ?int $userId = NULL, bool $isView = FALSE): ?array {
+    $field = \Civi::entity($this->entityName)->getField($fieldName);
     $options = NULL;
     $hookParams = [
       'entity' => $this->entityName,
@@ -52,6 +41,7 @@ abstract class EntityMetadataBase implements EntityMetadataInterface {
       'include_disabled' => $includeDisabled,
       'check_permissions' => $checkPermissions,
       'user_id' => $userId,
+      'is_view' => $isView,
     ];
     $field['pseudoconstant']['condition'] = (array) ($field['pseudoconstant']['condition'] ?? []);
     if (!empty($field['pseudoconstant']['condition_provider'])) {
@@ -171,12 +161,15 @@ abstract class EntityMetadataBase implements EntityMetadataInterface {
       if (isset($fields['is_active'])) {
         $select->select('`is_active`');
       }
+      if (isset($fields['is_reserved'])) {
+        $select->select('`is_reserved`');
+      }
       // Also component_id for filtering (this is legacy, the new way for extensions to add options is via hook)
       if (isset($fields['component_id'])) {
         $select->select('`component_id`');
       }
       // Order by: prefer order_column; or else 'weight' column; or else label_column; or as a last resort, $idCol
-      $orderColumns = [$pseudoconstant['order_column'] ?? NULL, 'weight', $pseudoconstant['label_column'] ?? NULL, $idCol];
+      $orderColumns = array_filter([$pseudoconstant['order_column'] ?? NULL, 'weight', $pseudoconstant['label_column'] ?? NULL, $idCol]);
       foreach ($orderColumns as $orderColumn) {
         if (isset($fields[$orderColumn])) {
           $select->orderBy($orderColumn);
@@ -230,7 +223,7 @@ abstract class EntityMetadataBase implements EntityMetadataInterface {
         $fieldName = $customGroup['name'] . '.' . $customField['name'];
         $field = [
           'title' => $customField['label'],
-          'sql_type' => \CRM_Core_BAO_CustomValueTable::fieldToSQLType($customField['data_type'], $customField['text_length']),
+          'sql_type' => \CRM_Core_BAO_CustomValueTable::fieldToSQLType($customField['data_type'], $customField['text_length'], !empty($customField['serialize']), $customField['fk_entity'] ?? NULL),
           'data_type' => \CRM_Core_BAO_CustomField::getDataTypeString($customField),
           'input_type' => $inputTypeMap[$customField['html_type']] ?? $customField['html_type'],
           'input_attrs' => [

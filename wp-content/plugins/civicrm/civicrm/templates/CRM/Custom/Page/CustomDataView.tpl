@@ -14,7 +14,7 @@
   {foreach from=$customValues item=cd_edit key=cvID}
     {crmRegion name="custom-data-view-`$cd_edit.name`"}
     {if $cd_edit.help_pre}
-      <div class="messages help">{$cd_edit.help_pre}</div>
+      <div class="messages help">{$cd_edit.help_pre|purify}</div>
     {/if}
     {if $multiRecordDisplay neq 'single'}
     <table class="no-border">
@@ -24,7 +24,7 @@
           <td>
             <a
               href="{crmURL p="civicrm/contact/view/cd/edit" q="tableId=`$contactId`&cid=`$contactId`&groupID=`$groupId`&action=update&reset=1"}"
-              class="button" style="margin-left: 6px;"><span><i class="crm-i fa-pencil" aria-hidden="true"></i> {ts 1=$cd_edit.title}Edit %1{/ts}</span></a><br/><br/>
+              class="button" style="margin-left: 6px;"><span><i class="crm-i fa-pencil" role="img" aria-hidden="true"></i> {ts 1=$cd_edit.title}Edit %1{/ts}</span></a><br/><br/>
           </td>
         </tr>
       {/if}
@@ -34,7 +34,7 @@
           <details class="crm-accordion-bold" {if !empty($cd_edit.collapse_display) && empty($skipTitle)}{else}open{/if}>
             {if !$skipTitle}
               <summary>
-                {$cd_edit.title}
+                {$cd_edit.title|escape}
               </summary>
             {/if}
             <div class="crm-accordion-body">
@@ -43,7 +43,7 @@
                   <a href="#" class="crm-hover-button crm-custom-value-del"
                      data-post='{ldelim}"valueID": "{$cvID}", "groupID": "{$customGroupId}", "contactId": "{$contactId}", "key": "{crmKey name='civicrm/ajax/customvalue'}"{rdelim}'
                      title="{ts escape='htmlattribute' 1=$cd_edit.title|cat:" `$rowCount`"}Delete %1{/ts}">
-                    <i class="crm-i fa-trash" aria-hidden="true"></i> {ts}Delete{/ts}
+                    <i class="crm-i fa-trash" role="img" aria-hidden="true"></i> {ts}Delete{/ts}
                   </a>
                 </div>
               {/if}
@@ -52,7 +52,7 @@
                   {foreach from=$cd_edit.fields item=element key=field_id}
                     <tr>
                       <td class="label">{$element.field_title}</td>
-                      <td class="html-adjust">
+                      <td class="html-adjust crm-cf-datatype-{$element.field_data_type|lower} crm-cf-{$element.field_type|lower}">
                         {if $element.options_per_line != 0}
                           {* sort by fails for option per line. Added a variable to iterate through the element array*}
                           {foreach from=$element.field_value item=val}
@@ -92,7 +92,7 @@
       {foreach from=$cd_edit.fields item=element key=field_id}
         <div class="crm-section">
           {if $element.options_per_line != 0}
-              <div class="label">{$element.field_title}</div>
+              <div class="label">{$element.field_title|escape}</div>
               <div class="content">
               {* sort by fails for option per line. Added a variable to iterate through the element array*}
               {foreach from=$element.field_value item=val}
@@ -132,7 +132,7 @@
         {/foreach}
       {/if}
       {if $cd_edit.help_post}
-        <div class="messages help">{$cd_edit.help_post}</div>
+        <div class="messages help">{$cd_edit.help_post|purify}</div>
       {/if}
     {/crmRegion}
   {/foreach}
