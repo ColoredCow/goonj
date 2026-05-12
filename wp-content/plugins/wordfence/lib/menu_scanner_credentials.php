@@ -3,13 +3,13 @@ if (!defined('WORDFENCE_VERSION')) { exit; }
 $scanner = wfScanner::shared();
 $scanURL = network_admin_url('admin.php?page=WordfenceScan');
 
-$action = @$_GET['action'];
-if (!in_array($action, array('restoreFile', 'deleteFile'))) { $action = ''; }
+$action = wfUtils::array_get($_GET, 'action');
+if (!is_string($action) || !in_array($action, array('restoreFile', 'deleteFile'))) { $action = ''; }
 $filesystemCredentialsAdminURL = network_admin_url('admin.php?' . http_build_query(array(
 		'page'               => 'WordfenceScan',
 		'subpage'       	 => 'scan_credentials',
 		'action' 			 => $action,
-		'issueID'            => (int) @$_GET['issueID'],
+		'issueID'            => (int) wfUtils::array_get($_GET, 'issueID', 0),
 		'nonce'              => wp_create_nonce('wp-ajax'),
 	)));
 
@@ -25,13 +25,12 @@ switch ($action) {
 <div class="wf-options-controls">
 	<div class="wf-row">
 		<div class="wf-col-xs-12">
-			<?php
-			echo wfView::create('options/block-controls', array(
-				'backLink' => $scanURL,
-				'backLabel' => __('Back to Scan', 'wordfence'),
-				'suppressControls' => true,
-			))->render();
-			?>
+			<div class="wordfence-vue-wrapper"
+					 data-base-component="SettingsControlBlock"
+					 data-prop-back-link="<?php echo esc_attr($scanURL); ?>"
+					 data-prop-back-link-label="<?php echo esc_attr(__('Back to Scan', 'wordfence')); ?>"
+					 data-prop-suppress-controls="true"
+			></div>
 		</div>
 	</div>
 </div>

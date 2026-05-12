@@ -49,9 +49,9 @@ class wfCentralAPIRequest {
 		error_log('Wordfence stack trace: ' . $e->getTraceAsString());
 	}
 
-	public function execute() {
+	public function execute($timeout = 10) {
 		$args = array(
-			'timeout' => 10,
+			'timeout' => $timeout,
 		);
 		$args = wp_parse_args($this->getArgs(), $args);
 		$args['method'] = $this->getMethod();
@@ -78,12 +78,12 @@ class wfCentralAPIRequest {
 			// Check if site has been disconnected on Central's end, but the plugin is still trying to connect.
 			if ($statusCode === 404 && strpos($body, 'Site has been disconnected') !== false) {
 				// Increment attempt count.
-				$centralDisconnectCount = get_site_transient('wordfenceCentralDisconnectCount');
+				$centralDisconnectCount = (int) get_site_transient('wordfenceCentralDisconnectCount');
 				set_site_transient('wordfenceCentralDisconnectCount', ++$centralDisconnectCount, 86400);
 
 				// Once threshold is hit, disconnect Central.
 				if ($centralDisconnectCount > 3) {
-					wfRESTConfigController::disconnectConfig();
+					wfRESTConfigController::disconnectConfig(wfRESTConfigController::WF_CENTRAL_FAILURE_MARKER);
 				}
 			}
 		}
@@ -443,6 +443,7 @@ class wfCentral {
 	 * @return bool|wfCentralAPIResponse
 	 */
 	public static function deleteIssues($issues) {
+		if (empty($issues)) { return true; }
 		$siteID = wfConfig::get('wordfenceCentralSiteID');
 		$request = new wfCentralAuthenticatedAPIRequest('/site/' . $siteID . '/issues', 'DELETE', array(
 			'data' => array(
@@ -642,7 +643,8 @@ class wfCentral {
 			));
 			try {
 				// Attempt to send the security events to Central.
-				$response = $request->execute();
+				$doing_cron = function_exists('wp_doing_cron') /* WP >= 4.8 */ ? wp_doing_cron() : (defined('DOING_CRON') && DOING_CRON);
+				$response = $request->execute($doing_cron ? 10 : 3);
 			}
 			catch (wfCentralAPIException $e) {
 				// If we didn't alert previously, notify the user now in the event Central is down.
@@ -838,13 +840,17 @@ class wfCentral {
 	}
 	
 	/**
-	 * Populates the Central record's site URL if missing locally.
+	 * Populates the Central record's site data if missing or incomplete locally.
 	 * 
 	 * @return array|bool
 	 */
-	public static function populateCentralSiteUrl() {
+	public static function populateCentralSiteData() {
+		if (!wfCentral::_isConnected()) {
+			return false;
+		}
+		
 		$siteData = json_decode(wfConfig::get('wordfenceCentralSiteData', '[]'), true);
-		if (!is_array($siteData) || !array_key_exists('site-url', $siteData)) {
+		if (!is_array($siteData) || !array_key_exists('site-url', $siteData) || !array_key_exists('audit-log-url', $siteData)) {
 			try {
 				$request = new wfCentralAuthenticatedAPIRequest('/site/' . wfConfig::get('wordfenceCentralSiteID'), 'GET', array(), array('timeout' => 2));
 				$response = $request->execute();
@@ -888,21 +894,35 @@ class wfCentral {
 	
 	public static function mismatchedCentralUrlNotice() {
 		echo '<div id="wordfenceMismatchedCentralUrlNotice" class="fade notice notice-warning"><p><strong>' .
-			__('Your site is currently linked to Wordfence Central under a different site URL.', 'wordfence')
+			esc_html__('Your site is currently linked to Wordfence Central under a different site URL.', 'wordfence')
 			. '</strong> '
-			. __('This may cause duplicated scan issues if both sites are currently active and reporting and is generally caused by duplicating the database from one site to another (e.g., from a production site to staging). We recommend disconnecting this site only, which will leave the matching site still connected.', 'wordfence')
+			. esc_html__('This may cause duplicated scan issues if both sites are currently active and reporting and is generally caused by duplicating the database from one site to another (e.g., from a production site to staging). We recommend disconnecting this site only, which will leave the matching site still connected.', 'wordfence')
 			. '</p><p>'
-			. __('If this is a single site with multiple domains or subdomains, you can dismiss this message.', 'wordfence')
+			. esc_html__('If this is a single site with multiple domains or subdomains, you can dismiss this message.', 'wordfence')
 			. '</p><p>'
 			. '<a class="wf-btn wf-btn-primary wf-btn-sm wf-dismiss-link" href="#" onclick="wordfenceExt.centralUrlMismatchChoice(\'local\'); return false;" role="button">' .
-			__('Disconnect This Site', 'wordfence')
+			esc_html__('Disconnect This Site', 'wordfence')
 			. '</a> '
 			. '<a class="wf-btn wf-btn-default wf-btn-sm wf-dismiss-link" href="#" onclick="wordfenceExt.centralUrlMismatchChoice(\'global\'); return false;" role="button">' .
-			__('Disconnect All', 'wordfence')
+			esc_html__('Disconnect All', 'wordfence')
 			. '</a> '
 			. '<a class="wf-btn wf-btn-default wf-btn-sm wf-dismiss-link" href="#" onclick="wordfenceExt.centralUrlMismatchChoice(\'dismiss\'); return false;" role="button">' .
-			__('Dismiss', 'wordfence')
+			esc_html__('Dismiss', 'wordfence')
 			. '</a> '
-			. '<a class="wfhelp" target="_blank" rel="noopener noreferrer" href="' . wfSupportController::esc_supportURL(wfSupportController::ITEM_DIAGNOSTICS_REMOVE_CENTRAL_DATA) . '"><span class="screen-reader-text"> (' . esc_html__('opens in new tab', 'wordfence') . ')</span></a></p></div>';
+			. '<a class="wfhelp" target="_blank" rel="noopener noreferrer" href="' . wfSupportController::esc_supportURL(wfSupportController::ITEM_DIAGNOSTICS_REMOVE_CENTRAL_DATA) . '"><span class="wfhelpextra">' . esc_html__('Click here to learn more', 'wordfence') . '</span><span class="screen-reader-text"> (' . esc_html__('opens in new tab', 'wordfence') . ')</span></a></p></div>';
+	}
+	
+	/**
+	 * Returns the audit log URL for this site in Wordfence Central.
+	 *
+	 * The return value may be:
+	 *  - null if there is no `audit-log-url` key present in the stored Central data
+	 *  - a string if there is a `audit-log-url` value
+	 *
+	 * @return string|null
+	 */
+	public static function getCentralAuditLogUrl() {
+		$siteData = json_decode(wfConfig::get('wordfenceCentralSiteData', '[]'), true);
+		return (is_array($siteData) && array_key_exists('audit-log-url', $siteData)) ? (string) $siteData['audit-log-url'] : null;
 	}
 }
