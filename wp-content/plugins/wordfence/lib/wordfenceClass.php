@@ -2879,12 +2879,13 @@ END
 					return self::processBruteForceAttempt(self::$authError, $username, $passwd);
 				}
 
-				if (!wfUtils::isAdmin($authUser)) {
-					wfAdminNoticeQueue::removeAdminNoticeForCategory('legacy2faDeprecationUnprivileged', $userID);
+				$maybeAdminUser = ($authUser instanceof WP_User) ? $authUser : get_user_by('ID', $userID);
+				if ($maybeAdminUser && $maybeAdminUser->exists() && !wfUtils::isAdmin($maybeAdminUser)) {
+					wfAdminNoticeQueue::removeAdminNoticeForCategory('legacy2faDeprecationUnprivileged', $maybeAdminUser->ID);
 					wfAdminNoticeQueue::addAdminNotice(wfAdminNotice::SEVERITY_CRITICAL,
 									__('<strong>NOTICE: </strong>This site is using Wordfence\'s legacy 2FA feature, which was replaced with an improved version in 2019. The legacy 2FA feature will be discontinued around July 1, 2026.', 'wordfence') . '<br><br>' .
 									__('Please contact the site administrators if they are not already aware of this change.', 'wordfence'),
-									'legacy2faDeprecationUnprivileged', array($authUser->ID));
+									'legacy2faDeprecationUnprivileged', array($maybeAdminUser->ID));
 				}
 
 				if ($usingBreachedPassword) {
@@ -3574,7 +3575,7 @@ END
 			require(dirname(__FILE__) . '/wfLockedOut.php');
 		}
 		
-		if (isset($_POST['wordfence_twoFactorUser'])) { //Final stage of login -- get and verify 2fa code, make sure we load the appropriate user
+		if (isset($_POST['wordfence_twoFactorUser']) && isset($_POST['wordfence_twoFactorNonce'])) { //Final stage of login -- get and verify 2fa code, make sure we load the appropriate user
 			$userID = intval($_POST['wordfence_twoFactorUser']);
 			$twoFactorNonce = preg_replace('/[^a-f0-9]/i', '', $_POST['wordfence_twoFactorNonce']);
 			if (self::verifyTwoFactorIntermediateValues($userID, $twoFactorNonce)) {
@@ -4027,10 +4028,7 @@ END
 		$dateFormat = get_option('date_format') . ' ' . get_option('time_format');
 		$hasCountryBlock = wfUtils::array_first(wfBlock::countryBlocks(true));
 		if ($hasCountryBlock !== null) {
-			$hasCountryBlock = json_encode($hasCountryBlock->editValues());
-		}
-		else {
-			$hasCountryBlock = '';
+			$hasCountryBlock = $hasCountryBlock->editValues();
 		}
 		
 		$response = array();
@@ -5963,8 +5961,21 @@ HTML;
 		$called = true;
 		
 		global $wp_scripts;
-		$script = "var WordfenceJSConstants = " . wp_json_encode(wfJavascriptBridge::WordfenceJSConstants()) . ";\n";
-		
+
+		try {
+			$script = "var WordfenceJSConstants = " . wp_json_encode(wfJavascriptBridge::WordfenceJSConstants()) . ";\n";
+		}
+		catch (Exception $e) {
+			$details = self::prepareJavascriptBridgeError($e);
+			$details['errorMessage'] = 'Error initializing WordfenceJSConstants';
+			$script = "var WordfenceJSConstants = " . wp_json_encode($details) . ";\n";
+		}
+		catch (Throwable $t) {
+			$details = self::prepareJavascriptBridgeError($t);
+			$details['errorMessage'] = 'Error initializing WordfenceJSConstants';
+			$script = "var WordfenceJSConstants = " . wp_json_encode($details) . ";\n";
+		}
+
 		$data = $wp_scripts->get_data('wordfenceVuejs', 'data');
 		
 		if (!empty($data)) {
@@ -5981,6 +5992,28 @@ HTML;
 		}
 		$called = true;
 		wp_localize_script('wfi18njs', 'WordfenceI18nStrings', wfJavascriptBridge::WordfenceI18nStrings());
+	}
+
+	private static function prepareJavascriptBridgeError($e) {
+		if (!wfUtils::isAdmin()) {
+			return array('hasGlobalError' => true);
+		}
+
+		$trace = $e->getTrace();
+		foreach ($trace as &$t) {
+			unset($t['args']);
+		}
+
+		return array(
+			'hasGlobalError' => true,
+			'errorDetails' => array(
+				'code' => $e->getCode(),
+				'message' => $e->getMessage(),
+				'file' => $e->getFile(),
+				'line' => $e->getLine(),
+				'trace' => $trace,
+			),
+		);
 	}
 	
 	public static function _setupImportMap() {

@@ -283,17 +283,17 @@ class Controller_Users {
 	 * Returns the number of recovery codes remaining for the user or null if the user does not have 2FA active.
 	 *
 	 * @param \WP_User $user
-	 * @return float|null
+	 * @return int
 	 */
 	public function recovery_code_count($user) {
 		global $wpdb;
 		$table = Controller_DB::shared()->secrets;
 		$record = $wpdb->get_var($wpdb->prepare("SELECT `recovery` FROM `{$table}` WHERE `user_id` = %d", $user->ID));
 		if (!$record) {
-			return null;
+			return 0;
 		}
 		
-		return floor(Model_Crypto::strlen($record) / self::RECOVERY_CODE_SIZE);
+		return intdiv(Model_Crypto::strlen($record), self::RECOVERY_CODE_SIZE);
 	}
 	
 	/**
