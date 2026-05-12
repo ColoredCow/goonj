@@ -24,19 +24,19 @@ class Model_Request {
 			list($ip, $variable) = $record;
 			if (isset($_SERVER[$variable]) && strpos($_SERVER[$variable], ',') !== false) {
 				$items = preg_replace('/[\s,]/', '', explode(',', $_SERVER[$variable]));
-				$output = array();
+				$output = '';
 				foreach ($items as $i) {
 					if ($ip == $i) {
-						$output[] = array('ip' => $i, 'selected' => true);
+						$output .= ', <strong>' . esc_html($i) . '</strong>';
 					}
 					else {
-						$output[] = array('ip' => $i, 'selected' => false);
+						$output .= ', ' . esc_html($i);
 					}
 				}
 				
-				return $output;
+				return substr($output, 2);
 			}
-			return array(array('ip' => $ip, 'selected' => true));
+			return '<strong>' . esc_html($ip) . '</strong>';
 		}
 		return false;
 	}

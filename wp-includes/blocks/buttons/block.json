@@ -13,16 +13,8 @@
 		"align": [ "wide", "full" ],
 		"html": false,
 		"__experimentalExposeControlsToChildren": true,
-		"color": {
-			"gradients": true,
-			"text": false,
-			"__experimentalDefaultControls": {
-				"background": true
-			}
-		},
 		"spacing": {
-			"blockGap": [ "horizontal", "vertical" ],
-			"padding": true,
+			"blockGap": true,
 			"margin": [ "top", "bottom" ],
 			"__experimentalDefaultControls": {
 				"blockGap": true
@@ -41,18 +33,6 @@
 				"fontSize": true
 			}
 		},
-		"__experimentalBorder": {
-			"color": true,
-			"radius": true,
-			"style": true,
-			"width": true,
-			"__experimentalDefaultControls": {
-				"color": true,
-				"radius": true,
-				"style": true,
-				"width": true
-			}
-		},
 		"layout": {
 			"allowSwitching": false,
 			"allowInheriting": false,
@@ -62,8 +42,7 @@
 		},
 		"interactivity": {
 			"clientNavigation": true
-		},
-		"contentRole": true
+		}
 	},
 	"editorStyle": "wp-block-buttons-editor",
 	"style": "wp-block-buttons"

@@ -6,7 +6,7 @@ namespace WPMailSMTP\Vendor\GuzzleHttp\Promise;
 /**
  * Exception thrown when too many errors occur in the some() or any() methods.
  */
-class AggregateException extends RejectionException
+class AggregateException extends \WPMailSMTP\Vendor\GuzzleHttp\Promise\RejectionException
 {
     public function __construct(string $msg, array $reasons)
     {

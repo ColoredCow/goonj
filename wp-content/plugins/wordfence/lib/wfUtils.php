@@ -1,30 +1,12 @@
 <?php
 require_once(dirname(__FILE__) . '/wfConfig.php');
 class wfUtils {
-	const DEFAULT_MAX_SERIALIZED_INPUT_LENGTH = 65536;
-	const DEFAULT_MAX_SERIALIZED_ARRAY_LENGTH = 1024;
-	const DEFAULT_MAX_SERIALIZED_ARRAY_DEPTH = 5;
-	
-	//Fields for wfUtils::parseCallable
-	const CALLABLE_CLASS = 'class';
-	const CALLABLE_FUNCTION = 'function';
-	const CALLABLE_IS_INSTANCE = 'instance';
-	const CALLABLE_IS_CLOSURE = 'closure';
-	const CALLABLE_IS_INVOKABLE = 'invokable';
-	
 	//Flags for wfUtils::parse_version
 	const VERSION_MAJOR = 'major';
 	const VERSION_MINOR = 'minor';
 	const VERSION_PATCH = 'patch';
 	const VERSION_PRE_RELEASE = 'pre-release';
 	const VERSION_BUILD = 'build';
-	
-	//Flags for array_diff_assoc
-	const ARRAY_DIFF_ORDERED_ARRAYS = 1; //When specified, non-associative arrays are treated as if the ordering matters. The default is to ignore the ordering and only care about the content
-	
-	//Constants for wfUtils::serverIPs
-	const SERVER_ADDR_CACHE_TTL =  86400;
-	const SERVER_ADDR_REFRESH_TTL =  14400;
 	
 	private static $isWindows = false;
 	public static $scanLockFH = false;
@@ -104,7 +86,7 @@ class wfUtils {
 			if($noSeconds){
 				return __("less than a minute", 'wordfence');
 			} else {
-				return sprintf(/* translators: Time duration (plural). */ __("%d seconds", 'wordfence'), floor($secs));
+				return sprintf(/* translators: Number of seconds. */ __("%d seconds", 'wordfence'), floor($secs));
 			}
 		}
 	}
@@ -181,402 +163,6 @@ class wfUtils {
 			return $matches[1];
 		}
 		return $version;
-	}
-	
-	/**
-	 * Safe unserialize() replacement
-	 * - accepts a strict subset of PHP's native serialized representation
-	 * - does not unserialize objects
-	 *
-	 * @param string $str
-	 * @return mixed
-	 */
-	public static function _safe_unserialize($str, $limit_input_length = self::DEFAULT_MAX_SERIALIZED_INPUT_LENGTH, $limit_array_length = self::DEFAULT_MAX_SERIALIZED_ARRAY_LENGTH, $limit_array_depth = self::DEFAULT_MAX_SERIALIZED_ARRAY_DEPTH) {
-		if (empty($str) || !is_string($str)) { return false; }
-		if (strlen($str) > $limit_input_length) { return false; }
-		if (!is_serialized($str)) { return false; }
-		
-		$stack = array();
-		$expected = array();
-		
-		/*
-		 * states:
-		 *   0 - initial state, expecting a single value or array
-		 *   1 - terminal state
-		 *   2 - in array, expecting end of array or a key
-		 *   3 - in array, expecting value or another array
-		 */
-		$state = 0;
-		while ($state != 1) {
-			$type = isset($str[0]) ? $str[0] : '';
-			if ($type == '}') {
-				$str = substr($str, 1);
-			} else if ($type == 'N' && $str[1] == ';') {
-				$value = null;
-				$str = substr($str, 2);
-			} else if ($type == 'b' && preg_match('/^b:([01]);/', $str, $matches)) {
-				$value = $matches[1] == '1' ? true : false;
-				$str = substr($str, 4);
-			} else if ($type == 'i' && preg_match('/^i:(-?[0-9]+);(.*)/s', $str, $matches)) {
-				$value = (int) $matches[1];
-				$str = $matches[2];
-			} else if ($type == 'd' && preg_match('/^d:(-?[0-9]+\.?[0-9]*(E[+-][0-9]+)?);(.*)/s', $str, $matches)) {
-				$value = (float) $matches[1];
-				$str = $matches[3];
-			} else if ($type == 's' && preg_match('/^s:([0-9]+):"(.*)/s', $str, $matches) && substr($matches[2], (int) $matches[1], 2) == '";') {
-				$value = substr($matches[2], 0, (int) $matches[1]);
-				$str = substr($matches[2], (int) $matches[1] + 2);
-			} else if ($type == 'a' && preg_match('/^a:([0-9]+):{(.*)/s', $str, $matches) && $matches[1] < $limit_array_length) {
-				$expectedLength = (int) $matches[1];
-				$str = $matches[2];
-			} else {
-				// object or unknown/malformed type
-				return false;
-			}
-			
-			switch ($state) {
-				case 3: // in array, expecting value or another array
-					if ($type == 'a') {
-						if (count($stack) >= $limit_array_depth) { return false; }
-						
-						$stack[] = &$list;
-						$list[$key] = array(); //$key is set in state 2
-						$list = &$list[$key];
-						$expected[] = $expectedLength;
-						$state = 2;
-						break;
-					}
-					if ($type != '}') {
-						$list[$key] = $value;
-						$state = 2;
-						break;
-					}
-					
-					// missing array value
-					return false;
-				
-				case 2: // in array, expecting end of array or a key
-					if ($type == '}') {
-						if (count($list) < end($expected)) {
-							// array size less than expected
-							return false;
-						}
-						
-						unset($list);
-						$list = &$stack[count($stack) - 1];
-						array_pop($stack);
-						
-						// go to terminal state if we're at the end of the root array
-						array_pop($expected);
-						if (count($expected) == 0) {
-							$state = 1;
-						}
-						break;
-					}
-					if ($type == 'i' || $type == 's') {
-						if (count($list) >= $limit_array_length) { return false; }
-						if (count($list) >= end($expected)) { return false; }
-						
-						$key = $value;
-						$state = 3;
-						break;
-					}
-					
-					// illegal array index type
-					return false;
-				
-				case 0: // expecting array or value
-					if ($type == 'a') {
-						if (count($stack) >= $limit_array_depth) { return false; }
-						
-						$data = array();
-						$list = &$data;
-						$expected[] = $expectedLength;
-						$state = 2;
-						break;
-					}
-					if ($type != '}') {
-						$data = $value;
-						$state = 1;
-						break;
-					}
-					
-					// not in array
-					return false;
-			}
-		}
-		
-		if (!empty($str)) { return false; } // trailing data in input
-		return $data;
-	}
-	
-	/**
-	 * Wrapper for _safe_unserialize() that handles multibyte encoding issues
-	 *
-	 * @param string $str
-	 * @return mixed
-	 */
-	public static function safe_unserialize($str) {
-		// ensure we use the byte count for strings even when strlen() is overloaded by mb_strlen()
-		if (function_exists('mb_internal_encoding') && (((int) ini_get('mbstring.func_overload')) & 2)) { // phpcs:ignore PHPCompatibility.IniDirectives.RemovedIniDirectives.mbstring_func_overloadDeprecated
-			$mbIntEnc = mb_internal_encoding();
-			mb_internal_encoding('ASCII');
-		}
-		
-		$out = self::_safe_unserialize($str);
-		
-		if (isset($mbIntEnc)) {
-			mb_internal_encoding($mbIntEnc);
-		}
-		return $out;
-	}
-	
-	/**
-	 * If $value is not null, this returns $value unchanged. Otherwise it returns one of two values:
-	 * 1. If $orCallable is a valid callable, it returns the result
-	 * 2. Otherwise it returns $default 
-	 * 
-	 * @param mixed $value
-	 * @param mixed $default
-	 * @param callable|null $orCallable
-	 * @return mixed
-	 */
-	public static function ifnull($value, $default = '', $orCallable = null) {
-		if (is_null($value)) {
-			if (is_callable($orCallable)) {
-				return $orCallable();
-			}
-			return $default;
-		}
-		return $value;
-	}
-	
-	/**
-	 * Returns a diff on the passed arrays. The behavior varies based on the content of the arrays themselves and any
-	 * flags passed. The resulting structure will be some variant of:
-	 * 
-	 * ['added' => [...], 'removed' => [...]]
-	 * 
-	 * 1. If both $a and $b are non-associative arrays, the result will not include keys in `added` and `removed`.
-	 * 2. If either or both of $a and $b are associative arrays, the result will include keys that are also factored
-	 *    into the comparison.
-	 * 
-	 * @param array $a
-	 * @param array $b
-	 * @param int $flags
-	 * @return array
-	 */
-	public static function array_diff($a, $b, $flags = 0) {
-		$result = array();
-		if (!self::is_assoc($a) && !self::is_assoc($b)) {
-			$result['added'] = array_diff($b, $a);
-			$result['removed'] = array_diff($a, $b);
-		}
-		else {
-			$result['added'] = self::array_diff_assoc($b, $a);
-			$result['removed'] = self::array_diff_assoc($a, $b);
-		}
-		return $result;
-	}
-	
-	/**
-	 * Improved version of array_diff_assoc that handles multidimensional arrays. The resulting array will contain all 
-	 * key/values from $a that are not present in $b.
-	 * 
-	 * For nested arrays, the behavior for inequality is this:
-	 * 	- If $a[key] contains values $b[key] does not, an array of those missing values is set for `key` in the result
-	 * 	- If $b[key] contains values $a[key] does not, `key` is not present in the result
-	 * 
-	 * @param array $a
-	 * @param array $b
-	 * @param int $flags
-	 * @return array
-	 */
-	public static function array_diff_assoc($a, $b, $flags = 0) {
-		if (!($flags & self::ARRAY_DIFF_ORDERED_ARRAYS)) { //Treat $a and $b as unordered if they're non-associative
-			if (!self::is_assoc($a) && !self::is_assoc($b)) {
-				sort($a);
-				sort($b);
-			}
-		}
-		
-		$result = array();
-		foreach ($a as $k => $v) {
-			if (array_key_exists($k, $b)) {
-				if ($a[$k] == $b[$k]) {
-					continue;
-				}
-				
-				if (is_array($a[$k]) && is_array($b[$k])) {
-					$diff = self::array_diff($a[$k], $b[$k]);
-					if (!empty($diff['removed'])) {
-						$result[$k] = $diff['removed'];
-					}
-					
-					continue;
-				}
-			}
-			
-			$result[$k] = $v;
-		}
-		return $result;
-	}
-	
-	/**
-	 * Returns the items from $array whose keys are in $keys.
-	 * 
-	 * @param array $array
-	 * @param array|string $keys
-	 * @param bool $single Return single-value as-is instead of a one-element array.
-	 * @param mixed|null $default Value to return when $single is true and nothing is found.
-	 * @return array|mixed
-	 */
-	public static function array_choose($array, $keys, $single = false, $default = null) {
-		if (!is_array($keys)) {
-			$keys = array($keys);
-		}
-		
-		if (is_object($array) && (
-			$array instanceof ArrayAccess ||
-				$array instanceof Traversable ||
-				$array instanceof Serializable ||
-				$array instanceof Countable)) {
-			$array = (array) $array;
-		}
-		
-		$matches = array_filter($array, function($k) use ($keys) {
-			return in_array($k, $keys);
-		}, ARRAY_FILTER_USE_KEY);
-		if ($single) {
-			$key = self::array_first($keys);
-			if ($key !== null && isset($matches[$key])) {
-				return $matches[$key];
-			}
-			
-			return $default;
-		}
-		return $matches;
-	}
-	
-	/**
-	 * Convenience function for `array_choose` in its single return value mode for better code readability.
-	 * 
-	 * @param array $array
-	 * @param string $key
-	 * @param mixed|null $default
-	 * @return mixed
-	 */
-	public static function array_get($array, $key, $default = null) {
-		return self::array_choose($array, $key, true, $default);
-	}
-	
-	/**
-	 * Polyfill for array_key_first.
-	 * 
-	 * @param array $array
-	 * @return mixed|null
-	 */
-	public static function array_key_first($array) {
-		if (function_exists('array_key_first')) {
-			return array_key_first($array);
-		}
-		
-		if (!count($array)) {
-			return null;
-		}
-		
-		$keys = array_keys($array);
-		return $keys[0];
-	}
-	
-	/**
-	 * Polyfill for array_key_last.
-	 *
-	 * @param array $array
-	 * @return mixed|null
-	 */
-	public static function array_key_last($array) {
-		if (function_exists('array_key_last')) {
-			return array_key_last($array);
-		}
-		
-		if (!count($array)) {
-			return null;
-		}
-		
-		$keys = array_keys($array);
-		return $keys[count($keys) - 1];
-	}
-	
-	/**
-	 * Performs an array_map but then converts the response into an associative array. $callable is expected to return
-	 * [$key => $value] rather than just $value as a normal array_map call would. The resulting array will be as if each
-	 * were merged in, preserving the $value under $key. Each $key _should_ generally be unique, but if there are 
-	 * duplicates, the last key/value pair mapped for a given $key will be the final value in the array.
-	 * 
-	 * @param callable $callable
-	 * @param array $array
-	 * @return array
-	 */
-	public static function array_kmap($callable, $array) {
-		$intermediate = array_map($callable, $array);
-		$result = array();
-		foreach ($intermediate as $i) { //Can't use array_merge because it discards numerical keys
-			$k = self::array_key_first($i);
-			$v = $i[$k];
-			$result[$k] = $v;
-		}
-		return $result;
-	}
-	
-	
-	/**
-	 * Returns whether or not $a is an associative-array. It is considered associative only when the array keys are not
-	 * sequential integers starting at 0.
-	 * 
-	 * @param array $a
-	 * @return bool
-	 */
-	public static function is_assoc($a) {
-		if (!is_array($a)) { return false; }
-		for ($i = 0; $i < count($a); $i++) {
-			if (!isset($a[$i])) {
-				return true;
-			}
-		}
-		return false;
-	}
-	
-	/**
-	 * Returns the raw HTTP POST body if possible. This is functionally identical to the implementation in wfWAFUtils 
-	 * but present here to avoid complications with nested install WAF optimization. 
-	 * 
-	 * @return string
-	 */
-	public static function rawPOSTBody() {
-		// phpcs:ignore PHPCompatibility.Variables.RemovedPredefinedGlobalVariables.http_raw_post_dataDeprecatedRemoved
-		global $HTTP_RAW_POST_DATA;
-		// phpcs:ignore PHPCompatibility.Variables.RemovedPredefinedGlobalVariables.http_raw_post_dataDeprecatedRemoved
-		if (empty($HTTP_RAW_POST_DATA)) { //Defined if always_populate_raw_post_data is on, PHP < 7, and the encoding type is not multipart/form-data
-			$avoidPHPInput = wfWAFConfig::get('avoid_php_input', false);
-			if ($avoidPHPInput) { //Some custom PHP builds break reading from php://input
-				//Reconstruct the best possible approximation of it from $_POST if populated -- won't help JSON or other raw payloads
-				$data = http_build_query($_POST, '', '&');
-			}
-			else {
-				$data = file_get_contents('php://input'); //Available if the encoding type is not multipart/form-data; it can only be read once prior to PHP 5.6 so we save it in $HTTP_RAW_POST_DATA for WP Core and others
-				
-				//For our purposes, we don't currently need the raw POST body if it's multipart/form-data since the data will be in $_POST/$_FILES. If we did, we could reconstruct the body here.
-				
-				// phpcs:ignore PHPCompatibility.Variables.RemovedPredefinedGlobalVariables.http_raw_post_dataDeprecatedRemoved
-				$HTTP_RAW_POST_DATA = $data;
-			}
-		}
-		else {
-			// phpcs:ignore PHPCompatibility.Variables.RemovedPredefinedGlobalVariables.http_raw_post_dataDeprecatedRemoved
-			$data =& $HTTP_RAW_POST_DATA;
-		}
-		return $data;
 	}
 	
 	/**
@@ -898,14 +484,8 @@ class wfUtils {
 	 * @return string
 	 */
 	public static function inet_aton($ip) {
-		try {
-			$ip = preg_replace('/(?<=^|\.)0+([1-9])/', '$1', $ip);
-			return sprintf("%u", ip2long($ip));
-		}
-		catch (Throwable $t) {
-			//Ignore -- fall through to default
-		}
-		return '0';
+		$ip = preg_replace('/(?<=^|\.)0+([1-9])/', '$1', $ip);
+		return sprintf("%u", ip2long($ip));
 	}
 
 	/**
@@ -929,14 +509,9 @@ class wfUtils {
 	 * @return string
 	 */
 	public static function inet_pton($ip) {
-		$default = "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff\x00\x00\x00\x00";
-		try {
-			// convert the 4 char IPv4 to IPv6 mapped version.
-			$pton = str_pad(self::hasIPv6Support() ? @inet_pton($ip) : self::_inet_pton($ip), 16, $default, STR_PAD_LEFT);
-		}
-		catch (Throwable $t) {
-			$pton = $default;
-		}
+		// convert the 4 char IPv4 to IPv6 mapped version.
+		$pton = str_pad(self::hasIPv6Support() ? @inet_pton($ip) : self::_inet_pton($ip), 16,
+			"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff\x00\x00\x00\x00", STR_PAD_LEFT);
 		return $pton;
 	}
 
@@ -1043,11 +618,7 @@ class wfUtils {
 	 * @return bool
 	 */
 	public static function hasIPv6Support() {
-		static $hasSupport = null;
-		if ($hasSupport === null) {
-			$hasSupport = defined('AF_INET6') && self::funcEnabled('inet_ntop') && self::funcEnabled('inet_pton');
-		}
-		return $hasSupport;
+		return defined('AF_INET6');
 	}
 
 	public static function hasLoginCookie(){
@@ -1078,16 +649,6 @@ class wfUtils {
 			return WP_CONTENT_DIR . '/plugins/';
 		}
 	}
-	
-	/**
-	 * Convenience function to generate an admin URL using the appropriate function depending on multisite status.
-	 *
-	 * @param string $path
-	 * @return string
-	 */
-	public static function maybeNetworkAdminURL($path) {
-		return function_exists('network_admin_url') && is_multisite() ? network_admin_url($path) : admin_url($path);
-	}
 	public static function makeRandomIP(){
 		return rand(11,230) . '.' . rand(0,255) . '.' . rand(0,255) . '.' . rand(0,255);
 	}
@@ -1095,7 +656,6 @@ class wfUtils {
 	/**
 	 * Converts a truthy value to a boolean, checking in this order:
 	 * - already a boolean
-	 * - is null => false
 	 * - numeric (0 => false, otherwise true)
 	 * - 'false', 'f', 'no', 'n', or 'off' => false
 	 * - 'true', 't', 'yes', 'y', or 'on' => true
@@ -1107,10 +667,6 @@ class wfUtils {
 	public static function truthyToBoolean($value) {
 		if ($value === true || $value === false) {
 			return $value;
-		}
-		
-		if (is_null($value)) {
-			return false;
 		}
 		
 		if (is_numeric($value)) {
@@ -1163,15 +719,12 @@ class wfUtils {
 	 * Returns an array containing all whitelisted service IPs/ranges. The returned array is grouped by service
 	 * tag: array('service1' => array('range1', 'range2', range3', ...), ...)
 	 * 
-	 * @param array|null $whitelistedServices If provided, use this service list for enabled/disabled resolution
 	 * @return array
 	 */
-	public static function whitelistedServiceIPs($whitelistedServices = null) {
+	public static function whitelistedServiceIPs() {
 		$result = array();
 		$whitelistPresets = self::whitelistPresets();
-		if ($whitelistedServices === null) {
-			$whitelistedServices = wfConfig::getJSON('whitelistedServices', array());
-		}
+		$whitelistedServices = wfConfig::getJSON('whitelistedServices', array());
 		foreach ($whitelistPresets as $tag => $preset) {
 			if (!isset($preset['n'])) { //Just an array of IPs/ranges
 				$result[$tag] = $preset;
@@ -1475,13 +1028,9 @@ class wfUtils {
 					$cnameRaw = @dns_get_record($host, DNS_CNAME);
 					$cnames = array();
 					$cnamesTargets = array();
-					if ($cnameRaw && is_array($cnameRaw)) {
+					if ($cnameRaw) {
 						foreach ($cnameRaw as $elem) {
-							if (is_array($elem) && 
-								array_key_exists('host', $elem) && 
-								array_key_exists('target', $elem) && 
-								$elem['host'] == $host
-							) {
+							if ($elem['host'] == $host) {
 								$cnames[] = $elem;
 								$cnamesTargets[] = $elem['target'];
 							}
@@ -1490,14 +1039,9 @@ class wfUtils {
 					
 					$aRaw = @dns_get_record($host, DNS_A);
 					$a = array();
-					if ($aRaw && is_array($aRaw)) {
+					if ($aRaw) {
 						foreach ($aRaw as $elem) {
-							if (is_array($elem) && 
-								array_key_exists('host', $elem) &&
-								array_key_exists('ttl', $elem) &&
-								array_key_exists('ip', $elem) &&
-								($elem['host'] == $host || in_array($elem['host'], $cnamesTargets))
-							) {
+							if ($elem['host'] == $host || in_array($elem['host'], $cnamesTargets)) {
 								$a[] = $elem;
 							}
 						}
@@ -1512,79 +1056,11 @@ class wfUtils {
 			}
 		}
 		
-		/*
-		 * This segment governs the SERVER_ADDR cache. We cache all seen values for the TTL defined by 
-		 * `wfUtils::SERVER_ADDR_CACHE_TTL` to account for varying IPs from load balancers. We do not refresh
-		 * the timestamp on a repeat address until it's at least `wfUtils::SERVER_ADDR_REFRESH_TTL` old unless we're
-		 * going to save a change anyway. 
-		 */
-		
-		$recentServerAddr = wfConfig::get_ser('recentServerAddr');
-		$dirtyServerAddr = false;
-		$containsCurrentServerAddr = false;
-		$recents = array();
-		if (!is_array($recentServerAddr)) {
-			$recentServerAddr = array();
-		}
-		
-		$recentServerAddr = array_filter($recentServerAddr, function($time, $addr) use (&$dirtyServerAddr, &$containsCurrentServerAddr, &$recents) {
-			if (!wfUtils::isValidIP($addr)) {
-				$dirtyServerAddr = true;
-				return false;
-			}
-			
-			if ($time < time() - self::SERVER_ADDR_CACHE_TTL) {
-				$dirtyServerAddr = true;
-				return false;
-			}
-			
-			if (isset($_SERVER['SERVER_ADDR']) && $addr == $_SERVER['SERVER_ADDR']) {
-				$containsCurrentServerAddr = true;
-				if ($time < time() - self::SERVER_ADDR_REFRESH_TTL) {
-					$dirtyServerAddr = true;
-				}
-				return false; //Filtering out the current one now so it can be re-added later with a current timestamp
-			}
-			$recents[] = $addr;
-			return true;
-		}, ARRAY_FILTER_USE_BOTH);
-		
 		if (isset($_SERVER['SERVER_ADDR']) && wfUtils::isValidIP($_SERVER['SERVER_ADDR'])) {
-			$recentServerAddr[$_SERVER['SERVER_ADDR']] = time();
-			$recents[] = $_SERVER['SERVER_ADDR'];
-			$dirtyServerAddr = $dirtyServerAddr || !$containsCurrentServerAddr;
-		}
-			
-		if ($dirtyServerAddr) {
-			//Check for state change from another request, merge as needed, then save our update
-			$locked = wfConfig::createLock('recentServerAddr');
-			if ($locked) {
-				$currentState = wfConfig::get_ser('recentServerAddr', array(), true, false);
-				if (is_array($currentState)) {
-					foreach ($currentState as $addr => $time) {
-						if (!wfUtils::isValidIP($addr)) {
-							continue;
-						}
-						
-						if (array_key_exists($addr, $recentServerAddr)) {
-							$recentServerAddr[$addr] = max($time, $recentServerAddr[$addr]);
-						}
-						else if ($time > time() - self::SERVER_ADDR_CACHE_TTL) {
-							$recentServerAddr[$addr] = $time;
-							$recents[] = $addr;
-						}
-					}
-				}
-				
-				wfConfig::set_ser('recentServerAddr', $recentServerAddr);
-				wfConfig::releaseLock('recentServerAddr');
-			}
+			$serverIPs[] = $_SERVER['SERVER_ADDR'];
 		}
 		
-		sort($recents);
-		$serverIPs = array_merge($serverIPs, $recents);
-		
-		$serverIPs = array_values(array_unique($serverIPs));
+		$serverIPs = array_unique($serverIPs);
 		$cachedServerIPs = $serverIPs;
 		return $serverIPs;
 	}
@@ -1672,32 +1148,25 @@ class wfUtils {
 		}
 		return false; //Returns an array with a valid IP and the server variable, or false.
 	}
-	
-	/**
-	 * Returns an array of IPs seen by the server. The structure of the return value is an array of arrays where each
-	 * child array has the structure ['ip' => <ip address>, 'selected' => <whether this one is considered the client ip>]
-	 *
-	 * @return array|false May return false if there are no IPs (e.g., a CLI request)
-	 */
 	public static function getIPPreview($howGet = null, $trustedProxies = null) {
 		$ip = self::getIPAndServerVariable($howGet, $trustedProxies);
 		if (is_array($ip)) {
 			list($IP, $variable) = $ip;
 			if (isset($_SERVER[$variable]) && strpos($_SERVER[$variable], ',') !== false) {
 				$items = preg_replace('/[\s,]/', '', explode(',', $_SERVER[$variable]));
-				$output = array();
+				$output = '';
 				foreach ($items as $i) {
 					if ($IP == $i) {
-						$output[] = array('ip' => $i, 'selected' => true);
+						$output .= ', <strong>' . esc_html($i) . '</strong>';
 					}
 					else {
-						$output[] = array('ip' => $i, 'selected' => false);
+						$output .= ', ' . esc_html($i); 
 					}
 				}
 				
-				return $output;
+				return substr($output, 2);
 			}
-			return array(array('ip' => $IP, 'selected' => true));
+			return '<strong>' . esc_html($IP) . '</strong>';
 		}
 		return false;
 	}
@@ -1723,10 +1192,6 @@ class wfUtils {
 		return true;
 	}
 	public static function isValidEmail($email, $strict = false) {
-		if (empty($email)) {
-			return false;
-		}
-		
 		//We don't default to strict, full validation because poorly-configured servers can crash due to the regex PHP uses in filter_var($email, FILTER_VALIDATE_EMAIL)
 		if ($strict) {
 			return (filter_var($email, FILTER_VALIDATE_EMAIL) !== false);
@@ -1915,37 +1380,16 @@ class wfUtils {
 		}
 		return $max;
 	}
-	
-	/**
-	 * Returns the current PHP memory limit in bytes.
-	 * 
-	 * Note: This is duplicated in wordfence.php to avoid needing to include this class early.
-	 * 
-	 * @return int
-	 */
-	public static function memoryLimit() {
-		$maxMemory = ini_get('memory_limit');
-		if (!(is_string($maxMemory) || is_numeric($maxMemory)) || !preg_match('/^\s*\d+[GMK]?\s*$/i', $maxMemory)) { $maxMemory = '128M'; } //Invalid or unreadable value, default to our minimum
-		$last = strtolower(substr($maxMemory, -1));
-		$maxMemory = (int) $maxMemory;
-		
-		if ($last == 'g') { $maxMemory = $maxMemory * 1024 * 1024 * 1024; }
-		else if ($last == 'm') { $maxMemory = $maxMemory * 1024 * 1024; }
-		else if ($last == 'k') { $maxMemory = $maxMemory * 1024; }
-		return floor($maxMemory);
-	}
-	
-	public static function requestMaxMemory() {
-		$maxMem = wfConfig::getInt('maxMem', 256);
-		if ($maxMem <= 0) {
+	public static function requestMaxMemory(){
+		if(wfConfig::get('maxMem', false) && (int) wfConfig::get('maxMem') > 0){
+			$maxMem = (int) wfConfig::get('maxMem');
+		} else {
 			$maxMem = 256;
 		}
-		
-		if (self::funcEnabled('memory_get_usage') && self::memoryLimit() < ($maxMem * 1024 * 1024)){
+		if( function_exists('memory_get_usage') && ( (int) @ini_get('memory_limit') < $maxMem ) ){
 			self::iniSet('memory_limit', $maxMem . 'M');
 		}
 	}
-	
 	public static function isAdmin($user = false){
 		if($user){
 			if(is_multisite()){
@@ -2003,7 +1447,6 @@ class wfUtils {
 		return self::$isWindows == 'yes' ? true : false;
 	}
 	public static function cleanupOneEntryPerLine($string) {
-		$string = !is_string($string) ? '' : $string;
 		$string = str_replace(",", "\n", $string); // fix old format
 		return implode("\n", array_unique(array_filter(array_map('trim', explode("\n", $string)))));
 	}
@@ -2092,7 +1535,7 @@ class wfUtils {
 				}
 			}
 			else {
-				self::requireIpLocator();
+				require_once(__DIR__ . '/wfIpLocator.php');
 				$locator = wfIpLocator::getInstance();
 				$freshIPs = array();
 				$locale = get_locale();
@@ -2173,8 +1616,8 @@ class wfUtils {
 
 				if ($ptr && function_exists('dns_get_record')) {
 					$host = @dns_get_record($ptr, DNS_PTR);
-					if ($host && is_array($host) && count($host)) {
-						$host = wfUtils::array_get($host[0], 'target');
+					if ($host) {
+						$host = $host[0]['target'];
 					}
 				}
 			}
@@ -2310,59 +1753,6 @@ class wfUtils {
 		}
 		return true;
 	}
-	
-	/**
-	 * Parses a callable and returns its components or null if it's not a valid callable. This does not attempt to verify
-	 * that the callable can actually be executed (e.g., the function may not exist), just that its structure is correct.
-	 * 
-	 * The array returned will have keys corresponding to the `wfUtils::CALLABLE_` constants.
-	 * 
-	 * @param callable $callable
-	 * @return array|null
-	 */
-	public static function parseCallable($callable) {
-		try {
-			if (!@is_callable($callable, true, $parsed)) {
-				return null;
-			}
-		}
-		catch (Throwable $t) {
-			return null;
-		}
-		
-		$className = null;
-		$functionName = null;
-		$isClosure = false;
-		$isInstance = false;
-		$isInvokable = false;
-		if (substr_count($parsed, '::')) {
-			$components = explode('::', $parsed);
-			$isClosure = $components[0] == 'Closure';
-			if (!$isClosure) {
-				$className = $components[0];
-				$functionName = $components[1];
-			}
-		}
-		else if (is_string($callable)) {
-			$functionName = $parsed;
-		}
-		
-		if (is_array($callable) && count($callable) == 2) {
-			$isInstance = is_object($callable[0]);
-		}
-		else if (!$isClosure && is_object($callable)) {
-			$isInvokable = true;
-		}
-		
-		return array(
-			self::CALLABLE_CLASS => $className,
-			self::CALLABLE_FUNCTION => $functionName,
-			self::CALLABLE_IS_CLOSURE => $isClosure,
-			self::CALLABLE_IS_INSTANCE => $isInstance,
-			self::CALLABLE_IS_INVOKABLE => $isInvokable,
-		);
-	}
-	
 	public static function iniSet($key, $val){
 		if(self::funcEnabled('ini_set')){
 			@ini_set($key, $val);
@@ -2499,14 +1889,11 @@ class wfUtils {
 		die();
 	}
 
-	public static function setcookie($name, $value = '', $expire = 0, $path = '', $domain = '', $secure = false, $httpOnly = false) {
-		if (empty($path)) { $path = COOKIEPATH; }
-		if (empty($domain)) { $domain = COOKIE_DOMAIN; }
-		if (version_compare(PHP_VERSION, '5.2.0') >= 0) {
-			setcookie($name, $value, $expire, $path, $domain, $secure, $httpOnly);
-		}
-		else {
-			setcookie($name, $value, $expire, $path);
+	public static function setcookie($name, $value, $expire, $path, $domain, $secure, $httpOnly){
+		if(version_compare(PHP_VERSION, '5.2.0') >= 0){
+			@setcookie($name, $value, $expire, $path, $domain, $secure, $httpOnly);
+		} else {
+			@setcookie($name, $value, $expire, $path);
 		}
 	}
 	public static function isNginx(){
@@ -2567,11 +1954,9 @@ class wfUtils {
 		$ips = array();
 		foreach ($recordTypes as $type => $key) {
 			$records = @dns_get_record($host, $type);
-			if ($records !== false && is_array($records)) {
+			if ($records !== false) {
 				foreach ($records as $record) {
-					if (array_key_exists($key, $record)) {
-						$ips[] = $record[$key];
-					}
+					$ips[] = $record[$key];
 				}
 			}
 		}
@@ -2599,30 +1984,6 @@ class wfUtils {
 		$result = wp_mail($to, $subject, $body);
 		remove_filter( 'wp_mail_content_type', 'wfUtils::set_html_content_type' );
 		return $result;
-	}
-	
-	/**
-	 * Convenience method to send an email via `wp_mail` and avoid an exception of another plugin overrides the call
-	 * and throws one (Core does not currently throw any).
-	 *
-	 * @param $to
-	 * @param $subject
-	 * @param $message
-	 * @param $headers
-	 * @param $attachments
-	 * @return bool
-	 */
-	public static function maybe_wp_mail($to, $subject, $message, $headers = '', $attachments = array()) {
-		try {
-			return wp_mail($to, $subject, $message, $headers, $attachments);
-		}
-		catch (Exception $e) {
-			wordfence::status(2, 'error', 'Wordfence failed to send email: ' . $e->getMessage());
-		}
-		catch (Throwable $t) {
-			wordfence::status(2, 'error', 'Wordfence failed to send email: ' . $t->getMessage());
-		}
-		return false;
 	}
 
 	/**
@@ -2813,50 +2174,6 @@ class wfUtils {
 			}
 		}
 		return $output;
-	}
-	
-	/**
-	 * A custom version of `esc_attr` that allows the escaping behavior to be customized
-	 *
-	 * @param string $text
-	 * @param int $quote_style
-	 * @param string $charset
-	 * @param bool $double_encode
-	 *
-	 * @return string
-	 */
-	public static function esc_attr( $text, $quote_style = ENT_QUOTES, $charset = 'UTF-8', $double_encode = false ) {
-		$original = $text;
-		$text = wp_check_invalid_utf8((string) $text);
-		
-		if (0 === strlen($text)) { return ''; }
-		else if (!preg_match( '/[&<>"\']/', $text ) ) { return $text; }
-		
-		if (!in_array($quote_style, array(ENT_NOQUOTES, ENT_COMPAT, ENT_QUOTES, 'single', 'double'), true)) {
-			$quote_style = ENT_QUOTES;
-		}
-		
-		$_quote_style = $quote_style;
-		
-		if ('double' === $quote_style) {
-			$quote_style  = ENT_COMPAT;
-			$_quote_style = ENT_COMPAT;
-		}
-		else if ('single' === $quote_style) {
-			$quote_style = ENT_NOQUOTES;
-		}
-		
-		if (!$double_encode) {
-			$text = wp_kses_normalize_entities($text, ($quote_style & ENT_XML1) ? 'xml' : 'html');
-		}
-		
-		$text = htmlspecialchars($text, $quote_style, $charset, $double_encode);
-		
-		if ('single' === $_quote_style) {
-			$text = str_replace( "'", '&#039;', $text );
-		}
-		
-		return apply_filters('attribute_escape', $text, $original);
 	}
 	
 	public static function requestDetectProxyCallback($timeout = 2, $blocking = true, $forceCheck = false) {
@@ -3517,20 +2834,6 @@ class wfUtils {
 		return $a1 == $a2;
 	}
 	
-	/**
-	 * Returns true if $maybeSubset is contained within $set.
-	 *
-	 * @param array $set
-	 * @param array $maybeSubset
-	 * @return bool
-	 */
-	public static function is_subset($set, $maybeSubset) {
-		if (!is_array($set) || !is_array($maybeSubset)) {
-			return false;
-		}
-		return count(array_intersect($set, $maybeSubset)) == count($maybeSubset);
-	}
-	
 	public static function array_first($array) {
 		if (empty($array)) {
 			return null;
@@ -3550,7 +2853,26 @@ class wfUtils {
 	}
 	
 	public static function array_strtolower($array) {
-		return array_map(function($v) { return self::strtolower($v); }, $array);
+		$result = array();
+		foreach ($array as $a) {
+			$result[] = strtolower($a);
+		}
+		return $result;
+	}
+	
+	/**
+	 * Convenience function to return the value in an array or the given default if not present.
+	 * 
+	 * @param array $array
+	 * @param string|int $key
+	 * @param mixed $default
+	 * @return mixed|null
+	 */
+	public static function array_choose($array, $key, $default = null) {
+		if (isset($array[$key])) {
+			return $array[$key];
+		}
+		return $default;
 	}
 	
 	public static function array_column($input = null, $columnKey = null, $indexKey = null) { //Polyfill from https://github.com/ramsey/array_column/blob/master/src/array_column.php
@@ -3830,7 +3152,7 @@ class wfUtils {
 		
 		$json = self::base64url_decode($components[1]);
 		$payload = @json_decode($json, true);
-		if (!is_array($payload) || (isset($payload['_exp']) && $payload['_exp'] < time())) {
+		if (isset($payload['_exp']) && $payload['_exp'] < time()) {
 			return false;
 		}
 		return $payload;
@@ -3931,7 +3253,7 @@ class wfUtils {
 	}
 
 	public static function includeOnceIfPresent($path) {
-		if (file_exists($path) && is_readable($path)) {
+		if (file_exists($path)) {
 			@include_once($path);
 			return @include_once($path); //Calling `include_once` for an already included file will return true
 		}
@@ -3939,21 +3261,9 @@ class wfUtils {
 	}
 
 	public static function isCurlSupported() {
-		if (!function_exists('curl_init') || !function_exists('curl_exec')) {
-			return false;
-		}
-		
-		$is_ssl = isset($args['ssl']) && $args['ssl'];
-		
-		if ($is_ssl) {
-			$curl_version = curl_version();
-			// Check whether this cURL version support SSL requests.
-			if (!(CURL_VERSION_SSL & $curl_version['features'])) {
-				return false;
-			}
-		}
-		
-		return true;
+		if (self::includeOnceIfPresent(ABSPATH . 'wp-includes/class-wp-http-curl.php'))
+			return WP_Http_Curl::test();
+		return false;
 	}
 
 	private static function isValidJsonValue($value) {
@@ -4116,10 +3426,6 @@ class wfWebServerInfo {
 			$serverInfo->setSoftware(self::APACHE);
 			$serverInfo->setSoftwareName('apache');
 		}
-		else if (stripos($_SERVER['SERVER_SOFTWARE'], 'unit') !== false) {
-			$serverInfo->setSoftware(self::NGINX);
-			$serverInfo->setSoftwareName('unit');
-		}
 
 		$serverInfo->setHandler($sapi);
 
@@ -4136,7 +3442,7 @@ class wfWebServerInfo {
 	/**
 	 * @return bool
 	 */
-	public function isNginx() {
+	public function isNGINX() {
 		return $this->getSoftware() === self::NGINX;
 	}
 
@@ -4168,20 +3474,7 @@ class wfWebServerInfo {
 	public function isApacheSuPHP() {
 		return $this->isApache() && $this->isCGI() &&
 			function_exists('posix_getuid') &&
-			function_exists('getmyuid') &&
 			getmyuid() === posix_getuid();
-	}
-
-	private function isUnit() {
-		return $this->softwareName == "unit";
-	}
-
-	public function isNginxStandard() {
-		return $this->isNginx() && !$this->isUnit();
-	}
-
-	public function isNginxUnit() {
-		return $this->isNginx() && $this->isUnit();
 	}
 
 	/**

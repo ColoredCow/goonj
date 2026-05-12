@@ -11,7 +11,7 @@ namespace WPMailSMTP\Vendor\GuzzleHttp\Promise;
  *
  * @final
  */
-class RejectedPromise implements PromiseInterface
+class RejectedPromise implements \WPMailSMTP\Vendor\GuzzleHttp\Promise\PromiseInterface
 {
     private $reason;
     /**
@@ -24,17 +24,17 @@ class RejectedPromise implements PromiseInterface
         }
         $this->reason = $reason;
     }
-    public function then(?callable $onFulfilled = null, ?callable $onRejected = null) : PromiseInterface
+    public function then(callable $onFulfilled = null, callable $onRejected = null) : \WPMailSMTP\Vendor\GuzzleHttp\Promise\PromiseInterface
     {
         // If there's no onRejected callback then just return self.
         if (!$onRejected) {
             return $this;
         }
-        $queue = Utils::queue();
+        $queue = \WPMailSMTP\Vendor\GuzzleHttp\Promise\Utils::queue();
         $reason = $this->reason;
-        $p = new Promise([$queue, 'run']);
+        $p = new \WPMailSMTP\Vendor\GuzzleHttp\Promise\Promise([$queue, 'run']);
         $queue->add(static function () use($p, $reason, $onRejected) : void {
-            if (Is::pending($p)) {
+            if (\WPMailSMTP\Vendor\GuzzleHttp\Promise\Is::pending($p)) {
                 try {
                     // Return a resolved promise if onRejected does not throw.
                     $p->resolve($onRejected($reason));
@@ -46,14 +46,14 @@ class RejectedPromise implements PromiseInterface
         });
         return $p;
     }
-    public function otherwise(callable $onRejected) : PromiseInterface
+    public function otherwise(callable $onRejected) : \WPMailSMTP\Vendor\GuzzleHttp\Promise\PromiseInterface
     {
         return $this->then(null, $onRejected);
     }
     public function wait(bool $unwrap = \true)
     {
         if ($unwrap) {
-            throw Create::exceptionFor($this->reason);
+            throw \WPMailSMTP\Vendor\GuzzleHttp\Promise\Create::exceptionFor($this->reason);
         }
         return null;
     }

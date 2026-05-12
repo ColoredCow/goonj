@@ -8,7 +8,7 @@ use WPMailSMTP\Vendor\Psr\Http\Message\StreamInterface;
  * Stream that when read returns bytes for a streaming multipart or
  * multipart/form-data stream.
  */
-final class MultipartStream implements StreamInterface
+final class MultipartStream implements \WPMailSMTP\Vendor\Psr\Http\Message\StreamInterface
 {
     use StreamDecoratorTrait;
     /** @var string */
@@ -27,7 +27,7 @@ final class MultipartStream implements StreamInterface
      *
      * @throws \InvalidArgumentException
      */
-    public function __construct(array $elements = [], ?string $boundary = null)
+    public function __construct(array $elements = [], string $boundary = null)
     {
         $this->boundary = $boundary ?: \bin2hex(\random_bytes(20));
         $this->stream = $this->createStream($elements);
@@ -56,9 +56,9 @@ final class MultipartStream implements StreamInterface
     /**
      * Create the aggregate stream that will be used to upload the POST data
      */
-    protected function createStream(array $elements = []) : StreamInterface
+    protected function createStream(array $elements = []) : \WPMailSMTP\Vendor\Psr\Http\Message\StreamInterface
     {
-        $stream = new AppendStream();
+        $stream = new \WPMailSMTP\Vendor\GuzzleHttp\Psr7\AppendStream();
         foreach ($elements as $element) {
             if (!\is_array($element)) {
                 throw new \UnexpectedValueException('An array is expected');
@@ -66,17 +66,17 @@ final class MultipartStream implements StreamInterface
             $this->addElement($stream, $element);
         }
         // Add the trailing boundary with CRLF
-        $stream->addStream(Utils::streamFor("--{$this->boundary}--\r\n"));
+        $stream->addStream(\WPMailSMTP\Vendor\GuzzleHttp\Psr7\Utils::streamFor("--{$this->boundary}--\r\n"));
         return $stream;
     }
-    private function addElement(AppendStream $stream, array $element) : void
+    private function addElement(\WPMailSMTP\Vendor\GuzzleHttp\Psr7\AppendStream $stream, array $element) : void
     {
         foreach (['contents', 'name'] as $key) {
             if (!\array_key_exists($key, $element)) {
                 throw new \InvalidArgumentException("A '{$key}' key is required");
             }
         }
-        $element['contents'] = Utils::streamFor($element['contents']);
+        $element['contents'] = \WPMailSMTP\Vendor\GuzzleHttp\Psr7\Utils::streamFor($element['contents']);
         if (empty($element['filename'])) {
             $uri = $element['contents']->getMetadata('uri');
             if ($uri && \is_string($uri) && \substr($uri, 0, 6) !== 'php://' && \substr($uri, 0, 7) !== 'data://') {
@@ -84,16 +84,16 @@ final class MultipartStream implements StreamInterface
             }
         }
         [$body, $headers] = $this->createElement($element['name'], $element['contents'], $element['filename'] ?? null, $element['headers'] ?? []);
-        $stream->addStream(Utils::streamFor($this->getHeaders($headers)));
+        $stream->addStream(\WPMailSMTP\Vendor\GuzzleHttp\Psr7\Utils::streamFor($this->getHeaders($headers)));
         $stream->addStream($body);
-        $stream->addStream(Utils::streamFor("\r\n"));
+        $stream->addStream(\WPMailSMTP\Vendor\GuzzleHttp\Psr7\Utils::streamFor("\r\n"));
     }
     /**
      * @param string[] $headers
      *
      * @return array{0: StreamInterface, 1: string[]}
      */
-    private function createElement(string $name, StreamInterface $stream, ?string $filename, array $headers) : array
+    private function createElement(string $name, \WPMailSMTP\Vendor\Psr\Http\Message\StreamInterface $stream, ?string $filename, array $headers) : array
     {
         // Set a default content-disposition header if one was no provided
         $disposition = self::getHeader($headers, 'content-disposition');
@@ -110,7 +110,7 @@ final class MultipartStream implements StreamInterface
         // Set a default Content-Type if one was not supplied
         $type = self::getHeader($headers, 'content-type');
         if (!$type && ($filename === '0' || $filename)) {
-            $headers['Content-Type'] = MimeType::fromFilename($filename) ?? 'application/octet-stream';
+            $headers['Content-Type'] = \WPMailSMTP\Vendor\GuzzleHttp\Psr7\MimeType::fromFilename($filename) ?? 'application/octet-stream';
         }
         return [$stream, $headers];
     }

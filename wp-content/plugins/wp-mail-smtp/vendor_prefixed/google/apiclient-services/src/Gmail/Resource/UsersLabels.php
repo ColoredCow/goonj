@@ -37,13 +37,12 @@ class UsersLabels extends \WPMailSMTP\Vendor\Google\Service\Resource
      * @param Label $postBody
      * @param array $optParams Optional parameters.
      * @return Label
-     * @throws \Google\Service\Exception
      */
-    public function create($userId, Label $postBody, $optParams = [])
+    public function create($userId, \WPMailSMTP\Vendor\Google\Service\Gmail\Label $postBody, $optParams = [])
     {
         $params = ['userId' => $userId, 'postBody' => $postBody];
         $params = \array_merge($params, $optParams);
-        return $this->call('create', [$params], Label::class);
+        return $this->call('create', [$params], \WPMailSMTP\Vendor\Google\Service\Gmail\Label::class);
     }
     /**
      * Immediately and permanently deletes the specified label and removes it from
@@ -53,7 +52,6 @@ class UsersLabels extends \WPMailSMTP\Vendor\Google\Service\Resource
      * used to indicate the authenticated user.
      * @param string $id The ID of the label to delete.
      * @param array $optParams Optional parameters.
-     * @throws \Google\Service\Exception
      */
     public function delete($userId, $id, $optParams = [])
     {
@@ -69,13 +67,12 @@ class UsersLabels extends \WPMailSMTP\Vendor\Google\Service\Resource
      * @param string $id The ID of the label to retrieve.
      * @param array $optParams Optional parameters.
      * @return Label
-     * @throws \Google\Service\Exception
      */
     public function get($userId, $id, $optParams = [])
     {
         $params = ['userId' => $userId, 'id' => $id];
         $params = \array_merge($params, $optParams);
-        return $this->call('get', [$params], Label::class);
+        return $this->call('get', [$params], \WPMailSMTP\Vendor\Google\Service\Gmail\Label::class);
     }
     /**
      * Lists all labels in the user's mailbox. (labels.listUsersLabels)
@@ -84,13 +81,12 @@ class UsersLabels extends \WPMailSMTP\Vendor\Google\Service\Resource
      * used to indicate the authenticated user.
      * @param array $optParams Optional parameters.
      * @return ListLabelsResponse
-     * @throws \Google\Service\Exception
      */
     public function listUsersLabels($userId, $optParams = [])
     {
         $params = ['userId' => $userId];
         $params = \array_merge($params, $optParams);
-        return $this->call('list', [$params], ListLabelsResponse::class);
+        return $this->call('list', [$params], \WPMailSMTP\Vendor\Google\Service\Gmail\ListLabelsResponse::class);
     }
     /**
      * Patch the specified label. (labels.patch)
@@ -101,13 +97,12 @@ class UsersLabels extends \WPMailSMTP\Vendor\Google\Service\Resource
      * @param Label $postBody
      * @param array $optParams Optional parameters.
      * @return Label
-     * @throws \Google\Service\Exception
      */
-    public function patch($userId, $id, Label $postBody, $optParams = [])
+    public function patch($userId, $id, \WPMailSMTP\Vendor\Google\Service\Gmail\Label $postBody, $optParams = [])
     {
         $params = ['userId' => $userId, 'id' => $id, 'postBody' => $postBody];
         $params = \array_merge($params, $optParams);
-        return $this->call('patch', [$params], Label::class);
+        return $this->call('patch', [$params], \WPMailSMTP\Vendor\Google\Service\Gmail\Label::class);
     }
     /**
      * Updates the specified label. (labels.update)
@@ -118,14 +113,13 @@ class UsersLabels extends \WPMailSMTP\Vendor\Google\Service\Resource
      * @param Label $postBody
      * @param array $optParams Optional parameters.
      * @return Label
-     * @throws \Google\Service\Exception
      */
-    public function update($userId, $id, Label $postBody, $optParams = [])
+    public function update($userId, $id, \WPMailSMTP\Vendor\Google\Service\Gmail\Label $postBody, $optParams = [])
     {
         $params = ['userId' => $userId, 'id' => $id, 'postBody' => $postBody];
         $params = \array_merge($params, $optParams);
-        return $this->call('update', [$params], Label::class);
+        return $this->call('update', [$params], \WPMailSMTP\Vendor\Google\Service\Gmail\Label::class);
     }
 }
 // Adding a class alias for backwards compatibility with the previous class name.
-\class_alias(UsersLabels::class, 'WPMailSMTP\\Vendor\\Google_Service_Gmail_Resource_UsersLabels');
+\class_alias(\WPMailSMTP\Vendor\Google\Service\Gmail\Resource\UsersLabels::class, 'WPMailSMTP\\Vendor\\Google_Service_Gmail_Resource_UsersLabels');

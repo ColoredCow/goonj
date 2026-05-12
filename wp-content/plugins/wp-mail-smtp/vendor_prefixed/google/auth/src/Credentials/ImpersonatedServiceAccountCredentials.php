@@ -20,7 +20,7 @@ namespace WPMailSMTP\Vendor\Google\Auth\Credentials;
 use WPMailSMTP\Vendor\Google\Auth\CredentialsLoader;
 use WPMailSMTP\Vendor\Google\Auth\IamSignerTrait;
 use WPMailSMTP\Vendor\Google\Auth\SignBlobInterface;
-class ImpersonatedServiceAccountCredentials extends CredentialsLoader implements SignBlobInterface
+class ImpersonatedServiceAccountCredentials extends \WPMailSMTP\Vendor\Google\Auth\CredentialsLoader implements \WPMailSMTP\Vendor\Google\Auth\SignBlobInterface
 {
     use IamSignerTrait;
     /**
@@ -32,13 +32,13 @@ class ImpersonatedServiceAccountCredentials extends CredentialsLoader implements
      */
     protected $sourceCredentials;
     /**
-     * Instantiate an instance of ImpersonatedServiceAccountCredentials from a credentials file that
-     * has be created with the --impersonated-service-account flag.
+     * Instantiate an instance of ImpersonatedServiceAccountCredentials from a credentials file that has be created with
+     * the --impersonated-service-account flag.
      *
-     * @param string|string[]     $scope   The scope of the access request, expressed either as an
-     *                                     array or as a space-delimited string.
+     * @param string|string[] $scope the scope of the access request, expressed
+     *   either as an Array or as a space-delimited String.
      * @param string|array<mixed> $jsonKey JSON credential file path or JSON credentials
-     *                                     as an associative array.
+     *   as an associative array
      */
     public function __construct($scope, $jsonKey)
     {
@@ -58,16 +58,14 @@ class ImpersonatedServiceAccountCredentials extends CredentialsLoader implements
             throw new \LogicException('json key is missing the source_credentials field');
         }
         $this->impersonatedServiceAccountName = $this->getImpersonatedServiceAccountNameFromUrl($jsonKey['service_account_impersonation_url']);
-        $this->sourceCredentials = new UserRefreshCredentials($scope, $jsonKey['source_credentials']);
+        $this->sourceCredentials = new \WPMailSMTP\Vendor\Google\Auth\Credentials\UserRefreshCredentials($scope, $jsonKey['source_credentials']);
     }
     /**
-     * Helper function for extracting the Server Account Name from the URL saved in the account
-     * credentials file.
-     *
-     * @param $serviceAccountImpersonationUrl string URL from "service_account_impersonation_url"
+     * Helper function for extracting the Server Account Name from the URL saved in the account credentials file
+     * @param $serviceAccountImpersonationUrl string URL from the 'service_account_impersonation_url' field
      * @return string Service account email or ID.
      */
-    private function getImpersonatedServiceAccountNameFromUrl(string $serviceAccountImpersonationUrl) : string
+    private function getImpersonatedServiceAccountNameFromUrl(string $serviceAccountImpersonationUrl)
     {
         $fields = \explode('/', $serviceAccountImpersonationUrl);
         $lastField = \end($fields);
@@ -82,7 +80,7 @@ class ImpersonatedServiceAccountCredentials extends CredentialsLoader implements
      * @param callable|null $unusedHttpHandler not used by this credentials type.
      * @return string Token issuer email
      */
-    public function getClientName(?callable $unusedHttpHandler = null)
+    public function getClientName(callable $unusedHttpHandler = null)
     {
         return $this->impersonatedServiceAccountName;
     }
@@ -99,7 +97,7 @@ class ImpersonatedServiceAccountCredentials extends CredentialsLoader implements
      *     @type string $id_token
      * }
      */
-    public function fetchAuthToken(?callable $httpHandler = null)
+    public function fetchAuthToken(callable $httpHandler = null)
     {
         return $this->sourceCredentials->fetchAuthToken($httpHandler);
     }

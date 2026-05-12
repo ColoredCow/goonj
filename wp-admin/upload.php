@@ -152,15 +152,14 @@ if ( 'grid' === $mode ) {
 		0
 	);
 
-	$query_string = $_GET;
+	$q = $_GET;
 	// Let JS handle this.
-	unset( $query_string['s'] );
-	$query_vars = wp_edit_attachments_query_vars( $query_string );
-	$ignore     = array( 'mode', 'post_type', 'post_status', 'posts_per_page' );
-
-	foreach ( $query_vars as $key => $value ) {
+	unset( $q['s'] );
+	$vars   = wp_edit_attachments_query_vars( $q );
+	$ignore = array( 'mode', 'post_type', 'post_status', 'posts_per_page' );
+	foreach ( $vars as $key => $value ) {
 		if ( ! $value || in_array( $key, $ignore, true ) ) {
-			unset( $query_vars[ $key ] );
+			unset( $vars[ $key ] );
 		}
 	}
 
@@ -169,7 +168,7 @@ if ( 'grid' === $mode ) {
 		'_wpMediaGridSettings',
 		array(
 			'adminUrl'  => parse_url( self_admin_url(), PHP_URL_PATH ),
-			'queryVars' => (object) $query_vars,
+			'queryVars' => (object) $vars,
 		)
 	);
 
@@ -213,7 +212,7 @@ if ( 'grid' === $mode ) {
 		<?php
 		if ( current_user_can( 'upload_files' ) ) {
 			?>
-			<a href="<?php echo esc_url( admin_url( 'media-new.php' ) ); ?>" class="page-title-action aria-button-if-js"><?php echo esc_html__( 'Add Media File' ); ?></a>
+			<a href="<?php echo esc_url( admin_url( 'media-new.php' ) ); ?>" class="page-title-action aria-button-if-js"><?php echo esc_html__( 'Add New Media File' ); ?></a>
 			<?php
 		}
 		?>
@@ -420,7 +419,7 @@ require_once ABSPATH . 'wp-admin/admin-header.php';
 <?php
 if ( current_user_can( 'upload_files' ) ) {
 	?>
-	<a href="<?php echo esc_url( admin_url( 'media-new.php' ) ); ?>" class="page-title-action"><?php echo esc_html__( 'Add Media File' ); ?></a>
+	<a href="<?php echo esc_url( admin_url( 'media-new.php' ) ); ?>" class="page-title-action"><?php echo esc_html__( 'Add New Media File' ); ?></a>
 						<?php
 }
 

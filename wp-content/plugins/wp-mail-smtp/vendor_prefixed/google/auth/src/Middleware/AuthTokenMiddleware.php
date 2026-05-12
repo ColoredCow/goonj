@@ -17,11 +17,8 @@
  */
 namespace WPMailSMTP\Vendor\Google\Auth\Middleware;
 
-use WPMailSMTP\Vendor\Google\Auth\FetchAuthTokenCache;
 use WPMailSMTP\Vendor\Google\Auth\FetchAuthTokenInterface;
 use WPMailSMTP\Vendor\Google\Auth\GetQuotaProjectInterface;
-use WPMailSMTP\Vendor\Google\Auth\UpdateMetadataInterface;
-use WPMailSMTP\Vendor\GuzzleHttp\Psr7\Utils;
 use WPMailSMTP\Vendor\Psr\Http\Message\RequestInterface;
 /**
  * AuthTokenMiddleware is a Guzzle Middleware that adds an Authorization header
@@ -41,9 +38,6 @@ class AuthTokenMiddleware
      */
     private $httpHandler;
     /**
-     * It must be an implementation of FetchAuthTokenInterface.
-     * It may also implement UpdateMetadataInterface allowing direct
-     * retrieval of auth related headers
      * @var FetchAuthTokenInterface
      */
     private $fetcher;
@@ -58,7 +52,7 @@ class AuthTokenMiddleware
      * @param callable $httpHandler (optional) callback which delivers psr7 request
      * @param callable $tokenCallback (optional) function to be called when a new token is fetched.
      */
-    public function __construct(FetchAuthTokenInterface $fetcher, ?callable $httpHandler = null, ?callable $tokenCallback = null)
+    public function __construct(\WPMailSMTP\Vendor\Google\Auth\FetchAuthTokenInterface $fetcher, callable $httpHandler = null, callable $tokenCallback = null)
     {
         $this->fetcher = $fetcher;
         $this->httpHandler = $httpHandler;
@@ -91,46 +85,44 @@ class AuthTokenMiddleware
      */
     public function __invoke(callable $handler)
     {
-        return function (RequestInterface $request, array $options) use($handler) {
+        return function (\WPMailSMTP\Vendor\Psr\Http\Message\RequestInterface $request, array $options) use($handler) {
             // Requests using "auth"="google_auth" will be authorized.
             if (!isset($options['auth']) || $options['auth'] !== 'google_auth') {
                 return $handler($request, $options);
             }
-            $request = $this->addAuthHeaders($request);
+            $request = $request->withHeader('authorization', 'Bearer ' . $this->fetchToken());
             if ($quotaProject = $this->getQuotaProject()) {
-                $request = $request->withHeader(GetQuotaProjectInterface::X_GOOG_USER_PROJECT_HEADER, $quotaProject);
+                $request = $request->withHeader(\WPMailSMTP\Vendor\Google\Auth\GetQuotaProjectInterface::X_GOOG_USER_PROJECT_HEADER, $quotaProject);
             }
             return $handler($request, $options);
         };
     }
     /**
-     * Adds auth related headers to the request.
+     * Call fetcher to fetch the token.
      *
-     * @param RequestInterface $request
-     * @return RequestInterface
+     * @return string|null
      */
-    private function addAuthHeaders(RequestInterface $request)
+    private function fetchToken()
     {
-        if (!$this->fetcher instanceof UpdateMetadataInterface || $this->fetcher instanceof FetchAuthTokenCache && !$this->fetcher->getFetcher() instanceof UpdateMetadataInterface) {
-            $token = $this->fetcher->fetchAuthToken();
-            $request = $request->withHeader('authorization', 'Bearer ' . ($token['access_token'] ?? $token['id_token'] ?? ''));
-        } else {
-            $headers = $this->fetcher->updateMetadata($request->getHeaders(), null, $this->httpHandler);
-            $request = Utils::modifyRequest($request, ['set_headers' => $headers]);
-        }
-        if ($this->tokenCallback && ($token = $this->fetcher->getLastReceivedToken())) {
-            if (\array_key_exists('access_token', $token)) {
-                \call_user_func($this->tokenCallback, $this->fetcher->getCacheKey(), $token['access_token']);
+        $auth_tokens = (array) $this->fetcher->fetchAuthToken($this->httpHandler);
+        if (\array_key_exists('access_token', $auth_tokens)) {
+            // notify the callback if applicable
+            if ($this->tokenCallback) {
+                \call_user_func($this->tokenCallback, $this->fetcher->getCacheKey(), $auth_tokens['access_token']);
             }
+            return $auth_tokens['access_token'];
         }
-        return $request;
+        if (\array_key_exists('id_token', $auth_tokens)) {
+            return $auth_tokens['id_token'];
+        }
+        return null;
     }
     /**
      * @return string|null
      */
     private function getQuotaProject()
     {
-        if ($this->fetcher instanceof GetQuotaProjectInterface) {
+        if ($this->fetcher instanceof \WPMailSMTP\Vendor\Google\Auth\GetQuotaProjectInterface) {
             return $this->fetcher->getQuotaProject();
         }
         return null;

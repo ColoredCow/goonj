@@ -25,10 +25,6 @@ class WatchRequest extends \WPMailSMTP\Vendor\Google\Collection
      */
     public $labelFilterAction;
     /**
-     * @var string
-     */
-    public $labelFilterBehavior;
-    /**
      * @var string[]
      */
     public $labelIds;
@@ -49,20 +45,6 @@ class WatchRequest extends \WPMailSMTP\Vendor\Google\Collection
     public function getLabelFilterAction()
     {
         return $this->labelFilterAction;
-    }
-    /**
-     * @param string
-     */
-    public function setLabelFilterBehavior($labelFilterBehavior)
-    {
-        $this->labelFilterBehavior = $labelFilterBehavior;
-    }
-    /**
-     * @return string
-     */
-    public function getLabelFilterBehavior()
-    {
-        return $this->labelFilterBehavior;
     }
     /**
      * @param string[]
@@ -94,4 +76,4 @@ class WatchRequest extends \WPMailSMTP\Vendor\Google\Collection
     }
 }
 // Adding a class alias for backwards compatibility with the previous class name.
-\class_alias(WatchRequest::class, 'WPMailSMTP\\Vendor\\Google_Service_Gmail_WatchRequest');
+\class_alias(\WPMailSMTP\Vendor\Google\Service\Gmail\WatchRequest::class, 'WPMailSMTP\\Vendor\\Google_Service_Gmail_WatchRequest');

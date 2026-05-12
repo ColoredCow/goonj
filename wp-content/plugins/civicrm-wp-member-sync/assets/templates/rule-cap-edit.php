@@ -39,7 +39,7 @@ defined( 'ABSPATH' ) || exit;
 
 	<p><?php esc_html_e( 'An additional Membership Status Capability will also be added to the WordPress User that is tied to the status of their Membership. This Capability will be of the form "civimember_ID_NUM", where "ID" is the numeric ID of the Membership Type and "NUM" is the numeric ID of the Membership Status. So, for Membership Type 2 with Membership Status 4, the Capability will be "civimember_2_4".', 'civicrm-wp-member-sync' ); ?></p>
 
-	<form method="post" id="civi_wp_member_sync_rules_form" action="<?php echo esc_url( $this->admin_form_url_get() ); ?>">
+	<form method="post" id="civi_wp_member_sync_rules_form" action="<?php echo $this->admin_form_url_get(); ?>">
 
 		<?php wp_nonce_field( 'civi_wp_member_sync_rule_action', 'civi_wp_member_sync_nonce' ); ?>
 
@@ -50,7 +50,7 @@ defined( 'ABSPATH' ) || exit;
 					<label class="civi_member_type_id_label" for="civi_member_type_id"><?php esc_html_e( 'CiviMember Membership Type', 'civicrm-wp-member-sync' ); ?> <span class="required">*</span></label>
 				</th>
 				<td>
-					<select name="civi_member_type_id" id="civi_member_type_id" class="required required-type">
+					<select name="civi_member_type_id" id="civi_member_type_id" class ="required required-type">
 						<?php foreach ( $membership_types as $key => $value ) : ?>
 							<option value="<?php echo esc_attr( $key ); ?>"<?php selected( $civi_member_type_id, $key ); ?>><?php echo esc_html( $value ); ?></option>
 						<?php endforeach; ?>
@@ -64,7 +64,7 @@ defined( 'ABSPATH' ) || exit;
 				</th>
 				<td>
 					<?php foreach ( $status_rules as $key => $value ) : ?>
-						<input type="checkbox" class="required-current current-<?php echo esc_attr( $key ); ?>" name="<?php echo esc_attr( 'current[' . $key . ']' ); ?>" id="<?php echo esc_attr( 'current[' . $key . ']' ); ?>" value="<?php echo esc_attr( $key ); ?>"<?php checked( array_search( $key, $current_rule, true ), $key ); ?> />
+						<input type="checkbox" class="required-current current-<?php echo esc_attr( $key ); ?>" name="<?php echo esc_attr( 'current[' . $key . ']' ); ?>" id="<?php echo esc_attr( 'current[' . $key . ']' ); ?>" value="<?php echo esc_attr( $key ); ?>"<?php checked( array_search( $key, $current_rule ), $key ); ?> />
 						<label for="<?php echo esc_attr( 'current[' . $key . ']' ); ?>"><?php echo esc_html( $value ); ?></label><br />
 					<?php endforeach; ?>
 				</td>
@@ -90,7 +90,7 @@ defined( 'ABSPATH' ) || exit;
 				</th>
 				<td>
 				<?php foreach ( $status_rules as $key => $value ) : ?>
-					<input type="checkbox" class="required-expire expire-<?php echo esc_attr( $key ); ?>" name="<?php echo esc_attr( 'expire[' . $key . ']' ); ?>" id="<?php echo esc_attr( 'expire[' . $key . ']' ); ?>" value="<?php echo esc_attr( $key ); ?>"<?php checked( array_search( $key, $expiry_rule, true ), $key ); ?> />
+					<input type="checkbox" class="required-expire expire-<?php echo esc_attr( $key ); ?>" name="<?php echo esc_attr( 'expire[' . $key . ']' ); ?>" id="<?php echo esc_attr( 'expire[' . $key . ']' ); ?>" value="<?php echo esc_attr( $key ); ?>"<?php checked( array_search( $key, $expiry_rule ), $key ); ?> />
 					<label for="<?php echo esc_attr( 'expire[' . $key . ']' ); ?>"><?php echo esc_html( $value ); ?></label><br />
 				<?php endforeach; ?>
 				</td>

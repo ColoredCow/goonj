@@ -580,33 +580,7 @@ function wp_render_layout_support_flag( $block_content, $block ) {
 
 	// Child layout specific logic.
 	if ( $child_layout ) {
-		/*
-		 * Generates a unique class for child block layout styles.
-		 *
-		 * To ensure consistent class generation across different page renders,
-		 * only properties that affect layout styling are used. These properties
-		 * come from `$block['attrs']['style']['layout']` and `$block['parentLayout']`.
-		 *
-		 * As long as these properties coincide, the generated class will be the same.
-		 */
-		$container_content_class = wp_unique_id_from_values(
-			array(
-				'layout'       => array_intersect_key(
-					$block['attrs']['style']['layout'] ?? array(),
-					array_flip(
-						array( 'selfStretch', 'flexSize', 'columnStart', 'columnSpan', 'rowStart', 'rowSpan' )
-					)
-				),
-				'parentLayout' => array_intersect_key(
-					$block['parentLayout'] ?? array(),
-					array_flip(
-						array( 'minimumColumnWidth', 'columnCount' )
-					)
-				),
-			),
-			'wp-container-content-'
-		);
-
+		$container_content_class   = wp_unique_prefixed_id( 'wp-container-content-' );
 		$child_layout_declarations = array();
 		$child_layout_styles       = array();
 
@@ -732,6 +706,16 @@ function wp_render_layout_support_flag( $block_content, $block ) {
 	$class_names        = array();
 	$layout_definitions = wp_get_layout_definitions();
 
+	/*
+	 * Uses an incremental ID that is independent per prefix to make sure that
+	 * rendering different numbers of blocks doesn't affect the IDs of other
+	 * blocks. Makes the CSS class names stable across paginations
+	 * for features like the enhanced pagination of the Query block.
+	 */
+	$container_class = wp_unique_prefixed_id(
+		'wp-container-' . sanitize_title( $block['blockName'] ) . '-is-layout-'
+	);
+
 	// Set the correct layout type for blocks using legacy content width.
 	if ( isset( $used_layout['inherit'] ) && $used_layout['inherit'] || isset( $used_layout['contentSize'] ) && $used_layout['contentSize'] ) {
 		$used_layout['type'] = 'constrained';
@@ -822,25 +806,6 @@ function wp_render_layout_support_flag( $block_content, $block ) {
 			: null;
 		$has_block_gap_support = isset( $block_gap );
 
-		/*
-		 * Generates a unique ID based on all the data required to obtain the
-		 * corresponding layout style. Keeps the CSS class names the same
-		 * even for different blocks on different places, as long as they have
-		 * the same layout definition. Makes the CSS class names stable across
-		 * paginations for features like the enhanced pagination of the Query block.
-		 */
-		$container_class = wp_unique_id_from_values(
-			array(
-				$used_layout,
-				$has_block_gap_support,
-				$gap_value,
-				$should_skip_gap_serialization,
-				$fallback_gap_value,
-				$block_spacing,
-			),
-			'wp-container-' . sanitize_title( $block['blockName'] ) . '-is-layout-'
-		);
-
 		$style = wp_get_layout_style(
 			".$container_class",
 			$used_layout,
@@ -858,9 +823,8 @@ function wp_render_layout_support_flag( $block_content, $block ) {
 	}
 
 	// Add combined layout and block classname for global styles to hook onto.
-	$split_block_name = explode( '/', $block['blockName'] );
-	$full_block_name  = 'core' === $split_block_name[0] ? end( $split_block_name ) : implode( '-', $split_block_name );
-	$class_names[]    = 'wp-block-' . $full_block_name . '-' . $layout_classname;
+	$block_name    = explode( '/', $block['blockName'] );
+	$class_names[] = 'wp-block-' . end( $block_name ) . '-' . $layout_classname;
 
 	// Add classes to the outermost HTML tag if necessary.
 	if ( ! empty( $outer_class_names ) ) {
@@ -995,7 +959,6 @@ add_filter( 'render_block', 'wp_render_layout_support_flag', 10, 2 );
  * to avoid breaking styles relying on that div.
  *
  * @since 5.8.0
- * @since 6.6.1 Removed inner container from Grid variations.
  * @access private
  *
  * @param string $block_content Rendered block content.
@@ -1012,7 +975,7 @@ function wp_restore_group_inner_container( $block_content, $block ) {
 	if (
 		wp_theme_has_theme_json() ||
 		1 === preg_match( $group_with_inner_container_regex, $block_content ) ||
-		( isset( $block['attrs']['layout']['type'] ) && ( 'flex' === $block['attrs']['layout']['type'] || 'grid' === $block['attrs']['layout']['type'] ) )
+		( isset( $block['attrs']['layout']['type'] ) && 'flex' === $block['attrs']['layout']['type'] )
 	) {
 		return $block_content;
 	}
@@ -1074,53 +1037,50 @@ add_filter( 'render_block_core/group', 'wp_restore_group_inner_container', 10, 2
  * @return string Filtered block content.
  */
 function wp_restore_image_outer_container( $block_content, $block ) {
-	if ( wp_theme_has_theme_json() ) {
-		return $block_content;
-	}
+	$image_with_align = "
+/# 1) everything up to the class attribute contents
+(
+	^\s*
+	<figure\b
+	[^>]*
+	\bclass=
+	[\"']
+)
+# 2) the class attribute contents
+(
+	[^\"']*
+	\bwp-block-image\b
+	[^\"']*
+	\b(?:alignleft|alignright|aligncenter)\b
+	[^\"']*
+)
+# 3) everything after the class attribute contents
+(
+	[\"']
+	[^>]*
+	>
+	.*
+	<\/figure>
+)/iUx";
 
-	$figure_processor = new WP_HTML_Tag_Processor( $block_content );
 	if (
-		! $figure_processor->next_tag( 'FIGURE' ) ||
-		! $figure_processor->has_class( 'wp-block-image' ) ||
-		! (
-			$figure_processor->has_class( 'alignleft' ) ||
-			$figure_processor->has_class( 'aligncenter' ) ||
-			$figure_processor->has_class( 'alignright' )
-		)
+		wp_theme_has_theme_json() ||
+		0 === preg_match( $image_with_align, $block_content, $matches )
 	) {
 		return $block_content;
 	}
 
-	/*
-	 * The next section of code wraps the existing figure in a new DIV element.
-	 * While doing it, it needs to transfer the layout and the additional CSS
-	 * class names from the original figure upward to the wrapper.
-	 *
-	 * Example:
-	 *
-	 *     // From this…
-	 *     <!-- wp:image {"className":"hires"} -->
-	 *     <figure class="wp-block-image wide hires">…
-	 *
-	 *     // To this…
-	 *     <div class="wp-block-image hires"><figure class="wide">…
-	 */
-	$wrapper_processor = new WP_HTML_Tag_Processor( '<div>' );
-	$wrapper_processor->next_token();
-	$wrapper_processor->set_attribute(
-		'class',
-		is_string( $block['attrs']['className'] ?? null )
-			? "wp-block-image {$block['attrs']['className']}"
-			: 'wp-block-image'
-	);
+	$wrapper_classnames = array( 'wp-block-image' );
 
-	// And remove them from the existing content; it has been transferred upward.
-	$figure_processor->remove_class( 'wp-block-image' );
-	foreach ( $wrapper_processor->class_list() as $class_name ) {
-		$figure_processor->remove_class( $class_name );
+	// If the block has a classNames attribute these classnames need to be removed from the content and added back
+	// to the new wrapper div also.
+	if ( ! empty( $block['attrs']['className'] ) ) {
+		$wrapper_classnames = array_merge( $wrapper_classnames, explode( ' ', $block['attrs']['className'] ) );
 	}
+	$content_classnames          = explode( ' ', $matches[2] );
+	$filtered_content_classnames = array_diff( $content_classnames, $wrapper_classnames );
 
-	return "{$wrapper_processor->get_updated_html()}{$figure_processor->get_updated_html()}</div>";
+	return '<div class="' . implode( ' ', $wrapper_classnames ) . '">' . $matches[1] . implode( ' ', $filtered_content_classnames ) . $matches[3] . '</div>';
 }
 
 add_filter( 'render_block_core/image', 'wp_restore_image_outer_container', 10, 2 );

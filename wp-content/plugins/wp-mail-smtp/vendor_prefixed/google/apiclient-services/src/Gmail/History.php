@@ -24,15 +24,15 @@ class History extends \WPMailSMTP\Vendor\Google\Collection
      * @var string
      */
     public $id;
-    protected $labelsAddedType = HistoryLabelAdded::class;
+    protected $labelsAddedType = \WPMailSMTP\Vendor\Google\Service\Gmail\HistoryLabelAdded::class;
     protected $labelsAddedDataType = 'array';
-    protected $labelsRemovedType = HistoryLabelRemoved::class;
+    protected $labelsRemovedType = \WPMailSMTP\Vendor\Google\Service\Gmail\HistoryLabelRemoved::class;
     protected $labelsRemovedDataType = 'array';
-    protected $messagesType = Message::class;
+    protected $messagesType = \WPMailSMTP\Vendor\Google\Service\Gmail\Message::class;
     protected $messagesDataType = 'array';
-    protected $messagesAddedType = HistoryMessageAdded::class;
+    protected $messagesAddedType = \WPMailSMTP\Vendor\Google\Service\Gmail\HistoryMessageAdded::class;
     protected $messagesAddedDataType = 'array';
-    protected $messagesDeletedType = HistoryMessageDeleted::class;
+    protected $messagesDeletedType = \WPMailSMTP\Vendor\Google\Service\Gmail\HistoryMessageDeleted::class;
     protected $messagesDeletedDataType = 'array';
     /**
      * @param string
@@ -120,4 +120,4 @@ class History extends \WPMailSMTP\Vendor\Google\Collection
     }
 }
 // Adding a class alias for backwards compatibility with the previous class name.
-\class_alias(History::class, 'WPMailSMTP\\Vendor\\Google_Service_Gmail_History');
+\class_alias(\WPMailSMTP\Vendor\Google\Service\Gmail\History::class, 'WPMailSMTP\\Vendor\\Google_Service_Gmail_History');

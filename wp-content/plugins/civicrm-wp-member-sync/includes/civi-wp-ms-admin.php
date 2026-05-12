@@ -142,15 +142,6 @@ class Civi_WP_Member_Sync_Admin {
 	public $select2 = false;
 
 	/**
-	 * Admin page URLs array.
-	 *
-	 * @since 0.1
-	 * @access public
-	 * @var array
-	 */
-	public $urls;
-
-	/**
 	 * Constructor.
 	 *
 	 * @since 0.1
@@ -565,7 +556,7 @@ class Civi_WP_Member_Sync_Admin {
 		];
 
 		// This tweaks the Settings subnav menu to show only one menu item.
-		if ( in_array( $plugin_page, $subpages, true ) ) {
+		if ( in_array( $plugin_page, $subpages ) ) {
 			// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 			$plugin_page = 'civi_wp_member_sync_parent';
 			// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
@@ -737,7 +728,7 @@ class Civi_WP_Member_Sync_Admin {
 		];
 
 		// Maybe override select2.
-		if ( in_array( 'civi_wp_member_sync_select2_js', $dependencies, true ) ) {
+		if ( in_array( 'civi_wp_member_sync_select2_js', $dependencies ) ) {
 			$vars['select2'] = 'yes';
 		}
 
@@ -855,7 +846,7 @@ class Civi_WP_Member_Sync_Admin {
 		];
 
 		// Kick out if not our screen.
-		if ( ! in_array( $screen->id, $pages, true ) ) {
+		if ( ! in_array( $screen->id, $pages ) ) {
 			return $screen;
 		}
 
@@ -1428,7 +1419,8 @@ class Civi_WP_Member_Sync_Admin {
 	public function admin_form_url_get() {
 
 		// Sanitise admin page url.
-		$target_url = isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		$target_url = isset( $_SERVER['REQUEST_URI'] ) ? wp_unslash( $_SERVER['REQUEST_URI'] ) : '';
 		if ( ! empty( $target_url ) ) {
 			$url_array = explode( '&', $target_url );
 			if ( $url_array ) {

@@ -10,7 +10,7 @@ use WPMailSMTP\Vendor\Psr\Http\Message\RequestInterface;
  *
  * Example: the target host name can not be resolved or the connection failed.
  */
-interface NetworkExceptionInterface extends ClientExceptionInterface
+interface NetworkExceptionInterface extends \WPMailSMTP\Vendor\Psr\Http\Client\ClientExceptionInterface
 {
     /**
      * Returns the request.
@@ -19,5 +19,5 @@ interface NetworkExceptionInterface extends ClientExceptionInterface
      *
      * @return RequestInterface
      */
-    public function getRequest() : RequestInterface;
+    public function getRequest() : \WPMailSMTP\Vendor\Psr\Http\Message\RequestInterface;
 }

@@ -27,17 +27,11 @@ jQuery( function($) {
 	 * @return {void}
 	 */
 	updateWelcomePanel = function( visible ) {
-		$.post(
-			ajaxurl,
-			{
-				action: 'update-welcome-panel',
-				visible: visible,
-				welcomepanelnonce: $( '#welcomepanelnonce' ).val()
-			},
-			function() {
-				wp.a11y.speak( wp.i18n.__( 'Screen Options updated.' ) );
-			}
-		);
+		$.post( ajaxurl, {
+			action: 'update-welcome-panel',
+			visible: visible,
+			welcomepanelnonce: $( '#welcomepanelnonce' ).val()
+		});
 	};
 
 	// Unhide the welcome panel if the Welcome Option checkbox is checked.

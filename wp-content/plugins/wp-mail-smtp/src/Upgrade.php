@@ -15,7 +15,7 @@ class Upgrade {
 	 *
 	 * @since 1.1.0
 	 */
-	public function __construct() { }
+	public function __construct() {}
 
 	/**
 	 * Run upgrades.
@@ -32,9 +32,7 @@ class Upgrade {
 
 		// Run any available upgrades.
 		foreach ( $upgrades as $upgrade ) {
-			if ( is_callable( $upgrade ) ) {
-				$upgrade();
-			}
+			$this->{$upgrade}();
 		}
 
 		// Update version post upgrade(s).
@@ -50,21 +48,12 @@ class Upgrade {
 	 */
 	protected function upgrades() {
 
-		$version = get_option( 'wp_mail_smtp_version' );
-
-		/**
-		 * Filters the list of upgrade callbacks to run.
-		 *
-		 * @since 4.4.0
-		 *
-		 * @param array  $upgrades List of upgrade callbacks to run.
-		 * @param string $version  Latest installed version of the plugin.
-		 */
-		$upgrades = apply_filters( 'wp_mail_smtp_upgrade_upgrades', [], $version );
+		$version  = get_option( 'wp_mail_smtp_version' );
+		$upgrades = array();
 
 		// Version 1.1.0 upgrade; prior to this the option was not available.
 		if ( empty( $version ) ) {
-			$upgrades[] = [ $this, 'v110_upgrade' ];
+			$upgrades[] = 'v110_upgrade';
 		}
 
 		return $upgrades;

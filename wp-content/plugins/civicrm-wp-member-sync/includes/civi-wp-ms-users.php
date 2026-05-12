@@ -32,15 +32,6 @@ class Civi_WP_Member_Sync_Users {
 	public $plugin;
 
 	/**
-	 * Role names array.
-	 *
-	 * @since 0.1
-	 * @access public
-	 * @var array
-	 */
-	public $role_names;
-
-	/**
 	 * Constructor.
 	 *
 	 * @since 0.1
@@ -122,7 +113,7 @@ class Civi_WP_Member_Sync_Users {
 		foreach ( $user->roles as $role ) {
 
 			// Return the first valid one.
-			if ( $role && in_array( $role, $filtered_roles, true ) ) {
+			if ( $role && in_array( $role, $filtered_roles ) ) {
 				return $role;
 			}
 
@@ -168,7 +159,7 @@ class Civi_WP_Member_Sync_Users {
 		foreach ( $user->roles as $role ) {
 
 			// Add Role to return array if it's a "blog" Role.
-			if ( $role && in_array( $role, $filtered_roles, true ) ) {
+			if ( $role && in_array( $role, $filtered_roles ) ) {
 				$user_roles[] = $role;
 			}
 

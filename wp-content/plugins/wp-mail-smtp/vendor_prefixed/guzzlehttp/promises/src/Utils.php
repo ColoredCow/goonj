@@ -20,13 +20,13 @@ final class Utils
      *
      * @param TaskQueueInterface|null $assign Optionally specify a new queue instance.
      */
-    public static function queue(?TaskQueueInterface $assign = null) : TaskQueueInterface
+    public static function queue(\WPMailSMTP\Vendor\GuzzleHttp\Promise\TaskQueueInterface $assign = null) : \WPMailSMTP\Vendor\GuzzleHttp\Promise\TaskQueueInterface
     {
         static $queue;
         if ($assign) {
             $queue = $assign;
         } elseif (!$queue) {
-            $queue = new TaskQueue();
+            $queue = new \WPMailSMTP\Vendor\GuzzleHttp\Promise\TaskQueue();
         }
         return $queue;
     }
@@ -36,13 +36,13 @@ final class Utils
      *
      * @param callable $task Task function to run.
      */
-    public static function task(callable $task) : PromiseInterface
+    public static function task(callable $task) : \WPMailSMTP\Vendor\GuzzleHttp\Promise\PromiseInterface
     {
         $queue = self::queue();
-        $promise = new Promise([$queue, 'run']);
+        $promise = new \WPMailSMTP\Vendor\GuzzleHttp\Promise\Promise([$queue, 'run']);
         $queue->add(function () use($task, $promise) : void {
             try {
-                if (Is::pending($promise)) {
+                if (\WPMailSMTP\Vendor\GuzzleHttp\Promise\Is::pending($promise)) {
                     $promise->resolve($task());
                 }
             } catch (\Throwable $e) {
@@ -63,14 +63,14 @@ final class Utils
      *
      * @param PromiseInterface $promise Promise or value.
      */
-    public static function inspect(PromiseInterface $promise) : array
+    public static function inspect(\WPMailSMTP\Vendor\GuzzleHttp\Promise\PromiseInterface $promise) : array
     {
         try {
-            return ['state' => PromiseInterface::FULFILLED, 'value' => $promise->wait()];
-        } catch (RejectionException $e) {
-            return ['state' => PromiseInterface::REJECTED, 'reason' => $e->getReason()];
+            return ['state' => \WPMailSMTP\Vendor\GuzzleHttp\Promise\PromiseInterface::FULFILLED, 'value' => $promise->wait()];
+        } catch (\WPMailSMTP\Vendor\GuzzleHttp\Promise\RejectionException $e) {
+            return ['state' => \WPMailSMTP\Vendor\GuzzleHttp\Promise\PromiseInterface::REJECTED, 'reason' => $e->getReason()];
         } catch (\Throwable $e) {
-            return ['state' => PromiseInterface::REJECTED, 'reason' => $e];
+            return ['state' => \WPMailSMTP\Vendor\GuzzleHttp\Promise\PromiseInterface::REJECTED, 'reason' => $e];
         }
     }
     /**
@@ -121,15 +121,13 @@ final class Utils
      * @param mixed $promises  Promises or values.
      * @param bool  $recursive If true, resolves new promises that might have been added to the stack during its own resolution.
      */
-    public static function all($promises, bool $recursive = \false) : PromiseInterface
+    public static function all($promises, bool $recursive = \false) : \WPMailSMTP\Vendor\GuzzleHttp\Promise\PromiseInterface
     {
         $results = [];
-        $promise = Each::of($promises, function ($value, $idx) use(&$results) : void {
+        $promise = \WPMailSMTP\Vendor\GuzzleHttp\Promise\Each::of($promises, function ($value, $idx) use(&$results) : void {
             $results[$idx] = $value;
-        }, function ($reason, $idx, Promise $aggregate) : void {
-            if (Is::pending($aggregate)) {
-                $aggregate->reject($reason);
-            }
+        }, function ($reason, $idx, \WPMailSMTP\Vendor\GuzzleHttp\Promise\Promise $aggregate) : void {
+            $aggregate->reject($reason);
         })->then(function () use(&$results) {
             \ksort($results);
             return $results;
@@ -137,7 +135,7 @@ final class Utils
         if (\true === $recursive) {
             $promise = $promise->then(function ($results) use($recursive, &$promises) {
                 foreach ($promises as $promise) {
-                    if (Is::pending($promise)) {
+                    if (\WPMailSMTP\Vendor\GuzzleHttp\Promise\Is::pending($promise)) {
                         return self::all($promises, $recursive);
                     }
                 }
@@ -160,12 +158,12 @@ final class Utils
      * @param int   $count    Total number of promises.
      * @param mixed $promises Promises or values.
      */
-    public static function some(int $count, $promises) : PromiseInterface
+    public static function some(int $count, $promises) : \WPMailSMTP\Vendor\GuzzleHttp\Promise\PromiseInterface
     {
         $results = [];
         $rejections = [];
-        return Each::of($promises, function ($value, $idx, PromiseInterface $p) use(&$results, $count) : void {
-            if (Is::settled($p)) {
+        return \WPMailSMTP\Vendor\GuzzleHttp\Promise\Each::of($promises, function ($value, $idx, \WPMailSMTP\Vendor\GuzzleHttp\Promise\PromiseInterface $p) use(&$results, $count) : void {
+            if (\WPMailSMTP\Vendor\GuzzleHttp\Promise\Is::settled($p)) {
                 return;
             }
             $results[$idx] = $value;
@@ -176,7 +174,7 @@ final class Utils
             $rejections[] = $reason;
         })->then(function () use(&$results, &$rejections, $count) {
             if (\count($results) !== $count) {
-                throw new AggregateException('Not enough promises to fulfill count', $rejections);
+                throw new \WPMailSMTP\Vendor\GuzzleHttp\Promise\AggregateException('Not enough promises to fulfill count', $rejections);
             }
             \ksort($results);
             return \array_values($results);
@@ -188,7 +186,7 @@ final class Utils
      *
      * @param mixed $promises Promises or values.
      */
-    public static function any($promises) : PromiseInterface
+    public static function any($promises) : \WPMailSMTP\Vendor\GuzzleHttp\Promise\PromiseInterface
     {
         return self::some(1, $promises)->then(function ($values) {
             return $values[0];
@@ -204,13 +202,13 @@ final class Utils
      *
      * @param mixed $promises Promises or values.
      */
-    public static function settle($promises) : PromiseInterface
+    public static function settle($promises) : \WPMailSMTP\Vendor\GuzzleHttp\Promise\PromiseInterface
     {
         $results = [];
-        return Each::of($promises, function ($value, $idx) use(&$results) : void {
-            $results[$idx] = ['state' => PromiseInterface::FULFILLED, 'value' => $value];
+        return \WPMailSMTP\Vendor\GuzzleHttp\Promise\Each::of($promises, function ($value, $idx) use(&$results) : void {
+            $results[$idx] = ['state' => \WPMailSMTP\Vendor\GuzzleHttp\Promise\PromiseInterface::FULFILLED, 'value' => $value];
         }, function ($reason, $idx) use(&$results) : void {
-            $results[$idx] = ['state' => PromiseInterface::REJECTED, 'reason' => $reason];
+            $results[$idx] = ['state' => \WPMailSMTP\Vendor\GuzzleHttp\Promise\PromiseInterface::REJECTED, 'reason' => $reason];
         })->then(function () use(&$results) {
             \ksort($results);
             return $results;

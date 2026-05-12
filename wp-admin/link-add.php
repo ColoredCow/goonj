@@ -14,7 +14,7 @@ if ( ! current_user_can( 'manage_links' ) ) {
 }
 
 // Used in the HTML title tag.
-$title       = __( 'Add Link' );
+$title       = __( 'Add New Link' );
 $parent_file = 'link-manager.php';
 
 $action  = ! empty( $_REQUEST['action'] ) ? sanitize_text_field( $_REQUEST['action'] ) : '';

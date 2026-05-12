@@ -9,7 +9,7 @@ use WPMailSMTP\Vendor\Psr\Http\Message\StreamInterface;
  *
  * This is a read-only stream decorator.
  */
-final class AppendStream implements StreamInterface
+final class AppendStream implements \WPMailSMTP\Vendor\Psr\Http\Message\StreamInterface
 {
     /** @var StreamInterface[] Streams being decorated */
     private $streams = [];
@@ -49,7 +49,7 @@ final class AppendStream implements StreamInterface
      *
      * @throws \InvalidArgumentException if the stream is not readable
      */
-    public function addStream(StreamInterface $stream) : void
+    public function addStream(\WPMailSMTP\Vendor\Psr\Http\Message\StreamInterface $stream) : void
     {
         if (!$stream->isReadable()) {
             throw new \InvalidArgumentException('Each stream must be readable');
@@ -62,7 +62,7 @@ final class AppendStream implements StreamInterface
     }
     public function getContents() : string
     {
-        return Utils::copyToString($this);
+        return \WPMailSMTP\Vendor\GuzzleHttp\Psr7\Utils::copyToString($this);
     }
     /**
      * Closes each attached stream.

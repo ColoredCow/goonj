@@ -4,17 +4,17 @@ Plugin Name: Wordfence Security
 Plugin URI: https://www.wordfence.com/
 Description: Wordfence Security - Anti-virus, Firewall and Malware Scan
 Author: Wordfence
-Version: 8.2.0
+Version: 7.11.7
 Author URI: https://www.wordfence.com/
 Text Domain: wordfence
 Domain Path: /languages
 Network: true
-Requires at least: 4.7
-Requires PHP: 7.0
+Requires at least: 3.9
+Requires PHP: 5.5
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
-@copyright Copyright (C) 2012-2026 Defiant Inc.
+@copyright Copyright (C) 2012-2023 Defiant Inc.
 @license http://www.gnu.org/licenses/gpl-3.0.html GNU General Public License, version 3 or higher
 
 This program is free software: you can redistribute it and/or modify
@@ -38,8 +38,8 @@ if(defined('WP_INSTALLING') && WP_INSTALLING){
 if (!defined('ABSPATH')) {
 	exit;
 }
-define('WORDFENCE_VERSION', '8.2.0');
-define('WORDFENCE_BUILD_NUMBER', '1777414075');
+define('WORDFENCE_VERSION', '7.11.7');
+define('WORDFENCE_BUILD_NUMBER', '1722265817');
 define('WORDFENCE_BASENAME', function_exists('plugin_basename') ? plugin_basename(__FILE__) :
 	basename(dirname(__FILE__)) . '/' . basename(__FILE__));
 
@@ -71,8 +71,6 @@ require(dirname(__FILE__) . '/lib/wfVersionSupport.php');
 /**
  * @var string $wfPHPDeprecatingVersion
  * @var string $wfPHPMinimumVersion
- * @var string $wfWordPressDeprecatingVersion
- * @var string $wfWordPressMinimumVersion
  */
 
 if (!defined('WF_PHP_UNSUPPORTED')) {
@@ -88,27 +86,11 @@ if (WF_PHP_UNSUPPORTED) {
 	return;
 }
 
-if (!defined('WF_WP_UNSUPPORTED')) {
-	require(ABSPATH . 'wp-includes/version.php'); /** @var string $wp_version */
-	define('WF_WP_UNSUPPORTED', version_compare($wp_version, $wfWordPressMinimumVersion, '<'));
-}
-
-if (WF_WP_UNSUPPORTED) {
-	add_action('all_admin_notices', 'wfUnsupportedWPOverlay');
-	
-	function wfUnsupportedWPOverlay() {
-		include "views/unsupported-wp/admin-message.php";
-	}
-	return;
-}
-
 if(get_option('wordfenceActivated') != 1){
 	add_action('activated_plugin','wordfence_save_activation_error'); function wordfence_save_activation_error(){ update_option('wf_plugin_act_error',  ob_get_contents()); }
 }
 if(! defined('WORDFENCE_VERSIONONLY_MODE')){ //Used to get version from file.
-	//Duplicate block of wfUtils::memoryLimit(), copied here to avoid needing to include the class at this point of execution
-	$maxMemory = ini_get('memory_limit');
-	if (!(is_string($maxMemory) || is_numeric($maxMemory)) || !preg_match('/^\s*\d+[GMK]?\s*$/i', $maxMemory)) { $maxMemory = '128M'; } //Invalid or unreadable value, default to our minimum
+	$maxMemory = @ini_get('memory_limit');
 	$last = strtolower(substr($maxMemory, -1));
 	$maxMemory = (int) $maxMemory;
 	
@@ -117,8 +99,7 @@ if(! defined('WORDFENCE_VERSIONONLY_MODE')){ //Used to get version from file.
 	else if ($last == 'k') { $maxMemory = $maxMemory * 1024; }
 	
 	if ($maxMemory < 134217728 /* 128 MB */ && $maxMemory > 0 /* Unlimited */) {
-		$disabled = ini_get('disable_functions');
-		if (!is_string($disabled) || strpos(ini_get('disable_functions'), 'ini_set') === false) {
+		if (strpos(ini_get('disable_functions'), 'ini_set') === false) {
 			@ini_set('memory_limit', '128M'); //Some hosts have ini set at as little as 32 megs. 128 is the min sane amount of memory.
 		}
 	}
@@ -141,7 +122,6 @@ if(! defined('WORDFENCE_VERSIONONLY_MODE')){ //Used to get version from file.
 
 	//Load
 	require_once(dirname(__FILE__) . '/lib/wordfenceConstants.php');
-	require_once(dirname(__FILE__) . '/lib/wfI18n.php');
 	require_once(dirname(__FILE__) . '/lib/wordfenceClass.php');
 	wordfence::install_actions();
 }
