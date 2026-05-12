@@ -41,8 +41,12 @@ class URE_Ajax_Processor {
     
     
     protected function get_required_cap() {
-        
-        if ( $this->action=='grant_roles' || $this->action=='get_user_roles' ) {
+        $promote_users_actions = array(
+            'grant_roles',
+            'add_role_to_user',
+            'revoke_role_from_user'
+        );
+        if ( in_array( $this->action, $promote_users_actions ) ) {
             $cap = 'promote_users';
         } else {
             $cap = URE_Own_Capabilities::get_key_capability();
@@ -225,6 +229,17 @@ class URE_Ajax_Processor {
     }
     // end of get_users_without_role()
     
+
+    protected function get_grant_roles() {
+        
+        $answer = URE_Grant_Roles::get_dialog_html();
+        
+        return $answer;
+        
+    }
+    // end of get_grant_roles_dialog_html()
+    
+
     
     protected function grant_roles() {
         
@@ -234,18 +249,28 @@ class URE_Ajax_Processor {
         
     }
     // end of grant_roles()
+
     
-    
-    protected function get_user_roles() {
+    protected function add_role_to_user() {
         
-        $answer = URE_Grant_Roles::get_user_roles();
+        $answer = URE_Grant_Roles::add_role();
         
         return $answer;
         
     }
-    // end of get_user_roles()
+    // end of add_role_to_user()
+
     
+    protected function revoke_role_from_user() {
+        
+        $answer = URE_Grant_Roles::revoke_role();
+        
+        return $answer;
+        
+    }
+    // end of add_role_to_user()
     
+        
     protected function get_role_caps() {
         
         $role = $this->lib->get_request_var('role', 'post' );
@@ -326,11 +351,17 @@ class URE_Ajax_Processor {
             case 'get_users_without_role':
                 $answer = $this->get_users_without_role();
                 break;
+            case 'get_grant_roles':
+                $answer = $this->get_grant_roles();
+                break;
             case 'grant_roles':
                 $answer = $this->grant_roles();
                 break;
-            case 'get_user_roles':
-                $answer = $this->get_user_roles();
+            case 'add_role_to_user':
+                $answer = $this->add_role_to_user();
+                break;
+            case 'revoke_role_from_user':
+                $answer = $this->revoke_role_from_user();
                 break;
             case 'get_role_caps': 
                 $answer = $this->get_role_caps();

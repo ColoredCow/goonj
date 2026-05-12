@@ -2,6 +2,7 @@
 
 namespace WPMailSMTP\Vendor\GuzzleHttp\Handler;
 
+use Closure;
 use WPMailSMTP\Vendor\GuzzleHttp\Promise as P;
 use WPMailSMTP\Vendor\GuzzleHttp\Promise\Promise;
 use WPMailSMTP\Vendor\GuzzleHttp\Promise\PromiseInterface;
@@ -59,10 +60,10 @@ class CurlMultiHandler
      */
     public function __construct(array $options = [])
     {
-        $this->factory = $options['handle_factory'] ?? new \WPMailSMTP\Vendor\GuzzleHttp\Handler\CurlFactory(50);
+        $this->factory = $options['handle_factory'] ?? new CurlFactory(50);
         if (isset($options['select_timeout'])) {
             $this->selectTimeout = $options['select_timeout'];
-        } elseif ($selectTimeout = \WPMailSMTP\Vendor\GuzzleHttp\Utils::getenv('GUZZLE_CURL_SELECT_TIMEOUT')) {
+        } elseif ($selectTimeout = Utils::getenv('GUZZLE_CURL_SELECT_TIMEOUT')) {
             @\trigger_error('Since guzzlehttp/guzzle 7.2.0: Using environment variable GUZZLE_CURL_SELECT_TIMEOUT is deprecated. Use option "select_timeout" instead.', \E_USER_DEPRECATED);
             $this->selectTimeout = (int) $selectTimeout;
         } else {
@@ -104,11 +105,11 @@ class CurlMultiHandler
             unset($this->_mh);
         }
     }
-    public function __invoke(\WPMailSMTP\Vendor\Psr\Http\Message\RequestInterface $request, array $options) : \WPMailSMTP\Vendor\GuzzleHttp\Promise\PromiseInterface
+    public function __invoke(RequestInterface $request, array $options) : PromiseInterface
     {
         $easy = $this->factory->create($request, $options);
         $id = (int) $easy->handle;
-        $promise = new \WPMailSMTP\Vendor\GuzzleHttp\Promise\Promise([$this, 'execute'], function () use($id) {
+        $promise = new Promise([$this, 'execute'], function () use($id) {
             return $this->cancel($id);
         });
         $this->addRequest(['easy' => $easy, 'deferred' => $promise]);
@@ -121,7 +122,7 @@ class CurlMultiHandler
     {
         // Add any delayed handles if needed.
         if ($this->delays) {
-            $currentTime = \WPMailSMTP\Vendor\GuzzleHttp\Utils::currentTime();
+            $currentTime = Utils::currentTime();
             foreach ($this->delays as $id => $delay) {
                 if ($currentTime >= $delay) {
                     unset($this->delays[$id]);
@@ -129,23 +130,37 @@ class CurlMultiHandler
                 }
             }
         }
+        // Run curl_multi_exec in the queue to enable other async tasks to run
+        P\Utils::queue()->add(Closure::fromCallable([$this, 'tickInQueue']));
         // Step through the task queue which may add additional requests.
-        \WPMailSMTP\Vendor\GuzzleHttp\Promise\Utils::queue()->run();
+        P\Utils::queue()->run();
         if ($this->active && \curl_multi_select($this->_mh, $this->selectTimeout) === -1) {
             // Perform a usleep if a select returns -1.
             // See: https://bugs.php.net/bug.php?id=61141
             \usleep(250);
         }
         while (\curl_multi_exec($this->_mh, $this->active) === \CURLM_CALL_MULTI_PERFORM) {
+            // Prevent busy looping for slow HTTP requests.
+            \curl_multi_select($this->_mh, $this->selectTimeout);
         }
         $this->processMessages();
+    }
+    /**
+     * Runs \curl_multi_exec() inside the event loop, to prevent busy looping
+     */
+    private function tickInQueue() : void
+    {
+        if (\curl_multi_exec($this->_mh, $this->active) === \CURLM_CALL_MULTI_PERFORM) {
+            \curl_multi_select($this->_mh, 0);
+            P\Utils::queue()->add(Closure::fromCallable([$this, 'tickInQueue']));
+        }
     }
     /**
      * Runs until all outstanding connections have completed.
      */
     public function execute() : void
     {
-        $queue = \WPMailSMTP\Vendor\GuzzleHttp\Promise\Utils::queue();
+        $queue = P\Utils::queue();
         while ($this->handles || !$queue->isEmpty()) {
             // If there are no transfers, then sleep for the next delay
             if (!$this->active && $this->delays) {
@@ -162,7 +177,7 @@ class CurlMultiHandler
         if (empty($easy->options['delay'])) {
             \curl_multi_add_handle($this->_mh, $easy->handle);
         } else {
-            $this->delays[$id] = \WPMailSMTP\Vendor\GuzzleHttp\Utils::currentTime() + $easy->options['delay'] / 1000;
+            $this->delays[$id] = Utils::currentTime() + $easy->options['delay'] / 1000;
         }
     }
     /**
@@ -184,7 +199,9 @@ class CurlMultiHandler
         $handle = $this->handles[$id]['easy']->handle;
         unset($this->delays[$id], $this->handles[$id]);
         \curl_multi_remove_handle($this->_mh, $handle);
-        \curl_close($handle);
+        if (\PHP_VERSION_ID < 80000) {
+            \curl_close($handle);
+        }
         return \true;
     }
     private function processMessages() : void
@@ -203,12 +220,12 @@ class CurlMultiHandler
             $entry = $this->handles[$id];
             unset($this->handles[$id], $this->delays[$id]);
             $entry['easy']->errno = $done['result'];
-            $entry['deferred']->resolve(\WPMailSMTP\Vendor\GuzzleHttp\Handler\CurlFactory::finish($this, $entry['easy'], $this->factory));
+            $entry['deferred']->resolve(CurlFactory::finish($this, $entry['easy'], $this->factory));
         }
     }
     private function timeToNext() : int
     {
-        $currentTime = \WPMailSMTP\Vendor\GuzzleHttp\Utils::currentTime();
+        $currentTime = Utils::currentTime();
         $nextTime = \PHP_INT_MAX;
         foreach ($this->delays as $time) {
             if ($time < $nextTime) {

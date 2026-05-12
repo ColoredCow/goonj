@@ -1,6 +1,6 @@
 {
 	"name": "johnbillion/user-switching",
-	"description": "Instant switching between user accounts in WordPress.",
+	"description": "Instant switching between user accounts in WordPress and WooCommerce.",
 	"license": "GPL-2.0-or-later",
 	"type": "wordpress-plugin",
 	"authors": [
@@ -13,7 +13,8 @@
 	"support": {
 		"issues": "https://github.com/johnbillion/user-switching/issues",
 		"forum": "https://wordpress.org/support/plugin/user-switching",
-		"source": "https://github.com/johnbillion/user-switching"
+		"source": "https://github.com/johnbillion/user-switching",
+		"security": "https://github.com/johnbillion/user-switching/security/policy"
 	},
 	"funding": [
 		{
@@ -26,19 +27,15 @@
 		"composer/installers": "^1.0 || ^2.0"
 	},
 	"require-dev": {
-		"codeception/module-asserts": "^1.0",
-		"codeception/module-db": "^1.0",
-		"codeception/module-webdriver": "^1.0",
-		"codeception/util-universalframework": "^1.0",
-		"johnbillion/plugin-infrastructure": "dev-trunk",
-		"lucatume/wp-browser": "3.2.1",
-		"phpcompatibility/phpcompatibility-wp": "2.1.4",
-		"phpstan/phpstan": "1.10.41",
-		"phpstan/phpstan-phpunit": "1.3.15",
-		"roots/wordpress-core-installer": "^1.0.0",
-		"roots/wordpress-full": "*",
-		"szepeviktor/phpstan-wordpress": "1.3.2",
-		"wp-coding-standards/wpcs": "3.0.1"
+		"johnbillion/plugin-infrastructure": "2.8.0",
+		"johnbillion/wp-compat": "1.3.0",
+		"php-stubs/wordpress-stubs": "6.9.0",
+		"phpcompatibility/phpcompatibility-wp": "2.1.8",
+		"phpstan/phpstan": "2.1.33",
+		"phpstan/phpstan-phpunit": "2.0.11",
+		"swissspidy/phpstan-no-private": "1.0.0",
+		"szepeviktor/phpstan-wordpress": "2.0.3",
+		"wp-coding-standards/wpcs": "3.3.0"
 	},
 	"autoload-dev": {
 		"psr-4": {
@@ -63,14 +60,14 @@
 		"test": [
 			"@composer validate --strict --no-check-lock",
 			"@test:phpstan",
-			"@test:phpcs",
 			"@test:start",
 			"@test:integration",
 			"@test:acceptance",
+			"@test:phpcs",
 			"@test:stop"
 		],
 		"test:acceptance": [
-			"acceptance-tests --cli=\"language core install it_IT\" --cli=\"language plugin install user-switching it_IT\""
+			"acceptance-tests"
 		],
 		"test:destroy": [
 			"tests-destroy"
@@ -82,8 +79,7 @@
 			"phpcs -ps --colors --report-code --report-summary --report-width=80 --basepath='./' ."
 		],
 		"test:phpstan": [
-			"codecept build",
-			"phpstan analyze --memory-limit=1024M"
+			"phpstan analyze -v --memory-limit=1024M"
 		],
 		"test:start": [
 			"tests-start"
