@@ -2,17 +2,19 @@
 
 namespace WPMailSMTP;
 
+use Exception;
+use ReflectionFunction;
 use WPMailSMTP\Admin\AdminBarMenu;
 use WPMailSMTP\Admin\DashboardWidget;
 use WPMailSMTP\Admin\DebugEvents\DebugEvents;
 use WPMailSMTP\Admin\Notifications;
+use WPMailSMTP\Compatibility\Compatibility;
+use WPMailSMTP\Providers\Outlook\Provider as OutlookProvider;
+use WPMailSMTP\Providers\Sendlayer\QuickConnect as SendlayerQuickConnect;
+use WPMailSMTP\Queue\Queue;
+use WPMailSMTP\Reports\Reports;
 use WPMailSMTP\Tasks\Meta;
 use WPMailSMTP\UsageTracking\UsageTracking;
-use WPMailSMTP\Compatibility\Compatibility;
-use WPMailSMTP\Reports\Reports;
-use ReflectionFunction;
-use Exception;
-use WPMailSMTP\Queue\Queue;
 
 /**
  * Class Core to handle all plugin initialization.
@@ -147,6 +149,8 @@ class Core {
 			'plugins_loaded',
 			function() {
 				( new OptimizedEmailSending() )->hooks();
+				( new OutlookProvider() )->hooks();
+				( new SendlayerQuickConnect() )->hooks();
 			}
 		);
 	}
@@ -449,7 +453,7 @@ class Core {
 	}
 
 	/**
-	 * Display various notifications to a user
+	 * Display various notifications to a user.
 	 *
 	 * @since 1.0.0
 	 */
@@ -553,12 +557,12 @@ class Core {
 						if ( ! wp_mail_smtp()->get_admin()->is_admin_page() ) {
 							printf(
 								wp_kses( /* translators: %s - plugin admin page URL. */
-									__( 'Please review your WP Mail SMTP settings in <a href="%s">plugin admin area</a>.' ) . ' ',
-									array(
-										'a' => array(
-											'href' => array(),
-										),
-									)
+									__( 'Please review your WP Mail SMTP settings in <a href="%s">plugin admin area</a>.', 'wp-mail-smtp' ) . ' ',
+									[
+										'a' => [
+											'href' => [],
+										],
+									]
 								),
 								esc_url( wp_mail_smtp()->get_admin()->get_admin_page_url() )
 							);
@@ -566,7 +570,7 @@ class Core {
 
 						printf(
 							wp_kses( /* translators: %s - URL to the debug events page. */
-								__( 'For more details please try running an Email Test or reading the latest <a href="%s">error event</a>.' ),
+								__( 'For more details please try running an Email Test or reading the latest <a href="%s">error event</a>.', 'wp-mail-smtp' ),
 								[
 									'a' => [
 										'href' => [],
@@ -1425,4 +1429,5 @@ class Core {
 
 		return $queue;
 	}
+
 }
