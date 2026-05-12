@@ -105,11 +105,11 @@ final class Idn
      */
     public static function idn_to_ascii($domainName, $options = self::IDNA_DEFAULT, $variant = self::INTL_IDNA_VARIANT_UTS46, &$idna_info = [])
     {
-        if (self::INTL_IDNA_VARIANT_2003 === $variant) {
+        if (\PHP_VERSION_ID >= 70200 && self::INTL_IDNA_VARIANT_2003 === $variant) {
             @\trigger_error('idn_to_ascii(): INTL_IDNA_VARIANT_2003 is deprecated', \E_USER_DEPRECATED);
         }
         $options = ['CheckHyphens' => \true, 'CheckBidi' => self::INTL_IDNA_VARIANT_2003 === $variant || 0 !== ($options & self::IDNA_CHECK_BIDI), 'CheckJoiners' => self::INTL_IDNA_VARIANT_UTS46 === $variant && 0 !== ($options & self::IDNA_CHECK_CONTEXTJ), 'UseSTD3ASCIIRules' => 0 !== ($options & self::IDNA_USE_STD3_RULES), 'Transitional_Processing' => self::INTL_IDNA_VARIANT_2003 === $variant || 0 === ($options & self::IDNA_NONTRANSITIONAL_TO_ASCII), 'VerifyDnsLength' => \true];
-        $info = new Info();
+        $info = new \WPMailSMTP\Vendor\Symfony\Polyfill\Intl\Idn\Info();
         $labels = self::process((string) $domainName, $options, $info);
         foreach ($labels as $i => $label) {
             // Only convert labels to punycode that contain non-ASCII code points
@@ -140,10 +140,10 @@ final class Idn
      */
     public static function idn_to_utf8($domainName, $options = self::IDNA_DEFAULT, $variant = self::INTL_IDNA_VARIANT_UTS46, &$idna_info = [])
     {
-        if (self::INTL_IDNA_VARIANT_2003 === $variant) {
+        if (\PHP_VERSION_ID >= 70200 && self::INTL_IDNA_VARIANT_2003 === $variant) {
             @\trigger_error('idn_to_utf8(): INTL_IDNA_VARIANT_2003 is deprecated', \E_USER_DEPRECATED);
         }
-        $info = new Info();
+        $info = new \WPMailSMTP\Vendor\Symfony\Polyfill\Intl\Idn\Info();
         $labels = self::process((string) $domainName, ['CheckHyphens' => \true, 'CheckBidi' => self::INTL_IDNA_VARIANT_2003 === $variant || 0 !== ($options & self::IDNA_CHECK_BIDI), 'CheckJoiners' => self::INTL_IDNA_VARIANT_UTS46 === $variant && 0 !== ($options & self::IDNA_CHECK_CONTEXTJ), 'UseSTD3ASCIIRules' => 0 !== ($options & self::IDNA_USE_STD3_RULES), 'Transitional_Processing' => self::INTL_IDNA_VARIANT_2003 === $variant || 0 === ($options & self::IDNA_NONTRANSITIONAL_TO_UNICODE)], $info);
         $idna_info = ['result' => \implode('.', $labels), 'isTransitionalDifferent' => $info->transitionalDifferent, 'errors' => $info->errors];
         return 0 === $info->errors ? $idna_info['result'] : \false;
@@ -173,7 +173,7 @@ final class Idn
             // If RegExpMatch((Joining_Type:{L,D})(Joining_Type:T)*\u200C(Joining_Type:T)*(Joining_Type:{R,D})) Then
             // True;
             // Generated RegExp = ([Joining_Type:{L,D}][Joining_Type:T]*\u200C[Joining_Type:T]*)[Joining_Type:{R,D}]
-            if (0x200c === $codePoint && 1 === \preg_match(Regex::ZWNJ, $label, $matches, \PREG_OFFSET_CAPTURE, $offset)) {
+            if (0x200c === $codePoint && 1 === \preg_match(\WPMailSMTP\Vendor\Symfony\Polyfill\Intl\Idn\Resources\unidata\Regex::ZWNJ, $label, $matches, \PREG_OFFSET_CAPTURE, $offset)) {
                 $offset += \strlen($matches[1][0]);
                 continue;
             }
@@ -189,7 +189,7 @@ final class Idn
      *
      * @return string
      */
-    private static function mapCodePoints($input, array $options, Info $info)
+    private static function mapCodePoints($input, array $options, \WPMailSMTP\Vendor\Symfony\Polyfill\Intl\Idn\Info $info)
     {
         $str = '';
         $useSTD3ASCIIRules = $options['UseSTD3ASCIIRules'];
@@ -198,6 +198,8 @@ final class Idn
             $data = self::lookupCodePointStatus($codePoint, $useSTD3ASCIIRules);
             switch ($data['status']) {
                 case 'disallowed':
+                    $info->errors |= self::ERROR_DISALLOWED;
+                // no break.
                 case 'valid':
                     $str .= \mb_chr($codePoint, 'utf-8');
                     break;
@@ -205,7 +207,7 @@ final class Idn
                     // Do nothing.
                     break;
                 case 'mapped':
-                    $str .= $transitional && 0x1e9e === $codePoint ? 'ss' : $data['mapping'];
+                    $str .= $data['mapping'];
                     break;
                 case 'deviation':
                     $info->transitionalDifferent = \true;
@@ -223,7 +225,7 @@ final class Idn
      *
      * @return array<int, string>
      */
-    private static function process($domain, array $options, Info $info)
+    private static function process($domain, array $options, \WPMailSMTP\Vendor\Symfony\Polyfill\Intl\Idn\Info $info)
     {
         // If VerifyDnsLength is not set, we are doing ToUnicode otherwise we are doing ToASCII and
         // we need to respect the VerifyDnsLength option.
@@ -245,16 +247,6 @@ final class Idn
         foreach ($labels as $i => $label) {
             $validationOptions = $options;
             if ('xn--' === \substr($label, 0, 4)) {
-                // Step 4.1. If the label contains any non-ASCII code point (i.e., a code point greater than U+007F),
-                // record that there was an error, and continue with the next label.
-                if (\preg_match('/[^\\x00-\\x7F]/', $label)) {
-                    $info->errors |= self::ERROR_PUNYCODE;
-                    continue;
-                }
-                // Step 4.2. Attempt to convert the rest of the label to Unicode according to Punycode [RFC3492]. If
-                // that conversion fails, record that there was an error, and continue
-                // with the next label. Otherwise replace the original label in the string by the results of the
-                // conversion.
                 try {
                     $label = self::punycodeDecode(\substr($label, 4));
                 } catch (\Exception $e) {
@@ -280,30 +272,30 @@ final class Idn
      *
      * @param string $label
      */
-    private static function validateBidiLabel($label, Info $info)
+    private static function validateBidiLabel($label, \WPMailSMTP\Vendor\Symfony\Polyfill\Intl\Idn\Info $info)
     {
-        if (1 === \preg_match(Regex::RTL_LABEL, $label)) {
+        if (1 === \preg_match(\WPMailSMTP\Vendor\Symfony\Polyfill\Intl\Idn\Resources\unidata\Regex::RTL_LABEL, $label)) {
             $info->bidiDomain = \true;
             // Step 1. The first character must be a character with Bidi property L, R, or AL.
             // If it has the R or AL property, it is an RTL label
-            if (1 !== \preg_match(Regex::BIDI_STEP_1_RTL, $label)) {
+            if (1 !== \preg_match(\WPMailSMTP\Vendor\Symfony\Polyfill\Intl\Idn\Resources\unidata\Regex::BIDI_STEP_1_RTL, $label)) {
                 $info->validBidiDomain = \false;
                 return;
             }
             // Step 2. In an RTL label, only characters with the Bidi properties R, AL, AN, EN, ES,
             // CS, ET, ON, BN, or NSM are allowed.
-            if (1 === \preg_match(Regex::BIDI_STEP_2, $label)) {
+            if (1 === \preg_match(\WPMailSMTP\Vendor\Symfony\Polyfill\Intl\Idn\Resources\unidata\Regex::BIDI_STEP_2, $label)) {
                 $info->validBidiDomain = \false;
                 return;
             }
             // Step 3. In an RTL label, the end of the label must be a character with Bidi property
             // R, AL, EN, or AN, followed by zero or more characters with Bidi property NSM.
-            if (1 !== \preg_match(Regex::BIDI_STEP_3, $label)) {
+            if (1 !== \preg_match(\WPMailSMTP\Vendor\Symfony\Polyfill\Intl\Idn\Resources\unidata\Regex::BIDI_STEP_3, $label)) {
                 $info->validBidiDomain = \false;
                 return;
             }
             // Step 4. In an RTL label, if an EN is present, no AN may be present, and vice versa.
-            if (1 === \preg_match(Regex::BIDI_STEP_4_AN, $label) && 1 === \preg_match(Regex::BIDI_STEP_4_EN, $label)) {
+            if (1 === \preg_match(\WPMailSMTP\Vendor\Symfony\Polyfill\Intl\Idn\Resources\unidata\Regex::BIDI_STEP_4_AN, $label) && 1 === \preg_match(\WPMailSMTP\Vendor\Symfony\Polyfill\Intl\Idn\Resources\unidata\Regex::BIDI_STEP_4_EN, $label)) {
                 $info->validBidiDomain = \false;
                 return;
             }
@@ -312,19 +304,19 @@ final class Idn
         // We are a LTR label
         // Step 1. The first character must be a character with Bidi property L, R, or AL.
         // If it has the L property, it is an LTR label.
-        if (1 !== \preg_match(Regex::BIDI_STEP_1_LTR, $label)) {
+        if (1 !== \preg_match(\WPMailSMTP\Vendor\Symfony\Polyfill\Intl\Idn\Resources\unidata\Regex::BIDI_STEP_1_LTR, $label)) {
             $info->validBidiDomain = \false;
             return;
         }
         // Step 5. In an LTR label, only characters with the Bidi properties L, EN,
         // ES, CS, ET, ON, BN, or NSM are allowed.
-        if (1 === \preg_match(Regex::BIDI_STEP_5, $label)) {
+        if (1 === \preg_match(\WPMailSMTP\Vendor\Symfony\Polyfill\Intl\Idn\Resources\unidata\Regex::BIDI_STEP_5, $label)) {
             $info->validBidiDomain = \false;
             return;
         }
         // Step 6.In an LTR label, the end of the label must be a character with Bidi property L or
         // EN, followed by zero or more characters with Bidi property NSM.
-        if (1 !== \preg_match(Regex::BIDI_STEP_6, $label)) {
+        if (1 !== \preg_match(\WPMailSMTP\Vendor\Symfony\Polyfill\Intl\Idn\Resources\unidata\Regex::BIDI_STEP_6, $label)) {
             $info->validBidiDomain = \false;
             return;
         }
@@ -332,7 +324,7 @@ final class Idn
     /**
      * @param array<int, string> $labels
      */
-    private static function validateDomainAndLabelLength(array $labels, Info $info)
+    private static function validateDomainAndLabelLength(array $labels, \WPMailSMTP\Vendor\Symfony\Polyfill\Intl\Idn\Info $info)
     {
         $maxDomainSize = self::MAX_DOMAIN_SIZE;
         $length = \count($labels);
@@ -364,7 +356,7 @@ final class Idn
      * @param array<string, bool> $options
      * @param bool                $canBeEmpty
      */
-    private static function validateLabel($label, Info $info, array $options, $canBeEmpty)
+    private static function validateLabel($label, \WPMailSMTP\Vendor\Symfony\Polyfill\Intl\Idn\Info $info, array $options, $canBeEmpty)
     {
         if ('' === $label) {
             if (!$canBeEmpty && (!isset($options['VerifyDnsLength']) || $options['VerifyDnsLength'])) {
@@ -391,15 +383,13 @@ final class Idn
             if ('-' === \substr($label, -1, 1)) {
                 $info->errors |= self::ERROR_TRAILING_HYPHEN;
             }
-        } elseif ('xn--' === \substr($label, 0, 4)) {
-            $info->errors |= self::ERROR_PUNYCODE;
         }
         // Step 4. The label must not contain a U+002E (.) FULL STOP.
         if (\false !== \strpos($label, '.')) {
             $info->errors |= self::ERROR_LABEL_HAS_DOT;
         }
         // Step 5. The label must not begin with a combining mark, that is: General_Category=Mark.
-        if (1 === \preg_match(Regex::COMBINING_MARK, $label)) {
+        if (1 === \preg_match(\WPMailSMTP\Vendor\Symfony\Polyfill\Intl\Idn\Resources\unidata\Regex::COMBINING_MARK, $label)) {
             $info->errors |= self::ERROR_LEADING_COMBINING_MARK;
         }
         // Step 6. Each code point in the label must only have certain status values according to
@@ -706,7 +696,7 @@ final class Idn
         if (isset(self::$deviation[$codePoint])) {
             return ['status' => 'deviation', 'mapping' => self::$deviation[$codePoint]];
         }
-        if (isset(self::$disallowed[$codePoint]) || DisallowedRanges::inRange($codePoint)) {
+        if (isset(self::$disallowed[$codePoint]) || \WPMailSMTP\Vendor\Symfony\Polyfill\Intl\Idn\Resources\unidata\DisallowedRanges::inRange($codePoint)) {
             return ['status' => 'disallowed'];
         }
         $isDisallowedMapped = isset(self::$disallowed_STD3_mapped[$codePoint]);

@@ -33,7 +33,6 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable
     /**
      * @return int
      */
-    #[\ReturnTypeWillChange]
     public function count()
     {
         return count($this->internalArray);
@@ -74,7 +73,6 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable
     /**
      * @return int
      */
-    #[\ReturnTypeWillChange]
     public function getSize()
     {
         return $this->size;
@@ -84,7 +82,6 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable
      * @param int $size
      * @return bool
      */
-    #[\ReturnTypeWillChange]
     public function setSize($size)
     {
         $this->size = $size;
@@ -95,7 +92,6 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable
      * @param string|int $index
      * @return bool
      */
-    #[\ReturnTypeWillChange]
     public function offsetExists($index)
     {
         return array_key_exists((int) $index, $this->internalArray);
@@ -105,7 +101,6 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable
      * @param string|int $index
      * @return mixed
      */
-    #[\ReturnTypeWillChange]
     public function offsetGet($index)
     {
         /** @psalm-suppress MixedReturnStatement */
@@ -117,7 +112,6 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable
      * @param mixed $newval
      * @psalm-suppress MixedAssignment
      */
-    #[\ReturnTypeWillChange]
     public function offsetSet($index, $newval)
     {
         $this->internalArray[(int) $index] = $newval;
@@ -126,7 +120,6 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable
     /**
      * @param string|int $index
      */
-    #[\ReturnTypeWillChange]
     public function offsetUnset($index)
     {
         unset($this->internalArray[(int) $index]);
@@ -138,7 +131,6 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable
      * @return void
      * @since 5.3.0
      */
-    #[\ReturnTypeWillChange]
     public function rewind()
     {
         reset($this->internalArray);
@@ -150,7 +142,6 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable
      * @return mixed The current element value.
      * @since 5.3.0
      */
-    #[\ReturnTypeWillChange]
     public function current()
     {
         /** @psalm-suppress MixedReturnStatement */
@@ -161,7 +152,6 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable
      * Return current array index
      * @return int The current array index.
      */
-    #[\ReturnTypeWillChange]
     public function key()
     {
         return key($this->internalArray);
@@ -170,7 +160,6 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable
     /**
      * @return void
      */
-    #[\ReturnTypeWillChange]
     public function next()
     {
         next($this->internalArray);
@@ -181,7 +170,6 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable
      * @link https://php.net/manual/en/splfixedarray.valid.php
      * @return bool true if the array contains any more elements, false otherwise.
      */
-    #[\ReturnTypeWillChange]
     public function valid()
     {
         if (empty($this->internalArray)) {
@@ -192,31 +180,11 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable
         return $result;
     }
 
-    public function __sleep()
-    {
-        return $this->internalArray;
-    }
-
     /**
      * Do nothing.
      */
     public function __wakeup()
     {
         // NOP
-    }
-
-    public function __serialize()
-    {
-        return array_values($this->internalArray);
-    }
-
-    public function __unserialize(array $data)
-    {
-        $length = count($data);
-        $values = array_values($data);
-        for ($i = 0; $i < $length; ++$i) {
-            $this->internalArray[$i] = $values[$i];
-        }
-        $this->size = $length;
     }
 }

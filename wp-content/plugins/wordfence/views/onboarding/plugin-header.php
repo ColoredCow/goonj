@@ -3,8 +3,6 @@ if (!defined('WORDFENCE_VERSION')) { exit; }
 /**
  * Presents the fresh install plugin header.
  */
-
-$registrationLink = wfLicense::generateRegistrationLink();
 ?>
 <div id="wf-onboarding-plugin-header">
 	<div id="wf-onboarding-plugin-header-header">
@@ -15,17 +13,7 @@ $registrationLink = wfLicense::generateRegistrationLink();
 		<ul>
 			<li id="wf-onboarding-plugin-header-stage-content">
 				<div id="wf-onboarding-plugin-header-stage-content-1">
-					<div class="wf-onboarding-registration-prompt">
-						<p><?php esc_html_e('Register with Wordfence to secure your site with the latest threat intelligence.', 'wordfence') ?></p>
-						<div class="wf-onboarding-install-new wf-onboarding-install-type">
-							<div>
-								<a class="wf-btn wf-btn-primary wf-onboarding-register" href="<?php echo esc_attr($registrationLink) ?>" target="_blank"><?php esc_html_e('Get Your Wordfence License', 'wordfence') ?></a>
-							</div>
-							<div>
-								<a class="wf-onboarding-install-type-existing" href="<?php echo esc_attr(network_admin_url('admin.php?page=WordfenceSupport#installExisting')); ?>"><?php esc_html_e('Install an existing license', 'wordfence') ?></a>
-							</div>
-						</div>
-					</div>
+					<?php echo wfView::create('onboarding/registration-prompt', array('attempt' => 2)) ?>
 				</div>
 			</li>
 			<li id="wf-onboarding-plugin-header-stage-image"></li>

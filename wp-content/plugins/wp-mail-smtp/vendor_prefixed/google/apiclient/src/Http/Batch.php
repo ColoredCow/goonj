@@ -43,15 +43,14 @@ class Batch
     private $client;
     private $rootUrl;
     private $batchPath;
-    public function __construct(Client $client, $boundary = \false, $rootUrl = null, $batchPath = null)
+    public function __construct(\WPMailSMTP\Vendor\Google\Client $client, $boundary = \false, $rootUrl = null, $batchPath = null)
     {
         $this->client = $client;
         $this->boundary = $boundary ?: \mt_rand();
-        $rootUrl = \rtrim($rootUrl ?: $this->client->getConfig('base_path'), '/');
-        $this->rootUrl = \str_replace('UNIVERSE_DOMAIN', $this->client->getUniverseDomain(), $rootUrl);
+        $this->rootUrl = \rtrim($rootUrl ?: $this->client->getConfig('base_path'), '/');
         $this->batchPath = $batchPath ?: self::BATCH_PATH;
     }
-    public function add(RequestInterface $request, $key = \false)
+    public function add(\WPMailSMTP\Vendor\Psr\Http\Message\RequestInterface $request, $key = \false)
     {
         if (\false == $key) {
             $key = \mt_rand();
@@ -89,11 +88,11 @@ EOF;
         $body = \trim($body);
         $url = $this->rootUrl . '/' . $this->batchPath;
         $headers = ['Content-Type' => \sprintf('multipart/mixed; boundary=%s', $this->boundary), 'Content-Length' => (string) \strlen($body)];
-        $request = new Request('POST', $url, $headers, $body);
+        $request = new \WPMailSMTP\Vendor\GuzzleHttp\Psr7\Request('POST', $url, $headers, $body);
         $response = $this->client->execute($request);
         return $this->parseResponse($response, $classes);
     }
-    public function parseResponse(ResponseInterface $response, $classes = [])
+    public function parseResponse(\WPMailSMTP\Vendor\Psr\Http\Message\ResponseInterface $response, $classes = [])
     {
         $contentType = $response->getHeaderLine('content-type');
         $contentType = \explode(';', $contentType);
@@ -119,12 +118,12 @@ EOF;
                     $status = \explode(" ", $status);
                     $status = $status[1];
                     list($partHeaders, $partBody) = $this->parseHttpResponse($part, 0);
-                    $response = new Response((int) $status, $partHeaders, Psr7\Utils::streamFor($partBody));
+                    $response = new \WPMailSMTP\Vendor\GuzzleHttp\Psr7\Response((int) $status, $partHeaders, \WPMailSMTP\Vendor\GuzzleHttp\Psr7\Utils::streamFor($partBody));
                     // Need content id.
                     $key = $headers['content-id'];
                     try {
-                        $response = REST::decodeHttpResponse($response, $requests[$i - 1]);
-                    } catch (GoogleServiceException $e) {
+                        $response = \WPMailSMTP\Vendor\Google\Http\REST::decodeHttpResponse($response, $requests[$i - 1]);
+                    } catch (\WPMailSMTP\Vendor\Google\Service\Exception $e) {
                         // Store the exception as the response, so successful responses
                         // can be processed.
                         $response = $e;

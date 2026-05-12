@@ -67,34 +67,38 @@ var WPMailSMTPDashboardWidget = window.WPMailSMTPDashboardWidget || ( function( 
 			options: {
 				maintainAspectRatio: false,
 				scales: {
-					x: {
-						type: 'timeseries',
+					xAxes: [ {
+						type: 'time',
 						time: {
+							unit: 'day',
 							tooltipFormat: 'MMM D',
 						},
+						distribution: 'series',
 						ticks: {
 							beginAtZero: true,
 							source: 'labels',
-							padding: 0,
+							padding: 10,
 							minRotation: 25,
 							maxRotation: 25,
 							callback: function( value, index, values ) {
-								const gap = Math.floor( values.length / 7 );
+
+								// Distribute the ticks equally starting from a right side of xAxis.
+								var gap = Math.floor( values.length / 7 );
 
 								if ( gap < 1 ) {
-									return moment( value ).format( 'MMM D' );
+									return value;
 								}
 								if ( ( values.length - index - 1 ) % gap === 0 ) {
-									return moment( value ).format( 'MMM D' );
+									return value;
 								}
 							},
 						},
-					},
-					y: {
+					} ],
+					yAxes: [ {
 						ticks: {
 							beginAtZero: true,
 							maxTicksLimit: 6,
-							padding: 0,
+							padding: 20,
 							callback: function( value ) {
 
 								// Make sure the tick value has no decimals.
@@ -103,23 +107,26 @@ var WPMailSMTPDashboardWidget = window.WPMailSMTPDashboardWidget || ( function( 
 								}
 							},
 						},
-					},
+					} ],
 				},
 				elements: {
 					line: {
 						tension: 0,
-						fill: true,
 					},
 				},
-				animation: false,
-				plugins: {
-					legend: {
-						display: false,
-					},
-					tooltip: {
-						displayColors: false,
-					},
+				animation: {
+					duration: 0,
 				},
+				hover: {
+					animationDuration: 0,
+				},
+				legend: {
+					display: false,
+				},
+				tooltips: {
+					displayColors: false,
+				},
+				responsiveAnimationDuration: 0,
 			},
 		},
 
@@ -164,7 +171,7 @@ var WPMailSMTPDashboardWidget = window.WPMailSMTPDashboardWidget || ( function( 
 
 				chart.settings.data.labels.push( date );
 				chart.settings.data.datasets[ 0 ].data.push( {
-					x: date,
+					t: date,
 					y: data[ i - 1 ],
 				} );
 			}

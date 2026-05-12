@@ -20,13 +20,13 @@ namespace WPMailSMTP\Vendor\Google\Service\Gmail;
 class MessagePart extends \WPMailSMTP\Vendor\Google\Collection
 {
     protected $collection_key = 'parts';
-    protected $bodyType = MessagePartBody::class;
+    protected $bodyType = \WPMailSMTP\Vendor\Google\Service\Gmail\MessagePartBody::class;
     protected $bodyDataType = '';
     /**
      * @var string
      */
     public $filename;
-    protected $headersType = MessagePartHeader::class;
+    protected $headersType = \WPMailSMTP\Vendor\Google\Service\Gmail\MessagePartHeader::class;
     protected $headersDataType = 'array';
     /**
      * @var string
@@ -36,12 +36,12 @@ class MessagePart extends \WPMailSMTP\Vendor\Google\Collection
      * @var string
      */
     public $partId;
-    protected $partsType = MessagePart::class;
+    protected $partsType = \WPMailSMTP\Vendor\Google\Service\Gmail\MessagePart::class;
     protected $partsDataType = 'array';
     /**
      * @param MessagePartBody
      */
-    public function setBody(MessagePartBody $body)
+    public function setBody(\WPMailSMTP\Vendor\Google\Service\Gmail\MessagePartBody $body)
     {
         $this->body = $body;
     }
@@ -124,4 +124,4 @@ class MessagePart extends \WPMailSMTP\Vendor\Google\Collection
     }
 }
 // Adding a class alias for backwards compatibility with the previous class name.
-\class_alias(MessagePart::class, 'WPMailSMTP\\Vendor\\Google_Service_Gmail_MessagePart');
+\class_alias(\WPMailSMTP\Vendor\Google\Service\Gmail\MessagePart::class, 'WPMailSMTP\\Vendor\\Google_Service_Gmail_MessagePart');

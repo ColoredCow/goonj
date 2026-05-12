@@ -1,7 +1,4 @@
 <?php
-
-use WordfenceLS\Utility_URL;
-
 if (!defined('WORDFENCE_LS_VERSION')) { exit; }
 
 /**
@@ -10,6 +7,11 @@ if (!defined('WORDFENCE_LS_VERSION')) { exit; }
 ?>
 <?php do_action('wfls_activation_page_header'); ?>
 <div class="wrap wordfence-ls">
+	<?php
+	if (\WordfenceLS\Controller_Permissions::shared()->can_manage_settings() && !\WordfenceLS\Controller_Settings::shared()->get_bool(\WordfenceLS\Controller_Settings::OPTION_DISMISSED_FRESH_INSTALL_MODAL) && !WORDFENCE_LS_FROM_CORE) {
+		echo \WordfenceLS\Model_View::create('onboarding/standalone-header')->render();
+	}
+	?>
 	<div class="wfls-container-fluid">
 		<?php
 		$tabs = array_map(function($t) { return $t['tab']; }, $sections);
@@ -33,9 +35,3 @@ if (!defined('WORDFENCE_LS_VERSION')) { exit; }
 		</div> <!-- end row -->
 	</div> <!-- end container -->
 </div>
-<div class="wordfence-vue-wrapper" data-base-component="WFLSCommonModals"></div>
-<?php
-/**
- * Fires after the main content of 2 WFLS page has been output.
- */
-do_action('wfls_page_footer');

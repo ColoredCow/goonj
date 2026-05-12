@@ -18,9 +18,11 @@ if (!defined('WORDFENCE_VERSION')) { exit; }
 	</div>
 	
 	<p><?php esc_html_e("To clone one site's configuration to another, use the import/export tools below.", 'wordfence') ?></p>
-
-
-	<div class="wf-row">
-		<div class="wf-col-xs-12 wordfence-vue-wrapper" data-base-component="OptionsGroupImport" data-prop-state-key="global-options-import" data-prop-collapseable="false"></div>
-	</div>
+	
+	<?php
+	echo wfView::create('dashboard/options-group-import', array(
+		'stateKey' => 'global-options-import',
+		'collapseable' => false,
+	))->render();
+	?>
 </div>

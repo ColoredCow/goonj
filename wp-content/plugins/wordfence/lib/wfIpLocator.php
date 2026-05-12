@@ -12,6 +12,8 @@ class wfIpLocator {
 	const SOURCE_BUNDLED = 0;
 	const SOURCE_WFLOGS = 1;
 
+	const DATABASE_FILE_NAME = 'GeoLite2-Country.mmdb';
+
 	private static $instances = array();
 
 	private $database;
@@ -83,7 +85,7 @@ class wfIpLocator {
 		foreach ($sources as $source) {
 			$directory = self::getDatabaseDirectory($source);
 			try {
-				$path = $directory . '/' . wfIpLocation::DATABASE_FILE_NAME;
+				$path = $directory . '/' . self::DATABASE_FILE_NAME;
 				if (file_exists($path)) //Preemptive check to prevent warnings
 					return Database::open($path);
 			}

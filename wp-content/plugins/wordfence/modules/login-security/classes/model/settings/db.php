@@ -9,8 +9,6 @@ class Model_DB extends Model_Settings {
 	const AUTOLOAD_NO = 'no';
 	const AUTOLOAD_YES = 'yes';
 	
-	private static $_cache = array();
-	
 	public function set($key, $value, $autoload = self::AUTOLOAD_YES, $allowOverwrite = true) {
 		global $wpdb;
 		$table = Controller_DB::shared()->settings;
@@ -43,43 +41,21 @@ class Model_DB extends Model_Settings {
 	}
 	
 	public function get($key, $default = false) {
-		$results = $this->get_multiple(array($key => $default));
-		return $results[$key];
-	}
-	
-	public function get_multiple($keysDefaults) {
 		global $wpdb;
 		
-		$result = array();
-		$remaining = array();
-		foreach ($keysDefaults as $key => $default) {
-			if ($this->_has_cached($key)) {
-				$result[$key] = $this->_cached_value($key);
-			}
-			else {
-				$remaining[$key] = $default;
-			}
+		if ($this->_has_cached($key)) {
+			return $this->_cached_value($key);
 		}
 		
-		if (!empty($remaining)) {
-			$sanitizedKeys = esc_sql(array_keys($remaining));
-			$keysINClause = "'" . implode("','", $sanitizedKeys) . "'";
-			
-			$table = Controller_DB::shared()->settings;
-			$rows = $wpdb->get_results("SELECT `name`, `value`, `autoload` FROM `{$table}` WHERE `name` IN ({$keysINClause})", ARRAY_A);
-			foreach ($rows as $r) {
-				$name = $r['name'];
-				$value = $r['value'];
-				
-				$result[$name] = $value;
-				unset($remaining[$name]);
-				if ($r['autoload'] != self::AUTOLOAD_NO) {
-					$this->_update_cached($name, $value);
-				}
-			}
+		$table = Controller_DB::shared()->settings;
+		if (!($setting = $wpdb->get_row($wpdb->prepare("SELECT `name`, `value`, `autoload` FROM `{$table}` WHERE `name` = %s", $key)))) {
+			return $default;
 		}
 		
-		return array_merge($remaining, $result);
+		if ($setting->autoload != self::AUTOLOAD_NO) {
+			$this->_update_cached($key, $setting->value);
+		}
+		return $setting->value;
 	}
 	
 	public function remove($key) {
@@ -92,7 +68,8 @@ class Model_DB extends Model_Settings {
 	private function _cached() {
 		global $wpdb;
 		
-		if (empty(self::$_cache)) {
+		$settings = wp_cache_get('allsettings', 'wordfence-ls');
+		if (!$settings) {
 			$table = Controller_DB::shared()->settings;
 			$suppress = $wpdb->suppress_errors();
 			$raw = $wpdb->get_results("SELECT `name`, `value` FROM `{$table}` WHERE `autoload` = 'yes'");
@@ -102,23 +79,24 @@ class Model_DB extends Model_Settings {
 				$settings[$o->name] = $o->value;
 			}
 			
-			self::$_cache = $settings;
+			wp_cache_add_non_persistent_groups('wordfence-ls');
+			wp_cache_add('allsettings', $settings, 'wordfence-ls');
 		}
 		
-		return self::$_cache;
+		return $settings;
 	}
 	
 	private function _update_cached($key, $value) {
 		$settings = $this->_cached();
 		$settings[$key] = $value;
-		self::$_cache = $settings;
+		wp_cache_set('allsettings', $settings, 'wordfence-ls');
 	}
 	
 	private function _remove_cached($key) {
 		$settings = $this->_cached();
 		if (isset($settings[$key])) {
 			unset($settings[$key]);
-			self::$_cache = $settings;
+			wp_cache_set('allsettings', $settings, 'wordfence-ls');
 		}
 	}
 	
@@ -134,7 +112,7 @@ class Model_DB extends Model_Settings {
 		$value = $wpdb->get_var($wpdb->prepare("SELECT `value` FROM `{$table}` WHERE name = %s", $key));
 		if ($value !== null) {
 			$settings[$key] = $value;
-			self::$_cache = $settings;
+			wp_cache_set('allsettings', $settings, 'wordfence-ls');
 		}
 		return $value;
 	}

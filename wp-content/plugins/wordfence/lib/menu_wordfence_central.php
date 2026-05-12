@@ -18,10 +18,12 @@ $connected = wfCentral::isConnected();
 $partialConnection = wfCentral::isPartialConnection();
 
 ?>
-<?php if (!wfOnboardingController::shouldShowAttempt3() && wfConfig::get('touppPromptNeeded')): ?>
-	<div id="wf-gdpr-wrapper" class="wordfence-vue-wrapper" data-base-component="GDPRBanner"></div>
-<?php endif; ?>
 <?php
+if (!wfOnboardingController::shouldShowAttempt3() && wfConfig::get('touppPromptNeeded')) {
+	echo wfView::create('gdpr/disabled-overlay')->render();
+	echo wfView::create('gdpr/banner')->render();
+}
+
 if (function_exists('network_admin_url') && is_multisite()) {
 	$wordfenceURL = network_admin_url('admin.php?page=Wordfence');
 }
@@ -125,10 +127,9 @@ else {
 		var authGrant = '<?php echo esc_js(isset($_GET['grant']) ? $_GET['grant'] : '') ?>';
 		var currentStep = <?php echo json_encode(wfConfig::getInt('wordfenceCentralCurrentStep', 1)) ?>;
 		var connected = <?php echo json_encode($connected) ?>;
-		var __ = window.wfi18n.__;
 
 		function wfConnectError(error) {
-			window.WFEventEmitter.emit('showModal', { name: 'simple-confirmation-modal', title: __('An error occurred'), message: error });
+			WFAD.colorboxError(error);
 		}
 
 		function wfCentralStepAjax(step, action, data, cb, cbErr, noLoading) {

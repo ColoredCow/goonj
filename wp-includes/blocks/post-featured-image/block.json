@@ -9,8 +9,7 @@
 	"attributes": {
 		"isLink": {
 			"type": "boolean",
-			"default": false,
-			"role": "content"
+			"default": false
 		},
 		"aspectRatio": {
 			"type": "string"
@@ -31,13 +30,11 @@
 		"rel": {
 			"type": "string",
 			"attribute": "rel",
-			"default": "",
-			"role": "content"
+			"default": ""
 		},
 		"linkTarget": {
 			"type": "string",
-			"default": "_self",
-			"role": "content"
+			"default": "_self"
 		},
 		"overlayColor": {
 			"type": "string"
@@ -61,9 +58,6 @@
 		}
 	},
 	"usesContext": [ "postId", "postType", "queryId" ],
-	"example": {
-		"viewportWidth": 350
-	},
 	"supports": {
 		"align": [ "left", "right", "center", "wide", "full" ],
 		"color": {

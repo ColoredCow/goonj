@@ -32,37 +32,6 @@ class Civi_WP_Member_Sync_Members {
 	public $plugin;
 
 	/**
-	 * Membership Status rules array.
-	 *
-	 * @since 0.1
-	 * @access public
-	 * @var array
-	 */
-	public $membership_status_rules;
-
-	/**
-	 * Membership Types array.
-	 *
-	 * @since 0.1
-	 * @access public
-	 * @var array
-	 */
-	public $membership_types;
-
-	/**
-	 * An array of Memberships prior to edit.
-	 *
-	 * There are situations where nested updates may take place (e.g. via CiviRules)
-	 * so we keep copies of the Memberships in an array and try and match them up in
-	 * the post edit hook.
-	 *
-	 * @since 0.6.3
-	 * @access private
-	 * @var array
-	 */
-	private $bridging_array = [];
-
-	/**
 	 * Constructor.
 	 *
 	 * @since 0.1
@@ -239,7 +208,7 @@ class Civi_WP_Member_Sync_Members {
 			foreach ( $memberships['values'] as $membership ) {
 
 				// Get Contact ID.
-				$civi_contact_id = isset( $membership['contact_id'] ) ? (int) $membership['contact_id'] : false;
+				$civi_contact_id = isset( $membership['contact_id'] ) ? $membership['contact_id'] : false;
 				if ( false === $civi_contact_id ) {
 					continue;
 				}
@@ -258,7 +227,7 @@ class Civi_WP_Member_Sync_Members {
 				 */
 
 				// Continue if we've already processed this Contact.
-				if ( in_array( $civi_contact_id, $processed, true ) ) {
+				if ( in_array( $civi_contact_id, $processed ) ) {
 					continue;
 				}
 
@@ -630,11 +599,8 @@ class Civi_WP_Member_Sync_Members {
 			return;
 		}
 
-		// There should be only one result, so grab it.
-		$membership = reset( $result['values'] );
-
-		// Store in bridging array for later inspection.
-		$this->bridging_array[ (int) $membership['id'] ] = $result;
+		// Store in property for later inspection.
+		$this->membership_pre = $result;
 
 	}
 
@@ -665,7 +631,7 @@ class Civi_WP_Member_Sync_Members {
 		}
 
 		// Only process create and edit operations.
-		if ( ! in_array( $op, [ 'create', 'edit' ], true ) ) {
+		if ( ! in_array( $op, [ 'create', 'edit' ] ) ) {
 			return;
 		}
 
@@ -673,13 +639,10 @@ class Civi_WP_Member_Sync_Members {
 		$previous_membership = null;
 
 		// For edit operations, we first need to check for renewals.
-		if ( 'edit' === $op && isset( $this->bridging_array[ (int) $object_id ] ) && isset( $object_ref->membership_type_id ) ) {
-
-			// There should be only one result, so grab it.
-			$membership_pre = reset( $this->bridging_array[ (int) $object_id ]['values'] );
+		if ( 'edit' === $op && isset( $this->membership_pre ) && isset( $object_ref->membership_type_id ) ) {
 
 			// Make sure we're comparing like with like.
-			$previous_type_id = (int) $membership_pre['membership_type_id'];
+			$previous_type_id = (int) $this->membership_pre['values'][0]['membership_type_id'];
 			$current_type_id  = (int) $object_ref->membership_type_id;
 
 			// Do we have different CiviCRM Membership Types?
@@ -696,10 +659,7 @@ class Civi_WP_Member_Sync_Members {
 				 */
 
 				// Assign Membership for processing below.
-				$previous_membership = $this->bridging_array[ (int) $object_id ];
-
-				// Clear the processed item from the bridging array.
-				unset( $this->bridging_array[ (int) $object_id ] );
+				$previous_membership = $this->membership_pre;
 
 			}
 
@@ -1048,15 +1008,12 @@ class Civi_WP_Member_Sync_Members {
 		// Extract the Contact IDs.
 		$contact_ids = wp_list_pluck( $result['values'], 'contact_id' );
 
-		// Make sure Contact IDs are integers.
-		$contact_ids = array_map( 'intval', $contact_ids );
-
 		// Override Membership Statuses.
 		$overrides = [];
 		foreach ( $data['values'] as $membership ) {
 
 			// Skip checks if this Membership doesn't refer to a Contact in Trash.
-			if ( ! in_array( (int) $membership['contact_id'], $contact_ids, true ) ) {
+			if ( ! in_array( $membership['contact_id'], $contact_ids ) ) {
 				$overrides[] = $membership;
 				continue;
 			}

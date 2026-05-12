@@ -17,24 +17,24 @@ class Custom_Image_Header {
 	/**
 	 * Callback for administration header.
 	 *
-	 * @since 2.1.0
 	 * @var callable
+	 * @since 2.1.0
 	 */
 	public $admin_header_callback;
 
 	/**
 	 * Callback for header div.
 	 *
-	 * @since 3.0.0
 	 * @var callable
+	 * @since 3.0.0
 	 */
 	public $admin_image_div_callback;
 
 	/**
 	 * Holds default headers.
 	 *
-	 * @since 3.0.0
 	 * @var array
+	 * @since 3.0.0
 	 */
 	public $default_headers = array();
 
@@ -664,7 +664,7 @@ class Custom_Image_Header {
 		<input type="file" id="upload" name="import" />
 		<input type="hidden" name="action" value="save" />
 			<?php wp_nonce_field( 'custom-header-upload', '_wpnonce-custom-header-upload' ); ?>
-			<?php submit_button( _x( 'Upload', 'verb' ), '', 'submit', false ); ?>
+			<?php submit_button( __( 'Upload' ), '', 'submit', false ); ?>
 	</p>
 			<?php
 			$modal_update_href = add_query_arg(
@@ -830,8 +830,8 @@ endif;
 
 		if ( ! current_theme_supports( 'custom-header', 'uploads' ) ) {
 			wp_die(
-				'<h1>' . __( 'An error occurred while processing your header image.' ) . '</h1>' .
-				'<p>' . __( 'The active theme does not support uploading a custom header image. Please ensure your theme supports custom headers and try again.' ) . '</p>',
+				'<h1>' . __( 'Something went wrong.' ) . '</h1>' .
+				'<p>' . __( 'The active theme does not support uploading a custom header image.' ) . '</p>',
 				403
 			);
 		}
@@ -951,7 +951,7 @@ endif;
 	<p class="submit">
 		<?php submit_button( __( 'Crop and Publish' ), 'primary', 'submit', false ); ?>
 		<?php
-		if ( 1 === $oitar
+		if ( isset( $oitar ) && 1 === $oitar
 			&& ( current_theme_supports( 'custom-header', 'flex-height' )
 				|| current_theme_supports( 'custom-header', 'flex-width' ) )
 		) {
@@ -1018,8 +1018,8 @@ endif;
 
 		if ( ! current_theme_supports( 'custom-header', 'uploads' ) ) {
 			wp_die(
-				'<h1>' . __( 'An error occurred while processing your header image.' ) . '</h1>' .
-				'<p>' . __( 'The active theme does not support uploading a custom header image. Please ensure your theme supports custom headers and try again.' ) . '</p>',
+				'<h1>' . __( 'Something went wrong.' ) . '</h1>' .
+				'<p>' . __( 'The active theme does not support uploading a custom header image.' ) . '</p>',
 				403
 			);
 		}
@@ -1029,7 +1029,7 @@ endif;
 			&& ! current_theme_supports( 'custom-header', 'flex-width' )
 		) {
 			wp_die(
-				'<h1>' . __( 'An error occurred while processing your header image.' ) . '</h1>' .
+				'<h1>' . __( 'Something went wrong.' ) . '</h1>' .
 				'<p>' . __( 'The active theme does not support a flexible sized header image.' ) . '</p>',
 				403
 			);
@@ -1547,8 +1547,8 @@ endif;
 
 		$already_has_default = false;
 
-		foreach ( $this->default_headers as $k => $header ) {
-			if ( $header['url'] === $default ) {
+		foreach ( $this->default_headers as $k => $h ) {
+			if ( $h['url'] === $default ) {
 				$already_has_default = true;
 				break;
 			}

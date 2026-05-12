@@ -9,15 +9,13 @@
 	"textdomain": "default",
 	"attributes": {
 		"url": {
-			"type": "string",
-			"role": "content"
+			"type": "string"
 		},
 		"service": {
 			"type": "string"
 		},
 		"label": {
-			"type": "string",
-			"role": "content"
+			"type": "string"
 		},
 		"rel": {
 			"type": "string"

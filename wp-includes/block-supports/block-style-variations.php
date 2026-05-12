@@ -8,6 +8,21 @@
  */
 
 /**
+ * Generate block style variation instance name.
+ *
+ * @since 6.6.0
+ * @access private
+ *
+ * @param array  $block     Block object.
+ * @param string $variation Slug for the block style variation.
+ *
+ * @return string The unique variation name.
+ */
+function wp_create_block_style_variation_instance_name( $block, $variation ) {
+	return $variation . '--' . md5( serialize( $block ) );
+}
+
+/**
  * Determines the block style variation names within a CSS class string.
  *
  * @since 6.6.0
@@ -62,7 +77,7 @@ function wp_resolve_block_style_variation_ref_values( &$variation_data, $theme_j
 	}
 }
 /**
- * Renders the block style variation's styles.
+ * Render the block style variation's styles.
  *
  * In the case of nested blocks with variations applied, we want the parent
  * variation's styles to be rendered before their descendants. This solves the
@@ -109,7 +124,7 @@ function wp_render_block_style_variation_support_styles( $parsed_block ) {
 	 */
 	wp_resolve_block_style_variation_ref_values( $variation_data, $theme_json );
 
-	$variation_instance = wp_unique_id( $variation . '--' );
+	$variation_instance = wp_create_block_style_variation_instance_name( $parsed_block, $variation );
 	$class_name         = "is-style-$variation_instance";
 	$updated_class_name = $parsed_block['attrs']['className'] . " $class_name";
 
@@ -181,7 +196,7 @@ function wp_render_block_style_variation_support_styles( $parsed_block ) {
 		return $parsed_block;
 	}
 
-	wp_register_style( 'block-style-variation-styles', false, array( 'wp-block-library', 'global-styles' ) );
+	wp_register_style( 'block-style-variation-styles', false, array( 'global-styles', 'wp-block-library' ) );
 	wp_add_inline_style( 'block-style-variation-styles', $variation_styles );
 
 	/*
@@ -194,14 +209,14 @@ function wp_render_block_style_variation_support_styles( $parsed_block ) {
 }
 
 /**
- * Ensures the variation block support class name generated and added to
+ * Ensure the variation block support class name generated and added to
  * block attributes in the `render_block_data` filter gets applied to the
  * block's markup.
  *
+ * @see wp_render_block_style_variation_support_styles
+ *
  * @since 6.6.0
  * @access private
- *
- * @see wp_render_block_style_variation_support_styles
  *
  * @param  string $block_content Rendered block content.
  * @param  array  $block         Block object.
@@ -215,9 +230,11 @@ function wp_render_block_style_variation_class_name( $block_content, $block ) {
 
 	/*
 	 * Matches a class prefixed by `is-style`, followed by the
-	 * variation slug, then `--`, and finally an instance number.
+	 * variation slug, then `--`, and finally a hash.
+	 *
+	 * See `wp_create_block_style_variation_instance_name` for class generation.
 	 */
-	preg_match( '/\bis-style-(\S+?--\d+)\b/', $block['attrs']['className'], $matches );
+	preg_match( '/\bis-style-(\S+?--\w+)\b/', $block['attrs']['className'], $matches );
 
 	if ( empty( $matches ) ) {
 		return $block_content;

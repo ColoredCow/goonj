@@ -1,5 +1,5 @@
 var type = self.data.type,
-	bin = new Uint8Array(self.data.bin),
+	bin = self.data.bin,
 	unzipFiles = function() {
 		/** @type {Array.<string>} */
 		var filenameList = [];
@@ -44,22 +44,12 @@ var type = self.data.type,
 	};
 
 self.res = {};
-
-switch (type) {
-  case 'tar':
-    self.res.files = tarFiles(bin);
-    break;
-  case 'zip':
-    self.res.files = unzipFiles.call(new Zlib.Unzip(bin));
-    break;
-  case 'gzip':
-    self.res.files = tarFiles(new Zlib.Gunzip(bin).decompress());
-    break;
-  case 'bzip2':
-    self.res.files = tarFiles(self.bzip2.simple(self.bzip2.array(bin)));
-    break;
-  default:
-    
-    break;
+if (type === 'tar') {
+	self.res.files = tarFiles(new Uint8Array(bin));
+} else if (type === 'zip') {
+	self.res.files = unzipFiles.call(new Zlib.Unzip(new Uint8Array(bin)));
+} else if (type === 'gzip') {
+	self.res.files = tarFiles((new Zlib.Gunzip(new Uint8Array(bin))).decompress());
+} else if (type === 'bzip2') {
+	self.res.files = tarFiles(self.bzip2.simple(self.bzip2.array(new Uint8Array(bin))));
 }
-

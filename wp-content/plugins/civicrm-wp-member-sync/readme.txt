@@ -3,9 +3,9 @@ Contributors: needle, cuny-academic-commons
 Donate link: https://www.paypal.me/interactivist
 Tags: civicrm, member, membership, sync
 Requires at least: 4.9
-Tested up to: 6.9
+Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 0.6.4
+Stable tag: 0.6.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
 
@@ -79,10 +79,6 @@ Code that used the `civi_wp_member_sync_after_insert_user` hook to send User Not
 
 
 == Changelog ==
-
-= 0.6.3 =
-
-* Deletes BuddyPress and "Groups" group memberships when a CiviCRM Membership is deleted
 
 = 0.6.2 =
 

@@ -26,13 +26,8 @@ class ParagonIE_Sodium_File extends ParagonIE_Sodium_Core_Util
      * @throws SodiumException
      * @throws TypeError
      */
-    public static function box(
-        $inputFile,
-        $outputFile,
-        $nonce,
-        #[\SensitiveParameter]
-        $keyPair
-    ) {
+    public static function box($inputFile, $outputFile, $nonce, $keyPair)
+    {
         /* Type checks: */
         if (!is_string($inputFile)) {
             throw new TypeError('Argument 1 must be a string, ' . gettype($inputFile) . ' given.');
@@ -97,13 +92,8 @@ class ParagonIE_Sodium_File extends ParagonIE_Sodium_Core_Util
      * @throws SodiumException
      * @throws TypeError
      */
-    public static function box_open(
-        $inputFile,
-        $outputFile,
-        $nonce,
-        #[\SensitiveParameter]
-        $keypair
-    ) {
+    public static function box_open($inputFile, $outputFile, $nonce, $keypair)
+    {
         /* Type checks: */
         if (!is_string($inputFile)) {
             throw new TypeError('Argument 1 must be a string, ' . gettype($inputFile) . ' given.');
@@ -126,9 +116,6 @@ class ParagonIE_Sodium_File extends ParagonIE_Sodium_Core_Util
             throw new TypeError('Argument 4 must be CRYPTO_BOX_KEYPAIRBYTES bytes');
         }
 
-        if (!file_exists($inputFile)) {
-            throw new SodiumException('Input file does not exist');
-        }
         /** @var int $size */
         $size = filesize($inputFile);
         if (!is_int($size)) {
@@ -142,7 +129,7 @@ class ParagonIE_Sodium_File extends ParagonIE_Sodium_Core_Util
         }
 
         /** @var resource $ofp */
-        $ofp = @fopen($outputFile, 'wb');
+        $ofp = fopen($outputFile, 'wb');
         if (!is_resource($ofp)) {
             fclose($ifp);
             throw new SodiumException('Could not open output file for writing');
@@ -175,12 +162,8 @@ class ParagonIE_Sodium_File extends ParagonIE_Sodium_Core_Util
      * @throws SodiumException
      * @throws TypeError
      */
-    public static function box_seal(
-        $inputFile,
-        $outputFile,
-        #[\SensitiveParameter]
-        $publicKey
-    ) {
+    public static function box_seal($inputFile, $outputFile, $publicKey)
+    {
         /* Type checks: */
         if (!is_string($inputFile)) {
             throw new TypeError('Argument 1 must be a string, ' . gettype($inputFile) . ' given.');
@@ -197,9 +180,6 @@ class ParagonIE_Sodium_File extends ParagonIE_Sodium_Core_Util
             throw new TypeError('Argument 3 must be CRYPTO_BOX_PUBLICKEYBYTES bytes');
         }
 
-        if (!file_exists($inputFile)) {
-            throw new SodiumException('Input file does not exist');
-        }
         /** @var int $size */
         $size = filesize($inputFile);
         if (!is_int($size)) {
@@ -213,7 +193,7 @@ class ParagonIE_Sodium_File extends ParagonIE_Sodium_Core_Util
         }
 
         /** @var resource $ofp */
-        $ofp = @fopen($outputFile, 'wb');
+        $ofp = fopen($outputFile, 'wb');
         if (!is_resource($ofp)) {
             fclose($ifp);
             throw new SodiumException('Could not open output file for writing');
@@ -286,12 +266,8 @@ class ParagonIE_Sodium_File extends ParagonIE_Sodium_Core_Util
      * @throws SodiumException
      * @throws TypeError
      */
-    public static function box_seal_open(
-        $inputFile,
-        $outputFile,
-        #[\SensitiveParameter]
-        $ecdhKeypair
-    ) {
+    public static function box_seal_open($inputFile, $outputFile, $ecdhKeypair)
+    {
         /* Type checks: */
         if (!is_string($inputFile)) {
             throw new TypeError('Argument 1 must be a string, ' . gettype($inputFile) . ' given.');
@@ -310,9 +286,6 @@ class ParagonIE_Sodium_File extends ParagonIE_Sodium_Core_Util
 
         $publicKey = ParagonIE_Sodium_Compat::crypto_box_publickey($ecdhKeypair);
 
-        if (!file_exists($inputFile)) {
-            throw new SodiumException('Input file does not exist');
-        }
         /** @var int $size */
         $size = filesize($inputFile);
         if (!is_int($size)) {
@@ -326,7 +299,7 @@ class ParagonIE_Sodium_File extends ParagonIE_Sodium_Core_Util
         }
 
         /** @var resource $ofp */
-        $ofp = @fopen($outputFile, 'wb');
+        $ofp = fopen($outputFile, 'wb');
         if (!is_resource($ofp)) {
             fclose($ifp);
             throw new SodiumException('Could not open output file for writing');
@@ -378,12 +351,8 @@ class ParagonIE_Sodium_File extends ParagonIE_Sodium_Core_Util
      * @throws TypeError
      * @psalm-suppress FailedTypeResolution
      */
-    public static function generichash(
-        $filePath,
-        #[\SensitiveParameter]
-        $key = '',
-        $outputLength = 32
-    ) {
+    public static function generichash($filePath, $key = '', $outputLength = 32)
+    {
         /* Type checks: */
         if (!is_string($filePath)) {
             throw new TypeError('Argument 1 must be a string, ' . gettype($filePath) . ' given.');
@@ -418,9 +387,6 @@ class ParagonIE_Sodium_File extends ParagonIE_Sodium_Core_Util
             throw new SodiumException('Argument 3 must be at least CRYPTO_GENERICHASH_BYTES_MAX');
         }
 
-        if (!file_exists($filePath)) {
-            throw new SodiumException('File does not exist');
-        }
         /** @var int $size */
         $size = filesize($filePath);
         if (!is_int($size)) {
@@ -463,13 +429,8 @@ class ParagonIE_Sodium_File extends ParagonIE_Sodium_Core_Util
      * @throws SodiumException
      * @throws TypeError
      */
-    public static function secretbox(
-        $inputFile,
-        $outputFile,
-        $nonce,
-        #[\SensitiveParameter]
-        $key
-    ) {
+    public static function secretbox($inputFile, $outputFile, $nonce, $key)
+    {
         /* Type checks: */
         if (!is_string($inputFile)) {
             throw new TypeError('Argument 1 must be a string, ' . gettype($inputFile) . ' given..');
@@ -492,9 +453,6 @@ class ParagonIE_Sodium_File extends ParagonIE_Sodium_Core_Util
             throw new TypeError('Argument 4 must be CRYPTO_SECRETBOX_KEYBYTES bytes');
         }
 
-        if (!file_exists($inputFile)) {
-            throw new SodiumException('Input file does not exist');
-        }
         /** @var int $size */
         $size = filesize($inputFile);
         if (!is_int($size)) {
@@ -502,7 +460,7 @@ class ParagonIE_Sodium_File extends ParagonIE_Sodium_Core_Util
         }
 
         /** @var resource $ifp */
-        $ifp = @fopen($inputFile, 'rb');
+        $ifp = fopen($inputFile, 'rb');
         if (!is_resource($ifp)) {
             throw new SodiumException('Could not open input file for reading');
         }
@@ -536,13 +494,8 @@ class ParagonIE_Sodium_File extends ParagonIE_Sodium_Core_Util
      * @throws SodiumException
      * @throws TypeError
      */
-    public static function secretbox_open(
-        $inputFile,
-        $outputFile,
-        $nonce,
-        #[\SensitiveParameter]
-        $key
-    ) {
+    public static function secretbox_open($inputFile, $outputFile, $nonce, $key)
+    {
         /* Type checks: */
         if (!is_string($inputFile)) {
             throw new TypeError('Argument 1 must be a string, ' . gettype($inputFile) . ' given.');
@@ -559,15 +512,12 @@ class ParagonIE_Sodium_File extends ParagonIE_Sodium_Core_Util
 
         /* Input validation: */
         if (self::strlen($nonce) !== ParagonIE_Sodium_Compat::CRYPTO_SECRETBOX_NONCEBYTES) {
-            throw new TypeError('Argument 3 must be CRYPTO_SECRETBOX_NONCEBYTES bytes');
+            throw new TypeError('Argument 4 must be CRYPTO_SECRETBOX_NONCEBYTES bytes');
         }
         if (self::strlen($key) !== ParagonIE_Sodium_Compat::CRYPTO_SECRETBOX_KEYBYTES) {
-            throw new TypeError('Argument 4 must be CRYPTO_SECRETBOX_KEYBYTES bytes');
+            throw new TypeError('Argument 4 must be CRYPTO_SECRETBOXBOX_KEYBYTES bytes');
         }
 
-        if (!file_exists($inputFile)) {
-            throw new SodiumException('Input file does not exist');
-        }
         /** @var int $size */
         $size = filesize($inputFile);
         if (!is_int($size)) {
@@ -581,7 +531,7 @@ class ParagonIE_Sodium_File extends ParagonIE_Sodium_Core_Util
         }
 
         /** @var resource $ofp */
-        $ofp = @fopen($outputFile, 'wb');
+        $ofp = fopen($outputFile, 'wb');
         if (!is_resource($ofp)) {
             fclose($ifp);
             throw new SodiumException('Could not open output file for writing');
@@ -611,11 +561,8 @@ class ParagonIE_Sodium_File extends ParagonIE_Sodium_Core_Util
      * @throws SodiumException
      * @throws TypeError
      */
-    public static function sign(
-        $filePath,
-        #[\SensitiveParameter]
-        $secretKey
-    ) {
+    public static function sign($filePath, $secretKey)
+    {
         /* Type checks: */
         if (!is_string($filePath)) {
             throw new TypeError('Argument 1 must be a string, ' . gettype($filePath) . ' given.');
@@ -632,9 +579,6 @@ class ParagonIE_Sodium_File extends ParagonIE_Sodium_Core_Util
             return self::sign_core32($filePath, $secretKey);
         }
 
-        if (!file_exists($filePath)) {
-            throw new SodiumException('File does not exist');
-        }
         /** @var int $size */
         $size = filesize($filePath);
         if (!is_int($size)) {
@@ -713,11 +657,8 @@ class ParagonIE_Sodium_File extends ParagonIE_Sodium_Core_Util
      * @throws TypeError
      * @throws Exception
      */
-    public static function verify(
-        $sig,
-        $filePath,
-        $publicKey
-    ) {
+    public static function verify($sig, $filePath, $publicKey)
+    {
         /* Type checks: */
         if (!is_string($sig)) {
             throw new TypeError('Argument 1 must be a string, ' . gettype($sig) . ' given.');
@@ -766,9 +707,6 @@ class ParagonIE_Sodium_File extends ParagonIE_Sodium_Core_Util
             throw new SodiumException('All zero public key');
         }
 
-        if (!file_exists($filePath)) {
-            throw new SodiumException('File does not exist');
-        }
         /** @var int $size */
         $size = filesize($filePath);
         if (!is_int($size)) {
@@ -787,14 +725,8 @@ class ParagonIE_Sodium_File extends ParagonIE_Sodium_Core_Util
         // Set ParagonIE_Sodium_Compat::$fastMult to true to speed up verification.
         ParagonIE_Sodium_Compat::$fastMult = true;
 
-        if (ParagonIE_Sodium_Core_Ed25519::small_order($publicKey)) {
-            throw new SodiumException('Public key has small order');
-        }
         /** @var ParagonIE_Sodium_Core_Curve25519_Ge_P3 $A */
         $A = ParagonIE_Sodium_Core_Ed25519::ge_frombytes_negate_vartime($publicKey);
-        if (!ParagonIE_Sodium_Core_Ed25519::is_on_main_subgroup($A)) {
-            throw new SodiumException('Public key is not on a member of the main subgroup');
-        }
 
         $hs = hash_init('sha512');
         self::hash_update($hs, self::substr($sig, 0, 32));

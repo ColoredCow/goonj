@@ -1,25 +1,22 @@
 <?php
 /**
   Plugin Name: WP File Manager
-  Plugin URI: https://filemanagerpro.io/
+  Plugin URI: https://wordpress.org/plugins/wp-file-manager
   Description: Manage your WP files.
   Author: mndpsingh287
-  Version: 8.0.4
+  Version: 7.2.9
   Author URI: https://profiles.wordpress.org/mndpsingh287
   License: GPLv2
  **/
 if (!defined('WP_FILE_MANAGER_DIRNAME')) {
     define('WP_FILE_MANAGER_DIRNAME', plugin_basename(dirname(__FILE__)));
 }
-if ( ! defined( 'WP_FM_SITE_URL' ) ) {
-    define( 'WP_FM_SITE_URL', 'https://filemanagerpro.io' );
-}
 define('WP_FILE_MANAGER_PATH', plugin_dir_path(__FILE__));
 if (!class_exists('mk_file_folder_manager')):
     class mk_file_folder_manager
     {
         protected $SERVER = 'https://filemanagerpro.io/api/plugindata/api.php';
-        var $ver = '8.0.4';
+        var $ver = '7.2.9';
         /* Auto Load Hooks */
         public function __construct()
         {
@@ -887,7 +884,7 @@ if (!class_exists('mk_file_folder_manager')):
                 $jquery_ui_js = 'jquery-ui-1.11.4.js';
                 // 5.6 jquery ui issue fix
                 if ( version_compare( $wp_version, '5.6', '>=' ) ) {
-                    $jquery_ui_js = 'jquery-ui-1.13.2.js';
+                    $jquery_ui_js = 'jquery-ui-1.12.1.js';
                 }
 
                 wp_enqueue_script('fm_jquery_ui', plugins_url('lib/jquery/'.$jquery_ui_js, __FILE__), $this->ver);
@@ -1077,13 +1074,6 @@ if (!class_exists('mk_file_folder_manager')):
                                    'locked' => false,
                                 );
             $nonce = sanitize_text_field($_REQUEST['_wpnonce']);
-            if ( ! current_user_can('manage_options') ) {
-                status_header(403);
-                echo json_encode([
-                    'error' => 'Access denied'
-                ]);
-                exit;
-            }
             if (wp_verify_nonce($nonce, 'wp-file-manager')) {
                 require 'lib/php/autoload.php';
                 if (isset($settings['fm_enable_trash']) && $settings['fm_enable_trash'] == '1') {

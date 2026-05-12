@@ -161,7 +161,7 @@ function wp_print_media_templates() {
 		__( '<a href="%1$s" %2$s>Learn how to describe the purpose of the image%3$s</a>. Leave empty if the image is purely decorative.' ),
 		/* translators: Localized tutorial, if one exists. W3C Web Accessibility Initiative link has list of existing translations. */
 		esc_url( __( 'https://www.w3.org/WAI/tutorials/images/decision-tree/' ) ),
-		'target="_blank"',
+		'target="_blank" rel="noopener"',
 		sprintf(
 			'<span class="screen-reader-text"> %s</span>',
 			/* translators: Hidden accessibility text. */
@@ -195,14 +195,14 @@ function wp_print_media_templates() {
 
 	<?php // Template for the media modal. ?>
 	<script type="text/html" id="tmpl-media-modal">
-		<div id="wp-media-modal" tabindex="0" class="<?php echo $class; ?>" role="dialog" aria-labelledby="media-frame-title">
+		<div tabindex="0" class="<?php echo $class; ?>" role="dialog" aria-labelledby="media-frame-title">
 			<# if ( data.hasCloseButton ) { #>
-				<button type="button" class="media-modal-close"><span class="media-modal-icon" aria-hidden="true"></span><span class="screen-reader-text">
+				<button type="button" class="media-modal-close"><span class="media-modal-icon"><span class="screen-reader-text">
 					<?php
 					/* translators: Hidden accessibility text. */
 					_e( 'Close dialog' );
 					?>
-				</span></button>
+				</span></span></button>
 			<# } #>
 			<div class="media-modal-content" role="document"></div>
 		</div>
@@ -223,7 +223,7 @@ function wp_print_media_templates() {
 		</div>
 	</script>
 
-	<?php // Template for the inline uploader, used for example in the Media Library admin page - Add. ?>
+	<?php // Template for the inline uploader, used for example in the Media Library admin page - Add New. ?>
 	<script type="text/html" id="tmpl-uploader-inline">
 		<# var messageClass = data.message ? 'has-upload-message' : 'no-upload-message'; #>
 		<# if ( data.canClose ) { #>
@@ -356,7 +356,7 @@ function wp_print_media_templates() {
 
 	<?php // Template for the uploading status errors. ?>
 	<script type="text/html" id="tmpl-uploader-status-error">
-		<span class="upload-error-filename word-wrap-break-word">{{{ data.filename }}}</span>
+		<span class="upload-error-filename">{{{ data.filename }}}</span>
 		<span class="upload-error-message">{{ data.message }}</span>
 	</script>
 
@@ -365,7 +365,7 @@ function wp_print_media_templates() {
 		<div class="edit-media-header">
 			<button class="left dashicons"<# if ( ! data.hasPrevious ) { #> disabled<# } #>><span class="screen-reader-text"><?php /* translators: Hidden accessibility text. */ _e( 'Edit previous media item' ); ?></span></button>
 			<button class="right dashicons"<# if ( ! data.hasNext ) { #> disabled<# } #>><span class="screen-reader-text"><?php /* translators: Hidden accessibility text. */ _e( 'Edit next media item' ); ?></span></button>
-			<button type="button" class="media-modal-close"><span class="media-modal-icon" aria-hidden="true"></span><span class="screen-reader-text"><?php _e( 'Close dialog' ); ?></span></button>
+			<button type="button" class="media-modal-close"><span class="media-modal-icon"><span class="screen-reader-text"><?php _e( 'Close dialog' ); ?></span></span></button>
 		</div>
 		<div class="media-frame-title"></div>
 		<div class="media-frame-content"></div>
@@ -443,7 +443,7 @@ function wp_print_media_templates() {
 					?>
 				</h2>
 				<div class="uploaded"><strong><?php _e( 'Uploaded on:' ); ?></strong> {{ data.dateFormatted }}</div>
-				<div class="uploaded-by word-wrap-break-word">
+				<div class="uploaded-by">
 					<strong><?php _e( 'Uploaded by:' ); ?></strong>
 						<# if ( data.authorLink ) { #>
 							<a href="{{ data.authorLink }}">{{ data.authorName }}</a>
@@ -605,12 +605,8 @@ function wp_print_media_templates() {
 					<div class="centered">
 						<# if ( data.image && data.image.src && data.image.src !== data.icon ) { #>
 							<img src="{{ data.image.src }}" class="thumbnail" draggable="false" alt="" />
-						<# } else if ( data.sizes ) {
-								if ( data.sizes.medium ) { #>
-									<img src="{{ data.sizes.medium.url }}" class="thumbnail" draggable="false" alt="" />
-								<# } else { #>
-									<img src="{{ data.sizes.full.url }}" class="thumbnail" draggable="false" alt="" />
-								<# } #>
+						<# } else if ( data.sizes && data.sizes.medium ) { #>
+							<img src="{{ data.sizes.medium.url }}" class="thumbnail" draggable="false" alt="" />
 						<# } else { #>
 							<img src="{{ data.icon }}" class="icon" draggable="false" alt="" />
 						<# } #>
@@ -621,7 +617,7 @@ function wp_print_media_templates() {
 				<# } #>
 			</div>
 			<# if ( data.buttons.close ) { #>
-				<button type="button" class="button-link attachment-close"><span class="media-modal-icon" aria-hidden="true"></span><span class="screen-reader-text">
+				<button type="button" class="button-link attachment-close media-modal-icon"><span class="screen-reader-text">
 					<?php
 					/* translators: Hidden accessibility text. */
 					_e( 'Remove' );
@@ -630,7 +626,7 @@ function wp_print_media_templates() {
 			<# } #>
 		</div>
 		<# if ( data.buttons.check ) { #>
-			<button type="button" class="check" tabindex="-1"><span class="media-modal-icon" aria-hidden="true"></span><span class="screen-reader-text">
+			<button type="button" class="check" tabindex="-1"><span class="media-modal-icon"></span><span class="screen-reader-text">
 				<?php
 				/* translators: Hidden accessibility text. */
 				_e( 'Deselect' );
@@ -844,7 +840,7 @@ function wp_print_media_templates() {
 						<?php esc_html_e( 'Right' ); ?>
 					</option>
 					<option value="none" selected>
-						<?php echo esc_html_x( 'None', 'Alignment option' ); ?>
+						<?php esc_html_x( 'None', 'Alignment' ); ?>
 					</option>
 				</select>
 			</span>
@@ -871,7 +867,7 @@ function wp_print_media_templates() {
 				<option value="file">
 			<# } else { #>
 				<option value="none" selected>
-					<?php echo esc_html_x( 'None', 'Media item link option' ); ?>
+					<?php esc_html_x( 'None', 'Embedded player type' ); ?>
 				</option>
 				<option value="file">
 			<# } #>
@@ -956,7 +952,7 @@ function wp_print_media_templates() {
 					<?php esc_html_e( 'Media File' ); ?>
 				</option>
 				<option value="none" <# if ( 'none' === wp.media.galleryDefaults.link ) { #>selected="selected"<# } #>>
-					<?php echo esc_html_x( 'None', 'Media item link option' ); ?>
+					<?php esc_html_x( 'None', 'Media link target' ); ?>
 				</option>
 			</select>
 		</span>
@@ -1100,7 +1096,7 @@ function wp_print_media_templates() {
 						<?php esc_html_e( 'Right' ); ?>
 					</button>
 					<button class="button active" value="none">
-						<?php echo esc_html_x( 'None', 'Alignment option' ); ?>
+						<?php esc_html_x( 'None', 'Alignment' ); ?>
 					</button>
 				</span>
 			</span>
@@ -1117,7 +1113,7 @@ function wp_print_media_templates() {
 						<?php esc_html_e( 'Custom URL' ); ?>
 					</button>
 					<button class="button active" value="none">
-						<?php echo esc_html_x( 'None', 'Media item link option' ); ?>
+						<?php esc_html_x( 'None', 'Media URL' ); ?>
 					</button>
 				</span>
 			</span>
@@ -1164,7 +1160,7 @@ function wp_print_media_templates() {
 									<?php esc_html_e( 'Right' ); ?>
 								</button>
 								<button class="button active" value="none">
-									<?php echo esc_html_x( 'None', 'Alignment option' ); ?>
+									<?php esc_html_x( 'None', 'Alignment' ); ?>
 								</button>
 							</span>
 						</span>
@@ -1240,7 +1236,7 @@ function wp_print_media_templates() {
 								<?php esc_html_e( 'Custom URL' ); ?>
 							</option>
 							<option value="none">
-								<?php echo esc_html_x( 'None', 'Media item link option' ); ?>
+								<?php esc_html_x( 'None', 'Media URL' ); ?>
 							</option>
 						</select>
 					</span>
@@ -1360,7 +1356,7 @@ function wp_print_media_templates() {
 						<span class="button-group button-large" data-setting="preload">
 							<button class="button" value="auto"><?php _ex( 'Auto', 'auto preload' ); ?></button>
 							<button class="button" value="metadata"><?php _e( 'Metadata' ); ?></button>
-							<button class="button active" value="none"><?php _ex( 'None', 'Preload value' ); ?></button>
+							<button class="button active" value="none"><?php _x( 'None', 'Preload type' ); ?></button>
 						</span>
 					</span>
 				</fieldset>
@@ -1459,7 +1455,7 @@ function wp_print_media_templates() {
 						<span class="button-group button-large" data-setting="preload">
 							<button class="button" value="auto"><?php _ex( 'Auto', 'auto preload' ); ?></button>
 							<button class="button" value="metadata"><?php _e( 'Metadata' ); ?></button>
-							<button class="button active" value="none"><?php _ex( 'None', 'Preload value' ); ?></button>
+							<button class="button active" value="none"><?php _x( 'None', 'Preload type' ); ?></button>
 						</span>
 					</span>
 				</fieldset>
@@ -1546,31 +1542,21 @@ function wp_print_media_templates() {
 	</script>
 
 	<?php // Template for the Site Icon preview, used for example in the Customizer. ?>
-	<script type="text/html" id="tmpl-site-icon-preview-crop">
-		<style>
-			:root{
-				--site-icon-url: url( "{{ data.url }}" );
-			}
-		</style>
-		<h2><?php _ex( 'Site Icon Preview', 'noun' ); ?></h2>
-		<p><?php _e( 'As an app icon and a browser icon.' ); ?></p>
-		<div class="site-icon-preview crop">
-			<div class="image-preview-wrap app-icon-preview">
-				<img id="preview-app-icon" src="{{ data.url }}" class="app-icon-preview" alt="<?php esc_attr_e( 'Preview as an app icon' ); ?>" />
+	<script type="text/html" id="tmpl-site-icon-preview">
+		<h2><?php _e( 'Preview' ); ?></h2>
+		<strong aria-hidden="true"><?php _e( 'As a browser icon' ); ?></strong>
+		<div class="favicon-preview">
+			<img src="<?php echo esc_url( admin_url( 'images/' . ( is_rtl() ? 'browser-rtl.png' : 'browser.png' ) ) ); ?>" class="browser-preview" width="182" height="" alt="" />
+
+			<div class="favicon">
+				<img id="preview-favicon" src="{{ data.url }}" alt="<?php esc_attr_e( 'Preview as a browser icon' ); ?>" />
 			</div>
-			<div class="site-icon-preview-browser">
-				<svg role="img" aria-hidden="true" fill="none" xmlns="http://www.w3.org/2000/svg" class="browser-buttons"><path fill-rule="evenodd" clip-rule="evenodd" d="M0 20a6 6 0 1 1 12 0 6 6 0 0 1-12 0Zm18 0a6 6 0 1 1 12 0 6 6 0 0 1-12 0Zm24-6a6 6 0 1 0 0 12 6 6 0 0 0 0-12Z" /></svg>
-				<div class="site-icon-preview-tab">
-					<div class="image-preview-wrap browser">
-						<img id="preview-favicon" src="{{ data.url }}" class="browser-icon-preview" alt="<?php esc_attr_e( 'Preview as a browser icon' ); ?>" />
-					</div>
-					<div class="site-icon-preview-site-title" aria-hidden="true"><# print( '<?php echo esc_js( get_bloginfo( 'name' ) ); ?>' ) #></div>
-						<svg role="img" aria-hidden="true" fill="none" xmlns="http://www.w3.org/2000/svg" class="close-button">
-							<path d="M12 13.0607L15.7123 16.773L16.773 15.7123L13.0607 12L16.773 8.28772L15.7123 7.22706L12 10.9394L8.28771 7.22705L7.22705 8.28771L10.9394 12L7.22706 15.7123L8.28772 16.773L12 13.0607Z" />
-						</svg>
-					</div>
-				</div>
-			</div>
+			<span class="browser-title" aria-hidden="true"><# print( '<?php echo esc_js( get_bloginfo( 'name' ) ); ?>' ) #></span>
+		</div>
+
+		<strong aria-hidden="true"><?php _e( 'As an app icon' ); ?></strong>
+		<div class="app-icon-preview">
+			<img id="preview-app-icon" src="{{ data.url }}" alt="<?php esc_attr_e( 'Preview as an app icon' ); ?>" />
 		</div>
 	</script>
 

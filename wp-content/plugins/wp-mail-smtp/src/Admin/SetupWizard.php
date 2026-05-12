@@ -116,11 +116,6 @@ class SetupWizard {
 			return;
 		}
 
-		// Only users who can activate plugins should be redirected.
-		if ( ! current_user_can( 'activate_plugins' ) ) {
-			return;
-		}
-
 		// Check if we should consider redirection.
 		if ( ! get_transient( 'wp_mail_smtp_activation_redirect' ) ) {
 			return;
@@ -239,14 +234,10 @@ class SetupWizard {
 				'public_url'         => wp_mail_smtp()->assets_url . '/vue/',
 				'current_user_email' => wp_get_current_user()->user_email,
 				'completed_time'     => self::get_stats()['completed_time'],
-				'sendlayer'          => [
-					'connect_nonce' => wp_create_nonce( 'wp-mail-smtp-sendlayer-connect' ),
-					'return_url'    => self::get_site_url() . '#/step/configure_mailer/sendlayer',
-				],
 				'education'          => [
 					'upgrade_text'   => esc_html__( 'We\'re sorry, the %mailer% mailer is not available on your plan. Please upgrade to the PRO plan to unlock all these awesome features.', 'wp-mail-smtp' ),
 					'upgrade_button' => esc_html__( 'Upgrade to Pro', 'wp-mail-smtp' ),
-					'upgrade_url'    => add_query_arg( 'discount', 'SMTPLITEUPGRADE', wp_mail_smtp()->get_upgrade_link( [ 'medium' => 'setup-wizard' ] ) ),
+					'upgrade_url'    => add_query_arg( 'discount', 'SMTPLITEUPGRADE', wp_mail_smtp()->get_upgrade_link( '' ) ),
 					'upgrade_bonus'  => sprintf(
 						wp_kses( /* Translators: %s - discount value $50 */
 							__( '<strong>Bonus:</strong> WP Mail SMTP users get <span class="highlight">%s off</span> regular price,<br>applied at checkout.', 'wp-mail-smtp' ),
@@ -1213,14 +1204,19 @@ class SetupWizard {
 
 		check_ajax_referer( 'wpms-admin-nonce', 'nonce' );
 
+		$options = Options::init();
+		$mailer  = $options->get( 'mail', 'mailer' );
+		$email   = $options->get( 'mail', 'from_email' );
+		$domain  = '';
+
 		// Send the test mail.
 		$result = wp_mail(
-			$this->get_test_email_recipient(),
+			$email,
 			'WP Mail SMTP Automatic Email Test',
 			TestTab::get_email_message_text(),
-			[
+			array(
 				'X-Mailer-Type:WPMailSMTP/Admin/SetupWizard/Test',
-			]
+			)
 		);
 
 		if ( ! $result ) {
@@ -1231,18 +1227,13 @@ class SetupWizard {
 			wp_send_json_error();
 		}
 
-		$options    = Options::init();
-		$mailer     = $options->get( 'mail', 'mailer' );
-		$from_email = $options->get( 'mail', 'from_email' );
-		$domain     = '';
-
 		// Add the optional sending domain parameter.
 		if ( in_array( $mailer, [ 'mailgun', 'sendinblue', 'sendgrid' ], true ) ) {
 			$domain = $options->get( $mailer, 'domain' );
 		}
 
 		// Perform the domain checker API test.
-		$domain_checker = new DomainChecker( $mailer, $from_email, $domain );
+		$domain_checker = new DomainChecker( $mailer, $email, $domain );
 
 		if ( $domain_checker->has_errors() ) {
 			$this->update_completed_stat( false );
@@ -1258,42 +1249,6 @@ class SetupWizard {
 	}
 
 	/**
-	 * Get the test email recipient.
-	 *
-	 * @since 4.7.0
-	 *
-	 * @return string
-	 */
-	private function get_test_email_recipient() {
-
-		$options    = Options::init();
-		$mailer     = $options->get( 'mail', 'mailer' );
-		$from_email = $options->get( 'mail', 'from_email' );
-
-		/*
-		 * Some mailers in a test mode allows to send emails only to the registered
-		 * From email address, so we need to cover this case.
-		 */
-		$to_email = $from_email;
-
-		$mailer_specific_constant_name = 'WPMS_SETUP_WIZARD_TEST_' . strtoupper( $mailer ) . '_EMAIL_RECIPIENT';
-
-		if (
-			defined( $mailer_specific_constant_name ) &&
-			is_email( constant( $mailer_specific_constant_name ) )
-		) {
-			$to_email = constant( $mailer_specific_constant_name );
-		} elseif (
-			defined( 'WPMS_SETUP_WIZARD_TEST_EMAIL_RECIPIENT' ) &&
-			is_email( WPMS_SETUP_WIZARD_TEST_EMAIL_RECIPIENT )
-		) {
-			$to_email = WPMS_SETUP_WIZARD_TEST_EMAIL_RECIPIENT;
-		}
-
-		return $to_email;
-	}
-
-	/**
 	 * AJAX callback for sending feedback.
 	 *
 	 * @since 2.6.0
@@ -1301,10 +1256,6 @@ class SetupWizard {
 	public function send_feedback() {
 
 		check_ajax_referer( 'wpms-admin-nonce', 'nonce' );
-
-		if ( ! current_user_can( wp_mail_smtp()->get_capability_manage_options() ) ) {
-			wp_send_json_error();
-		}
 
 		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		$data = ! empty( $_POST['data'] ) ? json_decode( wp_unslash( $_POST['data'] ), true ) : [];
@@ -1480,7 +1431,6 @@ class SetupWizard {
 			'WPMS_ZOHO_DOMAIN'                   => [ 'zoho', 'domain' ],
 			'WPMS_ZOHO_CLIENT_ID'                => [ 'zoho', 'client_id' ],
 			'WPMS_ZOHO_CLIENT_SECRET'            => [ 'zoho', 'client_secret' ],
-			'WPMS_RESEND_API_KEY'                => [ 'resend', 'api_key' ],
 			'WPMS_SMTP_HOST'                     => [ 'smtp', 'host' ],
 			'WPMS_SMTP_PORT'                     => [ 'smtp', 'port' ],
 			'WPMS_SSL'                           => [ 'smtp', 'encryption' ],

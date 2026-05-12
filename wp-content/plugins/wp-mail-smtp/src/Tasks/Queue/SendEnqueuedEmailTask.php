@@ -38,9 +38,6 @@ class SendEnqueuedEmailTask extends Task {
 
 		// Register the action handler.
 		add_action( self::ACTION, [ $this, 'process' ] );
-
-		// Cleanup completed task occurrences.
-		add_action( 'action_scheduler_after_process_queue', [ $this, 'cleanup' ] );
 	}
 
 	/**
@@ -83,15 +80,5 @@ class SendEnqueuedEmailTask extends Task {
 		$email_id = $meta->data[0];
 
 		wp_mail_smtp()->get_queue()->send_email( $email_id );
-	}
-
-	/**
-	 * Cleanup completed tasks.
-	 *
-	 * @since 4.1.0
-	 */
-	public function cleanup() {
-
-		$this->remove_completed( 10 );
 	}
 }

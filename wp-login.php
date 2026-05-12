@@ -210,16 +210,10 @@ function login_header( $title = null, $message = '', $wp_error = null ) {
 	 * @since 4.6.0
 	 */
 	do_action( 'login_header' );
-	?>
-	<?php
-	if ( 'confirm_admin_email' !== $action && ! empty( $title ) ) :
-		?>
-		<h1 class="screen-reader-text"><?php echo $title; ?></h1>
-		<?php
-	endif;
+
 	?>
 	<div id="login">
-		<h1 role="presentation" class="wp-login-logo"><a href="<?php echo esc_url( $login_header_url ); ?>"><?php echo $login_header_text; ?></a></h1>
+		<h1><a href="<?php echo esc_url( $login_header_url ); ?>"><?php echo $login_header_text; ?></a></h1>
 	<?php
 	/**
 	 * Filters the message to display above the login form.
@@ -426,7 +420,6 @@ function login_footer( $input_id = '' ) {
 				</div>
 		<?php } ?>
 	<?php } ?>
-
 	<?php
 
 	if ( ! empty( $input_id ) ) {
@@ -469,7 +462,7 @@ function wp_shake_js() {
  */
 function wp_login_viewport_meta() {
 	?>
-	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<meta name="viewport" content="width=device-width" />
 	<?php
 }
 
@@ -479,7 +472,7 @@ function wp_login_viewport_meta() {
  * Check the request and redirect or display a form based on the current action.
  */
 
-$action = isset( $_REQUEST['action'] ) && is_string( $_REQUEST['action'] ) ? $_REQUEST['action'] : 'login';
+$action = isset( $_REQUEST['action'] ) ? $_REQUEST['action'] : 'login';
 $errors = new WP_Error();
 
 if ( isset( $_GET['key'] ) ) {
@@ -528,14 +521,14 @@ if ( defined( 'RELOCATE' ) && RELOCATE ) { // Move flag is set.
 
 // Set a cookie now to see if they are supported by the browser.
 $secure = ( 'https' === parse_url( wp_login_url(), PHP_URL_SCHEME ) );
-setcookie( TEST_COOKIE, 'WP Cookie check', 0, COOKIEPATH, COOKIE_DOMAIN, $secure, true );
+setcookie( TEST_COOKIE, 'WP Cookie check', 0, COOKIEPATH, COOKIE_DOMAIN, $secure );
 
 if ( SITECOOKIEPATH !== COOKIEPATH ) {
-	setcookie( TEST_COOKIE, 'WP Cookie check', 0, SITECOOKIEPATH, COOKIE_DOMAIN, $secure, true );
+	setcookie( TEST_COOKIE, 'WP Cookie check', 0, SITECOOKIEPATH, COOKIE_DOMAIN, $secure );
 }
 
 if ( isset( $_GET['wp_lang'] ) ) {
-	setcookie( 'wp_lang', sanitize_text_field( $_GET['wp_lang'] ), 0, COOKIEPATH, COOKIE_DOMAIN, $secure, true );
+	setcookie( 'wp_lang', sanitize_text_field( $_GET['wp_lang'] ), 0, COOKIEPATH, COOKIE_DOMAIN, $secure );
 }
 
 /**
@@ -704,7 +697,7 @@ switch ( $action ) {
 				);
 
 				printf(
-					'<a href="%s" target="_blank">%s%s</a>',
+					'<a href="%s" rel="noopener" target="_blank">%s%s</a>',
 					esc_url( $admin_email_help_url ),
 					__( 'Why is this important?' ),
 					$accessibility_text
@@ -764,10 +757,8 @@ switch ( $action ) {
 		break;
 
 	case 'postpass':
-		$redirect_to = $_POST['redirect_to'] ?? wp_get_referer();
-
 		if ( ! isset( $_POST['post_password'] ) || ! is_string( $_POST['post_password'] ) ) {
-			wp_safe_redirect( $redirect_to );
+			wp_safe_redirect( wp_get_referer() );
 			exit;
 		}
 
@@ -784,17 +775,18 @@ switch ( $action ) {
 		 *
 		 * @param int $expires The expiry time, as passed to setcookie().
 		 */
-		$expire = apply_filters( 'post_password_expires', time() + 10 * DAY_IN_SECONDS );
+		$expire  = apply_filters( 'post_password_expires', time() + 10 * DAY_IN_SECONDS );
+		$referer = wp_get_referer();
 
-		if ( $redirect_to ) {
-			$secure = ( 'https' === parse_url( $redirect_to, PHP_URL_SCHEME ) );
+		if ( $referer ) {
+			$secure = ( 'https' === parse_url( $referer, PHP_URL_SCHEME ) );
 		} else {
 			$secure = false;
 		}
 
 		setcookie( 'wp-postpass_' . COOKIEHASH, $hasher->HashPassword( wp_unslash( $_POST['post_password'] ) ), $expire, COOKIEPATH, COOKIE_DOMAIN, $secure );
 
-		wp_safe_redirect( $redirect_to );
+		wp_safe_redirect( wp_get_referer() );
 		exit;
 
 	case 'logout':
@@ -1168,11 +1160,11 @@ switch ( $action ) {
 		<form name="registerform" id="registerform" action="<?php echo esc_url( site_url( 'wp-login.php?action=register', 'login_post' ) ); ?>" method="post" novalidate="novalidate">
 			<p>
 				<label for="user_login"><?php _e( 'Username' ); ?></label>
-				<input type="text" name="user_login" id="user_login" class="input" value="<?php echo esc_attr( $user_login ); ?>" size="20" autocapitalize="off" autocomplete="username" required="required" />
+				<input type="text" name="user_login" id="user_login" class="input" value="<?php echo esc_attr( wp_unslash( $user_login ) ); ?>" size="20" autocapitalize="off" autocomplete="username" required="required" />
 			</p>
 			<p>
 				<label for="user_email"><?php _e( 'Email' ); ?></label>
-				<input type="email" name="user_email" id="user_email" class="input" value="<?php echo esc_attr( $user_email ); ?>" size="25" autocomplete="email" required="required" />
+				<input type="email" name="user_email" id="user_email" class="input" value="<?php echo esc_attr( wp_unslash( $user_email ) ); ?>" size="25" autocomplete="email" required="required" />
 			</p>
 			<?php
 
@@ -1318,7 +1310,7 @@ switch ( $action ) {
 			$redirect_to = admin_url();
 		}
 
-		$reauth = ! empty( $_REQUEST['reauth'] );
+		$reauth = empty( $_REQUEST['reauth'] ) ? false : true;
 
 		$user = wp_signon( array(), $secure_cookie );
 
@@ -1490,7 +1482,7 @@ switch ( $action ) {
 		login_header( __( 'Log In' ), '', $errors );
 
 		if ( isset( $_POST['log'] ) ) {
-			$user_login = ( 'incorrect_password' === $errors->get_error_code() || 'empty_password' === $errors->get_error_code() ) ? wp_unslash( $_POST['log'] ) : '';
+			$user_login = ( 'incorrect_password' === $errors->get_error_code() || 'empty_password' === $errors->get_error_code() ) ? esc_attr( wp_unslash( $_POST['log'] ) ) : '';
 		}
 
 		$rememberme = ! empty( $_POST['rememberme'] );
@@ -1637,6 +1629,7 @@ switch ( $action ) {
 					for ( i in links ) {
 						if ( links[i].href ) {
 							links[i].target = '_blank';
+							links[i].rel = 'noopener';
 						}
 					}
 				} catch( er ) {}
