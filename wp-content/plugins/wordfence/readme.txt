@@ -4,7 +4,7 @@ Tags: security, malware, 2fa, firewall, scanner
 Requires at least: 4.7
 Requires PHP: 7.0
 Tested up to: 7.0
-Stable tag: 8.2.0
+Stable tag: 8.2.1
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -206,6 +206,13 @@ Secure your website with Wordfence.
 9. Logging in is easy with Wordfence 2FA.
 
 == Changelog ==
+
+= 8.2.1 - May 6, 2026 =
+* Fix: Fixed issue with some i18n plugins/themes when a user has no 2FA recovery codes
+* Fix: Toggled options with additional help links now correctly open the link rather than toggling the option
+* Fix: Country Blocking editing fixed when there are multiple pages of block rules
+* Fix: Added better error handling to the initial Vue data load
+* Fix: Handled error when logging in using legacy 2FA with separate prompts enabled
 
 = 8.2.0 - April 29, 2026 =
 * Improvement: Migrated all deprecated JavaScript libraries in use to a Vue-based infrastructure
