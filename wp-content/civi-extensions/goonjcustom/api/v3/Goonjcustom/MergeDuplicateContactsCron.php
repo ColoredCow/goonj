@@ -166,7 +166,13 @@ function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
   $header[0] = preg_replace('/^\xEF\xBB\xBF/', '', $header[0]);
   $header = array_map('trim', $header);
 
-  $groups = [];
+  // Build TWO independent group sets so we can try phone matching first,
+  // then fall back to email matching for duplicates not caught by phone.
+  // A row with both phone and email contributes to both group sets — the
+  // dedup logic in the processing pass ensures each duplicate is only merged
+  // once (phone match wins when both rules find the same duplicate).
+  $phoneGroups = [];
+  $emailGroups = [];
   $toDelete = [];
   $rowIndex = 1;
 
@@ -198,37 +204,43 @@ function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
       continue;
     }
 
-    // Per-row priority: prefer email, fall back to phone.
-    if ($email) {
-      $key = 'email:' . $email . '|' . $firstName;
-      $matchedBy = 'email';
-    }
-    elseif ($phone) {
-      $key = 'phone:' . $phone . '|' . $firstName;
-      $matchedBy = 'phone';
-    }
-    else {
+    if (!$phone && !$email) {
       $log('warning', "Row #$rowIndex (cid=$contactId) has neither email nor phone. Skipping.");
       continue;
     }
 
-    if (!isset($groups[$key])) {
-      $groups[$key] = ['real' => NULL, 'duplicates' => [], 'matched_by' => $matchedBy];
+    // Add to phone group if row has a phone
+    if ($phone) {
+      $phoneKey = 'phone:' . $phone . '|' . $firstName;
+      if (!isset($phoneGroups[$phoneKey])) {
+        $phoneGroups[$phoneKey] = ['real' => NULL, 'duplicates' => []];
+      }
+      if ($status === 'real') {
+        $phoneGroups[$phoneKey]['real'] = $contactId;
+      }
+      else {
+        $phoneGroups[$phoneKey]['duplicates'][] = $contactId;
+      }
     }
 
-    if ($status === 'real') {
-      $groups[$key]['real'] = $contactId;
-    }
-    else {
-      $groups[$key]['duplicates'][] = $contactId;
+    // Add to email group if row has an email (a row can belong to both)
+    if ($email) {
+      $emailKey = 'email:' . $email . '|' . $firstName;
+      if (!isset($emailGroups[$emailKey])) {
+        $emailGroups[$emailKey] = ['real' => NULL, 'duplicates' => []];
+      }
+      if ($status === 'real') {
+        $emailGroups[$emailKey]['real'] = $contactId;
+      }
+      else {
+        $emailGroups[$emailKey]['duplicates'][] = $contactId;
+      }
     }
   }
 
   fclose($file);
 
-  $emailGroupCount = count(array_filter($groups, fn($g) => $g['matched_by'] === 'email'));
-  $phoneGroupCount = count(array_filter($groups, fn($g) => $g['matched_by'] === 'phone'));
-  $log('info', "CSV parsed. Merge groups: " . count($groups) . " (by email: $emailGroupCount, by phone: $phoneGroupCount). Permanent deletions queued: " . count($toDelete));
+  $log('info', "CSV parsed. Phone groups: " . count($phoneGroups) . ", email groups: " . count($emailGroups) . ". Permanent deletions queued: " . count($toDelete));
 
   // Process permanent deletions first (Status = Deleted rows).
   // useTrash=FALSE removes the contact entirely (skip-trash hard delete).
@@ -268,38 +280,61 @@ function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
   $skippedGroups = 0;
   $mergedByEmail = 0;
   $mergedByPhone = 0;
+  $alreadyMerged = [];
 
-  foreach ($groups as $key => $data) {
+  // Closure to handle one merge attempt for a given rule. Tracks duplicates
+  // already processed so the email-fallback pass never double-merges.
+  $attemptMerge = function ($realId, $dupId, $matchedBy, $key)
+    use (&$mergedCount, &$failedCount, &$mergedByEmail, &$mergedByPhone, &$alreadyMerged, $log) {
+    if (isset($alreadyMerged[$dupId])) {
+      return;
+    }
+    try {
+      \Civi\Api4\Contact::mergeDuplicates(FALSE)
+        ->setContactId($realId)
+        ->setDuplicateId($dupId)
+        ->setMode('safe')
+        ->execute();
+      $mergedCount++;
+      if ($matchedBy === 'email') {
+        $mergedByEmail++;
+      }
+      else {
+        $mergedByPhone++;
+      }
+      $alreadyMerged[$dupId] = TRUE;
+      $log('info', "MERGED [$matchedBy] dup #$dupId -> real #$realId ($key)");
+    }
+    catch (\Throwable $e) {
+      $failedCount++;
+      $log('error', "FAILED [$matchedBy] dup #$dupId -> real #$realId ($key): " . $e->getMessage());
+    }
+  };
+
+  // Pass 1: Phone groups (priority rule).
+  foreach ($phoneGroups as $key => $data) {
     $realId = $data['real'];
     $duplicates = $data['duplicates'];
-    $matchedBy = $data['matched_by'];
-
     if (!$realId || empty($duplicates)) {
       $skippedGroups++;
       continue;
     }
-
     foreach ($duplicates as $dupId) {
-      try {
-        \Civi\Api4\Contact::mergeDuplicates(FALSE)
-          ->setContactId($realId)
-          ->setDuplicateId($dupId)
-          ->setMode('safe')
-          ->execute();
+      $attemptMerge($realId, $dupId, 'phone', $key);
+    }
+  }
 
-        $mergedCount++;
-        if ($matchedBy === 'email') {
-          $mergedByEmail++;
-        }
-        else {
-          $mergedByPhone++;
-        }
-        $log('info', "MERGED [$matchedBy] dup #$dupId -> real #$realId ($key)");
-      }
-      catch (\Throwable $e) {
-        $failedCount++;
-        $log('error', "FAILED [$matchedBy] dup #$dupId -> real #$realId ($key): " . $e->getMessage());
-      }
+  // Pass 2: Email groups (fallback). Skips any duplicate already merged
+  // via the phone rule so the same contact is never merged twice.
+  foreach ($emailGroups as $key => $data) {
+    $realId = $data['real'];
+    $duplicates = $data['duplicates'];
+    if (!$realId || empty($duplicates)) {
+      $skippedGroups++;
+      continue;
+    }
+    foreach ($duplicates as $dupId) {
+      $attemptMerge($realId, $dupId, 'email', $key);
     }
   }
 
