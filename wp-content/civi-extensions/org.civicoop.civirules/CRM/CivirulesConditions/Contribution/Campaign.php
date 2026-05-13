@@ -40,12 +40,22 @@ class CRM_CivirulesConditions_Contribution_Campaign extends CRM_Civirules_Condit
         if (in_array($contribution['campaign_id'], $this->conditionParams['campaign_id'])) {
           $isConditionValid = TRUE;
         }
-      break;
+        break;
       case 1:
         if (!in_array($contribution['campaign_id'], $this->conditionParams['campaign_id'])) {
           $isConditionValid = TRUE;
         }
-      break;
+        break;
+      case 2:
+        if (empty($contribution['campaign_id'])) {
+          $isConditionValid = TRUE;
+        }
+        break;
+      case 3:
+        if (!empty($contribution['campaign_id'])) {
+          $isConditionValid = TRUE;
+        }
+        break;
     }
     return $isConditionValid;
   }
@@ -64,7 +74,7 @@ class CRM_CivirulesConditions_Contribution_Campaign extends CRM_Civirules_Condit
           'return' => 'name',
           'id' => $params['campaign_id']
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -84,7 +94,7 @@ class CRM_CivirulesConditions_Contribution_Campaign extends CRM_Civirules_Condit
           'return' => 'id',
           'name' => $condition_params['campaign_id']
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -120,11 +130,17 @@ class CRM_CivirulesConditions_Contribution_Campaign extends CRM_Civirules_Condit
     if ($this->conditionParams['operator'] == 1) {
       $friendlyText = 'Is NOT in of these campaigns: ';
     }
+    if ($this->conditionParams['operator'] == 2) {
+      $friendlyText = 'Is not in any campaigns at all.';
+    }
+    if ($this->conditionParams['operator'] == 4) {
+      $friendlyText = 'Is in any campaigns.';
+    }
     $campaignText = array();
     foreach ($this->conditionParams['campaign_id'] as $campaignId) {
       try {
         $campaignText[] = civicrm_api3('Campaign', 'Getvalue', array('id' => $campaignId, 'return' => 'title'));
-      } catch (CiviCRM_API3_Exception $ex) {}
+      } catch (CRM_Core_Exception $ex) {}
     }
     if (!empty($campaignText)) {
       $friendlyText .= implode(", ", $campaignText);

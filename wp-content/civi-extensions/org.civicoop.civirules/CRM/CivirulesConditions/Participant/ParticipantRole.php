@@ -28,6 +28,7 @@ class CRM_CivirulesConditions_Participant_ParticipantRole extends CRM_Civirules_
   public function isConditionValid(CRM_Civirules_TriggerData_TriggerData $triggerData) {
     $isConditionValid = FALSE;
     $participant = $triggerData->getEntityData('Participant');
+    $participant['role_id'] = $participant['role_id'] ?? $participant['participant_role_id'];
     $participant_role_ids = is_array($participant['role_id']) ?  $participant['role_id'] : explode(CRM_Core_DAO::VALUE_SEPARATOR, $participant['role_id']);
     foreach($participant_role_ids as $participant_role_id) {
       switch ($this->conditionParams['operator']) {
@@ -69,7 +70,7 @@ class CRM_CivirulesConditions_Participant_ParticipantRole extends CRM_Civirules_
           'value' => $params['participant_role_id'],
           'option_group_id' => 'participant_role',
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -98,7 +99,7 @@ class CRM_CivirulesConditions_Participant_ParticipantRole extends CRM_Civirules_
           'name' => $condition_params['participant_role_id'],
           'option_group_id' => 'participant_role',
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }

@@ -10,7 +10,7 @@ return [
       'version' => 4,
       'values' => [
         'name' => 'Site_Email_Addresses',
-        'label' => ts('Site Email Addresses'),
+        'label' => ts('Site From Email Addresses'),
         'api_entity' => 'SiteEmailAddress',
         'api_params' => [
           'version' => 4,
@@ -42,7 +42,7 @@ return [
       'version' => 4,
       'values' => [
         'name' => 'Site_Email_Addresses',
-        'label' => ts('Site Email Addresses'),
+        'label' => ts('Site From Email Addresses'),
         'saved_search_id.name' => 'Site_Email_Addresses',
         'type' => 'table',
         'settings' => [
@@ -61,35 +61,30 @@ return [
             [
               'type' => 'field',
               'key' => 'display_name',
-              'dataType' => 'String',
               'label' => ts('Display Name'),
               'sortable' => TRUE,
             ],
             [
               'type' => 'field',
               'key' => 'email',
-              'dataType' => 'String',
               'label' => ts('Email'),
               'sortable' => TRUE,
             ],
             [
               'type' => 'field',
               'key' => 'description',
-              'dataType' => 'Text',
               'label' => ts('Description'),
               'sortable' => TRUE,
             ],
             [
               'type' => 'field',
               'key' => 'is_active',
-              'dataType' => 'Boolean',
               'label' => ts('Enabled'),
               'sortable' => TRUE,
             ],
             [
               'type' => 'field',
               'key' => 'is_default',
-              'dataType' => 'Boolean',
               'label' => ts('Default'),
               'sortable' => TRUE,
               'icons' => [
@@ -102,7 +97,7 @@ return [
               'rewrite' => ' ',
             ],
             [
-              'text' => ts(''),
+              'text' => '',
               'style' => 'default',
               'size' => 'btn-xs',
               'icon' => 'fa-bars',
@@ -117,7 +112,7 @@ return [
                   'style' => 'default',
                   'path' => '',
                   'task' => '',
-                  'condition' => [],
+                  'conditions' => [],
                 ],
                 [
                   'task' => 'disable',
@@ -129,7 +124,7 @@ return [
                   'style' => 'default',
                   'path' => '',
                   'action' => '',
-                  'condition' => [],
+                  'conditions' => [],
                 ],
                 [
                   'task' => 'enable',
@@ -141,7 +136,19 @@ return [
                   'style' => 'default',
                   'path' => '',
                   'action' => '',
-                  'condition' => [],
+                  'conditions' => [],
+                ],
+                [
+                  'task' => 'delete',
+                  'entity' => 'SiteEmailAddress',
+                  'join' => '',
+                  'target' => 'crm-popup',
+                  'icon' => 'fa-trash',
+                  'text' => ts('Delete Email Addresses'),
+                  'style' => 'danger',
+                  'path' => '',
+                  'action' => '',
+                  'conditions' => [],
                 ],
               ],
               'type' => 'menu',
@@ -165,12 +172,13 @@ return [
               'join' => '',
               'path' => '',
               'task' => '',
-              'condition' => [],
+              'conditions' => [],
             ],
           ],
           'cssRules' => [
             ['disabled', 'is_active', '=', FALSE],
           ],
+          'columnMode' => 'custom',
         ],
       ],
       'match' => [

@@ -37,7 +37,7 @@ class CRM_CivirulesActions_Membership_CancelLatestMembership extends CRM_Civirul
             ->execute();
         }
       }
-      catch (\API_Exception $ex) {
+      catch (\CRM_Core_Exception $ex) {
       }
     }
   }
@@ -111,7 +111,7 @@ class CRM_CivirulesActions_Membership_CancelLatestMembership extends CRM_Civirul
         $label = $membershipStatus['label'];
       }
     }
-    catch (API_Exception $ex) {
+    catch (CRM_Core_Exception $ex) {
     }
     return $label;
   }
@@ -133,7 +133,7 @@ class CRM_CivirulesActions_Membership_CancelLatestMembership extends CRM_Civirul
         $name = $membershipType['name'];
       }
     }
-    catch (API_Exception $ex) {
+    catch (CRM_Core_Exception $ex) {
     }
     return $name;
   }

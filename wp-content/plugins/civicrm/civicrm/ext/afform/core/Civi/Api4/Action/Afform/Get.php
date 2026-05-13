@@ -21,8 +21,8 @@ class Get extends \Civi\Api4\Generic\BasicGetAction {
 
     // Optimization: only fetch extra data if requested
     $getComputed = $this->_isFieldSelected('has_local', 'has_base', 'base_module');
-    $getLayout = $this->_isFieldSelected('layout');
     $getSearchDisplays = $this->_isFieldSelected('search_displays');
+    $getLayout = $getSearchDisplays || $this->_isFieldSelected('layout');
     // To optimize lookups by file/module/directive name
     $getNames = array_filter([
       'name' => $this->_itemsToGet('name'),
@@ -61,7 +61,7 @@ class Get extends \Civi\Api4\Generic\BasicGetAction {
           continue 2;
         }
       }
-      $record = $scanner->getMeta($name, $getLayout || $getSearchDisplays);
+      $record = $scanner->getMeta($name, $getLayout);
       // Skip if afform does not exist or is not of requested type(s)
       if (
         (!$record && !isset($afforms[$name])) ||
@@ -109,16 +109,32 @@ class Get extends \Civi\Api4\Generic\BasicGetAction {
     }
 
     // Fetch submission aggregates in bulk
-    if ($afforms && $this->_isFieldSelected('submission_count', 'submission_date', 'submit_currently_open')) {
+    if ($afforms && $this->_isFieldSelected('submission_count', 'submission_date', 'user_submission_count', 'submit_currently_open')) {
+      $userContactId = \CRM_Core_Session::getLoggedInContactID();
       $afformSubmissions = \Civi\Api4\AfformSubmission::get(FALSE)
         ->addSelect('afform_name', 'COUNT(id) AS count', 'MAX(submission_date) AS date')
         ->addWhere('afform_name', 'IN', array_keys($afforms))
+        ->addWhere('status_id:name', '!=', 'Draft')
         ->addGroupBy('afform_name')
         ->execute()->indexBy('afform_name');
       foreach ($afforms as $name => $record) {
         $afforms[$name]['submission_count'] = $afformSubmissions[$name]['count'] ?? 0;
         $afforms[$name]['submission_date'] = $afformSubmissions[$name]['date'] ?? NULL;
         $afforms[$name]['submit_currently_open'] = ($record['submit_enabled'] ?? TRUE) && (empty($record['submit_limit']) || $record['submit_limit'] > $afforms[$name]['submission_count']);
+
+        // Check per-user submission limit
+        if ($userContactId && ($this->_isFieldSelected('user_submission_count') || (!empty($afforms[$name]['submit_limit_per_user']) && $afforms[$name]['submit_currently_open']))) {
+          $userSubmissions = \Civi\Api4\AfformSubmission::get(FALSE)
+            ->addWhere('afform_name', '=', $name)
+            ->addWhere('contact_id', '=', $userContactId)
+            ->addWhere('status_id:name', '!=', 'Draft')
+            ->selectRowCount()
+            ->execute();
+          $afforms[$name]['user_submission_count'] = $userSubmissions->countMatched();
+          if (!empty($afforms[$name]['submit_limit_per_user']) && $afforms[$name]['submit_currently_open']) {
+            $afforms[$name]['submit_currently_open'] = $userSubmissions->countMatched() < $afforms[$name]['submit_limit_per_user'];
+          }
+        }
       }
     }
 

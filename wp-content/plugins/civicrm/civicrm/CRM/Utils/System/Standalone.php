@@ -65,6 +65,24 @@ class CRM_Utils_System_Standalone extends CRM_Utils_System_Base {
   }
 
   /**
+   * Get Url to view user record.
+   *
+   * @param int $contactID
+   *   Contact ID.
+   *
+   * @return string|null
+   */
+  public function getUserRecordUrl($contactID) {
+    if (CRM_Core_Permission::check('cms:administer users')) {
+      $uid = (int) CRM_Core_BAO_UFMatch::getUFId($contactID);
+      if ($uid) {
+        return (string) Civi::url("backend://civicrm/admin/user/#?User1=[uid]")->addVars(compact('uid'));
+      }
+    }
+    return NULL;
+  }
+
+  /**
    * @inheritdoc
    *
    * In Standalone the UF is CiviCRM, so we're never
@@ -160,34 +178,30 @@ class CRM_Utils_System_Standalone extends CRM_Utils_System_Base {
 
   /**
    * @inheritDoc
+   *
+   * Note: Standalone renders the html-header region directly in its smarty page template
+   * so this should never be called
    */
   public function addHTMLHead($header) {
-    $template = CRM_Core_Smarty::singleton();
-    // Smarty's append function does not check for the existence of the var before appending to it.
-    // So this prevents a stupid notice error:
-    $template->ensureVariablesAreAssigned(['pageHTMLHead']);
-    $template->append('pageHTMLHead', $header);
-    return;
+    throw new \CRM_Core_Exception('addHTMLHead should never be called in Standalone');
   }
 
   /**
-   * @inheritDoc
+   * @inheritdoc
+   *
+   * No such things as CMS-rendering in Standalone => always return FALSE
    */
   public function addStyleUrl($url, $region) {
-    if ($region != 'html-header') {
-      return FALSE;
-    }
-    $this->addHTMLHead('<link rel="stylesheet" href="' . $url . '"></style>');
+    return FALSE;
   }
 
   /**
-   * @inheritDoc
+   * @inheritdoc
+   *
+   * No such things as CMS-rendering in Standalone => always return FALSE
    */
   public function addStyle($code, $region) {
-    if ($region != 'html-header') {
-      return FALSE;
-    }
-    $this->addHTMLHead('<style>' . $code . '</style>');
+    return FALSE;
   }
 
   /**
@@ -253,7 +267,7 @@ class CRM_Utils_System_Standalone extends CRM_Utils_System_Base {
   public static function currentPath() {
     $path = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
 
-    return $path ? trim($path, '/') : NULL;
+    return $path ? trim(urldecode($path), '/') : NULL;
   }
 
   /**
@@ -328,30 +342,27 @@ class CRM_Utils_System_Standalone extends CRM_Utils_System_Base {
   /**
    * @inheritDoc
    */
-  public function theme(&$content, $print = FALSE, $maintenance = FALSE) {
-    if ($maintenance) {
-      // if maintenance, we need to wrap in a minimal header
-      $headerContent = CRM_Core_Region::instance('html-header', FALSE)->render('');
+  public function renderMaintenanceMessage(string $content): void {
+    // wrap in a minimal header
+    $headerContent = CRM_Core_Region::instance('html-header', FALSE)->render('');
 
-      // note - now adding #crm-container is a hacky way to avoid rendering
-      // the civicrm menubar. @todo a better way
-      $content = <<<HTML
-        <!DOCTYPE html >
-        <html class="crm-standalone">
-          <head>
-            {$headerContent}
-          </head>
-          <body>
-            <div class="crm-container standalone-page-padding">
-              {$content}
-            </div>
-          </body>
-        </html>
-      HTML;
-    }
+    // note - not adding #crm-container is a hacky way to avoid rendering
+    // the civicrm menubar. @todo a better way
+    print <<<HTML
+      <!DOCTYPE html >
+      <html class="crm-standalone">
+        <head>
+          {$headerContent}
+        </head>
+        <body>
+          <div class="crm-container standalone-page-padding">
+            {$content}
+          </div>
+        </body>
+      </html>
+    HTML;
 
-    print $content;
-    return NULL;
+    exit();
   }
 
   /**
@@ -653,9 +664,15 @@ class CRM_Utils_System_Standalone extends CRM_Utils_System_Base {
       $session_cookie_name = 'SESSCIVISOFALLBACK';
     }
     else {
-      $session_handler = new SessionHandler();
-      session_set_save_handler($session_handler);
       $session_cookie_name = 'SESSCIVISO';
+
+      if (ini_get('session.save_handler') === 'redis') {
+        // We'll just use the default, take no action.
+      }
+      else {
+        $session_handler = new SessionHandler();
+        session_set_save_handler($session_handler);
+      }
     }
 
     // session lifetime in seconds (default = 24 minutes)
@@ -714,6 +731,15 @@ class CRM_Utils_System_Standalone extends CRM_Utils_System_Base {
   public function postContainerBoot(): void {
     $sess = \CRM_Core_Session::singleton();
     $sess->initialize();
+  }
+
+  public function getRoleNames(): array {
+    return \Civi\Api4\Role::get(FALSE)
+      ->addSelect('name', 'label')
+      ->addWhere('is_active', '=', TRUE)
+      ->addOrderBy('label')
+      ->execute()
+      ->column('label', 'name');
   }
 
 }

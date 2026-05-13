@@ -6,6 +6,8 @@
  * and it converts it to a start and end date of the period
  *
  */
+use CRM_Civirules_ExtensionUtil as E;
+
 class CRM_CivirulesConditions_Utils_Period {
 
   /**
@@ -34,55 +36,55 @@ class CRM_CivirulesConditions_Utils_Period {
   private static function PeriodDefinitions() {
     return array(
       'this month' => array(
-        'label' => ts('This month'),
+        'label' => E::ts('This month'),
         'replacements' => array()
       ),
       'previous month' => array(
-        'label' => ts('Previous month'),
+        'label' => E::ts('Previous month'),
         'replacements' => array()
       ),
       'last 30 days' => array(
-        'label' => ts('Last 30 days'),
+        'label' => E::ts('Last 30 days'),
         'replacements' => array()
       ),
       'last 12 months' => array(
-        'label' => ts('Last 12 months'),
+        'label' => E::ts('Last 12 months'),
         'replacements' => array()
       ),
       'last 13 months' => array(
-        'label' => ts('Last 13 months'),
+        'label' => E::ts('Last 13 months'),
         'replacements' => array()
       ),
       'this year' => array(
-        'label' => ts('This year'),
+        'label' => E::ts('This year'),
         'replacements' => array()
       ),
       'previous year' => array(
-        'label' => ts('Previous year'),
+        'label' => E::ts('Previous year'),
         'replacements' => array()
       ),
       'last nnn days' => array(
-        'label' => ts('Last nnn days'),
+        'label' => E::ts('Last nnn days'),
         'replacements' => array(
-          'nnn' => ts('days'),
+          'nnn' => E::ts('days'),
         )
       ),
       'last nnn weeks' => array(
-        'label' => ts('Last nnn weeks'),
+        'label' => E::ts('Last nnn weeks'),
         'replacements' => array(
-          'nnn' => ts('weeks'),
+          'nnn' => E::ts('weeks'),
         )
       ),
       'last nnn months' => array(
-        'label' => ts('Last nnn months'),
+        'label' => E::ts('Last nnn months'),
         'replacements' => array(
-          'nnn' => ts('months'),
+          'nnn' => E::ts('months'),
         )
       ),
       'last nnn years' => array(
-        'label' => ts('Last nnn years'),
+        'label' => E::ts('Last nnn years'),
         'replacements' => array(
-          'nnn' => ts('years'),
+          'nnn' => E::ts('years'),
         )
       ),
     );
@@ -146,11 +148,11 @@ class CRM_CivirulesConditions_Utils_Period {
    * @param $form
    */
   public static function buildQuickForm(&$form) {
-    $form->add('select', 'period', ts('Period'), array('' => ts('All time')) + CRM_CivirulesConditions_Utils_Period::Options());
+    $form->add('select', 'period',E::ts('Period'), array('' => E::ts('All time')) + CRM_CivirulesConditions_Utils_Period::Options());
 
     $replacements = self::getReplacementOptions();
     foreach($replacements as $replacement_key => $replacement_periods) {
-      $form->add('text', $replacement_key, ts($replacement_key));
+      $form->add('text', $replacement_key,E::ts($replacement_key));
     }
     $form->assign('period_replacements', $replacements);
     $form->assign('period_replacements_by_period', json_encode(self::getReplacementOptionsByPeriod()));
@@ -168,7 +170,7 @@ class CRM_CivirulesConditions_Utils_Period {
       $errors = array();
       foreach($definitions[$period]['replacements'] as $key => $label) {
          if (empty($fields[$key]) || !is_numeric($fields[$key])) {
-           $errors[$key] = ts('You should enter a valid amount');
+           $errors[$key] =E::ts('You should enter a valid amount');
          }
        }
       if (count($errors)) {
@@ -238,7 +240,7 @@ class CRM_CivirulesConditions_Utils_Period {
         }
       }
     } else {
-      $period = ts('all time');
+      $period =E::ts('all time');
     }
     return $period;
   }
@@ -362,4 +364,34 @@ class CRM_CivirulesConditions_Utils_Period {
     return false;
   }
 
+ /**
+   * Returns the friendly conditional parameters
+   *
+   * @param string $operator
+   * @return string
+   */
+  public static function generateFriendlyOperator($operator) {
+    $friendlyOperator = '';
+    switch ($operator) {
+      case 1:
+        $friendlyOperator = E::ts('is not equal to');
+        break;
+      case 2:
+        $friendlyOperator = E::ts('more than');
+        break;
+      case 3:
+        $friendlyOperator = E::ts('more than or equal to');
+        break;
+      case 4:
+        $friendlyOperator = E::ts('less than');
+        break;
+      case 5:
+        $friendlyOperator = E::ts('less than or equal to');
+        break;
+      default:
+        $friendlyOperator = E::ts('is equal to');
+        break;
+    }
+    return $friendlyOperator;
+  }
 }

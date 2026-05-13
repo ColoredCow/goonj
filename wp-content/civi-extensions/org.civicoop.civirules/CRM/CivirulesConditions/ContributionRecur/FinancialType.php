@@ -33,7 +33,7 @@ class CRM_CivirulesConditions_ContributionRecur_FinancialType extends CRM_Civiru
             'return' => 'name',
             'id' => $gid,
           ]);
-        } catch (CiviCRM_API3_Exception $e) {
+        } catch (CRM_Core_Exception $e) {
         }
       }
     }
@@ -54,7 +54,7 @@ class CRM_CivirulesConditions_ContributionRecur_FinancialType extends CRM_Civiru
             'return' => 'id',
             'name' => $gid,
           ]);
-        } catch (CiviCRM_API3_Exception $e) {
+        } catch (CRM_Core_Exception $e) {
         }
       }
     }

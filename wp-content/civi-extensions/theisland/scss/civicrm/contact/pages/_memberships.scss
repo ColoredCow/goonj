@@ -39,10 +39,6 @@
 }
 
 #{civi-page('contact-view')} {
-  .help {
-    margin-bottom: 20px;
-  }
-
   .ui-widget-content {
     .crm-button i {
       top: 0.7em;
@@ -77,11 +73,6 @@
     @include transform(translate(0, -50%));
     left: 0.7em;
     top: 50%;
-  }
-
-  #help {
-    margin-bottom: 15px;
-    padding: 10px;
   }
 
   #recordContribution td,

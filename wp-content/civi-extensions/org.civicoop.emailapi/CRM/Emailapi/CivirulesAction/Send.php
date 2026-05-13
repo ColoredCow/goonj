@@ -45,6 +45,7 @@ class CRM_Emailapi_CivirulesAction_Send extends CRM_CivirulesActions_Generic_Api
     }
     if (!empty($actionParameters['alternative_receiver_address'])) {
       $parameters['alternative_receiver_address'] = $actionParameters['alternative_receiver_address'];
+      $parameters['contact_id'] ??= 0;
     }
     if (!empty($actionParameters['file_on_case'])) {
       $case = $triggerData->getEntityData('Case');
@@ -103,7 +104,6 @@ class CRM_Emailapi_CivirulesAction_Send extends CRM_CivirulesActions_Generic_Api
    * @return string
    */
   public function userFriendlyConditionParams() {
-    $template = 'unknown template';
     $params = $this->getActionParameters();
     if (empty($params['from_email']) && empty($params['from_name'])) {
       if (!empty($params['from_email_option'])) {
@@ -123,14 +123,9 @@ class CRM_Emailapi_CivirulesAction_Send extends CRM_CivirulesActions_Generic_Api
     else {
       $fromAddress = htmlspecialchars("\"{$params['from_name']} <{$params['from_email']}>\"");
     }
-    $messageTemplates = new CRM_Core_DAO_MessageTemplate();
-    $messageTemplates->id = $params['template_id'];
-    $messageTemplates->is_active = true;
-    if ($messageTemplates->find(TRUE)) {
-      $template = "<a href='"
-        . CRM_Utils_System::url('civicrm/admin/messageTemplates/add', ['action' => 'update', 'id' => $messageTemplates->id, 'reset' => 1])
-        . "'>$messageTemplates->msg_title</a>";
-    }
+
+    $template = self::getTemplateLink($params['template_id']);
+
     if (isset($params['location_type_id']) && !empty($params['location_type_id'])) {
       try {
         $locationText = 'location type ' . civicrm_api3('LocationType', 'getvalue', [
@@ -222,6 +217,51 @@ class CRM_Emailapi_CivirulesAction_Send extends CRM_CivirulesActions_Generic_Api
    */
   public function getFormattedExtraDataInputUrl(string $url, int $ruleActionID): string {
     return CRM_Utils_System::url($url, 'rule_action_id=' . $ruleActionID, FALSE, NULL, FALSE, FALSE, TRUE);
+  }
+
+  /**
+   * Get the Message Template Link for userFriendlyConditionParams
+   * It supports Mosaico templates if the mosaicomsgtpl extension is installed.
+   *
+   * @param int $templateID
+   *
+   * @return string
+   * @throws \CRM_Core_Exception
+   * @throws \Civi\API\Exception\UnauthorizedException
+   */
+  public static function getTemplateLink(int $templateID): string {
+    $messageTemplateSelects = ['id', 'msg_title'];
+
+    $messageTemplateAPI = \Civi\Api4\MessageTemplate::get(FALSE)
+      ->addWhere('id', '=', $templateID)
+      ->addWhere('is_active', '=', TRUE);
+    if (!empty(\Civi\Api4\Extension::get(FALSE)
+      ->addWhere('file', '=', 'mosaicomsgtpl')
+      ->addWhere('status:name', '=', 'installed')
+      ->execute()
+      ->first())) {
+      $messageTemplateAPI->addJoin('MosaicoTemplate AS mosaico_template', 'LEFT');
+      $messageTemplateSelects[] = 'mosaico_template.msg_tpl_id';
+      $messageTemplateSelects[] = 'mosaico_template.id';
+    }
+    $messageTemplateAPI->setSelect($messageTemplateSelects);
+    $messageTemplate = $messageTemplateAPI->execute()->first();
+
+    if (!empty($messageTemplate)) {
+      if (!empty($messageTemplate['mosaico_template.msg_tpl_id'])) {
+        $url = CRM_Utils_System::url('civicrm/mosaico-template-list#?id=' . $messageTemplate['mosaico_template.id']);
+      }
+      else {
+        $url = CRM_Utils_System::url('civicrm/admin/messageTemplates/add', [
+          'action' => 'update',
+          'id' => $messageTemplate['id'],
+          'reset' => 1
+        ]);
+      }
+      $template = "<a href='$url' target='_blank'>" . $messageTemplate['msg_title'] . "</a>";
+    }
+
+    return $template ?? E::ts('unknown template');
   }
 
 }

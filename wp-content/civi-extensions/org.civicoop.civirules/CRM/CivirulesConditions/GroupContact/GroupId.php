@@ -76,7 +76,7 @@ class CRM_CivirulesConditions_GroupContact_GroupId extends CRM_Civirules_Conditi
           'return' => 'name',
           'id' => $params['group_id'],
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -96,7 +96,7 @@ class CRM_CivirulesConditions_GroupContact_GroupId extends CRM_Civirules_Conditi
           'return' => 'id',
           'name' => $condition_params['group_id'],
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }

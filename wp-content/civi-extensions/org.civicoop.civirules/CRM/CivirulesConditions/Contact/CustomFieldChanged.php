@@ -87,7 +87,7 @@ class CRM_CivirulesConditions_Contact_CustomFieldChanged extends CRM_Civirules_C
         unset($params['custom_field_id']);
         $params['custom_field_group'] = $customGroup['name'];
         $params['custom_field_field'] = $customField['name'];
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -112,7 +112,7 @@ class CRM_CivirulesConditions_Contact_CustomFieldChanged extends CRM_Civirules_C
         $condition_params['custom_field_id'] = $customField['id'];
         unset($condition_params['custom_field_field']);
         unset($condition_params['custom_field_group']);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -154,7 +154,7 @@ class CRM_CivirulesConditions_Contact_CustomFieldChanged extends CRM_Civirules_C
       }
       $friendlyText .= implode(",", $fields);
     }
-    catch (CiviCRM_API3_Exception $ex) {
+    catch (CRM_Core_Exception $ex) {
     }
     return $friendlyText;
   }

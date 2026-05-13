@@ -41,7 +41,7 @@ class CRM_Contact_Form_Search_Criteria {
       // multiselect for groups
       if ($form->_group) {
         // Arrange groups into hierarchical listing (child groups follow their parents and have indentation spacing in title)
-        $groupHierarchy = CRM_Contact_BAO_Group::getGroupsHierarchy($form->_group, NULL, '- ', TRUE);
+        $groupHierarchy = CRM_Contact_BAO_Group::getGroupsHierarchy($form->_group, NULL, '- ', TRUE, textFormat: 'plain');
 
         $form->add('select', 'group', ts('Groups'), $groupHierarchy, FALSE,
          ['id' => 'group', 'multiple' => 'multiple', 'class' => 'crm-select2']
@@ -60,7 +60,7 @@ class CRM_Contact_Form_Search_Criteria {
     $form->addOptionalQuickFormElement('all_tag_types');
     if ($form->_searchOptions['tags']) {
       // multiselect for categories
-      $contactTags = CRM_Core_BAO_Tag::getTags();
+      $contactTags = CRM_Core_BAO_Tag::getTags(separator: '- ');
 
       if ($contactTags) {
         $form->add('select', 'contact_tags', ts('Tag'), $contactTags, FALSE,
@@ -136,9 +136,9 @@ class CRM_Contact_Form_Search_Criteria {
 
     $form->add('select',
       'uf_group_id',
-      ts('Views For Display Contacts'),
+      ts('Display Columns'),
       [
-        '0' => ts('- default view -'),
+        '0' => ts('- default columns -'),
       ] + $searchProfiles,
       FALSE,
       ['class' => 'crm-select2']
@@ -203,7 +203,7 @@ class CRM_Contact_Form_Search_Criteria {
 
     $form->addElement('select',
       'privacy_operator',
-      ts('Operator'),
+      ts('Multiple Privacy Options'),
       [
         'OR' => ts('OR'),
         'AND' => ts('AND'),
@@ -315,7 +315,7 @@ class CRM_Contact_Form_Search_Criteria {
     }
     $fields = array_merge(self::getBasicSearchFields(), $searchFields);
     foreach ($fields as $index => $field) {
-      $fields[$index] = array_merge(['class' => '', 'is_custom' => FALSE, 'template' => '', 'help' => '', 'description' => ''], $field);
+      $fields[$index] = array_merge(['class' => '', 'is_custom' => FALSE, 'template' => '', 'description' => ''], $field);
     }
     $form->assign('basicSearchFields', $fields);
   }
@@ -340,7 +340,7 @@ class CRM_Contact_Form_Search_Criteria {
       'tag_types_text' => ['name' => 'tag_types_text'],
       'tag_search' => [
         'name' => 'tag_search',
-        'help' => ['id' => 'id-all-tags', 'file' => NULL],
+        'help' => ['id' => 'tag_search'],
       ],
       'tag_set' => [
         'name' => 'tag_set',
@@ -350,7 +350,7 @@ class CRM_Contact_Form_Search_Criteria {
       'all_tag_types' => [
         'name' => 'all_tag_types',
         'class' => 'search-field__span-3 search-field__checkbox',
-        'help' => ['id' => 'id-all-tag-types', 'file' => NULL],
+        'help' => ['id' => 'all_tag_types'],
       ],
       'phone_numeric' => [
         'name' => 'phone_numeric',
@@ -369,17 +369,17 @@ class CRM_Contact_Form_Search_Criteria {
       ],
       'contact_source' => [
         'name' => 'contact_source',
-        'help' => ['id' => 'id-source', 'file' => 'CRM/Contact/Form/Contact'],
+        'help' => ['id' => 'contact_source', 'file' => 'CRM/Contact/Form/Contact'],
       ],
       'job_title' => ['name' => 'job_title'],
       'preferred_language' => ['name' => 'preferred_language'],
       'contact_id' => [
         'name' => 'id',
-        'help' => ['id' => 'id-contact-id', 'file' => 'CRM/Contact/Form/Contact'],
+        'help' => ['id' => 'contact_id', 'file' => 'CRM/Contact/Form/Contact'],
       ],
       'external_identifier' => [
         'name' => 'external_identifier',
-        'help' => ['id' => 'id-external-id', 'file' => 'CRM/Contact/Form/Contact'],
+        'help' => ['id' => 'external_identifier', 'file' => 'CRM/Contact/Form/Contact'],
       ],
       'uf_user' => [
         'name' => 'uf_user',
@@ -603,7 +603,7 @@ class CRM_Contact_Form_Search_Criteria {
    */
   public static function custom(&$form) {
     $form->add('hidden', 'hidden_custom', 1);
-    $groupDetails = CRM_Core_BAO_CustomGroup::getAll(['extends' => 'Contact', 'is_active' => TRUE]);
+    $groupDetails = CRM_Core_BAO_CustomGroup::getAll(['extends' => 'Contact', 'is_active' => TRUE], CRM_Core_Permission::VIEW);
     $form->assign('groupTree', $groupDetails);
 
     foreach ($groupDetails as $key => $group) {

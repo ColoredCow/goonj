@@ -9,6 +9,22 @@ Releases use the following numbering system:
 
 * **[BC]**: Items marked with [BC] indicate a breaking change that will require updates to your code if you are using that code in your extension.
 
+## 1.5.13 (2026-04-13)
+
+* [!24](https://lab.civicrm.org/extensions/firewall/-/merge_requests/24) Add composer package publish CI.
+* [!25](https://lab.civicrm.org/extensions/firewall/-/merge_requests/25) Fix implicit null deprecation errors.
+
+## 1.5.12 (2026-02-19)
+
+* [!20](https://lab.civicrm.org/extensions/firewall/-/merge_requests/20) Updated docs to reflect how CSRF token timeout works since 1.5.3.
+* [!21](https://lab.civicrm.org/extensions/firewall/-/merge_requests/21) Convert Thresholds to be settings so thresholds can be modified in the UI without needing code changes.
+* [!22](https://lab.civicrm.org/extensions/firewall/-/merge_requests/22) Replace reference to deprecated exception class.
+
+## 1.5.11 (2025-07-07)
+
+* Fix [#35](https://lab.civicrm.org/extensions/firewall/-/issues/35) Only use sessionId for logged in users.
+* Upgrade to EntityFrameworkV2.
+
 ## 1.5.10 (2024-04-29)
 
 * Fix [#34](https://lab.civicrm.org/extensions/firewall/-/merge_requests/18) Force session cookie for anonymous users submitting Drupal webforms on Drupal 9.2+.

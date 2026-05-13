@@ -58,7 +58,7 @@ class CRM_CivirulesConditions_Contact_LivesInCountry extends CRM_Civirules_Condi
         }
       }
       // if no address found setting determines if default country is to be used
-      catch (CiviCRM_API3_Exception $ex) {
+      catch (CRM_Core_Exception $ex) {
         $countryId = $this->checkDefaultCountryUsed();
       }
       if ($countryId) {
@@ -82,7 +82,7 @@ class CRM_CivirulesConditions_Contact_LivesInCountry extends CRM_Civirules_Condi
           'name' => "defaultContactCountry",
         ));
       }
-      catch (CiviCRM_API3_Exception $ex) {
+      catch (CRM_Core_Exception $ex) {
         return FALSE;
       }
     }
@@ -135,7 +135,7 @@ class CRM_CivirulesConditions_Contact_LivesInCountry extends CRM_Civirules_Condi
           'return' => 'name',
         ));
       }
-      catch (CiviCRM_API3_Exception $ex) {
+      catch (CRM_Core_Exception $ex) {
       }
     }
     if (!empty($countryNames)) {
@@ -152,7 +152,7 @@ class CRM_CivirulesConditions_Contact_LivesInCountry extends CRM_Civirules_Condi
           'id' => $this->_conditionParams['location_type_id'],
         )) . ')';
       }
-      catch (CiviCRM_API3_Exception $ex) {
+      catch (CRM_Core_Exception $ex) {
       }
     }
     else {

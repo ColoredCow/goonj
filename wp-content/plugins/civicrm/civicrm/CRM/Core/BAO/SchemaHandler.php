@@ -81,7 +81,7 @@ class CRM_Core_BAO_SchemaHandler {
    * @return string
    */
   public static function buildTableSQL($params): string {
-    $sql = "CREATE TABLE {$params['name']} (";
+    $sql = "CREATE TABLE IF NOT EXISTS {$params['name']} (";
     if (isset($params['fields']) &&
       is_array($params['fields'])
     ) {
@@ -194,11 +194,6 @@ class CRM_Core_BAO_SchemaHandler {
   public static function buildSearchIndexSQL($params, $separator, $prefix = '', $existingIndex = '') {
     $sql = '';
 
-    // Don't index blob
-    if ($params['type'] == 'text') {
-      return NULL;
-    }
-
     // Perform case-insensitive match to see if index name begins with "index_" or "INDEX_"
     // (for legacy reasons it could be either)
     $searchIndexExists = stripos($existingIndex ?? '', 'index_') === 0;
@@ -207,7 +202,7 @@ class CRM_Core_BAO_SchemaHandler {
     // (skip indexing FK fields because it would be redundant to have 2 indexes)
     if (!empty($params['searchable']) && empty($params['fk_table_name']) && !$searchIndexExists) {
       $indexName = $params['name'];
-      if (self::getFieldLength($params['type']) > self::MAX_INDEX_LENGTH) {
+      if ($params['type'] === 'text' || self::getFieldLength($params['type']) > self::MAX_INDEX_LENGTH) {
         $indexName .= '(' . self::MAX_INDEX_LENGTH . ')';
       }
       $sql .= $separator;
@@ -481,11 +476,16 @@ ADD UNIQUE INDEX `unique_entity_id` ( `entity_id` )";
    *
    * @param string $tableName
    * @param string $indexName
+   *
+   * @return bool
+   *   TRUE if the index was dropped, FALSE otherwise.
    */
-  public static function dropIndexIfExists($tableName, $indexName) {
+  public static function dropIndexIfExists($tableName, $indexName): bool {
     if (self::checkIfIndexExists($tableName, $indexName)) {
       CRM_Core_DAO::executeQuery("DROP INDEX $indexName ON $tableName");
+      return TRUE;
     }
+    return FALSE;
   }
 
   /**
@@ -589,6 +589,10 @@ MODIFY      {$columnName} varchar( $length )
    * @return bool TRUE if FK is found
    */
   public static function checkFKExists(string $table_name, string $constraint_name): bool {
+    if (!isset(\Civi::$statics['CRM_Core_DAO']['init'])) {
+      // This could get called early during installation.
+      return FALSE;
+    }
     $query = "
       SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
       WHERE TABLE_SCHEMA = DATABASE()
@@ -825,9 +829,9 @@ MODIFY      {$columnName} varchar( $length )
    * @return bool
    */
   public static function migrateUtf8mb4($revert = FALSE, $patterns = [], $databaseList = NULL) {
-    $newCharSet = $revert ? 'utf8' : 'utf8mb4';
-    $newCollation = $revert ? 'utf8_unicode_ci' : 'utf8mb4_unicode_ci';
-    $newBinaryCollation = $revert ? 'utf8_bin' : 'utf8mb4_bin';
+    $newCharSet = $revert ? 'utf8mb3' : 'utf8mb4';
+    $newCollation = $revert ? 'utf8mb3_unicode_ci' : 'utf8mb4_unicode_ci';
+    $newBinaryCollation = $revert ? 'utf8mb3_bin' : 'utf8mb4_bin';
     $tables = [];
     $dao = new CRM_Core_DAO();
     $databases = $databaseList ?? [$dao->_database];

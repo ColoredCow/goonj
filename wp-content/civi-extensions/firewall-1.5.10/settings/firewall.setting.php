@@ -100,5 +100,76 @@ return [
       ]
     ],
   ],
-
+  'firewall_declines_threshold' => [
+    'name' => 'firewall_declines_threshold',
+    'type' => 'String',
+    'html_type' => 'text',
+    'default' => 10,
+    'is_domain' => 1,
+    'is_contact' => 1,
+    'title' => E::ts('Threshold of card decline events before an IP Address is blocked'),
+    'description' => E::ts('How many times should an IP Address be able to trigger a card decline before being blocked'),
+    'html_attributes' => [
+      'size' => 20,
+    ],
+    'settings_pages' => [
+      'firewall' => [
+        'weight' => 70,
+      ]
+    ],
+  ],
+  'firewall_invalidcsrf_threshold' => [
+    'name' => 'firewall_invalidcsrf_threshold',
+    'type' => 'String',
+    'html_type' => 'text',
+    'default' => 5,
+    'is_domain' => 1,
+    'is_contact' => 1,
+    'title' => E::ts('Threshold of how many invalid CSRF Failures'),
+    'description' => E::ts('How many times should an IP Address be able to submit with a bad CSRF value before being blocked'),
+    'html_attributes' => [
+      'size' => 20,
+    ],
+    'settings_pages' => [
+      'firewall' => [
+        'weight' => 80,
+      ]
+    ],
+  ],
+  'firewall_formprotection_threshold' => [
+    'name' => 'firewall_formprotection_threshold',
+    'type' => 'String',
+    'html_type' => 'text',
+    'default' => 10,
+    'is_domain' => 1,
+    'is_contact' => 1,
+    'title' => E::ts('Threshold of Form protection events before an IP Address is blocked'),
+    'description' => E::ts('How many times should an IP Address be able to trigger form protection event before being blocked'),
+    'html_attributes' => [
+      'size' => 20,
+    ],
+    'settings_pages' => [
+      'firewall' => [
+        'weight' => 90,
+      ]
+    ],
+  ],
+  'firewall_fraud_threshold' => [
+    'name' => 'firewall_fraud_threshold',
+    'type' => 'String',
+    'html_type' => 'text',
+    'default' => 3,
+    'is_domain' => 1,
+    'is_contact' => 1,
+    'title' => E::ts('Threshold of card fraud events before an IP Address is blocked'),
+    'description' => E::ts('How many times should an IP Address be able to trigger a card fraud before being blocked'),
+    'html_attributes' => [
+      'size' => 20,
+    ],
+    'settings_pages' => [
+      'firewall' => [
+        'weight' => 100,
+      ]
+    ],
+  ],
 ];

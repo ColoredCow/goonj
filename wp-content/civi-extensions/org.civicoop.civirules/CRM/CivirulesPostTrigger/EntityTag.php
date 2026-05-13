@@ -66,11 +66,9 @@ class CRM_CivirulesPostTrigger_EntityTag extends CRM_Civirules_Trigger_Post {
       if ($op === 'edit' || $op === 'delete') {
         //set also original data with an edit event
         $oldData = CRM_Civirules_Utils_PreData::getPreData($entity, $objectId, $eventID);
-        $triggerData = new CRM_Civirules_TriggerData_Edit($entity, $objectId, $entityTag, $oldData);
-        $triggerData->setTrigger($this);
+        $triggerData = new CRM_Civirules_TriggerData_Edit($entity, $objectId, $entityTag, $oldData, $this);
       } else {
-        $triggerData = new CRM_Civirules_TriggerData_Post($entity, $objectId, $entityTag);
-        $triggerData->setTrigger($this);
+        $triggerData = new CRM_Civirules_TriggerData_Post($entity, $objectId, $entityTag, $this);
       }
       $this->setTriggerData($triggerData);
       parent::triggerTrigger($op, $objectName, $objectId, $objectRef, $eventID);

@@ -277,7 +277,7 @@ class CRM_CivirulesActions_Contact_UpdateDateValue extends CRM_Civirules_Action 
         $action_params['source_field_id'] = $customField['id'];
         unset($action_params['source_custom_group']);
         unset($action_params['source_custom_field']);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -290,7 +290,7 @@ class CRM_CivirulesActions_Contact_UpdateDateValue extends CRM_Civirules_Action 
    * @param string|int $field_identifier
    * @access protected
    * @return string
-   * @throws \CiviCRM_API3_Exception
+   * @throws \CRM_Core_Exception
    */
   protected function getHumanReadableFieldLabel($field_identifier) {
 

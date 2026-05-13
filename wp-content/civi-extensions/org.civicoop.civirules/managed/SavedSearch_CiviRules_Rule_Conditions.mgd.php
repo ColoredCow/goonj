@@ -47,7 +47,7 @@ return [
         'saved_search_id.name' => 'CiviRules_Rule_Conditions',
         'type' => 'table',
         'settings' => [
-          'description' => E::ts(''),
+          'description' => '',
           'sort' => [],
           'limit' => 20,
           'pager' => [
@@ -97,7 +97,7 @@ return [
               'alignment' => 'text-right',
             ],
             [
-              'text' => E::ts(''),
+              'text' => '',
               'style' => 'default',
               'size' => 'btn-xs',
               'icon' => 'fa-bars',

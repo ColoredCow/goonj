@@ -41,7 +41,7 @@ class CRM_CivirulesConditions_Membership_Status extends CRM_CivirulesConditions_
       foreach ($apiMembershipStatus as $membershipStatus) {
         $return[$membershipStatus['id']] = $membershipStatus['label'];
       }
-    } catch (CiviCRM_API3_Exception $ex) {}
+    } catch (CRM_Core_Exception $ex) {}
     return $return;
   }
 
@@ -66,7 +66,7 @@ class CRM_CivirulesConditions_Membership_Status extends CRM_CivirulesConditions_
           'return' => 'name',
           'id' => $params['status_id'],
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -93,7 +93,7 @@ class CRM_CivirulesConditions_Membership_Status extends CRM_CivirulesConditions_
           'return' => 'id',
           'name' => $condition_params['status_id'],
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }

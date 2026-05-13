@@ -173,6 +173,12 @@ function prettyworkflowmessages_civicrm_alterMailContent(&$content) {
  */
 function replaceWorkflowMessage(&$content, $tokenValue, $tokenString) {
   // set the return string as workflow message content
+
+  // Convert null content to an empty string to avoid a 'Passing null
+  // to parameter #2 ($subject) of type string is deprecated' warning
+  // down the line.
+  $content ??= '';
+
   $processedString = $tokenValue;
   if (CRM_Utils_Token::token_match('system', $tokenString, $content)) {
     CRM_Utils_Token::token_replace('system', $tokenString, $tokenValue, $content);

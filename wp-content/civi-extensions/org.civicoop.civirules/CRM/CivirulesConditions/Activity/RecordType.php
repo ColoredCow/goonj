@@ -73,7 +73,7 @@ class CRM_CivirulesConditions_Activity_RecordType extends CRM_Civirules_Conditio
           'value' => $params['record_type_id'],
           'option_group_id' => 'activity_contacts',
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -94,7 +94,7 @@ class CRM_CivirulesConditions_Activity_RecordType extends CRM_Civirules_Conditio
           'name' => $params['record_type_id'],
           'option_group_id' => 'activity_contacts',
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }

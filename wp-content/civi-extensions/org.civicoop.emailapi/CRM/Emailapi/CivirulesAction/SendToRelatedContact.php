@@ -172,15 +172,10 @@ class CRM_Emailapi_CivirulesAction_SendToRelatedContact extends CRM_Civirules_Ac
    * @return string
    */
   public function userFriendlyConditionParams() {
-    $template = 'unknown template';
     $params = $this->getActionParameters();
-    $version = CRM_Core_BAO_Domain::version();
-    $messageTemplates = new CRM_Core_DAO_MessageTemplate();
-    $messageTemplates->id = $params['template_id'];
-    $messageTemplates->is_active = true;
-    if ($messageTemplates->find(TRUE)) {
-      $template = $messageTemplates->msg_title;
-    }
+
+    $template = CRM_Emailapi_CivirulesAction_Send::getTemplateLink($params['template_id']);
+
     if (isset($params['location_type_id']) && !empty($params['location_type_id'])) {
       try {
         $locationText = 'location type ' . civicrm_api3('LocationType', 'getvalue', [
@@ -213,7 +208,7 @@ class CRM_Emailapi_CivirulesAction_SendToRelatedContact extends CRM_Civirules_Ac
     if (!empty($params['bcc'])) {
       $bcc = ts(' and bcc to %1', [1=>$params['bcc']]);
     }
-    return ts('Send email from "%1 (%2 using %3)" with Template "%4" to %5 %6 %7', [
+    return ts("Send email from '%1 (%2 using %3)' with Template '%4' to %5 %6 %7", [
       1=>$params['from_name'],
       2=>$params['from_email'],
       3=>$locationText,

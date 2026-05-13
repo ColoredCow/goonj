@@ -33,9 +33,7 @@ class CRM_CivirulesCronTrigger_GroupMembership extends CRM_Civirules_Trigger_Cro
     if ($this->dao->fetch()) {
       $data = [];
       CRM_Core_DAO::storeValues($this->dao, $data);
-      $triggerData = new CRM_Civirules_TriggerData_Cron($this->dao->contact_id, 'GroupContact', $data, $this->dao->contact_id);
-      $triggerData->setTrigger($this);
-      return $triggerData;
+      return new CRM_Civirules_TriggerData_Cron($this->dao->contact_id, 'GroupContact', $data, $this->dao->contact_id, $this);
     }
     return FALSE;
   }

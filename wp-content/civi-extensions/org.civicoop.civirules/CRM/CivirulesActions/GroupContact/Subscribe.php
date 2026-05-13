@@ -28,7 +28,7 @@ class CRM_CivirulesActions_GroupContact_Subscribe extends CRM_Civirules_Action {
           'email' => $email,
           'group_id' => $groupId
         ]);
-      } catch (\CiviCRM_API3_Exception $ex) {
+      } catch (\CRM_Core_Exception $ex) {
         // Do nothing.
       }
     }
@@ -48,7 +48,7 @@ class CRM_CivirulesActions_GroupContact_Subscribe extends CRM_Civirules_Action {
           'return' => 'name',
           'id' => $action_params['group_id'],
         ]);
-      } catch (CiviCRM_API3_Exception $e) {
+      } catch (CRM_Core_Exception $e) {
       }
     } elseif (!empty($actionParams['group_ids']) && is_array($actionParams['group_ids'])) {
       foreach ($action_params['group_ids'] as $i => $j) {
@@ -57,7 +57,7 @@ class CRM_CivirulesActions_GroupContact_Subscribe extends CRM_Civirules_Action {
             'return' => 'name',
             'id' => $j,
           ]);
-        } catch (CiviCRM_API3_Exception $e) {
+        } catch (CRM_Core_Exception $e) {
         }
       }
     }
@@ -77,7 +77,7 @@ class CRM_CivirulesActions_GroupContact_Subscribe extends CRM_Civirules_Action {
           'return' => 'id',
           'name' => $action_params['group_id'],
         ]);
-      } catch (CiviCRM_API3_Exception $e) {
+      } catch (CRM_Core_Exception $e) {
       }
     } elseif (!empty($actionParams['group_ids']) && is_array($actionParams['group_ids'])) {
       foreach ($action_params['group_ids'] as $i => $j) {
@@ -86,7 +86,7 @@ class CRM_CivirulesActions_GroupContact_Subscribe extends CRM_Civirules_Action {
             'return' => 'id',
             'name' => $j,
           ]);
-        } catch (CiviCRM_API3_Exception $e) {
+        } catch (CRM_Core_Exception $e) {
         }
       }
     }

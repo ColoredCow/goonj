@@ -43,7 +43,7 @@ class CRM_CivirulesConditions_Activity_Campaign extends CRM_Civirules_Condition 
           'return' => 'name',
           'id' => $params['campaign_id']
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -63,7 +63,7 @@ class CRM_CivirulesConditions_Activity_Campaign extends CRM_Civirules_Condition 
           'return' => 'id',
           'name' => $condition_params['campaign_id']
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -89,7 +89,7 @@ class CRM_CivirulesConditions_Activity_Campaign extends CRM_Civirules_Condition 
           'return' => 'campaign_id',
         ));
       }
-      catch (CiviCRM_API3_Exception $ex) {
+      catch (CRM_Core_Exception $ex) {
         $campaignId = NULL;
       }
     }
@@ -134,7 +134,7 @@ class CRM_CivirulesConditions_Activity_Campaign extends CRM_Civirules_Condition 
           'return' => 'title'
         ));
       }
-      catch (CiviCRM_API3_Exception $ex) {
+      catch (CRM_Core_Exception $ex) {
       }
     }
     if (!empty($campaignTitles)) {

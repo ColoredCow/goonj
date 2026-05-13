@@ -41,7 +41,7 @@ class CRM_CivirulesConditions_Activity_OnlyOnce extends CRM_Civirules_Condition 
       if (empty($activityContactData) || $activityContactData['record_type_id'] == $sourceRecordTypeId) {
         $isConditionValid = TRUE;
       }
-    } catch (CiviCRM_API3_Exception $ex) {}
+    } catch (CRM_Core_Exception $ex) {}
     return $isConditionValid;
   }
 

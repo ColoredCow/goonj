@@ -64,7 +64,7 @@
   &:not(.crm-editable-editing):hover {
     border: 1px solid $crm-grayblue-darker;
     border-radius: $border-radius-base;
-    padding: 1px 30px 1px 3px;
+    padding: 1px 2px;
 
     &::before {
       background-color: $crm-background;
@@ -78,7 +78,7 @@
       text-align: center;
       top: 0;
       vertical-align: middle;
-      width: 30px;
+      width: 25px;
     }
 
     &::after {
@@ -87,7 +87,7 @@
       right: 0;
       text-align: center;
       top: calc(50% - 9px);
-      width: 30px;
+      width: 25px;
     }
   }
 

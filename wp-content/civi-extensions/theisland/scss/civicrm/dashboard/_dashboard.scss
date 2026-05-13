@@ -55,6 +55,9 @@ $dashboard-dashlets-margin: 10px;
 
   .crm-dashlet-header h3 {
     border: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    color: white;
     font-size: $font-size-h3;
     line-height: $crm-line-height;
   }
@@ -62,6 +65,7 @@ $dashboard-dashlets-margin: 10px;
   .crm-dashlet-header .crm-i {
     line-height: $crm-line-height;
     opacity: 1;
+    color: white;
   }
 }
 

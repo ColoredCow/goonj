@@ -207,6 +207,11 @@ class CRM_Core_SelectValues {
         'label' => ts('Drop-down (select list)'),
       ],
       [
+        'id' => 'Toggle',
+        'name' => 'Toggle',
+        'label' => ts('Toggle Switch'),
+      ],
+      [
         'id' => 'Radio',
         'name' => 'Radio buttons',
         'label' => ts('Radio buttons'),
@@ -283,9 +288,13 @@ class CRM_Core_SelectValues {
    */
   public static function ufGroupTypes() {
     $ufGroupType = [
-      'Profile' => ts('Standalone Form or Directory'),
-      'Search Profile' => ts('Search Views'),
+      'Profile' => ts('Standalone Form'),
+      'Search Profile' => ts('Advanced Search Display Columns'),
     ];
+
+    if (function_exists('legacyprofiles_civicrm_config')) {
+      $ufGroupType['Profile'] = ts('Standalone Form or Directory');
+    }
 
     if (CRM_Core_Config::singleton()->userSystem->supports_form_extensions) {
       $ufGroupType += CRM_Core_Config::singleton()->userSystem->getUfGroupTypes();
@@ -359,7 +368,7 @@ class CRM_Core_SelectValues {
         }
 
         $date['format'] = $dao->date_format;
-        $date['time'] = (bool) $dao->time_format;
+        $date['time'] = $dao->time_format ? $dao->time_format * 12 : FALSE;
       }
 
       if (empty($date['format'])) {
@@ -1140,6 +1149,14 @@ class CRM_Core_SelectValues {
     return $optionValues;
   }
 
+  /**
+   * Get option values for quicksearch.
+   *
+   * The 'join' key is used by ContactAutocompleteProvider to add explicit joins.
+   * The 'adv_search_legacy' key is used by crm.menubar.js when redirecting to advanced search.
+   *
+   * @return array[]
+   */
   public static function getQuicksearchOptions(): array {
     $includeEmail = Civi::settings()->get('includeEmailInName');
     $options = [
@@ -1164,29 +1181,34 @@ class CRM_Core_SelectValues {
         'label' => ts('Last Name'),
       ],
       [
-        'key' => 'email_primary.email',
+        'key' => 'Email.email',
         'label' => ts('Email'),
         'adv_search_legacy' => 'email',
+        'join' => ['Email AS Email', 'INNER', ['Email.contact_id', '=', 'id']],
       ],
       [
-        'key' => 'phone_primary.phone_numeric',
+        'key' => 'Phone.phone_numeric',
         'label' => ts('Phone'),
         'adv_search_legacy' => 'phone_numeric',
+        'join' => ['Phone AS Phone', 'INNER', ['Phone.contact_id', '=', 'id']],
       ],
       [
-        'key' => 'address_primary.street_address',
+        'key' => 'Address.street_address',
         'label' => ts('Street Address'),
         'adv_search_legacy' => 'street_address',
+        'join' => ['Address AS Address', 'INNER', ['Address.contact_id', '=', 'id']],
       ],
       [
-        'key' => 'address_primary.city',
+        'key' => 'Address.city',
         'label' => ts('City'),
         'adv_search_legacy' => 'city',
+        'join' => ['Address AS Address', 'INNER', ['Address.contact_id', '=', 'id']],
       ],
       [
-        'key' => 'address_primary.postal_code',
+        'key' => 'Address.postal_code',
         'label' => ts('Postal Code'),
         'adv_search_legacy' => 'postal_code',
+        'join' => ['Address AS Address', 'INNER', ['Address.contact_id', '=', 'id']],
       ],
       [
         'key' => 'employer_id.sort_name',
@@ -1199,6 +1221,14 @@ class CRM_Core_SelectValues {
     ];
     $customGroups = CRM_Core_BAO_CustomGroup::getAll(['extends' => 'Contact', 'is_active' => TRUE], CRM_Core_Permission::VIEW);
     foreach ($customGroups as $group) {
+      $join = NULL;
+      if (!empty($group['is_multiple'])) {
+        $join = [
+          "Custom_{$group['name']} AS {$group['name']}",
+          'INNER',
+          ['id', '=', "{$group['name']}.entity_id"],
+        ];
+      }
       foreach ($group['fields'] as $field) {
         if (in_array($field['data_type'], ['Date', 'File', 'ContactReference', 'EntityReference'])) {
           continue;
@@ -1207,6 +1237,7 @@ class CRM_Core_SelectValues {
           'key' => $group['name'] . '.' . $field['name'] . ($field['option_group_id'] ? ':label' : ''),
           'label' => $group['title'] . ': ' . $field['label'],
           'adv_search_legacy' => 'custom_' . $field['id'],
+          'join' => $join,
         ];
       }
     }
@@ -1320,12 +1351,12 @@ class CRM_Core_SelectValues {
    *
    * @return array
    */
-  public static function permissions() {
+  public static function permissions($fieldName = NULL, $params = []) {
     $perms = $options = [];
     \CRM_Utils_Hook::permissionList($perms);
 
     foreach ($perms as $machineName => $details) {
-      if (!empty($details['is_active'])) {
+      if (!empty($details['is_active']) || !empty($params['include_disabled'])) {
         $options[$machineName] = $details['title'];
       }
     }

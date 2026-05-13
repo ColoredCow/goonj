@@ -59,7 +59,7 @@ class Test {
   public static function dsn($part = NULL) {
     if (!isset(self::$singletons['dsn'])) {
       require_once "DB.php";
-      $dsn = \CRM_Utils_SQL::autoSwitchDSN(CIVICRM_DSN);
+      $dsn = \CRM_Utils_SQL::autoSwitchDSN(\CIVICRM_DSN);
       self::$singletons['dsn'] = \DB::parseDSN($dsn);
     }
 
@@ -127,7 +127,10 @@ class Test {
       ->callback(function ($ctx) {
         // (1) Set baseline components. (2) Listeners on this setting are janky about "revert()".
         \CRM_Core_BAO_ConfigSetting::setEnabledComponents(\Civi::settings()->getDefault('enable_components'));
-      }, 'reset');
+      }, 'reset')
+      ->callback(function ($ctx) {
+        \Civi\Test::schema()->setAutoIncrement();
+      });
     $builder->install(['org.civicrm.search_kit', 'org.civicrm.afform', 'authx']);
     return $builder;
   }

@@ -78,7 +78,7 @@ class CRM_CivirulesConditions_Form_Contact_HasActivityInCampaign extends CRM_Civ
       }
       asort($activityTypeList);
     }
-    catch (CiviCRM_API3_Exception $ex) {
+    catch (CRM_Core_Exception $ex) {
       $activityTypeList = array();
     }
     return $activityTypeList;

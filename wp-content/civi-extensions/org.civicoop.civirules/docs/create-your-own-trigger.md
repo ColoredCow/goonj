@@ -6,7 +6,11 @@ Not much is need, you need to make civirules aware of those entities. CiviRules 
 
 This how to explains how to add triggers based on the expense extension. This extension contains 2 entities: Expense and ExpenseLine.
 
-## Create a file with the definition of the triggers
+### Step 1 - Add the Trigger to the Database
+
+New method using Managed Entities: [Defining Triggers/Conditions/Actions in extension](./define-trigger-condition-action-in-extension.md).
+
+#### Old method (using json files)
 
 Create a file in your extension folder with the filename `civirules/triggers.json` with the following contents:
 

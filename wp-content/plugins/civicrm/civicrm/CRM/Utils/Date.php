@@ -779,7 +779,7 @@ class CRM_Utils_Date {
     $mysqlEndDate = self::isoToMysql($endDate);
     $mysqlToday = self::isoToMysql($today);
 
-    if ((isset($mysqlStartDate) && isset($mysqlEndDate)) && (($mysqlToday >= $mysqlStartDate) && ($mysqlToday <= $mysqlEndDate))) {
+    if (isset($mysqlStartDate, $mysqlEndDate) && (($mysqlToday >= $mysqlStartDate) && ($mysqlToday <= $mysqlEndDate))) {
       return TRUE;
     }
     elseif ((isset($mysqlStartDate) && !isset($mysqlEndDate)) && (($mysqlToday >= $mysqlStartDate))) {
@@ -808,8 +808,11 @@ class CRM_Utils_Date {
    */
   public static function getFromTo($relative, $from = NULL, $to = NULL, $fromTime = NULL, $toTime = '235959') {
     if ($relative) {
-      [$term, $unit] = explode('.', $relative, 2);
-      $dateRange = self::relativeToAbsolute($term, $unit);
+      $dateRange = CRM_Utils_Hook::relativeDate($relative);
+      if (!is_array($dateRange) || (empty($dateRange['from']) && empty($dateRange['to']))) {
+        [$term, $unit] = explode('.', $relative, 2);
+        $dateRange = self::relativeToAbsolute($term, $unit);
+      }
       $from = substr(($dateRange['from'] ?? ''), 0, 8);
       $to = substr(($dateRange['to'] ?? ''), 0, 8);
       // @todo fix relativeToAbsolute & add tests
@@ -1867,7 +1870,7 @@ class CRM_Utils_Date {
           $field['smarty_view_format'] = $dateAttributes['smarty_view_format'];
         }
         $field['datepicker']['extra'] = self::getDatePickerExtra($field);
-        $field['datepicker']['extra']['time'] = $fieldMetaData['type'] == CRM_Utils_Type::T_TIMESTAMP || $fieldMetaData['type'] == (CRM_Utils_Type::T_DATE + CRM_Utils_Type::T_TIME);
+        $field['datepicker']['extra']['time'] = $dateAttributes['time'];
         $field['datepicker']['attributes'] = self::getDatePickerAttributes($field);
       }
     }

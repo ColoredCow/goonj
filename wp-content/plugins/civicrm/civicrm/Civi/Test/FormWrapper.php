@@ -80,12 +80,30 @@ class FormWrapper {
   }
 
   /**
+   * Gets a value saved to the form using `set()`.
+   *
+   * Generally this function is best avoided in favour of
+   * outputs / actions. But for some embedded search forms...
+   *
+   * @param string $name
+   *
+   * @return mixed
+   */
+  public function getValueSetOnForm($name): mixed {
+    return $this->form->get($name);
+  }
+
+  /**
    * Get a variable assigned to the template.
    *
    * @return mixed
    */
   public function getTemplateVariable($string) {
     return $this->templateVariables[$string];
+  }
+
+  public function getQFKey() {
+    return $this->form->controller->_key;
   }
 
   private $redirects;
@@ -287,7 +305,7 @@ class FormWrapper {
 
       case 'CRM_Contribute_Import_Form_DataSource':
       case 'CRM_Contribute_Import_Form_MapField':
-      case 'CRM_Contribute_Import_Form_Preview':
+      case 'CRM_CiviImport_Form_Generic_Preview':
         if ($this->formController) {
           // Add to the existing form controller.
           $this->form->controller = $this->formController;
@@ -342,7 +360,7 @@ class FormWrapper {
 
       case 'CRM_Custom_Import_Form_DataSource':
       case 'CRM_Custom_Import_Form_MapField':
-      case 'CRM_Custom_Import_Form_Preview':
+      case 'CRM_CiviImport_Form_Generic_Preview':
         $this->form->controller = new \CRM_Import_Controller('Custom Value import', ['class_prefix' => 'CRM_Custom_Import']);
         $this->form->controller->setStateMachine(new \CRM_Core_StateMachine($this->form->controller));
         // The submitted values should be set on one or the other of the forms in the flow.
@@ -355,6 +373,14 @@ class FormWrapper {
       case $class === 'CRM_Contact_Form_Search_Basic':
         $this->form->controller = new \CRM_Contact_Controller_Search('Basic', TRUE, \CRM_Core_Action::BASIC);
         $this->form->setAction(\CRM_Core_Action::BASIC);
+        break;
+
+      case $class === 'CRM_Event_Form_Search':
+        $this->form->controller = new \CRM_Event_Controller_Search();
+        break;
+
+      case $class === 'CRM_Pledge_Form_Search':
+        $this->form->controller = new \CRM_Pledge_Controller_Search();
         break;
 
       case str_contains($class, 'Search'):

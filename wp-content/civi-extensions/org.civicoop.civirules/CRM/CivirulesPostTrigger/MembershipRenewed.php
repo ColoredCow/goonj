@@ -42,7 +42,7 @@ class CRM_CivirulesPostTrigger_MembershipRenewed extends CRM_CivirulesPostTrigge
     parent::triggerTrigger($op, $objectName, $objectId, $objectRef, $eventID);
   }
 
-  public function getTriggerDescription() {
+  public function getTriggerDescription(): string {
     return $this->getHelpText('triggerDescriptionWithParams');
   }
 

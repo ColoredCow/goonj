@@ -106,7 +106,7 @@ class CRM_CivirulesConditions_ContributionSoft_SoftCreditType extends CRM_Civiru
           'value' => $params['soft_credit_type_id'],
           'option_group_id' => 'soft_credit_type',
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -127,7 +127,7 @@ class CRM_CivirulesConditions_ContributionSoft_SoftCreditType extends CRM_Civiru
           'name' => $params['soft_credit_type_id'],
           'option_group_id' => 'soft_credit_type',
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }

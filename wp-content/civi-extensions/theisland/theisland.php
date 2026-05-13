@@ -29,9 +29,11 @@ function theisland_civicrm_config(&$config): void {
     }
   }
 
-  $menubar = Civi::settings()->get('menubar_color');
-  if ($menubar == '#ffffff' || $menubar == '#fff') {
-    Civi::resources()->addStyle(file_get_contents(E::path('css/light-menu.css')));
+  if (_theisland_isActive()) {
+    $menubar = Civi::settings()->get('menubar_color');
+    if ($menubar == '#ffffff' || $menubar == '#fff') {
+      Civi::resources()->addStyle(file_get_contents(E::path('css/light-menu.css')));
+    }
   }
 }
 
@@ -147,9 +149,17 @@ function _theisland_isActive() {
   // Check if it is a public page
   // we fallback on REQUEST_URI because currentPath() does not work reliably on WordPress
   $path = CRM_Utils_System::currentPath() ?: substr($_SERVER['REQUEST_URI'], 1);
+  // Fix special WordPress case when there is no q=civicrm part
+  if ($path == 'wp-admin/admin.php?page=CiviCRM') {
+    $path = 'civicrm/dashboard';
+  }
   $item = CRM_Core_Menu::get($path);
   if (!empty($item['is_public'])) {
     return Civi::settings()->get('theme_frontend') === 'theisland';
+  }
+  elseif (CIVICRM_UF == 'WordPress' && empty($item)) {
+     // Wordpress shortcodes
+     return Civi::settings()->get('theme_frontend') === 'theisland';
   }
 
   // Fallback on the normal CiviCRM mechanism

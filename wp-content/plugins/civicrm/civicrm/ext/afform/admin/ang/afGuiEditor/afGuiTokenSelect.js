@@ -11,7 +11,7 @@
     },
     templateUrl: '~/afGuiEditor/afGuiTokenSelect.html',
     controller: function ($scope, $element) {
-      var ts = $scope.ts = CRM.ts('org.civicrm.afform_admin'),
+      const ts = $scope.ts = CRM.ts('org.civicrm.afform_admin'),
         ctrl = this;
 
       this.$onInit = function() {
@@ -26,8 +26,21 @@
       };
 
       this.getTokens = function() {
-        var tokens = _.transform(ctrl.editor.getEntities(), function(tokens, entity) {
-          tokens.push({id: entity.name + '.0.id', text: entity.label + ' ' + ts('ID')});
+        const tokens = ctrl.editor.getEntities().reduce((tokens, entity) => {
+          const entityMeta = ctrl.editor.meta.entities[entity.type];
+          if (entityMeta.submissionTokens) {
+            entityMeta.submissionTokens.forEach((submissionToken) => {
+              const description = submissionToken.description ?? '';
+              tokens.push({
+                id: entity.name + '.0.' + submissionToken.token,
+                text: entity.label + ' ' + submissionToken.label,
+                description: description
+              });
+            });
+          } else {
+            tokens.push({id: entity.name + '.0.id', text: entity.label + ' ' + ts('ID')});
+          }
+          return tokens;
         }, []);
         tokens.push({id: 'token', text: ts('Submission JWT')});
         return {
@@ -39,11 +52,6 @@
         data: this.getTokens,
         // The crm-action-menu icon doesn't show without a placeholder
         placeholder: ' ',
-        // Make this widget very compact
-        width: '52px',
-        containerCss: {minWidth: '52px'},
-        // Make the dropdown wider than the widget
-        dropdownCss: {width: '250px'}
       };
 
     }

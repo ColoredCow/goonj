@@ -50,7 +50,7 @@ return [
         'saved_search_id.name' => 'Civi_Rules_Rule_Action_Search',
         'type' => 'table',
         'settings' => [
-          'description' => E::ts(''),
+          'description' => '',
           'sort' => [],
           'limit' => 10,
           'pager' => [
@@ -109,7 +109,7 @@ return [
               'alignment' => 'text-right',
             ],
             [
-              'text' => E::ts(''),
+              'text' => '',
               'style' => 'default',
               'size' => 'btn-xs',
               'icon' => 'fa-bars',

@@ -6,6 +6,8 @@
  * @license AGPL-3.0
  */
 
+use CRM_Civirules_ExtensionUtil as E;
+
 abstract class CRM_Civirules_Action {
 
   protected array $ruleAction = [];
@@ -151,7 +153,7 @@ abstract class CRM_Civirules_Action {
    * @param \CRM_Civirules_TriggerData_TriggerData|NULL $triggerData
    * @param string $level Should be one of \Psr\Log\LogLevel
    */
-  protected function logAction($message, CRM_Civirules_TriggerData_TriggerData $triggerData=null, $level=\Psr\Log\LogLevel::INFO) {
+  protected function logAction($message, ?CRM_Civirules_TriggerData_TriggerData $triggerData=null, $level=\Psr\Log\LogLevel::INFO) {
     $context = [];
     $context['message'] = $message;
     $context['rule_id'] = $this->ruleAction['rule_id'];
@@ -165,9 +167,18 @@ abstract class CRM_Civirules_Action {
     $context['action_label'] = CRM_Civirules_BAO_Action::getActionLabelWithId($this->ruleAction['action_id']);
     $context['action_parameters'] = $this->userFriendlyConditionParams();
     $context['contact_id'] = $triggerData ? $triggerData->getContactId() : - 1;
-    $msg = "{action_label} (ID: {rule_action_id})\r\n\r\n{message}\r\n\r\nRule: '{rule_title}' with id {rule_id}";
+    $msg = E::ts(
+      "Rule: '%1' with id %2: Action: %3 with id %4: %5",
+      [
+        1 => $context['rule_title'],
+        2 => $context['rule_id'],
+        3 => $context['action_label'],
+        4 => $context['rule_action_id'],
+        5 => $message,
+      ]
+    );
     if ($context['contact_id'] > 0) {
-      $msg .= "\r\nFor contact: {contact_id}";
+      $msg .= ": " . E::ts('For contact: %1', [1 => $context['contact_id']]);
     }
     CRM_Civirules_Utils_LoggerFactory::log($msg, $context, $level);
   }

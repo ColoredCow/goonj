@@ -44,6 +44,9 @@ class Listen extends \CRM_Core_Page {
       $complaint = new \Civi\SES\Complaint($notification->complaint, $notification->mail);
       $complaint->process();
     }
+
+    // We are done
+    \CRM_Utils_System::civiExit();
   }
 
 }

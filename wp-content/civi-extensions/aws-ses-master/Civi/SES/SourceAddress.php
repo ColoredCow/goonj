@@ -8,12 +8,14 @@ namespace Civi\SES;
 class SourceAddress {
 
   public static function parse($address) {
+    // sample $address value : bounces+b.31853.7420944.1zb6coodt7xeltmd@example.org
+
     $mailSettings = \Civi\Api4\MailSettings::get(FALSE)
       ->addWhere('is_default', '=', TRUE)
       ->execute()->first();
 
     $vs = preg_quote(\Civi::settings()->get('verpSeparator'));
-    $regex = '/^' . preg_quote($mailSettings['localpart']) . '(b|c|e|o|r|u)' . $vs . '(\d+)' . $vs . '(\d+)' . $vs . '([0-9a-f]{16})@' . preg_quote($mailSettings['domain']) . '$/';
+    $regex = '/^' . preg_quote($mailSettings['localpart']) . '(b|c|e|o|r|u)' . $vs . '(\d+)' . $vs . '(\d+)' . $vs . '([0-9a-z]{16})@' . preg_quote($mailSettings['domain']) . '$/';
     $matches = array();
 
     preg_match($regex, $address, $matches);

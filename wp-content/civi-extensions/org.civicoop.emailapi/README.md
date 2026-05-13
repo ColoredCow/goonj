@@ -1,21 +1,5 @@
 # org.civicoop.emailapi
 
-## Version 2.9 uses the token processor
-
-## Version 2.5 and the removal of the token processor
-
-In Version 2.5 the token processor is removed. There have been too many issues with tokens for too long. 
-The main issue for removing token processor is that the hook_civicrm_tokenValues did not work any more in CiviCRM 5.42 and email api 2.4.
-
-It now uses the same code for token replacements as the action provider extension.
-
-## Version 2.0 and the token processor
-Version 2.0 adds support for the new CiviCRM token processor introduced via https://github.com/civicrm/civicrm-core/pull/14662.
-
-**It may not be fully backwards compatible with older versions so you should check before upgrading**
-
-But it adds support for processing activity tokens which is nice.
-
 ## Description
 
 Email API for CiviCRM to send emails through the API

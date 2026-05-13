@@ -107,7 +107,7 @@ class CRM_CivirulesConditions_Group_GroupType extends CRM_Civirules_Condition {
           'value' => $params['group_type_id'],
           'option_group_id' => 'group_type',
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -136,7 +136,7 @@ class CRM_CivirulesConditions_Group_GroupType extends CRM_Civirules_Condition {
           'name' => $condition_params['group_type_id'],
           'option_group_id' => 'group_type',
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -145,7 +145,7 @@ class CRM_CivirulesConditions_Group_GroupType extends CRM_Civirules_Condition {
 
   /**
    * @return array
-   * @throws \CiviCRM_API3_Exception
+   * @throws \CRM_Core_Exception
    */
   public static function getGroupTypes() {
     $return = [];

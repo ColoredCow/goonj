@@ -84,7 +84,7 @@ class CRM_CivirulesActions_Relationship_Add extends CRM_CivirulesActions_Generic
         'return' => 'name_a_b',
         'id' => $action_params['relationship_type_id'],
       ]);
-    } catch (CiviCRM_API3_Exception $e) {
+    } catch (CRM_Core_Exception $e) {
     }
     return $action_params;
   }
@@ -101,7 +101,7 @@ class CRM_CivirulesActions_Relationship_Add extends CRM_CivirulesActions_Generic
         'return' => 'id',
         'name_a_b' => $action_params['relationship_type_id'],
       ]);
-    } catch (CiviCRM_API3_Exception $e) {
+    } catch (CRM_Core_Exception $e) {
     }
     return parent::importActionParameters($action_params);
   }

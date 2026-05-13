@@ -220,7 +220,7 @@ class CRM_Dedupe_Merger {
    * are use cases not covered by entityTables and instead we should wait & see.
    */
   public static function cidRefs() {
-    if (isset(\Civi::$statics[__CLASS__]) && isset(\Civi::$statics[__CLASS__]['contact_references'])) {
+    if (isset(\Civi::$statics[__CLASS__], \Civi::$statics[__CLASS__]['contact_references'])) {
       return \Civi::$statics[__CLASS__]['contact_references'];
     }
 
@@ -383,8 +383,8 @@ INNER JOIN  civicrm_pledge pledge ON ( pledge.id = payment.pledge_id )
       case 'civicrm_membership':
         $sqls[] = "
     UPDATE  IGNORE  civicrm_contribution contribution
-INNER JOIN  civicrm_membership_payment payment ON ( payment.contribution_id = contribution.id )
-INNER JOIN  civicrm_membership membership ON ( membership.id = payment.membership_id )
+INNER JOIN  civicrm_line_item line ON ( line.contribution_id = contribution.id AND line.entity_table = 'civicrm_membership')
+INNER JOIN  civicrm_membership membership ON ( membership.id = line.entity_id )
        SET  contribution.contact_id = $mainContactId
      WHERE  membership.contact_id = $otherContactId";
         break;
@@ -392,8 +392,8 @@ INNER JOIN  civicrm_membership membership ON ( membership.id = payment.membershi
       case 'civicrm_participant':
         $sqls[] = "
     UPDATE  IGNORE  civicrm_contribution contribution
-INNER JOIN  civicrm_participant_payment payment ON ( payment.contribution_id = contribution.id )
-INNER JOIN  civicrm_participant participant ON ( participant.id = payment.participant_id )
+INNER JOIN  civicrm_line_item line ON ( line.contribution_id = contribution.id AND line.entity_table = 'civicrm_participant')
+INNER JOIN  civicrm_participant participant ON ( participant.id = line.entity_id )
        SET  contribution.contact_id = $mainContactId
      WHERE  participant.contact_id = $otherContactId";
         break;
@@ -736,16 +736,6 @@ INNER JOIN  civicrm_membership membership2 ON membership1.membership_type_id = m
     foreach ($params as $key => $value) {
 
       if (($customFieldId = CRM_Core_BAO_CustomField::getKeyID($key))) {
-        // for autocomplete transfer hidden value instead of label
-        if ($params[$key] && isset($params[$key . '_id'])) {
-          $value = $params[$key . '_id'];
-        }
-
-        // we need to append time with date
-        if ($params[$key] && isset($params[$key . '_time'])) {
-          $value .= ' ' . $params[$key . '_time'];
-        }
-
         // if auth source is not checksum / login && $value is blank, do not proceed - CRM-10128
         if (($session->get('authSrc') & (CRM_Core_Permission::AUTH_SRC_CHECKSUM + CRM_Core_Permission::AUTH_SRC_LOGIN)) == 0 &&
           ($value == '' || !isset($value))
@@ -861,12 +851,12 @@ INNER JOIN  civicrm_membership membership2 ON membership1.membership_type_id = m
    *   Limit on number of contacts to search for duplicates for.
    *   This means that if the limit is 1000 then only duplicates for the first 1000 contacts
    *   matching criteria will be found and batchMerged (the number of merges could be less than or greater than 100)
-   *
+   * @param bool $isForceNewSearch
    * @return array|bool
    *
-   * @throws \CRM_Core_Exception
+   * @throws CRM_Core_Exception
    */
-  public static function batchMerge($rgid, $gid = NULL, $mode = 'safe', $batchLimit = 1, $isSelected = 2, $criteria = [], $checkPermissions = TRUE, $reloadCacheIfEmpty = NULL, $searchLimit = 0) {
+  public static function batchMerge($rgid, $gid = NULL, $mode = 'safe', $batchLimit = 1, $isSelected = 2, $criteria = [], $checkPermissions = TRUE, $reloadCacheIfEmpty = NULL, $searchLimit = 0, bool $isForceNewSearch = FALSE): array|bool {
     $redirectForPerformance = $batchLimit > 1;
     if ($mode === 'aggressive' && $checkPermissions && !CRM_Core_Permission::check('force merge duplicate contacts')) {
       throw new CRM_Core_Exception(ts('Insufficient permissions for aggressive mode batch merge'));
@@ -878,7 +868,7 @@ INNER JOIN  civicrm_membership membership2 ON membership1.membership_type_id = m
       // explicitly set to NULL if not 1 or 0 as part of grandfathering out the mystical '2' value.
       $isSelected = NULL;
     }
-    $dupePairs = self::getDuplicatePairs($rgid, $gid, $reloadCacheIfEmpty, $batchLimit, $isSelected, ($mode === 'aggressive'), $criteria, $checkPermissions, $searchLimit);
+    $dupePairs = self::getDuplicatePairs($rgid, $gid, $reloadCacheIfEmpty, $batchLimit, $isSelected, ($mode === 'aggressive'), $criteria, $checkPermissions, $searchLimit, $isForceNewSearch);
 
     $cacheParams = [
       'cache_key_string' => self::getMergeCacheKeyString($rgid, $gid, $criteria, $checkPermissions, $searchLimit),
@@ -1364,7 +1354,7 @@ INNER JOIN  civicrm_membership membership2 ON membership1.membership_type_id = m
         $attributes = ['checked' => 'checked'];
         $otherContactMemberships = CRM_Member_BAO_Membership::getAllContactMembership($otherID);
         foreach ($otherContactMemberships as $membership) {
-          $mainMembership = CRM_Member_BAO_Membership::getContactMembership($mainID, $membership['membership_type_id'], FALSE);
+          $mainMembership = self::getContactMembership($mainID, $membership['membership_type_id']);
           if ($mainMembership) {
             $attributes = [];
           }
@@ -1463,6 +1453,65 @@ INNER JOIN  civicrm_membership membership2 ON membership1.membership_type_id = m
     $result['other_details']['location_blocks'] = $locations['other'];
 
     return $result;
+  }
+
+  /**
+   * Return a current membership of given contact.
+   *
+   * NB: if more than one membership meets criteria, a randomly selected one is returned.
+   *
+   * @param int $contactID
+   *   Contact id.
+   * @param int $memType
+   *   Membership type, null to retrieve all types.
+   *
+   * @return array|bool
+   * @throws \CRM_Core_Exception
+   */
+  private static function getContactMembership($contactID, $memType) {
+    $dao = new CRM_Member_DAO_Membership();
+    $dao->contact_id = $contactID;
+    $dao->membership_type_id = $memType;
+    $dao->whereAdd('is_test = 0');
+    //avoid pending membership as current membership: CRM-3027
+    $statusIds = [array_search('Pending', CRM_Member_PseudoConstant::membershipStatus())];
+    // CRM-15475
+    $statusIds[] = array_search(
+      'Cancelled',
+      CRM_Member_PseudoConstant::membershipStatus(
+        NULL,
+        " name = 'Cancelled' ",
+        'name',
+        FALSE,
+        TRUE
+      )
+    );
+    $dao->whereAdd('status_id NOT IN ( ' . implode(',', $statusIds) . ')');
+
+    // order by start date to find most recent membership first, CRM-4545
+    $dao->orderBy('start_date DESC');
+
+    if ($dao->find(TRUE)) {
+      $membership = [];
+      CRM_Core_DAO::storeValues($dao, $membership);
+      $membership['is_current_member'] = CRM_Core_DAO::getFieldValue('CRM_Member_DAO_MembershipStatus',
+        $membership['status_id'],
+        'is_current_member', 'id'
+      );
+      $ownerMemberId = CRM_Core_DAO::getFieldValue('CRM_Member_DAO_Membership',
+        $membership['id'],
+        'owner_membership_id', 'id'
+      );
+      if ($ownerMemberId) {
+        $membership['id'] = $membership['membership_id'] = $ownerMemberId;
+        $membership['membership_contact_id'] = CRM_Core_DAO::getFieldValue('CRM_Member_DAO_Membership',
+          $membership['id'],
+          'contact_id', 'id'
+        );
+      }
+      return $membership;
+    }
+    return FALSE;
   }
 
   /**
@@ -1713,7 +1762,7 @@ INNER JOIN  civicrm_membership membership2 ON membership1.membership_type_id = m
    * @param int $searchLimit
    *   Limit to searching for matches against this many contacts.
    *
-   * @param int $isForceNewSearch
+   * @param bool $isForceNewSearch
    *   Should a new search be forced, bypassing any cache retrieval.
    *
    * @return array
@@ -1721,7 +1770,7 @@ INNER JOIN  civicrm_membership membership2 ON membership1.membership_type_id = m
    *
    * @throws \CRM_Core_Exception
    */
-  public static function getDuplicatePairs($rule_group_id, $group_id, $reloadCacheIfEmpty, $batchLimit, $isSelected, $includeConflicts = TRUE, $criteria = [], $checkPermissions = TRUE, $searchLimit = 0, $isForceNewSearch = 0) {
+  public static function getDuplicatePairs($rule_group_id, $group_id, $reloadCacheIfEmpty, $batchLimit, $isSelected, $includeConflicts = TRUE, $criteria = [], $checkPermissions = TRUE, $searchLimit = 0, $isForceNewSearch = FALSE) {
     $dupePairs = $isForceNewSearch ? [] : self::getCachedDuplicateMatches($rule_group_id, $group_id, $batchLimit, $isSelected, $includeConflicts, $criteria, $checkPermissions, $searchLimit);
     if (empty($dupePairs) && $reloadCacheIfEmpty) {
       // If we haven't found any dupes, probably cache is empty.
@@ -1786,18 +1835,10 @@ INNER JOIN  civicrm_membership membership2 ON membership1.membership_type_id = m
   public static function getMergeFieldsMetadata(bool $checkPermissions = TRUE): array {
     if (!isset(\Civi::$statics[__CLASS__]['merge_fields_metadata'][(int) $checkPermissions])) {
       $contactFields = (array) Contact::getFields($checkPermissions)
+        ->addWhere('name', 'NOT IN', self::ignoredFields('contact'))
         ->execute()
         ->indexBy('name');
-      $invalidFields = self::ignoredFields('contact');
-      foreach ($contactFields as $field => $value) {
-        if (in_array($field, $invalidFields, TRUE)) {
-          unset($contactFields[$field]);
-        }
-      }
-      $optionValueFields = CRM_Core_OptionValue::getFields();
-      foreach ($optionValueFields as $field => $params) {
-        $contactFields[$field]['title'] = $params['title'];
-      }
+
       \Civi::$statics[__CLASS__]['merge_fields_metadata'][(int) $checkPermissions] = $contactFields;
     }
     return \Civi::$statics[__CLASS__]['merge_fields_metadata'][(int) $checkPermissions];
@@ -2277,7 +2318,7 @@ INNER JOIN  civicrm_membership membership2 ON membership1.membership_type_id = m
    */
   private static function getFieldValueAndLabel(string $field, array $contact, bool $checkPermissions): array {
     $fields = self::getMergeFieldsMetadata($checkPermissions);
-    $value = $label = $contact[$field] ?? NULL;
+    $value = $label = $contact[$field] ?? '';
     $fieldSpec = $fields[$field];
     if (!empty($fieldSpec['serialize']) && is_array($value)) {
       // In practice this only applies to preferred_communication_method as the sub types are skipped above
@@ -2553,7 +2594,7 @@ INNER JOIN  civicrm_membership membership2 ON membership1.membership_type_id = m
 
           // Put this field's location type at the top of the list
           $tmpIdList = $typeOptions['values'];
-          $defaultTypeId = [$thisTypeId => $tmpIdList[$thisTypeId] ?? NULL];
+          $defaultTypeId = [$thisTypeId => $tmpIdList[$thisTypeId ?? ''] ?? NULL];
           unset($tmpIdList[$thisTypeId]);
 
           // Add the element

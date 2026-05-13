@@ -44,7 +44,7 @@ class CRM_CivirulesActions_Contribution_ThankYouDate extends CRM_Civirules_Actio
     );
     try {
       civicrm_api3('Contribution', 'Create', $params);
-    } catch (CiviCRM_API3_Exception $ex) {}
+    } catch (CRM_Core_Exception $ex) {}
   }
 
   /**

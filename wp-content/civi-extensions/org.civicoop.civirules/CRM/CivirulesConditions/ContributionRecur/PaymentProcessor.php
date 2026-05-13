@@ -128,7 +128,7 @@ LEFT JOIN civicrm_contribution_recur ccr ON ccr.id = cm.contribution_recur_id WH
           2 => $values,
         ]);
       }
-    } catch (CiviCRM_API3_Exception $ex) {}
+    } catch (CRM_Core_Exception $ex) {}
 
     return trim($label);
   }
@@ -148,7 +148,7 @@ LEFT JOIN civicrm_contribution_recur ccr ON ccr.id = cm.contribution_recur_id WH
             'return' => 'name',
             'id' => $gid,
           ]);
-        } catch (CiviCRM_API3_Exception $e) {
+        } catch (CRM_Core_Exception $e) {
         }
       }
     }
@@ -169,7 +169,7 @@ LEFT JOIN civicrm_contribution_recur ccr ON ccr.id = cm.contribution_recur_id WH
             'return' => 'id',
             'name' => $gid,
           ]);
-        } catch (CiviCRM_API3_Exception $e) {
+        } catch (CRM_Core_Exception $e) {
         }
       }
     }

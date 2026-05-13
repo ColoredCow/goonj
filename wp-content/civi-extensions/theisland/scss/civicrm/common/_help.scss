@@ -5,10 +5,17 @@
   background: initial;
   border: none;
   color: $text-color;
-  padding: 10px 0;
-  font-size: 1em;
+  padding: 15px 0;
+  margin: 0;
+  font-size: $font-size-base;
 
   a {
     color: darken($brand-primary, $crm-darken-percentage);
   }
+}
+
+// Usually we do not need horizontal padding
+// except when the help is directly at the top of the page
+#crm-main-content-wrapper > .help {
+  padding: 15px;
 }

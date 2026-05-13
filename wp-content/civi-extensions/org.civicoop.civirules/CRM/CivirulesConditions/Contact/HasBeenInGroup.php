@@ -101,7 +101,7 @@ class CRM_CivirulesConditions_Contact_HasBeenInGroup extends CRM_Civirules_Condi
             'return' => 'name',
             'id' => $gid,
           ]);
-        } catch (CiviCRM_API3_Exception $e) {
+        } catch (CRM_Core_Exception $e) {
         }
       }
     }
@@ -122,7 +122,7 @@ class CRM_CivirulesConditions_Contact_HasBeenInGroup extends CRM_Civirules_Condi
             'return' => 'id',
             'name' => $gid,
           ]);
-        } catch (CiviCRM_API3_Exception $e) {
+        } catch (CRM_Core_Exception $e) {
         }
       }
     }
@@ -150,7 +150,7 @@ class CRM_CivirulesConditions_Contact_HasBeenInGroup extends CRM_Civirules_Condi
           'return' => 'title',
         ]);
       }
-      catch (CiviCRM_API3_Exception $ex) {
+      catch (CRM_Core_Exception $ex) {
       }
     }
     if (!empty($groupNames)) {
