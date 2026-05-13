@@ -30,6 +30,20 @@ class CollectionBaseService extends AutoSubscriber {
   private static $generatePosterRequest = NULL;
 
   /**
+   * Maps collectionSourceId => newly-generated poster file id.
+   *
+   * CiviCRM 6.13.x changed the order inside CRM_Eck_DAO_Entity::writeRecord so
+   * that hook_civicrm_post (which is where maybeGeneratePoster runs) now fires
+   * BEFORE CustomValueTable::store. CustomValueTable::store writes the wide
+   * "form values" UPDATE for the whole custom group, with poster_202 = NULL
+   * (because the form has no value for Poster). That wipes the SQL UPDATE we
+   * just ran. To recover, we stash the freshly-generated file id here and a
+   * later hook (applyPendingPosterFileIds, on hook_civicrm_custom) re-applies
+   * it AFTER CustomValueTable::store has finished its wide write.
+   */
+  private static $pendingPosterFileIds = [];
+
+  /**
    *
    */
   public static function getSubscribedEvents() {
@@ -53,8 +67,75 @@ class CollectionBaseService extends AutoSubscriber {
         ['updateMatrialContributorsCount'],
         ['updateMonetaryContributorsCount'],
       ],
+      // Runs AFTER CustomValueTable::store (which fires hook_civicrm_custom).
+      // Re-applies the poster file id that CustomValueTable wiped to NULL.
+      // See $pendingPosterFileIds for full explanation.
+      '&hook_civicrm_custom' => [
+        ['applyPendingPosterFileIds'],
+      ],
       '&hook_civicrm_fieldOptions' => 'setIndianStateOptions',
     ];
+  }
+
+  /**
+   * Re-applies the just-generated poster file id to poster_202.
+   *
+   * CiviCRM 6.13.x's CRM_Eck_DAO_Entity::writeRecord fires hook_civicrm_post
+   * BEFORE CustomValueTable::store. Our maybeGeneratePoster post-hook writes
+   * poster_202=<file_id>, then CustomValueTable::store immediately writes the
+   * wide row with poster_202=NULL (form has no value for Poster). This hook
+   * fires AFTER CustomValueTable::store, so we can put our value back.
+   */
+  public static function applyPendingPosterFileIds($op, $groupID, $entityID, &$params) {
+    // Only act for Collection_Camp_Core_Details (group 17) — id may shift across envs
+    // so resolve by name lazily and cache.
+    static $targetGroupId = NULL;
+    if ($targetGroupId === NULL) {
+      try {
+        $group = \Civi\Api4\CustomGroup::get(FALSE)
+          ->addSelect('id')
+          ->addWhere('name', '=', 'Collection_Camp_Core_Details')
+          ->execute()
+          ->single();
+        $targetGroupId = (int) $group['id'];
+      }
+      catch (\Throwable $e) {
+        return;
+      }
+    }
+    if ((int) $groupID !== $targetGroupId) {
+      return;
+    }
+    if (empty(self::$pendingPosterFileIds[$entityID])) {
+      return;
+    }
+
+    $pending = self::$pendingPosterFileIds[$entityID];
+    unset(self::$pendingPosterFileIds[$entityID]);
+
+    try {
+      if ($pending['mode'] === 'set_column') {
+        \CRM_Core_DAO::executeQuery(
+          "UPDATE `{$pending['table']}` SET `{$pending['column']}` = %1 WHERE entity_id = %2",
+          [
+            1 => [$pending['fileId'], 'Integer'],
+            2 => [$entityID, 'Integer'],
+          ]
+        );
+      }
+      elseif ($pending['mode'] === 'update_file_uri') {
+        \Civi\Api4\File::update(FALSE)
+          ->addValue('uri', $pending['newUri'])
+          ->addWhere('id', '=', $pending['existingFileId'])
+          ->execute();
+      }
+    }
+    catch (\Throwable $e) {
+      \Civi::log()->error('[PosterDebug] applyPendingPosterFileIds failed', [
+        'entityID' => $entityID,
+        'error' => $e->getMessage(),
+      ]);
+    }
   }
 
   /**
@@ -777,29 +858,28 @@ class CollectionBaseService extends AutoSubscriber {
         1 => [$collectionSourceId, 'Integer'],
       ]);
 
-      if ($dao->fetch()) {
+      $rowExists = $dao->fetch();
+
+      if ($rowExists) {
         $existingPosterFileId = (int) $dao->poster_value;
 
+        // Stash the write — applyPendingPosterFileIds will perform it AFTER
+        // CustomValueTable::store has finished (which would otherwise wipe
+        // poster_202 to NULL on CiviCRM 6.13.x).
         if (empty($existingPosterFileId)) {
-          $updateQuery = "
-            UPDATE `$tableName`
-            SET `{$columnName}` = %1
-            WHERE entity_id = %2
-          ";
-          \CRM_Core_DAO::executeQuery($updateQuery, [
-            1 => [$result['id'], 'Integer'],
-            2 => [$collectionSourceId, 'Integer'],
-          ]);
+          self::$pendingPosterFileIds[$collectionSourceId] = [
+            'mode' => 'set_column',
+            'fileId' => $result['id'],
+            'table' => $tableName,
+            'column' => $columnName,
+          ];
         }
-        else {
-          if (!empty($attachment['path'])) {
-            $newFileName = basename($attachment['path']);
-
-            File::update(FALSE)
-              ->addValue('uri', $newFileName)
-              ->addWhere('id', '=', $existingPosterFileId)
-              ->execute();
-          }
+        elseif (!empty($attachment['path'])) {
+          self::$pendingPosterFileIds[$collectionSourceId] = [
+            'mode' => 'update_file_uri',
+            'existingFileId' => $existingPosterFileId,
+            'newUri' => basename($attachment['path']),
+          ];
         }
       }
     }
