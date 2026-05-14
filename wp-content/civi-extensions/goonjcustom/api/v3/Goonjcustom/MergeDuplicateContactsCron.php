@@ -266,8 +266,29 @@ function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
         ->addWhere('id', '=', $contactId)
         ->setUseTrash(FALSE)
         ->execute();
-      $deletedCount++;
-      $log('info', "DELETED contact #$contactId (status=Deleted, row #$sourceRowIdx)");
+
+      // Verify the delete actually happened. CiviCRM's Contact::delete can
+      // silently no-op (or fall back to soft-trash) when a hook intervenes,
+      // returning success without touching the DB. Trust the DB state.
+      $afterDelete = \Civi\Api4\Contact::get(FALSE)
+        ->addWhere('id', '=', $contactId)
+        ->addWhere('is_deleted', 'IN', [TRUE, FALSE])
+        ->addSelect('id', 'is_deleted')
+        ->execute()
+        ->first();
+
+      if (!$afterDelete) {
+        $deletedCount++;
+        $log('info', "DELETED contact #$contactId (status=Deleted, row #$sourceRowIdx)");
+      }
+      elseif (!empty($afterDelete['is_deleted'])) {
+        $failedDeleteCount++;
+        $log('error', "FAILED HARD DELETE contact #$contactId (row #$sourceRowIdx): contact only moved to trash, not permanently removed. Likely a hook intervened.");
+      }
+      else {
+        $failedDeleteCount++;
+        $log('error', "FAILED DELETE contact #$contactId (row #$sourceRowIdx): contact still exists with is_deleted=0. A pre-delete hook silently rolled back the deletion.");
+      }
     }
     catch (\Throwable $e) {
       $failedDeleteCount++;
@@ -295,15 +316,33 @@ function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
         ->setDuplicateId($dupId)
         ->setMode('safe')
         ->execute();
-      $mergedCount++;
-      if ($matchedBy === 'email') {
-        $mergedByEmail++;
+
+      // Verify the duplicate is actually gone (is_deleted=1 or row removed).
+      // CiviCRM's mergeDuplicates can silently no-op when a pre/post-merge hook
+      // rolls back the transaction, returning success without touching the DB.
+      // Trust the DB state, not the API's return value.
+      $dupStillActive = \Civi\Api4\Contact::get(FALSE)
+        ->addWhere('id', '=', $dupId)
+        ->addWhere('is_deleted', '=', FALSE)
+        ->addSelect('id')
+        ->execute()
+        ->count() > 0;
+
+      if ($dupStillActive) {
+        $failedCount++;
+        $log('error', "FAILED [$matchedBy] dup #$dupId -> real #$realId ($key): API returned success but duplicate still active (is_deleted=0). A pre/post-merge hook silently rolled back. See PHP warnings around this timestamp.");
       }
       else {
-        $mergedByPhone++;
+        $mergedCount++;
+        if ($matchedBy === 'email') {
+          $mergedByEmail++;
+        }
+        else {
+          $mergedByPhone++;
+        }
+        $alreadyMerged[$dupId] = TRUE;
+        $log('info', "MERGED [$matchedBy] dup #$dupId -> real #$realId ($key)");
       }
-      $alreadyMerged[$dupId] = TRUE;
-      $log('info', "MERGED [$matchedBy] dup #$dupId -> real #$realId ($key)");
     }
     catch (\Throwable $e) {
       $failedCount++;
