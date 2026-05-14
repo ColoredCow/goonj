@@ -194,8 +194,8 @@ function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
       continue;
     }
 
-    // Status = Deleted -> permanent removal queue (no first_name needed).
-    if ($status === 'deleted') {
+    // Status = Delete / Deleted -> permanent removal queue (no first_name needed).
+    if (in_array($status, ['delete', 'deleted'])) {
       $toDelete[$contactId] = $rowIndex;
       continue;
     }
