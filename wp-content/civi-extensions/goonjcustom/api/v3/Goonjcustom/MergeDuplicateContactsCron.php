@@ -314,7 +314,7 @@ function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
       \Civi\Api4\Contact::mergeDuplicates(FALSE)
         ->setContactId($realId)
         ->setDuplicateId($dupId)
-        ->setMode('safe')
+        ->setMode('aggressive')
         ->execute();
 
       // Verify the duplicate is actually gone (is_deleted=1 or row removed).
