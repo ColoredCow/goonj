@@ -542,6 +542,16 @@ public static function assignChapterGroupToContacts(string $op, string $objectNa
           ->execute();
       }
       else {
+        $current = Contact::get(FALSE)
+          ->addSelect('Review.Status:label')
+          ->addWhere('id', '=', $contactId)
+          ->execute()
+          ->first();
+
+        if ($current['Review.Status:label'] === 'Active') {
+          return;
+        }
+
         Contact::update(FALSE)
           ->addValue('Review.Status:label', 'Active')
           ->addWhere('id', '=', $contactId)
