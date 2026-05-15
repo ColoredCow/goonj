@@ -5,84 +5,452 @@
  *
  * Merges duplicate contacts into real ones using data from a local CSV file.
  *
+ * Execution mode:
+ *  - When invoked from a web context (e.g. the CiviCRM Scheduled Jobs
+ *    "Execute now" button on mod_php), the function spawns a detached
+ *    `cv api` worker and returns immediately. The admin's browser is not
+ *    held while the merge runs, so large CSVs (1000-2000+ contacts) will
+ *    not time the page out.
+ *  - When invoked from CLI (cv / system cron) or with `_background=1`,
+ *    the function performs the actual merge work.
+ *
+ * Each run writes a timestamped log file under
+ * `wp-content/uploads/civicrm-logs/merge-duplicates/` capturing every
+ * merge, skip, and failure for later audit.
+ *
  * @param array $params
  * @return array
  */
 function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
-  $csvPath = ABSPATH . 'wp-content/uploads/2025/07/Merge-Duplciate-Sheet1-1.csv';
-  \Civi::log()->info("[MergeDuplicatesCron] 📁 CSV path: $csvPath");
+  $logDir = rtrim(\CRM_Core_Config::singleton()->configAndLogDir, '/') . '/merge-duplicates';
+  if (!is_dir($logDir)) {
+    @mkdir($logDir, 0755, TRUE);
+  }
+
+  // Reuse the log file path from the spawning request when running as a
+  // background worker, so spawn + worker write to the same file. Otherwise
+  // generate a fresh timestamped filename.
+  $logFile = !empty($params['_logfile'])
+    ? $params['_logfile']
+    : $logDir . '/merge-' . date('Y-m-d_His') . '.log';
+
+  $isCli = (PHP_SAPI === 'cli');
+  $isBackgroundWorker = !empty($params['_background']);
+
+  if (!$isCli && !$isBackgroundWorker) {
+    $cvPath = file_exists('/usr/local/bin/cv') ? '/usr/local/bin/cv' : 'cv';
+    $wpRoot = rtrim(ABSPATH, '/');
+
+    $cmd = sprintf(
+      '( cd %s && PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin %s api Goonjcustom.merge_duplicate_contacts_cron _background=1 _logfile=%s < /dev/null > /dev/null 2>>%s & )',
+      escapeshellarg($wpRoot),
+      escapeshellarg($cvPath),
+      escapeshellarg($logFile),
+      escapeshellarg($logFile)
+    );
+    $execOutput = [];
+    $execExit = NULL;
+    exec($cmd, $execOutput, $execExit);
+
+    if ($execExit === 0) {
+      @file_put_contents(
+        $logFile,
+        '[' . date('Y-m-d H:i:s') . '] [INFO] Spawned background worker via cv api.' . PHP_EOL,
+        FILE_APPEND
+      );
+    }
+    else {
+      $errLine = sprintf(
+        '[%s] [ERROR] Failed to spawn background worker. Shell exit code: %d. Output: %s%s',
+        date('Y-m-d H:i:s'),
+        (int) $execExit,
+        implode(' | ', $execOutput),
+        PHP_EOL
+      );
+      @file_put_contents($logFile, $errLine, FILE_APPEND);
+      return civicrm_api3_create_error("Failed to spawn merge worker. See log: $logFile");
+    }
+
+    return civicrm_api3_create_success(
+      [
+        'status' => 'Started in background',
+        'log_file' => $logFile,
+        'message' => 'Merge is running in the background. Check the log file for progress.',
+      ],
+      $params,
+      'Goonjcustom',
+      'merge_duplicate_contacts_cron'
+    );
+  }
+
+  set_time_limit(0);
+  ignore_user_abort(TRUE);
+  ini_set('memory_limit', '1024M');
+
+  $log = function ($level, $msg) use ($logFile) {
+    $line = '[' . date('Y-m-d H:i:s') . '] [' . strtoupper($level) . '] ' . $msg;
+    @file_put_contents($logFile, $line . PHP_EOL, FILE_APPEND);
+  };
+
+  // Normalise Indian phone numbers to a canonical 10-digit form so different
+  // formats (+91-9876543210, 91 98765 43210, 09876543210, 9876543210) all
+  // group together.
+  $normalizePhone = function ($raw) {
+    $digits = preg_replace('/\D+/', '', (string) $raw);
+    if (strlen($digits) === 12 && strpos($digits, '91') === 0) {
+      $digits = substr($digits, 2);
+    }
+    if (strlen($digits) === 11 && $digits[0] === '0') {
+      $digits = substr($digits, 1);
+    }
+    return $digits;
+  };
+
+  $log('info', 'Job started (background worker, PID ' . getmypid() . ')');
+
+  try {
+  // Pick the CSV to process:
+  // 1. Explicit override via API param `csv_path` (for ad-hoc runs).
+  // 2. Otherwise: most recent file matching `*duplicate*.csv` (case-insensitive)
+  //    in the current month's WP uploads folder, falling back to previous
+  //    month if current is empty. Ops just uploads the sheet via WP Media
+  //    Library (or SFTP into uploads/YYYY/MM/) — the script auto-picks it.
+  $csvPath = !empty($params['csv_path']) ? $params['csv_path'] : NULL;
+
+  if (!$csvPath) {
+    $candidates = [];
+    $monthDirs = [
+      ABSPATH . 'wp-content/uploads/' . date('Y/m') . '/',
+      ABSPATH . 'wp-content/uploads/' . date('Y/m', strtotime('-1 month')) . '/',
+    ];
+    foreach ($monthDirs as $dir) {
+      if (!is_dir($dir)) {
+        continue;
+      }
+      foreach (scandir($dir) as $entry) {
+        if (preg_match('/duplicate.*\.csv$/i', $entry)) {
+          $candidates[] = $dir . $entry;
+        }
+      }
+    }
+    if (empty($candidates)) {
+      $msg = "No CSV matching '*duplicate*.csv' found in uploads/" . date('Y/m') . "/ or previous month.";
+      $log('error', $msg);
+      return civicrm_api3_create_error($msg);
+    }
+    usort($candidates, fn($a, $b) => filemtime($b) - filemtime($a));
+    $csvPath = $candidates[0];
+    $log('info', "Auto-selected CSV (latest of " . count($candidates) . " candidate(s)): " . str_replace(ABSPATH, '', $csvPath));
+  }
+  $log('info', "CSV path: $csvPath");
 
   if (!file_exists($csvPath)) {
+    $log('error', "File not found at: $csvPath");
     return civicrm_api3_create_error("File not found at: $csvPath");
   }
 
   $file = fopen($csvPath, 'r');
   if (!$file) {
+    $log('error', 'Unable to open the CSV file.');
     return civicrm_api3_create_error("Unable to open the CSV file.");
   }
 
   $header = fgetcsv($file, 0, ",", '"', "\\");
   if (!$header || count($header) < 2 || in_array('<!DOCTYPE html>', $header)) {
     fclose($file);
+    $log('error', 'Invalid or malformed CSV header.');
     return civicrm_api3_create_error("Invalid or malformed CSV header.");
   }
+  // Strip UTF-8 BOM from first cell (Excel exports often include it) and trim
+  // any stray whitespace from each header — both can silently break key lookups.
+  $header[0] = preg_replace('/^\xEF\xBB\xBF/', '', $header[0]);
+  $header = array_map('trim', $header);
 
-  $groups = [];
+  // Build THREE independent group sets, processed in priority order:
+  //   1. fname + phone   (strong match)
+  //   2. fname + email   (fallback when phone didn't catch it)
+  //   3. email + phone   (last-resort fallback for name-typo cases — same
+  //      contact registered twice with slightly different first names)
+  // A row can contribute to multiple sets; the seen-set in the merge pass
+  // ensures each duplicate is only merged once (earliest rule wins).
+  $phoneGroups = [];
+  $emailGroups = [];
+  $emailPhoneGroups = [];
+  $toDelete = [];
   $rowIndex = 1;
 
-  while (($row = fgetcsv($file, 0, ",", '"', "\\")) !== false) {
+  while (($row = fgetcsv($file, 0, ",", '"', "\\")) !== FALSE) {
     $rowIndex++;
     if (count($row) !== count($header)) {
-      \Civi::log()->warning("⚠️ Row #$rowIndex column count mismatch. Skipping row.");
+      $log('warning', "Row #$rowIndex column count mismatch. Skipping row.");
       continue;
     }
 
-    $contact = array_combine($header, $row);
+    $contact = array_change_key_case(array_combine($header, $row), CASE_LOWER);
+    $contactId = (int) ($contact['contact_id'] ?? 0);
     $email = strtolower(trim($contact['email'] ?? ''));
     $firstName = strtolower(trim($contact['first_name'] ?? ''));
-    $status = trim($contact['Status'] ?? '');
+    $phone = $normalizePhone($contact['phone'] ?? '');
+    $status = strtolower(trim($contact['status'] ?? ''));
 
-    $key = $email . '|' . $firstName;
-
-    if (!$email || !$firstName || !in_array($status, ['Real', 'Duplicate'])) {
+    if (!$contactId) {
       continue;
     }
 
-    if (!isset($groups[$key])) {
-      $groups[$key] = ['real' => null, 'duplicates' => [], 'email' => $email];
+    // Status = Delete / Deleted -> permanent removal queue (no first_name needed).
+    if (in_array($status, ['delete', 'deleted'])) {
+      $toDelete[$contactId] = $rowIndex;
+      continue;
     }
 
-    if ($status === 'Real') {
-      $groups[$key]['real'] = (int) $contact['contact_id'];
-    } else {
-      $groups[$key]['duplicates'][] = (int) $contact['contact_id'];
+    if (!in_array($status, ['real', 'duplicate'])) {
+      continue;
+    }
+
+    if (!$phone && !$email) {
+      $log('warning', "Row #$rowIndex (cid=$contactId) has neither email nor phone. Skipping.");
+      continue;
+    }
+
+    $addedToAnyGroup = FALSE;
+
+    // Rule 1: first_name + phone
+    if ($firstName && $phone) {
+      $phoneKey = 'phone:' . $phone . '|' . $firstName;
+      if (!isset($phoneGroups[$phoneKey])) {
+        $phoneGroups[$phoneKey] = ['real' => NULL, 'duplicates' => []];
+      }
+      if ($status === 'real') {
+        $phoneGroups[$phoneKey]['real'] = $contactId;
+      }
+      else {
+        $phoneGroups[$phoneKey]['duplicates'][] = $contactId;
+      }
+      $addedToAnyGroup = TRUE;
+    }
+
+    // Rule 2: first_name + email
+    if ($firstName && $email) {
+      $emailKey = 'email:' . $email . '|' . $firstName;
+      if (!isset($emailGroups[$emailKey])) {
+        $emailGroups[$emailKey] = ['real' => NULL, 'duplicates' => []];
+      }
+      if ($status === 'real') {
+        $emailGroups[$emailKey]['real'] = $contactId;
+      }
+      else {
+        $emailGroups[$emailKey]['duplicates'][] = $contactId;
+      }
+      $addedToAnyGroup = TRUE;
+    }
+
+    // Rule 3: email + phone (no first_name required — catches name-typo
+    // cases where the same contact was registered with slightly different
+    // first names but the same email and phone).
+    if ($email && $phone) {
+      $epKey = 'emailphone:' . $email . '|' . $phone;
+      if (!isset($emailPhoneGroups[$epKey])) {
+        $emailPhoneGroups[$epKey] = ['real' => NULL, 'duplicates' => []];
+      }
+      if ($status === 'real') {
+        $emailPhoneGroups[$epKey]['real'] = $contactId;
+      }
+      else {
+        $emailPhoneGroups[$epKey]['duplicates'][] = $contactId;
+      }
+      $addedToAnyGroup = TRUE;
+    }
+
+    if (!$addedToAnyGroup) {
+      $log('warning', "Row #$rowIndex (cid=$contactId) couldn't form any match key. Needs (first_name + phone) or (first_name + email) or (email + phone). Skipping.");
     }
   }
 
   fclose($file);
 
-  foreach ($groups as $key => $data) {
-    $realId = $data['real'];
-    $duplicates = $data['duplicates'];
-    $email = $data['email'];
+  $log('info', "CSV parsed. Phone groups: " . count($phoneGroups) . ", email groups: " . count($emailGroups) . ", email+phone groups: " . count($emailPhoneGroups) . ". Permanent deletions queued: " . count($toDelete));
 
-    if (!$realId || empty($duplicates)) {
-      continue;
-    }
-
-    foreach ($duplicates as $dupId) {
-      try {
-        \Civi\Api4\Contact::mergeDuplicates(FALSE)
-          ->setContactId($realId)
-          ->setDuplicateId($dupId)
-          ->setMode('safe')
-          ->execute();
-
-        \Civi::log()->info("[MergeDuplicatesCron] Merged duplicate #$dupId → real #$realId ($key)");
-      } catch (Exception $e) {
+  // Process permanent deletions first (Status = Deleted rows).
+  // useTrash=FALSE removes the contact entirely (skip-trash hard delete).
+  // We check existence first because Contact::delete() returns success even
+  // for non-existent IDs, which would otherwise hide CSV data quality issues.
+  $deletedCount = 0;
+  $failedDeleteCount = 0;
+  $deleteNoopCount = 0;
+  foreach ($toDelete as $contactId => $sourceRowIdx) {
+    try {
+      $existing = \Civi\Api4\Contact::get(FALSE)
+        ->addWhere('id', '=', $contactId)
+        ->addWhere('is_deleted', 'IN', [TRUE, FALSE])
+        ->addSelect('id')
+        ->execute();
+      if ($existing->count() === 0) {
+        $deleteNoopCount++;
+        $log('warning', "DELETE NOOP: contact #$contactId not found (row #$sourceRowIdx). Already deleted or invalid ID.");
+        continue;
       }
+
+      \Civi\Api4\Contact::delete(FALSE)
+        ->addWhere('id', '=', $contactId)
+        ->setUseTrash(FALSE)
+        ->execute();
+
+      // Verify the delete actually happened. CiviCRM's Contact::delete can
+      // silently no-op (or fall back to soft-trash) when a hook intervenes,
+      // returning success without touching the DB. Trust the DB state.
+      $afterDelete = \Civi\Api4\Contact::get(FALSE)
+        ->addWhere('id', '=', $contactId)
+        ->addWhere('is_deleted', 'IN', [TRUE, FALSE])
+        ->addSelect('id', 'is_deleted')
+        ->execute()
+        ->first();
+
+      if (!$afterDelete) {
+        $deletedCount++;
+        $log('info', "DELETED contact #$contactId (status=Deleted, row #$sourceRowIdx)");
+      }
+      elseif (!empty($afterDelete['is_deleted'])) {
+        $failedDeleteCount++;
+        $log('error', "FAILED HARD DELETE contact #$contactId (row #$sourceRowIdx): contact only moved to trash, not permanently removed. Likely a hook intervened.");
+      }
+      else {
+        $failedDeleteCount++;
+        $log('error', "FAILED DELETE contact #$contactId (row #$sourceRowIdx): contact still exists with is_deleted=0. A pre-delete hook silently rolled back the deletion.");
+      }
+    }
+    catch (\Throwable $e) {
+      $failedDeleteCount++;
+      $log('error', "FAILED DELETE contact #$contactId (row #$sourceRowIdx): " . $e->getMessage());
     }
   }
 
-  return civicrm_api3_create_success([], $params, 'Goonjcustom', 'merge_duplicate_contacts_cron');
+  $mergedCount = 0;
+  $failedCount = 0;
+  $skippedGroups = 0;
+  $mergedByEmail = 0;
+  $mergedByPhone = 0;
+  $mergedByEmailPhone = 0;
+  $alreadyMerged = [];
+
+  // Closure to handle one merge attempt for a given rule. Tracks duplicates
+  // already processed so later passes never double-merge a contact already
+  // merged by an earlier (higher-priority) rule.
+  $attemptMerge = function ($realId, $dupId, $matchedBy, $key)
+    use (&$mergedCount, &$failedCount, &$mergedByEmail, &$mergedByPhone, &$mergedByEmailPhone, &$alreadyMerged, $log) {
+    if (isset($alreadyMerged[$dupId])) {
+      return;
+    }
+    try {
+      \Civi\Api4\Contact::mergeDuplicates(FALSE)
+        ->setContactId($realId)
+        ->setDuplicateId($dupId)
+        ->setMode('aggressive')
+        ->execute();
+
+      // Verify the duplicate is actually gone (is_deleted=1 or row removed).
+      // CiviCRM's mergeDuplicates can silently no-op when a pre/post-merge hook
+      // rolls back the transaction, returning success without touching the DB.
+      // Trust the DB state, not the API's return value.
+      $dupStillActive = \Civi\Api4\Contact::get(FALSE)
+        ->addWhere('id', '=', $dupId)
+        ->addWhere('is_deleted', '=', FALSE)
+        ->addSelect('id')
+        ->execute()
+        ->count() > 0;
+
+      if ($dupStillActive) {
+        $failedCount++;
+        $log('error', "FAILED [$matchedBy] dup #$dupId -> real #$realId ($key): API returned success but duplicate still active (is_deleted=0). A pre/post-merge hook silently rolled back. See PHP warnings around this timestamp.");
+      }
+      else {
+        $mergedCount++;
+        if ($matchedBy === 'email') {
+          $mergedByEmail++;
+        }
+        elseif ($matchedBy === 'phone') {
+          $mergedByPhone++;
+        }
+        elseif ($matchedBy === 'email+phone') {
+          $mergedByEmailPhone++;
+        }
+        $alreadyMerged[$dupId] = TRUE;
+        $log('info', "MERGED [$matchedBy] dup #$dupId -> real #$realId ($key)");
+      }
+    }
+    catch (\Throwable $e) {
+      $failedCount++;
+      $log('error', "FAILED [$matchedBy] dup #$dupId -> real #$realId ($key): " . $e->getMessage());
+    }
+  };
+
+  // Pass 1: Phone groups (first_name + phone — strongest match).
+  foreach ($phoneGroups as $key => $data) {
+    $realId = $data['real'];
+    $duplicates = $data['duplicates'];
+    if (!$realId || empty($duplicates)) {
+      $skippedGroups++;
+      continue;
+    }
+    foreach ($duplicates as $dupId) {
+      $attemptMerge($realId, $dupId, 'phone', $key);
+    }
+  }
+
+  // Pass 2: Email groups (first_name + email — fallback when phone missed).
+  foreach ($emailGroups as $key => $data) {
+    $realId = $data['real'];
+    $duplicates = $data['duplicates'];
+    if (!$realId || empty($duplicates)) {
+      $skippedGroups++;
+      continue;
+    }
+    foreach ($duplicates as $dupId) {
+      $attemptMerge($realId, $dupId, 'email', $key);
+    }
+  }
+
+  // Pass 3: Email+phone groups (no first_name — last-resort fallback for
+  // contacts where the first_name didn't match in passes 1 & 2 but both
+  // email and phone match exactly. Strong signal of duplicate despite a
+  // name typo / variation).
+  foreach ($emailPhoneGroups as $key => $data) {
+    $realId = $data['real'];
+    $duplicates = $data['duplicates'];
+    if (!$realId || empty($duplicates)) {
+      $skippedGroups++;
+      continue;
+    }
+    foreach ($duplicates as $dupId) {
+      $attemptMerge($realId, $dupId, 'email+phone', $key);
+    }
+  }
+
+  $log('info', "Job finished. Merged: $mergedCount (phone: $mergedByPhone, email: $mergedByEmail, email+phone: $mergedByEmailPhone) | Failed merges: $failedCount | Deleted: $deletedCount | Delete noops: $deleteNoopCount | Failed deletes: $failedDeleteCount | Skipped groups: $skippedGroups");
+
+  return civicrm_api3_create_success(
+    [
+      'log_file' => $logFile,
+      'merged' => $mergedCount,
+      'merged_by_phone' => $mergedByPhone,
+      'merged_by_email' => $mergedByEmail,
+      'merged_by_email_phone' => $mergedByEmailPhone,
+      'failed' => $failedCount,
+      'deleted' => $deletedCount,
+      'delete_noops' => $deleteNoopCount,
+      'failed_deletes' => $failedDeleteCount,
+      'skipped_groups' => $skippedGroups,
+    ],
+    $params,
+    'Goonjcustom',
+    'merge_duplicate_contacts_cron'
+  );
+  }
+  catch (\Throwable $e) {
+    $log('error', 'UNEXPECTED FATAL: ' . get_class($e) . ': ' . $e->getMessage());
+    $log('error', 'At ' . $e->getFile() . ':' . $e->getLine());
+    $log('error', 'Trace: ' . $e->getTraceAsString());
+    return civicrm_api3_create_error(
+      'Fatal error during merge job: ' . $e->getMessage() . ' (see log: ' . $logFile . ')'
+    );
+  }
 }
