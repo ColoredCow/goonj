@@ -42,7 +42,7 @@ function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
     $wpRoot = rtrim(ABSPATH, '/');
 
     $cmd = sprintf(
-      '( cd %s && PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin %s api Goonjcustom.merge_duplicate_contacts_cron _background=1 _logfile=%s < /dev/null > /dev/null 2>>%s & )',
+      '( cd %s && HOME=/tmp PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin %s api Goonjcustom.merge_duplicate_contacts_cron _background=1 _logfile=%s < /dev/null > /dev/null 2>>%s & )',
       escapeshellarg($wpRoot),
       escapeshellarg($cvPath),
       escapeshellarg($logFile),
