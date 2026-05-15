@@ -2195,7 +2195,10 @@ class CollectionCampService extends AutoSubscriber {
     if (!empty($params['workflow']) && $params['workflow'] === 'contribution_offline_receipt') {
       // Extract donor name or use a default value.
       $donorName = !empty($params['toName']) ? $params['toName'] : 'Valued Supporter';
-      $contributionID = !empty($params['contributionId']) ? $params['contributionId'] : NULL;
+      // CiviCRM 6.13.x moved contribution id from $params['contributionId'] into
+      // $params['tokenContext']['contributionId']. Read from either location so this
+      // works on both prod (6.3.1) and staging/post-upgrade (6.13.x).
+      $contributionID = $params['contributionId'] ?? ($params['tokenContext']['contributionId'] ?? NULL);
       $params['cc'] = 'priyanka@goonj.org, accounts@goonj.org';
       $params['from'] = 'Goonj <accounts@goonj.org>';
 
