@@ -76,98 +76,8 @@ class CollectionBaseService extends AutoSubscriber {
       '&hook_civicrm_custom' => [
         ['applyPendingPosterFileIds'],
       ],
-      '&hook_civicrm_alterMailParams' => [
-        ['debugMailSender'],
-      ],
-      // TEMPORARY DEBUG: catch ANY queue task run system-wide.
-      'civi.queue.runTask.start' => 'debugQueueTaskStart',
       '&hook_civicrm_fieldOptions' => 'setIndianStateOptions',
     ];
-  }
-
-  /**
-   * TEMPORARY DEBUG: fires for EVERY queue task that runs in CiviCRM.
-   *
-   * Writes to /tmp/goonjcustom-debug.log via raw error_log() so it bypasses
-   * CiviCRM's logger entirely (in case the logger has buffering / pool issues).
-   * Also logs to civicrm.log for cross-correlation.
-   *
-   * REMOVE before final merge.
-   */
-  public static function debugQueueTaskStart($event) {
-    try {
-      $task = is_object($event) && isset($event->task) ? $event->task : NULL;
-      $taskCtx = is_object($event) && isset($event->taskCtx) ? $event->taskCtx : NULL;
-      $callback = $task ? $task->callback : NULL;
-      $callbackStr = is_array($callback) ? implode('::', $callback) : (is_string($callback) ? $callback : '<unknown>');
-      $queueName = '<unknown>';
-      if ($taskCtx && isset($taskCtx->queue) && method_exists($taskCtx->queue, 'getName')) {
-        $queueName = $taskCtx->queue->getName();
-      }
-
-      $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 30);
-      $callers = [];
-      foreach ($trace as $f) {
-        $callers[] = ($f['class'] ?? '') . ($f['type'] ?? '') . ($f['function'] ?? '?')
-          . ' @ ' . basename($f['file'] ?? '<no-file>') . ':' . ($f['line'] ?? '?');
-      }
-
-      @error_log(
-        date('c') . " [DEBUG-FILE] civi.queue.runTask.start FIRED. callback=$callbackStr queue=$queueName\n",
-        3,
-        '/tmp/goonjcustom-debug.log'
-      );
-
-      \Civi::log()->info('[AuthEmail] QUEUE-TASK-START', [
-        'callback' => $callbackStr,
-        'queueName' => $queueName,
-        'callers' => $callers,
-      ]);
-    }
-    catch (\Throwable $e) {
-      @error_log(date('c') . " [DEBUG-FILE] debugQueueTaskStart threw: " . $e->getMessage() . "\n", 3, '/tmp/goonjcustom-debug.log');
-    }
-  }
-
-  /**
-   * TEMPORARY DEBUG: identifies who is sending the Collection Camp auth email.
-   *
-   * Fires on every outgoing email via hook_civicrm_alterMailParams. Logs only
-   * when the subject matches our auth email — captures a PHP backtrace plus
-   * whether attachments were actually on $params at send-time.
-   *
-   * REMOVE THIS METHOD AND ITS HOOK REGISTRATION before final merge.
-   */
-  public static function debugMailSender(&$params, $context = NULL) {
-    $subject = $params['subject'] ?? '<no-subject-key>';
-    // Log a one-line ping for EVERY outgoing email so we know the hook is firing.
-    \Civi::log()->info('[AuthEmail] ALTERMAIL-PING', [
-      'subject' => $subject,
-      'param_keys' => array_keys($params),
-      'context' => $context,
-      '_file' => __FILE__,
-      '_file_mtime' => @date('Y-m-d H:i:s', @filemtime(__FILE__)),
-    ]);
-    // Full backtrace only for matching emails.
-    if (strpos($subject, 'Confirmation') !== FALSE
-        || strpos($subject, 'Collection') !== FALSE
-        || strpos($subject, 'authorized') !== FALSE) {
-      $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 30);
-      $callers = [];
-      foreach ($trace as $f) {
-        $callers[] = ($f['class'] ?? '') . ($f['type'] ?? '') . ($f['function'] ?? '?')
-          . ' @ ' . basename($f['file'] ?? '<no-file>') . ':' . ($f['line'] ?? '?');
-      }
-      \Civi::log()->info('[AuthEmail] ALTERMAIL-MATCH: auth email intercepted', [
-        'subject' => $subject,
-        'toEmail' => $params['toEmail'] ?? '<none>',
-        'toName' => $params['toName'] ?? '<none>',
-        'has_attachments_key' => array_key_exists('attachments', $params) ? 'yes' : 'no',
-        'attachments_count' => isset($params['attachments']) && is_array($params['attachments']) ? count($params['attachments']) : 0,
-        'attachments' => $params['attachments'] ?? '<not-set>',
-        'callers' => $callers,
-      ]);
-    }
   }
 
   /**
@@ -1140,13 +1050,6 @@ class CollectionBaseService extends AutoSubscriber {
    *   The reference to the object.
    */
   public static function handleAuthorizationEmails(string $op, string $objectName, $objectId, &$objectRef) {
-    \Civi::log()->info('[AuthEmail] STAGE 1: handleAuthorizationEmails entered (pre-hook)', [
-      'op' => $op,
-      'objectName' => $objectName,
-      'objectId' => $objectId,
-      'newStatus_in_objectRef' => $objectRef['Collection_Camp_Core_Details.Status'] ?? '<not set>',
-    ]);
-
     if ($objectName != 'Eck_Collection_Camp' || !$objectId) {
       return;
     }
@@ -1155,7 +1058,6 @@ class CollectionBaseService extends AutoSubscriber {
     $subType = $objectRef['subtype'] ?? '';
 
     if (!$newStatus) {
-      \Civi::log()->info('[AuthEmail] STAGE 1: early-return — no newStatus in objectRef');
       return;
     }
 
@@ -1183,16 +1085,6 @@ class CollectionBaseService extends AutoSubscriber {
       self::$collectionAuthorized = $objectId;
       self::$collectionAuthorizedStatus = $newStatus;
       \Civi::log()->info('currentStatus', ['currentStatus' => $currentStatus, 'newStatus' => $newStatus]);
-      \Civi::log()->info('[AuthEmail] STAGE 1 done: marked camp authorized for post-hook', [
-        'collectionAuthorized' => $objectId,
-        'collectionAuthorizedStatus' => $newStatus,
-      ]);
-    }
-    else {
-      \Civi::log()->info('[AuthEmail] STAGE 1: status unchanged, post-hook will be skipped', [
-        'currentStatus' => $currentStatus,
-        'newStatus' => $newStatus,
-      ]);
     }
   }
 
@@ -1200,14 +1092,6 @@ class CollectionBaseService extends AutoSubscriber {
    *
    */
   public static function handleAuthorizationEmailsPost(string $op, string $objectName, $objectId, &$objectRef) {
-    \Civi::log()->info('[AuthEmail] STAGE 2: handleAuthorizationEmailsPost entered (post-hook)', [
-      'op' => $op,
-      'objectName' => $objectName,
-      'objectId' => $objectId,
-      'collectionAuthorized_static' => self::$collectionAuthorized ?? '<null>',
-      'will_proceed' => ($objectName == 'Eck_Collection_Camp' && $op === 'edit' && $objectId && $objectId === self::$collectionAuthorized),
-    ]);
-
     if ($objectName != 'Eck_Collection_Camp' || $op !== 'edit' || !$objectId || $objectId !== self::$collectionAuthorized) {
       return;
     }
@@ -1223,13 +1107,6 @@ class CollectionBaseService extends AutoSubscriber {
     $collectionSourceId = $collectionCamp['id'];
     $subtype = $collectionCamp['subtype'];
 
-    \Civi::log()->info('[AuthEmail] STAGE 2 reached queue-decision', [
-      'collectionSourceId' => $collectionSourceId,
-      'subtype' => $subtype,
-      'authorizationEmailQueued_already' => self::$authorizationEmailQueued,
-      'will_queue' => !self::$authorizationEmailQueued,
-    ]);
-
     if (!self::$authorizationEmailQueued) {
       self::queueAuthorizationEmail($initiatorId, $subtype, self::$collectionAuthorizedStatus, $collectionSourceId);
     }
@@ -1240,17 +1117,6 @@ class CollectionBaseService extends AutoSubscriber {
    */
   private static function queueAuthorizationEmail($initiatorId, $subtype, $status, $collectionSourceId) {
 
-    \Civi::log()->info('[AuthEmail] STAGE 3: queueAuthorizationEmail entered', [
-      'initiatorId' => $initiatorId,
-      'subtype' => $subtype,
-      'status' => $status,
-      'collectionSourceId' => $collectionSourceId,
-      '_file' => __FILE__,
-      '_file_mtime' => @date('Y-m-d H:i:s', @filemtime(__FILE__)),
-      '_callback_class' => self::class,
-      '_callback_method' => 'processQueuedEmail',
-    ]);
-
     try {
       $params = [
         'initiatorId' => $initiatorId,
@@ -1259,17 +1125,10 @@ class CollectionBaseService extends AutoSubscriber {
         'collectionSourceId' => $collectionSourceId,
       ];
 
-      // IMPORTANT: do NOT set 'runner' => 'task' on this queue. In
-      // CiviCRM 6.13.x, queues with runner='task' are eligible for the
-      // built-in auto-runner (`hook_civicrm_queueRun_task` → CRM_Queue_TaskHandler)
-      // which can process items inline at unpredictable times, before our
-      // scheduled cron (CRM_Goonjcustom_Engine::processQueue) gets to them.
-      // That auto-run path on staging fired emails without invoking our
-      // processQueuedEmail (so the poster attachment was dropped). Leaving
-      // runner unset means only our explicit cron processes this queue.
       $queue = \Civi::queue(\CRM_Goonjcustom_Engine::QUEUE_NAME, [
         'type' => 'Sql',
         'error' => 'abort',
+        'runner' => 'task',
       ]);
 
       $queue->createItem(new \CRM_Queue_Task(
@@ -1281,34 +1140,12 @@ class CollectionBaseService extends AutoSubscriber {
 
       self::$authorizationEmailQueued = TRUE;
 
-      // Capture the row we just wrote so we can correlate with cron processing.
-      $dao = \CRM_Core_DAO::executeQuery(
-        "SELECT id, queue_name, weight, data
-         FROM civicrm_queue_item
-         WHERE queue_name = 'goonjcustom.action'
-         ORDER BY id DESC LIMIT 1"
-      );
-      $captured = NULL;
-      if ($dao->fetch()) {
-        $captured = [
-          'queue_item_id' => (int) $dao->id,
-          'queue_name' => $dao->queue_name,
-          'weight' => (int) $dao->weight,
-          'data_preview' => substr((string) $dao->data, 0, 300),
-        ];
-      }
-
-      \Civi::log()->info('[AuthEmail] STAGE 3 done: task added to civi queue (goonjcustom.action)', [
-        'collectionSourceId' => $collectionSourceId,
-        'captured_item' => $captured,
-      ]);
-
     }
     catch (\Exception $ex) {
-      \Civi::log()->error('[AuthEmail] STAGE 3 FAILED: cannot queue authorization email', [
+      \Civi::log()->debug('Cannot queue authorization email for initiator.', [
         'initiatorId' => $initiatorId,
         'status' => $status,
-        'collectionSourceId' => $collectionSourceId,
+        'entityId' => $objectRef['id'],
         'error' => $ex->getMessage(),
       ]);
     }
@@ -1318,52 +1155,12 @@ class CollectionBaseService extends AutoSubscriber {
    *
    */
   public static function processQueuedEmail($queue, $params) {
-    // TEMPORARY DEBUG: write directly to a file, bypassing CiviCRM logger.
-    // If for any reason \Civi::log() isn't flushing, this WILL show.
-    @error_log(
-      date('c') . " [DEBUG-FILE] processQueuedEmail entered. collectionSourceId=" . ($params['collectionSourceId'] ?? '?') .
-      " initiatorId=" . ($params['initiatorId'] ?? '?') .
-      " pid=" . getmypid() .
-      " sapi=" . PHP_SAPI . "\n",
-      3,
-      '/tmp/goonjcustom-debug.log'
-    );
-
-    // Caller stack — tells us who invoked the queue task (cron? inline? other?).
-    $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 20);
-    $callers = [];
-    foreach ($trace as $f) {
-      $callers[] = ($f['class'] ?? '') . ($f['type'] ?? '') . ($f['function'] ?? '?')
-        . ' @ ' . basename($f['file'] ?? '<no-file>') . ':' . ($f['line'] ?? '?');
-    }
-    \Civi::log()->info('[AuthEmail] STAGE 4: processQueuedEmail entered (queue runner picked task)', [
-      'params' => $params,
-      '_file' => __FILE__,
-      '_file_mtime' => @date('Y-m-d H:i:s', @filemtime(__FILE__)),
-      'callers' => $callers,
-    ]);
     try {
       $emailParams = self::getAuthorizationEmailParams($params);
-
-      \Civi::log()->info('[AuthEmail] STAGE 5: about to call MessageTemplate.send', [
-        'collectionSourceId' => $params['collectionSourceId'] ?? null,
-        'template_id' => $emailParams['id'] ?? null,
-        'to_email' => $emailParams['to_email'] ?? null,
-        'attachments_count' => isset($emailParams['attachments']) ? count($emailParams['attachments']) : 0,
-        'attachments' => $emailParams['attachments'] ?? '<none>',
-      ]);
-
       civicrm_api3('MessageTemplate', 'send', $emailParams);
-
-      \Civi::log()->info('[AuthEmail] STAGE 6: MessageTemplate.send returned (email queued for SMTP)', [
-        'collectionSourceId' => $params['collectionSourceId'] ?? null,
-      ]);
     }
     catch (\Exception $ex) {
-      \Civi::log()->error('[AuthEmail] STAGE X: Failed to send email', [
-        'error' => $ex->getMessage(),
-        'params' => $emailParams ?? null,
-      ]);
+      \Civi::log()->error('Failed to send email.', ['error' => $ex->getMessage(), 'params' => $emailParams]);
     }
   }
 
@@ -1424,11 +1221,6 @@ class CollectionBaseService extends AutoSubscriber {
 
       $posterFileId = $collectionSource['Collection_Camp_Core_Details.Poster'];
 
-      \Civi::log()->info('[AuthEmail] resolving poster attachment', [
-        'collectionSourceId' => $collectionSourceId,
-        'posterFileId' => $posterFileId ?? '<null>',
-      ]);
-
       if ($posterFileId) {
         $file = File::get(FALSE)
           ->addWhere('id', '=', $posterFileId)
@@ -1436,25 +1228,11 @@ class CollectionBaseService extends AutoSubscriber {
 
         $config = \CRM_Core_Config::singleton();
         $filePath = $config->customFileUploadDir . $file['uri'];
-
-        \Civi::log()->info('[AuthEmail] attaching poster', [
-          'collectionSourceId' => $collectionSourceId,
-          'fileId' => $posterFileId,
-          'filePath' => $filePath,
-          'file_exists' => file_exists($filePath),
-          'mime_type' => $file['mime_type'] ?? null,
-        ]);
-
         $emailParams['attachments'][] = [
           'fullPath' => $filePath,
           'mime_type' => $file['mime_type'],
           'cleanName' => self::generateBaseFileName($collectionSourceId),
         ];
-      }
-      else {
-        \Civi::log()->warning('[AuthEmail] no poster id on camp at email time — attachment will be missing', [
-          'collectionSourceId' => $collectionSourceId,
-        ]);
       }
 
     }
