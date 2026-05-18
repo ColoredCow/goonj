@@ -1050,6 +1050,13 @@ class CollectionBaseService extends AutoSubscriber {
    *   The reference to the object.
    */
   public static function handleAuthorizationEmails(string $op, string $objectName, $objectId, &$objectRef) {
+    \Civi::log()->info('[AuthEmail] STAGE 1: handleAuthorizationEmails entered (pre-hook)', [
+      'op' => $op,
+      'objectName' => $objectName,
+      'objectId' => $objectId,
+      'newStatus_in_objectRef' => $objectRef['Collection_Camp_Core_Details.Status'] ?? '<not set>',
+    ]);
+
     if ($objectName != 'Eck_Collection_Camp' || !$objectId) {
       return;
     }
@@ -1058,6 +1065,7 @@ class CollectionBaseService extends AutoSubscriber {
     $subType = $objectRef['subtype'] ?? '';
 
     if (!$newStatus) {
+      \Civi::log()->info('[AuthEmail] STAGE 1: early-return — no newStatus in objectRef');
       return;
     }
 
@@ -1085,6 +1093,16 @@ class CollectionBaseService extends AutoSubscriber {
       self::$collectionAuthorized = $objectId;
       self::$collectionAuthorizedStatus = $newStatus;
       \Civi::log()->info('currentStatus', ['currentStatus' => $currentStatus, 'newStatus' => $newStatus]);
+      \Civi::log()->info('[AuthEmail] STAGE 1 done: marked camp authorized for post-hook', [
+        'collectionAuthorized' => $objectId,
+        'collectionAuthorizedStatus' => $newStatus,
+      ]);
+    }
+    else {
+      \Civi::log()->info('[AuthEmail] STAGE 1: status unchanged, post-hook will be skipped', [
+        'currentStatus' => $currentStatus,
+        'newStatus' => $newStatus,
+      ]);
     }
   }
 
@@ -1092,6 +1110,14 @@ class CollectionBaseService extends AutoSubscriber {
    *
    */
   public static function handleAuthorizationEmailsPost(string $op, string $objectName, $objectId, &$objectRef) {
+    \Civi::log()->info('[AuthEmail] STAGE 2: handleAuthorizationEmailsPost entered (post-hook)', [
+      'op' => $op,
+      'objectName' => $objectName,
+      'objectId' => $objectId,
+      'collectionAuthorized_static' => self::$collectionAuthorized ?? '<null>',
+      'will_proceed' => ($objectName == 'Eck_Collection_Camp' && $op === 'edit' && $objectId && $objectId === self::$collectionAuthorized),
+    ]);
+
     if ($objectName != 'Eck_Collection_Camp' || $op !== 'edit' || !$objectId || $objectId !== self::$collectionAuthorized) {
       return;
     }
@@ -1107,6 +1133,13 @@ class CollectionBaseService extends AutoSubscriber {
     $collectionSourceId = $collectionCamp['id'];
     $subtype = $collectionCamp['subtype'];
 
+    \Civi::log()->info('[AuthEmail] STAGE 2 reached queue-decision', [
+      'collectionSourceId' => $collectionSourceId,
+      'subtype' => $subtype,
+      'authorizationEmailQueued_already' => self::$authorizationEmailQueued,
+      'will_queue' => !self::$authorizationEmailQueued,
+    ]);
+
     if (!self::$authorizationEmailQueued) {
       self::queueAuthorizationEmail($initiatorId, $subtype, self::$collectionAuthorizedStatus, $collectionSourceId);
     }
@@ -1116,6 +1149,13 @@ class CollectionBaseService extends AutoSubscriber {
    * Send Authorization Email to contact.
    */
   private static function queueAuthorizationEmail($initiatorId, $subtype, $status, $collectionSourceId) {
+
+    \Civi::log()->info('[AuthEmail] STAGE 3: queueAuthorizationEmail entered', [
+      'initiatorId' => $initiatorId,
+      'subtype' => $subtype,
+      'status' => $status,
+      'collectionSourceId' => $collectionSourceId,
+    ]);
 
     try {
       $params = [
@@ -1140,12 +1180,16 @@ class CollectionBaseService extends AutoSubscriber {
 
       self::$authorizationEmailQueued = TRUE;
 
+      \Civi::log()->info('[AuthEmail] STAGE 3 done: task added to civi queue (goonjcustom.action)', [
+        'collectionSourceId' => $collectionSourceId,
+      ]);
+
     }
     catch (\Exception $ex) {
-      \Civi::log()->debug('Cannot queue authorization email for initiator.', [
+      \Civi::log()->error('[AuthEmail] STAGE 3 FAILED: cannot queue authorization email', [
         'initiatorId' => $initiatorId,
         'status' => $status,
-        'entityId' => $objectRef['id'],
+        'collectionSourceId' => $collectionSourceId,
         'error' => $ex->getMessage(),
       ]);
     }
@@ -1155,12 +1199,31 @@ class CollectionBaseService extends AutoSubscriber {
    *
    */
   public static function processQueuedEmail($queue, $params) {
+    \Civi::log()->info('[AuthEmail] STAGE 4: processQueuedEmail entered (queue runner picked task)', [
+      'params' => $params,
+    ]);
     try {
       $emailParams = self::getAuthorizationEmailParams($params);
+
+      \Civi::log()->info('[AuthEmail] STAGE 5: about to call MessageTemplate.send', [
+        'collectionSourceId' => $params['collectionSourceId'] ?? null,
+        'template_id' => $emailParams['id'] ?? null,
+        'to_email' => $emailParams['to_email'] ?? null,
+        'attachments_count' => isset($emailParams['attachments']) ? count($emailParams['attachments']) : 0,
+        'attachments' => $emailParams['attachments'] ?? '<none>',
+      ]);
+
       civicrm_api3('MessageTemplate', 'send', $emailParams);
+
+      \Civi::log()->info('[AuthEmail] STAGE 6: MessageTemplate.send returned (email queued for SMTP)', [
+        'collectionSourceId' => $params['collectionSourceId'] ?? null,
+      ]);
     }
     catch (\Exception $ex) {
-      \Civi::log()->error('Failed to send email.', ['error' => $ex->getMessage(), 'params' => $emailParams]);
+      \Civi::log()->error('[AuthEmail] STAGE X: Failed to send email', [
+        'error' => $ex->getMessage(),
+        'params' => $emailParams ?? null,
+      ]);
     }
   }
 
