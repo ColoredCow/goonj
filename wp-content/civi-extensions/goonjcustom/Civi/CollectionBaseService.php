@@ -1199,7 +1199,6 @@ class CollectionBaseService extends AutoSubscriber {
       'subtype' => $subtype,
       'status' => $status,
       'collectionSourceId' => $collectionSourceId,
-      // Fingerprint so we know which version of this file is loaded right now.
       '_file' => __FILE__,
       '_file_mtime' => @date('Y-m-d H:i:s', @filemtime(__FILE__)),
       '_callback_class' => self::class,
@@ -1214,10 +1213,17 @@ class CollectionBaseService extends AutoSubscriber {
         'collectionSourceId' => $collectionSourceId,
       ];
 
+      // IMPORTANT: do NOT set 'runner' => 'task' on this queue. In
+      // CiviCRM 6.13.x, queues with runner='task' are eligible for the
+      // built-in auto-runner (`hook_civicrm_queueRun_task` → CRM_Queue_TaskHandler)
+      // which can process items inline at unpredictable times, before our
+      // scheduled cron (CRM_Goonjcustom_Engine::processQueue) gets to them.
+      // That auto-run path on staging fired emails without invoking our
+      // processQueuedEmail (so the poster attachment was dropped). Leaving
+      // runner unset means only our explicit cron processes this queue.
       $queue = \Civi::queue(\CRM_Goonjcustom_Engine::QUEUE_NAME, [
         'type' => 'Sql',
         'error' => 'abort',
-        'runner' => 'task',
       ]);
 
       $queue->createItem(new \CRM_Queue_Task(
