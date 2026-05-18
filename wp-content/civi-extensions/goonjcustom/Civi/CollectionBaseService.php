@@ -93,27 +93,35 @@ class CollectionBaseService extends AutoSubscriber {
    * REMOVE THIS METHOD AND ITS HOOK REGISTRATION before final merge.
    */
   public static function debugMailSender(&$params, $context = NULL) {
-    $subject = $params['subject'] ?? '';
-    if (strpos($subject, 'Confirmation of the Collection Camp') === FALSE
-        && strpos($subject, 'Collection_Camp') === FALSE) {
-      return;
-    }
-    $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 30);
-    $callers = [];
-    foreach ($trace as $f) {
-      $callers[] = ($f['class'] ?? '') . ($f['type'] ?? '') . ($f['function'] ?? '?')
-        . ' @ ' . basename($f['file'] ?? '<no-file>') . ':' . ($f['line'] ?? '?');
-    }
-    \Civi::log()->info('[AuthEmail] ALTERMAIL: outgoing email intercepted', [
+    $subject = $params['subject'] ?? '<no-subject-key>';
+    // Log a one-line ping for EVERY outgoing email so we know the hook is firing.
+    \Civi::log()->info('[AuthEmail] ALTERMAIL-PING', [
       'subject' => $subject,
-      'toEmail' => $params['toEmail'] ?? '<none>',
-      'toName' => $params['toName'] ?? '<none>',
-      'has_attachments_key' => array_key_exists('attachments', $params) ? 'yes' : 'no',
-      'attachments_count' => isset($params['attachments']) && is_array($params['attachments']) ? count($params['attachments']) : 0,
-      'attachments' => $params['attachments'] ?? '<not-set>',
+      'param_keys' => array_keys($params),
       'context' => $context,
-      'callers' => $callers,
+      '_file' => __FILE__,
+      '_file_mtime' => @date('Y-m-d H:i:s', @filemtime(__FILE__)),
     ]);
+    // Full backtrace only for matching emails.
+    if (strpos($subject, 'Confirmation') !== FALSE
+        || strpos($subject, 'Collection') !== FALSE
+        || strpos($subject, 'authorized') !== FALSE) {
+      $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 30);
+      $callers = [];
+      foreach ($trace as $f) {
+        $callers[] = ($f['class'] ?? '') . ($f['type'] ?? '') . ($f['function'] ?? '?')
+          . ' @ ' . basename($f['file'] ?? '<no-file>') . ':' . ($f['line'] ?? '?');
+      }
+      \Civi::log()->info('[AuthEmail] ALTERMAIL-MATCH: auth email intercepted', [
+        'subject' => $subject,
+        'toEmail' => $params['toEmail'] ?? '<none>',
+        'toName' => $params['toName'] ?? '<none>',
+        'has_attachments_key' => array_key_exists('attachments', $params) ? 'yes' : 'no',
+        'attachments_count' => isset($params['attachments']) && is_array($params['attachments']) ? count($params['attachments']) : 0,
+        'attachments' => $params['attachments'] ?? '<not-set>',
+        'callers' => $callers,
+      ]);
+    }
   }
 
   /**
@@ -1191,6 +1199,11 @@ class CollectionBaseService extends AutoSubscriber {
       'subtype' => $subtype,
       'status' => $status,
       'collectionSourceId' => $collectionSourceId,
+      // Fingerprint so we know which version of this file is loaded right now.
+      '_file' => __FILE__,
+      '_file_mtime' => @date('Y-m-d H:i:s', @filemtime(__FILE__)),
+      '_callback_class' => self::class,
+      '_callback_method' => 'processQueuedEmail',
     ]);
 
     try {
@@ -1216,8 +1229,26 @@ class CollectionBaseService extends AutoSubscriber {
 
       self::$authorizationEmailQueued = TRUE;
 
+      // Capture the row we just wrote so we can correlate with cron processing.
+      $dao = \CRM_Core_DAO::executeQuery(
+        "SELECT id, queue_name, weight, data
+         FROM civicrm_queue_item
+         WHERE queue_name = 'goonjcustom.action'
+         ORDER BY id DESC LIMIT 1"
+      );
+      $captured = NULL;
+      if ($dao->fetch()) {
+        $captured = [
+          'queue_item_id' => (int) $dao->id,
+          'queue_name' => $dao->queue_name,
+          'weight' => (int) $dao->weight,
+          'data_preview' => substr((string) $dao->data, 0, 300),
+        ];
+      }
+
       \Civi::log()->info('[AuthEmail] STAGE 3 done: task added to civi queue (goonjcustom.action)', [
         'collectionSourceId' => $collectionSourceId,
+        'captured_item' => $captured,
       ]);
 
     }
@@ -1235,8 +1266,18 @@ class CollectionBaseService extends AutoSubscriber {
    *
    */
   public static function processQueuedEmail($queue, $params) {
+    // Caller stack — tells us who invoked the queue task (cron? inline? other?).
+    $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 20);
+    $callers = [];
+    foreach ($trace as $f) {
+      $callers[] = ($f['class'] ?? '') . ($f['type'] ?? '') . ($f['function'] ?? '?')
+        . ' @ ' . basename($f['file'] ?? '<no-file>') . ':' . ($f['line'] ?? '?');
+    }
     \Civi::log()->info('[AuthEmail] STAGE 4: processQueuedEmail entered (queue runner picked task)', [
       'params' => $params,
+      '_file' => __FILE__,
+      '_file_mtime' => @date('Y-m-d H:i:s', @filemtime(__FILE__)),
+      'callers' => $callers,
     ]);
     try {
       $emailParams = self::getAuthorizationEmailParams($params);
