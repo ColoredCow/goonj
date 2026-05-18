@@ -1221,6 +1221,11 @@ class CollectionBaseService extends AutoSubscriber {
 
       $posterFileId = $collectionSource['Collection_Camp_Core_Details.Poster'];
 
+      \Civi::log()->info('[AuthEmail] resolving poster attachment', [
+        'collectionSourceId' => $collectionSourceId,
+        'posterFileId' => $posterFileId ?? '<null>',
+      ]);
+
       if ($posterFileId) {
         $file = File::get(FALSE)
           ->addWhere('id', '=', $posterFileId)
@@ -1228,11 +1233,25 @@ class CollectionBaseService extends AutoSubscriber {
 
         $config = \CRM_Core_Config::singleton();
         $filePath = $config->customFileUploadDir . $file['uri'];
+
+        \Civi::log()->info('[AuthEmail] attaching poster', [
+          'collectionSourceId' => $collectionSourceId,
+          'fileId' => $posterFileId,
+          'filePath' => $filePath,
+          'file_exists' => file_exists($filePath),
+          'mime_type' => $file['mime_type'] ?? null,
+        ]);
+
         $emailParams['attachments'][] = [
           'fullPath' => $filePath,
           'mime_type' => $file['mime_type'],
           'cleanName' => self::generateBaseFileName($collectionSourceId),
         ];
+      }
+      else {
+        \Civi::log()->warning('[AuthEmail] no poster id on camp at email time — attachment will be missing', [
+          'collectionSourceId' => $collectionSourceId,
+        ]);
       }
 
     }
