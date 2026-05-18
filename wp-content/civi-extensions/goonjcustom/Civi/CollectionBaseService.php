@@ -76,8 +76,44 @@ class CollectionBaseService extends AutoSubscriber {
       '&hook_civicrm_custom' => [
         ['applyPendingPosterFileIds'],
       ],
+      '&hook_civicrm_alterMailParams' => [
+        ['debugMailSender'],
+      ],
       '&hook_civicrm_fieldOptions' => 'setIndianStateOptions',
     ];
+  }
+
+  /**
+   * TEMPORARY DEBUG: identifies who is sending the Collection Camp auth email.
+   *
+   * Fires on every outgoing email via hook_civicrm_alterMailParams. Logs only
+   * when the subject matches our auth email — captures a PHP backtrace plus
+   * whether attachments were actually on $params at send-time.
+   *
+   * REMOVE THIS METHOD AND ITS HOOK REGISTRATION before final merge.
+   */
+  public static function debugMailSender(&$params, $context = NULL) {
+    $subject = $params['subject'] ?? '';
+    if (strpos($subject, 'Confirmation of the Collection Camp') === FALSE
+        && strpos($subject, 'Collection_Camp') === FALSE) {
+      return;
+    }
+    $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 30);
+    $callers = [];
+    foreach ($trace as $f) {
+      $callers[] = ($f['class'] ?? '') . ($f['type'] ?? '') . ($f['function'] ?? '?')
+        . ' @ ' . basename($f['file'] ?? '<no-file>') . ':' . ($f['line'] ?? '?');
+    }
+    \Civi::log()->info('[AuthEmail] ALTERMAIL: outgoing email intercepted', [
+      'subject' => $subject,
+      'toEmail' => $params['toEmail'] ?? '<none>',
+      'toName' => $params['toName'] ?? '<none>',
+      'has_attachments_key' => array_key_exists('attachments', $params) ? 'yes' : 'no',
+      'attachments_count' => isset($params['attachments']) && is_array($params['attachments']) ? count($params['attachments']) : 0,
+      'attachments' => $params['attachments'] ?? '<not-set>',
+      'context' => $context,
+      'callers' => $callers,
+    ]);
   }
 
   /**
