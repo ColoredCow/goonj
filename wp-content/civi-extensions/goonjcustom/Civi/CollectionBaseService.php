@@ -79,8 +79,54 @@ class CollectionBaseService extends AutoSubscriber {
       '&hook_civicrm_alterMailParams' => [
         ['debugMailSender'],
       ],
+      // TEMPORARY DEBUG: catch ANY queue task run system-wide.
+      'civi.queue.runTask.start' => 'debugQueueTaskStart',
       '&hook_civicrm_fieldOptions' => 'setIndianStateOptions',
     ];
+  }
+
+  /**
+   * TEMPORARY DEBUG: fires for EVERY queue task that runs in CiviCRM.
+   *
+   * Writes to /tmp/goonjcustom-debug.log via raw error_log() so it bypasses
+   * CiviCRM's logger entirely (in case the logger has buffering / pool issues).
+   * Also logs to civicrm.log for cross-correlation.
+   *
+   * REMOVE before final merge.
+   */
+  public static function debugQueueTaskStart($event) {
+    try {
+      $task = is_object($event) && isset($event->task) ? $event->task : NULL;
+      $taskCtx = is_object($event) && isset($event->taskCtx) ? $event->taskCtx : NULL;
+      $callback = $task ? $task->callback : NULL;
+      $callbackStr = is_array($callback) ? implode('::', $callback) : (is_string($callback) ? $callback : '<unknown>');
+      $queueName = '<unknown>';
+      if ($taskCtx && isset($taskCtx->queue) && method_exists($taskCtx->queue, 'getName')) {
+        $queueName = $taskCtx->queue->getName();
+      }
+
+      $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 30);
+      $callers = [];
+      foreach ($trace as $f) {
+        $callers[] = ($f['class'] ?? '') . ($f['type'] ?? '') . ($f['function'] ?? '?')
+          . ' @ ' . basename($f['file'] ?? '<no-file>') . ':' . ($f['line'] ?? '?');
+      }
+
+      @error_log(
+        date('c') . " [DEBUG-FILE] civi.queue.runTask.start FIRED. callback=$callbackStr queue=$queueName\n",
+        3,
+        '/tmp/goonjcustom-debug.log'
+      );
+
+      \Civi::log()->info('[AuthEmail] QUEUE-TASK-START', [
+        'callback' => $callbackStr,
+        'queueName' => $queueName,
+        'callers' => $callers,
+      ]);
+    }
+    catch (\Throwable $e) {
+      @error_log(date('c') . " [DEBUG-FILE] debugQueueTaskStart threw: " . $e->getMessage() . "\n", 3, '/tmp/goonjcustom-debug.log');
+    }
   }
 
   /**
@@ -1272,6 +1318,17 @@ class CollectionBaseService extends AutoSubscriber {
    *
    */
   public static function processQueuedEmail($queue, $params) {
+    // TEMPORARY DEBUG: write directly to a file, bypassing CiviCRM logger.
+    // If for any reason \Civi::log() isn't flushing, this WILL show.
+    @error_log(
+      date('c') . " [DEBUG-FILE] processQueuedEmail entered. collectionSourceId=" . ($params['collectionSourceId'] ?? '?') .
+      " initiatorId=" . ($params['initiatorId'] ?? '?') .
+      " pid=" . getmypid() .
+      " sapi=" . PHP_SAPI . "\n",
+      3,
+      '/tmp/goonjcustom-debug.log'
+    );
+
     // Caller stack — tells us who invoked the queue task (cron? inline? other?).
     $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 20);
     $callers = [];
