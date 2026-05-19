@@ -1,0 +1,238 @@
+{
+  "_lookup": ["name"],
+  "_translate": ["title"],
+  "name": "xcm_matching_rules",
+  "title": "XCM Matching Rules",
+  "_values": [
+    {
+      "_lookup": ["name"],
+      "_translate": ["label"],
+      "name": "CRM_Xcm_Matcher_EmailMatcher",
+      "value": "CRM_Xcm_Matcher_EmailMatcher",
+      "label": "Email only (any email)",
+      "filter": "0",
+      "is_reserved": "1",
+      "is_active": "1"
+    },
+    {
+      "_lookup": ["name"],
+      "_translate": ["label"],
+      "name": "CRM_Xcm_Matcher_EmailFirstnameMatcher",
+      "value": "CRM_Xcm_Matcher_EmailFirstnameMatcher",
+      "label": "First name and (any) email",
+      "filter": "0",
+      "is_reserved": "1",
+      "is_active": "1"
+    },
+    {
+      "_lookup": ["name"],
+      "_translate": ["label"],
+      "name": "CRM_Xcm_Matcher_EmailLastnameMatcher",
+      "value": "CRM_Xcm_Matcher_EmailLastnameMatcher",
+      "label": "Last name and (any) email",
+      "filter": "0",
+      "is_reserved": "1",
+      "is_active": "1"
+    },
+    {
+      "_lookup": ["name"],
+      "_translate": ["label"],
+      "name": "CRM_Xcm_Matcher_EmailFullNameMatcher",
+      "value": "CRM_Xcm_Matcher_EmailFullNameMatcher",
+      "label": "Last name, first name, and (any) email",
+      "filter": "0",
+      "is_reserved": "1",
+      "is_active": "1"
+    },
+    {
+      "_lookup": ["name"],
+      "_translate": ["label"],
+      "name": "CRM_Xcm_Matcher_EmailFullNameReversedMatcher",
+      "value": "CRM_Xcm_Matcher_EmailFullNameReversedMatcher",
+      "label": "Last name/first name reversed(!), and (any) email",
+      "filter": "0",
+      "is_reserved": "1",
+      "is_active": "1"
+    },
+    {
+      "_lookup": ["name"],
+      "_translate": ["label"],
+      "name": "CRM_Xcm_Matcher_IbanBirthdayMatcher",
+      "value": "CRM_Xcm_Matcher_IbanBirthdayMatcher",
+      "label": "Birthday and IBAN (CiviSEPA or CiviBanking)",
+      "filter": "0",
+      "is_reserved": "1",
+      "is_active": "1"
+    },
+    {
+      "_lookup": ["name"],
+      "_translate": ["label"],
+      "name": "CRM_Xcm_Matcher_IbanFirstNameMatcher",
+      "value": "CRM_Xcm_Matcher_IbanFirstNameMatcher",
+      "label": "First Name and IBAN (CiviSEPA or CiviBanking)",
+      "filter": "0",
+      "is_reserved": "1",
+      "is_active": "1"
+    },
+    {
+      "_lookup": ["name"],
+      "_translate": ["label"],
+      "name": "CRM_Xcm_Matcher_IbanLastNameMatcher",
+      "value": "CRM_Xcm_Matcher_IbanLastNameMatcher",
+      "label": "Last Name and IBAN (CiviSEPA or CiviBanking)",
+      "filter": "0",
+      "is_reserved": "1",
+      "is_active": "1"
+    },
+    {
+      "_lookup": ["name"],
+      "_translate": ["label"],
+      "name": "CRM_Xcm_Matcher_NameAddressMatcher",
+      "value": "CRM_Xcm_Matcher_NameAddressMatcher",
+      "label": "First name, last name, and (any) address",
+      "filter": "0",
+      "is_reserved": "1",
+      "is_active": "1"
+    },
+    {
+      "_lookup": ["name"],
+      "_translate": ["label"],
+      "name": "CRM_Xcm_Matcher_FirstNameAddressMatcher",
+      "value": "CRM_Xcm_Matcher_FirstNameAddressMatcher",
+      "label": "First name and (any) address",
+      "filter": "0",
+      "is_reserved": "1",
+      "is_active": "1"
+    },
+    {
+      "_lookup": ["name"],
+      "_translate": ["label"],
+      "name": "CRM_Xcm_Matcher_LastNameAddressMatcher",
+      "value": "CRM_Xcm_Matcher_LastNameAddressMatcher",
+      "label": "Last name and (any) address",
+      "filter": "0",
+      "is_reserved": "1",
+      "is_active": "1"
+    },
+    {
+      "_lookup": ["name"],
+      "_translate": ["label"],
+      "name": "CRM_Xcm_Matcher_PhoneMatcher",
+      "value": "CRM_Xcm_Matcher_PhoneMatcher",
+      "label": "Phone (exact)",
+      "filter": "0",
+      "is_reserved": "1",
+      "is_active": "1"
+    },
+    {
+      "_lookup": ["name"],
+      "_translate": ["label"],
+      "name": "CRM_Xcm_Matcher_PhoneFirstnameMatcher",
+      "value": "CRM_Xcm_Matcher_PhoneFirstnameMatcher",
+      "label": "First name and (any) phone",
+      "filter": "0",
+      "is_reserved": "1",
+      "is_active": "1"
+    },
+    {
+      "_lookup": ["name"],
+      "_translate": ["label"],
+      "name": "CRM_Xcm_Matcher_PhoneLastnameMatcher",
+      "value": "CRM_Xcm_Matcher_PhoneLastnameMatcher",
+      "label": "Last name and (any) phone",
+      "filter": "0",
+      "is_reserved": "1",
+      "is_active": "1"
+    },
+    {
+      "_lookup": ["name"],
+      "_translate": ["label"],
+      "name": "CRM_Xcm_Matcher_PhoneFullNameMatcher",
+      "value": "CRM_Xcm_Matcher_PhoneFullNameMatcher",
+      "label": "Last name, first name, and (any) phone",
+      "filter": "0",
+      "is_reserved": "1",
+      "is_active": "1"
+    },
+    {
+      "_lookup": ["name"],
+      "_translate": ["label"],
+      "name": "CRM_Xcm_Matcher_EmailOnlyMatcher",
+      "value": "CRM_Xcm_Matcher_EmailOnlyMatcher",
+      "label": "Email (if only email submitted)",
+      "filter": "0",
+      "is_reserved": "1",
+      "is_active": "1"
+    },
+    {
+      "_lookup": ["name"],
+      "_translate": ["label"],
+      "name": "CRM_Xcm_Matcher_PhoneOnlyMatcher",
+      "value": "CRM_Xcm_Matcher_PhoneOnlyMatcher",
+      "label": "Phone (if only phone submitted)",
+      "filter": "0",
+      "is_reserved": "1",
+      "is_active": "1"
+    },
+    {
+      "_lookup": ["name"],
+      "_translate": ["label"],
+      "name": "CRM_Xcm_Matcher_WebsiteMatcher",
+      "value": "CRM_Xcm_Matcher_WebsiteMatcher",
+      "label": "Website (exact)",
+      "filter": "0",
+      "is_reserved": "1",
+      "is_active": "1"
+    },
+    {
+      "_lookup": ["name"],
+      "_translate": ["label"],
+      "name": "CRM_Xcm_Matcher_WebsiteOnlyMatcher",
+      "value": "CRM_Xcm_Matcher_WebsiteOnlyMatcher",
+      "label": "Website (if only website submitted)",
+      "filter": "0",
+      "is_reserved": "1",
+      "is_active": "1"
+    },
+    {
+      "_lookup": ["name"],
+      "_translate": ["label"],
+      "name": "CRM_Xcm_Matcher_EmailFirstNameBirthdateMatcher",
+      "value": "CRM_Xcm_Matcher_EmailFirstNameBirthdateMatcher",
+      "label": "First name, birthday, and (any) email",
+      "filter": "0",
+      "is_reserved": "1",
+      "is_active": "1"
+    },
+    {
+      "_lookup": ["name"],
+      "_translate": ["label"],
+      "name": "CRM_Xcm_Matcher_EmailLastNameBirthdateMatcher",
+      "value": "CRM_Xcm_Matcher_EmailLastNameBirthdateMatcher",
+      "label": "Last name, birthday, and (any) email",
+      "filter": "0",
+      "is_reserved": "1",
+      "is_active": "1"
+    },
+    {
+      "_lookup": ["name"],
+      "_translate": ["label"],
+      "name": "CRM_Xcm_Matcher_EmailBirthdateMatcher",
+      "value": "CRM_Xcm_Matcher_EmailBirthdateMatcher",
+      "label": "Birthday and (any) email",
+      "filter": "0",
+      "is_reserved": "1",
+      "is_active": "1"
+    },
+    {
+      "_lookup": ["name"],
+      "_translate": ["label"],
+      "name": "CRM_Xcm_Matcher_ExternalIdentifierOnlyMatcher",
+      "value": "CRM_Xcm_Matcher_ExternalIdentifierOnlyMatcher",
+      "label": "External identifier only (exact)",
+      "filter": "0",
+      "is_reserved": "1",
+      "is_active": "1"
+    }
+  ]
+}

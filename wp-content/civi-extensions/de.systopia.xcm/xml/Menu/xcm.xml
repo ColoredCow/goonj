@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<menu>
+  <item>
+    <path>civicrm/admin/setting/xcm</path>
+    <page_callback>CRM_Xcm_Page_Profiles</page_callback>
+    <title>Xtended Contact Matcher (XCM) Configuration</title>
+    <access_arguments>access CiviCRM</access_arguments>
+    <desc>Configure your Xtended Contact Matcher (XCM)</desc>
+    <adminGroup>System Settings</adminGroup>
+    <icon>admin/duplicate_matching.png</icon>
+  </item>
+  <item>
+    <path>civicrm/admin/setting/xcm_profile</path>
+    <page_callback>CRM_Xcm_Form_Settings</page_callback>
+    <title>Xtended Contact Matcher Profile</title>
+    <access_arguments>administer CiviCRM</access_arguments>
+  </item>
+  <item>
+    <path>civicrm/import/contact/xcm</path>
+    <page_callback>CRM_Xcm_Form_Import</page_callback>
+    <title>Import contacts (XCM)</title>
+    <access_arguments>import contacts</access_arguments>
+  </item>
+</menu>
