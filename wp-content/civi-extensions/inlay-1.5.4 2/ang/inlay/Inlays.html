@@ -1,0 +1,134 @@
+<div class="crm-container">
+
+  <div class="inlays-list-header">
+    <h1 crm-page-title>{{ts('Inlays')}}</h1>
+
+    <div class="for-button">
+      <button
+          class="crm-button"
+          ng-click="updateAllInlays()"
+          ng-disabled="updating"
+          >{{ts(updating ? 'Updating' : 'Update all Inlays')}}
+      </button>
+    </div>
+  </div>
+
+  <h2>Installed Inlay Types</h2>
+
+  <div ng-repeat="inlayType in inlayTypeOptions" >
+    <div crm-ui-accordion="{title: ts(inlayType.name), collapsed: true}">
+
+      <table class="inlays-admin-list">
+        <thead>
+          <tr>
+            <th style="width:10ch">Status</th>
+            <th>Name</th>
+            <th style="width:36ch">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr ng-repeat="inlay in inlays" ng-if="inlay && inlay.class === inlayType.class" class="{{inlay.status}}"
+                                                                                           data-public-id="{{inlay.public_id}}"
+            >
+            <td>
+              <a href ng-click="toggleStatus(inlay)" ng-if="inlay.status === 'on'" title="{{ts('This Inlay can be used. Click to turn OFF.')}}">{{ts('ON')}} </a>
+              <a href ng-click="toggleStatus(inlay)" ng-if="inlay.status === 'off'" title="{{ts('This Inlay will not do anything while it is off. Click to turn ON')}}">{{ts('OFF')}} </a>
+              <span ng-if="inlay.status === 'broken'" title="{{ts('Something is misconfigured; this Inlay will not function. Try editing and checking the settings.')}}" >{{ts('Broken!')}} </span>
+            </td>
+            <td>{{inlay.name}}</td>
+            <td>
+              <a ng-if="inlay.inlayType && !inlay.error" href="{{ inlay.editURL }}" >Edit</a> |
+              <a href ng-click="confirmDelete(inlay)" >Delete</a> |
+              <a href ng-click="copyInlay(inlay)" >Copy</a> |
+              <span ng-if="!inlay.error" >
+                <a href ng-click="getScript(inlay)" >Get code</a> |
+                <a href="{{inlay.useURL}}" >Preview</a>
+              </span>
+              <p class="error" ng-if="inlay.error" >Error ({{ inlay.error }}). This can happen if you have disabled or uninstalled an inlay type.</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <button ng-click="addNew(inlayType)" >{{ts('Add New ‘%1’ Inlay', {1:inlayType.name})}}</button>
+      <br/>
+      <br/>
+
+      <div ng-repeat="(configSchemaName, configSet) in inlayType.configSets" >
+        <h3>{{configSet.label}}</h3>
+        <p ng-if="configSet.description">{{configSet.description}}</p>
+
+        <div ng-if="!configSet.multiple">
+          <!-- only one set allowed, we mandate that it is called 'default' -->
+          <a href="{{CRM.url(configSet.configURLTemplate.replace('{id}', 'default'))}}" >Edit configuration</a>
+        </div>
+        <div ng-if="configSet.multiple">
+          <!-- multiple sets allowed -->
+          <ul>
+            <li ng-if="configSet.required">
+              <a href="{{CRM.url(configSet.configURLTemplate.replace('{id}', 'default'))}}" >Edit default configuration</a>
+            </li>
+            <li ng-repeat="configSetInstance in configSetInstances" ng-if="configSetInstance.name !== 'default'">
+              <a href="{{CRM.url(configSet.configURLTemplate.replace('{id}', 'default'))}}" >Edit: {{configSetInstance.label}}</a>
+            </li>
+            <li>
+              <a href="{{CRM.url({{configSet.configURLTemplate.replace('{id}', 'new'))}}}}" >Create new configuration</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <br />
+  <br />
+  <h2>Configuration</h2>
+  <form action="#" crm-form crm-ui-id-scope >
+  <div crm-ui-accordion="{title: ts('Permitted websites'), collapsed: true}">
+    <p ng-bind-html="ts('In order for an external site to be able to use Inlays you will need to register its domain name in the <a %1>options list</a>. To add a domain, ensure that you include the protocol (i.e.  this should be <code>https://</code>) as well as the website’s domain, but no path info. You must add this into the <strong>value</strong> field, not just the <strong>label</strong> field.', {1: optionsListUrl})"></p>
+    <div ng-if="cors.length > 0">
+      <p>Currently enabled websites are:</p>
+      <ol>
+        <li ng-repeat="w in cors" >{{w.value}}</li>
+      </ol>
+    </div>
+    <p ng-if="cors.length == 0">{{ts('You have not yet enabled any websites')}}</p>
+  </div>
+
+  <div crm-ui-accordion="{title: ts('Old browser support'), collapsed: true}">
+    <p>{{ts('Inlay uses some Javascript APIs that aren’t supported by older browsers, notably Internet Explorer. If you care about these browsers, you’ll need to provide a "polyfill" to make it work.')}}</p>
+
+    <p>{{ts('Specifically, we need to polyfill')}}
+      <a href="https://caniuse.com/?search=fetch">fetch</a> {{ts('and')}}
+      <a href="https://caniuse.com/?search=Promise">Promise</a>. Your options are:</p>
+
+    <ol>
+      <li><p>{{ts('We don’t care about old browsers. Fine, nothing to do.')}}</p></li>
+      <li><p>{{ts('The website that will be using Inlays already polyfills this. Fine, nothing to do.')}}</p></li>
+      <li><p><label><input ng-change="saveSettings()" ng-model="settings.polyfill" type="checkbox" /> {{ts('I want to include the polyfill in the inlay code directly, which should work everywhere but adds to the size of the bundle.')}}</label></p></li>
+    </ol>
+  </div>
+
+  <div crm-ui-accordion="{title: ts('Proxy support'), collapsed: true}">
+    <p>{{ts('Inlay requires some public URLs. If your CiviCRM instance is on a publicly facing internet server then the defaults are fine, but if your CiviCRM instance runs on a private network you will need to proxy certain paths through from your public webserver to your private CiviCRM one, and in this case the following settings may be helpful.')}}</p>
+
+    <p><label crm-ui-for="baseurl">{{ts('Base URL')}}</label>
+      <input crm-ui-id="baseurl" ng-model="settings.publicBaseUrl" type="text" />
+      <button ng-click="saveSettings(true); $event.preventDefault()" ng-disabled="savedPublicBaseUrl == settings.publicBaseUrl">Save</button>
+    </p>
+    <p>e.g. <code>https://proxy.example.org</code> or <code>https://example.org</code>, currently <code>{{ savedPublicBaseUrl || '(default: ' + defaultBaseUrl + ')' }}</code>
+      Note that this URL must include the scheme (<code>https://</code>), and the domain (<code>example.org</code>) without a path. You will need to ensure that your webserver (nginx/apache/...) is configured to proxy requests appropriately.</p>
+    <p><strong>If you change this URL you will need to update all sites that embed Inlays with new code samples (use 'get code' links above)</strong></p>
+
+    <div ng-if="cleanUrlWarning" class="error">
+      <strong>Your site will not be able to use a proxy as you do not have clean URLs enabled.</strong>
+    </div>
+
+  </div>
+
+  <button ng-click="$event.preventDefault();$ctrl.searchPublicID(); " role="button" class="crm-button secondary" >Find inlay by public ID</button>
+
+  </form>
+</div>

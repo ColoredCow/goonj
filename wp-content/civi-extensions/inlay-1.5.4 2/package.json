@@ -1,0 +1,22 @@
+{
+  "name": "inlay",
+  "version": "1.0.1",
+  "description": "API for remote CiviCRM forms",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git@lab.civicrm.org:extensions/inlay.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "laravel-mix": "^6.0.31",
+    "sass": "^1.42.1",
+    "sass-loader": "^12.1.0"
+  },
+  "dependencies": {
+    "promise-polyfill": "8.2.0",
+    "whatwg-fetch": "^3.4.1"
+  }
+}
