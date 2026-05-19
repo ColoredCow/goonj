@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<menu>
+  <item>
+    <path>civicrm/inlay-api</path>
+    <page_callback>CRM_Inlay_Page_ApiEndpoint</page_callback>
+    <title>ApiEndpoint</title>
+    <access_arguments>*always allow*</access_arguments>
+  </item>
+  <item>
+    <path>civicrm/inlay/use</path>
+    <page_callback>CRM_Inlay_Page_Demo</page_callback>
+    <title>Demo</title>
+    <access_arguments>administer Inlays</access_arguments>
+  </item>
+</menu>

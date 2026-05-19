@@ -1,0 +1,26 @@
+/* Add any CSS rules for Angular module "inlay" */
+.inlay-actions {
+  display: flex;
+  align-items: center;
+}
+.inlay-actions div.for-select {
+  flex: 1 1 auto;
+}
+.inlay-actions div.for-button {
+  padding-left: 2rem;
+  flex: 0 0 auto;
+}
+
+.inlays-list-header {
+  margin-bottom: 1rem;
+  overflow: hidden;
+}
+.inlays-list-header button {
+  float:none;
+}
+.inlays-admin-list tr.off {
+  color: #777;
+}
+.inlays-admin-list tr.broken {
+  color: #b44;
+}
