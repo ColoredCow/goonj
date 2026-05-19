@@ -1,0 +1,30 @@
+site_name: Extended Contact Matcher (XCM)
+site_description: CiviCRM contact matching extension
+site_author: SYSTOPIA
+repo_url: https://github.com/systopia/de.systopia.xcm
+
+theme:
+  name: material
+
+nav:
+- 'Introduction': index.md
+- 'Configuration': configuration.md
+- 'Contact Import': contact-import.md
+- 'API': api.md
+
+markdown_extensions:
+  - attr_list
+  - admonition
+  - def_list
+  - codehilite
+  - toc:
+      permalink: true
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+  - pymdownx.tilde
+  - pymdownx.betterem
+  - pymdownx.mark
+
+plugins:
+  - search:
+      lang: en
