@@ -5,7 +5,7 @@
  * CLI Script to import already-verified PAN card data from a client-provided CSV file.
  *
  * Contact matching (fallback order):
- *   1. first_name + last_name
+ *   1. first_name + email
  *   2. first_name + phone
  *   3. email + phone
  *
