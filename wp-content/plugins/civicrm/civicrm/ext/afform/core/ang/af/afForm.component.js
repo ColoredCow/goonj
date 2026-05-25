@@ -596,9 +596,13 @@
           //
           // TODO: in the long run we should provide a way for callers of
           // CRM.alert to specify between interrupting vs non-interrupting alerts
-          if (document.getElementById('crm-notification-container')) {
-            CRM.alert(ts('Please fill all required fields.'), ts('Form Error'));
-          }
+          //
+          // GOONJ CUSTOM: removed the gate `if (document.getElementById('crm-notification-container'))`
+          // around this call. On frontend pages the container isn't present, so the gate
+          // silently swallowed the popup. CRM.alert's own fallback in Common.js creates
+          // a native <dialog> when the container is missing — so calling it unconditionally
+          // is safe and restores the 6.3.1 behaviour the team relied on.
+          CRM.alert(ts('Please fill all required fields.'), ts('Form Error'));
           return;
         }
         status = CRM.status({error: ts('Not saved')});
