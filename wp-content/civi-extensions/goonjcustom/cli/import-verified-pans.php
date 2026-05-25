@@ -72,19 +72,18 @@ function readInputCsv(): array {
 
 /**
  * Try to find contact ID using the fallback chain:
- * first_name + last_name → first_name + phone → email + phone.
+ * first_name + email → first_name + phone → email + phone.
  */
 function findContactByFallback(array $row): ?int {
   $firstName = $row['Name'] ?? '';
-  $lastName  = $row['Last Name'] ?? '';
   $email     = $row['Email'] ?? '';
   $phone     = $row['Phone'] ?? '';
 
-  if ($firstName && $lastName) {
+  if ($firstName && $email) {
     $contact = Contact::get(FALSE)
       ->addSelect('id')
       ->addWhere('first_name', '=', $firstName)
-      ->addWhere('last_name', '=', $lastName)
+      ->addWhere('email_primary.email', '=', $email)
       ->addWhere('is_deleted', '=', FALSE)
       ->setLimit(1)
       ->execute()
@@ -200,7 +199,7 @@ function importVerifiedPans(array &$stats): void {
           'phone' => $row['Phone'] ?? '',
           'pan'   => $pan,
         ]);
-        $row['_reason'] = 'Contact not found by name/last_name, name/phone, or email/phone';
+        $row['_reason'] = 'Contact not found by first_name/email, first_name/phone, or email/phone';
         $notFound[] = $row;
         $stats['not_found']++;
         continue;
