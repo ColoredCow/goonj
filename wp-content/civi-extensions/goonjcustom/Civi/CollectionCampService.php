@@ -320,11 +320,18 @@ class CollectionCampService extends AutoSubscriber {
      * WIRE TRANSFER (payment_instrument_id = 5) + UPI PAYMENTS
      * =========================
      */
-    $upiInstrumentValues = \Civi\Api4\OptionValue::get(FALSE)
+    $upiInstrumentValues = OptionValue::get(FALSE)
       ->addSelect('value')
       ->addWhere('option_group_id:name', '=', 'payment_instrument')
-      ->addWhere('name', 'IN', ['Through_Paytm', 'Through_Amazon', 'Through_Google_Pay', 'Through_UPI', 'Through_UPI_Paytm'])
-      ->execute()->column('value');
+      ->addWhere('name', 'IN', [
+        'Through_Paytm',
+        'Through_Amazon',
+        'Through_Google_Pay',
+        'Through_UPI',
+        'Through_UPI_Paytm',
+      ])
+      ->execute()
+      ->column('value');
 
     $wireAndUpiIds = array_merge([5], $upiInstrumentValues);
 
@@ -2577,11 +2584,18 @@ class CollectionCampService extends AutoSubscriber {
      * WIRE TRANSFER (payment_instrument_id = 5) + UPI PAYMENTS
      * =========================
      */
-    $upiInstrumentValues = \Civi\Api4\OptionValue::get(FALSE)
+    $upiInstrumentValues = OptionValue::get(FALSE)
       ->addSelect('value')
       ->addWhere('option_group_id:name', '=', 'payment_instrument')
-      ->addWhere('name', 'IN', ['Through_Paytm', 'Through_Amazon', 'Through_Google_Pay', 'Through_UPI', 'Through_UPI_Paytm'])
-      ->execute()->column('value');
+      ->addWhere('name', 'IN', [
+        'Through_Paytm',
+        'Through_Amazon',
+        'Through_Google_Pay',
+        'Through_UPI',
+        'Through_UPI_Paytm',
+      ])
+      ->execute()
+      ->column('value');
 
     $wireAndUpiIds = array_merge([5], $upiInstrumentValues);
 
