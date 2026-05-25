@@ -21,8 +21,23 @@ These guidelines are used by Claude to align feedback with project expectations.
 
 ## Project-specific rules (customize these)
 
-<!-- Add your project-specific rules below. Examples: -->
+### PHP code style
+
+Run `phpcbf` against any PHP file you change before opening a PR. We use the **Drupal** coding standard (which CiviCRM's `Civi` ruleset extends).
+
+```bash
+phpcbf --standard=Drupal path/to/changed/file.php
+```
+
+Example:
+
+```bash
+phpcbf --standard=Drupal wp-content/civi-extensions/goonjcustom/Civi/UrbanExternalMeetingService.php
+```
+
+If `phpcbf` isn't on your machine, install PHP_CodeSniffer globally with Composer (`composer global require squizlabs/php_codesniffer`) and ensure `~/.composer/vendor/bin` is on your `PATH`.
+
+<!-- Add other project-specific rules below. Examples: -->
 <!-- - All API endpoints must have authentication middleware -->
-<!-- - Use TypeScript strict mode - no `any` types -->
 <!-- - Database migrations must be reversible -->
 <!-- - Feature flags required for new user-facing features -->
