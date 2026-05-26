@@ -2,7 +2,8 @@
 
 /**
  * @file
- * CLI Script to backfill Contact PAN card numbers from FY 2025-2026 contributions.
+ * CLI Script to backfill Contact PAN card numbers from contributions received
+ * from 2026-04-01 onwards (older data is handled manually by the accounts team).
  *
  * For each contact:
  * - If exactly 1 unique valid-format PAN found across contributions → save to Contact (Not Verified)
@@ -20,8 +21,8 @@ if (php_sapi_name() != 'cli') {
   exit("This script can only be run from the command line.\n");
 }
 
-define('FY_START', '2025-04-01');
-define('FY_END', '2026-03-31');
+define('FY_START', '2026-04-01');
+define('FY_END', date('Y-m-d'));
 define('CONFLICT_REPORT_PATH', __DIR__ . '/pan-conflict-report.csv');
 
 $stats = [
