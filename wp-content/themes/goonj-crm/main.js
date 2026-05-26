@@ -106,8 +106,8 @@ function setupFormValidation() {
     },
     {
       labelText: "PAN Card Number",
-      regex: /^[a-zA-Z0-9]{10}$/,
-      errorMessage: "Please enter a valid 10-digit PAN card number.",
+      regex: /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/,
+      errorMessage: "Invalid PAN format. Correct format: ABCDE1234F (5 letters, 4 digits, 1 letter).",
     },
   ];
 
@@ -207,47 +207,66 @@ document.addEventListener("DOMContentLoaded", function () {
     ".crm-contribution-main-form-block .custom_pre_profile-group fieldset > div:nth-last-child(5) .content input"
   );
   const form = document.querySelector(".crm-contribution-main-form-block");
-  let errorElement = panFieldContainer.querySelector(".error-message");
 
-  // Create error message element if it doesn't exist
+  if (!checkbox || !panFieldContainer || !panInput || !form) return;
+
+  const PAN_REGEX = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+
+  let errorElement = panFieldContainer.querySelector(".pan-error-message");
   if (!errorElement) {
     errorElement = document.createElement("div");
-    errorElement.className = "error-message";
+    errorElement.className = "pan-error-message";
     errorElement.style.color = "red";
     errorElement.style.display = "none";
     panFieldContainer.appendChild(errorElement);
   }
 
-  // Function to show/hide error message
   function showError(message) {
     errorElement.textContent = message;
     errorElement.style.display = message ? "block" : "none";
   }
 
-  // Function to toggle PAN field visibility
+  function validatePan() {
+    const value = panInput.value.trim();
+    if (value && !PAN_REGEX.test(value)) {
+      showError("Invalid PAN format. Correct format: ABCDE1234F (5 letters, 4 digits, 1 letter).");
+      return false;
+    }
+    showError("");
+    return true;
+  }
+
   function togglePanField() {
-    const isChecked = checkbox.checked;
-    if (isChecked) {
+    if (checkbox.checked) {
       panFieldContainer.style.display = "block";
-      if (panInput) {
-        panInput.required = true;
-      }
     } else {
       panFieldContainer.style.display = "none";
-      if (panInput) {
-        panInput.value = "";
-        panInput.required = false;
-        showError("");
-      }
+      panInput.value = "";
+      showError("");
     }
   }
 
+  // Auto-uppercase as user types
+  panInput.addEventListener("input", function () {
+    const cursor = this.selectionStart;
+    this.value = this.value.toUpperCase();
+    this.setSelectionRange(cursor, cursor);
+  });
+
+  // Validate only when user leaves the field
+  panInput.addEventListener("blur", validatePan);
+
+  // Block form submission if PAN is visible and invalid
+  form.addEventListener("submit", function (event) {
+    if (checkbox.checked && !validatePan()) {
+      event.preventDefault();
+      panInput.focus();
+    }
+  });
+
   togglePanField();
 
-  // Add event listener for checkbox changes
-  checkbox.addEventListener("change", function () {
-    togglePanField();
-  });
+  checkbox.addEventListener("change", togglePanField);
 });
 
 document.addEventListener("DOMContentLoaded", function () {
