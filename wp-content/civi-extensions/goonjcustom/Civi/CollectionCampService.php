@@ -317,10 +317,24 @@ class CollectionCampService extends AutoSubscriber {
 
     /**
      * =========================
-     * WIRE TRANSFER (payment_instrument_id = 5)
+     * WIRE TRANSFER + UPI PAYMENTS
      * =========================
      */
-    if ($fields['payment_instrument_id'] == 5) {
+    $wireAndUpiIds = OptionValue::get(FALSE)
+      ->addSelect('value')
+      ->addWhere('option_group_id:name', '=', 'payment_instrument')
+      ->addWhere('name', 'IN', [
+        'EFT',
+        'Through_Paytm',
+        'Through_Amazon',
+        'Through_Google_Pay',
+        'Through_UPI',
+        'Through_UPI_Paytm',
+      ])
+      ->execute()
+      ->column('value');
+
+    if (in_array($fields['payment_instrument_id'], $wireAndUpiIds)) {
 
       $transferDateField = CustomField::get(FALSE)
         ->addSelect('id')
@@ -2569,10 +2583,24 @@ class CollectionCampService extends AutoSubscriber {
 
     /**
      * =========================
-     * WIRE TRANSFER (payment_instrument_id = 5)
+     * WIRE TRANSFER + UPI PAYMENTS
      * =========================
      */
-    if ($fields['payment_instrument_id'] == 5) {
+    $wireAndUpiIds = OptionValue::get(FALSE)
+      ->addSelect('value')
+      ->addWhere('option_group_id:name', '=', 'payment_instrument')
+      ->addWhere('name', 'IN', [
+        'EFT',
+        'Through_Paytm',
+        'Through_Amazon',
+        'Through_Google_Pay',
+        'Through_UPI',
+        'Through_UPI_Paytm',
+      ])
+      ->execute()
+      ->column('value');
+
+    if (in_array($fields['payment_instrument_id'], $wireAndUpiIds)) {
 
       $transactionIdField = CustomField::get(FALSE)
         ->addSelect('id')
