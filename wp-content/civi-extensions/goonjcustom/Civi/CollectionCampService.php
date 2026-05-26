@@ -317,13 +317,14 @@ class CollectionCampService extends AutoSubscriber {
 
     /**
      * =========================
-     * WIRE TRANSFER (payment_instrument_id = 5) + UPI PAYMENTS
+     * WIRE TRANSFER + UPI PAYMENTS
      * =========================
      */
-    $upiInstrumentValues = OptionValue::get(FALSE)
+    $wireAndUpiIds = OptionValue::get(FALSE)
       ->addSelect('value')
       ->addWhere('option_group_id:name', '=', 'payment_instrument')
       ->addWhere('name', 'IN', [
+        'EFT',
         'Through_Paytm',
         'Through_Amazon',
         'Through_Google_Pay',
@@ -332,8 +333,6 @@ class CollectionCampService extends AutoSubscriber {
       ])
       ->execute()
       ->column('value');
-
-    $wireAndUpiIds = array_merge([5], $upiInstrumentValues);
 
     if (in_array($fields['payment_instrument_id'], $wireAndUpiIds)) {
 
@@ -2581,13 +2580,14 @@ class CollectionCampService extends AutoSubscriber {
 
     /**
      * =========================
-     * WIRE TRANSFER (payment_instrument_id = 5) + UPI PAYMENTS
+     * WIRE TRANSFER + UPI PAYMENTS
      * =========================
      */
-    $upiInstrumentValues = OptionValue::get(FALSE)
+    $wireAndUpiIds = OptionValue::get(FALSE)
       ->addSelect('value')
       ->addWhere('option_group_id:name', '=', 'payment_instrument')
       ->addWhere('name', 'IN', [
+        'EFT',
         'Through_Paytm',
         'Through_Amazon',
         'Through_Google_Pay',
@@ -2596,8 +2596,6 @@ class CollectionCampService extends AutoSubscriber {
       ])
       ->execute()
       ->column('value');
-
-    $wireAndUpiIds = array_merge([5], $upiInstrumentValues);
 
     if (in_array($fields['payment_instrument_id'], $wireAndUpiIds)) {
 
