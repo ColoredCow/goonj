@@ -166,9 +166,6 @@ function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
   $header[0] = preg_replace('/^\xEF\xBB\xBF/', '', $header[0]);
   $header = array_map('trim', $header);
 
-<<<<<<< HEAD
-  $groups = [];
-=======
   // Build THREE independent group sets, processed in priority order:
   //   1. fname + phone   (strong match)
   //   2. fname + email   (fallback when phone didn't catch it)
@@ -179,7 +176,6 @@ function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
   $phoneGroups = [];
   $emailGroups = [];
   $emailPhoneGroups = [];
->>>>>>> c4b67bce3eac8bf878699265ea9d51ba8af8e274
   $toDelete = [];
   $rowIndex = 1;
 
@@ -198,44 +194,6 @@ function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
     $status = strtolower(trim($contact['status'] ?? ''));
 
     if (!$contactId) {
-<<<<<<< HEAD
-      continue;
-    }
-
-    // Status = Deleted -> permanent removal queue (no first_name needed).
-    if ($status === 'deleted') {
-      $toDelete[$contactId] = $rowIndex;
-      continue;
-    }
-
-    if (!$firstName || !in_array($status, ['real', 'duplicate'])) {
-      continue;
-    }
-
-    // Per-row priority: prefer email, fall back to phone.
-    if ($email) {
-      $key = 'email:' . $email . '|' . $firstName;
-      $matchedBy = 'email';
-    }
-    elseif ($phone) {
-      $key = 'phone:' . $phone . '|' . $firstName;
-      $matchedBy = 'phone';
-    }
-    else {
-      $log('warning', "Row #$rowIndex (cid=$contactId) has neither email nor phone. Skipping.");
-      continue;
-    }
-
-    if (!isset($groups[$key])) {
-      $groups[$key] = ['real' => NULL, 'duplicates' => [], 'matched_by' => $matchedBy];
-    }
-
-    if ($status === 'real') {
-      $groups[$key]['real'] = $contactId;
-    }
-    else {
-      $groups[$key]['duplicates'][] = $contactId;
-=======
       continue;
     }
 
@@ -305,87 +263,11 @@ function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
 
     if (!$addedToAnyGroup) {
       $log('warning', "Row #$rowIndex (cid=$contactId) couldn't form any match key. Needs (first_name + phone) or (first_name + email) or (email + phone). Skipping.");
->>>>>>> c4b67bce3eac8bf878699265ea9d51ba8af8e274
     }
   }
 
   fclose($file);
 
-<<<<<<< HEAD
-  $emailGroupCount = count(array_filter($groups, fn($g) => $g['matched_by'] === 'email'));
-  $phoneGroupCount = count(array_filter($groups, fn($g) => $g['matched_by'] === 'phone'));
-  $log('info', "CSV parsed. Merge groups: " . count($groups) . " (by email: $emailGroupCount, by phone: $phoneGroupCount). Permanent deletions queued: " . count($toDelete));
-
-  // Process permanent deletions first (Status = Deleted rows).
-  // useTrash=FALSE removes the contact entirely (skip-trash hard delete).
-  // We check existence first because Contact::delete() returns success even
-  // for non-existent IDs, which would otherwise hide CSV data quality issues.
-  $deletedCount = 0;
-  $failedDeleteCount = 0;
-  $deleteNoopCount = 0;
-  foreach ($toDelete as $contactId => $sourceRowIdx) {
-    try {
-      $existing = \Civi\Api4\Contact::get(FALSE)
-        ->addWhere('id', '=', $contactId)
-        ->addWhere('is_deleted', 'IN', [TRUE, FALSE])
-        ->addSelect('id')
-        ->execute();
-      if ($existing->count() === 0) {
-        $deleteNoopCount++;
-        $log('warning', "DELETE NOOP: contact #$contactId not found (row #$sourceRowIdx). Already deleted or invalid ID.");
-        continue;
-      }
-
-      \Civi\Api4\Contact::delete(FALSE)
-        ->addWhere('id', '=', $contactId)
-        ->setUseTrash(FALSE)
-        ->execute();
-      $deletedCount++;
-      $log('info', "DELETED contact #$contactId (status=Deleted, row #$sourceRowIdx)");
-    }
-    catch (\Throwable $e) {
-      $failedDeleteCount++;
-      $log('error', "FAILED DELETE contact #$contactId (row #$sourceRowIdx): " . $e->getMessage());
-    }
-  }
-
-  $mergedCount = 0;
-  $failedCount = 0;
-  $skippedGroups = 0;
-  $mergedByEmail = 0;
-  $mergedByPhone = 0;
-
-  foreach ($groups as $key => $data) {
-    $realId = $data['real'];
-    $duplicates = $data['duplicates'];
-    $matchedBy = $data['matched_by'];
-
-    if (!$realId || empty($duplicates)) {
-      $skippedGroups++;
-      continue;
-    }
-
-    foreach ($duplicates as $dupId) {
-      try {
-        \Civi\Api4\Contact::mergeDuplicates(FALSE)
-          ->setContactId($realId)
-          ->setDuplicateId($dupId)
-          ->setMode('safe')
-          ->execute();
-
-        $mergedCount++;
-        if ($matchedBy === 'email') {
-          $mergedByEmail++;
-        }
-        else {
-          $mergedByPhone++;
-        }
-        $log('info', "MERGED [$matchedBy] dup #$dupId -> real #$realId ($key)");
-      }
-      catch (\Throwable $e) {
-        $failedCount++;
-        $log('error', "FAILED [$matchedBy] dup #$dupId -> real #$realId ($key): " . $e->getMessage());
-=======
   $log('info', "CSV parsed. Phone groups: " . count($phoneGroups) . ", email groups: " . count($emailGroups) . ", email+phone groups: " . count($emailPhoneGroups) . ". Permanent deletions queued: " . count($toDelete));
 
   // Process permanent deletions first (Status = Deleted rows).
@@ -406,7 +288,6 @@ function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
         $deleteNoopCount++;
         $log('warning', "DELETE NOOP: contact #$contactId not found (row #$sourceRowIdx). Already deleted or invalid ID.");
         continue;
->>>>>>> c4b67bce3eac8bf878699265ea9d51ba8af8e274
       }
 
       \Civi\Api4\Contact::delete(FALSE)
@@ -443,9 +324,6 @@ function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
     }
   }
 
-<<<<<<< HEAD
-  $log('info', "Job finished. Merged: $mergedCount (email: $mergedByEmail, phone: $mergedByPhone) | Failed merges: $failedCount | Deleted: $deletedCount | Delete noops: $deleteNoopCount | Failed deletes: $failedDeleteCount | Skipped groups: $skippedGroups");
-=======
   $mergedCount = 0;
   $failedCount = 0;
   $skippedGroups = 0;
@@ -548,20 +426,14 @@ function civicrm_api3_goonjcustom_merge_duplicate_contacts_cron($params) {
   }
 
   $log('info', "Job finished. Merged: $mergedCount (phone: $mergedByPhone, email: $mergedByEmail, email+phone: $mergedByEmailPhone) | Failed merges: $failedCount | Deleted: $deletedCount | Delete noops: $deleteNoopCount | Failed deletes: $failedDeleteCount | Skipped groups: $skippedGroups");
->>>>>>> c4b67bce3eac8bf878699265ea9d51ba8af8e274
 
   return civicrm_api3_create_success(
     [
       'log_file' => $logFile,
       'merged' => $mergedCount,
-<<<<<<< HEAD
-      'merged_by_email' => $mergedByEmail,
-      'merged_by_phone' => $mergedByPhone,
-=======
       'merged_by_phone' => $mergedByPhone,
       'merged_by_email' => $mergedByEmail,
       'merged_by_email_phone' => $mergedByEmailPhone,
->>>>>>> c4b67bce3eac8bf878699265ea9d51ba8af8e274
       'failed' => $failedCount,
       'deleted' => $deletedCount,
       'delete_noops' => $deleteNoopCount,
