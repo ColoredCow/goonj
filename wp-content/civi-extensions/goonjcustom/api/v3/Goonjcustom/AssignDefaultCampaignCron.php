@@ -31,7 +31,7 @@ function civicrm_api3_goonjcustom_assign_default_campaign_cron($params) {
 
   $goonjItCampaign = Campaign::get(FALSE)
     ->addSelect('id')
-    ->addWhere('name', '=', 'Goonj_It')
+    ->addWhere('name', '=', 'General Camp')
     ->execute()->first();
 
   if (empty($goonjItCampaign['id'])) {
