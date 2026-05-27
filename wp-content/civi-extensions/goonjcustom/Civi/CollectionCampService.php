@@ -325,11 +325,11 @@ class CollectionCampService extends AutoSubscriber {
       ->addWhere('option_group_id:name', '=', 'payment_instrument')
       ->addWhere('name', 'IN', [
         'EFT',
-        'Through_Paytm',
-        'Through_Amazon',
-        'Through_Google_Pay',
-        'Through_UPI',
-        'Through_UPI_Paytm',
+        'Through Paytm',
+        'Through Amazon',
+        'Through Google Pay',
+        'Through UPI',
+        'Through UPI/Paytm',
       ])
       ->execute()
       ->column('value');
@@ -2591,11 +2591,11 @@ class CollectionCampService extends AutoSubscriber {
       ->addWhere('option_group_id:name', '=', 'payment_instrument')
       ->addWhere('name', 'IN', [
         'EFT',
-        'Through_Paytm',
-        'Through_Amazon',
-        'Through_Google_Pay',
-        'Through_UPI',
-        'Through_UPI_Paytm',
+        'Through Paytm',
+        'Through Amazon',
+        'Through Google Pay',
+        'Through UPI',
+        'Through UPI/Paytm',
       ])
       ->execute()
       ->column('value');
