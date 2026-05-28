@@ -13,25 +13,6 @@ $contactId = $_SESSION['contactId'] ?? null;
 $displayName = $_SESSION['displayName'] ?? null;
 $contactNumber = $_SESSION['contactNumber'] ?? null;
 
-// [ChooseFromPast] TRACE-3: the choose-from-past template render
-if ( class_exists( 'Civi' ) ) {
-	\Civi::log()->info( '[ChooseFromPast] TRACE-3 template render', array(
-		'session_status'        => session_status(),
-		'session_id'            => session_id(),
-		'session_keys'          => array_keys( $_SESSION ?? array() ),
-		'recentCampData_isset'  => isset( $_SESSION['recentCampData'] ),
-		'recentCampData_isarr'  => is_array( $recentCampData ),
-		'recentCampData_keys'   => is_array( $recentCampData ) ? array_keys( $recentCampData ) : '<not-array>',
-		'recentCampData_city'   => $recentCampData['Collection_Camp_Intent_Details.City'] ?? '<missing>',
-		'recentCampData_pin'    => $recentCampData['Collection_Camp_Intent_Details.Pin_Code'] ?? '<missing>',
-		'contactId'             => $contactId,
-		'displayName'           => $displayName,
-		'contactNumber'         => $contactNumber,
-		'request_uri'           => $_SERVER['REQUEST_URI'] ?? '',
-		'cookies_received'      => array_keys( $_COOKIE ?? array() ),
-	) );
-}
-
 $redirectBaseUrl = get_home_url() . "/collection-camp/intent/#?";
 
 $queryParams = [
