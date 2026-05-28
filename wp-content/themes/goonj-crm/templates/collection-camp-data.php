@@ -1,4 +1,12 @@
 <?php
+// Start the PHP session so we can read the data the check-user handler saved
+// under $_SESSION before redirecting here. Without this $_SESSION would be
+// empty even though the PHPSESSID cookie is present, because PHP needs an
+// explicit session_start() before it will populate the superglobal.
+if ( session_status() === PHP_SESSION_NONE && ! headers_sent() ) {
+	session_start();
+}
+
 // Retrieve the recentCamp data from the session
 $recentCampData = $_SESSION['recentCampData'] ?? null;
 $contactId = $_SESSION['contactId'] ?? null;
