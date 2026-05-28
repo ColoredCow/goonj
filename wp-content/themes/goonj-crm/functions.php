@@ -226,6 +226,20 @@ function goonj_handle_user_identification_form() {
 	// Retrieve the email and phone number from the POST data
 	$email = $_POST['email'] ?? '';
 	$phone = $_POST['phone'] ?? '';
+
+	// [ChooseFromPast] TRACE-1: entry to the check-user handler
+	if ( class_exists( 'Civi' ) ) {
+		\Civi::log()->info( '[ChooseFromPast] TRACE-1 handler entered', array(
+			'purpose'         => $purpose,
+			'email'           => $email,
+			'phone'           => $phone,
+			'session_status'  => session_status(),
+			'session_id'      => session_id(),
+			'session_keys'    => array_keys( $_SESSION ?? array() ),
+			'request_uri'     => $_SERVER['REQUEST_URI'] ?? '',
+			'cookies'         => array_keys( $_COOKIE ?? array() ),
+		) );
+	}
 	$state_id = $_POST['state_id'] ?? '';
 	$city = $_POST['city'] ?? '';
 
@@ -677,12 +691,39 @@ function goonj_handle_user_identification_form() {
 		// Recent camp data
 		$recentCamp = $collectionCampResult->first() ?? null;
 
+		// [ChooseFromPast] TRACE-2a: about to write session
+		if ( class_exists( 'Civi' ) ) {
+			\Civi::log()->info( '[ChooseFromPast] TRACE-2a before session write', array(
+				'contact_id'      => $found_contacts['id'],
+				'recentCamp_found' => ! empty( $recentCamp ),
+				'recentCamp_id'   => $recentCamp['id'] ?? '<none>',
+				'recentCamp_keys' => $recentCamp ? array_keys( (array) $recentCamp ) : array(),
+				'session_status_before' => session_status(),
+				'session_id_before'     => session_id(),
+				'session_keys_before'   => array_keys( $_SESSION ?? array() ),
+			) );
+		}
+
 		if ( ! empty( $recentCamp ) ) {
 			// Save the recentCamp data to the session
 			$_SESSION['recentCampData'] = $recentCamp;
 			$_SESSION['contactId']  = $found_contacts['id'];
 			$_SESSION['displayName']  = $display_name;
 			$_SESSION['contactNumber'] = $phone;
+
+			// [ChooseFromPast] TRACE-2b: after session write, just before redirect
+			if ( class_exists( 'Civi' ) ) {
+				\Civi::log()->info( '[ChooseFromPast] TRACE-2b after session write', array(
+					'session_status_after' => session_status(),
+					'session_id_after'     => session_id(),
+					'session_keys_after'   => array_keys( $_SESSION ?? array() ),
+					'saved_contactId'      => $_SESSION['contactId'] ?? '<missing>',
+					'saved_displayName'    => $_SESSION['displayName'] ?? '<missing>',
+					'saved_recentCampData_city' => $_SESSION['recentCampData']['Collection_Camp_Intent_Details.City'] ?? '<missing>',
+					'saved_recentCampData_pin'  => $_SESSION['recentCampData']['Collection_Camp_Intent_Details.Pin_Code'] ?? '<missing>',
+					'redirect_to'          => get_home_url() . '/collection-camp/choose-from-past/#?Collection_Camp_Core_Details.Contact_Id=' . $found_contacts['id'] . '&message=past-collection-data',
+				) );
+			}
 
 			wp_redirect( get_home_url() . '/collection-camp/choose-from-past/#?Collection_Camp_Core_Details.Contact_Id=' . $found_contacts['id'] . '&message=past-collection-data' );
 			exit;
