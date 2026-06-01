@@ -120,7 +120,8 @@
 }
 
 // Mobile
-@media (max-device-width: $screen-sm-max) {
+// Forcing 700px instead of screen-sm-max because of weird results on WordPress
+@media (max-device-width: 700px) {
   #mainTabContainer {
     flex-direction: column;
 

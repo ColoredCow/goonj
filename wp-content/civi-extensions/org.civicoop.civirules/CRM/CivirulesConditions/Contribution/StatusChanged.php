@@ -54,20 +54,7 @@ class CRM_CivirulesConditions_Contribution_StatusChanged extends CRM_CivirulesCo
    * @return array
    */
   public function getFieldOptionsNames() {
-    $return = [];
-    $params = [
-      'return' => ["name", "value"],
-      'option_group_id' =>  'contribution_status',
-      'options' => ['limit' => 0, 'sort' => "label ASC"],
-    ];
-    try {
-      $options = civicrm_api3('OptionValue', 'get', $params)['values'];
-      foreach ($options as $option) {
-        $return[$option['value']] = $option['name'];
-      }
-    } catch (CiviCRM_API3_Exception $ex) {}
-
-    return $return;
+    return CRM_CivirulesConditions_Contribution_Status::getEntityStatusList(TRUE);
   }
 
 }

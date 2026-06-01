@@ -61,7 +61,7 @@ class CRM_CivirulesConditions_Relationship_RelationshipType extends CRM_Civirule
             'return' => 'name_a_b',
             'id' => $gid,
           ]);
-        } catch (CiviCRM_API3_Exception $e) {
+        } catch (CRM_Core_Exception $e) {
         }
       }
     }
@@ -82,7 +82,7 @@ class CRM_CivirulesConditions_Relationship_RelationshipType extends CRM_Civirule
             'return' => 'id',
             'name_a_b' => $gid,
           ]);
-        } catch (CiviCRM_API3_Exception $e) {
+        } catch (CRM_Core_Exception $e) {
         }
       }
     }

@@ -36,10 +36,9 @@
     },
     "files": ["functions.php", "guzzle_php81_shim.php"]
   },
-  "include-path": ["vendor/tecnickcom"],
   "config": {
     "platform": {
-      "php": "8.0.0"
+      "php": "8.1.2"
     },
     "allow-plugins": {
       "civicrm/composer-compile-plugin": true,
@@ -48,10 +47,19 @@
     }
   },
   "require": {
-    "php": "~8.0",
+    "php": "^8.1.2",
+    "ext-bcmath": "*",
+    "ext-curl": "*",
+    "ext-fileinfo": "*",
+    "ext-intl": "*",
+    "ext-json": "*",
+    "ext-mbstring": "*",
+    "ext-mysqli": "*",
+    "ext-zip": "*",
+    "ext-xml": "*",
     "composer-runtime-api": "~2.0",
     "dompdf/dompdf": "~2.0.4|| ~3.0",
-    "firebase/php-jwt": ">=3 <7",
+    "firebase/php-jwt": ">=6.0 <8",
     "rubobaquero/phpquery": "^0.9.15",
     "symfony/config": "~4.4 || ~5.4 || ~6.0 || ~7.0",
     "symfony/polyfill-iconv": "~1.0",
@@ -61,6 +69,7 @@
     "symfony/process": "~4.4 ||  ~5.4 || ~5.0 || ~6.0 || ~7.0",
     "symfony/var-dumper": "~4.4 || ~5.1 || ~6.0 || ~7.0",
     "symfony/service-contracts": "~2.2 || ~3.1",
+    "psr/http-client": "^1.0",
     "psr/log": "~1.0 || ~2.0 || ~3.0",
     "symfony/finder": "~4.4 || ~5.4 || ~6.0 || ~7.0",
     "tecnickcom/tcpdf": "6.*",
@@ -69,7 +78,7 @@
     "zetacomponents/mail": "~1.9.4",
     "marcj/topsort": "~1.1",
     "phpoffice/phpword": "^1.4",
-    "phpseclib/phpseclib": "~2.0",
+    "phpseclib/phpseclib": "^3.0",
     "pear/validate_finance_creditcard": "0.7.0",
     "pear/auth_sasl": "1.2.0",
     "pear/net_smtp": "1.12.*",
@@ -83,20 +92,16 @@
     "adrienrn/php-mimetyper": "0.2.2",
     "civicrm/composer-downloads-plugin": "^3.0 || ^4.0",
     "laravel/serializable-closure": "^1.3",
-    "league/csv": "^9.8.0",
+    "league/csv": "^9.28",
     "league/oauth2-client": "^2.8",
     "league/oauth2-google": "^4.0",
     "tplaner/when": "~3.1",
     "xkerman/restricted-unserialize": "~1.1",
     "typo3/phar-stream-wrapper": "^3.0 || ^4.0",
-    "brick/money": "~0.5",
-    "ext-intl": "*",
+    "brick/money": ">=0.9 <0.11",
     "pear/mail_mime": "~1.10",
-    "pear/db": "~1.12.1",
+    "pear/db": "~1.12.2",
     "civicrm/composer-compile-lib": "~0.6 || ~1.0",
-    "ext-json": "*",
-    "ext-mbstring": "*",
-    "ext-mysqli": "*",
     "ezyang/htmlpurifier": "^4.13",
     "phpoffice/phpspreadsheet": "^1.18 || ^2",
     "symfony/polyfill-php80": "^1.0",
@@ -106,11 +111,11 @@
     "symfony/polyfill-php84": "^1.0",
     "soundasleep/html2text": "^2.1",
     "psr/container": "~1.0 || ~2.0",
-    "ext-fileinfo": "*",
     "behat/mink": "^1.10",
     "dmore/chrome-mink-driver": "^2.9",
     "pontedilana/php-weasyprint": "^0.13.0 || ^1",
-    "knplabs/knp-snappy": "^1.4"
+    "knplabs/knp-snappy": "^1.4",
+    "phpseclib/phpseclib2_compat": "^1.0"
   },
   "scripts": {
     "post-install-cmd": [
@@ -266,7 +271,7 @@
         "ignore": [".*", "*.log", "*.md", "component.json", "package.json", "node_modules"]
       },
       "select2": {
-        "url": "https://github.com/colemanw/select2/archive/v3.5-civicrm-1.2.zip"
+        "url": "https://github.com/colemanw/select2/archive/v3.5-civicrm-1.3.zip"
       },
       "js-yaml": {
         "url": "https://github.com/nodeca/js-yaml/archive/3.13.1.zip",
@@ -289,7 +294,7 @@
       },
       "pear/db": {
         "Ensure that error messages about MySQL-SSL connections are reported": "https://download.civicrm.org/patches/a6e31a769218801fb1fb3d679ff72d3d8a7c5637d3bb7b78680cd7809552e0c6/mysqli-ssl.patch",
-        "Apply CiviCRM Customisations for the pear:db package": "https://download.civicrm.org/patches/83a3d0dd9f8e555a474ee433c453ff741a4dedf1983bad8b3566136e90f9c46b/pear_db_civicrm_changes.patch"
+        "Apply CiviCRM Customisations for the pear:db package": "https://download.civicrm.org/patches/47e125fec0c789b095880fa65c6037210b01179290d5727b22b70fa77333496b/pear_db_civicrm_changes.patch"
       },
       "pear/mail": {
         "Apply CiviCRM Customisations for CRM-1367 and CRM-5946": "https://download.civicrm.org/patches/00da3cfcfe0d24420665f3015a5d3ea72dc331a52636f009883892ed3c7fbf84/pear-mail.patch"

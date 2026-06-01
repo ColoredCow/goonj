@@ -310,7 +310,7 @@ class CRM_Contact_Selector extends CRM_Core_Selector_Base implements CRM_Core_Se
           }
           elseif ($value['key'] === 'note') {
             $url = 'civicrm/note';
-            $qs = "reset=1&action=add&entity_table=civicrm_contact&entity_id='%%id%%{$extraParams}";
+            $qs = "reset=1&action=add&entity_table=civicrm_contact&entity_id=%%id%%{$extraParams}";
           }
 
           self::$_links[$counter++] = [
@@ -505,10 +505,10 @@ class CRM_Contact_Selector extends CRM_Core_Selector_Base implements CRM_Core_Se
           );
 
         }
-        elseif (isset($this->_query->_fields[$prop]) && isset($this->_query->_fields[$prop]['title'])) {
+        elseif (isset($this->_query->_fields[$prop], $this->_query->_fields[$prop]['title'])) {
           $title = $this->_query->_fields[$prop]['title'];
         }
-        elseif (isset($this->_query->_pseudoConstantsSelect[$prop]) && isset($this->_query->_pseudoConstantsSelect[$prop]['pseudoconstant']['optionGroupName'])) {
+        elseif (isset($this->_query->_pseudoConstantsSelect[$prop], $this->_query->_pseudoConstantsSelect[$prop]['pseudoconstant']['optionGroupName'])) {
           $title = CRM_Core_BAO_OptionGroup::getTitleByName($this->_query->_pseudoConstantsSelect[$prop]['pseudoconstant']['optionGroupName']);
         }
         else {

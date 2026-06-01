@@ -120,7 +120,7 @@ class CRM_CivirulesActions_Activity_CreateActivityFromEvent extends CRM_Civirule
         'value' => $action_params['activity_type_id'],
         'option_group_id' => 'activity_type',
       ]);
-    } catch (CiviCRM_API3_Exception $e) {
+    } catch (CRM_Core_Exception $e) {
     }
 
     if (!empty($action_params['event_id_custom_field'])) {
@@ -133,7 +133,7 @@ class CRM_CivirulesActions_Activity_CreateActivityFromEvent extends CRM_Civirule
         ]);
         $action_params['event_id_custom_group'] = $customGroup['name'];
         $action_params['event_id_custom_field'] = $customField['name'];
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -148,7 +148,7 @@ class CRM_CivirulesActions_Activity_CreateActivityFromEvent extends CRM_Civirule
         ]);
         $action_params['event_start_date_custom_group'] = $customGroup['name'];
         $action_params['event_start_date_custom_field'] = $customField['name'];
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -163,7 +163,7 @@ class CRM_CivirulesActions_Activity_CreateActivityFromEvent extends CRM_Civirule
         ]);
         $action_params['event_end_date_custom_group'] = $customGroup['name'];
         $action_params['event_end_date_custom_field'] = $customField['name'];
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -184,7 +184,7 @@ class CRM_CivirulesActions_Activity_CreateActivityFromEvent extends CRM_Civirule
         'name' => $action_params['status_id'],
         'option_group_id' => 'activity_status',
       ]);
-    } catch (CiviCRM_API3_Exception $e) {
+    } catch (CRM_Core_Exception $e) {
     }
     try {
       $action_params['activity_type_id'] = civicrm_api3('OptionValue', 'getvalue', [
@@ -192,7 +192,7 @@ class CRM_CivirulesActions_Activity_CreateActivityFromEvent extends CRM_Civirule
         'name' => $action_params['activity_type_id'],
         'option_group_id' => 'activity_type',
       ]);
-    } catch (CiviCRM_API3_Exception $e) {
+    } catch (CRM_Core_Exception $e) {
     }
 
     if (!empty($action_params['event_id_custom_group'])) {
@@ -203,7 +203,7 @@ class CRM_CivirulesActions_Activity_CreateActivityFromEvent extends CRM_Civirule
         ]);
         $action_params['event_id_custom_field'] = $customField['id'];
         unset($action_params['event_id_custom_group']);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -216,7 +216,7 @@ class CRM_CivirulesActions_Activity_CreateActivityFromEvent extends CRM_Civirule
         ]);
         $action_params['event_start_date_custom_field'] = $customField['id'];
         unset($action_params['event_start_date_custom_group']);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -229,7 +229,7 @@ class CRM_CivirulesActions_Activity_CreateActivityFromEvent extends CRM_Civirule
         ]);
         $action_params['event_end_date_custom_field'] = $customField['id'];
         unset($action_params['event_end_date_custom_group']);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -312,7 +312,7 @@ class CRM_CivirulesActions_Activity_CreateActivityFromEvent extends CRM_Civirule
    *
    * @return string
    * @access public
-   * @throws \CiviCRM_API3_Exception
+   * @throws \CRM_Core_Exception
    */
   public function userFriendlyConditionParams() {
     $return = '';

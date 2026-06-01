@@ -113,7 +113,7 @@ class CRM_CivirulesConditions_Event_EventType extends CRM_Civirules_Condition {
           'value' => $params['event_type_id'],
           'option_group_id' => 'event_type',
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -142,7 +142,7 @@ class CRM_CivirulesConditions_Event_EventType extends CRM_Civirules_Condition {
           'name' => $condition_params['event_type_id'],
           'option_group_id' => 'event_type',
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }

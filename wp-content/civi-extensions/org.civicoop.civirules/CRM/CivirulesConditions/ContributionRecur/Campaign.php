@@ -39,7 +39,7 @@ class CRM_CivirulesConditions_ContributionRecur_Campaign extends CRM_Civirules_C
           'return' => 'name',
           'id' => $params['campaign_id']
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -59,7 +59,7 @@ class CRM_CivirulesConditions_ContributionRecur_Campaign extends CRM_Civirules_C
           'return' => 'id',
           'name' => $condition_params['campaign_id']
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -124,7 +124,7 @@ class CRM_CivirulesConditions_ContributionRecur_Campaign extends CRM_Civirules_C
     foreach ($this->conditionParams['campaign_id'] as $campaignId) {
       try {
         $campaignText[] = civicrm_api3('Campaign', 'Getvalue', array('id' => $campaignId, 'return' => 'title'));
-      } catch (CiviCRM_API3_Exception $ex) {}
+      } catch (CRM_Core_Exception $ex) {}
     }
     if (!empty($campaignText)) {
       $friendlyText .= implode(", ", $campaignText);

@@ -256,6 +256,8 @@ a.sorting_desc {
   display: inline-block;
   padding-left: 0;
   padding-right: 20px;
+  // required for the position of the sort icon
+  position: relative;
 
   &::after {
     position: absolute;

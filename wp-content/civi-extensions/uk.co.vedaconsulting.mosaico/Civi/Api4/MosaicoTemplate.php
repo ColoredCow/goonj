@@ -16,9 +16,15 @@ class MosaicoTemplate extends Generic\DAOEntity {
   public static function permissions():array {
     return [
       'get' => ['access CiviCRM'],
-      'create' => ['edit message templates'],
-      'update' => ['edit message templates'],
-      'delete' => ['edit message templates'],
+      'create' => [
+        ['edit message templates', 'edit user driven message templates']
+      ],
+      'update' => [
+        ['edit message templates', 'edit user driven message templates']
+      ],
+      'delete' => [
+        ['edit message templates', 'edit user driven message templates']
+      ]
     ];
   }
 

@@ -5,3 +5,38 @@
     }
   }
 }
+
+// Ex: Contact > Memberships, when using AdminUI
+form#bootstrap-theme crm-search-display-table {
+  .alert-info {
+    background: inherit;
+    border: none;
+  }
+  .crm-search-display-description {
+    // Based on a normal h3
+    font-size: $font-size-h3;
+    font-weight: 600;
+    margin-bottom: 10.5px;
+    padding-left: 0;
+    color: #464354;
+  }
+}
+
+// extensions/theisland#19 SK/FB inline edit for boolean fields
+crm-angular-js > #bootstrap-theme button.btn-xs {
+  padding: 1px 5px;
+}
+crm-angular-js > #bootstrap-theme button.btn-success {
+  background-color: green !important;
+}
+crm-angular-js > #bootstrap-theme button.btn-danger {
+  background-color: darkred !important;
+}
+
+// Sticky headers on SearchKit tables
+.crm-search-display-table thead {
+  position: sticky;
+  top: var(--crm-menubar-bottom);
+  box-shadow: 0 2px 2px -1px #cfcec3;
+  z-index: 10;
+}

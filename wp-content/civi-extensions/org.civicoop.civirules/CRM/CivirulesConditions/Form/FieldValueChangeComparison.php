@@ -22,13 +22,15 @@ class CRM_CivirulesConditions_Form_FieldValueChangeComparison extends CRM_Civiru
    *
    * @access public
    */
-  public function addRules()
-  {
-    $this->addFormRule(array('CRM_CivirulesConditions_Form_ValueComparison', 'validateOperatorAndComparisonValue'));
+  public function addRules() {
+    $this->addFormRule([
+      'CRM_CivirulesConditions_Form_ValueComparison',
+      'validateOperatorAndComparisonValue',
+    ]);
   }
 
   public static function validateOperatorAndComparisonValue($fields) {
-    $errors = array();
+    $errors = [];
     $operator = $fields['operator'];
     switch ($operator) {
       case '=':
@@ -77,11 +79,10 @@ class CRM_CivirulesConditions_Form_FieldValueChangeComparison extends CRM_Civiru
         break;
     }
 
-
     if (count($errors)) {
       return $errors;
     }
-    return true;
+    return TRUE;
   }
 
   /**
@@ -94,20 +95,21 @@ class CRM_CivirulesConditions_Form_FieldValueChangeComparison extends CRM_Civiru
 
     $this->add('hidden', 'rule_condition_id');
 
-    $this->add('select', 'original_operator', ts('Operator'), $this->conditionClass->getOperators(), true);
-    $this->add('text', 'original_value', ts('Compare value'), NULL, true);
+    $this->add('select', 'original_operator', ts('Operator'), $this->conditionClass->getOperators(), TRUE);
+    $this->add('text', 'original_value', ts('Compare value'), NULL, TRUE);
     $this->add('textarea', 'original_multi_value', ts('Compare values'));
 
-    $this->add('select', 'operator', ts('Operator'), $this->conditionClass->getOperators(), true);
-    $this->add('text', 'value', ts('Compare value'), NULL, true);
+    $this->add('select', 'operator', ts('Operator'), $this->conditionClass->getOperators(), TRUE);
+    $this->add('text', 'value', ts('Compare value'), NULL, TRUE);
     $this->add('textarea', 'multi_value', ts('Compare values'));
 
     $this->assign('field_options', $this->conditionClass->getFieldOptions());
     $this->assign('is_field_option_multiple', $this->conditionClass->isMultiple());
 
-    $this->addButtons(array(
-      array('type' => 'next', 'name' => ts('Save'), 'isDefault' => TRUE,),
-      array('type' => 'cancel', 'name' => ts('Cancel'))));
+    $this->addButtons([
+      ['type' => 'next', 'name' => ts('Save'), 'isDefault' => TRUE,],
+      ['type' => 'cancel', 'name' => ts('Cancel')],
+    ]);
   }
 
   /**
@@ -117,12 +119,12 @@ class CRM_CivirulesConditions_Form_FieldValueChangeComparison extends CRM_Civiru
    * @access public
    */
   public function setDefaultValues() {
-    $data = array();
-    $defaultValues = array();
+    $data = [];
+    $defaultValues = [];
     $defaultValues['rule_condition_id'] = $this->ruleConditionId;
     $ruleCondition = new CRM_Civirules_BAO_RuleCondition();
     $ruleCondition->id = $this->ruleConditionId;
-    if ($ruleCondition->find(true)) {
+    if ($ruleCondition->find(TRUE)) {
       $data = $ruleCondition->unserializeParams();
     }
     if (!empty($data['operator'])) {
@@ -156,33 +158,32 @@ class CRM_CivirulesConditions_Form_FieldValueChangeComparison extends CRM_Civiru
    */
   public function postProcess() {
     $data = $this->ruleCondition->unserializeParams();
-    $data['original_operator'] = $this->_submitValues['original_operator'];
-    $data['original_value'] = $this->_submitValues['original_value'];
-    if (isset($this->_submitValues['original_multi_value'])) {
-      $data['original_multi_value'] = explode("\r\n", $this->_submitValues['original_multi_value']);
+    $data['original_operator'] = $this->getSubmittedValue('original_operator');
+    $data['original_value'] = $this->getSubmittedValue('original_value');
+    $originalMultiValue = $this->getSubmittedValue('original_multi_value');
+    if (!empty($originalMultiValue)) {
+      $originalMultiValue = str_replace('\r\n', '\n', $originalMultiValue);
+      $data['original_multi_value'] = explode("\n", $originalMultiValue);
     }
 
-    $data['operator'] = $this->_submitValues['operator'];
-    $data['value'] = $this->_submitValues['value'];
-    if (isset($this->_submitValues['multi_value'])) {
-      $data['multi_value'] = explode("\r\n", $this->_submitValues['multi_value']);
+    $data['operator'] = $this->getSubmittedValue('operator');
+    $data['value'] = $this->getSubmittedValue('value');
+    $newMultiValue = $this->getSubmittedValue('multi_value');
+    if (!empty($newMultiValue)) {
+      $newMultiValue = str_replace('\r\n', '\n', $newMultiValue);
+      $data['multi_value'] = explode("\n", $newMultiValue);
     }
 
     $this->ruleCondition->condition_params = serialize($data);
     $this->ruleCondition->save();
 
-    $session = CRM_Core_Session::singleton();
-    $session->setStatus('Condition '.$this->condition->label.' parameters updated to CiviRule '
-      .CRM_Civirules_BAO_Rule::getRuleLabelWithId($this->ruleCondition->rule_id),
-      'Condition parameters updated', 'success');
-
-    $redirectUrl = CRM_Utils_System::url('civicrm/civirule/form/rule', 'action=update&id='.$this->ruleCondition->rule_id, TRUE);
-    CRM_Utils_System::redirect($redirectUrl);
+    parent::postProcess();
   }
 
   /**
    * Returns a help text for this condition.
-   * The help text is shown to the administrator who is configuring the condition.
+   * The help text is shown to the administrator who is configuring the
+   * condition.
    *
    * @return string
    */

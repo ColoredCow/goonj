@@ -291,7 +291,8 @@ SELECT  id, html_type
     $this->assign('partiallyPaid', array_search('Partially paid', $statuses));
     $this->assign('pendingRefund', array_search('Pending refund', $statuses));
     $this->assign('participantStatus', $this->getParticipantValue('status_id'));
-
+    // @todo - this is for calculate.tpl but may not work here
+    // the main form needs it - see Contribution_Form->assignCurrencySymbol()
     $this->assign('currencySymbol', CRM_Core_BAO_Country::defaultCurrencySymbol());
 
     // line items block
@@ -329,7 +330,8 @@ SELECT  id, html_type
       ['onclick' => "showHideByValue('send_receipt','','notice','table-row','radio',false); showHideByValue('send_receipt','','from-email','table-row','radio',false);"]
     );
 
-    $this->add('select', 'from_email_address', ts('Receipt From'), $this->_fromEmails['from_email_id']);
+    $fromEmailSelect = $this->add('select', 'from_email_address', ts('Receipt From'), $this->_fromEmails['from_email_id']);
+    $fromEmailSelect->setOptionTextEscaped();
 
     $this->add('textarea', 'receipt_text', ts('Confirmation Message'));
 
@@ -495,11 +497,6 @@ SELECT  id, html_type
               $optionFullTotalAmount += $option['amount'] ?? 0;
             }
           }
-          else {
-            if (!empty($defaultPricefieldIds) && in_array($optId, $defaultPricefieldIds)) {
-              unset($optionFullIds[$optId]);
-            }
-          }
         }
         $option['is_full'] = $isFull;
         $option['total_option_count'] = $dbTotalCount + $currentTotalCount;
@@ -625,24 +622,7 @@ SELECT  id, html_type
 
     $this->assign('event', $event);
 
-    $this->assign('isShowLocation', $event['is_show_location']);
-    if (($event['is_show_location'] ?? NULL) == 1) {
-      $locationParams = [
-        'entity_id' => $params['event_id'],
-        'entity_table' => 'civicrm_event',
-      ];
-      $location = CRM_Core_BAO_Location::getValues($locationParams, TRUE);
-      $this->assign('location', $location);
-    }
-
     if ($this->_isPaidEvent) {
-      $paymentInstrument = CRM_Contribute_PseudoConstant::paymentInstrument();
-      if (!$this->_mode) {
-        if (isset($params['payment_instrument_id'])) {
-          $this->assign('paidBy', $paymentInstrument[$params['payment_instrument_id']] ?? NULL);
-        }
-      }
-
       $this->assign('totalAmount', $this->contributionAmt);
       $this->assign('checkNumber', $params['check_number'] ?? NULL);
     }
@@ -862,7 +842,7 @@ SELECT  id, html_type
             $currentCount = 1;
           }
 
-          if (isset($priceSetFields[$priceFieldId]) && isset($priceSetFields[$priceFieldId]['options'][$optId])) {
+          if (isset($priceSetFields[$priceFieldId], $priceSetFields[$priceFieldId]['options'][$optId])) {
             $currentCount = $priceSetFields[$priceFieldId]['options'][$optId] * $optVal;
           }
 

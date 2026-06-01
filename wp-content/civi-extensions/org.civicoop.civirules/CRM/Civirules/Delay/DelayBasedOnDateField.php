@@ -66,7 +66,7 @@ class CRM_Civirules_Delay_DelayBasedOnDateField extends CRM_Civirules_Delay_Dela
                     ->setLimit(1)
                     ->execute()->first();
                 }
-                catch (API_Exception $ex) {
+                catch (CRM_Core_Exception $ex) {
                 }
                 break;
               default:
@@ -77,7 +77,7 @@ class CRM_Civirules_Delay_DelayBasedOnDateField extends CRM_Civirules_Delay_Dela
                     ->setLimit(1)
                     ->execute()->first();
                 }
-                catch (API_Exception $ex) {
+                catch (CRM_Core_Exception $ex) {
                 }
                 break;
             }
@@ -86,7 +86,7 @@ class CRM_Civirules_Delay_DelayBasedOnDateField extends CRM_Civirules_Delay_Dela
             }
           }
         }
-        catch (API_Exception $ex) {
+        catch (CRM_Core_Exception $ex) {
         }
       }
     }

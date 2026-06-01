@@ -83,7 +83,7 @@ class CRM_CivirulesActions_Activity_Form_AssignToContact extends CRM_CivirulesAc
     {
         $errors = array();
         if (empty($fields['use_contact_trigger']) || $fields['use_contact_trigger'] === '0') {
-            if (count($fields['assignee_contact_id']) < 1 || $fields['assignee_contact_id'] == null) {
+            if (empty($fields['assignee_contact_id'])) {
                 $errors['assignee_contact_id'] = ts("Assign a contact or choose the 'Assign to contact from trigger' option");
             }
         }

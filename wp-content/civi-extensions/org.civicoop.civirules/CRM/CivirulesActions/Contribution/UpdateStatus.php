@@ -1,5 +1,7 @@
 <?php
 
+use CRM_Civirules_ExtensionUtil as E;
+
 /**
  * Class for CiviRules Update Contribution Status for Contribution Action
  */
@@ -58,7 +60,7 @@ class CRM_CivirulesActions_Contribution_UpdateStatus extends CRM_CivirulesAction
    * e.g. 'Older than 65'
    *
    * @return string
-   * @throws \CiviCRM_API3_Exception
+   * @throws \CRM_Core_Exception
    */
   public function userFriendlyConditionParams() {
     $return = '';
@@ -105,7 +107,7 @@ class CRM_CivirulesActions_Contribution_UpdateStatus extends CRM_CivirulesAction
     $data = $triggerData->getEntityData('Contribution');
 
     if (empty($data['id'])) {
-      $this->logAction('Could not find a contribution to update');
+      $this->logAction(E::ts('Could not find a contribution to update'), $triggerData);
     }
     else {
       $this->executeApiAction($entity, $action, $params);

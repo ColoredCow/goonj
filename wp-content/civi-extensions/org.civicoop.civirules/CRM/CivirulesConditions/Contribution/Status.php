@@ -52,7 +52,7 @@ class CRM_CivirulesConditions_Contribution_Status extends CRM_CivirulesCondition
           'value' => $params['status_id'],
           'option_group_id' => 'contribution_status',
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -81,7 +81,7 @@ class CRM_CivirulesConditions_Contribution_Status extends CRM_CivirulesCondition
           'name' => $condition_params['status_id'],
           'option_group_id' => 'contribution_status',
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }

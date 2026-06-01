@@ -9,7 +9,7 @@ class CRM_Civirules_Utils_PreData {
    *
    * @var array $preData
    */
-  protected static $preData = array();
+  protected static $preData = [];
 
   /**
    * Method pre to store the entity data before the data in the database is changed
@@ -26,7 +26,7 @@ class CRM_Civirules_Utils_PreData {
     if (empty($objectName)) {
       return;
     }
-    $nonPreEntities = array('GroupContact', 'ActionLog');
+    $nonPreEntities = ['GroupContact', 'ActionLog'];
     if (($op != 'edit' && $op != 'delete') || in_array($objectName, $nonPreEntities)) {
       return;
     }
@@ -69,19 +69,28 @@ class CRM_Civirules_Utils_PreData {
       return;
     }
     try {
-      $data = civicrm_api3($entity, 'getsingle', array('id' => $id));
+      $api4Entities = ['AfformSubmission'];
+      if (in_array($entity, $api4Entities)) {
+        $data = civicrm_api4($entity, 'get', [
+          'where' => [['id', '=', $id]],
+          'checkPermissions' => FALSE,
+        ])->first();
+      }
+      else {
+        $data = civicrm_api3($entity, 'getsingle', ['id' => $id]);
+      }
     } catch (Exception $e) {
       return;
     }
     // add custom data fields
     try {
-      $customData = civicrm_api3('CustomValue', 'get', array(
+      $customData = civicrm_api3('CustomValue', 'get', [
         'sequential' => 1,
         'entity_id' => $id,
         'entity_table' => ucfirst($entity),
-      ));
-    } catch (Exception $e ) {
-      $customData = array();
+      ]);
+    } catch (Exception $e) {
+      $customData = [];
     }
     if ( empty($customData['is_error']) && ! empty($customData['count']) ) {
       foreach ($customData['values'] as $customField ) {
@@ -114,12 +123,7 @@ class CRM_Civirules_Utils_PreData {
     }
     $config = \Civi\CiviRules\Config\ConfigContainer::getInstance();
     $custom_group = $config->getCustomGroupById($groupID);
-    if (version_compare(CRM_Utils_System::version(), '5.67', '<')) {
-      $entity = CustomGroupJoinable::getEntityFromExtends($custom_group['extends']);
-    }
-    else {
-      $entity = CRM_Core_BAO_CustomGroup::getEntityFromExtends($custom_group['extends']);
-    }
+    $entity = CRM_Core_BAO_CustomGroup::getEntityFromExtends($custom_group['extends']);
     $data = [];
     if (!isset(self::$preData[$entity][$entityID][$eventID])) {
       try {

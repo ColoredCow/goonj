@@ -11,5 +11,14 @@ namespace Civi\Api4;
  * @package Civi\Api4
  */
 class CiviRulesRuleTag extends Generic\DAOEntity {
+  use Generic\Traits\ManagedEntity;
 
+  /**
+   * @inheritDoc
+   */
+  public static function permissions(): array {
+    return [
+      'default' => ['administer CiviRules'],
+    ];
+  }
 }

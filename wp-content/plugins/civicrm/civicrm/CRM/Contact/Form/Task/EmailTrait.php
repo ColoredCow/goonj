@@ -239,7 +239,8 @@ trait CRM_Contact_Form_Task_EmailTrait {
 
     $this->add('text', 'subject', ts('Subject'), ['size' => 50, 'maxlength' => 254], TRUE);
 
-    $this->add('select', 'from_email_address', ts('From'), $this->getFromEmails(), TRUE, ['class' => 'crm-select2 huge']);
+    $fromEmailSelect = $this->add('select', 'from_email_address', ts('From'), $this->getFromEmails(), TRUE, ['class' => 'crm-select2 huge']);
+    $fromEmailSelect->setOptionTextEscaped();
 
     CRM_Mailing_BAO_Mailing::commonCompose($this);
 
@@ -437,13 +438,13 @@ trait CRM_Contact_Form_Task_EmailTrait {
 
       if (!empty($formValues['saveTemplate'])) {
         $messageTemplate['msg_title'] = $formValues['saveTemplateName'];
-        CRM_Core_BAO_MessageTemplate::add($messageTemplate);
+        CRM_Core_BAO_MessageTemplate::writeRecord($messageTemplate);
       }
 
       if (!empty($formValues['template']) && !empty($formValues['updateTemplate'])) {
         $messageTemplate['id'] = $formValues['template'];
         unset($messageTemplate['msg_title']);
-        CRM_Core_BAO_MessageTemplate::add($messageTemplate);
+        CRM_Core_BAO_MessageTemplate::writeRecord($messageTemplate);
       }
     }
   }
@@ -654,7 +655,7 @@ trait CRM_Contact_Form_Task_EmailTrait {
     $tokenErrors = [];
     foreach ($deprecatedTokens as $token => $replacement) {
       if (str_contains($fields['html_message'], $token)) {
-        $tokenErrors[] = ts('Token %1 is no longer supported - use %2 instead', [$token, $replacement]);
+        $tokenErrors[] = ts('Token %1 is no longer supported - use %2 instead', [1 => $token, 2 => $replacement]);
       }
     }
     return empty($tokenErrors) ? TRUE : ['html_message' => implode('<br>', $tokenErrors)];
@@ -780,7 +781,7 @@ trait CRM_Contact_Form_Task_EmailTrait {
           'msg_html' => $html,
           'msg_subject' => $this->getSubject(),
         ],
-        'tokenContext' => array_merge(['schema' => $this->getTokenSchema()], ($values['schema'] ?? [])),
+        'tokenContext' => array_merge(['schema' => array_keys($values['schema'] ?? [])], ($values['schema'] ?? [])),
         'contactId' => $contactId,
         'disableSmarty' => !CRM_Utils_Constant::value('CIVICRM_MAIL_SMARTY'),
       ]);

@@ -1,5 +1,7 @@
 <?php
 
+use Civi\Api4\CiviRulesRuleCondition;
+
 abstract class CRM_Civirules_Trigger {
 
   /**
@@ -23,7 +25,7 @@ abstract class CRM_Civirules_Trigger {
    *
    * @var array
    */
-  protected array $triggerParams;
+  protected array $triggerParams = [];
 
   /**
    * @var \CRM_Civirules_TriggerData_TriggerData
@@ -175,8 +177,9 @@ abstract class CRM_Civirules_Trigger {
    */
   public function getRuleConditions(): array {
     if (!isset($this->ruleConditions) && !empty($this->ruleId)) {
-      $this->ruleConditions = \Civi\Api4\CiviRulesRuleCondition::get(FALSE)
+      $this->ruleConditions = CiviRulesRuleCondition::get(FALSE)
         ->addWhere('rule_id', '=', $this->ruleId)
+        ->addWhere('is_active', '=', TRUE)
         ->addOrderBy('weight', 'ASC')
         ->addOrderBy('id', 'ASC')
         ->execute()
@@ -290,6 +293,16 @@ abstract class CRM_Civirules_Trigger {
   }
 
   /**
+   * @param string $url
+   * @param int $ruleID
+   *
+   * @return string
+   */
+  public function getFormattedExtraDataInputUrl(string $url, int $ruleID): string {
+    return CRM_Utils_System::url($url, 'rule_id=' . $ruleID, FALSE, NULL, FALSE, FALSE, TRUE);
+  }
+
+  /**
    * Returns a calculated description of this trigger
    * If the trigger has parameters this this function should provide a user-friendly description of those parameters
    * See also: getHelpText()
@@ -298,7 +311,7 @@ abstract class CRM_Civirules_Trigger {
    *
    * @return string
    */
-  public function getTriggerDescription() {
+  public function getTriggerDescription(): string {
     // If you implement getHelpText('triggerDescriptionWithParams') then you don't need to implement this function!
     return '';
   }

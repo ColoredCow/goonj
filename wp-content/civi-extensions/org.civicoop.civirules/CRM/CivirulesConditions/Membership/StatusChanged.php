@@ -64,7 +64,7 @@ class CRM_CivirulesConditions_Membership_StatusChanged extends CRM_CivirulesCond
       foreach ($options as $option) {
         $return[$option['id']] = $option['name'];
       }
-    } catch (CiviCRM_API3_Exception $ex) {}
+    } catch (CRM_Core_Exception $ex) {}
 
     return $return;
   }

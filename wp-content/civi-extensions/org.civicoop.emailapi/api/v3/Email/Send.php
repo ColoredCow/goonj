@@ -111,10 +111,10 @@ function civicrm_api3_email_send($params) {
   //   We could add a "context" param that takes an array of params instead (note that we can only support one of each entity currently).
   //   [['contact_id' => 1, 'activity_id' => 123, ..], ['contact_id' => 2, 'activity_id' => 456]]
   // @todo Perhaps we could use TokenProcessor if passed the context param and the "old" method otherwise?
-  if (!CRM_Utils_Type::validate($params['contact_id'], 'CommaSeparatedIntegers')) {
+  if (!CRM_Utils_Type::validate($params['contact_id'], 'CommaSeparatedIntegers') && !isset($params['alternative_receiver_address'])) {
     throw new CRM_Core_Exception('Parameter contact_id must be a unique id or a list of ids separated by comma');
   }
-  $params['contact_id'] = explode(',', $params['contact_id']);
+  $params['contact_id'] = explode(',', $params['contact_id'] ?? '');
   $locationTypeId = !empty($params['location_type_id']) ? $params['location_type_id'] : FALSE;
   $alternativeEmailAddress = !empty($params['alternative_receiver_address']) ? $params['alternative_receiver_address'] : FALSE;
 
@@ -189,12 +189,19 @@ function civicrm_api3_email_send($params) {
       $toEmail = $locationAddress;
     }
 
+    // Change the user language (if multilingual)
+    $preferred_language = NULL;
+    if (CRM_Core_I18n::isMultilingual()) {
+      $preferred_language = CRM_Core_DAO::getFieldValue('CRM_Contact_DAO_Contact', $contactId, 'preferred_language');
+      $preferred_language = CRM_Core_BAO_ActionSchedule::pickLocale(CRM_Core_I18n::AUTO, $preferred_language);
+    }
+
     $message['messageSubject'] = (empty($params['subject']) ? $messageTemplates->msg_subject : $params['subject']);
     $message['text'] = $messageTemplates->msg_text ?: CRM_Utils_String::htmlToText($messageTemplates->msg_html);
     $message['html'] = $messageTemplates->msg_html;
     $message_params = $params;
     $message_params['contact_id'] = $contactId;
-    list('messageSubject' => $messageSubject, 'html' => $html, 'text' => $text) = CRM_Emailapi_Utils_Tokens::replaceTokens($contactId, $message, $message_params);
+    list('messageSubject' => $messageSubject, 'html' => $html, 'text' => $text) = CRM_Emailapi_Utils_Tokens::replaceTokens($contactId, $message, $message_params, $preferred_language);
 
     // set up the parameters for CRM_Utils_Mail::send
     $mailParams = [
@@ -293,11 +300,18 @@ function civicrm_api3_email_send($params) {
     // Set the ID of the email activity (if we created one)
     $mailParams['emailActivityID'] = $activity['id'] ?? NULL;
 
+    // It's possible, eg, that sendReminderEmail fires Hook::alterMailParams() and that some listener use ts().
+    $swapLocale = empty($preferred_language) ? NULL : \CRM_Utils_AutoClean::swapLocale($preferred_language);
+
     // Try to send the email.
     $result = CRM_Utils_Mail::send($mailParams);
     if (!$result) {
+      unset($swapLocale);
       throw new CRM_Core_Exception('Error sending email to ' . $contact['display_name'] . ' <' . $mailParams['toEmail'] . '> ');
     }
+
+    // Switch back language
+    unset($swapLocale);
 
     if ($params['create_activity']) {
       // Update the activity to Completed, since we know sending was successful.

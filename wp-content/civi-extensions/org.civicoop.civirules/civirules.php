@@ -78,25 +78,6 @@ function civirules_civicrm_enable() {
   _civirules_civix_civicrm_enable();
 }
 
-  /**
-   * @param string $op the type of operation being performed; 'check' or 'enqueue'
-   * @param \CRM_Queue_Queue|NULL $queue (for 'enqueue') the modifiable list of pending up upgrade tasks
-   *
-   * @return void
-   *   For 'check' operations, return array(bool) (TRUE if an upgrade is required)
-   *   For 'enqueue' operations, return void
-   */
-function civirules_civicrm_upgrade($op, CRM_Queue_Queue $queue = NULL) {
-  if ($op === 'enqueue') {
-    $task = new CRM_Queue_Task(
-      ['CRM_Civirules_Upgrader', 'postUpgrade'],
-      [],
-      'Update CiviRules Triggers/Conditions/Actions'
-    );
-    return $queue->createItem($task);
-  }
-}
-
 /**
  * By default we use the Symfony event for preInsert, preUpdate, postInsert etc.
  * However there a couple of entities which do not work yet with the symfony events.
@@ -222,6 +203,10 @@ function civirules_trigger_postinsert($event) {
 function civirules_trigger_preupdate(\Civi\Core\DAO\Event\PreUpdate $event) {
   try {
     $objectName = CRM_Civirules_Utils::getObjectNameFromObject($event->object);
+    if (empty($objectName)) {
+      // If the object name is empty, we cannot proceed with the pre-update.
+      return;
+    }
     $objectId = $event->object->id;
     $eventID = $event->eventID ?? 1;
     $params = [];
@@ -416,21 +401,14 @@ function civirules_civicrm_permission(&$permissions) {
  * @param $classes
  *
  * @return void
+ *
+ * Implements hook_civicrm_scanClasses
+ *
+ * @see CRM_Utils_Hook::scanClasses()
  */
 function civirules_civicrm_scanClasses(&$classes) {
-  $cache = ClassScanner::cache('structure');
-  $cacheKey = E::LONG_NAME;
-  $all = $cache->get($cacheKey);
-  if ($all === NULL) {
-    $baseDir = CRM_Utils_File::addTrailingSlash(E::path());
-    $all = [];
-
-    ClassScanner::scanFolders($all, $baseDir, 'CRM', '_');
-    ClassScanner::scanFolders($all, $baseDir, 'Civi', '\\', ';(ConfigItems);');
-    $cache->set($cacheKey, $all, ClassScanner::TTL);
-  }
-
-  $classes = array_merge($classes, $all);
+  ClassScanner::scanFolders($classes, __DIR__, 'CRM', '_');
+  ClassScanner::scanFolders($classes, __DIR__, 'Civi', '\\', ';(ConfigItems);');
 }
 
 /**

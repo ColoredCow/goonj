@@ -13,5 +13,15 @@ namespace Civi\Api4;
  */
 class CiviRulesRuleCondition extends Generic\DAOEntity {
   use Generic\Traits\SortableEntity;
+  use Generic\Traits\ManagedEntity;
+
+  /**
+   * @inheritDoc
+   */
+  public static function permissions(): array {
+    return [
+      'default' => ['administer CiviRules'],
+    ];
+  }
 
 }

@@ -9,18 +9,22 @@
       ngForm: 'form'
     },
     controller: function($scope, $element, $timeout, crmApi4, crmStatus, $window, $location, $parse, FileUploader) {
-      var schema = {},
-        data = {extra: {}},
+      const
+        ctrl = this,
+        ts = CRM.ts('org.civicrm.afform'),
+        saveDraftButtons = [],
+        schema = {},
+        data = {extra: {}};
+
+      let
         status,
         args,
         submissionResponse,
-        autoSave = _.noop,
-        saveDraftButtons = [],
+        // Default autosave function does nothing
+        autoSave = () => {},
         draftStatus = 'pristine',
         cancelDraftWatcher,
-        uploadingDraftFiles = false,
-        ts = CRM.ts('org.civicrm.afform'),
-        ctrl = this;
+        uploadingDraftFiles = false;
 
       this.$onInit = function() {
         // This component has no template. It makes its controller available within it by adding it to the parent scope.
@@ -83,8 +87,8 @@
         // Prefill entire form
         else {
           params.fillMode = 'form';
-          args = _.assign({}, $scope.$parent.routeParams || {}, $scope.$parent.options || {});
-          _.each(schema, function (entity, entityName) {
+          args = Object.assign({}, $scope.$parent.routeParams || {}, $scope.$parent.options || {});
+          Object.keys(schema).forEach(entityName => {
             if (args[entityName] && typeof args[entityName] === 'string') {
               args[entityName] = args[entityName].split(',');
             }
@@ -98,12 +102,6 @@
           }
           return crmApi4('Afform', 'prefill', params)
             .then((result) => {
-              // In some cases (noticed on Wordpress) the response header incorrectly outputs success when there's an error.
-              if (result.error_message) {
-                disableForm(result.error_message);
-                $element.unblock();
-                return;
-              }
               result.forEach((item) => {
                 // Use _.each() because item.values could be cast as an object if array keys are not sequential
                 _.each(item.values, (values, index) => {
@@ -114,7 +112,7 @@
               });
               $element.unblock();
             }, (error) => {
-              disableForm(error.error_message);
+              disableForm(error.error_message, ts('Sorry'), 'error');
               $element.unblock();
             });
         }
@@ -140,8 +138,8 @@
       }
 
       // Used when submitting file fields
-      var token = new URLSearchParams(window.location.search).get('_aff');
-      var headers = {'X-Requested-With': 'XMLHttpRequest'};
+      const token = new URLSearchParams(window.location.search).get('_aff');
+      const headers = {'X-Requested-With': 'XMLHttpRequest'};
       if (token) {
         headers['X-Civi-Auth-Afform'] = token;
       }
@@ -161,7 +159,7 @@
 
       function onFileUploadSuccess(item, response, status, headers) {
         if (response.values && response.values[0] && response.values[0].id) {
-          var dataProvider = item.crmDataProvider;
+          const dataProvider = item.crmDataProvider;
           dataProvider.getFieldData()[item.crmFieldName] = response.values[0];
         }
       }
@@ -185,7 +183,7 @@
         const buttons = getDraftButtons();
         const autoSaveEnabled = ctrl.getFormMeta().autosave_draft;
 
-        if ((!autoSaveEnabled && !buttons.length) || !ctrl.showSubmitButton || !CRM.config.cid) {
+        if ((!autoSaveEnabled && !buttons.length) || !ctrl.showSubmitButton || (!CRM.config.cid && !token)) {
           // No watchers needed
           return;
         }
@@ -222,18 +220,18 @@
         op = op || 'AND';
         // OR and AND have the opposite behavior so the logic is inverted
         // NOT works identically to OR but gets flipped at the end
-        var ret = op === 'AND',
+        let ret = op === 'AND',
           flip = !ret;
         _.each(conditions, function(clause) {
           // Recurse into nested group
-          if (_.isArray(clause[1])) {
+          if (Array.isArray(clause[1])) {
             if (ctrl.checkConditions(clause[1], clause[0]) === flip) {
               ret = flip;
             }
           } else {
             // Angular can't handle expressions with quotes inside brackets, so they are omitted
             // Here we add them back to make valid js
-            if (_.isString(clause[0]) && clause[0].charAt(0) !== '"') {
+            if (typeof clause[0] === 'string' && clause[0].charAt(0) !== '"') {
               clause[0] = clause[0].replace(/\[([^'"])/g, "['$1").replace(/([^'"])]/g, "$1']");
             }
             let parser1 = $parse(clause[0]);
@@ -319,7 +317,7 @@
 
       // Called after form is submitted and files are uploaded
       function postProcess() {
-        var metaData = ctrl.getFormMeta(),
+        const metaData = ctrl.getFormMeta(),
           dialog = $element.closest('.ui-dialog-content');
 
         $element.trigger('crmFormSuccess', {
@@ -328,22 +326,8 @@
           submissionResponse: submissionResponse,
         });
 
-        status.resolve();
-        $element.unblock();
-
-        if (dialog.length) {
-          dialog.dialog('close');
-        }
-
-        else if (metaData.confirmation_type && metaData.confirmation_type === 'show_confirmation_message') {
-          $element.hide();
-          const $confirmation = $('<div class="afform-confirmation" />');
-          $confirmation.text(metaData.confirmation_message);
-          $confirmation.insertAfter($element);
-        }
-
-        else if ((!metaData.confirmation_type && metaData.redirect ) || (metaData.confirmation_type && metaData.confirmation_type === 'redirect_to_url' && metaData.redirect)) {
-          var url = replaceTokens(metaData.redirect, submissionResponse[0]);
+        if (submissionResponse[0].redirect) {
+          let url = submissionResponse[0].redirect;
           if (url.indexOf('civicrm/') === 0) {
             url = CRM.url(url);
           } else if (url.indexOf('/') === 0) {
@@ -352,27 +336,28 @@
             url = `${$location.protocol()}://${$location.host()}${port}${url}`;
           }
           $window.location.href = url;
+          return;
         }
-      }
 
-      function replaceTokens(str, vars) {
-        function recurse(stack, values) {
-          _.each(values, function(value, key) {
-            if (_.isArray(value) || _.isPlainObject(value)) {
-              recurse(stack.concat([key]), value);
-            } else {
-              var token = (stack.length ? stack.join('.') + '.' : '') + key;
-              str = str.replace(new RegExp(_.escapeRegExp('[' + token + ']'), 'g'), value);
-            }
-          });
+        status.resolve();
+
+        if (submissionResponse[0].message) {
+          $element.hide();
+          const $confirmation = $('<div class="afform-confirmation" />');
+          $confirmation.html(submissionResponse[0].message);
+          $confirmation.insertAfter($element);
         }
-        recurse([], vars);
-        return str;
+        else if (dialog.length) {
+          dialog.dialog('close');
+        }
+        else {
+          $element.unblock();
+        }
       }
 
       function validateFileFields() {
-        var valid = true;
-        $("af-form[ng-form=" + ctrl.getFormMeta().name +"] input[type='file']").each((index, fld) => {
+        let valid = true;
+        $("af-form[ng-form=" + ctrl.getFormMeta().name + "] input[type='file']").each((index, fld) => {
           if ($(fld).attr('required') && $(fld).get(0).files.length == 0) {
             valid = false;
           }
@@ -386,6 +371,18 @@
           .find('button[ng-click="afform.submit()"]').prop('disabled', true);
         CRM.alert(errorMsg, ts('Sorry'), 'error');
       }
+
+      const handleError = (error) => {
+        // see: CRM/Api4/Page/AJAX.php
+        if (error && error.error_code !== '1') {
+          CRM.alert(error.error_message, ts('Please resolve these issues'), 'warning');
+        }
+        else {
+          const message = error?.error_message ? error.error_message : ts('Unknown error');
+          CRM.alert(message, ts('There is a problem'), 'error');
+        }
+      };
+
       // NOTE: This function currently provides basic validation for email, phone number, and postal code fields.
       // For now, we have implemented these simple checks to meet current project requirements.
       // In the future, we need to change this.
@@ -581,10 +578,34 @@
         }
         // validate required fields on the form
         if (!ctrl.ngForm.$valid || !validateFileFields()) {
+          // at this point we want the user to know to check the invalid fields
+          //
+          // the complication is the browser will natively trigger notifications
+          // for invalid fields, and focus the first one of these
+          //
+          // on the backend CRM.alert complements this by adding a global popup
+          // that does not block the user flow
+          //
+          // however on the frontend CRM.alert will trigger a popup (either our
+          // homebrew or sweetalert) which *interrupts* the browser putting focus
+          // on the invalid fields. in this case we are better off doing nothing
+          // and just letting the browser alerts do their work
+          //
+          // NOTE: if you set sweetalert to Override Everywhere it will turn the
+          // below alert into a popup on the backend too, which isn't great
+          //
+          // TODO: in the long run we should provide a way for callers of
+          // CRM.alert to specify between interrupting vs non-interrupting alerts
+          //
+          // GOONJ CUSTOM: removed the gate `if (document.getElementById('crm-notification-container'))`
+          // around this call. On frontend pages the container isn't present, so the gate
+          // silently swallowed the popup. CRM.alert's own fallback in Common.js creates
+          // a native <dialog> when the container is missing — so calling it unconditionally
+          // is safe and restores the 6.3.1 behaviour the team relied on.
           CRM.alert(ts('Please fill all required fields.'), ts('Form Error'));
           return;
         }
-        status = CRM.status({});
+        status = CRM.status({error: ts('Not saved')});
         $element.block();
         if (cancelDraftWatcher) {
           cancelDraftWatcher();
@@ -606,14 +627,23 @@
               });
             });
             ctrl.fileUploader.uploadAll();
-          } else {
+          }
+          else {
             postProcess();
           }
         })
         .catch(function(error) {
           status.reject();
           $element.unblock();
-          CRM.alert(error.error_message || '', ts('Form Error'));
+
+          handleError(error);
+
+          $element.trigger('crmFormError', {
+            afform: ctrl.getFormMeta(),
+            data: data,
+            submissionResponse: submissionResponse,
+            error: error
+          });
         });
       };
 
@@ -642,6 +672,10 @@
           } else {
             setDraftStatus('saved');
           }
+        })
+        .catch(function(error) {
+          setDraftStatus('unsaved');
+          handleError(error);
         });
       };
 
@@ -674,7 +708,7 @@
         const buttons = getDraftButtons();
         $.each(buttons, function(index, button) {
           $(button).text(text).attr('disabled', true);
-          $(button).prepend('<i class="crm-i ' + icon + '" aria-hidden="true"></i> ');
+          $(button).prepend('<i class="crm-i ' + icon + '" role="img" aria-hidden="true"></i> ');
         });
       }
 
@@ -684,7 +718,7 @@
           const initialState = saveDraftButtons[index] || saveDraftButtons[0];
           $(button).text(initialState.text).attr('disabled', false);
           if (initialState.icon) {
-            $(button).prepend('<i class="crm-i ' + saveDraftButtons[index].icon + '" aria-hidden="true"></i> ');
+            $(button).prepend('<i class="crm-i ' + saveDraftButtons[index].icon + '" role="img" aria-hidden="true"></i> ');
           }
         });
       }

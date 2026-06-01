@@ -219,6 +219,15 @@ function goonj_handle_user_identification_form() {
 		return;
 	}
 
+	// Start a PHP session so the $_SESSION writes below (recentCampData, contactId,
+	// displayName, contactNumber) actually persist to disk and can be read on the
+	// /collection-camp/choose-from-past/ page that follows. Without this PHP would
+	// accept the $_SESSION assignments silently but never write them anywhere,
+	// because session_start() was never called on this request.
+	if ( session_status() === PHP_SESSION_NONE && ! headers_sent() ) {
+		session_start();
+	}
+
 	$purpose = $_POST['purpose'] ?? 'collection-camp-intent';
 	$target_id = $_POST['target_id'] ?? '';
 	$source = $_POST['source'] ?? '';

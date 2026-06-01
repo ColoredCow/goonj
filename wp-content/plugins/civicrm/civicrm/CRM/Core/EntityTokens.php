@@ -127,8 +127,7 @@ class CRM_Core_EntityTokens extends AbstractTokenSubscriber {
       }
 
       return $row->format('text/plain')->tokens($entity, $field,
-        Money::of($fieldValue, $currency, NULL, RoundingMode::HALF_UP));
-
+        Money::of((string) $fieldValue, $currency, NULL, RoundingMode::HALF_UP));
     }
     if ($this->isDateField($field)) {
       try {
@@ -307,6 +306,9 @@ class CRM_Core_EntityTokens extends AbstractTokenSubscriber {
    * @internal function will likely be protected soon.
    */
   protected function getPseudoValue(string $realField, string $pseudoKey, $fieldValue): string {
+    // If the field name is in the format 'entity.field' then we need to just get 'field'
+    $explode = explode('.', $realField);
+    $realField = end($explode);
     $bao = CRM_Core_DAO_AllCoreTables::getDAONameForEntity($this->getMetadataForField($realField)['entity']);
     if ($pseudoKey === 'name') {
       // There is a theoretical possibility fieldValue could be an array but
@@ -323,9 +325,17 @@ class CRM_Core_EntityTokens extends AbstractTokenSubscriber {
       }
       $fieldValue = implode(', ', $newValue);
     }
-    if ($pseudoKey === 'abbr' && $realField === 'state_province_id') {
-      // hack alert - currently only supported for state.
-      $fieldValue = (string) CRM_Core_PseudoConstant::stateProvinceAbbreviation($fieldValue);
+    if ($pseudoKey === 'abbr' && $fieldValue) {
+      // hack alert - currently only supported for country and state.
+      switch ($realField) {
+        case 'state_province_id':
+          $fieldValue = CRM_Core_PseudoConstant::stateProvinceAbbreviation($fieldValue);
+          break;
+
+        case 'country_id':
+          $fieldValue = CRM_Core_PseudoConstant::countryIsoCode($fieldValue);
+          break;
+      }
     }
     return (string) $fieldValue;
   }
@@ -333,7 +343,7 @@ class CRM_Core_EntityTokens extends AbstractTokenSubscriber {
   /**
    * @param \Civi\Token\TokenRow $row
    * @param string $field
-   * @return string|int
+   * @return string|int|float
    */
   protected function getFieldValue(TokenRow $row, string $field) {
     $entityName = $this->getEntityName();
@@ -345,7 +355,7 @@ class CRM_Core_EntityTokens extends AbstractTokenSubscriber {
     if ($field === 'id') {
       return $entityID;
     }
-    return $this->prefetch[$entityID][$field] ?? '';
+    return $this->prefetch[$entityID ?? ''][$field] ?? '';
   }
 
   /**
@@ -661,7 +671,7 @@ class CRM_Core_EntityTokens extends AbstractTokenSubscriber {
       // the space open for that.
       // Not the existing QuickForm widget has handling for the custom field
       // format based on the title using this syntax.
-      $parts = explode(': ', $field['label']);
+      $parts = explode(': ', $field['label'], 2);
       $field['title'] = "{$parts[1]} :: {$parts[0]}";
       $tokenName = 'custom_' . $field['custom_field_id'];
       $tokensMetadata[$tokenName] = $field;

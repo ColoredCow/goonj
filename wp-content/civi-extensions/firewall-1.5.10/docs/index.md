@@ -23,10 +23,13 @@ If this job is *not* running then the `civicrm_firewall_ipaddress` table will gr
 
 ### Settings
 
-#### CSRF validity
+#### CSRF Validity
 
-* There is a setting `firewall_csrf_timeout` (default 43200 (12 hours)) that controls how long generated CSRF tokens
-are valid for. This accepts an integer number of seconds.
+- CiviCRM core provides `secure_cache_timeout_minutes`, controlling expiration of generated CSRF tokens.
+- Prior to **v1.5.3 (Nov 13 2022)**, the Firewall extension used its own `firewall_csrf_timeout` (default 43200 seconds, i.e., 12 hours). As of [v1.5.3](https://lab.civicrm.org/extensions/firewall/-/blob/master/docs/releasenotes.md#153-2022-11-13), this was replaced to use the core setting instead.
+- The setting is not visible in the UI but can be modified via the API or CLI, e.g.:
+  ```bash
+  cv ev 'Civi::settings()->set("secure_cache_timeout_minutes", 120);'
 
 ## Scenarios
 
@@ -125,8 +128,7 @@ Thanks to @artfulrobot for testing and writing down some ideas for future develo
   *Currently the records are kept in the database table for one month. So you can work out when an IP was blocked - but it does require a bit of calculation.*
 
 ## Support and Maintenance
-This extension is supported and maintained with the help and support of the CiviCRM community by:
 
-[![MJW Consulting](images/mjwconsulting.jpg)](https://www.mjwconsult.co.uk)
+This extension is supported and maintained with the help and support of the CiviCRM community by [MJW](https://www.mjwconsult.co.uk).
 
 We offer paid [support and development](https://mjw.pt/support) as well as a [troubleshooting/investigation service](https://mjw.pt/investigation).

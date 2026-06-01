@@ -24,29 +24,9 @@ I am going to create my condition step by step.
 
 ### Step 1 - Add the Condition to the Database
 
-You need to make sure that there is a record in the civirule_condition table for your condition. We recommend you do some by using an `insert` query.
+New method using Managed Entities: [Defining Triggers/Conditions/Actions in extension](./define-trigger-condition-action-in-extension.md).
 
-If you have created your extension with Civix then you can add a file `/sql/createFirstDonation.sql` and add an `Upgrader` to your extension to process the sql file (check the relevant section of the [Developer Guide](https://docs.civicrm.org/dev/en/latest/extensions/civix/#generate-upgrader)).
-
-The file `/sql/createFirstDonation.sql` should have this statement:
-
-```mysql
-  
-INSERT INTO civirule_condition (name, label, class_name, is_active)
-VALUES("first_donation_of_contact", "First Donation of a Contact", "CRM_CivirulesConditions_Contribution_FirstDonation", 1)
-
-```
-
-Obviously you can use any name you like for your `class_name`, we have stuck to our structure in this example with `CRM_CivirulesConditions_Contribution_FirstDonation` but that is not mandatory. 
-
-!!! warning "On managed entities"
-    We have had a few bad experiences using managed entities because the managed entities are always automatically re-created when you do a `clearcache` in drush or in the URL. And if you have just removed the managed entity because it is the cause of a problem that is not very helpful. So we have removed them from CiviRules. But it is possible to use a managed entity for a CiviRule action, we do not recommend it.
-
-
-!!! Note
-    You can also use the API to add a Condition to CiviRules. Entity is `CiviRuleCondition`, action is `Create`.
-    
-#### Alternative method json file (since CiviRules 2.9)
+#### Old method (using json files)
 
 If your condition is in the CiviRules extension you can add your condition to the `sql/conditions.json` file.
 When you have created the condition in your own extension you can add a `civirules_conditions.json` file in the root of your extension. And add the following data
@@ -226,32 +206,9 @@ I am going to create my condition step by step.
 1. implement the required methods `isConditionValid` and `getExtraDataInputUrl`
 1. link my condition to the entity Contribution with the method `requiredEntities`
 
+New method using Managed Entities: [Defining Triggers/Conditions/Actions in extension](./define-trigger-condition-action-in-extension.md).
 
-### Step 1 - Add the Condition to the Database
-
-You need to make sure that there is a record in the civirule_condition table for your condition. We recommend you do some by using an `insert` query.
-
-If you have created your extension with Civix then you can add a file `/sql/createMembershipType.sql` and add an `Upgrader` to your extension to process the sql file (check the relevant section of the [Developer Guide](https://docs.civicrm.org/dev/en/latest/extensions/civix/#generate-upgrader)).
-
-The file `/sql/createMembershipType.sql` should have this statement:
-
-```mysql
-  
-INSERT INTO civirule_condition (name, label, class_name, is_active)
-VALUES("membership_is_of_type", "Membership is (not) of type(s)", "CRM_CivirulesConditions_Membership_Type", 1)
-
-```
-
-Obviously you can use any name you like for your `class_name`, we have stuck to our structure in this example with `CRM_CivirulesConditions_Membership_Type` but that is not mandatory. 
-
-!!! warning "On managed entities"
-    We have had a few bad experiences using managed entities because the managed entities are always automatically re-created when you do a `clearcache` in drush or in the URL. And if you have just removed the managed entity because it is the cause of a problem that is not very helpful. So we have removed them from CiviRules. But it is possible to use a managed entity for a CiviRule action, we do not recommend it.
-
-
-!!! Note
-    You can also use the API to add a Condition to CiviRules. Entity is `CiviRuleCondition`, action is `Create`.
-    
-#### Alternative method json file (since CiviRules 2.9)
+#### Old method (using json files)
 
 If your condition is in the CiviRules extension you can add your condition to the `sql/conditions.json` file.
 When you have created the condition in your own extension you can add a `civirules_conditions.json` file in the root of your extension. And add the following data

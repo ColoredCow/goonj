@@ -56,7 +56,7 @@ class CRM_CivirulesConditions_Activity_Status extends CRM_CivirulesConditions_Ge
           'value' => $params['status_id'],
           'option_group_id' => 'activity_status',
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -85,7 +85,7 @@ class CRM_CivirulesConditions_Activity_Status extends CRM_CivirulesConditions_Ge
           'name' => $condition_params['status_id'],
           'option_group_id' => 'activity_status',
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }

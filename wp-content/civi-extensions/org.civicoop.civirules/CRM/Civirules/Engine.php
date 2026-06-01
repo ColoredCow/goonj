@@ -50,7 +50,7 @@ class CRM_Civirules_Engine {
       $isRuleValid = self::areConditionsValid($triggerData);
     } catch (Throwable $e) {
       // Catch *any* error when executing the conditions and log it.
-      \Civi::log('civirules')->error('CiviRules: One or more conditions is crashing for ruleID: ' . $trigger->getRuleId() . ' with error: ' . $e->getMessage());
+      \Civi::log('civirules')->error('CiviRules: One or more conditions is failing for ruleID: ' . $trigger->getRuleId() . ' with error: ' . $e->getMessage());
       return FALSE;
     }
 
@@ -80,7 +80,7 @@ class CRM_Civirules_Engine {
   protected static function executeActions(CRM_Civirules_TriggerData_TriggerData $triggerData): void {
     $ruleActions = CiviRulesRuleAction::get(FALSE)
       ->addWhere('rule_id', '=', $triggerData->getTrigger()->getRuleId())
-      ->addWhere('is_active', '=', 1)
+      ->addWhere('is_active', '=', TRUE)
       ->addOrderBy('weight', 'ASC')
       ->addOrderBy('id', 'ASC')
       ->execute();
@@ -113,7 +113,7 @@ class CRM_Civirules_Engine {
         $actionEngine->execute();
       }
       catch (Throwable $e) {
-        CRM_Civirules_Utils_LoggerFactory::logError('Failed to execute action for Rule ID: ' . $triggerData->getTrigger()->getRuleId(),  $e->getMessage(), $triggerData, $actionEngine->getRuleAction());
+        CRM_Civirules_Utils_LoggerFactory::logError(E::ts('Failed to execute action'),  $e->getMessage(), $triggerData, $actionEngine->getRuleAction());
       }
     }
   }
@@ -198,7 +198,7 @@ class CRM_Civirules_Engine {
         $actionEngine->execute();
       }
     } catch (Throwable $e) {
-      CRM_Civirules_Utils_LoggerFactory::logError('Failed to execute delayed action for Rule ID: ' . $triggerData->getTrigger()->getRuleId(),  $e->getMessage(), $triggerData, $actionEngine->getRuleAction());
+      CRM_Civirules_Utils_LoggerFactory::logError(E::ts('Failed to execute delayed action'),  $e->getMessage(), $triggerData, $actionEngine->getRuleAction());
     }
     return TRUE;
   }
@@ -296,7 +296,6 @@ class CRM_Civirules_Engine {
   public static function areConditionsValid(CRM_Civirules_TriggerData_TriggerData $triggerData): bool {
     $isValid = TRUE;
     $firstCondition = TRUE;
-    $previousConditionLink = '';
 
     $ruleConditions = $triggerData->getTrigger()->getRuleConditions();
     foreach ($ruleConditions as $ruleConditionId => $ruleCondition) {

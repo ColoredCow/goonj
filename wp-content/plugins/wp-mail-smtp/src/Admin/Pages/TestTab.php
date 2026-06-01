@@ -289,8 +289,6 @@ class TestTab extends PageAbstract {
 	 */
 	public function process_post( $data ) {
 
-		$this->check_admin_referer();
-
 		$this->post_data = $data;
 
 		$connection = wp_mail_smtp()->get_connections_manager()->get_primary_connection();
@@ -991,7 +989,7 @@ Co-Founder, WP Mail SMTP';
 								],
 							]
 						),
-						'https://app.mailgun.com/app/sending/domains'
+						'https://app.mailgun.com/mg/sending/domains'
 					),
 					esc_html__( 'Verify your domain Region is correct.', 'wp-mail-smtp' ),
 				],

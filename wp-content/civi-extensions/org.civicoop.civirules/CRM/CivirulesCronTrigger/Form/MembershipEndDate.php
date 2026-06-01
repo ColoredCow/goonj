@@ -53,7 +53,7 @@ class CRM_CivirulesCronTrigger_Form_MembershipEndDate extends CRM_CivirulesTrigg
         ]);
       }
     }
-    catch (CiviCRM_API3_Exception $ex) {}
+    catch (CRM_Core_Exception $ex) {}
     return $return;
   }
 

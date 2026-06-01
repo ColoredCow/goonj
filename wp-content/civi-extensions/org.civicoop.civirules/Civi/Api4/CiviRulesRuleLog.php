@@ -12,4 +12,13 @@ namespace Civi\Api4;
  */
 class CiviRulesRuleLog extends Generic\DAOEntity {
 
+  /**
+   * @inheritDoc
+   */
+  public static function permissions(): array {
+    return [
+      'default' => ['administer CiviRules'],
+    ];
+  }
+
 }

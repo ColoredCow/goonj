@@ -41,7 +41,7 @@ class CRM_CivirulesConditions_ContributionRecur_Status extends CRM_CivirulesCond
           'value' => $params['status_id'],
           'option_group_id' => 'contribution_status',
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -70,7 +70,7 @@ class CRM_CivirulesConditions_ContributionRecur_Status extends CRM_CivirulesCond
           'name' => $condition_params['status_id'],
           'option_group_id' => 'contribution_status',
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -103,7 +103,7 @@ class CRM_CivirulesConditions_ContributionRecur_Status extends CRM_CivirulesCond
       foreach ($options as $option) {
         $return[$option['value']] = $option['label'];
       }
-    } catch (CiviCRM_API3_Exception $ex) {}
+    } catch (CRM_Core_Exception $ex) {}
     return $return;
   }
 

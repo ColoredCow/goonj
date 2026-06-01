@@ -460,11 +460,15 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
     try {
       $eventId = $event['id'];
       $eventCode = $event['title'];
-      $addresses = Address::get(FALSE)
-        ->addWhere('id', '=', $event['loc_block_id.address_id'])
-        ->setLimit(1)
-        ->execute()->first();
-      $eventAddress = \CRM_Utils_Address::format($addresses);
+      $addressId = $event['loc_block_id.address_id'] ?? NULL;
+      $addresses = NULL;
+      if ($addressId) {
+        $addresses = Address::get(FALSE)
+          ->addWhere('id', '=', $addressId)
+          ->setLimit(1)
+          ->execute()->first();
+      }
+      $eventAddress = is_array($addresses) ? \CRM_Utils_Address::format($addresses) : '';
 
       $eventAttendedById = $event['Goonj_Events.Goonj_Coordinating_POC_Main_'];
       $outcomeEmailSent = $event['Goonj_Events_Outcome.Outcome_Email_Sent'];
@@ -507,7 +511,7 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
         }
       }
     }
-    catch (\Exception $e) {
+    catch (\Throwable $e) {
       \Civi::log()->error("Error in sendEventsOutcomeEmail for $eventId " . $e->getMessage());
     }
 
@@ -582,7 +586,7 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
         'customGroupName' => 'Event_QR',
         'customFieldName' => 'QR_Code_For_Poster',
       ];
-  
+
       self::generateQrCodeForPoster($qrCodeData, $eventId, $saveOptionsForPoster);
 
       // Generate and save the QR Code.

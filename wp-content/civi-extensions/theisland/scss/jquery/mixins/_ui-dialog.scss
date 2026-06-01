@@ -22,7 +22,6 @@
   box-shadow: $box-shadow;
   color: $gray-darker;
   font-family: $font-family-base;
-  max-height: 90%;
   padding: 0;
 
   table {
@@ -142,8 +141,6 @@
   }
 
   .ui-dialog-content {
-    @include calc(max-height, '100vh - 280px',!important);
-
     background: $crm-white;
     color: $gray-darker;
     font-family: $font-family-base;
@@ -186,7 +183,8 @@
     margin-left: 0;
     margin-top: 0;
     position: relative;
-    z-index: 99999;
+    // Oddly fixes the corner icons so that we can resize popups
+    z-index: -1;
   }
 
   .ui-dialog-buttonset {

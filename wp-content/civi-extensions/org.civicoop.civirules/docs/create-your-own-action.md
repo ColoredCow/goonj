@@ -20,30 +20,10 @@ I am going to create this action step by step:
 
 ### Step 1 - Add the Action to the Database
 
-You need to make sure that there is a record in the civirule_action table for your action. We recommend you do some by using an `insert` query.
+New method using Managed Entities: [Defining Triggers/Conditions/Actions in extension](./define-trigger-condition-action-in-extension.md).
 
-If you have created your extension with Civix then you can add a file `/sql/createSoftDelete.sql` and add an `Upgrader` to your extension to process the sql file (check the relevant section of the [Developer Guide](https://docs.civicrm.org/dev/en/latest/extensions/civix/#generate-upgrader)).
-
-The file `/sql/createSoftDelete.sql` should have this statement:
-
-```mysql
-         
-INSERT INTO civirule_action (name, label, class_name, is_active) 
-VALUES("contact_soft_delete", "Soft delete a contact", "CRM_CivirulesActions_Contact_SoftDelete", 1)
-
-```
-
-Obviously you can use any name you like for your `class_name`, we have stuck to our structure in this example with `CRM_CivirulesActions_Contact_SoftDelete` but that is not mandatory. 
-
-!!! warning "On managed entities"
-    We have had a few bad experiences using managed entities because the managed entities are always automatically re-created when you do a `clearcache` in drush or in the URL. And if you have just removed the managed entity because it is the cause of a problem that is not very helpful. So we have removed them from CiviRules. But it is possible to use a managed entity for a CiviRule action, we do not recommend it.
-
-
-!!! Note
-    You can also use the API to add an Action to CiviRules. Entity is `CiviRuleAction`, action is `Create`.
+#### Old method (using json files)
     
-#### Alternative method json file (since CiviRules 2.9)
-
 When your action is in the CiviRules extension you can add your condition to the `sql/actions.json` file.
 When you have created the action in your own extension you can add a `civirules_actions.json` file in the root of your extension. And add the following data
 
@@ -140,29 +120,9 @@ I am going to create this action step by step:
 
 ### Step 1 - Add the Action to the Database
 
-You need to make sure that there is a record in the civirule_action table for your action. You need to make sure that there is a record in the civirule_action table for your action. We recommend you do some by using an `insert` query.
+New method using Managed Entities: [Defining Triggers/Conditions/Actions in extension](./define-trigger-condition-action-in-extension.md).
 
-If you have created your extension with Civix then you can add a file `/sql/createSubtype.sql` and add an `Upgrader` to your extension to process the sql file (check the relevant section of the [Developer Guide](https://docs.civicrm.org/dev/en/latest/extensions/civix/#generate-upgrader)).
-
-The file `/sql/createSubtype.sql` should have this statement:
-
-```mysql
-         
-INSERT INTO civirule_action (name, label, class_name, is_active) 
-VALUES("contact_sub_type", "Set subtype for a contact", "CRM_CivirulesActions_Contact_Subtype", 1)
-
-```
-
-Obviously you can use any name you like for your `class_name`, we have stuck to our structure in this example with `CRM_CivirulesActions_Contact_Subtype` but that is not mandatory. 
-
-!!! warning "On managed entities"
-    We have had a few bad experiences using managed entities because the managed entities are always automatically re-created when you do a `clearcache` in drush or in the URL. And if you have just removed the managed entity because it is the cause of a problem that is not very helpful. So we have removed them from CiviRules. But it is possible to use a managed entity for a CiviRule action, we do not recommend it.
-
-
-!!! Note
-    You can also use the API to add an Action to CiviRules. Entity is `CiviRuleAction`, action is `Create`.
-    
-#### Alternative method json file (since CiviRules 2.9)
+#### Old method (using json files)
 
 When your action is in the CiviRules extension you can add your condition to the `sql/actions.json` file.
 When you have created the action in your own extension you can add a `civirules_actions.json` file in the root of your extension. And add the following data

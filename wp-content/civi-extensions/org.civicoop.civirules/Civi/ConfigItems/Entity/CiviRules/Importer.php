@@ -20,7 +20,7 @@ namespace Civi\ConfigItems\Entity\CiviRules;
 
 use Civi\ConfigItems\Entity\EntityImporter;
 use Civi\ConfigItems\FileFormat\EntityImportDataException;
-use CiviCRM_API3_Exception;
+use CRM_Core_Exception;
 use CRM_Civirules_BAO_Action;
 use CRM_Civirules_BAO_Condition;
 use CRM_Civirules_ExtensionUtil as E;
@@ -106,7 +106,7 @@ class Importer implements EntityImporter {
    * @param $entityData
    *
    * @return array
-   * @throws \API_Exception
+   * @throws \CRM_Core_Exception
    * @throws \Civi\API\Exception\UnauthorizedException
    */
   protected function checkEntityDataForExistence($entityData) {
@@ -123,7 +123,7 @@ class Importer implements EntityImporter {
           'limit' => 1,
         ]);
         $entityData[$name][$this->getEntityDefinition()->getIdAttribute()] = $result;
-      } catch (CiviCRM_API3_Exception $e) {
+      } catch (CRM_Core_Exception $e) {
         // Do nothing
       }
     }
@@ -235,7 +235,7 @@ class Importer implements EntityImporter {
    * @param $config_item_set
    * @param \CRM_Queue_TaskContext $ctx
    *
-   * @throws \API_Exception
+   * @throws \CRM_Core_Exception
    * @throws \Civi\API\Exception\NotImplementedException
    * @throws \Civi\ConfigItems\FileFormat\EntityImportDataException
    */
@@ -259,7 +259,7 @@ class Importer implements EntityImporter {
                 $this->addRuleConditions($ruleId, $data);
                 $this->addRuleActions($ruleId, $data);
               }
-            } catch (CiviCRM_API3_Exception|Exception $ex) {
+            } catch (CRM_Core_Exception|Exception $ex) {
               CRM_Core_Session::setStatus($ex->getMessage(), E::ts("Could not %1 '%2' %3", [1=>$apiAction, 2=>$data[$titleAttribute], 3=>$this->entityDefinition->getTitleSingle()]), 'error');
             }
           }
@@ -273,7 +273,7 @@ class Importer implements EntityImporter {
    * @param $data
    *
    * @return void
-   * @throws \CiviCRM_API3_Exception
+   * @throws \CRM_Core_Exception
    * @throws \Exception
    */
   protected function addRuleConditions($ruleId, $data) {
@@ -299,7 +299,7 @@ class Importer implements EntityImporter {
    * @param $data
    *
    * @return void
-   * @throws \CiviCRM_API3_Exception
+   * @throws \CRM_Core_Exception
    * @throws \Exception
    */
   protected function addRuleActions($ruleId, $data) {

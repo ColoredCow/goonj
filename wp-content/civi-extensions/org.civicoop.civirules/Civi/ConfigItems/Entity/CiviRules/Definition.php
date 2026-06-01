@@ -136,7 +136,7 @@ class Definition extends EntityDefinition {
         'return' => 'name',
         'id' => $triggerId,
       ]);
-    } catch (\CiviCRM_API3_Exception $e) {
+    } catch (\CRM_Core_Exception $e) {
     }
     return $triggerId;
   }
@@ -152,7 +152,7 @@ class Definition extends EntityDefinition {
         'return' => 'name',
         'id' => $conditionId,
       ]);
-    } catch (\CiviCRM_API3_Exception $e) {
+    } catch (\CRM_Core_Exception $e) {
     }
     return $conditionId;
   }
@@ -168,7 +168,7 @@ class Definition extends EntityDefinition {
         'return' => 'name',
         'id' => $actionId,
       ]);
-    } catch (\CiviCRM_API3_Exception $e) {
+    } catch (\CRM_Core_Exception $e) {
     }
     return $actionId;
   }
@@ -184,7 +184,7 @@ class Definition extends EntityDefinition {
         'return' => 'id',
         'name' => $triggerName,
       ]);
-    } catch (\CiviCRM_API3_Exception $e) {
+    } catch (\CRM_Core_Exception $e) {
     }
     return $triggerName;
   }
@@ -200,7 +200,7 @@ class Definition extends EntityDefinition {
         'return' => 'id',
         'name' => $conditionName,
       ]);
-    } catch (\CiviCRM_API3_Exception $e) {
+    } catch (\CRM_Core_Exception $e) {
     }
     return $conditionName;
   }
@@ -216,7 +216,7 @@ class Definition extends EntityDefinition {
         'return' => 'id',
         'name' => $actionName,
       ]);
-    } catch (\CiviCRM_API3_Exception $e) {
+    } catch (\CRM_Core_Exception $e) {
     }
     return $actionName;
   }

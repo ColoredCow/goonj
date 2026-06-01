@@ -8,11 +8,16 @@ class CRM_Civirules_TriggerData_Post extends CRM_Civirules_TriggerData_TriggerDa
    * @param string $entity
    * @param int $objectId
    * @param array $data
+   * @param ?CRM_Civirules_Trigger_Post $trigger
    *
    * @throws \CRM_Core_Exception
    * @throws \Civi\API\Exception\UnauthorizedException
    */
-  public function __construct($entity, $objectId, $data) {
+  public function __construct($entity, $objectId, $data, ?CRM_Civirules_Trigger_Post $trigger = NULL) {
+    if ($trigger) {
+      $this->setTrigger($trigger);
+    }
+
     // Trigger is not always defined when creating triggerData. It is used for adding Rule ID to log messages if possible.
     $ruleIDText = $this->getTrigger() ? 'Rule ID: ' . $this->getTrigger()->getRuleId() . ': ' : '';
 

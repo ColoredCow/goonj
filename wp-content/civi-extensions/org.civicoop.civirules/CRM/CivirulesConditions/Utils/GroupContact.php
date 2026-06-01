@@ -55,7 +55,7 @@ class CRM_CivirulesConditions_Utils_GroupContact {
         'checkPermissions' => FALSE,
       ])->count();
     }
-    catch (CiviCRM_API3_Exception $ex) {
+    catch (CRM_Core_Exception $ex) {
       return FALSE;
     }
     if ($groupContactCount > 0) {

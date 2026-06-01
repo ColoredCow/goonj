@@ -1,5 +1,30 @@
 # CHANGELOG
 
+## Version 2.26.1 (2026-03-27)
+
+* Changed send e-mail to a contact reference so that it can send to multiple contact reference fields.
+
+## Version 2.26.0 (2026-02-11)
+
+* Changed send e-mail to a contact reference so that it can send to multiple contact reference fields.
+
+## Version 2.25.0 (2026-02-11)
+
+* [#33](https://lab.civicrm.org/extensions/emailapi/-/issues/33) Fixed Send E-mail to a contact reference fails.
+* Improved configuration for the action 'Send E-mail to a contact reference'. Restrict the selection to allowed entities.
+* [!78](https://lab.civicrm.org/extensions/emailapi/-/merge_requests/78) Support mosaicomsgtpl for messagetemplate link.
+
+## Version 2.24.0 (2025-12-03)
+
+* [!75](https://lab.civicrm.org/extensions/emailapi/-/merge_requests/75) Switch to user language when sending messages for proper tokens.
+* [!74](https://lab.civicrm.org/extensions/emailapi/-/merge_requests/74) Fix deprecation notice - mark $queue as nullable.
+
+## Version 2.23.0 (2025-07-24)
+
+* [!73](https://lab.civicrm.org/extensions/emailapi/-/merge_requests/73) Fix sending to alternative address.
+* [!72](https://lab.civicrm.org/extensions/emailapi/-/merge_requests/72) Remove unused functions and outdated README tied to pre-token processor days.
+* Move insert actions to upgrade because it causes performance issues when called via managed.
+
 ## Version 2.22.0 (2024-04-30)
 
 * [!70](https://lab.civicrm.org/extensions/emailapi/-/merge_requests/70) Pass additional params to the message template so that its available in hook.

@@ -11,12 +11,8 @@
       token: '@'
     },
     controller: function($scope, $timeout, crmApi4) {
-      var ts = $scope.ts = CRM.ts(null),
-      ctrl = this;
-
-      // console.log('init crmResetPassword component starting');
-      // $onInit gets run after the this controller is called, and after the bindings have been applied.
-      // this.$onInit = function() { console.log('user', ctrl.userId); };
+      const ts = $scope.ts = CRM.ts(null);
+      const ctrl = this;
 
       ctrl.completeReset = () => {
         ctrl.busy='';
@@ -30,9 +26,8 @@
       };
       ctrl.completeReset();
 
-      let updateAngular = (prop, newVal) => {
+      const updateAngular = (prop, newVal) => {
         $timeout(() => {
-          console.log("Setting", prop, "to", newVal);
           ctrl[prop] = newVal;
         }, 0);
       };

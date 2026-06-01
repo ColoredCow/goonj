@@ -110,7 +110,7 @@ class CRM_CivirulesConditions_Contact_HasActivityInCampaign extends CRM_Civirule
           'return' => 'label',
         ));
       }
-      catch (CiviCRM_API3_Exception $ex) {
+      catch (CRM_Core_Exception $ex) {
       }
     }
     if (!empty($activityTypeLabels)) {
@@ -128,7 +128,7 @@ class CRM_CivirulesConditions_Contact_HasActivityInCampaign extends CRM_Civirule
           'return' => 'title',
         ));
       }
-      catch (CiviCRM_API3_Exception $ex) {
+      catch (CRM_Core_Exception $ex) {
       }
     }
     if (!empty($campaignTitles)) {
@@ -155,7 +155,7 @@ class CRM_CivirulesConditions_Contact_HasActivityInCampaign extends CRM_Civirule
           'return' => 'name',
           'id' => $params['campaign_id']
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -166,7 +166,7 @@ class CRM_CivirulesConditions_Contact_HasActivityInCampaign extends CRM_Civirule
           'value' => $params['activity_type_id'],
           'option_group_id' => 'activity_type',
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -186,7 +186,7 @@ class CRM_CivirulesConditions_Contact_HasActivityInCampaign extends CRM_Civirule
           'return' => 'id',
           'name' => $condition_params['campaign_id']
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -197,7 +197,7 @@ class CRM_CivirulesConditions_Contact_HasActivityInCampaign extends CRM_Civirule
           'name' => $condition_params['activity_type_id'],
           'option_group_id' => 'activity_type',
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }

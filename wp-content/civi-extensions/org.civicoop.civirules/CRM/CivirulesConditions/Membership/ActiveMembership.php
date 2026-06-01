@@ -77,7 +77,7 @@ class CRM_CivirulesConditions_Membership_ActiveMembership extends CRM_Civirules_
         }
       }
       return 'Membership Type ' . $operator . ' ' . implode(',', $membershipTypeNames);
-    } catch (CiviCRM_API3_Exception $ex) {}
+    } catch (CRM_Core_Exception $ex) {}
     return '';
   }
 
@@ -95,7 +95,7 @@ class CRM_CivirulesConditions_Membership_ActiveMembership extends CRM_Civirules_
           'return' => 'name',
           'id' => $params['membership_type_id'],
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -115,7 +115,7 @@ class CRM_CivirulesConditions_Membership_ActiveMembership extends CRM_Civirules_
           'return' => 'id',
           'name' => $condition_params['membership_type_id'],
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }

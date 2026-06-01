@@ -6,6 +6,25 @@ use CRM_Emailapi_ExtensionUtil as E;
  */
 class CRM_Emailapi_Upgrader extends CRM_Extension_Upgrader_Base {
 
+  /**
+   * Perform actions after install
+   */
+  public function postInstall() {
+    self::postUpgrade();
+  }
+
+  public static function postUpgrade() {
+    // Load the actions when emailapi is upgraded.
+    if (!empty(\Civi\Api4\Extension::get(FALSE)
+      ->addWhere('file', '=', 'civirules')
+      ->addWhere('status:name', '=', 'installed')
+      ->execute()
+      ->first())) {
+      CRM_Civirules_Utils_Upgrader::insertActionsFromJson(E::path('civirules/actions.json'));
+    }
+    return TRUE;
+  }
+
   // By convention, functions that look like "function upgrade_NNNN()" are
   // upgrade tasks. They are executed in order (like Drupal's hook_update_N).
 

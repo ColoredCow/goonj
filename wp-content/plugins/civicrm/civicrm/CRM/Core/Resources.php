@@ -383,6 +383,8 @@ class CRM_Core_Resources implements CRM_Core_Resources_CollectionAdderInterface 
       $this->addBundle('coreResources');
       $this->addCoreStyles($region);
       if (!CRM_Core_Config::isUpgradeMode()) {
+        // Needed by all UIs that incorporate SearchKit, etc
+        $this->addBundle('bootstrap3');
         // This ensures that if a popup link requires AngularJS, it will always be available.
         // Additional Ang modules required by popups will be loaded on-the-fly by Civi\Angular\AngularLoader
         Civi::service('angularjs.loader')->addModules(['crmResource']);
@@ -545,7 +547,6 @@ class CRM_Core_Resources implements CRM_Core_Resources_CollectionAdderInterface 
     // "color" is deprecated in favor of the more specific "menubarColor"
     $menubarColor = $params['color'] ?? $params['menubarColor'];
     $vars = [
-      '$resourceBase' => rtrim($config->resourceBase, '/'),
       '$menubarHeight' => $params['height'] . 'px',
       '$breakMin' => $params['breakpoint'] . 'px',
       '$breakMax' => ($params['breakpoint'] - 1) . 'px',

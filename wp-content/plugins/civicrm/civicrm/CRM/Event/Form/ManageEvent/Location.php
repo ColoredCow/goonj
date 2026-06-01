@@ -31,6 +31,7 @@ class CRM_Event_Form_ManageEvent_Location extends CRM_Event_Form_ManageEvent {
 
   /**
    * @var \Civi\Api4\Generic\Result
+   * @deprecated use `getLocationBlockValue()
    */
   protected $locationBlock;
 
@@ -65,10 +66,19 @@ class CRM_Event_Form_ManageEvent_Location extends CRM_Event_Form_ManageEvent {
     if ($this->getEventID() && empty($this->_values)) {
       //get location values.
       $params = [
-        'entity_id' => $this->_id,
+        'entity_id' => $this->getEventID(),
         'entity_table' => 'civicrm_event',
       ];
-      $this->_values = CRM_Core_BAO_Location::getValues($params);
+      $this->_values = [
+        'im' => CRM_Core_BAO_IM::getValues($params),
+        'openid' => CRM_Core_BAO_OpenID::getValues($params),
+        'phone' => CRM_Core_BAO_Phone::getValues($params),
+        'address' => CRM_Core_BAO_Address::getValues($params),
+      ];
+      // Get all the existing email addresses, The array historically starts
+      // with 1 not 0 so we do something nasty to continue that.
+      $this->_values['email'] = array_merge([0 => 1], (array) $this->getExistingEmails(TRUE));
+      unset($this->existingEmails[0]);
 
       //get event values.
       $params = ['id' => $this->_id];
@@ -140,19 +150,14 @@ class CRM_Event_Form_ManageEvent_Location extends CRM_Event_Form_ManageEvent {
     $this->addEmailBlockNonContactFields(2);
     $this->addPhoneBlockFields(1);
     $this->addPhoneBlockFields(2);
+    $this->addToggle('is_map', ts('Show a Map'));
 
     $this->applyFilter('__ALL__', 'trim');
 
     //fix for CRM-1971
     $this->assign('action', $this->_action);
 
-    if ($this->_id) {
-      $this->locationBlock = Event::get()
-        ->addWhere('id', '=', $this->_id)
-        ->setSelect(['loc_block_id.*', 'loc_block_id'])
-        ->execute()->first();
-      $this->_oldLocBlockId = $this->locationBlock['loc_block_id'];
-    }
+    $this->_oldLocBlockId = $this->getLocationBlockID();
 
     // get the list of location blocks being used by other events
 
@@ -185,8 +190,33 @@ class CRM_Event_Form_ManageEvent_Location extends CRM_Event_Form_ManageEvent {
       }
       $this->add('select', 'loc_event_id', ts('Use Location'), $locationEvents, FALSE, ['class' => 'crm-select2']);
     }
-    $this->addElement('advcheckbox', 'is_show_location', ts('Show Location?'));
+    $this->addToggle('is_show_location', ts('Show Location'));
     parent::buildQuickForm();
+  }
+
+  /**
+   * Get the ID of the location block associated with the event.
+   *
+   * @return int|null
+   * @throws \CRM_Core_Exception
+   * @api supported for external use. Will not change in minor versions of
+   *   CiviCRM.
+   *
+   */
+  public function getLocationBlockID(): ?int {
+    if (!$this->isDefined('LocationBlock')) {
+      if ($this->getEventID()) {
+        $this->locationBlock = Event::get()
+          ->addWhere('id', '=', $this->getEventID())
+          ->setSelect(['loc_block_id.*', 'loc_block_id'])
+          ->execute()->first();
+        $this->define('LocBlock', 'LocationBlock', ['id' => $this->locationBlock['loc_block_id']]);
+      }
+      else {
+        $this->locationBlock = [];
+      }
+    }
+    return $this->locationBlock['loc_block_id'] ?? NULL;
   }
 
   /**
@@ -195,6 +225,12 @@ class CRM_Event_Form_ManageEvent_Location extends CRM_Event_Form_ManageEvent {
   public function postProcess() {
     $params = $this->exportValues();
     $deleteOldBlock = FALSE;
+
+    // This property is on the event itself, not the location
+    // It was previously on the EventInfo
+    $params['id'] = $this->getEventID();
+    $params['is_map'] ??= FALSE;
+    $event = CRM_Event_BAO_Event::create($params);
 
     // If 'Use existing location' is selected.
     if (($params['location_option'] ?? NULL) == 2) {

@@ -71,8 +71,19 @@ class UsageTracking {
 			}
 		);
 
-		// Register the action handler only if enabled.
+		// Register the action handler and error stats tracking only if enabled.
 		if ( $this->is_enabled() ) {
+			/**
+			 * Filter whether to enable error stats collection.
+			 *
+			 * @since 4.8.0
+			 *
+			 * @param bool $enabled Whether error stats collection is enabled. Default true.
+			 */
+			if ( apply_filters( 'wp_mail_smtp_usage_tracking_error_stats_enabled', true ) ) { // phpcs:ignore WPForms.PHP.ValidateHooks.InvalidHookName
+				( new ErrorStats() )->hooks();
+			}
+
 			add_filter(
 				'wp_mail_smtp_tasks_get_tasks',
 				static function ( $tasks ) {
@@ -158,7 +169,12 @@ class UsageTracking {
 		}
 
 		if ( is_multisite() ) {
-			$data['wp_mail_smtp_multisite_network_wide'] = WP::use_global_plugin_settings();
+			$use_global_settings                         = WP::use_global_plugin_settings();
+			$data['wp_mail_smtp_multisite_network_wide'] = $use_global_settings;
+
+			if ( ! $use_global_settings ) {
+				$data['wp_mail_smtp_multisite_is_subsite'] = ! is_main_site();
+			}
 		}
 
 		return apply_filters( 'wp_mail_smtp_usage_tracking_get_data', $data );

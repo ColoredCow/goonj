@@ -36,7 +36,7 @@ class InvalidCSRFEvent extends \Civi\Core\Event\GenericHookEvent {
    * @param string $ipAddress
    * @param string|NULL $source
    */
-  public function __construct(string $ipAddress, string $source = NULL) {
+  public function __construct(string $ipAddress, ?string $source = NULL) {
     $this->ipAddress = $ipAddress;
     $this->source = $source;
     $this->eventType = 'InvalidCSRFEvent';
@@ -48,7 +48,7 @@ class InvalidCSRFEvent extends \Civi\Core\Event\GenericHookEvent {
    * @param string $ipAddress
    * @param string|NULL $source
    */
-  public static function trigger(string $ipAddress, string $source = NULL) {
+  public static function trigger(string $ipAddress, ?string $source = NULL) {
     $event = new \Civi\Firewall\Event\InvalidCSRFEvent($ipAddress, $source);
     \Civi::dispatcher()->dispatch('civi.firewall.invalidcsrfrequest', $event);
   }

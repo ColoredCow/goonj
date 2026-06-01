@@ -63,9 +63,9 @@ class CRM_CivirulesConditions_ContributionRecur_Membership extends CRM_Civirules
 
     $dateFields = ['start_date', 'join_date', 'end_date'];
     foreach ($dateFields as $dateField) {
-      $date_relative = CRM_Utils_Array::value($dateField . '_relative', $this->conditionParams);
-      $date_to = CRM_Utils_Array::value($dateField . '_to', $this->conditionParams);
-      $date_from = CRM_Utils_Array::value($dateField . '_from', $this->conditionParams);
+      $date_relative = $this->conditionParams[$dateField . '_relative'] ?? NULL;
+      $date_to = $this->conditionParams[$dateField . '_to'] ?? NULL;
+      $date_from = $this->conditionParams[$dateField . '_from'] ?? NULL;
 
       if (!empty($date_relative) || !empty($date_from) || !empty($date_to)) {
         [$from, $to] = CRM_Utils_Date::getFromTo($date_relative, $date_from, $date_to);
@@ -106,7 +106,7 @@ class CRM_CivirulesConditions_ContributionRecur_Membership extends CRM_Civirules
             'return' => 'name',
             'id' => $gid,
           ]);
-        } catch (CiviCRM_API3_Exception $e) {
+        } catch (CRM_Core_Exception $e) {
         }
       }
     }
@@ -117,7 +117,7 @@ class CRM_CivirulesConditions_ContributionRecur_Membership extends CRM_Civirules
             'return' => 'name',
             'id' => $gid,
           ]);
-        } catch (CiviCRM_API3_Exception $e) {
+        } catch (CRM_Core_Exception $e) {
         }
       }
     }
@@ -138,7 +138,7 @@ class CRM_CivirulesConditions_ContributionRecur_Membership extends CRM_Civirules
             'return' => 'id',
             'name' => $gid,
           ]);
-        } catch (CiviCRM_API3_Exception $e) {
+        } catch (CRM_Core_Exception $e) {
         }
       }
     }
@@ -149,7 +149,7 @@ class CRM_CivirulesConditions_ContributionRecur_Membership extends CRM_Civirules
             'return' => 'id',
             'name' => $gid,
           ]);
-        } catch (CiviCRM_API3_Exception $e) {
+        } catch (CRM_Core_Exception $e) {
         }
       }
     }
@@ -205,7 +205,7 @@ class CRM_CivirulesConditions_ContributionRecur_Membership extends CRM_Civirules
         $label .= "<li>" . ts('Membership Type') . " {$operator} <b>{$values}</b> <br>";
       }
     }
-    catch (CiviCRM_API3_Exception $ex) {
+    catch (CRM_Core_Exception $ex) {
     }
 
     try {
@@ -228,7 +228,7 @@ class CRM_CivirulesConditions_ContributionRecur_Membership extends CRM_Civirules
         $label .= "<li>" . ts('Membership Status') . " {$operator} <b>{$values}</b> <br>";
       }
     }
-    catch (CiviCRM_API3_Exception $ex) {
+    catch (CRM_Core_Exception $ex) {
     }
 
     $dateFields = [
@@ -239,9 +239,9 @@ class CRM_CivirulesConditions_ContributionRecur_Membership extends CRM_Civirules
     $dateOperators = CRM_Core_OptionGroup::values('relative_date_filters');
     $msg = [];
     foreach ($dateFields as $dateField => $dateDesc) {
-      $date_relative = CRM_Utils_Array::value($dateField . '_relative', $this->conditionParams);
-      $date_to = CRM_Utils_Array::value($dateField . '_to', $this->conditionParams);
-      $date_from = CRM_Utils_Array::value($dateField . '_from', $this->conditionParams);
+      $date_relative = $this->conditionParams[$dateField . '_relative'] ?? NULL;
+      $date_to = $this->conditionParams[$dateField . '_to'] ?? NULL;
+      $date_from = $this->conditionParams[$dateField . '_from'] ?? NULL;
 
       if (!empty($date_relative)) {
         $msg[] = $dateDesc . " <b>{$dateOperators[$date_relative]}</b>";

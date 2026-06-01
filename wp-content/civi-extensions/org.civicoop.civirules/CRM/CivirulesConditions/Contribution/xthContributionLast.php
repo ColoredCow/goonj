@@ -40,7 +40,7 @@ class CRM_CivirulesConditions_Contribution_xthContributionLast extends CRM_Civir
             'return' => 'name',
             'id' => $gid,
           ]);
-        } catch (CiviCRM_API3_Exception $e) {
+        } catch (CRM_Core_Exception $e) {
         }
       }
     }
@@ -61,7 +61,7 @@ class CRM_CivirulesConditions_Contribution_xthContributionLast extends CRM_Civir
             'return' => 'id',
             'name' => $gid,
           ]);
-        } catch (CiviCRM_API3_Exception $e) {
+        } catch (CRM_Core_Exception $e) {
         }
       }
     }
@@ -120,7 +120,7 @@ class CRM_CivirulesConditions_Contribution_xthContributionLast extends CRM_Civir
           break;
       }
     }
-    catch (CiviCRM_API3_Exception $ex) {
+    catch (CRM_Core_Exception $ex) {
       Civi::log()->error(ts('Unexpected error from API Contribution getcount in ') . __METHOD__
         . ts(', error message: ') . $ex->getMessage());
     }

@@ -33,7 +33,7 @@ class CRM_CivirulesConditions_Case_CaseType extends CRM_Civirules_Condition {
           'value' => $params['case_type_id'],
           'option_group_id' => 'case_type',
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }
@@ -54,7 +54,7 @@ class CRM_CivirulesConditions_Case_CaseType extends CRM_Civirules_Condition {
           'name' => $condition_params['case_type_id'],
           'option_group_id' => 'case_type',
         ]);
-      } catch (\CiviCRM_Api3_Exception $e) {
+      } catch (\CRM_Core_Exception $e) {
         // Do nothing.
       }
     }

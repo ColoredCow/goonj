@@ -22,7 +22,7 @@ class CRM_CivirulesConditions_Generic_Campaign {
       try {
         $campaignData = civicrm_api3('Campaign', 'getsingle', ['id' => $campaignId]);
       }
-      catch (CiviCRM_API3_Exception $ex) {
+      catch (CRM_Core_Exception $ex) {
       }
     }
     return $campaignData;

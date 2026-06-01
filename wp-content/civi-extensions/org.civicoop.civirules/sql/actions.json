@@ -51,8 +51,12 @@
   {"name":"end_relationship","label":"Disable/end or delete a Relationship","class_name":"CRM_CivirulesActions_Relationship_End"},
   {"name":"register_participant","label":"Register Event Participant","class_name":"CRM_CivirulesActions_Participant_Register"},
   {"name":"contributionrecur_update_status","label":"Update Recurring Contribution Status","class_name":"CRM_CivirulesActions_ContributionRecur_UpdateStatus"},
+  {"name":"contributionrecur_cancel_recurring","label":"Cancel Recurring Contribution","class_name":"CRM_CivirulesActions_ContributionRecur_CancelRecurring"},
+  {"name":"contributionrecur_change_nextscheduledate","label":"Change Next Schedule Date for Recurring Contribution","class_name":"CRM_CivirulesActions_ContributionRecur_ChangeNextScheduleDate"},
   {"name":"contribution_update_status","label":"Update Contribution Status","class_name":"CRM_CivirulesActions_Contribution_UpdateStatus"},
   {"name":"decease_contact","label":"Set Contact as Deceased","class_name":"CRM_CivirulesActions_Contact_DeceaseContact"},
   {"name":"cancel_latest_membership","label":"Cancel Latest Membership","class_name":"CRM_CivirulesActions_Membership_CancelLatestMembership"},
-  {"name":"log_to_civicrm","label":"Log to CiviCRM logs","class_name":"CRM_CivirulesActions_Log"}
+  {"name":"log_to_civicrm","label":"Log to CiviCRM logs","class_name":"CRM_CivirulesActions_Log"},
+  {"name":"set_field_generic","label":"Set Field Value","class_name":"CRM_CivirulesActions_Generic_SetField"},
+  {"name":"remove_related_contact_group","label":"Remove Related Contact from a Group","class_name":"CRM_CivirulesActions_GroupContact_RemoveRelated"}
 ]

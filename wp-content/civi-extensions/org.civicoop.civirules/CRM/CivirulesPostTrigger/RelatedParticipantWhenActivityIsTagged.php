@@ -58,8 +58,7 @@ class CRM_CivirulesPostTrigger_RelatedParticipantWhenActivityIsTagged extends CR
         }
       }
 
-      $triggerData = new CRM_Civirules_TriggerData_Post($entity, $objectId, $entityTag);
-      $triggerData->setTrigger($this);
+      $triggerData = new CRM_Civirules_TriggerData_Post($entity, $objectId, $entityTag, $this);
       $triggerData->setEntityData('Activity', $activity);
 
       $custom_field_id = $this->triggerParams['event_id_custom_field'];

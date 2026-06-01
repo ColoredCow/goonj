@@ -59,7 +59,7 @@ class CRM_CivirulesActions_Activity_UpdateStatus extends CRM_CivirulesActions_Ge
         'value' => $action_params['status_id'],
         'option_group_id' => 'activity_status',
       ]);
-    } catch (CiviCRM_API3_Exception $e) {
+    } catch (CRM_Core_Exception $e) {
     }
     return $action_params;
   }
@@ -77,7 +77,7 @@ class CRM_CivirulesActions_Activity_UpdateStatus extends CRM_CivirulesActions_Ge
         'name' => $action_params['status_id'],
         'option_group_id' => 'activity_status',
       ]);
-    } catch (CiviCRM_API3_Exception $e) {
+    } catch (CRM_Core_Exception $e) {
     }
     return parent::importActionParameters($action_params);
   }

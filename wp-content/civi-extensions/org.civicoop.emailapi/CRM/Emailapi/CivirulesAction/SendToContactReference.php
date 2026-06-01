@@ -20,21 +20,31 @@ class CRM_Emailapi_CivirulesAction_SendToContactReference extends CRM_Civirules_
       $actionParams['case_id'] = $case['id'];
     }
 
-    $contactReferenceField = 'custom_' . $actionParams['contact_reference'];
+    if (!is_array($actionParams['contact_reference'])) {
+      $actionParams['contact_reference'] = explode(",", $actionParams['contact_reference']);
+    }
+
+    $contactIds = [];
+    foreach($actionParams['contact_reference'] as $contactReferenceFieldId) {
+    $contactReferenceField = 'custom_' . $contactReferenceFieldId;
     $entityData = $triggerData->getEntityData($actionParams['entity']);
-    // Find the contact reference contact's ID.
-    $contactReferenceIds = (array) $entityData[$contactReferenceField];
-    // Not all $triggerData contains custom field data, so look it up if necessary.
-    if (!$contactReferenceIds) {
-      $contactReferenceIds = (array) civicrm_api3(CRM_Core_BAO_CustomGroup::getEntityFromExtends($actionParams['entity']), 'getvalue', [
-        'return' => $contactReferenceField,
-        'id' => $entityData['id'],
-      ]);
+      // Find the contact reference contact's ID.
+      $contactReferenceIds = (array) $entityData[$contactReferenceField.'_id'] ?? (array) $entityData[$contactReferenceField];
+      // Not all $triggerData contains custom field data, so look it up if necessary.
+      if (!$contactReferenceIds) {
+        $contactReferenceIds = (array) civicrm_api3(CRM_Core_BAO_CustomGroup::getEntityFromExtends($actionParams['entity']), 'getvalue', [
+          'return' => $contactReferenceField,
+          'id' => $entityData['id'],
+        ]);
+      }
+      if (count($contactReferenceIds)) {
+        $contactIds = array_unique(array_merge($contactIds, $contactReferenceIds));
+      }
     }
 
     $params = $actionParams;
-    foreach ($contactReferenceIds as $contactReferenceId) {
-      $params['contact_id'] = $contactReferenceId;
+    foreach ($contactIds as $contactId) {
+      $params['contact_id'] = $contactId;
       // change e-mailaddress if other location type is used, falling back on primary if set
       if (!empty($actionParameters['location_type_id'])) {
         $parameters['location_type_id'] = $actionParameters['location_type_id'];
@@ -72,26 +82,6 @@ class CRM_Emailapi_CivirulesAction_SendToContactReference extends CRM_Civirules_
   }
 
   /**
-   * Get a list of entities that use custom fields.
-   *
-   * @return array
-   */
-  public static function getContactReferenceEntities() {
-    $return[] = '-- please select --';
-    $result = \Civi\Api4\CustomField::get(TRUE)
-      ->addSelect('custom_group_id.extends')
-      ->addClause('OR', ['data_type', '=', 'ContactReference'], ['AND', [['data_type', '=', 'EntityReference'], ['fk_entity', '=', 'Contact']]])
-      ->execute()
-      ->indexBy('custom_group_id.extends');
-    foreach ($result as $field) {
-      $return[$field['custom_group_id.extends']] = $field['custom_group_id.extends'];
-    }
-    $return = array_unique($return);
-    asort($return);
-    return $return;
-  }
-
-  /**
    * Returns a redirect url to extra data input from the user after adding a action
    *
    * Return false if you do not need extra data input
@@ -111,15 +101,10 @@ class CRM_Emailapi_CivirulesAction_SendToContactReference extends CRM_Civirules_
    * @return string
    */
   public function userFriendlyConditionParams() {
-    $template = 'unknown template';
     $params = $this->getActionParameters();
 
-    $messageTemplates = new CRM_Core_DAO_MessageTemplate();
-    $messageTemplates->id = $params['template_id'];
-    $messageTemplates->is_active = TRUE;
-    if ($messageTemplates->find(TRUE)) {
-      $template = $messageTemplates->msg_title;
-    }
+    $template = CRM_Emailapi_CivirulesAction_Send::getTemplateLink($params['template_id']);
+
     if (isset($params['location_type_id']) && !empty($params['location_type_id'])) {
       try {
         $locationText = 'location type ' . civicrm_api3('LocationType', 'getvalue', [
@@ -135,14 +120,23 @@ class CRM_Emailapi_CivirulesAction_SendToContactReference extends CRM_Civirules_
       $locationText = "primary e-mailaddress";
     }
     $to = "";
-    try {
-      $to = civicrm_api3('CustomField', 'getvalue', [
-        'return' => "label",
-        'id' => $params['contact_reference'],
-      ]);
+    if (!is_array($params['contact_reference'])) {
+      $params['contact_reference'] = explode(",", $params['contact_reference']);
     }
-    catch (CRM_Core_Exception $e) {
-      // Do nothing
+    $toArray = [];
+    foreach($params['contact_reference'] as $contactReferenceFieldId) {
+      try {
+        $toArray[] = civicrm_api3('CustomField', 'getvalue', [
+          'return' => "label",
+          'id' => $contactReferenceFieldId,
+        ]);
+      }
+      catch (CRM_Core_Exception $e) {
+        // Do nothing
+      }
+    }
+    if (count($toArray)) {
+      $to = implode(", ", $toArray);
     }
 
     $cc = "";
@@ -153,7 +147,7 @@ class CRM_Emailapi_CivirulesAction_SendToContactReference extends CRM_Civirules_
     if (!empty($params['bcc'])) {
       $bcc = ts(' and bcc to %1', [1 => $params['bcc']]);
     }
-    return ts('Send e-mail from "%1 (%2 using %3)" with Template "%4" to %5 %6 %7', [
+    return ts("Send e-mail from '%1 (%2 using %3)' with Template '%4' to %5 %6 %7", [
       1 => $params['from_name'],
       2 => $params['from_email'],
       3 => $locationText,

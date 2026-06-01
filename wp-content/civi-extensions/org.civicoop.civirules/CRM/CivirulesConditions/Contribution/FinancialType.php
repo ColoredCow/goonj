@@ -33,7 +33,7 @@ class CRM_CivirulesConditions_Contribution_FinancialType extends CRM_Civirules_C
       throw new CRM_Core_Exception($message);
     }
     $contribution = $triggerData->getEntityData('Contribution');
-    if (!isset($contribution['financial_type_id'])) {
+    if (!isset($contribution['financial_type_id']) && isset($contribution['id'])) {
       // The financial type could be empty because of an online payment.
       // So we have to look it up in the database.
       $contribution['financial_type_id'] = CRM_Core_DAO::singleValueQuery("SELECT financial_type_id FROM civicrm_contribution WHERE id = %1", array(1=>array($contribution['id'], 'Integer')));
@@ -84,7 +84,7 @@ class CRM_CivirulesConditions_Contribution_FinancialType extends CRM_Civirules_C
             'return' => 'name',
             'id' => $gid,
           ]);
-        } catch (CiviCRM_API3_Exception $e) {
+        } catch (CRM_Core_Exception $e) {
         }
       }
     }
@@ -105,7 +105,7 @@ class CRM_CivirulesConditions_Contribution_FinancialType extends CRM_Civirules_C
             'return' => 'id',
             'name' => $gid,
           ]);
-        } catch (CiviCRM_API3_Exception $e) {
+        } catch (CRM_Core_Exception $e) {
         }
       }
     }

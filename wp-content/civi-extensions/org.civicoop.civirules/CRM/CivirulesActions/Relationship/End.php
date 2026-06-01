@@ -75,6 +75,7 @@ class CRM_CivirulesActions_Relationship_End extends CRM_Civirules_Action {
         ->addValue('is_active', FALSE)
         ->addWhere('relationship_type_id', '=', (int) $actionParams['relationship_type_id'])
         ->addClause('OR', ['contact_id_a', '=', $contactId], ['contact_id_b', '=', $contactId])
+        ->addWhere('is_current', '=', TRUE)
         ->execute();
     }
     catch (\Exception $ex) {
@@ -130,7 +131,7 @@ class CRM_CivirulesActions_Relationship_End extends CRM_Civirules_Action {
         'return' => 'name_a_b',
         'id' => $action_params['relationship_type_id'],
       ]);
-    } catch (CiviCRM_API3_Exception $e) {
+    } catch (CRM_Core_Exception $e) {
     }
     return $action_params;
   }
@@ -149,7 +150,7 @@ class CRM_CivirulesActions_Relationship_End extends CRM_Civirules_Action {
         'return' => 'id',
         'name_a_b' => $action_params['relationship_type_id'],
       ]);
-    } catch (CiviCRM_API3_Exception $e) {
+    } catch (CRM_Core_Exception $e) {
     }
     return parent::importActionParameters($action_params);
   }

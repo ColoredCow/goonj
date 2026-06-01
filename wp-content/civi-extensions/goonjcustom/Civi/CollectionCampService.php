@@ -317,10 +317,24 @@ class CollectionCampService extends AutoSubscriber {
 
     /**
      * =========================
-     * WIRE TRANSFER (payment_instrument_id = 5)
+     * WIRE TRANSFER + UPI PAYMENTS
      * =========================
      */
-    if ($fields['payment_instrument_id'] == 5) {
+    $wireAndUpiIds = OptionValue::get(FALSE)
+      ->addSelect('value')
+      ->addWhere('option_group_id:name', '=', 'payment_instrument')
+      ->addWhere('name', 'IN', [
+        'EFT',
+        'Through Paytm',
+        'Through Amazon',
+        'Through Google Pay',
+        'Through UPI',
+        'Through UPI/Paytm',
+      ])
+      ->execute()
+      ->column('value');
+
+    if (in_array($fields['payment_instrument_id'], $wireAndUpiIds)) {
 
       $transferDateField = CustomField::get(FALSE)
         ->addSelect('id')
@@ -2195,7 +2209,10 @@ class CollectionCampService extends AutoSubscriber {
     if (!empty($params['workflow']) && $params['workflow'] === 'contribution_offline_receipt') {
       // Extract donor name or use a default value.
       $donorName = !empty($params['toName']) ? $params['toName'] : 'Valued Supporter';
-      $contributionID = !empty($params['contributionId']) ? $params['contributionId'] : NULL;
+      // CiviCRM 6.13.x moved contribution id from $params['contributionId'] into
+      // $params['tokenContext']['contributionId']. Read from either location so this
+      // works on both prod (6.3.1) and staging/post-upgrade (6.13.x).
+      $contributionID = $params['contributionId'] ?? ($params['tokenContext']['contributionId'] ?? NULL);
       $params['cc'] = 'priyanka@goonj.org, accounts@goonj.org';
       $params['from'] = 'Goonj <accounts@goonj.org>';
 
@@ -2566,10 +2583,24 @@ class CollectionCampService extends AutoSubscriber {
 
     /**
      * =========================
-     * WIRE TRANSFER (payment_instrument_id = 5)
+     * WIRE TRANSFER + UPI PAYMENTS
      * =========================
      */
-    if ($fields['payment_instrument_id'] == 5) {
+    $wireAndUpiIds = OptionValue::get(FALSE)
+      ->addSelect('value')
+      ->addWhere('option_group_id:name', '=', 'payment_instrument')
+      ->addWhere('name', 'IN', [
+        'EFT',
+        'Through Paytm',
+        'Through Amazon',
+        'Through Google Pay',
+        'Through UPI',
+        'Through UPI/Paytm',
+      ])
+      ->execute()
+      ->column('value');
+
+    if (in_array($fields['payment_instrument_id'], $wireAndUpiIds)) {
 
       $transactionIdField = CustomField::get(FALSE)
         ->addSelect('id')
