@@ -43,6 +43,68 @@ function goonjcustom_civicrm_install(): void {
 }
 
 /**
+ * Implements hook_civicrm_alterSettingsFolders().
+ *
+ * Registers this extension's settings folder so the files under settings/*.setting.php
+ * are discovered by CiviCRM's metadata loader. Admins can then change redirect URLs
+ * and filter labels for the Event Registration Afform without touching code.
+ */
+function goonjcustom_civicrm_alterSettingsFolders(&$metaDataFolders = NULL): void {
+  $folder = __DIR__ . '/settings';
+  if (is_dir($folder) && !in_array($folder, (array) $metaDataFolders, TRUE)) {
+    $metaDataFolders[] = $folder;
+  }
+}
+
+/**
+ * Implements hook_civicrm_alterBundle().
+ *
+ * Exposes Event Registration config (success/duplicate URLs, labels) to the
+ * client via CRM.goonjEventRegistration, so the Angular directive reads live
+ * values without a second round-trip. If settings are unset, we rely on the
+ * directive's hardcoded fallbacks (kept only as a safety net).
+ */
+function goonjcustom_civicrm_alterBundle(\CRM_Core_Resources_Bundle $bundle): void {
+  if (($bundle->name ?? '') !== 'coreResources') {
+    return;
+  }
+  try {
+    $settings = Civi::settings();
+    $bundle->addVars('goonjEventRegistration', [
+      'successUrl'    => $settings->get('goonj_event_registration_success_url'),
+      'duplicateUrl'  => $settings->get('goonj_event_registration_duplicate_url'),
+      'filterLabel'   => $settings->get('goonj_event_registration_filter_label'),
+      'filterHelp'    => $settings->get('goonj_event_registration_filter_help'),
+      'allTypesLabel' => $settings->get('goonj_event_registration_all_types_label'),
+    ]);
+  }
+  catch (\Throwable $e) {
+    // Don't break the page if settings aren't available yet (e.g. during
+    // upgrade). The directive has safe fallbacks.
+  }
+}
+
+/**
+ * Implements hook_civicrm_angularModules().
+ *
+ * Auto-discovers Angular modules shipped as `<extension>/ang/*.ang.php` so
+ * civix-generated extensions can use them without hand-registering each file.
+ */
+function goonjcustom_civicrm_angularModules(&$angularModules): void {
+  $dir = __DIR__ . '/ang';
+  if (!is_dir($dir)) {
+    return;
+  }
+  foreach (glob($dir . '/*.ang.php') as $file) {
+    $moduleName = basename($file, '.ang.php');
+    $angularModules[$moduleName] = include $file;
+    $angularModules[$moduleName]['ext'] = 'goonjcustom';
+  }
+}
+
+
+
+/**
  * Implements hook_civicrm_enable().
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_enable
