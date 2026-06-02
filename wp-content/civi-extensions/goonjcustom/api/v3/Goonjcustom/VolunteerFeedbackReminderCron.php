@@ -45,15 +45,44 @@ function civicrm_api3_goonjcustom_volunteer_feedback_reminder_cron($params) {
   // Get the default "from" email.
   $from = HelperService::getDefaultFromEmail();
 
-  // Fetch camps that have completed and volunteers have not filled the feedback form.
-  $campsNeedReminder = EckEntity::get('Collection_Camp', TRUE)
-    ->addSelect('Collection_Source_Feedback.Last_Reminder_Sent', 'Collection_Camp_Intent_Details.Location_Area_of_camp', 'Collection_Camp_Intent_Details.End_Date', 'Collection_Camp_Core_Details.Contact_Id')
-    ->addWhere('Collection_Source_Feedback.Rate_Your_Camp_Experience_1_Lowest_10_Highest_', 'IS NULL')
+  // Feedback now lives in its own Eck entity (Collection_Source_Feedback)
+  // linked back to the camp via Collection_Camp_Code. Exclude any camp that
+  // either already has submitted feedback OR has already been sent a reminder
+  // (Last_Reminder_Sent set on the feedback row).
+  $campIdsToSkip = EckEntity::get('Collection_Source_Feedback', FALSE)
+    ->addSelect('Collection_Source_Feedback.Collection_Camp_Code')
+    ->addClause('OR',
+      ['Collection_Source_Feedback.Rate_Your_Camp_Experience_1_Lowest_10_Highest_', 'IS NOT NULL'],
+      ['Collection_Source_Feedback.Last_Reminder_Sent', 'IS NOT NULL']
+    )
+    ->execute()
+    ->column('Collection_Source_Feedback.Collection_Camp_Code');
+
+  // Floor on End_Date so the cron does not blast reminders for historical camps
+  // when it resumes after being broken for a while. Only camps that ended on or
+  // after this cutoff are eligible for a reminder.
+  $reminderEligibleFrom = '2026-05-20 00:00:00';
+
+  // checkPermissions=FALSE because cron has no user context; with TRUE, ACL
+  // filters out every row (matches other Goonj crons in this directory).
+  $campsQuery = EckEntity::get('Collection_Camp', FALSE)
+    ->addSelect('Collection_Camp_Intent_Details.Location_Area_of_camp', 'Collection_Camp_Intent_Details.End_Date', 'Collection_Camp_Core_Details.Contact_Id')
     ->addWhere('Logistics_Coordination.Feedback_Email_Sent', '=', 1)
     ->addWhere('Collection_Camp_Core_Details.Status', '=', 'authorized')
+    ->addWhere('Collection_Camp_Intent_Details.End_Date', '>=', $reminderEligibleFrom)
     ->addWhere('Collection_Camp_Intent_Details.End_Date', '<=', $endOfDay)
-    ->addWhere('Collection_Camp_Intent_Details.Camp_Status', '!=', 'aborted')
-    ->execute();
+    // Camp_Status IS NULL for most camps; SQL "NULL != 'aborted'" evaluates to
+    // NULL and would drop those rows, so make the exclusion explicitly NULL-safe.
+    ->addClause('OR',
+      ['Collection_Camp_Intent_Details.Camp_Status', 'IS NULL'],
+      ['Collection_Camp_Intent_Details.Camp_Status', '!=', 'aborted']
+    );
+
+  if (!empty($campIdsToSkip)) {
+    $campsQuery->addWhere('id', 'NOT IN', $campIdsToSkip);
+  }
+
+  $campsNeedReminder = $campsQuery->execute();
 
   foreach ($campsNeedReminder as $camp) {
     try {
