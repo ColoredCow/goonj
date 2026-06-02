@@ -22,11 +22,15 @@ class CollectionCampVolunteerFeedbackService {
    */
   public static function processVolunteerFeedbackReminder($camp, $now, $from) {
     $initiatorId = $camp['Collection_Camp_Core_Details.Contact_Id'];
-    $initiator = Contact::get(TRUE)
+    // checkPermissions=FALSE because cron has no user context; with TRUE, ACL
+    // makes Contact::get return zero rows. The LEFT JOIN on Email can return
+    // one row per email — use ->first() to pick any email when the contact
+    // has multiple addresses.
+    $initiator = Contact::get(FALSE)
       ->addSelect('email.email', 'display_name')
       ->addJoin('Email AS email', 'LEFT')
       ->addWhere('id', '=', $initiatorId)
-      ->execute()->single();
+      ->execute()->first();
 
     $initiatorEmail = $initiator['email.email'];
     $initiatorName = $initiator['display_name'];
@@ -35,8 +39,21 @@ class CollectionCampVolunteerFeedbackService {
     $collectionCampId = $camp['id'];
     $campAddress = $camp['Collection_Camp_Intent_Details.Location_Area_of_camp'];
 
-    // Check last reminder sent.
-    $lastReminderSent = $camp['Collection_Source_Feedback.Last_Reminder_Sent'] ? new \DateTime($camp['Collection_Source_Feedback.Last_Reminder_Sent']) : NULL;
+    // Look for an existing Collection_Source_Feedback row linked to this camp.
+    // Feedback rows live on a separate Eck entity (Collection_Source_Feedback)
+    // and are normally created when the volunteer submits the form. Reminder
+    // tracking (Last_Reminder_Sent) lives on the same row, so the cron has to
+    // create a placeholder row on the first reminder if none exists yet.
+    $existingFeedback = EckEntity::get('Collection_Source_Feedback', FALSE)
+      ->addSelect('id', 'Collection_Source_Feedback.Last_Reminder_Sent')
+      ->addWhere('Collection_Source_Feedback.Collection_Camp_Code', '=', $collectionCampId)
+      ->setLimit(1)
+      ->execute()
+      ->first();
+
+    $lastReminderSent = !empty($existingFeedback['Collection_Source_Feedback.Last_Reminder_Sent'])
+      ? new \DateTime($existingFeedback['Collection_Source_Feedback.Last_Reminder_Sent'])
+      : NULL;
 
     // Calculate hours since camp ended.
     $hoursSinceCampEnd = abs($now->getTimestamp() - $endDate->getTimestamp()) / 3600;
@@ -46,11 +63,12 @@ class CollectionCampVolunteerFeedbackService {
       // Send the first reminder email to the volunteer.
       self::sendVolunteerFeedbackReminderEmail($initiatorEmail, $from, $campAddress, $collectionCampId, $endDate, $initiatorName, $initiatorId);
 
-      // Update the Last_Reminder_Sent field in the database.
-      EckEntity::update('Collection_Camp', TRUE)
-        ->addWhere('id', '=', $collectionCampId)
-        ->addValue('Collection_Source_Feedback.Last_Reminder_Sent', $now->format('Y-m-d H:i:s'))
-        ->execute();
+      if (!empty($existingFeedback['id'])) {
+        EckEntity::update('Collection_Source_Feedback', FALSE)
+          ->addWhere('id', '=', $existingFeedback['id'])
+          ->addValue('Collection_Source_Feedback.Last_Reminder_Sent', $now->format('Y-m-d H:i:s'))
+          ->execute();
+      }
     }
   }
 
@@ -94,7 +112,6 @@ class CollectionCampVolunteerFeedbackService {
   public static function getVolunteerFeedbackReminderEmailHtml($initiatorName, $collectionCampId, $initiatorId, $campAddress) {
     $homeUrl = \CRM_Utils_System::baseCMSURL();
     $campVolunteerFeedback = $homeUrl . 'volunteer-camp-feedback/#?Collection_Source_Feedback.Collection_Camp_Code=' . $collectionCampId . '&Collection_Source_Feedback.Collection_Camp_Address=' . urlencode($campAddress) . '&Collection_Source_Feedback.Filled_By=' . $initiatorId;
-
 
     $html = "
       <p>Dear $initiatorName,</p>
