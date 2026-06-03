@@ -519,7 +519,7 @@ class InductionService extends AutoSubscriber {
       \Civi::log()->error('[Induction:Hook] Address created but no state found', [
         'contactId' => $contactId,
         'addressId' => $objectId,
-        'stateId' => $stateId
+        'stateId' => $stateId,
       ]);
       return FALSE;
     }
@@ -748,20 +748,10 @@ class InductionService extends AutoSubscriber {
       return FALSE;
     }
 
-    $contacts = Contact::get(FALSE)
-      ->addWhere('contact_sub_type:name', '=', 'Volunteer')
-      ->execute();
-    $contact = $contacts->first();
-    if (!empty($contact)) {
-      \Civi::log()->info('[Induction:Hook] sendInductionEmailForTransitionedVolunteer skipped: volunteer subtype contact exists', [
-        'transitionedVolunteerId' => self::$transitionedVolunteerId,
-      ]);
-      // Return the contact if it exists.
-      return FALSE;
-    }
-    \Civi::log()->info('[Induction:Hook] sendInductionEmailForTransitionedVolunteer proceeding', [
-      'transitionedVolunteerId' => self::$transitionedVolunteerId,
-    ]);
+    // The "is this a transition?" check already happened in the pre-hook
+    // hasIndividualChangedToVolunteer — which only sets $transitionedVolunteerId
+    // when Volunteer was not in the contact's subtypes before this edit.
+    // No further gating needed here; just send the slot email.
     self::sendInductionEmail(self::$transitionedVolunteerId);
   }
 
@@ -944,7 +934,7 @@ class InductionService extends AutoSubscriber {
       return FALSE;
     }
 
-    // Log all addresses for this contact for debugging
+    // Log all addresses for this contact for debugging.
     $allAddresses = Address::get(FALSE)
       ->addSelect('id', 'state_province_id', 'is_primary', 'street_address', 'city')
       ->addWhere('contact_id', '=', $objectId)
@@ -1011,10 +1001,11 @@ class InductionService extends AutoSubscriber {
           'stateId' => $stateId,
         ]);
       }
-      catch (\Exception $e) {
-        \Civi::log()->error('[Induction:Transitioned] FAILED: Exception during induction creation', [
+      catch (\Throwable $e) {
+        \Civi::log()->error('[Induction:Transitioned] FAILED: Throwable during induction creation', [
           'contactId' => self::$transitionedVolunteerId,
           'stateId' => $stateId,
+          'class' => get_class($e),
           'error' => $e->getMessage(),
           'trace' => $e->getTraceAsString(),
         ]);
