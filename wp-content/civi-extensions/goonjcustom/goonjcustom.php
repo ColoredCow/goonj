@@ -9,12 +9,13 @@ require_once 'goonjcustom.civix.php';
 use Civi\InductionService;
 use Civi\Api4\Address;
 use Civi\Api4\Contact;
+use Civi\Api4\UserJob;
 use Civi\Token\Event\TokenRegisterEvent;
 use Civi\Token\Event\TokenValueEvent;
 use Symfony\Component\Config\Resource\FileResource;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
-require_once __DIR__ . '/api/v3/ContributionFilter.php';
 
+require_once __DIR__ . '/api/v3/ContributionFilter.php';
 
 /**
  * Implements hook_civicrm_config().
@@ -43,6 +44,7 @@ function goonjcustom_civicrm_install(): void {
 }
 
 /**
+ * 
  * Implements hook_civicrm_enable().
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_enable
@@ -66,6 +68,133 @@ function goonjcustom_civicrm_container(ContainerBuilder $container) {
         'addListener',
         ['civi.token.eval', 'goonjcustom_evaluate_tokens']
   )->setPublic(TRUE);
+}
+
+/**
+ * Implements hook_civicrm_pageRun().
+ *
+ * Background-queue imports (enableBackgroundQueue) hand the job off to the
+ * queue runner and redirect the operator to the queue monitor page. The
+ * default civiimport monitor template reloads the import summary as an AJAX
+ * snippet every second, with no stop condition — producing a perpetually
+ * "blinking" screen that never settles on the final result.
+ *
+ * Instead, for import jobs we send the operator straight to the full import
+ * summary page (the URL core already recorded as the job's onEndUrl). The
+ * summary page then auto-refreshes on a sane interval until the background
+ * job finishes — see goonjcustom_civicrm_buildForm().
+ */
+function goonjcustom_civicrm_pageRun(&$page) {
+  if (!($page instanceof CRM_Queue_Page_Monitor)) {
+    return;
+  }
+  $info = _goonjcustom_import_monitor_target();
+  if (!$info) {
+    return;
+  }
+  // Redirect as early as possible (html-header) so the blinking snippet
+  // never gets a chance to run.
+  CRM_Core_Resources::singleton()->addScript(
+    'window.location.replace(' . json_encode($info['url']) . ');',
+    1,
+    'html-header'
+  );
+}
+
+/**
+ * Resolve the queue-monitor request to an import job + its summary URL.
+ *
+ * Mirrors the import-job detection civiimport uses for its monitor template
+ * (queue named "user_job_<id>" whose job type is a CRM_Import_Parser).
+ *
+ * @return array|null
+ *   ['user_job_id' => int, 'url' => string] for an import job, else NULL.
+ */
+function _goonjcustom_import_monitor_target(): ?array {
+  $queueName = CRM_Utils_Request::retrieveValue('name', 'String');
+  if (!$queueName || !str_starts_with($queueName, 'user_job_')) {
+    return NULL;
+  }
+  $userJobId = (int) str_replace('user_job_', '', $queueName);
+  if (!$userJobId) {
+    return NULL;
+  }
+  try {
+    $userJob = UserJob::get(TRUE)
+      ->addWhere('id', '=', $userJobId)
+      ->addSelect('job_type', 'metadata')
+      ->execute()
+      ->first();
+  }
+  catch (\Exception $e) {
+    return NULL;
+  }
+  if (empty($userJob)) {
+    return NULL;
+  }
+  $isImport = FALSE;
+  foreach (CRM_Core_BAO_UserJob::getTypes() as $type) {
+    if ($type['id'] === $userJob['job_type']
+      && is_subclass_of($type['class'], 'CRM_Import_Parser')
+    ) {
+      $isImport = TRUE;
+      break;
+    }
+  }
+  if (!$isImport) {
+    return NULL;
+  }
+  // Prefer the completion URL core already stored; fall back to building it.
+  $url = $userJob['metadata']['runner']['onEndUrl']
+    ?? CRM_Utils_System::url('civicrm/import/contact/summary', [
+      'reset' => 1,
+      'user_job_id' => $userJobId,
+    ], TRUE, NULL, FALSE);
+  return ['user_job_id' => $userJobId, 'url' => $url];
+}
+
+/**
+ * Implements hook_civicrm_buildForm().
+ *
+ * While a background-queue import is still being drained by the queue runner
+ * (coworker), the import summary shows partial / zero totals. Rather than
+ * making the operator refresh manually, auto-refresh the summary page on a
+ * sane interval and stop automatically once the job reaches a terminal state
+ * (the refresh script is simply not re-added on the next load).
+ */
+function goonjcustom_civicrm_buildForm($formName, &$form) {
+  if ($formName !== 'CRM_Contact_Import_Form_Summary') {
+    return;
+  }
+  $userJobId = $form->getUserJobID();
+  if (!$userJobId) {
+    return;
+  }
+  try {
+    $status = UserJob::get(FALSE)
+      ->addWhere('id', '=', $userJobId)
+      ->addSelect('status_id:name')
+      ->execute()
+      ->first()['status_id:name'] ?? NULL;
+  }
+  catch (\Exception $e) {
+    return;
+  }
+  // Keep polling only while the queue is still working; all other states
+  // (completed, complete_with_errors, incomplete, …) are terminal.
+  if (!in_array($status, ['scheduled', 'in_progress'], TRUE)) {
+    return;
+  }
+  CRM_Core_Session::setStatus(
+    ts('This import is still being processed in the background. This page will refresh automatically until it completes.'),
+    ts('Import in progress'),
+    'info'
+  );
+  CRM_Core_Resources::singleton()->addScript(
+    'window.setTimeout(function(){ window.location.reload(); }, 5000);',
+    1,
+    'page-footer'
+  );
 }
 
 /**
