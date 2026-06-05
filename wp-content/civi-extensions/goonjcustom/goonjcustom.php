@@ -80,9 +80,9 @@ function goonjcustom_civicrm_container(ContainerBuilder $container) {
  * "blinking" screen that never settles on the final result.
  *
  * Instead, for import jobs we send the operator straight to the full import
- * summary page (the URL core already recorded as the job's onEndUrl). The
- * summary page then auto-refreshes on a sane interval until the background
- * job finishes — see goonjcustom_civicrm_buildForm().
+ * summary page (the URL core already recorded as the job's onEndUrl). While
+ * the background job is still draining, the summary shows an "in progress"
+ * notice asking the operator to refresh — see goonjcustom_civicrm_buildForm().
  */
 function goonjcustom_civicrm_pageRun(&$page) {
   if (!($page instanceof CRM_Queue_Page_Monitor)) {
@@ -157,10 +157,11 @@ function _goonjcustom_import_monitor_target(): ?array {
  * Implements hook_civicrm_buildForm().
  *
  * While a background-queue import is still being drained by the queue runner
- * (coworker), the import summary shows partial / zero totals. Rather than
- * making the operator refresh manually, auto-refresh the summary page on a
- * sane interval and stop automatically once the job reaches a terminal state
- * (the refresh script is simply not re-added on the next load).
+ * (coworker), the import summary shows partial / zero totals. Show a clear
+ * "in progress — please refresh" notice while the job is non-terminal so the
+ * operator does not mistake the partial totals for a failed import. Operators
+ * refresh manually; the notice disappears once the job reaches a terminal
+ * state (completed, complete_with_errors, incomplete, …).
  */
 function goonjcustom_civicrm_buildForm($formName, &$form) {
   if ($formName !== 'CRM_Contact_Import_Form_Summary') {
@@ -180,20 +181,15 @@ function goonjcustom_civicrm_buildForm($formName, &$form) {
   catch (\Exception $e) {
     return;
   }
-  // Keep polling only while the queue is still working; all other states
+  // Only show the notice while the queue is still working; all other states
   // (completed, complete_with_errors, incomplete, …) are terminal.
   if (!in_array($status, ['scheduled', 'in_progress'], TRUE)) {
     return;
   }
   CRM_Core_Session::setStatus(
-    ts('This import is still being processed in the background. This page will refresh automatically until it completes.'),
+    ts('This import is still being processed in the background. Please refresh this page after a short while to see the updated results.'),
     ts('Import in progress'),
     'info'
-  );
-  CRM_Core_Resources::singleton()->addScript(
-    'window.setTimeout(function(){ window.location.reload(); }, 5000);',
-    1,
-    'page-footer'
   );
 }
 
