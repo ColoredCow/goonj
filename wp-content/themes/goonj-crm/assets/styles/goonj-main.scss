@@ -178,13 +178,27 @@
       }
 
       #crm-submit-buttons {
+        // Keep the submit button aligned with the form fields. The wrapper
+        // carried side padding and extra width that pushed the button wider
+        // than (and offset to the right of) the inputs on both desktop and
+        // mobile; on mobile it also overflowed the viewport and caused
+        // horizontal scroll. Reset so the button fills the form column.
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        width: auto !important;
+
         button {
+          // border-box so width:100% includes the button's own padding —
+          // otherwise it renders ~24px wider than the column and overflows.
+          box-sizing: border-box !important;
           font-weight: 400;
           font-family: "Proxima Nova", sans-serif !important;
           font-size: 1.2rem;
-          line-height: 16px;
+          // Must be >= font-size (1.2rem ≈ 19.2px); the old 16px clipped the
+          // label and left it vertically off-centre.
+          line-height: normal;
           height: 45px;
-          width: 100%;
+          width: 100% !important;
           background-color: #B8763F !important;
           border: none;
           border-radius: 6px !important;
@@ -474,6 +488,37 @@
 
           .header-dark {
             width: 57% !important;
+          }
+        }
+      }
+    }
+
+    // Event registration thank-you (confirmation) page.
+    // The global `form#ThankYou .crm-section { display:flex }` rule near the
+    // top of this file puts each profile label and its value on the same
+    // line. On the event confirmation profile (long labels like "Share URLs
+    // which best describes your work") that collapses on narrow screens.
+    // On mobile only, stack label above value at full width so it stays
+    // readable. Scoped to the profile-view groups (.crm-group) so it only
+    // touches the read-only confirmation layout.
+    form#ThankYou {
+      .crm-group {
+        .crm-public-form-item.crm-section {
+          display: block !important;
+        }
+
+        .crm-section {
+          .label {
+            float: none !important;
+            display: block !important;
+            width: 100% !important;
+            margin-bottom: 2px;
+          }
+
+          .content {
+            display: block !important;
+            width: 100% !important;
+            margin-left: 0 !important;
           }
         }
       }
