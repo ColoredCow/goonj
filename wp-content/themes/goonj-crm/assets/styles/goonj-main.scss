@@ -104,7 +104,7 @@
 
         fieldset > div:nth-last-child(3) .content .crm-multiple-checkbox-radio-options .crm-option-label-pair input {
           position: relative;
-          top: 8px;
+          top: 3px;
         }
 
         #on-behalf-block fieldset > div:nth-last-child(-n+2) {
@@ -146,6 +146,8 @@
 
         .content .crm-form-radio {
           max-width: 22px !important;
+          top: 4px !important;
+          position: relative !important;
         }
       }
 
@@ -520,6 +522,23 @@
             width: 100% !important;
             margin-left: 0 !important;
           }
+        }
+      }
+    }
+
+    // Event registration radio/checkbox options.
+    // Each option is a `display:grid; align-items:baseline` pair
+    // (.crm-option-label-pair). The control renders ~29px tall, which skews
+    // its baseline and lifts it above the label's first line on long
+    // (wrapping) labels. Letting the control take its natural height restores
+    // the grid's baseline alignment for both single-line (Yes/No) and
+    // multi-line options — so do NOT change align-items here, only the height.
+    // Scoped to the event registration form so other forms are untouched.
+    form.CRM_Event_Form_Registration_Register {
+      .crm-option-label-pair {
+        input[type="radio"],
+        input[type="checkbox"] {
+          height: auto !important;
         }
       }
     }
