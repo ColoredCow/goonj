@@ -83,7 +83,7 @@ class CollectionCampVolunteerFeedbackService {
     if (!$emailSendResult) {
       \Civi::log()->error('Failed to send feedback reminder email', [
         'initiatorEmail' => $initiatorEmail,
-        'volunteerEmail' => $volunteerEmail,
+        'collectionCampId' => $collectionCampId,
       ]);
       throw new \CRM_Core_Exception('Failed to send feedback reminder email');
     }
