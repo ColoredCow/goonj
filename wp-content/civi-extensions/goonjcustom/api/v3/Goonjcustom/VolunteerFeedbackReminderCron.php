@@ -45,10 +45,13 @@ function civicrm_api3_goonjcustom_volunteer_feedback_reminder_cron($params) {
   // Get the default "from" email.
   $from = HelperService::getDefaultFromEmail();
 
-  // Feedback now lives in its own Eck entity (Collection_Source_Feedback)
-  // linked back to the camp via Collection_Camp_Code. Exclude any camp that
-  // either already has submitted feedback OR has already been sent a reminder
-  // (Last_Reminder_Sent set on the feedback row).
+  // Feedback lives in its own Eck entity (Collection_Source_Feedback) linked
+  // back to the camp via Collection_Camp_Code. Exclude any camp whose feedback
+  // is filled (ANY volunteer-entered field present) OR that was already reminded
+  // earlier (Last_Reminder_Sent on the feedback row). This matches the prod
+  // backfill of Logistics_Coordination.Feedback_Reminder_Sent exactly; the
+  // "reminded by this cron" guard additionally lives on the camp itself and is
+  // applied in the camps query below.
   $campIdsToSkip = EckEntity::get('Collection_Source_Feedback', FALSE)
     ->addSelect('Collection_Source_Feedback.Collection_Camp_Code')
     ->addClause('OR',
@@ -58,19 +61,20 @@ function civicrm_api3_goonjcustom_volunteer_feedback_reminder_cron($params) {
     ->execute()
     ->column('Collection_Source_Feedback.Collection_Camp_Code');
 
-  // Floor on End_Date so the cron does not blast reminders for historical camps
-  // when it resumes after being broken for a while. Only camps that ended on or
-  // after this cutoff are eligible for a reminder.
-  $reminderEligibleFrom = '2026-05-20 00:00:00';
-
   // checkPermissions=FALSE because cron has no user context; with TRUE, ACL
   // filters out every row (matches other Goonj crons in this directory).
   $campsQuery = EckEntity::get('Collection_Camp', FALSE)
     ->addSelect('Collection_Camp_Intent_Details.Location_Area_of_camp', 'Collection_Camp_Intent_Details.End_Date', 'Collection_Camp_Core_Details.Contact_Id')
     ->addWhere('Logistics_Coordination.Feedback_Email_Sent', '=', 1)
     ->addWhere('Collection_Camp_Core_Details.Status', '=', 'authorized')
-    ->addWhere('Collection_Camp_Intent_Details.End_Date', '>=', $reminderEligibleFrom)
     ->addWhere('Collection_Camp_Intent_Details.End_Date', '<=', $endOfDay)
+    // Skip camps already reminded. The flag is unset (NULL) or 0 for camps that
+    // still need a reminder; "= 1" naturally excludes both without a NULL-safe
+    // clause because we want only the not-yet-reminded rows.
+    ->addClause('OR',
+      ['Logistics_Coordination.Feedback_Reminder_Sent', 'IS NULL'],
+      ['Logistics_Coordination.Feedback_Reminder_Sent', '!=', 1]
+    )
     // Camp_Status IS NULL for most camps; SQL "NULL != 'aborted'" evaluates to
     // NULL and would drop those rows, so make the exclusion explicitly NULL-safe.
     ->addClause('OR',
@@ -88,7 +92,10 @@ function civicrm_api3_goonjcustom_volunteer_feedback_reminder_cron($params) {
     try {
       CollectionCampVolunteerFeedbackService::processVolunteerFeedbackReminder($camp, $now, $from);
     }
-    catch (\Exception $e) {
+    catch (\Throwable $e) {
+      // Catch \Throwable (not just \Exception) so a fatal Error raised by an
+      // unrelated post-hook on one bad camp is logged and skipped instead of
+      // aborting the whole cron run for every remaining camp.
       \Civi::log()->error('Error processing volunteer feedback reminder', [
         'id' => $camp['id'],
         'error' => $e->getMessage(),
