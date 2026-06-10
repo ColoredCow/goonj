@@ -139,7 +139,9 @@ function civicrm_api3_goonjcustom_volunteer_feedback_collection_camp_cron($param
       }
 
     }
-    catch (Exception $e) {
+    catch (\Throwable $e) {
+      // Catch \Throwable (not just Exception) so a fatal Error from an unrelated
+      // post-hook on one bad camp does not abort the whole cron run.
       \Civi::log()->info("Error processing camp ID $collectionCampId: " . $e->getMessage());
     }
   }

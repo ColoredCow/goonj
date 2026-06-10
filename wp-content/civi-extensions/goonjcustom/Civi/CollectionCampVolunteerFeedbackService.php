@@ -39,36 +39,24 @@ class CollectionCampVolunteerFeedbackService {
     $collectionCampId = $camp['id'];
     $campAddress = $camp['Collection_Camp_Intent_Details.Location_Area_of_camp'];
 
-    // Look for an existing Collection_Source_Feedback row linked to this camp.
-    // Feedback rows live on a separate Eck entity (Collection_Source_Feedback)
-    // and are normally created when the volunteer submits the form. Reminder
-    // tracking (Last_Reminder_Sent) lives on the same row, so the cron has to
-    // create a placeholder row on the first reminder if none exists yet.
-    $existingFeedback = EckEntity::get('Collection_Source_Feedback', FALSE)
-      ->addSelect('id', 'Collection_Source_Feedback.Last_Reminder_Sent')
-      ->addWhere('Collection_Source_Feedback.Collection_Camp_Code', '=', $collectionCampId)
-      ->setLimit(1)
-      ->execute()
-      ->first();
-
-    $lastReminderSent = !empty($existingFeedback['Collection_Source_Feedback.Last_Reminder_Sent'])
-      ? new \DateTime($existingFeedback['Collection_Source_Feedback.Last_Reminder_Sent'])
-      : NULL;
-
     // Calculate hours since camp ended.
     $hoursSinceCampEnd = abs($now->getTimestamp() - $endDate->getTimestamp()) / 3600;
 
-    // Check if feedback form is not filled and 24 hours have passed since camp end.
-    if ($hoursSinceCampEnd >= 24 && !$lastReminderSent) {
-      // Send the first reminder email to the volunteer.
+    // Send a single reminder once 24 hours have passed since the camp ended.
+    // The cron query already excludes camps whose feedback is filled or that
+    // were already reminded (Logistics_Coordination.Feedback_Reminder_Sent), so
+    // here we just send and flag the camp so the reminder never fires again.
+    if ($hoursSinceCampEnd >= 24) {
+      // Send the first (and only) reminder email to the volunteer.
       self::sendVolunteerFeedbackReminderEmail($initiatorEmail, $from, $campAddress, $collectionCampId, $endDate, $initiatorName, $initiatorId);
 
-      if (!empty($existingFeedback['id'])) {
-        EckEntity::update('Collection_Source_Feedback', FALSE)
-          ->addWhere('id', '=', $existingFeedback['id'])
-          ->addValue('Collection_Source_Feedback.Last_Reminder_Sent', $now->format('Y-m-d H:i:s'))
-          ->execute();
-      }
+      // Flag the reminder on the camp itself (same pattern as Feedback_Email_Sent).
+      // Runs only if the send above succeeded — sendVolunteerFeedbackReminderEmail
+      // throws on failure, so a failed send is retried on the next cron run.
+      EckEntity::update('Collection_Camp', FALSE)
+        ->addWhere('id', '=', $collectionCampId)
+        ->addValue('Logistics_Coordination.Feedback_Reminder_Sent', 1)
+        ->execute();
     }
   }
 
@@ -95,7 +83,7 @@ class CollectionCampVolunteerFeedbackService {
     if (!$emailSendResult) {
       \Civi::log()->error('Failed to send feedback reminder email', [
         'initiatorEmail' => $initiatorEmail,
-        'volunteerEmail' => $volunteerEmail,
+        'collectionCampId' => $collectionCampId,
       ]);
       throw new \CRM_Core_Exception('Failed to send feedback reminder email');
     }
