@@ -293,7 +293,11 @@ trait QrCodeable {
       $saveOptions['entityId'] = $entityId;
       self::saveQrCode($finalImage, $saveOptions);
     }
-    catch (\Exception $e) {
+    catch (\Throwable $e) {
+      // Catch \Throwable (not just \Exception) so a fatal Error — e.g. reading
+      // $objectRef as an array when CiviCRM 6.13.x passes it as a CRM_Eck_DAO_Entity
+      // object — is logged and swallowed instead of propagating out of the
+      // post-hook and rolling back the triggering entity write.
       \CRM_Core_Error::debug_log_message('Error generating QR code: ' . $e->getMessage());
       return FALSE;
     }
