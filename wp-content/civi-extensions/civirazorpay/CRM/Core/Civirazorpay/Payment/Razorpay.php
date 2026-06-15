@@ -483,7 +483,11 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
     $paymentId = $event['payload']['payment']['entity']['id'] ?? NULL;
     // Convert from paise to INR.
     $amount = $event['payload']['payment']['entity']['amount'] / 100;
-    $panCard = $event['payload']['subscription']['entity']['notes']['identity_type'] ?? NULL;
+    // CiviCRM-created subscriptions store the PAN under 'identity_type'. Subscriptions
+    // imported from Razorpay carry it under 'PAN Card' instead, so fall back to that.
+    $panCard = $event['payload']['subscription']['entity']['notes']['identity_type']
+      ?? $event['payload']['subscription']['entity']['notes']['PAN Card']
+      ?? NULL;
     $campaignTitle = $event['payload']['subscription']['entity']['notes']['purpose'] ?? NULL;
 
     if (!$subscriptionId || !$paymentId) {
