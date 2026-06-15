@@ -17,11 +17,17 @@
  *   - contribution was created by the webhook (source IS NULL or '')
  *   - contribution's PAN custom field is empty
  *
+ * Memory: backfilling contributions fires CiviCRM post-hooks on every
+ * update and is memory-heavy. Run with a raised memory limit so the process
+ * does not die silently mid-way, e.g.:
+ *   php -d memory_limit=2G `which cv` scr <this-file>
+ * (or raise memory_limit in the CLI php.ini). Do NOT hardcode it here.
+ *
  * Usage (DRY RUN by default — writes nothing):
- *   cv scr wp-content/civi-extensions/civirazorpay/cli/backfill-recurring-pan-from-razorpay.php
+ *   php -d memory_limit=2G `which cv` scr wp-content/civi-extensions/civirazorpay/cli/backfill-recurring-pan-from-razorpay.php
  *
  * To actually write:
- *   cv scr wp-content/civi-extensions/civirazorpay/cli/backfill-recurring-pan-from-razorpay.php -- --apply
+ *   php -d memory_limit=2G `which cv` scr wp-content/civi-extensions/civirazorpay/cli/backfill-recurring-pan-from-razorpay.php -- --apply
  *
  * Output: backfill-recurring-pan-results.csv in the current working dir.
  */
@@ -32,10 +38,6 @@ use Civi\Api4\PaymentProcessor;
 use Civi\Payment\System;
 
 civicrm_initialize();
-
-// Backfilling 850+ contributions fires CiviCRM post-hooks on every update, which
-// is memory-heavy. Raise the limit so the run does not die silently mid-way.
-ini_set('memory_limit', '2G');
 
 $APPLY = in_array('--apply', $argv ?? [], TRUE);
 echo $APPLY
