@@ -162,8 +162,20 @@ class PanVerificationService extends AutoSubscriber {
       return;
     }
 
+    // Try _contactID first (when contact is pre-selected via URL cid=N).
+    // Fall back to the standalone form's submitted contact_id field.
     $contactId = $form->getVar('_contactID');
+    if (!$contactId && !empty($fields['contact_id'])) {
+      $contactId = is_array($fields['contact_id'])
+        ? (int) reset($fields['contact_id'])
+        : (int) $fields['contact_id'];
+    }
+
     if (!$contactId) {
+      \Civi::log()->warning('PanVerification: backend admin form — could not resolve contact_id, skipping.', [
+        'pan'           => $pan,
+        'available_keys' => array_keys($fields),
+      ]);
       return;
     }
 
