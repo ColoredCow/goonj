@@ -32,6 +32,77 @@ function goonjcustom_civicrm_config(&$config): void {
   \Civi::dispatcher()->addSubscriber(new CRM_Goonjcustom_Token_InstitutionDroppingCenter());
   \Civi::dispatcher()->addSubscriber(new CRM_Goonjcustom_Token_InstitutionGoonjActivities());
   \Civi::dispatcher()->addSubscriber(new CRM_Goonjcustom_Token_IndividualGoonjActivities());
+
+  // Forward CiviCRM API/cron exceptions to Sentry (the WP "Sentry for
+  // WordPress" plugin already initialises the SDK). Many CiviCRM exceptions —
+  // especially in scheduled jobs — are caught internally and only written to
+  // ConfigAndLog, so they never reach Sentry on their own. This surfaces them.
+  \Civi::dispatcher()->addListener('civi.api.exception', '_goonjcustom_sentry_capture_api_exception');
+
+  // Catch page/form fatals. CiviCRM swallows these in
+  // CRM_Core_Error::handleUnhandledException() (renders an error page), so they
+  // never reach PHP's handler or the API event above — this is the only place
+  // they surface. These are the "$Fatal Error Details" entries in ConfigAndLog.
+  \Civi::dispatcher()->addListener('hook_civicrm_unhandled_exception', '_goonjcustom_sentry_capture_unhandled_exception');
+}
+
+/**
+ * Report a CiviCRM page/form unhandled exception to Sentry.
+ *
+ * No-op when the Sentry SDK is not loaded, so it is safe on any environment.
+ */
+function _goonjcustom_sentry_capture_unhandled_exception($event): void {
+  if (!function_exists('Sentry\captureException')) {
+    return;
+  }
+
+  $exception = $event->exception ?? NULL;
+  if (!$exception instanceof \Throwable) {
+    return;
+  }
+
+  try {
+    \Sentry\withScope(function (\Sentry\State\Scope $scope) use ($exception): void {
+      $scope->setTag('civicrm.component', 'page');
+      \Sentry\captureException($exception);
+    });
+  }
+  catch (\Throwable $sentryFailure) {
+    // Best-effort: never let Sentry forwarding mask the original error page.
+  }
+}
+
+/**
+ * Report a CiviCRM API exception to Sentry, tagged with the failing entity/action.
+ *
+ * No-op when the Sentry SDK is not loaded, so it is safe in any context
+ * (CLI, cron, web) and on environments where Sentry is not configured.
+ */
+function _goonjcustom_sentry_capture_api_exception($event): void {
+  if (!function_exists('Sentry\captureException')) {
+    return;
+  }
+
+  $exception = method_exists($event, 'getException') ? $event->getException() : NULL;
+  if (!$exception instanceof \Throwable) {
+    return;
+  }
+
+  $request = method_exists($event, 'getApiRequest') ? $event->getApiRequest() : [];
+  $entity = $request['entity'] ?? 'unknown';
+  $action = $request['action'] ?? 'unknown';
+
+  try {
+    \Sentry\withScope(function (\Sentry\State\Scope $scope) use ($exception, $entity, $action): void {
+      $scope->setTag('civicrm.component', 'api');
+      $scope->setTag('civicrm.entity', (string) $entity);
+      $scope->setTag('civicrm.action', (string) $action);
+      \Sentry\captureException($exception);
+    });
+  }
+  catch (\Throwable $sentryFailure) {
+    // Best-effort: never let Sentry forwarding interfere with the API call.
+  }
 }
 
 /**
@@ -68,6 +139,13 @@ function goonjcustom_civicrm_container(ContainerBuilder $container) {
         'addListener',
         ['civi.token.eval', 'goonjcustom_evaluate_tokens']
   )->setPublic(TRUE);
+
+  // Route CiviCRM's PSR-3 logger through our subclass so that
+  // Civi::log()->error() (and higher) entries are forwarded to Sentry. File
+  // logging is unchanged; see CRM_Goonjcustom_SentryLog.
+  if ($container->hasDefinition('psr_log')) {
+    $container->getDefinition('psr_log')->setClass('CRM_Goonjcustom_SentryLog');
+  }
 }
 
 /**
