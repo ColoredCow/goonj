@@ -27,9 +27,21 @@ class PanVerificationService extends AutoSubscriber {
    */
   public static function getSubscribedEvents() {
     return [
-      '&hook_civicrm_validateForm' => 'onContributionFormValidate',
+      '&hook_civicrm_validateForm' => 'onValidateForm',
       '&hook_civicrm_post'         => 'onContributionPostSave',
     ];
+  }
+
+  /**
+   * Dispatcher — routes to the right handler based on which form is being validated.
+   */
+  public static function onValidateForm($formName, &$fields, &$files, &$form, &$errors): void {
+    if ($formName === 'CRM_Contribute_Form_Contribution_Main') {
+      self::onContributionFormValidate($formName, $fields, $files, $form, $errors);
+    }
+    elseif ($formName === 'CRM_Contribute_Form_Contribution') {
+      self::onAdminContributionFormValidate($formName, $fields, $files, $form, $errors);
+    }
   }
 
   /**
@@ -128,6 +140,57 @@ class PanVerificationService extends AutoSubscriber {
         $errors[$panFieldKey] = self::PAN_VERIFICATION_FAILED_MESSAGE;
       }
     }
+  }
+
+  /**
+   * Fires during form validation for the backend (admin) contribution form.
+   * Backend team will handle verification separately — we just copy the PAN
+   * from the contribution form to the contact record. No format check,
+   * no API call, no PAN_API_Status update so backend-entered PANs can be
+   * identified later.
+   */
+  public static function onAdminContributionFormValidate($formName, &$fields, &$files, &$form, &$errors): void {
+    if ($formName !== 'CRM_Contribute_Form_Contribution') {
+      return;
+    }
+
+    // Backend form submits PAN with a record suffix (e.g. custom_278_-1 for new entry,
+    // custom_278_<id> for an existing record), so direct key lookup fails.
+    // Match by prefix instead.
+    $pan = self::getPanFromBackendFormFields($fields);
+    if (empty($pan)) {
+      return;
+    }
+
+    // Try _contactID first (when contact is pre-selected via URL cid=N).
+    // Fall back to the standalone form's submitted contact_id field.
+    $contactId = $form->getVar('_contactID');
+    if (!$contactId && !empty($fields['contact_id'])) {
+      $contactId = is_array($fields['contact_id'])
+        ? (int) reset($fields['contact_id'])
+        : (int) $fields['contact_id'];
+    }
+
+    if (!$contactId) {
+      \Civi::log()->warning('PanVerification: backend admin form — could not resolve contact_id, skipping.', [
+        'pan'           => $pan,
+        'available_keys' => array_keys($fields),
+      ]);
+      return;
+    }
+
+    $enteredPan = strtoupper(trim($pan));
+
+    Contact::update(FALSE)
+      ->addWhere('id', '=', $contactId)
+      ->addValue('PAN_Card_Details.PAN_Card_Number', $enteredPan)
+      ->addValue('PAN_Card_Details.PAN_Verification_Status:name', self::PAN_STATUS_VERIFIED)
+      ->execute();
+
+    \Civi::log()->info('PanVerification: backend admin entry — PAN saved to contact as Verified (no API call, PAN_API_Status untouched).', [
+      'contact_id' => $contactId,
+      'pan'        => $enteredPan,
+    ]);
   }
 
   /**
@@ -267,6 +330,30 @@ class PanVerificationService extends AutoSubscriber {
     }
 
     return $params[$key] ?? NULL;
+  }
+
+  /**
+   * Extract PAN from backend admin form fields. The backend submits the field
+   * with a record-id suffix (e.g. custom_278_-1 for a new record entry), so
+   * we match by prefix instead of an exact key.
+   */
+  private static function getPanFromBackendFormFields(array $params): ?string {
+    $key = self::getPanFieldKey();
+    if (!$key) {
+      return NULL;
+    }
+
+    if (!empty($params[$key])) {
+      return $params[$key];
+    }
+
+    foreach ($params as $paramKey => $value) {
+      if (!empty($value) && strpos($paramKey, $key . '_') === 0) {
+        return $value;
+      }
+    }
+
+    return NULL;
   }
 
   /**
