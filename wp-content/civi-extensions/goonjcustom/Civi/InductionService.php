@@ -32,15 +32,18 @@ class InductionService extends AutoSubscriber {
   public static function getSubscribedEvents() {
     return [
       '&hook_civicrm_pre' => [
-        ['hasIndividualChangedToVolunteer'],
-        ['sendActivityEmailToVolunteer'],
+        // TEMP DISABLED for bulk dedup merge: merge-edit is wrongly detected as a new
+        // volunteer transition and re-sends the onboarding email. RESTORE after merge.
+        // ['hasIndividualChangedToVolunteer'],
+        // ['sendActivityEmailToVolunteer'],
       ],
       '&hook_civicrm_post' => [
             ['volunteerCreated'],
             ['createInductionForVolunteer'],
-            ['createInductionForTransitionedVolunteer'],
-            ['sendInductionEmailToVolunteer'],
-            ['sendInductionEmailForTransitionedVolunteer'],
+        // TEMP DISABLED for bulk dedup merge (see note above). RESTORE after merge.
+        //     ['createInductionForTransitionedVolunteer'],
+        //     ['sendInductionEmailToVolunteer'],
+        //     ['sendInductionEmailForTransitionedVolunteer'],
       ],
       '&hook_civicrm_custom' => [
         ['volunteerInductionAssignee'],
