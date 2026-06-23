@@ -46,10 +46,6 @@ if (!function_exists('civicrm_api3')) {
   exit(1);
 }
 
-// Bulk merges accumulate memory; default 128M dies after a few hundred. Lift limits.
-@ini_set('memory_limit', '2048M');
-@set_time_limit(0);
-
 CRM_Core_DAO::executeQuery("SET SESSION sql_mode=''");
 
 // keeper + the members that merge into it, restricted to merge_scope.
@@ -119,10 +115,7 @@ foreach ($pairs as $keeper => $removes) {
         fputcsv($fh, [$ts, $keeper, $remove, 'SKIPPED_CONFLICT', json_encode($r['values'])]);
       }
     }
-    catch (\Throwable $e) {
-      // \Throwable (not just Exception) so a CiviCRM 6.13 TypeError on one pair
-      // (e.g. null primary email -> updateContactName) logs + skips that pair
-      // instead of killing the whole run.
+    catch (Exception $e) {
       $errors++;
       fputcsv($fh, [$ts, $keeper, $remove, 'ERROR', $e->getMessage()]);
     }
