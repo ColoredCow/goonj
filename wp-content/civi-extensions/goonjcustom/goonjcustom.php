@@ -44,6 +44,29 @@ function goonjcustom_civicrm_config(&$config): void {
   // never reach PHP's handler or the API event above — this is the only place
   // they surface. These are the "$Fatal Error Details" entries in ConfigAndLog.
   \Civi::dispatcher()->addListener('hook_civicrm_unhandled_exception', '_goonjcustom_sentry_capture_unhandled_exception');
+
+  // The WP "Sentry for WordPress" plugin only flushes queued events on
+  // WordPress's `shutdown` action. CiviCRM ends most requests via civiExit()
+  // (a raw exit()), and CLI/cron contexts also skip that action — so events we
+  // capture programmatically (the listeners above + CRM_Goonjcustom_SentryLog)
+  // get queued but never sent. Register a native PHP shutdown flush, which DOES
+  // run on exit(), so pending Sentry events are delivered however the request
+  // ends. flush() is a no-op when nothing is queued, so error-free requests are
+  // unaffected.
+  register_shutdown_function(static function (): void {
+    if (!class_exists('\Sentry\SentrySdk')) {
+      return;
+    }
+    try {
+      $client = \Sentry\SentrySdk::getCurrentHub()->getClient();
+      if ($client !== NULL) {
+        $client->flush();
+      }
+    }
+    catch (\Throwable $sentryFailure) {
+      // Best-effort: never let flushing interfere with shutdown.
+    }
+  });
 }
 
 /**
