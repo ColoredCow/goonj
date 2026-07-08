@@ -9,12 +9,13 @@ require_once 'goonjcustom.civix.php';
 use Civi\InductionService;
 use Civi\Api4\Address;
 use Civi\Api4\Contact;
+use Civi\Api4\UserJob;
 use Civi\Token\Event\TokenRegisterEvent;
 use Civi\Token\Event\TokenValueEvent;
 use Symfony\Component\Config\Resource\FileResource;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
-require_once __DIR__ . '/api/v3/ContributionFilter.php';
 
+require_once __DIR__ . '/api/v3/ContributionFilter.php';
 
 /**
  * Implements hook_civicrm_config().
@@ -31,6 +32,77 @@ function goonjcustom_civicrm_config(&$config): void {
   \Civi::dispatcher()->addSubscriber(new CRM_Goonjcustom_Token_InstitutionDroppingCenter());
   \Civi::dispatcher()->addSubscriber(new CRM_Goonjcustom_Token_InstitutionGoonjActivities());
   \Civi::dispatcher()->addSubscriber(new CRM_Goonjcustom_Token_IndividualGoonjActivities());
+
+  // Forward CiviCRM API/cron exceptions to Sentry (the WP "Sentry for
+  // WordPress" plugin already initialises the SDK). Many CiviCRM exceptions —
+  // especially in scheduled jobs — are caught internally and only written to
+  // ConfigAndLog, so they never reach Sentry on their own. This surfaces them.
+  \Civi::dispatcher()->addListener('civi.api.exception', '_goonjcustom_sentry_capture_api_exception');
+
+  // Catch page/form fatals. CiviCRM swallows these in
+  // CRM_Core_Error::handleUnhandledException() (renders an error page), so they
+  // never reach PHP's handler or the API event above — this is the only place
+  // they surface. These are the "$Fatal Error Details" entries in ConfigAndLog.
+  \Civi::dispatcher()->addListener('hook_civicrm_unhandled_exception', '_goonjcustom_sentry_capture_unhandled_exception');
+}
+
+/**
+ * Report a CiviCRM page/form unhandled exception to Sentry.
+ *
+ * No-op when the Sentry SDK is not loaded, so it is safe on any environment.
+ */
+function _goonjcustom_sentry_capture_unhandled_exception($event): void {
+  if (!function_exists('Sentry\captureException')) {
+    return;
+  }
+
+  $exception = $event->exception ?? NULL;
+  if (!$exception instanceof \Throwable) {
+    return;
+  }
+
+  try {
+    \Sentry\withScope(function (\Sentry\State\Scope $scope) use ($exception): void {
+      $scope->setTag('civicrm.component', 'page');
+      \Sentry\captureException($exception);
+    });
+  }
+  catch (\Throwable $sentryFailure) {
+    // Best-effort: never let Sentry forwarding mask the original error page.
+  }
+}
+
+/**
+ * Report a CiviCRM API exception to Sentry, tagged with the failing entity/action.
+ *
+ * No-op when the Sentry SDK is not loaded, so it is safe in any context
+ * (CLI, cron, web) and on environments where Sentry is not configured.
+ */
+function _goonjcustom_sentry_capture_api_exception($event): void {
+  if (!function_exists('Sentry\captureException')) {
+    return;
+  }
+
+  $exception = method_exists($event, 'getException') ? $event->getException() : NULL;
+  if (!$exception instanceof \Throwable) {
+    return;
+  }
+
+  $request = method_exists($event, 'getApiRequest') ? $event->getApiRequest() : [];
+  $entity = $request['entity'] ?? 'unknown';
+  $action = $request['action'] ?? 'unknown';
+
+  try {
+    \Sentry\withScope(function (\Sentry\State\Scope $scope) use ($exception, $entity, $action): void {
+      $scope->setTag('civicrm.component', 'api');
+      $scope->setTag('civicrm.entity', (string) $entity);
+      $scope->setTag('civicrm.action', (string) $action);
+      \Sentry\captureException($exception);
+    });
+  }
+  catch (\Throwable $sentryFailure) {
+    // Best-effort: never let Sentry forwarding interfere with the API call.
+  }
 }
 
 /**
@@ -43,6 +115,7 @@ function goonjcustom_civicrm_install(): void {
 }
 
 /**
+ * 
  * Implements hook_civicrm_enable().
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_enable
@@ -66,7 +139,137 @@ function goonjcustom_civicrm_container(ContainerBuilder $container) {
         'addListener',
         ['civi.token.eval', 'goonjcustom_evaluate_tokens']
   )->setPublic(TRUE);
+
+  // Route CiviCRM's PSR-3 logger through our subclass so that
+  // Civi::log()->error() (and higher) entries are forwarded to Sentry. File
+  // logging is unchanged; see CRM_Goonjcustom_SentryLog.
+  if ($container->hasDefinition('psr_log')) {
+    $container->getDefinition('psr_log')->setClass('CRM_Goonjcustom_SentryLog');
+  }
 }
+
+/**
+ * Implements hook_civicrm_pageRun().
+ *
+ * Background-queue imports (enableBackgroundQueue) hand the job off to the
+ * queue runner and redirect the operator to the queue monitor page. The
+ * default civiimport monitor template reloads the import summary as an AJAX
+ * snippet every second, with no stop condition — producing a perpetually
+ * "blinking" screen that never settles on the final result.
+ *
+ * Instead, for import jobs we send the operator straight to the full import
+ * summary page (the URL core already recorded as the job's onEndUrl). While
+ * the background job is still draining, the summary shows an "in progress"
+ * notice asking the operator to refresh — see goonjcustom_civicrm_buildForm().
+ */
+// function goonjcustom_civicrm_pageRun(&$page) {
+//   if (!($page instanceof CRM_Queue_Page_Monitor)) {
+//     return;
+//   }
+//   $info = _goonjcustom_import_monitor_target();
+//   if (!$info) {
+//     return;
+//   }
+//   // Redirect as early as possible (html-header) so the blinking snippet
+//   // never gets a chance to run.
+//   CRM_Core_Resources::singleton()->addScript(
+//     'window.location.replace(' . json_encode($info['url']) . ');',
+//     1,
+//     'html-header'
+//   );
+// }
+
+/**
+ * Resolve the queue-monitor request to an import job + its summary URL.
+ *
+ * Mirrors the import-job detection civiimport uses for its monitor template
+ * (queue named "user_job_<id>" whose job type is a CRM_Import_Parser).
+ *
+ * @return array|null
+ *   ['user_job_id' => int, 'url' => string] for an import job, else NULL.
+ */
+// function _goonjcustom_import_monitor_target(): ?array {
+//   $queueName = CRM_Utils_Request::retrieveValue('name', 'String');
+//   if (!$queueName || !str_starts_with($queueName, 'user_job_')) {
+//     return NULL;
+//   }
+//   $userJobId = (int) str_replace('user_job_', '', $queueName);
+//   if (!$userJobId) {
+//     return NULL;
+//   }
+//   try {
+//     $userJob = UserJob::get(TRUE)
+//       ->addWhere('id', '=', $userJobId)
+//       ->addSelect('job_type', 'metadata')
+//       ->execute()
+//       ->first();
+//   }
+//   catch (\Exception $e) {
+//     return NULL;
+//   }
+//   if (empty($userJob)) {
+//     return NULL;
+//   }
+//   $isImport = FALSE;
+//   foreach (CRM_Core_BAO_UserJob::getTypes() as $type) {
+//     if ($type['id'] === $userJob['job_type']
+//       && is_subclass_of($type['class'], 'CRM_Import_Parser')
+//     ) {
+//       $isImport = TRUE;
+//       break;
+//     }
+//   }
+//   if (!$isImport) {
+//     return NULL;
+//   }
+//   // Prefer the completion URL core already stored; fall back to building it.
+//   $url = $userJob['metadata']['runner']['onEndUrl']
+//     ?? CRM_Utils_System::url('civicrm/import/contact/summary', [
+//       'reset' => 1,
+//       'user_job_id' => $userJobId,
+//     ], TRUE, NULL, FALSE);
+//   return ['user_job_id' => $userJobId, 'url' => $url];
+// }
+
+/**
+ * Implements hook_civicrm_buildForm().
+ *
+ * While a background-queue import is still being drained by the queue runner
+ * (coworker), the import summary shows partial / zero totals. Show a clear
+ * "in progress — please refresh" notice while the job is non-terminal so the
+ * operator does not mistake the partial totals for a failed import. Operators
+ * refresh manually; the notice disappears once the job reaches a terminal
+ * state (completed, complete_with_errors, incomplete, …).
+ */
+// function goonjcustom_civicrm_buildForm($formName, &$form) {
+//   if ($formName !== 'CRM_Contact_Import_Form_Summary') {
+//     return;
+//   }
+//   $userJobId = $form->getUserJobID();
+//   if (!$userJobId) {
+//     return;
+//   }
+//   try {
+//     $status = UserJob::get(FALSE)
+//       ->addWhere('id', '=', $userJobId)
+//       ->addSelect('status_id:name')
+//       ->execute()
+//       ->first()['status_id:name'] ?? NULL;
+//   }
+//   catch (\Exception $e) {
+//     return;
+//   }
+//   // Only show the notice while the queue is still working; all other states
+//   // (completed, complete_with_errors, incomplete, …) are terminal.
+//   if (!in_array($status, ['scheduled', 'in_progress'], TRUE)) {
+//     return;
+//   }
+//   CRM_Core_Session::setStatus(
+//     ts('This import is still being processed in the background. Please refresh this page after a short while to see the updated results.'),
+//     ts('Import in progress'),
+//     'info'
+//   );
+// }
 
 /**
  * Implements hook_civicrm_links().
