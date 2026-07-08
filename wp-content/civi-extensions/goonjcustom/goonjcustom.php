@@ -64,7 +64,10 @@ function goonjcustom_civicrm_config(&$config): void {
       }
     }
     catch (\Throwable $sentryFailure) {
-      // Best-effort: never let flushing interfere with shutdown.
+      // Best-effort: never let flushing interfere with shutdown. Log to the PHP
+      // error log (NOT Civi::log, to avoid recursion) so a broken flush is
+      // diagnosable in wp-content/debug.log.
+      error_log('[goonjcustom][sentry] shutdown flush failed: ' . $sentryFailure->getMessage());
     }
   });
 }
@@ -92,6 +95,7 @@ function _goonjcustom_sentry_capture_unhandled_exception($event): void {
   }
   catch (\Throwable $sentryFailure) {
     // Best-effort: never let Sentry forwarding mask the original error page.
+    error_log('[goonjcustom][sentry] page-exception forward failed: ' . $sentryFailure->getMessage());
   }
 }
 
@@ -125,6 +129,7 @@ function _goonjcustom_sentry_capture_api_exception($event): void {
   }
   catch (\Throwable $sentryFailure) {
     // Best-effort: never let Sentry forwarding interfere with the API call.
+    error_log('[goonjcustom][sentry] api-exception forward failed: ' . $sentryFailure->getMessage());
   }
 }
 
