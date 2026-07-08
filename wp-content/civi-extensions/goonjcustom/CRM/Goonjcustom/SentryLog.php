@@ -58,7 +58,10 @@ class CRM_Goonjcustom_SentryLog extends CRM_Core_Error_Log {
       });
     }
     catch (\Throwable $sentryFailure) {
-      // Swallow — CiviCRM logging already succeeded above.
+      // Swallow — CiviCRM logging already succeeded above. Record to the PHP
+      // error log (NOT Civi::log, which would recurse back into this method) so
+      // a broken forwarder is diagnosable in wp-content/debug.log.
+      error_log('[goonjcustom][sentry] log forward failed: ' . $sentryFailure->getMessage());
     }
   }
 
