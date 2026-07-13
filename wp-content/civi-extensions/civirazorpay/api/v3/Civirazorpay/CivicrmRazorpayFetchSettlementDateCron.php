@@ -98,13 +98,13 @@ class RazorpaySettlementFetcher {
   private function fetchSettlementTransactions(): array {
     $transactionsByDay = [];
 
-    // Hardcoded dates for testing
-    // $hardcodedDates = [
-    //   new DateTime('2025-07-05'),
-    // ];
-    // $datesToCheck = $hardcodedDates;
+    // Check the target date + previous 2 days (3 days total) so a day missed
+    // on its own run is caught up later. Already-settled contributions are
+    // skipped below, so re-checking is safe.
     $datesToCheck = [
       $this->targetDate,
+      (clone $this->targetDate)->modify('-1 day'),
+      (clone $this->targetDate)->modify('-2 day'),
     ];
 
     foreach ($datesToCheck as $checkDate) {
