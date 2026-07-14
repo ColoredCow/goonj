@@ -1,0 +1,38 @@
+name: production-deployment
+
+on:
+  push:
+    branches: main
+
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: web, host_secret: PROD_SSH_HOST }
+          # worker leg — uncomment when the worker is ready (Phase 2 Part 3)
+          # - { name: worker, host_secret: PROD_SSH_WORKER_HOST }
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to ${{ matrix.name }}
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          DIR: ${{ secrets.PROD_SSH_BUILD_DIRECTORY }}
+          APP_USER: ${{ secrets.PROD_APP_USER }}
+        with:
+          host: ${{ secrets[matrix.host_secret] }}
+          username: ${{ secrets.PROD_SSH_USERNAME }}
+          key: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
+          envs: DIR,APP_USER
+          script_stop: true
+          script: |
+            set -eu
+            sudo -u "$APP_USER" rm -f "$DIR/.git/index.lock" 2>/dev/null || true
+            sudo -u "$APP_USER" git -C "$DIR" fetch --prune origin main
+            sudo -u "$APP_USER" git -C "$DIR" reset --hard origin/main
