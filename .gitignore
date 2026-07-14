@@ -36,8 +36,8 @@ wordfence-waf.php
 /wp-content/wflogs/
 
 # dompdf font cache
-wp-content/plugins/civicrm/civicrm/vendor/dompdf/dompdf/lib/fonts/*.ufm.json
-wp-content/plugins/civicrm/civicrm/vendor/dompdf/dompdf/lib/fonts/*.afm.json
+/wp-content/plugins/civicrm/civicrm/vendor/dompdf/dompdf/lib/fonts/*.ufm.json
+/wp-content/plugins/civicrm/civicrm/vendor/dompdf/dompdf/lib/fonts/*.afm.json
 
 # macos
 .DS_Store
