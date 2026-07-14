@@ -1,0 +1,33 @@
+name: production-deployment
+
+on:
+  push:
+    branches: main
+
+jobs:
+  deploy:
+    strategy:
+      fail-fast: false          # once both legs are live, one host failing must NOT cancel the other
+      matrix:
+        include:
+          - { name: web, host_secret: PROD_SSH_HOST }        # only the HOST differs between web/worker
+          # --- WORKER LEG: uncomment once the worker is provisioned + reachable (Phase 2 Part 3) ---
+          # - { name: worker, host_secret: PROD_SSH_WORKER_HOST }
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to ${{ matrix.name }}
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets[matrix.host_secret] }}          # per-host (web vs worker)
+          username: ${{ secrets.PROD_SSH_USERNAME }}         # ubuntu (shared)
+          key: ${{ secrets.PROD_SSH_PRIVATE_KEY }}           # Key A (shared)
+          script_stop: true
+          script: |
+            set -eu
+            DIR="${{ secrets.PROD_SSH_BUILD_DIRECTORY }}"
+            # git runs as apache (tree owner); ubuntu -> apache is passwordless sudo
+            sudo -u apache bash -c "cd '$DIR' \
+              && rm -f .git/index.lock 2>/dev/null || true; \
+              git fetch --prune origin main \
+              && git reset --hard origin/main"
