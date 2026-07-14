@@ -15,8 +15,7 @@ jobs:
       matrix:
         include:
           - { name: web, host_secret: PROD_SSH_HOST }
-          # worker leg — uncomment when the worker is ready (Phase 2 Part 3)
-          # - { name: worker, host_secret: PROD_SSH_WORKER_HOST }
+          - { name: worker, host_secret: PROD_SSH_WORKER_HOST }
     runs-on: ubuntu-latest
 
     steps:
