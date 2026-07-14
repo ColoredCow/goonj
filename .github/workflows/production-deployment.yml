@@ -33,9 +33,6 @@ jobs:
           script_stop: true
           script: |
             set -eu
-            if [ -f "$DIR/.git/index.lock" ]; then
-              sudo -u "$APP_USER" rm -f "$DIR/.git/index.lock"
-            fi
+            sudo -u "$APP_USER" rm -f "$DIR/.git/index.lock" 2>/dev/null || true
             sudo -u "$APP_USER" git -C "$DIR" fetch --prune origin main
             sudo -u "$APP_USER" git -C "$DIR" reset --hard origin/main
-            sudo -u "$APP_USER" git -C "$DIR" rev-parse HEAD
