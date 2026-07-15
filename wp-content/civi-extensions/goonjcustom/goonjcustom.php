@@ -164,22 +164,22 @@ function goonjcustom_civicrm_container(ContainerBuilder $container) {
  * the background job is still draining, the summary shows an "in progress"
  * notice asking the operator to refresh — see goonjcustom_civicrm_buildForm().
  */
-// function goonjcustom_civicrm_pageRun(&$page) {
-//   if (!($page instanceof CRM_Queue_Page_Monitor)) {
-//     return;
-//   }
-//   $info = _goonjcustom_import_monitor_target();
-//   if (!$info) {
-//     return;
-//   }
-//   // Redirect as early as possible (html-header) so the blinking snippet
-//   // never gets a chance to run.
-//   CRM_Core_Resources::singleton()->addScript(
-//     'window.location.replace(' . json_encode($info['url']) . ');',
-//     1,
-//     'html-header'
-//   );
-// }
+function goonjcustom_civicrm_pageRun(&$page) {
+  if (!($page instanceof CRM_Queue_Page_Monitor)) {
+    return;
+  }
+  $info = _goonjcustom_import_monitor_target();
+  if (!$info) {
+    return;
+  }
+  // Redirect as early as possible (html-header) so the blinking snippet
+  // never gets a chance to run.
+  CRM_Core_Resources::singleton()->addScript(
+    'window.location.replace(' . json_encode($info['url']) . ');',
+    1,
+    'html-header'
+  );
+}
 
 /**
  * Resolve the queue-monitor request to an import job + its summary URL.
@@ -190,48 +190,48 @@ function goonjcustom_civicrm_container(ContainerBuilder $container) {
  * @return array|null
  *   ['user_job_id' => int, 'url' => string] for an import job, else NULL.
  */
-// function _goonjcustom_import_monitor_target(): ?array {
-//   $queueName = CRM_Utils_Request::retrieveValue('name', 'String');
-//   if (!$queueName || !str_starts_with($queueName, 'user_job_')) {
-//     return NULL;
-//   }
-//   $userJobId = (int) str_replace('user_job_', '', $queueName);
-//   if (!$userJobId) {
-//     return NULL;
-//   }
-//   try {
-//     $userJob = UserJob::get(TRUE)
-//       ->addWhere('id', '=', $userJobId)
-//       ->addSelect('job_type', 'metadata')
-//       ->execute()
-//       ->first();
-//   }
-//   catch (\Exception $e) {
-//     return NULL;
-//   }
-//   if (empty($userJob)) {
-//     return NULL;
-//   }
-//   $isImport = FALSE;
-//   foreach (CRM_Core_BAO_UserJob::getTypes() as $type) {
-//     if ($type['id'] === $userJob['job_type']
-//       && is_subclass_of($type['class'], 'CRM_Import_Parser')
-//     ) {
-//       $isImport = TRUE;
-//       break;
-//     }
-//   }
-//   if (!$isImport) {
-//     return NULL;
-//   }
-//   // Prefer the completion URL core already stored; fall back to building it.
-//   $url = $userJob['metadata']['runner']['onEndUrl']
-//     ?? CRM_Utils_System::url('civicrm/import/contact/summary', [
-//       'reset' => 1,
-//       'user_job_id' => $userJobId,
-//     ], TRUE, NULL, FALSE);
-//   return ['user_job_id' => $userJobId, 'url' => $url];
-// }
+function _goonjcustom_import_monitor_target(): ?array {
+  $queueName = CRM_Utils_Request::retrieveValue('name', 'String');
+  if (!$queueName || !str_starts_with($queueName, 'user_job_')) {
+    return NULL;
+  }
+  $userJobId = (int) str_replace('user_job_', '', $queueName);
+  if (!$userJobId) {
+    return NULL;
+  }
+  try {
+    $userJob = UserJob::get(TRUE)
+      ->addWhere('id', '=', $userJobId)
+      ->addSelect('job_type', 'metadata')
+      ->execute()
+      ->first();
+  }
+  catch (\Exception $e) {
+    return NULL;
+  }
+  if (empty($userJob)) {
+    return NULL;
+  }
+  $isImport = FALSE;
+  foreach (CRM_Core_BAO_UserJob::getTypes() as $type) {
+    if ($type['id'] === $userJob['job_type']
+      && is_subclass_of($type['class'], 'CRM_Import_Parser')
+    ) {
+      $isImport = TRUE;
+      break;
+    }
+  }
+  if (!$isImport) {
+    return NULL;
+  }
+  // Prefer the completion URL core already stored; fall back to building it.
+  $url = $userJob['metadata']['runner']['onEndUrl']
+    ?? CRM_Utils_System::url('civicrm/import/contact/summary', [
+      'reset' => 1,
+      'user_job_id' => $userJobId,
+    ], TRUE, NULL, FALSE);
+  return ['user_job_id' => $userJobId, 'url' => $url];
+}
 
 /**
  * Implements hook_civicrm_buildForm().
@@ -243,35 +243,35 @@ function goonjcustom_civicrm_container(ContainerBuilder $container) {
  * refresh manually; the notice disappears once the job reaches a terminal
  * state (completed, complete_with_errors, incomplete, …).
  */
-// function goonjcustom_civicrm_buildForm($formName, &$form) {
-//   if ($formName !== 'CRM_Contact_Import_Form_Summary') {
-//     return;
-//   }
-//   $userJobId = $form->getUserJobID();
-//   if (!$userJobId) {
-//     return;
-//   }
-//   try {
-//     $status = UserJob::get(FALSE)
-//       ->addWhere('id', '=', $userJobId)
-//       ->addSelect('status_id:name')
-//       ->execute()
-//       ->first()['status_id:name'] ?? NULL;
-//   }
-//   catch (\Exception $e) {
-//     return;
-//   }
-//   // Only show the notice while the queue is still working; all other states
-//   // (completed, complete_with_errors, incomplete, …) are terminal.
-//   if (!in_array($status, ['scheduled', 'in_progress'], TRUE)) {
-//     return;
-//   }
-//   CRM_Core_Session::setStatus(
-//     ts('This import is still being processed in the background. Please refresh this page after a short while to see the updated results.'),
-//     ts('Import in progress'),
-//     'info'
-//   );
-// }
+function goonjcustom_civicrm_buildForm($formName, &$form) {
+  if ($formName !== 'CRM_Contact_Import_Form_Summary') {
+    return;
+  }
+  $userJobId = $form->getUserJobID();
+  if (!$userJobId) {
+    return;
+  }
+  try {
+    $status = UserJob::get(FALSE)
+      ->addWhere('id', '=', $userJobId)
+      ->addSelect('status_id:name')
+      ->execute()
+      ->first()['status_id:name'] ?? NULL;
+  }
+  catch (\Exception $e) {
+    return;
+  }
+  // Only show the notice while the queue is still working; all other states
+  // (completed, complete_with_errors, incomplete, …) are terminal.
+  if (!in_array($status, ['scheduled', 'in_progress'], TRUE)) {
+    return;
+  }
+  CRM_Core_Session::setStatus(
+    ts('This import is still being processed in the background. Please refresh this page after a short while to see the updated results.'),
+    ts('Import in progress'),
+    'info'
+  );
+}
 
 /**
  * Implements hook_civicrm_links().
