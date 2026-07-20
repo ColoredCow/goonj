@@ -392,6 +392,24 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
       'amount' => $amount,
     ]);
 
+    // A replayed webhook for an already-recorded payment must be acknowledged,
+    // not retried. Completed one-time contributions store "order_X,pay_Y" in
+    // trxn_id (the order lookup below no longer matches them), so match on the
+    // payment id.
+    if ($razorpayPaymentId) {
+      $isTestMode = $this->_mode === 'test';
+
+      $alreadyRecorded = Contribution::get(FALSE)
+        ->addWhere('trxn_id', 'LIKE', '%' . $razorpayPaymentId . '%')
+        ->addWhere('is_test', '=', $isTestMode ? TRUE : FALSE)
+        ->execute()->first();
+
+      if ($alreadyRecorded) {
+        \Civi::log()->info("[RZP-FIX idempotency] payment.captured replay: payment {$razorpayPaymentId} already recorded as contribution {$alreadyRecorded['id']}, skipping");
+        CRM_Utils_System::civiExit();
+      }
+    }
+
     $contribution = $this->getContributionByOrderId($razorpayOrderId);
 
     if ($contribution) {
@@ -437,6 +455,55 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
       }
     }
     else {
+      // Subscription installments also arrive as `payment.captured`, but they
+      // have no order-linked contribution, so the lookup above always fails
+      // for them. Resolve the payment's invoice to its subscription and record
+      // the installment through the recurring flow instead of erroring. This
+      // doubles as a safety net when the `subscription.charged` event for the
+      // same payment is lost: any of the captured retries recovers it, and the
+      // idempotency guard keeps double-processing out.
+      $invoiceId = $params['payload']['payment']['entity']['invoice_id'] ?? NULL;
+
+      if ($invoiceId) {
+        try {
+          $api = $this->initializeApi();
+          $invoice = $api->invoice->fetch($invoiceId)->toArray();
+          $subscriptionId = $invoice['subscription_id'] ?? NULL;
+
+          if ($subscriptionId) {
+            \Civi::log()->info('[RZP-FIX captured-fallback] payment.captured belongs to a subscription, processing as an installment', [
+              'paymentId' => $razorpayPaymentId,
+              'invoiceId' => $invoiceId,
+              'subscriptionId' => $subscriptionId,
+            ]);
+
+            $subscription = $api->subscription->fetch($subscriptionId)->toArray();
+
+            $this->processSubscriptionCharged([
+              'event' => 'subscription.charged',
+              'payload' => [
+                'subscription' => ['entity' => $subscription],
+                'payment' => ['entity' => $params['payload']['payment']['entity']],
+              ],
+            ]);
+
+            \Civi::log()->info('[RZP-FIX captured-fallback] installment handled via payment.captured', [
+              'paymentId' => $razorpayPaymentId,
+              'subscriptionId' => $subscriptionId,
+            ]);
+
+            CRM_Utils_System::civiExit();
+          }
+        }
+        catch (Exception $e) {
+          \Civi::log()->error('[RZP-FIX captured-fallback] failed to resolve subscription for payment', [
+            'paymentId' => $razorpayPaymentId,
+            'invoiceId' => $invoiceId,
+            'error' => $e->getMessage(),
+          ]);
+        }
+      }
+
       \Civi::log()->error('processOneTimePayment: no contribution found for order', [
         'orderId' => $razorpayOrderId,
         'paymentId' => $razorpayPaymentId,
@@ -496,6 +563,20 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
     }
 
     try {
+      // Razorpay redelivers webhooks on retry; skip payments already recorded
+      // so a retry can never double-count an installment.
+      $isTestMode = $this->_mode === 'test';
+
+      $alreadyRecorded = Contribution::get(FALSE)
+        ->addWhere('trxn_id', '=', $paymentId)
+        ->addWhere('is_test', '=', $isTestMode ? TRUE : FALSE)
+        ->execute()->first();
+
+      if ($alreadyRecorded) {
+        \Civi::log()->info("[RZP-FIX idempotency] subscription.charged replay: payment {$paymentId} already recorded as contribution {$alreadyRecorded['id']}, skipping");
+        return;
+      }
+
       $recurringContribution = $this->getContributionRecurBySubId($subscriptionId);
 
       if (!$recurringContribution) {
@@ -572,11 +653,31 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
           'paymentId' => $paymentId,
         ]);
 
+        // The pending contribution carries the subscription signup date as its
+        // receive_date, but Razorpay may collect the first installment days or
+        // weeks later. Stamp the actual charge date before completing the
+        // contribution so the record and the completion receipt show the date
+        // the money was received, not the signup date.
+        $chargeDate = date('Y-m-d H:i:s');
+
+        \Civi::log()->info('[RZP-FIX date-stamp] Updating receive_date on pending contribution before completing it', [
+          'contributionId' => $contributionToUpdate['id'],
+          'signup_receive_date' => $pendingContribution['receive_date'] ?? NULL,
+          'charge_date' => $chargeDate,
+          'paymentId' => $paymentId,
+        ]);
+
+        Contribution::update(FALSE)
+          ->addWhere('id', '=', $contributionToUpdate['id'])
+          ->addValue('receive_date', $chargeDate)
+          ->execute();
+
         civicrm_api3('Payment', 'create', [
           'contribution_id' => $contributionToUpdate['id'],
           'total_amount' => $amount,
           'payment_instrument_id' => $recurringContribution['payment_instrument_id'] ?? NULL,
           'trxn_id' => $paymentId,
+          'trxn_date' => $chargeDate,
         ]);
       }
 
@@ -597,6 +698,15 @@ class CRM_Core_Civirazorpay_Payment_Razorpay extends CRM_Core_Payment {
       \Civi::log()->error("Failed to process recurring payment for subscription: {$subscriptionId}", [
         'error' => $e->getMessage(),
       ]);
+      // Respond non-2xx so Razorpay retries the webhook. Answering 200 here
+      // marks the event as delivered and the installment is silently lost —
+      // the idempotency guard above makes the retry safe.
+      \Civi::log()->error('[RZP-FIX retry-500] subscription.charged failed, responding HTTP 500 so Razorpay retries', [
+        'subscriptionId' => $subscriptionId,
+        'paymentId' => $paymentId,
+      ]);
+      http_response_code(500);
+      CRM_Utils_System::civiExit();
     }
   }
 
