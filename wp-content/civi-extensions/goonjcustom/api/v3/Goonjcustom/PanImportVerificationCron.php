@@ -42,9 +42,15 @@ function _civicrm_api3_goonjcustom_pan_import_verification_cron_spec(&$spec) {
  *    verified contact PAN (no Surepass call), overwrite the contribution's
  *    mismatched PAN with the contact's verified PAN, and mark the contribution
  *    Verified, for record consistency.
+ *  - Case 5: contribution PAN != contact PAN AND contact = Not Verified ->
+ *    verify the incoming contribution PAN via Surepass; if it passes it
+ *    replaces the contact PAN (marked Verified), if it fails the existing
+ *    contact PAN is kept.
  *
- * Case 5 is added incrementally. Until a case is implemented, rows that don't
- * match an implemented case are left as Pending = Yes for a later run.
+ * All five cases are implemented. Any row that still matches none of them (a
+ * data anomaly, e.g. an empty contribution PAN, or a contact PAN with no
+ * verification status) is left as Pending = Yes and logged, so it stays visible
+ * rather than being silently mishandled.
  *
  * @param array $params
  *
@@ -143,6 +149,7 @@ function civicrm_api3_goonjcustom_pan_import_verification_cron($params) {
       'case2' => 0,
       'case3' => 0,
       'case4' => 0,
+      'case5' => 0,
       'invalid_format' => 0,
       'api_error' => 0,
       'unhandled' => 0,
@@ -246,14 +253,65 @@ function civicrm_api3_goonjcustom_pan_import_verification_cron($params) {
           continue;
         }
 
-        // No implemented case matched yet — leave Pending = Yes so it is picked
-        // up once the relevant case is built.
+        // CASE 5 — the contribution PAN differs from the contact PAN, and the
+        // contact PAN is Not Verified (never confirmed). Verify the incoming
+        // contribution PAN via Surepass: if it passes it replaces the contact
+        // PAN (marked Verified); if it fails, the existing contact PAN is kept.
+        if (
+          $contributionPan !== ''
+          && $contactPan !== ''
+          && $contributionPan !== $contactPan
+          && $contactStatus === PanVerificationService::PAN_STATUS_NOT_VERIFIED
+        ) {
+          // Invalid-format incoming PAN — nothing to verify. Keep the existing
+          // contact PAN and mark the row processed.
+          if (!PanVerificationService::isValidPanFormat($contributionPan)) {
+            _goonjcustom_pan_import_mark_processed($contributionId);
+            $counters['invalid_format']++;
+            $log('info', "CASE 5 contribution #$contributionId (contact #$contactId): incoming PAN '$contributionPan' has invalid format — kept existing contact PAN '$contactPan', marked processed.");
+            continue;
+          }
+
+          $api = PanVerificationService::verifyPanViaApi($contributionPan);
+
+          // API error — leave the row Pending so it retries on the next run.
+          if (!empty($api['api_error'])) {
+            $counters['api_error']++;
+            $log('warning', "CASE 5 contribution #$contributionId (contact #$contactId): Surepass API error — left Pending for retry ({$api['message']}).");
+            continue;
+          }
+
+          if (!empty($api['verified'])) {
+            // Incoming PAN verified — it replaces the contact's unverified PAN.
+            _goonjcustom_pan_import_write_contact_pan($contactId, $contributionPan, PanVerificationService::PAN_STATUS_VERIFIED);
+            _goonjcustom_pan_import_mark_processed($contributionId);
+
+            // Refresh the in-memory contact PAN/status so this contact's other
+            // pending contributions this run compare against the new value.
+            $contactPan = $contributionPan;
+            $contactStatus = PanVerificationService::PAN_STATUS_VERIFIED;
+
+            $counters['case5']++;
+            $log('info', "CASE 5 contribution #$contributionId (contact #$contactId): incoming PAN '$contributionPan' verified — replaced unverified contact PAN, marked processed.");
+            continue;
+          }
+
+          // Incoming PAN could not be verified — keep the existing contact PAN.
+          _goonjcustom_pan_import_mark_processed($contributionId);
+          $counters['case5']++;
+          $log('info', "CASE 5 contribution #$contributionId (contact #$contactId): incoming PAN '$contributionPan' not verified — kept existing contact PAN '$contactPan', marked processed.");
+          continue;
+        }
+
+        // None of the five cases matched — a data anomaly (e.g. an empty
+        // contribution PAN, or a contact PAN with no verification status).
+        // Leave it Pending and log it so it stays visible for review.
         $counters['unhandled']++;
-        $log('info', "SKIP contribution #$contributionId (contact #$contactId): no implemented case matched yet — left as Pending.");
+        $log('warning', "ANOMALY contribution #$contributionId (contact #$contactId): matched none of the 5 cases (contribution PAN '$contributionPan', contact PAN '$contactPan', status '" . ($contactStatus ?? 'NULL') . "') — left as Pending.");
       }
     }
 
-    $log('info', "Job finished. Case 1: {$counters['case1']} | Case 2: {$counters['case2']} | Case 3: {$counters['case3']} | Case 4: {$counters['case4']} | Invalid format: {$counters['invalid_format']} | API errors (left pending): {$counters['api_error']} | Left pending (unhandled cases): {$counters['unhandled']}");
+    $log('info', "Job finished. Case 1: {$counters['case1']} | Case 2: {$counters['case2']} | Case 3: {$counters['case3']} | Case 4: {$counters['case4']} | Case 5: {$counters['case5']} | Invalid format: {$counters['invalid_format']} | API errors (left pending): {$counters['api_error']} | Anomalies (left pending): {$counters['unhandled']}");
 
     return civicrm_api3_create_success(
       [
@@ -262,6 +320,7 @@ function civicrm_api3_goonjcustom_pan_import_verification_cron($params) {
         'case2' => $counters['case2'],
         'case3' => $counters['case3'],
         'case4' => $counters['case4'],
+        'case5' => $counters['case5'],
         'invalid_format' => $counters['invalid_format'],
         'api_error' => $counters['api_error'],
         'unhandled' => $counters['unhandled'],
