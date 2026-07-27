@@ -4,6 +4,7 @@
  * @file
  */
 
+use Civi\Api4\Contact;
 use Civi\Api4\Contribution;
 use Civi\PanVerificationService;
 
@@ -30,8 +31,15 @@ function _civicrm_api3_goonjcustom_pan_import_verification_cron_spec(&$spec) {
  * Cases implemented so far:
  *  - Case 1: contribution PAN == contact PAN AND contact = Verified -> nothing
  *    to change; just mark the row processed.
+ *  - Case 2: contribution PAN == contact PAN AND contact = Not Verified
+ *    (already checked by Surepass, came back invalid) -> nothing to change;
+ *    just mark the row processed.
+ *  - Case 3: contact has no PAN -> format-check the contribution PAN, verify it
+ *    via Surepass, and save it (with the resulting status) onto the contact.
+ *    Invalid-format PANs are skipped (not saved); a Surepass API error leaves
+ *    the row Pending for retry.
  *
- * Cases 2-5 are added incrementally. Until a case is implemented, rows that
+ * Cases 4-5 are added incrementally. Until a case is implemented, rows that
  * don't match an implemented case are left as Pending = Yes for a later run.
  *
  * @param array $params
@@ -126,7 +134,14 @@ function civicrm_api3_goonjcustom_pan_import_verification_cron($params) {
 
     $log('info', 'Pending contributions: ' . $pending->count() . ' across ' . count($byContact) . ' contact(s).');
 
-    $counters = ['case1' => 0, 'unhandled' => 0];
+    $counters = [
+      'case1' => 0,
+      'case2' => 0,
+      'case3' => 0,
+      'invalid_format' => 0,
+      'api_error' => 0,
+      'unhandled' => 0,
+    ];
 
     foreach ($byContact as $contactId => $contributions) {
       $contactPanData = PanVerificationService::getContactPan($contactId);
@@ -152,6 +167,63 @@ function civicrm_api3_goonjcustom_pan_import_verification_cron($params) {
           continue;
         }
 
+        // CASE 2 — contribution PAN matches the contact PAN AND the contact
+        // PAN is Not Verified. "Not Verified" here means Surepass was already
+        // called for this PAN and it came back invalid, so there is nothing new
+        // to do: no fresh Surepass call, no PAN write. Just mark it processed.
+        if (
+          $contributionPan !== ''
+          && $contributionPan === $contactPan
+          && $contactStatus === PanVerificationService::PAN_STATUS_NOT_VERIFIED
+        ) {
+          _goonjcustom_pan_import_mark_processed($contributionId);
+          $counters['case2']++;
+          $log('info', "CASE 2 contribution #$contributionId (contact #$contactId): PAN matches already-checked (Not Verified) contact PAN ($contactPan) — no change, marked processed.");
+          continue;
+        }
+
+        // CASE 3 — the contact has no PAN yet. Format-check the contribution
+        // PAN, verify it via Surepass, and save it (with the resulting status)
+        // onto the contact. This is the only case that spends a Surepass call
+        // and writes to the contact.
+        if ($contactPan === '' && $contributionPan !== '') {
+          // Never call Surepass on a malformed PAN, and never store one on the
+          // contact. Mark processed so it does not get re-scanned forever.
+          if (!PanVerificationService::isValidPanFormat($contributionPan)) {
+            _goonjcustom_pan_import_mark_processed($contributionId);
+            $counters['invalid_format']++;
+            $log('info', "CASE 3 contribution #$contributionId (contact #$contactId): PAN '$contributionPan' has invalid format — not saved, marked processed.");
+            continue;
+          }
+
+          $api = PanVerificationService::verifyPanViaApi($contributionPan);
+
+          // The API call itself failed (auth/network/5xx) — we did not get a
+          // real answer. Leave the row Pending so it retries on the next run.
+          if (!empty($api['api_error'])) {
+            $counters['api_error']++;
+            $log('warning', "CASE 3 contribution #$contributionId (contact #$contactId): Surepass API error — left Pending for retry ({$api['message']}).");
+            continue;
+          }
+
+          $status = !empty($api['verified'])
+            ? PanVerificationService::PAN_STATUS_VERIFIED
+            : PanVerificationService::PAN_STATUS_NOT_VERIFIED;
+
+          _goonjcustom_pan_import_write_contact_pan($contactId, $contributionPan, $status);
+          _goonjcustom_pan_import_mark_processed($contributionId);
+
+          // Refresh the in-memory contact PAN/status so this contact's other
+          // pending contributions in THIS run compare against the value we just
+          // saved (they will hit Case 1/2 rather than calling Surepass again).
+          $contactPan = $contributionPan;
+          $contactStatus = $status;
+
+          $counters['case3']++;
+          $log('info', "CASE 3 contribution #$contributionId (contact #$contactId): no contact PAN — saved '$contributionPan' as $status, marked processed.");
+          continue;
+        }
+
         // No implemented case matched yet — leave Pending = Yes so it is picked
         // up once the relevant case is built.
         $counters['unhandled']++;
@@ -159,12 +231,16 @@ function civicrm_api3_goonjcustom_pan_import_verification_cron($params) {
       }
     }
 
-    $log('info', "Job finished. Case 1: {$counters['case1']} | Left pending (unhandled cases): {$counters['unhandled']}");
+    $log('info', "Job finished. Case 1: {$counters['case1']} | Case 2: {$counters['case2']} | Case 3: {$counters['case3']} | Invalid format: {$counters['invalid_format']} | API errors (left pending): {$counters['api_error']} | Left pending (unhandled cases): {$counters['unhandled']}");
 
     return civicrm_api3_create_success(
       [
         'log_file' => $logFile,
         'case1' => $counters['case1'],
+        'case2' => $counters['case2'],
+        'case3' => $counters['case3'],
+        'invalid_format' => $counters['invalid_format'],
+        'api_error' => $counters['api_error'],
         'unhandled' => $counters['unhandled'],
       ],
       $params,
@@ -192,5 +268,29 @@ function _goonjcustom_pan_import_mark_processed(int $contributionId): void {
   Contribution::update(FALSE)
     ->addWhere('id', '=', $contributionId)
     ->addValue('PAN_Import.Pending_PAN_Verification', FALSE)
+    ->execute();
+}
+
+/**
+ * Save a PAN onto a contact, with its verification status, and record that
+ * Surepass was called (PAN_API_Status = Called).
+ *
+ * Setting PAN_API_Status = Called matters: the standalone bulk-verify cron only
+ * picks up contacts where PAN_API_Status is Not_Called / NULL, so marking it
+ * Called here prevents that cron from making a second (paid) Surepass call for
+ * the same PAN.
+ *
+ * @param int $contactId
+ * @param string $pan
+ *   Already uppercased + trimmed, valid-format PAN.
+ * @param string $status
+ *   One of the PanVerificationService::PAN_STATUS_* constants.
+ */
+function _goonjcustom_pan_import_write_contact_pan(int $contactId, string $pan, string $status): void {
+  Contact::update(FALSE)
+    ->addWhere('id', '=', $contactId)
+    ->addValue('PAN_Card_Details.PAN_Card_Number', $pan)
+    ->addValue('PAN_Card_Details.PAN_Verification_Status:name', $status)
+    ->addValue('PAN_Card_Details.PAN_API_Status:name', 'Called')
     ->execute();
 }
