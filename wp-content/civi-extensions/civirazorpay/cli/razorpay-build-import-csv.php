@@ -55,7 +55,7 @@ $proc = PaymentProcessor::get(FALSE)
   ->execute()->single();
 $key = $proc['user_name'];
 $secret = $proc['password'];
-echo "LIVE processor id={$proc['id']} key={$key}\n";
+echo "LIVE processor id={$proc['id']}\n";
 echo "In : {$inCsv}\nOut: {$outCsv}\n\n";
 
 /**
