@@ -80,15 +80,28 @@ echo "Mail backend    : outBound_option=" . ($mb['outBound_option'] ?? '?') . "\
 // ---- load payments grouped by subscription_id ----
 function loadCsv($path) {
   $fh = fopen($path, 'r');
+  if ($fh === FALSE) {
+    fwrite(STDERR, "Cannot read CSV: {$path}\n");
+    exit(1);
+  }
   $h = fgetcsv($fh);
+  if ($h === FALSE) {
+    fwrite(STDERR, "Empty CSV: {$path}\n");
+    exit(1);
+  }
   $rows = [];
+  $skipped = 0;
   while (($r = fgetcsv($fh)) !== FALSE) {
     if (count($r) < count($h)) {
+      $skipped++;
       continue;
     }
     $rows[] = array_combine($h, array_slice($r, 0, count($h)));
   }
   fclose($fh);
+  if ($skipped > 0) {
+    echo "WARNING: {$skipped} malformed row(s) skipped in {$path}\n";
+  }
   return $rows;
 }
 $payRows = loadCsv($paysCsv);
