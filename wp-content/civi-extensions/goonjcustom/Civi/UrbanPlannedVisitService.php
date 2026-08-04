@@ -6,7 +6,6 @@ use Civi\Api4\Contact;
 use Civi\Api4\EckEntity;
 use Civi\Api4\Group;
 use Civi\Api4\GroupContact;
-use Civi\Api4\OptionValue;
 use Civi\Api4\Organization;
 use Civi\Api4\Relationship;
 use Civi\Api4\StateProvince;
@@ -82,7 +81,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
       $institutionName = $institutionOrganizationName['display_name'];
 
       $visitData = EckEntity::get('Institution_Visit', FALSE)
-        ->addSelect('Urban_Planned_Visit.Number_of_people_accompanying_you', 'Urban_Planned_Visit.When_do_you_wish_to_visit_Goonj', 'Urban_Planned_Visit.What_time_do_you_wish_to_visit_', 'Urban_Planned_Visit.External_Coordinating_PoC')
+        ->addSelect('Urban_Planned_Visit.Number_of_people_accompanying_you', 'Urban_Planned_Visit.When_do_you_wish_to_visit_Goonj', 'Urban_Planned_Visit.What_time_do_you_wish_to_visit_:label', 'Urban_Planned_Visit.External_Coordinating_PoC')
         ->addWhere('id', '=', $visitId)
         ->execute()->first();
 
@@ -92,15 +91,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         return;
       }
 
-      $visitTimeId = $visitData['Urban_Planned_Visit.What_time_do_you_wish_to_visit_'];
-
-      $optionValue = OptionValue::get(FALSE)
-        ->addSelect('name')
-        ->addWhere('option_group_id:name', '=', 'Urban_Planned_Visit_What_time_do_you_wish_to_visit_')
-        ->addWhere('value', '=', $visitTimeId)
-        ->execute()->first();
-
-      $visitTime = str_replace('_', ':', $optionValue['name']);
+      $visitTime = $visitData['Urban_Planned_Visit.What_time_do_you_wish_to_visit_:label'];
 
       $visitParticipation = $visitData['Urban_Planned_Visit.Number_of_people_accompanying_you'];
       $goonjCoordinatingPocId = $objectRef['Urban_Planned_Visit.Coordinating_Goonj_POC'] ?? '';
@@ -290,7 +281,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
       }
 
       $visitData = EckEntity::get('Institution_Visit', FALSE)
-        ->addSelect('Urban_Planned_Visit.Which_Goonj_Processing_Center_do_you_wish_to_visit_', 'Urban_Planned_Visit.When_do_you_wish_to_visit_Goonj', 'Urban_Planned_Visit.What_time_do_you_wish_to_visit_')
+        ->addSelect('Urban_Planned_Visit.Which_Goonj_Processing_Center_do_you_wish_to_visit_', 'Urban_Planned_Visit.When_do_you_wish_to_visit_Goonj', 'Urban_Planned_Visit.What_time_do_you_wish_to_visit_:label')
         ->addWhere('id', '=', $visitId)
         ->execute()->first();
 
@@ -301,15 +292,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         return;
       }
 
-      $visitTimeId = $visitData['Urban_Planned_Visit.What_time_do_you_wish_to_visit_'];
-
-      $optionValue = OptionValue::get(FALSE)
-        ->addSelect('name')
-        ->addWhere('option_group_id:name', '=', 'Urban_Planned_Visit_What_time_do_you_wish_to_visit_')
-        ->addWhere('value', '=', $visitTimeId)
-        ->execute()->first();
-
-      $visitTime = str_replace('_', ':', $optionValue['name']);
+      $visitTime = $visitData['Urban_Planned_Visit.What_time_do_you_wish_to_visit_:label'];
 
       $contact = Contact::get(FALSE)
         ->addSelect('address.street_address', 'address.city')
@@ -805,15 +788,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     $coordinatingGoonjPersonName = $coordinatingGoonjPocPerson['display_name'];
     $coordinatingGoonjPersonPhone = $coordinatingGoonjPocPerson['phone.phone_numeric'];
 
-    $visitTimeId = $visit['Urban_Planned_Visit.What_time_do_you_wish_to_visit_'];
-
-    $optionValue = OptionValue::get(FALSE)
-      ->addSelect('name')
-      ->addWhere('option_group_id:name', '=', 'Urban_Planned_Visit_What_time_do_you_wish_to_visit_')
-      ->addWhere('value', '=', $visitTimeId)
-      ->execute()->first();
-
-    $visitTime = str_replace('_', ':', $optionValue['name']);
+    $visitTime = $visit['Urban_Planned_Visit.What_time_do_you_wish_to_visit_:label'];
 
     $visitAtId = $visit['Urban_Planned_Visit.Which_Goonj_Processing_Center_do_you_wish_to_visit_'];
 
@@ -884,15 +859,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     $institutionName = $institutionOrganizationName['display_name'];
 
     $visitId = $visit['id'];
-    $visitTimeId = $visit['Urban_Planned_Visit.What_time_do_you_wish_to_visit_'];
-
-    $optionValue = OptionValue::get(FALSE)
-      ->addSelect('name')
-      ->addWhere('option_group_id:name', '=', 'Urban_Planned_Visit_What_time_do_you_wish_to_visit_')
-      ->addWhere('value', '=', $visitTimeId)
-      ->execute()->first();
-
-    $visitTime = str_replace('_', ':', $optionValue['name']);
+    $visitTime = $visit['Urban_Planned_Visit.What_time_do_you_wish_to_visit_:label'];
 
     $goonjVisitGuideId = $visit['Urban_Planned_Visit.Visit_Guide'] ?? '';
     $goonjVisitGuideIds = is_array($goonjVisitGuideId) ? $goonjVisitGuideId : [$goonjVisitGuideId];
@@ -1130,22 +1097,14 @@ class UrbanPlannedVisitService extends AutoSubscriber {
       }
 
       $visitData = EckEntity::get('Institution_Visit', FALSE)
-        ->addSelect('Urban_Planned_Visit.When_do_you_wish_to_visit_Goonj', 'Urban_Planned_Visit.What_time_do_you_wish_to_visit_', 'Urban_Planned_Visit.Number_of_people_accompanying_you')
+        ->addSelect('Urban_Planned_Visit.When_do_you_wish_to_visit_Goonj', 'Urban_Planned_Visit.What_time_do_you_wish_to_visit_:label', 'Urban_Planned_Visit.Number_of_people_accompanying_you')
         ->addWhere('id', '=', $visitId)
         ->execute()->first();
 
       $numberOfAttendees = $visitData['Urban_Planned_Visit.Number_of_people_accompanying_you'];
 
       $visitDate = $visitData['Urban_Planned_Visit.When_do_you_wish_to_visit_Goonj'];
-      $visitTimeId = $visitData['Urban_Planned_Visit.What_time_do_you_wish_to_visit_'];
-
-      $optionValue = OptionValue::get(FALSE)
-        ->addSelect('name')
-        ->addWhere('option_group_id:name', '=', 'Urban_Planned_Visit_What_time_do_you_wish_to_visit_')
-        ->addWhere('value', '=', $visitTimeId)
-        ->execute()->first();
-
-      $visitTime = str_replace('_', ':', $optionValue['name']);
+      $visitTime = $visitData['Urban_Planned_Visit.What_time_do_you_wish_to_visit_:label'];
 
       $goonjCoordinatingPocId = $objectRef['Urban_Planned_Visit.Coordinating_Goonj_POC'] ?? '';
 
