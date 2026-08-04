@@ -13,14 +13,16 @@
  *   - LIMIT=N: process at most N NEW subscriptions this run (batching).
  *   - CATEGORY=single_match|new_contact|ambiguous: only that category.
  *   - Idempotent: recur skipped if processor_id exists; contribution skipped if
- *     trxn_id exists.
+ *     trxn_id exists (both checked from a preloaded in-memory set).
  *   - NO email: contact create is minimal (name/email/phone, no group/sub_type);
  *     recur is_email_receipt=0; contribution sets no is_email_receipt / no
- *     Send_Receipt_via_WhatsApp; recur status = actual (never 'In Progress').
+ *     Send_Receipt_via_WhatsApp; recur status = actual (never 'In Progress');
+ *     next_sched_contribution_date forced NULL.
+ *   - LOW LOAD: all existing state is preloaded once (a few batched, indexed
+ *     queries); the loop does ZERO per-row DB lookups (no full-table scans).
  *
- * Contact resolution at RUNTIME (not the CSV's baked id): email (MIN contact_id)
- * -> phone (MIN contact_id) -> create new. So ambiguous auto-takes the lowest id
- * and it self-corrects against the live DB.
+ * Contact resolution (in-memory): email (MIN contact_id) -> phone (MIN
+ * contact_id) -> create new. Ambiguous auto-takes the lowest id.
  *
  * Usage:
  *   cv scr .../razorpay-import-subscriptions.php "/path/subs.csv" "/path/pays.csv"
@@ -69,7 +71,6 @@ $proc = PaymentProcessor::get(FALSE)
   ->execute()->single();
 $processorID = $proc['id'];
 
-// Mail backend banner (visibility).
 $mb = Civi::settings()->get('mailing_backend');
 echo "==== Razorpay MISSING-SUBSCRIPTIONS import ====\n";
 echo ($DRY_RUN ? "[DRY RUN — nothing created]\n" : "[LIVE — creating contact/recur/contributions]\n");
@@ -77,7 +78,9 @@ echo "CATEGORY filter : " . ($CATEGORY ?: 'ALL') . "\n";
 echo "LIMIT (subs)    : " . ($LIMIT ?: 'no cap') . "\n";
 echo "Mail backend    : outBound_option=" . ($mb['outBound_option'] ?? '?') . "\n\n";
 
-// ---- load payments grouped by subscription_id ----
+/**
+ * Load a CSV into an array of assoc rows (header-keyed).
+ */
 function loadCsv($path) {
   $fh = fopen($path, 'r');
   if ($fh === FALSE) {
@@ -104,6 +107,7 @@ function loadCsv($path) {
   }
   return $rows;
 }
+
 $payRows = loadCsv($paysCsv);
 $paysBySub = [];
 foreach ($payRows as $p) {
@@ -111,31 +115,61 @@ foreach ($payRows as $p) {
 }
 $subRows = loadCsv($subsCsv);
 
+// ---------------------------------------------------------------------------
+// PRELOAD existing state ONCE (a handful of batched, indexed queries) so the
+// per-subscription / per-payment loop does ZERO per-row DB lookups. This avoids
+// ~1400 leading-wildcard full-table scans on prod (which would load the DB /
+// slow the live site).
+// ---------------------------------------------------------------------------
+$EXISTING_PAY = [];     // pay_id => TRUE (already-imported payments)
+$pdao = CRM_Core_DAO::executeQuery("SELECT trxn_id FROM civicrm_contribution WHERE trxn_id LIKE '%pay%'");
+while ($pdao->fetch()) {
+  if (preg_match_all('/pay_[A-Za-z0-9]+/', (string) $pdao->trxn_id, $m)) {
+    foreach ($m[0] as $pid) {
+      $EXISTING_PAY[$pid] = TRUE;
+    }
+  }
+}
+$EXISTING_RECUR = [];   // processor_id (sub_XXX) => ['id'=>recur_id,'contact'=>contact_id]
+$rdao = CRM_Core_DAO::executeQuery("SELECT id, processor_id, contact_id FROM civicrm_contribution_recur WHERE processor_id LIKE 'sub\\_%'");
+while ($rdao->fetch()) {
+  $EXISTING_RECUR[$rdao->processor_id] = ['id' => (int) $rdao->id, 'contact' => (int) $rdao->contact_id];
+}
+$allEmails = [];
+$allPhones = [];
+foreach ($subRows as $s) {
+  if (trim($s['email']) !== '') {
+    $allEmails[trim($s['email'])] = 1;
+  }
+  if (trim($s['phone']) !== '') {
+    $allPhones[trim($s['phone'])] = 1;
+  }
+}
+$EMAIL_MIN = [];
+$PHONE_MIN = [];
+$mkIn = function ($arr) {
+  return implode(',', array_map(fn($v) => "'" . CRM_Core_DAO::escapeString($v) . "'", array_keys($arr)));
+};
+if ($allEmails) {
+  $d = CRM_Core_DAO::executeQuery("SELECT email, MIN(contact_id) mn FROM civicrm_email WHERE email IN (" . $mkIn($allEmails) . ") GROUP BY email");
+  while ($d->fetch()) {
+    $EMAIL_MIN[$d->email] = (int) $d->mn;
+  }
+}
+if ($allPhones) {
+  $d = CRM_Core_DAO::executeQuery("SELECT phone, MIN(contact_id) mn FROM civicrm_phone WHERE phone IN (" . $mkIn($allPhones) . ") GROUP BY phone");
+  while ($d->fetch()) {
+    $PHONE_MIN[$d->phone] = (int) $d->mn;
+  }
+}
+echo "preloaded: pay_ids=" . count($EXISTING_PAY) . " recurs=" . count($EXISTING_RECUR) . " emails=" . count($EMAIL_MIN) . " phones=" . count($PHONE_MIN) . "\n\n";
+
 $logNew = (!file_exists($LOG) || filesize($LOG) === 0);
 $fh = fopen($LOG, 'a');
 if ($logNew) {
   fputcsv($fh, ['time', 'subscription_id', 'category', 'mode', 'result', 'ref', 'detail']);
 }
 $ts = date('Y-m-d H:i:s');
-
-/**
- * Resolve a contact by email (MIN id) then phone (MIN id). Null if none.
- */
-function resolveContact($email, $phone) {
-  if ($email) {
-    $id = CRM_Core_DAO::singleValueQuery("SELECT MIN(contact_id) FROM civicrm_email WHERE email=%1", [1 => [$email, 'String']]);
-    if ($id) {
-      return (int) $id;
-    }
-  }
-  if ($phone) {
-    $id = CRM_Core_DAO::singleValueQuery("SELECT MIN(contact_id) FROM civicrm_phone WHERE phone=%1", [1 => [$phone, 'String']]);
-    if ($id) {
-      return (int) $id;
-    }
-  }
-  return NULL;
-}
 
 $subDone = 0; $recurCreated = 0; $recurExisting = 0; $contactsCreated = 0; $contactsResolved = 0;
 $contribCreated = 0; $contribSkipped = 0; $errors = 0;
@@ -159,17 +193,18 @@ foreach ($subRows as $s) {
   $newlyCreatedRecur = FALSE;
 
   try {
-    // 1. Recur idempotency by processor_id.
-    $recurId = CRM_Core_DAO::singleValueQuery("SELECT id FROM civicrm_contribution_recur WHERE processor_id=%1 LIMIT 1", [1 => [$subId, 'String']]);
+    // 1. Recur idempotency by processor_id (preloaded in-memory).
+    $recurId = NULL;
     $contactId = NULL;
-
-    if ($recurId) {
+    if (isset($EXISTING_RECUR[$subId])) {
       $recurExisting++;
-      $contactId = (int) CRM_Core_DAO::singleValueQuery("SELECT contact_id FROM civicrm_contribution_recur WHERE id=%1", [1 => [$recurId, 'Integer']]);
+      $recurId = $EXISTING_RECUR[$subId]['id'];
+      $contactId = $EXISTING_RECUR[$subId]['contact'];
     }
     else {
-      // 2. Resolve or create contact.
-      $contactId = resolveContact($email, $phone);
+      // 2. Resolve contact (in-memory: email MIN id -> phone MIN id) or create.
+      $contactId = ($email !== '' && isset($EMAIL_MIN[$email])) ? $EMAIL_MIN[$email]
+        : (($phone !== '' && isset($PHONE_MIN[$phone])) ? $PHONE_MIN[$phone] : NULL);
       if ($contactId) {
         $contactsResolved++;
       }
@@ -186,9 +221,13 @@ foreach ($subRows as $s) {
           $contactId = (int) $c['id'];
           if ($email) {
             Email::create(FALSE)->addValue('contact_id', $contactId)->addValue('email', $email)->addValue('is_primary', TRUE)->execute();
+            $EMAIL_MIN[$email] = $contactId;   // a later sub with same email reuses it
           }
           if ($phone) {
             Phone::create(FALSE)->addValue('contact_id', $contactId)->addValue('phone', $phone)->addValue('is_primary', TRUE)->execute();
+            if (!isset($PHONE_MIN[$phone])) {
+              $PHONE_MIN[$phone] = $contactId;
+            }
           }
         }
         $contactsCreated++;
@@ -220,12 +259,12 @@ foreach ($subRows as $s) {
           ->addValue('payment_processor_id', $processorID)
           ->addValue('campaign_id', 2)
           ->addValue('is_email_receipt', 0)
-          // NOTE: next_sched_contribution_date intentionally NOT set (NULL) +
-          // status is Completed/Cancelled/Failed (never In Progress) so NO future
-          // charge / reminder / email ever fires for these historical recurs.
+          // next_sched forced NULL below (after contributions) + non-In-Progress
+          // status => NO future charge / reminder / email for these historical recurs.
           ->execute()->first();
         $recurId = (int) $r['id'];
         $newlyCreatedRecur = TRUE;
+        $EXISTING_RECUR[$subId] = ['id' => $recurId, 'contact' => $contactId];
       }
       $recurCreated++;
     }
@@ -238,10 +277,9 @@ foreach ($subRows as $s) {
       if (!preg_match('/^pay_[A-Za-z0-9]+$/', $trxn)) {
         continue;
       }
-      $exists = CRM_Core_DAO::singleValueQuery("SELECT id FROM civicrm_contribution WHERE trxn_id LIKE %1 LIMIT 1", [1 => ['%' . $trxn, 'String']]);
-      if ($exists) {
+      if (isset($EXISTING_PAY[$trxn])) {
         $contribSkipped++;
-        fputcsv($fh, [$ts, $subId, $s['category'], $DRY_RUN ? 'DRY' : 'LIVE', 'SKIP_EXISTS', $trxn, "cid={$exists}"]);
+        fputcsv($fh, [$ts, $subId, $s['category'], $DRY_RUN ? 'DRY' : 'LIVE', 'SKIP_EXISTS', $trxn, 'already-in-db']);
         continue;
       }
       if ($DRY_RUN) {
@@ -263,14 +301,15 @@ foreach ($subRows as $s) {
         ->addValue('campaign_id', 2)
         // NO invoice_number, NO is_email_receipt, NO Send_Receipt_via_WhatsApp.
         ->execute()->first();
+      $EXISTING_PAY[$trxn] = TRUE;   // so a re-run / same run never duplicates it
       $contribCreated++;
       fputcsv($fh, [$ts, $subId, $s['category'], 'LIVE', 'CONTRIB', $trxn, "cid={$cr['id']}"]);
     }
 
     // AFTER contributions: CiviCRM recomputes next_sched_contribution_date (and
-    // may reset end_date) when payments are added to a recur. Force next_sched
-    // NULL and restore the REAL end_date so NO future charge/reminder/email can
-    // ever fire for these historical (Completed/Cancelled/Failed) recurs.
+    // overrides end_date=now for Completed status) when payments are added to a
+    // recur. Force next_sched NULL and restore the REAL end_date so NO future
+    // charge/reminder/email can ever fire for these historical recurs.
     if ($newlyCreatedRecur && !$DRY_RUN && $recurId) {
       $endSql = !empty($s['end_date']) ? "'" . CRM_Core_DAO::escapeString($s['end_date']) . "'" : 'NULL';
       CRM_Core_DAO::executeQuery(
