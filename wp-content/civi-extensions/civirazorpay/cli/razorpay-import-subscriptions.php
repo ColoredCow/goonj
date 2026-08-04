@@ -98,7 +98,11 @@ foreach ($payRows as $p) {
 }
 $subRows = loadCsv($subsCsv);
 
+$logNew = (!file_exists($LOG) || filesize($LOG) === 0);
 $fh = fopen($LOG, 'a');
+if ($logNew) {
+  fputcsv($fh, ['time', 'subscription_id', 'category', 'mode', 'result', 'ref', 'detail']);
+}
 $ts = date('Y-m-d H:i:s');
 
 /**
