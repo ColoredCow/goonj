@@ -47,8 +47,9 @@ function _civicrm_api3_goonjcustom_pan_import_verification_cron_spec(&$spec) {
  *    replaces the contact PAN (marked Verified), if it fails the existing
  *    contact PAN is kept.
  *
- * Cases 4 and 5 also sweep the contact's other (older, non-imported)
- * contributions so they carry the same verified PAN.
+ * Scope: ONLY contributions flagged Pending = Yes are ever read or written.
+ * A contact's other contributions are never touched, because those records have
+ * already been shared for audit purposes.
  *
  * The ladder is exhaustive, so a single run finishes every row it reads and
  * nothing carries over to the next day:
@@ -162,17 +163,12 @@ function civicrm_api3_goonjcustom_pan_import_verification_cron($params) {
       'case3' => 0,
       'case4' => 0,
       'case5' => 0,
-      'other_contributions_corrected' => 0,
       'invalid_format' => 0,
       'no_contribution_pan' => 0,
       'api_error' => 0,
       'errors' => 0,
       'unhandled' => 0,
     ];
-
-    // Contacts whose non-imported contributions have already been swept this
-    // run, so the sweep happens once per contact rather than per contribution.
-    $sweptContacts = [];
 
     foreach ($byContact as $contactId => $contributions) {
       $contactPanData = PanVerificationService::getContactPan($contactId);
@@ -286,15 +282,6 @@ function civicrm_api3_goonjcustom_pan_import_verification_cron($params) {
             _goonjcustom_pan_import_correct_contribution_pan($contributionId, $contactPan);
             $counters['case4']++;
             $log('info', "CASE 4 contribution #$contributionId (contact #$contactId): contribution PAN '$contributionPan' != verified contact PAN '$contactPan' — corrected contribution PAN to '$contactPan' and set it Verified, marked processed.");
-
-            // The same contact may also have OTHER (already-imported / older)
-            // contributions still carrying a wrong PAN. Bring those in line with
-            // the verified contact PAN too, once per contact per run.
-            if (!isset($sweptContacts[$contactId])) {
-              $sweptContacts[$contactId] = TRUE;
-              $swept = _goonjcustom_pan_import_sync_other_contributions($contactId, $contactPan, $log);
-              $counters['other_contributions_corrected'] += $swept;
-            }
             continue;
           }
 
@@ -339,14 +326,6 @@ function civicrm_api3_goonjcustom_pan_import_verification_cron($params) {
 
               $counters['case5']++;
               $log('info', "CASE 5 contribution #$contributionId (contact #$contactId): incoming PAN '$contributionPan' verified — replaced unverified contact PAN, marked processed.");
-
-              // The contact now has a verified PAN, so bring its other
-              // contributions (older / not part of this import) in line with it
-              // too — same as Case 4.
-              if (!isset($sweptContacts[$contactId])) {
-                $sweptContacts[$contactId] = TRUE;
-                $counters['other_contributions_corrected'] += _goonjcustom_pan_import_sync_other_contributions($contactId, $contactPan, $log);
-              }
               continue;
             }
 
@@ -370,7 +349,7 @@ function civicrm_api3_goonjcustom_pan_import_verification_cron($params) {
       }
     }
 
-    $log('info', "Job finished. Case 1: {$counters['case1']} | Case 2: {$counters['case2']} | Case 3: {$counters['case3']} | Case 4: {$counters['case4']} | Case 5: {$counters['case5']} | Other contributions corrected (sweep): {$counters['other_contributions_corrected']} | Invalid format: {$counters['invalid_format']} | No PAN on contribution: {$counters['no_contribution_pan']} | API errors (left pending): {$counters['api_error']} | Row errors (left pending): {$counters['errors']} | Anomalies (left pending): {$counters['unhandled']}");
+    $log('info', "Job finished. Case 1: {$counters['case1']} | Case 2: {$counters['case2']} | Case 3: {$counters['case3']} | Case 4: {$counters['case4']} | Case 5: {$counters['case5']} | Invalid format: {$counters['invalid_format']} | No PAN on contribution: {$counters['no_contribution_pan']} | API errors (left pending): {$counters['api_error']} | Row errors (left pending): {$counters['errors']} | Anomalies (left pending): {$counters['unhandled']}");
 
     return civicrm_api3_create_success(
       [
@@ -380,7 +359,6 @@ function civicrm_api3_goonjcustom_pan_import_verification_cron($params) {
         'case3' => $counters['case3'],
         'case4' => $counters['case4'],
         'case5' => $counters['case5'],
-        'other_contributions_corrected' => $counters['other_contributions_corrected'],
         'invalid_format' => $counters['invalid_format'],
         'no_contribution_pan' => $counters['no_contribution_pan'],
         'errors' => $counters['errors'],
@@ -456,55 +434,4 @@ function _goonjcustom_pan_import_correct_contribution_pan(int $contributionId, s
     ->addValue('Contribution_Details.PAN_Card_Verified:name', PanVerificationService::PAN_STATUS_VERIFIED)
     ->addValue('PAN_Import.Pending_PAN_Verification', FALSE)
     ->execute();
-}
-
-/**
- * Bring a contact's OTHER contributions in line with its verified PAN.
- *
- * Cases 4 and 5 both end with the contact holding a verified PAN, and they fix
- * the contribution that came through the import — but the same contact can have
- * older contributions still carrying a wrong PAN. This sweeps those: every
- * contribution of the contact whose PAN is present and different from the
- * verified contact PAN is corrected to the verified PAN and marked Verified.
- *
- * Deliberately scoped:
- *  - contributions with an EMPTY PAN are left untouched (we do not stamp a PAN
- *    onto a donation that never carried one);
- *  - the Pending flag is not touched on these rows, because they were not part
- *    of the import batch.
- *
- * @param int $contactId
- * @param string $verifiedPan
- *   The contact's verified PAN (already uppercased + trimmed).
- * @param callable $log
- *
- * @return int
- *   Number of other contributions corrected.
- */
-function _goonjcustom_pan_import_sync_other_contributions(int $contactId, string $verifiedPan, callable $log): int {
-  $others = Contribution::get(FALSE)
-    ->addSelect('id', 'Contribution_Details.PAN_Card_Number')
-    ->addWhere('contact_id', '=', $contactId)
-    ->addWhere('Contribution_Details.PAN_Card_Number', 'IS NOT EMPTY')
-    ->addOrderBy('id')
-    ->execute();
-
-  $corrected = 0;
-  foreach ($others as $other) {
-    $otherPan = strtoupper(trim($other['Contribution_Details.PAN_Card_Number'] ?? ''));
-    if ($otherPan === '' || $otherPan === $verifiedPan) {
-      continue;
-    }
-
-    Contribution::update(FALSE)
-      ->addWhere('id', '=', $other['id'])
-      ->addValue('Contribution_Details.PAN_Card_Number', $verifiedPan)
-      ->addValue('Contribution_Details.PAN_Card_Verified:name', PanVerificationService::PAN_STATUS_VERIFIED)
-      ->execute();
-
-    $corrected++;
-    $log('info', "  CASE 4 sweep: contribution #{$other['id']} (contact #$contactId) PAN '$otherPan' -> '$verifiedPan' (not part of this import batch).");
-  }
-
-  return $corrected;
 }
