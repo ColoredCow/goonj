@@ -52,8 +52,11 @@
             margin-top: -15px;
           }
           #is_recur {
+            // The checkbox sat ~11px below its label because of a hand-tuned
+            // `top: 10px` nudge. Dropping the nudge lines it up with the label
+            // text; the control's own size is left as-is.
             position: relative;
-            top: 10px;
+            top: 0;
           }
           #recurHelp {
             font-size: 14px;
@@ -271,6 +274,35 @@
 .crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options div label {
   align-self: center !important;
   margin-left: 22px !important;
+}
+
+// Vertically centre these option controls against their labels
+// ("Select contribution type", the 80(G) checkbox, the confirmation radio).
+// Two things pushed them off: the pair is a grid with `align-items: baseline`,
+// and `.content .crm-form-radio` above pins radios with
+// `position: relative; top: 4px !important`, which pushes them further below
+// the label rather than lifting them. Centre the pair and zero the nudge here.
+//
+// The control's size is deliberately untouched — `form input { height: 29px }`
+// in main.scss plus the `max-width: 22px` above are what give these their
+// larger look, and that look is intended.
+//
+// `#crm-main-content-wrapper` is on the front of these selectors only to
+// outrank that `top: 4px !important` rule, which sits at (1 id, 4 classes).
+#crm-main-content-wrapper .crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options div.crm-option-label-pair {
+  align-items: center !important;
+}
+
+#crm-main-content-wrapper .crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options div input[type="radio"],
+#crm-main-content-wrapper .crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options div input[type="checkbox"] {
+  top: 0 !important;
+  align-self: center !important;
+}
+
+// The 5px bottom margin on the label shifts its box up relative to the control
+// once both are centred; the row spacing comes from the section, not from here.
+#crm-main-content-wrapper .crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options div label {
+  margin-bottom: 0 !important;
 }
 
 #crm-container #crm-main-content-wrapper form .messages.crm-error ul {
