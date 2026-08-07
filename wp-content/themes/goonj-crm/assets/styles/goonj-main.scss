@@ -52,8 +52,11 @@
             margin-top: -15px;
           }
           #is_recur {
+            // The checkbox sat ~11px below its label because of a hand-tuned
+            // `top: 10px` nudge. Dropping the nudge lines it up with the label
+            // text; the control's own size is left as-is.
             position: relative;
-            top: 10px;
+            top: 0;
           }
           #recurHelp {
             font-size: 14px;
@@ -271,6 +274,35 @@
 .crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options div label {
   align-self: center !important;
   margin-left: 22px !important;
+}
+
+// Vertically centre these option controls against their labels
+// ("Select contribution type", the 80(G) checkbox, the confirmation radio).
+// Two things pushed them off: the pair is a grid with `align-items: baseline`,
+// and `.content .crm-form-radio` above pins radios with
+// `position: relative; top: 4px !important`, which pushes them further below
+// the label rather than lifting them. Centre the pair and zero the nudge here.
+//
+// The control's size is deliberately untouched — `form input { height: 29px }`
+// in main.scss plus the `max-width: 22px` above are what give these their
+// larger look, and that look is intended.
+//
+// `#crm-main-content-wrapper` is on the front of these selectors only to
+// outrank that `top: 4px !important` rule, which sits at (1 id, 4 classes).
+#crm-main-content-wrapper .crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options div.crm-option-label-pair {
+  align-items: center !important;
+}
+
+#crm-main-content-wrapper .crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options div input[type="radio"],
+#crm-main-content-wrapper .crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options div input[type="checkbox"] {
+  top: 0 !important;
+  align-self: center !important;
+}
+
+// The 5px bottom margin on the label shifts its box up relative to the control
+// once both are centred; the row spacing comes from the section, not from here.
+#crm-main-content-wrapper .crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options div label {
+  margin-bottom: 0 !important;
 }
 
 #crm-container #crm-main-content-wrapper form .messages.crm-error ul {
@@ -542,6 +574,59 @@
         }
       }
     }
+
+    // Contribution amount options (the price-set radios) on monetary
+    // contribution pages. At 15px the amount wraps onto two lines and the radio
+    // is stretched to text-input height, so each option is ~85x77px — only
+    // three fit across a phone. Shrink both so roughly five fit per line.
+    // The wrap that stops the row overflowing is set outside this breakpoint,
+    // at the bottom of this file, because desktop needs it too.
+    form.CRM_Contribute_Form_Contribution_Main {
+      .crm-block.crm-contribution-main-form-block #priceset-div {
+        .crm-section.contribution_amount-section .content.contribution_amount-content {
+          column-gap: 12px;
+          row-gap: 10px;
+
+          .price-set-row {
+            // Core adds 5px under every option; the flex row-gap spaces the
+            // wrapped lines now.
+            margin-bottom: 0;
+          }
+
+          // Stack the radio above its amount deterministically. The options are
+          // flex items here, so the `float: inline-start` set on the price set
+          // above no longer applies and the two would otherwise sit side by
+          // side once the amount stops wrapping.
+          .crm-option-label-pair {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+          }
+
+          input.crm-form-radio {
+            // `form input { height: 29px !important }` in main.scss inflates
+            // radios to text-input height, which is most of the wasted vertical
+            // space; `auto` restores the control's own size (same fix as the
+            // event registration block above). The 20px right margin set on the
+            // price set above is meant for the Other Amount text box, not for
+            // these.
+            height: auto !important;
+            margin: 0 0 2px 0 !important;
+            padding: 0 !important;
+          }
+
+          label {
+            margin: 0 !important;
+          }
+
+          .crm-price-amount-amount,
+          .crm-price-amount-label {
+            font-size: 12px;
+            line-height: 15px;
+          }
+        }
+      }
+    }
   }
 }
 
@@ -551,5 +636,38 @@
   }
   .d-xl-flex {
     display: flex !important;
+  }
+}
+
+// Contribution amount options (the price-set radios) on monetary contribution
+// pages — /contribute/website-user, /contribute/team-5000, the RAHAT pages, etc.
+//
+// The shared `#priceset-div .content` rule above lays the options out as a
+// nowrap flex row with a 30px gap, so a price set with more than a few amounts
+// renders one long line that runs past the form column: on
+// /contribute/website-user (9 amounts) the row measured 928px inside a 390px
+// phone viewport (horizontal scroll) and 865px inside the 720px desktop column
+// (last options clipped).
+//
+// Letting the row wrap fixes the overflow at every width, so it belongs here
+// rather than in a breakpoint. The matching mobile sizing lives in the
+// existing (min-width: 340px) and (max-width: 769px) block above.
+//
+// Scoping: `form.CRM_Contribute_Form_Contribution_Main` +
+// `.crm-contribution-main-form-block` restricts this to contribution pages, and
+// `.contribution_amount-*` to the amount price field. Both halves are needed —
+// event registration renders the same `#priceset-div` markup and one event
+// price set also names its field `contribution_amount`. The chain is this long
+// on purpose: the competing rules above carry `!important` at (2 ids, 4
+// classes), so anything shorter loses the cascade.
+#crm-main-content-wrapper {
+  form.CRM_Contribute_Form_Contribution_Main {
+    .crm-block.crm-contribution-main-form-block #priceset-div {
+      .crm-section.contribution_amount-section .content.contribution_amount-content {
+        flex-wrap: wrap;
+        align-items: flex-start;
+        row-gap: 12px;
+      }
+    }
   }
 }
