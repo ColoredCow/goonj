@@ -604,13 +604,22 @@
           }
 
           input.crm-form-radio {
-            // `form input { height: 29px !important }` in main.scss inflates
-            // radios to text-input height, which is most of the wasted vertical
-            // space; `auto` restores the control's own size (same fix as the
-            // event registration block above). The 20px right margin set on the
-            // price set above is meant for the Other Amount text box, not for
-            // these.
-            height: auto !important;
+            // Pin the control to an explicit size. `form input { height: 29px
+            // !important }` in main.scss inflates radios to text-input height,
+            // and `.crm-container input { flex: 1 }` leaves them at
+            // `flex: 1 1 0%` — inside this column flex the flex-basis governs
+            // the vertical axis, so the rendered size ends up being whatever
+            // each engine's flex algorithm settles on rather than what we ask
+            // for. Measured on the same page at 390px: WebKit 12px, Chromium
+            // 13px, Firefox resolved 10px. That spread is why the control can
+            // come out too small to see on some phones.
+            //
+            // `flex: none` has to come first — without it flex-basis silently
+            // overrides any height set here. 16px reads clearly next to the
+            // 12px amount and gives a bigger touch target.
+            flex: none !important;
+            width: 16px !important;
+            height: 16px !important;
             margin: 0 0 2px 0 !important;
             padding: 0 !important;
           }
