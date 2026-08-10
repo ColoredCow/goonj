@@ -198,3 +198,71 @@ document.addEventListener('DOMContentLoaded', function() {
         campaignSection.style.setProperty('display', 'block', 'important');
     }
 });
+
+// An 80(G) certificate needs an address to print on it. The microsite profile
+// keeps the address optional, so make it mandatory for as long as the
+// contributor has the 80(G) option ticked, and let it go again when they
+// untick it. The rule is handed to CiviCRM's own validator so the message
+// renders in the page's existing error style and blocks submit alongside the
+// other required fields.
+document.addEventListener('DOMContentLoaded', function() {
+    var $ = window.CRM && CRM.$;
+    if (!$) {
+        return;
+    }
+
+    var MESSAGE = 'Address is required to issue the 80(G) Certificate. If you don\'t need the certificate, please uncheck this option.';
+
+    var PROFILE_TITLE = 'MS Individual Contribution';
+
+    var form = $('form.CRM_Contribute_Form_Contribution_Main');
+
+    // This behaviour belongs to the MS Individual Contribution profile alone.
+    // Every other monetary page carries the same 80(G) option, and must keep
+    // its own address rules whatever they are set to in future. CiviCRM prints
+    // the profile title in the fieldset's legend, so match on that — the class
+    // holds the machine name instead, which is generated per environment.
+    var profile = form.find('fieldset.crm-profile').filter(function() {
+        return $(this).children('legend').text().trim() === PROFILE_TITLE;
+    });
+
+    // The 80(G) option is a custom field, so its custom_NNN name is not the
+    // same on every environment — match it on the label contributors see.
+    var checkbox = profile.find('input[type="checkbox"]').filter(function() {
+        return $('label[for="' + this.id + '"]').text().indexOf('80(G)') !== -1;
+    });
+
+    // The address carries a location type suffix (-Primary, -5, ...).
+    var address = profile.find('input[type="text"][name^="street_address-"]').first();
+
+    if (!profile.length || !checkbox.length || !address.length || !form.data('validator')) {
+        return;
+    }
+
+    // If the profile is ever changed to make the address mandatory in its own
+    // right, CiviCRM handles it — there is nothing for us to add, and nothing
+    // we may take away when the option is unticked.
+    if (address.hasClass('required')) {
+        return;
+    }
+
+    function syncAddressRequirement() {
+        if (checkbox.filter(':checked').length) {
+            address.rules('add', {
+                required: true,
+                messages: { required: MESSAGE }
+            });
+            return;
+        }
+
+        address.rules('remove', 'required');
+        address.removeClass('crm-inline-error alert-danger').removeAttr('aria-invalid');
+        form.find('label.crm-inline-error[for="' + address.attr('id') + '"]').remove();
+    }
+
+    checkbox.on('change', syncAddressRequirement);
+
+    // Also covers the option coming back ticked when CiviCRM re-renders the
+    // form after a server-side validation failure.
+    syncAddressRequirement();
+});
