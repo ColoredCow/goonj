@@ -680,3 +680,32 @@
     }
   }
 }
+// Inline validation error on the street address field, on phones.
+//
+// `.content` lays the input and any inline error out as a nowrap flex row with
+// a 33px gap. That works for the narrower fields, but the street address input
+// carries CiviCRM's `huge` class: inside a 390px viewport the input alone
+// measured 336px against a 320px `.content`, so the error label was pushed to
+// x=403 — completely off-screen. The contributor saw a tall blank gap, a form
+// that refused to submit, and no message explaining why.
+//
+// Letting this one row wrap puts the message on its own full-width line under
+// the field. Scoped to the street address section so the other fields' errors,
+// which do fit, keep the layout the phone styles above already set.
+@media (max-width: 769px) {
+  #crm-main-content-wrapper {
+    form.CRM_Contribute_Form_Contribution_Main {
+      .crm-block.crm-contribution-main-form-block {
+        .crm-section[class*="editrow_street_address-"] .content {
+          flex-wrap: wrap;
+          gap: 16px;
+
+          label.crm-inline-error {
+            width: 100%;
+            margin-left: 0 !important;
+          }
+        }
+      }
+    }
+  }
+}
