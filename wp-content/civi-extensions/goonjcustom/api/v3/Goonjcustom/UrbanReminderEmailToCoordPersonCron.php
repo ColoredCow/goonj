@@ -42,6 +42,10 @@ function civicrm_api3_goonjcustom_urban_reminder_email_to_coord_person_cron($par
   $institutionVisit = EckEntity::get('Institution_Visit', FALSE)
     ->addSelect('Urban_Planned_Visit.Visit_Guide', 'Urban_Planned_Visit.Coordinating_Goonj_POC', 'Urban_Planned_Visit.What_time_do_you_wish_to_visit_:label', 'Urban_Planned_Visit.Number_of_people_accompanying_you', 'Urban_Planned_Visit.Institution_Name', 'Urban_Planned_Visit.Institution', 'Urban_Planned_Visit.External_Coordinating_PoC')
     ->addWhere('Urban_Planned_Visit.Visit_Guide', 'IS NOT NULL')
+    // Only remind for an authorized visit that is still going ahead; a
+    // cancelled or already completed visit needs no reminder.
+    ->addWhere('Urban_Planned_Visit.Status:name', '=', 'Authorized')
+    ->addWhere('Urban_Planned_Visit.Visit_Status:label', '=', 'Scheduled')
     ->addWhere('Urban_Planned_Visit.When_do_you_wish_to_visit_Goonj', '>=', $startOfDay)
     ->addWhere('Urban_Planned_Visit.When_do_you_wish_to_visit_Goonj', '<=', $endOfDay)
     ->addClause('OR',

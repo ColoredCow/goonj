@@ -31,12 +31,16 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         ['sendAuthorizationEmailToExtCoordPoc'],
         ['sendAuthorizationEmailToExtCoordPocAndVisitGuide'],
         ['sendVisitOutcomeForm'],
+        ['stampVisitCompletedDate'],
         ['generateUrbanVisitSourceCode'],
         ['fillExternalCoordinatingPoc'],
         ['autoAssignExternalCoordinatingPoc'],
         ['autoAssignExternalCoordinatingPocFromIndividual'],
         ['assignCenterGroupToIndividual'],
         ['assignBackendCenterGroupToIndividualAndInstitute'],
+      ],
+      '&hook_civicrm_custom' => [
+        ['stampVisitCompletedDateOnCreate'],
       ],
       '&hook_civicrm_tabset' => 'urbanVisitTabset',
     ];
@@ -567,6 +571,117 @@ class UrbanPlannedVisitService extends AutoSubscriber {
       'newVisitStatus' => $newVisitStatus,
       'currentVisitStatus' => $currentVisitStatus,
     ];
+  }
+
+  /**
+   * Records the date on which the visit was marked as completed.
+   *
+   * The feedback email to the external PoC is due at 10 AM on the day after the
+   * visit is marked completed, so the cron needs to know when that happened.
+   * Nothing else records it: Visit_Status is only ever set by hand, and
+   * modified_date moves on any edit.
+   *
+   * This also covers a visit that is authorized and marked completed in the same
+   * save, which is how the team records visits that already took place.
+   *
+   * @param string $op
+   *   The type of operation being performed.
+   * @param string $objectName
+   *   The name of the object.
+   * @param int $objectId
+   *   The unique identifier for the object.
+   * @param object $objectRef
+   *   The reference to the object.
+   */
+  public static function stampVisitCompletedDate(string $op, string $objectName, $objectId, &$objectRef) {
+    $visitStatusDetails = self::checkVisitStatusAndIds($objectName, $objectId, $objectRef);
+
+    if (!$visitStatusDetails) {
+      return;
+    }
+
+    // Cast: the form sends the option value as a string but API callers may pass
+    // an int, and a strict comparison would silently skip those.
+    $newVisitStatus = (string) $visitStatusDetails['newVisitStatus'];
+    $currentVisitStatus = (string) $visitStatusDetails['currentVisitStatus'];
+
+    // @todo Fix hardcode values.
+    if ($currentVisitStatus === $newVisitStatus || $newVisitStatus !== '3') {
+      return;
+    }
+
+    $visitId = $objectRef['id'] ?? NULL;
+    if (!$visitId) {
+      return;
+    }
+
+    $visit = EckEntity::get('Institution_Visit', FALSE)
+      ->addSelect('Visit_Feedback.Visit_Completed_Date')
+      ->addWhere('id', '=', $visitId)
+      ->execute()->first();
+
+    // Never move the date once set; a later re-save must not delay the mail.
+    if (!empty($visit['Visit_Feedback.Visit_Completed_Date'])) {
+      return;
+    }
+
+    EckEntity::update('Institution_Visit', FALSE)
+      ->addValue('Visit_Feedback.Visit_Completed_Date', (new \DateTime())->format('Y-m-d'))
+      ->addWhere('id', '=', $visitId)
+      ->execute();
+  }
+
+  /**
+   * Stamps the completion date for a visit that is created already completed.
+   *
+   * On create, hook_civicrm_pre carries no entity id yet, so
+   * stampVisitCompletedDate() cannot run and the feedback mail would never
+   * become due. hook_civicrm_custom fires once the custom values are stored and
+   * does carry the id, which is where the "create a visit directly in CRM" flow
+   * lands when recording a visit that already took place.
+   *
+   * @param string $op
+   *   The type of operation being performed.
+   * @param int $groupID
+   *   The custom group being written.
+   * @param int $entityID
+   *   The entity the custom values belong to.
+   * @param array $params
+   *   The custom values being written.
+   */
+  public static function stampVisitCompletedDateOnCreate($op, $groupID, $entityID, &$params) {
+    if ($op !== 'create' || !$entityID) {
+      return;
+    }
+
+    // @todo Fix hardcode values.
+    $marksCompleted = FALSE;
+    foreach ((array) $params as $param) {
+      $column = $param['column_name'] ?? '';
+      if (strpos($column, 'visit_status_') === 0 && (string) ($param['value'] ?? '') === '3') {
+        $marksCompleted = TRUE;
+        break;
+      }
+    }
+
+    if (!$marksCompleted) {
+      return;
+    }
+
+    // Doubles as the entity filter: a non-visit id returns nothing here.
+    $visit = EckEntity::get('Institution_Visit', FALSE)
+      ->addSelect('Visit_Feedback.Visit_Completed_Date')
+      ->addWhere('id', '=', $entityID)
+      ->execute()->first();
+
+    if (!$visit || !empty($visit['Visit_Feedback.Visit_Completed_Date'])) {
+      return;
+    }
+
+    EckEntity::update('Institution_Visit', FALSE)
+      ->addValue('Visit_Feedback.Visit_Completed_Date', (new \DateTime())->format('Y-m-d'))
+      ->addWhere('id', '=', $entityID)
+      ->execute();
   }
 
   /**
