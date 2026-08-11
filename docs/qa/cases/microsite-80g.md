@@ -237,11 +237,15 @@ Automation: api · Manual: pass · Status: pending
 ## Page setup
 
 ### TC-371-24 — City renders as free text under the Contribute parent page
-Automation: browser · Manual: pass · Status: pending
+Automation: api · Manual: pass · Status: **ready**
 
     Given the microsite page is opened via the /contribute/ path
     When the City field is inspected
     Then City is a text input, not a dropdown
+
+> Check: `tests/qa/microsite/TC-371-24.js`. Needs no credentials — the page is public,
+> so the field is read straight from the HTML. Originally tagged `browser`; it turned
+> out to need no browser at all.
 
 ---
 
