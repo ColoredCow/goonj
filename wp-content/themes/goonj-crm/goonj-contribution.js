@@ -249,13 +249,19 @@ document.addEventListener('DOMContentLoaded', function() {
     function syncAddressRequirement() {
         if (checkbox.filter(':checked').length) {
             address.rules('add', {
+                // `required` only measures the raw string length, so a field
+                // holding nothing but spaces passes it. Trim before the rule
+                // reads the value, otherwise "   " counts as an address.
+                normalizer: function(value) {
+                    return typeof value === 'string' ? value.trim() : value;
+                },
                 required: true,
                 messages: { required: MESSAGE }
             });
             return;
         }
 
-        address.rules('remove', 'required');
+        address.rules('remove', 'required normalizer');
         address.removeClass('crm-inline-error alert-danger').removeAttr('aria-invalid');
         form.find('label.crm-inline-error[for="' + address.attr('id') + '"]').remove();
     }
