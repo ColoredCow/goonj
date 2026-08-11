@@ -39,6 +39,9 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         ['assignCenterGroupToIndividual'],
         ['assignBackendCenterGroupToIndividualAndInstitute'],
       ],
+      '&hook_civicrm_custom' => [
+        ['stampVisitCompletedDateOnCreate'],
+      ],
       '&hook_civicrm_tabset' => 'urbanVisitTabset',
     ];
   }
@@ -625,6 +628,59 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     EckEntity::update('Institution_Visit', FALSE)
       ->addValue('Visit_Feedback.Visit_Completed_Date', (new \DateTime())->format('Y-m-d'))
       ->addWhere('id', '=', $visitId)
+      ->execute();
+  }
+
+  /**
+   * Stamps the completion date for a visit that is created already completed.
+   *
+   * On create, hook_civicrm_pre carries no entity id yet, so
+   * stampVisitCompletedDate() cannot run and the feedback mail would never
+   * become due. hook_civicrm_custom fires once the custom values are stored and
+   * does carry the id, which is where the "create a visit directly in CRM" flow
+   * lands when recording a visit that already took place.
+   *
+   * @param string $op
+   *   The type of operation being performed.
+   * @param int $groupID
+   *   The custom group being written.
+   * @param int $entityID
+   *   The entity the custom values belong to.
+   * @param array $params
+   *   The custom values being written.
+   */
+  public static function stampVisitCompletedDateOnCreate($op, $groupID, $entityID, &$params) {
+    if ($op !== 'create' || !$entityID) {
+      return;
+    }
+
+    // @todo Fix hardcode values.
+    $marksCompleted = FALSE;
+    foreach ((array) $params as $param) {
+      $column = $param['column_name'] ?? '';
+      if (strpos($column, 'visit_status_') === 0 && (string) ($param['value'] ?? '') === '3') {
+        $marksCompleted = TRUE;
+        break;
+      }
+    }
+
+    if (!$marksCompleted) {
+      return;
+    }
+
+    // Doubles as the entity filter: a non-visit id returns nothing here.
+    $visit = EckEntity::get('Institution_Visit', FALSE)
+      ->addSelect('Visit_Feedback.Visit_Completed_Date')
+      ->addWhere('id', '=', $entityID)
+      ->execute()->first();
+
+    if (!$visit || !empty($visit['Visit_Feedback.Visit_Completed_Date'])) {
+      return;
+    }
+
+    EckEntity::update('Institution_Visit', FALSE)
+      ->addValue('Visit_Feedback.Visit_Completed_Date', (new \DateTime())->format('Y-m-d'))
+      ->addWhere('id', '=', $entityID)
       ->execute();
   }
 
