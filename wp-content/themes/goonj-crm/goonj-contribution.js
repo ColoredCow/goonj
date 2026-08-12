@@ -199,76 +199,150 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// An 80(G) certificate needs an address to print on it. The microsite profile
-// keeps the address optional, so make it mandatory for as long as the
-// contributor has the 80(G) option ticked, and let it go again when they
-// untick it. The rule is handed to CiviCRM's own validator so the message
-// renders in the page's existing error style and blocks submit alongside the
-// other required fields.
+// An 80(G) certificate cannot be issued without a PAN, and it needs an address
+// to print on it. So for as long as the contributor has the 80(G) option
+// ticked, require those fields, and let them go again when it is unticked.
+//
+// PAN applies to every monetary page. The address applies only to the microsite
+// profile — everywhere else the profile already marks the address required and
+// CiviCRM handles it.
+//
+// The rules are handed to CiviCRM's own validator, so the messages render in
+// the page's existing error style and block submit alongside the other required
+// fields. PAN *format* checking is separate and stays in main.js.
 document.addEventListener('DOMContentLoaded', function() {
     var $ = window.CRM && CRM.$;
     if (!$) {
         return;
     }
 
-    var MESSAGE = 'Address is required to issue the 80(G) Certificate. If you don\'t need the certificate, please uncheck this option.';
-
     var PROFILE_TITLE = 'MS Individual Contribution';
 
-    var form = $('form.CRM_Contribute_Form_Contribution_Main');
+    var ADDRESS_MESSAGE = 'To get the 80-G certificate, please enter your Address.';
+    var PAN_MESSAGE = 'To get the 80-G certificate, please enter your PAN number.';
+    var PAN_AND_ADDRESS_MESSAGE = 'To get the 80-G certificate, please enter your PAN number and Address.';
 
-    // This behaviour belongs to the MS Individual Contribution profile alone.
-    // Every other monetary page carries the same 80(G) option, and must keep
-    // its own address rules whatever they are set to in future. CiviCRM prints
-    // the profile title in the fieldset's legend, so match on that — the class
-    // holds the machine name instead, which is generated per environment.
-    var profile = form.find('fieldset.crm-profile').filter(function() {
+    var form = $('form.CRM_Contribute_Form_Contribution_Main');
+    if (!form.length || !form.data('validator')) {
+        return;
+    }
+
+    // CiviCRM prints the profile title in the fieldset's legend, so match on
+    // that — the class holds the machine name instead, which is generated per
+    // environment.
+    var profiles = form.find('fieldset.crm-profile');
+    var microsite = profiles.filter(function() {
         return $(this).children('legend').text().trim() === PROFILE_TITLE;
     });
+    var isMicrosite = microsite.length > 0;
+    var scope = isMicrosite ? microsite : profiles;
 
-    // The 80(G) option is a custom field, so its custom_NNN name is not the
-    // same on every environment — match it on the label contributors see.
-    var checkbox = profile.find('input[type="checkbox"]').filter(function() {
+    // Both are custom fields, so their custom_NNN names are not the same on
+    // every environment — match them on the labels contributors see.
+    var checkbox = scope.find('input[type="checkbox"]').filter(function() {
         return $('label[for="' + this.id + '"]').text().indexOf('80(G)') !== -1;
     });
+    var pan = scope.find('input[type="text"]').filter(function() {
+        return $('label[for="' + this.id + '"]').text().trim() === 'PAN Card Number';
+    }).first();
 
     // The address carries a location type suffix (-Primary, -5, ...).
-    var address = profile.find('input[type="text"][name^="street_address-"]').first();
+    var address = scope.find('input[type="text"][name^="street_address-"]').first();
 
-    if (!profile.length || !checkbox.length || !address.length || !form.data('validator')) {
+    if (!checkbox.length) {
         return;
     }
 
-    // If the profile is ever changed to make the address mandatory in its own
-    // right, CiviCRM handles it — there is nothing for us to add, and nothing
+    // Only take charge of the address on the microsite, and only while its
+    // profile leaves it optional. If the profile is ever changed to make it
+    // mandatory in its own right, there is nothing for us to add — and nothing
     // we may take away when the option is unticked.
-    if (address.hasClass('required')) {
+    var managesAddress = isMicrosite && address.length > 0 && !address.hasClass('required');
+    var managesPan = pan.length > 0 && !pan.hasClass('required');
+
+    if (!managesAddress && !managesPan) {
         return;
     }
 
-    function syncAddressRequirement() {
-        if (checkbox.filter(':checked').length) {
-            address.rules('add', {
-                // `required` only measures the raw string length, so a field
-                // holding nothing but spaces passes it. Trim before the rule
-                // reads the value, otherwise "   " counts as an address.
-                normalizer: function(value) {
-                    return typeof value === 'string' ? value.trim() : value;
-                },
-                required: true,
-                messages: { required: MESSAGE }
-            });
-            return;
+    // Mark the rows we put messages under. Our messages are long sentences and
+    // the row lays the field and its error out side by side, which leaves no
+    // usable width on a phone — the stylesheet uses this class to drop the
+    // message onto its own line there. It cannot key off the section's own
+    // class because that carries the custom field ID, which differs per
+    // environment.
+    if (managesAddress) {
+        address.closest('.crm-section').addClass('goonj-80g-field');
+    }
+    if (managesPan) {
+        pan.closest('.crm-section').addClass('goonj-80g-field');
+    }
+
+    // `required` only measures the raw string length, so a field holding
+    // nothing but spaces passes it. Trim before the rule reads the value,
+    // otherwise "   " counts as an answer.
+    function trim(value) {
+        return typeof value === 'string' ? value.trim() : value;
+    }
+
+    function isBlank(field) {
+        return !field.length || trim(field.val()) === '';
+    }
+
+    function require(field, message) {
+        field.rules('add', {
+            normalizer: trim,
+            required: true,
+            messages: { required: message }
+        });
+    }
+
+    function release(field) {
+        field.rules('remove', 'required normalizer');
+        field.removeClass('crm-inline-error alert-danger').removeAttr('aria-invalid');
+        form.find('label.crm-inline-error[for="' + field.attr('id') + '"]').remove();
+    }
+
+    // Both fields left blank is one problem, not two, so both of them say the
+    // same thing. Resolved each time a message is shown rather than fixed when
+    // the rule is added, so it follows what the contributor has filled in so
+    // far.
+    function bothMissing() {
+        return managesAddress && managesPan && isBlank(address) && isBlank(pan);
+    }
+
+    function addressMessage() {
+        return bothMissing() ? PAN_AND_ADDRESS_MESSAGE : ADDRESS_MESSAGE;
+    }
+
+    function panMessage() {
+        return bothMissing() ? PAN_AND_ADDRESS_MESSAGE : PAN_MESSAGE;
+    }
+
+    function sync() {
+        var wantsCertificate = checkbox.filter(':checked').length > 0;
+
+        if (managesAddress) {
+            if (wantsCertificate) {
+                require(address, addressMessage);
+            }
+            else {
+                release(address);
+            }
         }
 
-        address.rules('remove', 'required normalizer');
-        address.removeClass('crm-inline-error alert-danger').removeAttr('aria-invalid');
-        form.find('label.crm-inline-error[for="' + address.attr('id') + '"]').remove();
+        if (managesPan) {
+            if (wantsCertificate) {
+                require(pan, panMessage);
+            }
+            else {
+                release(pan);
+            }
+        }
     }
 
-    checkbox.on('change', syncAddressRequirement);
+    checkbox.on('change', sync);
 
     // Also covers the option coming back ticked when CiviCRM re-renders the
     // form after a server-side validation failure.
-    syncAddressRequirement();
+    sync();
 });
