@@ -70,6 +70,14 @@ function civicrm_api3_goonjcustom_update_scheduled_time_cron($params) {
     }
     $feedbackTime = $twoPmDateTime->format('Y-m-d H:i:s');
 
+    // // Set time to 11:00 PM (next day if past 11 PM).
+    // $elevenPmDateTime = clone $currentDate;
+    // $elevenPmDateTime->setTime(23, 0, 0);
+    // if ($currentTime >= 23) {
+    //   $elevenPmDateTime->modify('+1 day');
+    // }
+    // $panImportTime = $elevenPmDateTime->format('Y-m-d H:i:s');
+
     // Update scheduled run time for logistics and volunteer feedback.
     updateJobScheduledTime('institution_collection_camp_cron', $logisticsTime);
     updateJobScheduledTime('collection_camp_cron', $logisticsTime);
@@ -84,6 +92,9 @@ function civicrm_api3_goonjcustom_update_scheduled_time_cron($params) {
 
     // Update scheduled run time for razorpay settlement.
     updateJobScheduledTime('civicrm_razorpay_fetch_settlement_date_cron', $settlementTime);
+
+    // Update scheduled run time for the PAN import verification job (11 PM).
+    // updateJobScheduledTime('pan_import_verification_cron', $panImportTime);
 
   }
   catch (Exception $e) {
