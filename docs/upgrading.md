@@ -96,3 +96,12 @@ The custom code for the message templates is saved in the following files:
 
 **Note:**
 The custom changes made to the receipt templates were implemented to meet specific project requirements and priorities. When updating CiviCRM, we need to revisit these templates and apply the necessary modifications accordingly.
+
+### 4. Modification On Main.php of CiviCRM
+Changes on `wp-content/plugins/civicrm/civicrm/CRM/Contribute/Form/Contribution/Main.php`
+Text Change;
+Old Text: 
+$errors["price_{$priceField->id}"] = ts('Thank you for your consideration, request you to contribute a minimum of INR %1',
+
+New Text:
+$errors["price_{$priceField->id}"] = ts('Thank you for your consideration, request you to donate a minimum of INR %1',
