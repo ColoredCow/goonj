@@ -19,7 +19,7 @@ class GlificClient {
   public function __construct() {
     $this->client = new Client();
     $this->token = GlificHelper::getToken();
-    $this->url = rtrim(CIVICRM_GLIFIC_API_BASE_URL, '/') . '/api/';
+    $this->url = rtrim(\Civi::settings()->get('civiglific_api_base_url'), '/') . '/api/';
   }
 
   /**
