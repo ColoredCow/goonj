@@ -28,6 +28,10 @@ class ComposerStaticInit139a6fb22d498a0dbedfabbbacfd660d
     );
 
     public static $prefixLengthsPsr4 = array (
+        'P' => 
+        array (
+            'Phlib\\XssSanitizer\\' => 20,
+        ),
         'x' =>
         array (
             'xKerman\\Restricted\\' => 19,
@@ -153,6 +157,10 @@ class ComposerStaticInit139a6fb22d498a0dbedfabbbacfd660d
     );
 
     public static $prefixDirsPsr4 = array (
+        'Phlib\\XssSanitizer\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/phlib/xss-sanitizer/src',
+        ),
         'xKerman\\Restricted\\' =>
         array (
             0 => __DIR__ . '/..' . '/xkerman/restricted-unserialize/src',
