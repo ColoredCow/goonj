@@ -28,10 +28,6 @@ class ComposerStaticInit139a6fb22d498a0dbedfabbbacfd660d
     );
 
     public static $prefixLengthsPsr4 = array (
-        'P' => 
-        array (
-            'Phlib\\XssSanitizer\\' => 20,
-        ),
         'x' =>
         array (
             'xKerman\\Restricted\\' => 19,
@@ -89,6 +85,7 @@ class ComposerStaticInit139a6fb22d498a0dbedfabbbacfd660d
         ),
         'P' =>
         array (
+            'Phlib\\XssSanitizer\\' => 19,
             'Psr\\SimpleCache\\' => 16,
             'Psr\\Log\\' => 8,
             'Psr\\Http\\Message\\' => 17,
