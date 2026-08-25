@@ -19,6 +19,10 @@ wp-config.php
 # htaccess
 /.htaccess
 
+# Server-generated PHP config (created per environment, not version-controlled)
+/.user.ini
+/wordfence-waf.php
+
 # All plugins
 #
 # Note: If you wish to whitelist plugins,
