@@ -21,12 +21,22 @@
 use Civi\Api4\Contribution;
 use Civi\Api4\PaymentProcessor;
 
-// Who gets the mismatch alert
+// Who gets the mismatch alert.
 const RZP_RECON_TO = 'priyanka@goonj.org, accounts@goonj.org';
 const RZP_RECON_CC = 'tarun.joshi@coloredcow.in';
 
 // Attempts before giving up on a transient Razorpay/DB failure.
 const RZP_RECON_MAX_RETRIES = 3;
+
+// Bookmark of the last day fully reconciled (one auto-managed internal value —
+// not a custom field, nothing to create in admin). The cron reconciles every
+// day AFTER this up to yesterday, so a night it never ran is caught up next
+// time and no day is silently skipped.
+const RZP_RECON_STATE_KEY = 'razorpay_reconciliation_last_date';
+
+// Most days one run will catch up at once, so a long outage does not hammer the
+// Razorpay API in a single run — the rest follow on later runs.
+const RZP_RECON_MAX_CATCHUP_DAYS = 30;
 
 /**
  * Read-only comparison of one day's Razorpay captured payments against CiviCRM
@@ -216,9 +226,10 @@ class RazorpayReconciler {
  * @param array $spec
  */
 function _civicrm_api3_civirazorpay_civicrm_razorpay_reconciliation_cron_spec(&$spec) {
-  $spec['date'] = ['title' => 'Day to reconcile (Y-m-d). Default: yesterday.', 'type' => CRM_Utils_Type::T_STRING];
+  $spec['date'] = ['title' => 'End day to reconcile (Y-m-d), inclusive. Default: yesterday.', 'type' => CRM_Utils_Type::T_STRING];
+  $spec['from_date'] = ['title' => 'Start day (Y-m-d). Overrides the saved marker — use for a manual/historical range.', 'type' => CRM_Utils_Type::T_STRING];
   $spec['is_test'] = ['title' => 'Reconcile the test processor.', 'type' => CRM_Utils_Type::T_BOOLEAN];
-  $spec['send_email'] = ['title' => 'Send the mismatch email (default on).', 'type' => CRM_Utils_Type::T_BOOLEAN];
+  $spec['send_email'] = ['title' => 'Send the mismatch email (default on for nightly, off for a manual from_date range).', 'type' => CRM_Utils_Type::T_BOOLEAN];
 }
 
 /**
@@ -230,87 +241,180 @@ function _civicrm_api3_civirazorpay_civicrm_razorpay_reconciliation_cron_spec(&$
  */
 function civicrm_api3_civirazorpay_civicrm_razorpay_reconciliation_cron($params) {
   $isTest = !empty($params['is_test']) ? 1 : 0;
-  $sendEmail = array_key_exists('send_email', $params) ? (bool) $params['send_email'] : TRUE;
-  $day = (new DateTime($params['date'] ?? 'yesterday'))->format('Y-m-d');
 
-  // Retry a transient failure a few times before giving up (an error is not
-  // treated as a clean day — nothing is emailed and the log shows the failure).
+  $endDay = new DateTime($params['date'] ?? 'yesterday');
+  $endDay->setTime(0, 0, 0);
+
+  // Where to start: continue from the saved bookmark (catch-up), or an explicit
+  // manual range that ignores the bookmark.
+  if (!empty($params['from_date'])) {
+    $startDay = new DateTime($params['from_date']);
+    $useMarker = FALSE;
+  }
+  else {
+    $marker = (string) Civi::settings()->get(RZP_RECON_STATE_KEY);
+    $startDay = $marker !== '' ? (new DateTime($marker))->modify('+1 day') : clone $endDay;
+    $useMarker = TRUE;
+  }
+  $startDay->setTime(0, 0, 0);
+
+  // Nightly runs alert; a manual from_date range stays silent unless asked.
+  $sendEmail = array_key_exists('send_email', $params) ? (bool) $params['send_email'] : $useMarker;
+
+  $result = [
+    'is_test' => $isTest,
+    'range_start' => $startDay->format('Y-m-d'),
+    'range_end' => $endDay->format('Y-m-d'),
+    'days_reconciled' => 0,
+    'total_issues' => 0,
+    'stopped_early' => FALSE,
+    'email_sent' => FALSE,
+    'issues' => [],
+  ];
+
+  if ($startDay > $endDay) {
+    Civi::log()->info('Razorpay reconciliation: already up to date, nothing to do', $result);
+    return civicrm_api3_create_success($result, $params, 'Civirazorpay', 'civicrm_razorpay_reconciliation_cron');
+  }
+
+  // Cap catch-up per run.
+  $lastDay = clone $endDay;
+  if ((int) $startDay->diff($endDay)->days >= RZP_RECON_MAX_CATCHUP_DAYS) {
+    $lastDay = (clone $startDay)->modify('+' . (RZP_RECON_MAX_CATCHUP_DAYS - 1) . ' day');
+    $result['range_end'] = $lastDay->format('Y-m-d');
+  }
+
+  $allIssues = [];
+  for ($d = clone $startDay; $d <= $lastDay; $d->modify('+1 day')) {
+    $dayStr = $d->format('Y-m-d');
+    try {
+      $dayRes = _razorpay_reconcile_one_day($dayStr, (bool) $isTest);
+    }
+    catch (\Throwable $e) {
+      // A day that fails after retries is NOT marked done — stop here so the
+      // bookmark stays behind and the next run retries from this day.
+      Civi::log()->error('Razorpay reconciliation: day FAILED after retries, stopping run', ['date' => $dayStr, 'error' => $e->getMessage()]);
+      $result['stopped_early'] = TRUE;
+      $result['failed_date'] = $dayStr;
+      break;
+    }
+
+    $result['days_reconciled']++;
+    foreach ($dayRes['issues'] as $issue) {
+      $issue['date'] = $dayStr;
+      $allIssues[] = $issue;
+    }
+    Civi::log()->info('Razorpay reconciliation: day done', ['date' => $dayStr, 'summary' => $dayRes['summary'], 'mismatches' => count($dayRes['issues'])]);
+
+    // This day is reconciled (clean or mismatch) — move the bookmark forward.
+    if ($useMarker) {
+      Civi::settings()->set(RZP_RECON_STATE_KEY, $dayStr);
+    }
+  }
+
+  $result['issues'] = $allIssues;
+  $result['total_issues'] = count($allIssues);
+
+  if ($allIssues && $sendEmail) {
+    $result['email_sent'] = _razorpay_reconciliation_send_alert($allIssues, $result);
+  }
+
+  Civi::log()->info('Razorpay reconciliation: run complete', [
+    'range_start' => $result['range_start'],
+    'range_end' => $result['range_end'],
+    'days_reconciled' => $result['days_reconciled'],
+    'total_issues' => $result['total_issues'],
+    'stopped_early' => $result['stopped_early'],
+    'email_sent' => $result['email_sent'],
+  ]);
+  return civicrm_api3_create_success($result, $params, 'Civirazorpay', 'civicrm_razorpay_reconciliation_cron');
+}
+
+/**
+ * Reconcile a single day, retrying transient failures with back-off.
+ *
+ * @param string $dayStr
+ * @param bool $isTest
+ *
+ * @return array
+ *
+ * @throws \Throwable
+ */
+function _razorpay_reconcile_one_day(string $dayStr, bool $isTest): array {
   $lastError = NULL;
   for ($attempt = 1; $attempt <= RZP_RECON_MAX_RETRIES; $attempt++) {
     try {
-      $reconciler = new RazorpayReconciler($day . ' 00:00:00', $day . ' 23:59:59', (bool) $isTest);
-      $res = $reconciler->reconcile();
-
-      $res['date'] = $day;
-      $res['is_test'] = $isTest;
-      $res['email_sent'] = FALSE;
-      if (!empty($res['issues']) && $sendEmail) {
-        $res['email_sent'] = _razorpay_reconciliation_send_alert($day, $res);
-      }
-
-      Civi::log()->info('Razorpay reconciliation complete', [
-        'date' => $day,
-        'captured' => $res['summary']['rzp_captured_count'],
-        'matched' => $res['summary']['matched_in_civi_count'],
-        'mismatches' => count($res['issues']),
-        'email_sent' => $res['email_sent'],
-      ]);
-      return civicrm_api3_create_success($res, $params, 'Civirazorpay', 'civicrm_razorpay_reconciliation_cron');
+      $reconciler = new RazorpayReconciler($dayStr . ' 00:00:00', $dayStr . ' 23:59:59', $isTest);
+      return $reconciler->reconcile();
     }
     catch (\Throwable $e) {
       $lastError = $e;
-      Civi::log()->warning('Razorpay reconciliation attempt failed, will retry', ['date' => $day, 'attempt' => $attempt, 'error' => $e->getMessage()]);
+      Civi::log()->warning('Razorpay reconciliation: attempt failed, will retry', ['date' => $dayStr, 'attempt' => $attempt, 'error' => $e->getMessage()]);
       if ($attempt < RZP_RECON_MAX_RETRIES) {
         sleep(min(60, 10 * (2 ** ($attempt - 1))));
       }
     }
   }
-
-  Civi::log()->error('Razorpay reconciliation FAILED after retries', ['date' => $day, 'error' => $lastError->getMessage()]);
-  return civicrm_api3_create_error('Razorpay reconciliation failed: ' . $lastError->getMessage());
+  throw $lastError;
 }
 
 /**
- * Send a short plain-text mismatch alert. Returns TRUE if accepted for delivery.
+ * Send the mismatch alert (simple house-style HTML). One email lists every
+ * unreconciled payment, each with its own date, since a run may cover more than
+ * one day after a catch-up. Returns TRUE if accepted for delivery.
  *
- * @param string $day
- * @param array $res
+ * @param array $issues
+ *   Each: date, category, pay_id, contributor, amount, detail.
+ * @param array $result
  *
  * @return bool
  */
-function _razorpay_reconciliation_send_alert(string $day, array $res): bool {
+function _razorpay_reconciliation_send_alert(array $issues, array $result): bool {
   [$fromName, $fromEmail] = CRM_Core_BAO_Domain::getNameAndEmail();
-  $s = $res['summary'];
+  $count = count($issues);
 
-  $lines = [];
-  $lines[] = "Razorpay - CiviCRM reconciliation for {$day} found " . count($res['issues']) . " mismatch(es).";
-  $lines[] = "Razorpay captured {$s['rzp_captured_count']} payment(s) (Rs {$s['rzp_captured_total']}); matched in CiviCRM {$s['matched_in_civi_count']} (Rs {$s['matched_in_civi_total']}).";
-  $lines[] = 'Please check the payment IDs below in CiviCRM and Razorpay.';
-  $lines[] = '';
+  $reasons = [
+    'MISSING_IN_CIVI' => 'Captured at Razorpay but no contribution in CiviCRM',
+    'NOT_COMPLETED' => 'Captured at Razorpay but the contribution is not Completed',
+    'AMOUNT_MISMATCH' => 'Amount does not match between Razorpay and CiviCRM',
+  ];
+
+  $rows = '';
   $n = 0;
-  foreach ($res['issues'] as $i) {
+  foreach ($issues as $i) {
     $n++;
-    $lines[] = "{$n}. {$i['category']} | Payment: {$i['pay_id']} | Contributor: {$i['contributor']} | Amount: Rs {$i['amount']}";
-    $lines[] = "   {$i['detail']}";
+    $why = $reasons[$i['category']] ?? $i['category'];
+    $rows .= "<p style='margin:0 0 12px'>"
+      . "{$n}. <strong>{$i['pay_id']}</strong> &mdash; " . htmlspecialchars((string) $i['contributor'])
+      . " &mdash; <strong>Rs " . htmlspecialchars((string) $i['amount']) . "</strong>"
+      . " &mdash; " . htmlspecialchars((string) $i['date']) . "<br>"
+      . "<span style='color:#555'>" . htmlspecialchars($why) . "</span>"
+      . "</p>";
   }
+
+  $html = "<p>Greetings from Goonj!</p>"
+    . "<p>The daily Razorpay reconciliation found <strong>{$count} payment(s)</strong> that did not match CiviCRM "
+    . "(checked {$result['range_start']} to {$result['range_end']}). Please verify the payment IDs below in Razorpay and CiviCRM:</p>"
+    . $rows
+    . "<p>Warm regards<br>Team Goonj</p>";
 
   $params = [
     'from' => "\"{$fromName}\" <{$fromEmail}>",
     'toEmail' => RZP_RECON_TO,
     'cc' => RZP_RECON_CC,
-    'subject' => "Razorpay reconciliation: " . count($res['issues']) . " mismatch(es) on {$day}",
-    'text' => implode("\n", $lines),
+    'subject' => "Razorpay reconciliation: {$count} payment(s) need checking",
+    'html' => $html,
   ];
 
   try {
     $sent = CRM_Utils_Mail::send($params);
     if (!$sent) {
-      Civi::log()->error('Razorpay reconciliation: mailer returned failure', ['date' => $day]);
+      Civi::log()->error('Razorpay reconciliation: mailer returned failure');
     }
     return (bool) $sent;
   }
   catch (\Throwable $e) {
-    Civi::log()->error('Razorpay reconciliation: sending alert threw', ['date' => $day, 'error' => $e->getMessage()]);
+    Civi::log()->error('Razorpay reconciliation: sending alert threw', ['error' => $e->getMessage()]);
     return FALSE;
   }
 }
