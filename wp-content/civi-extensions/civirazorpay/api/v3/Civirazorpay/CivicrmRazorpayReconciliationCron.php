@@ -18,7 +18,6 @@
  *   cv api Civirazorpay.civicrm_razorpay_reconciliation_cron date=2026-07-18 --user=devteam
  */
 
-use Civi\Api4\Contribution;
 use Civi\Api4\PaymentProcessor;
 
 // Who gets the mismatch alert.
@@ -50,6 +49,12 @@ class RazorpayReconciler {
   private DateTime $start;
   private DateTime $end;
 
+  /**
+   * Pay_id => matched contribution info, preloaded once (see preload()).
+   */
+  private array $payMap = [];
+  private bool $preloaded = FALSE;
+
   public function __construct(string $startDate, string $endDate, bool $isTest) {
     $this->isTest = $isTest;
     $this->start = new DateTime($startDate);
@@ -71,6 +76,7 @@ class RazorpayReconciler {
    */
   public function reconcile(): array {
     $captured = $this->fetchCapturedPayments();
+    $this->preload();
 
     $issues = [];
     $matchedCount = 0;
@@ -188,34 +194,81 @@ class RazorpayReconciler {
   }
 
   /**
-   * Find a contribution carrying this payment id (in trxn_id, or its
-   * financial_trxn rows), regardless of its receive_date.
+   * O(1) lookup of a payment id in the preloaded map (any date — date-drift safe).
    */
   private function findContribution(string $payId): ?array {
-    $found = Contribution::get(FALSE)
-      ->addSelect('id', 'contact_id.display_name', 'total_amount', 'contribution_status_id:name')
-      ->addWhere('trxn_id', 'LIKE', '%' . $payId . '%')
-      ->addWhere('is_test', '=', $this->isTest)
-      ->execute()->first();
-    if ($found) {
-      return $found;
+    return $this->payMap[$payId] ?? NULL;
+  }
+
+  /**
+   * Preload every Razorpay pay_ id already in CiviCRM into memory ONCE (from
+   * contribution.trxn_id and financial_trxn), so each payment is an O(1) lookup
+   * instead of a per-payment leading-wildcard full scan. This keeps even a big
+   * (monthly/yearly) window light: one scan up front, not N scans.
+   */
+  private function preload(): void {
+    if ($this->preloaded) {
+      return;
+    }
+    $isTest = $this->isTest ? 1 : 0;
+
+    // contribution_status_id -> label (to report Pending/Cancelled/etc.).
+    $statusLabels = [];
+    $sd = CRM_Core_DAO::executeQuery(
+      "SELECT ov.value, ov.label
+         FROM civicrm_option_value ov
+         JOIN civicrm_option_group og ON og.id = ov.option_group_id
+        WHERE og.name = 'contribution_status'");
+    while ($sd->fetch()) {
+      $statusLabels[(int) $sd->value] = $sd->label;
     }
 
+    // 1) pay_ ids stored in contribution.trxn_id ("pay_X" or "order_X,pay_Y").
     $dao = CRM_Core_DAO::executeQuery(
-      "SELECT eft.entity_id
-         FROM civicrm_financial_trxn ft
-         JOIN civicrm_entity_financial_trxn eft ON eft.financial_trxn_id = ft.id
-        WHERE ft.trxn_id LIKE %1 AND eft.entity_table = 'civicrm_contribution'
-        LIMIT 1",
-      [1 => ['%' . $payId . '%', 'String']]
+      "SELECT c.id, c.trxn_id, c.total_amount, c.contribution_status_id st, ct.display_name name
+         FROM civicrm_contribution c
+         LEFT JOIN civicrm_contact ct ON ct.id = c.contact_id
+        WHERE c.is_test = %1 AND c.trxn_id LIKE '%pay%'",
+      [1 => [$isTest, 'Integer']]
     );
-    if ($dao->fetch()) {
-      return Contribution::get(FALSE)
-        ->addSelect('id', 'contact_id.display_name', 'total_amount', 'contribution_status_id:name')
-        ->addWhere('id', '=', (int) $dao->entity_id)
-        ->execute()->first();
+    while ($dao->fetch()) {
+      if (preg_match_all('/pay_[A-Za-z0-9]+/', (string) $dao->trxn_id, $m)) {
+        foreach ($m[0] as $pid) {
+          $this->payMap[$pid] = [
+            'id' => $dao->id,
+            'contact_id.display_name' => $dao->name,
+            'total_amount' => $dao->total_amount,
+            'contribution_status_id:name' => $statusLabels[(int) $dao->st] ?? (string) $dao->st,
+          ];
+        }
+      }
     }
-    return NULL;
+
+    // 2) pay_ ids that live only in financial_trxn (older rows whose trxn_id
+    // holds just the order id).
+    $dao2 = CRM_Core_DAO::executeQuery(
+      "SELECT eft.entity_id id, ft.trxn_id, c.total_amount, c.contribution_status_id st, ct.display_name name
+         FROM civicrm_financial_trxn ft
+         JOIN civicrm_entity_financial_trxn eft ON eft.financial_trxn_id = ft.id AND eft.entity_table = 'civicrm_contribution'
+         JOIN civicrm_contribution c ON c.id = eft.entity_id AND c.is_test = %1
+         LEFT JOIN civicrm_contact ct ON ct.id = c.contact_id
+        WHERE ft.trxn_id LIKE 'pay%'",
+      [1 => [$isTest, 'Integer']]
+    );
+    while ($dao2->fetch()) {
+      if (preg_match('/pay_[A-Za-z0-9]+/', (string) $dao2->trxn_id, $m)) {
+        if (!isset($this->payMap[$m[0]])) {
+          $this->payMap[$m[0]] = [
+            'id' => $dao2->id,
+            'contact_id.display_name' => $dao2->name,
+            'total_amount' => $dao2->total_amount,
+            'contribution_status_id:name' => $statusLabels[(int) $dao2->st] ?? (string) $dao2->st,
+          ];
+        }
+      }
+    }
+
+    $this->preloaded = TRUE;
   }
 
 }
