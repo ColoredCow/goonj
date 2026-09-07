@@ -103,6 +103,7 @@
           font-size: 14px;
           font-weight: 400;
           font-family: "Proxima Nova", sans-serif !important;
+          margin-left: 9px !important;
         }
 
         fieldset > div:nth-last-child(3) .content .crm-multiple-checkbox-radio-options .crm-option-label-pair input {
@@ -303,6 +304,140 @@
 // once both are centred; the row spacing comes from the section, not from here.
 #crm-main-content-wrapper .crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options div label {
   margin-bottom: 0 !important;
+}
+
+// ── Contribution pages: two-column profile ────────────────────────────────
+//
+// Every profile field sat on its own full-width row, so a donor scrolled a
+// long way before reaching Contribute. Lay the profile fieldset out as a
+// two-column grid and let the short contact fields pair up:
+//
+//   Select contribution type            (full)
+//   First Name         | Last Name
+//   Email Address      | Mobile Number
+//   Flat/House no.                      (full)
+//   State              | City
+//   PIN Code           | Country
+//   80(G), PAN, confirmation            (full)
+//
+// Rows are full width by default and only the core contact fields opt into a
+// half column. That way round on purpose: the rows for custom fields carry
+// `custom_NNN` in their class and those IDs are not the same on staging and
+// prod, while `editrow_first_name-section` and its siblings are. It also
+// means anything the Goonj team adds to the profile later keeps today's
+// full-width row instead of silently landing in a half column.
+//
+// The `-Primary` in the address and email row classes is the location type's
+// name, so the classes are matched on their stable leading part rather than in
+// full.
+//
+// Scoped to the contribution main form. Event registration and the
+// profile-edit screens can render this same `.crm-profile` markup and have to
+// stay single-column, so the selector also names the form class and the block
+// class, which are `CRM_Contribute_Form_Contribution_Main` and
+// `crm-contribution-main-form-block` only on this one screen — the Confirm and
+// Thank-You steps carry `crm-contribution-confirm-form-block` and
+// `crm-contribution-thankyou-form-block` and are left alone.
+#crm-main-content-wrapper
+  form.CRM_Contribute_Form_Contribution_Main
+  .crm-block.crm-contribution-main-form-block
+  .crm-public-form-item
+  .crm-profile {
+  // Outranks the `.crm-profile { display: block !important }` rule above,
+  // which is why the whole chain is spelled out here.
+  display: grid !important;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 24px;
+
+  > .crm-section {
+    grid-column: 1 / -1;
+
+    // Grid items size to their content by default (`min-width: auto`), so one
+    // wide child — the State select2, or an inline error laid out beside its
+    // input — would push its column past the 1fr share and unbalance the pair.
+    min-width: 0;
+  }
+
+  > .crm-section[class*="editrow_first_name-"],
+  > .crm-section[class*="editrow_last_name-"],
+  > .crm-section[class*="editrow_email-"],
+  > .crm-section[class*="editrow_phone-"],
+  > .crm-section[class*="editrow_state_province-"],
+  > .crm-section[class*="editrow_city-"],
+  > .crm-section[class*="editrow_postal_code-"],
+  > .crm-section[class*="editrow_country-"] {
+    grid-column: auto;
+  }
+
+  // An inline error is laid out as a second flex item beside its field, which
+  // was fine while every row was the full 720px. Half a row has no space for
+  // both: the input shrank to 225px and "This field is required." broke onto
+  // three lines. Let the row wrap so the message takes its own line under the
+  // field, which is also where a donor expects to find it.
+  .crm-section .content {
+    flex-wrap: wrap;
+    row-gap: 6px;
+
+    > label.crm-inline-error {
+      flex: 1 0 100%;
+      margin-left: 0 !important;
+
+      // The message carries 5px of padding on a content box, so a plain 100%
+      // basis makes the red bar 10px wider than the field it belongs to and
+      // it hangs over the gutter.
+      box-sizing: border-box;
+    }
+
+    // "Contribute Once" and "Contribute Monthly" sat side by side because
+    // `nowrap` shrank their `width: 100%` boxes into equal halves of the row.
+    // Now that the row wraps they would each claim a line of their own, so ask
+    // for the equal shares outright.
+    .crm-multiple-checkbox-radio-options > .crm-option-label-pair {
+      flex: 1 1 0;
+    }
+  }
+
+  // CiviCRM sizes text inputs by class — `.huge` (the street address) asks for
+  // 25em, `.big` for 15em. They are flex items that should just grow or shrink
+  // to the row, but a flex item will not shrink below its own specified width,
+  // so once a column is narrower than 25em the address input stopped at
+  // `max-width: 100%` and its padding and border pushed it 16px past the
+  // column. Releasing that floor lets it shrink to the column like the rest.
+  //
+  // It has to be `min-width`, not `box-sizing: border-box`: `form input` in
+  // main.scss pins `height: 29px !important` on a content box, so switching
+  // the box model would fold the 16px of vertical padding into the height and
+  // leave every field 29px tall against the 45px of the State dropdown and
+  // the amount input above it.
+  //
+  // (This is also why the address input already sat 16px wider than its
+  // neighbours on a phone, before any of the above.)
+  .crm-section .content input.crm-form-text,
+  .crm-section .content input.crm-form-autocomplete {
+    min-width: 0;
+  }
+
+  // One field per row on phones: half of 24px-gutter columns leaves nothing
+  // for a label like "Flat/House no./Building/Apartment" or the inline errors.
+  //
+  // 769px, not 768px, to line up with the phone block further down this file,
+  // which sets `.crm-profile div { width: 82vw }`. Switching a pixel earlier
+  // left 769px itself with two columns *and* 82vw rows, which overflowed the
+  // form by 58px.
+  @media (max-width: 769px) {
+    grid-template-columns: 1fr;
+
+    // That phone block sizes the rows with `width: 82vw`, which is not the
+    // same measurement as the form's own width, so the fields never lined up
+    // with the Contribute button under it: at 390px they stopped 22px short of
+    // it, and by 768px 82vw had grown 58px past it and the inputs hung off the
+    // form altogether. A grid item is already exactly one column wide, so take
+    // the width from the column and let it cascade down the row.
+    > .crm-section,
+    .crm-section div {
+      width: 100% !important;
+    }
+  }
 }
 
 #crm-container #crm-main-content-wrapper form .messages.crm-error ul {
