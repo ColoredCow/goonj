@@ -312,13 +312,19 @@
 // long way before reaching Contribute. Lay the profile fieldset out as a
 // two-column grid and let the short contact fields pair up:
 //
-//   Select contribution type            (full)
-//   First Name         | Last Name
-//   Email Address      | Mobile Number
-//   Flat/House no.                      (full)
-//   State              | City
-//   PIN Code           | Country
-//   80(G), PAN, confirmation            (full)
+//        from 770px up                     on a phone
+//   ------------------------------    ------------------------------
+//   Select contribution type          Select contribution type
+//   First Name    | Last Name         First Name
+//   Email Address | Mobile Number     Last Name
+//   Flat/House no.                    Email Address
+//   State         | City              Mobile Number
+//   PIN Code      | Country           Flat/House no.
+//   80(G), PAN, confirmation          State    | City
+//                                     PIN Code | Country
+//                                     80(G), PAN, confirmation
+//
+// (the phone column list is set up in the media query at the end of the block)
 //
 // Rows are full width by default and only the core contact fields opt into a
 // half column. That way round on purpose: the rows for custom fields carry
@@ -417,22 +423,35 @@
     min-width: 0;
   }
 
-  // One field per row on phones: half of 24px-gutter columns leaves nothing
-  // for a label like "Flat/House no./Building/Apartment" or the inline errors.
+  // On phones the two columns are kept, but only State | City and
+  // PIN Code | Country stay paired. Those four are the shortest fields on the
+  // form — two short labels and a 6-digit box against a country that is just
+  // the word "India" — so they still read at half a phone width. A name, an
+  // email or "Flat/House no./Building/Apartment" does not, so each of those
+  // takes the whole row back.
   //
   // 769px, not 768px, to line up with the phone block further down this file,
   // which sets `.crm-profile div { width: 82vw }`. Switching a pixel earlier
   // left 769px itself with two columns *and* 82vw rows, which overflowed the
   // form by 58px.
   @media (max-width: 769px) {
-    grid-template-columns: 1fr;
+    // 24px of gutter is a lot to give up out of a ~340px form; the pairs read
+    // better with the width in the fields.
+    column-gap: 12px;
+
+    > .crm-section[class*="editrow_first_name-"],
+    > .crm-section[class*="editrow_last_name-"],
+    > .crm-section[class*="editrow_email-"],
+    > .crm-section[class*="editrow_phone-"] {
+      grid-column: 1 / -1;
+    }
 
     // That phone block sizes the rows with `width: 82vw`, which is not the
     // same measurement as the form's own width, so the fields never lined up
     // with the Contribute button under it: at 390px they stopped 22px short of
     // it, and by 768px 82vw had grown 58px past it and the inputs hung off the
-    // form altogether. A grid item is already exactly one column wide, so take
-    // the width from the column and let it cascade down the row.
+    // form altogether. A grid item is already exactly as wide as the column it
+    // sits in, so take the width from there and let it cascade down the row.
     > .crm-section,
     .crm-section div {
       width: 100% !important;
