@@ -21,8 +21,11 @@
 use Civi\Api4\PaymentProcessor;
 
 // Who gets the mismatch alert.
-const RZP_RECON_TO = 'priyanka@goonj.org, accounts@goonj.org';
-const RZP_RECON_CC = 'tarun.joshi@coloredcow.in';
+// CiviCRM's mailer formats only ONE address cleanly in "To" (multiple get
+// wrapped in a single <...> and then show up as Bcc). So keep one address in
+// To and put the rest on Cc — everyone still receives it, no Bcc.
+const RZP_RECON_TO = 'priyanka@goonj.org';
+const RZP_RECON_CC = 'patel.amarjeet@goonj.org, tarun.joshi@coloredcow.in, shivangi@goonj.org';
 
 // Attempts before giving up on a transient Razorpay/DB failure.
 const RZP_RECON_MAX_RETRIES = 3;
