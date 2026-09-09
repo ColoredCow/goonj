@@ -61,6 +61,7 @@ class CollectionCampService extends AutoSubscriber {
       ['reGenerateCollectionCampQr'],
       ['assignChapterGroupToIndividualForContribution'],
       ['updateCampaignForCollectionSourceContribution'],
+      ['updateCampaignForBackOfficeContribution'],
       ['generateInvoiceIdForContribution'],
       ['generateInvoiceNumber'],
       ['sendInductionEmailToCollectionCampUser'],
@@ -2478,6 +2479,112 @@ class CollectionCampService extends AutoSubscriber {
     }
     catch (\Exception $e) {
       \Civi::log()->error("Exception in updateCampaignForCollectionSourceContribution", [
+        'Message' => $e->getMessage(),
+        'Trace'   => $e->getTraceAsString(),
+      ]);
+    }
+  }
+
+  /**
+   * Resolves the campaign held by a contribution's collection source.
+   *
+   * @param int|null $sourceId
+   *   The collection camp selected on the contribution.
+   * @param int|null $eventId
+   *   The event selected on the contribution.
+   *
+   * @return int|null
+   *   The campaign of the source, or NULL when the source holds none.
+   */
+  private static function getCampaignForContributionSource($sourceId, $eventId) {
+    if (!empty($sourceId)) {
+      $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
+        ->addSelect(
+          'Collection_Camp_Intent_Details.Campaign',
+          'Institution_collection_camp_Review.Campaign'
+        )
+        ->addWhere('id', '=', $sourceId)
+        ->execute()->first();
+
+      if (empty($collectionCamp)) {
+        return NULL;
+      }
+
+      return $collectionCamp['Collection_Camp_Intent_Details.Campaign']
+        ?: $collectionCamp['Institution_collection_camp_Review.Campaign'];
+    }
+
+    if (!empty($eventId)) {
+      $event = Event::get(FALSE)
+        ->addSelect('campaign_id')
+        ->addWhere('id', '=', $eventId)
+        ->execute()->first();
+
+      return $event['campaign_id'] ?? NULL;
+    }
+
+    return NULL;
+  }
+
+  /**
+   * This hook is called after a db write on entities.
+   *
+   * Contributions added from the back office are saved in a single step, so
+   * they never reach updateCampaignForCollectionSourceContribution, which only
+   * runs on the edit that completes an online contribution. Here the campaign
+   * of the selected collection source always wins over a campaign entered on
+   * the form.
+   *
+   * @param string $op
+   *   The type of operation being performed.
+   * @param string $objectName
+   *   The name of the object.
+   * @param int $objectId
+   *   The unique identifier for the object.
+   * @param object $objectRef
+   *   The reference to the object.
+   */
+  public static function updateCampaignForBackOfficeContribution(string $op, string $objectName, int $objectId, &$objectRef) {
+    if ($objectName !== 'Contribution' || !$objectRef->id || !in_array($op, ['create', 'edit'])) {
+      return;
+    }
+
+    try {
+      $contributionId = $objectRef->id;
+
+      $contribution = Contribution::get(FALSE)
+        ->addSelect('Contribution_Details.Source', 'Contribution_Details.Events', 'campaign_id', 'contribution_page_id')
+        ->addWhere('id', '=', $contributionId)
+        ->execute()->first();
+
+      if (!$contribution) {
+        return;
+      }
+
+      // Online contributions keep the campaign of the contribution page.
+      if (!empty($contribution['contribution_page_id'])) {
+        return;
+      }
+
+      $campaignId = self::getCampaignForContributionSource(
+        $contribution['Contribution_Details.Source'],
+        $contribution['Contribution_Details.Events']
+      );
+
+      // Sources that hold no campaign of their own, such as dropping centers
+      // and Goonj activities, are left to the default campaign cron.
+      if (!$campaignId || $campaignId == $contribution['campaign_id']) {
+        return;
+      }
+
+      Contribution::update(FALSE)
+        ->addValue('campaign_id', $campaignId)
+        ->addWhere('id', '=', $contributionId)
+        ->execute();
+
+    }
+    catch (\Exception $e) {
+      \Civi::log()->error("Exception in updateCampaignForBackOfficeContribution", [
         'Message' => $e->getMessage(),
         'Trace'   => $e->getTraceAsString(),
       ]);
