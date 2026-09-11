@@ -154,6 +154,29 @@ form input {
   border-color: rgba(0, 0, 0, 0.3) !important;
 }
 
+// CiviCRM stamps `crm-container crm-public` onto the select2 dropdown overlay
+// so its own CSS reaches it. That also hands the overlay the page container's
+// 24px of padding below (and, in lg.scss, a hard 720px width). On a phone the
+// padding left a 150px dropdown with only 66px of room for the option text, so
+// "Chhattisgarh" rendered as "Chhattis..." — reported on a 360px Android,
+// where a 390px iPhone had just enough room to hide it. The overlay is not a
+// page container; it brings its own white background from select2.
+.select2-drop.crm-container {
+  padding: 0;
+}
+
+// Without that padding the dropdown is exactly as wide as its field, which is
+// fine until the field is a half column on a phone: at 360px that is 150px,
+// and the longest single-word states — Chhattisgarh, Maharashtra, Lakshadweep
+// — need ~99px of text plus the row's own padding. Multi-word names wrap on
+// their spaces; these have nowhere to break, so they were the ones that
+// ellipsised. Let the overlay outgrow its field by just enough, and never let
+// it run off the screen.
+.select2-drop {
+  min-width: 175px;
+  max-width: calc(100vw - 32px);
+}
+
 .crm-container {
   padding: 24px;
   background-color: #fff !important;
