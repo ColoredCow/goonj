@@ -52,7 +52,10 @@
         max-width: 100% !important;
     }
     
-    .crm-container {
+    // Not the select2 overlay — see the note in main.scss. This `width` is
+    // `!important`, so without the guard every dropdown in the CRM opened
+    // 720px wide under whatever field it belonged to.
+    .crm-container:not(.select2-drop) {
         width: 720px !important;
         padding: 15px;
         

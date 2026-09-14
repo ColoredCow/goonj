@@ -93,6 +93,15 @@ function civicrm_api3_goonjcustom_update_scheduled_time_cron($params) {
     // Update scheduled run time for razorpay settlement.
     updateJobScheduledTime('civicrm_razorpay_fetch_settlement_date_cron', $settlementTime);
 
+    // Set time to 1:30 AM (next day if already past) for razorpay reconciliation.
+    // 1:30 AM runs just after the 1 AM settlement cron and reconciles the previous day.
+    // $reconDateTime = clone $currentDate;
+    // $reconDateTime->setTime(1, 30, 0);
+    // if ($currentDate >= $reconDateTime) {
+    //   $reconDateTime->modify('+1 day');
+    // }
+    // updateJobScheduledTime('civicrm_razorpay_reconciliation_cron', $reconDateTime->format('Y-m-d H:i:s'));
+
     // Update scheduled run time for the PAN import verification job (11 PM).
     updateJobScheduledTime('pan_import_verification_cron', $panImportTime);
 
