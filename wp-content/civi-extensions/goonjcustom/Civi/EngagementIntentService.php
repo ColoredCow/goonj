@@ -2,7 +2,6 @@
 
 namespace Civi;
 
-use Civi\Api4\Activity;
 use Civi\Api4\Address;
 use Civi\Api4\Group;
 use Civi\Api4\GroupContact;
@@ -27,10 +26,6 @@ class EngagementIntentService extends AutoSubscriber {
    * India.
    */
   const DEFAULT_COUNTRY_ID = 1101;
-
-  const ACTIVITY_TYPE_NAME = 'JSM engagement intent';
-  const ACTIVITY_SUBJECT = 'JSM engagement intent';
-  const ACTIVITY_STATUS = 'Completed';
 
   /**
    * {@inheritDoc}
@@ -95,8 +90,6 @@ class EngagementIntentService extends AutoSubscriber {
       if ($groupId) {
         self::addContactToGroup($contactId, $groupId);
       }
-
-      self::createEngagementIntentActivity($contactId);
     }
   }
 
@@ -161,28 +154,6 @@ class EngagementIntentService extends AutoSubscriber {
     }
 
     return $stateContactGroup ? $stateContactGroup['id'] : NULL;
-  }
-
-  /**
-   * Records the engagement intent as an activity on the contact.
-   *
-   * Each submission is a separate intent, so activities accumulate rather than
-   * being deduplicated the way the group membership is.
-   */
-  private static function createEngagementIntentActivity($contactId) {
-    try {
-      Activity::create(FALSE)
-        ->addValue('subject', self::ACTIVITY_SUBJECT)
-        ->addValue('activity_type_id:name', self::ACTIVITY_TYPE_NAME)
-        ->addValue('status_id:name', self::ACTIVITY_STATUS)
-        ->addValue('activity_date_time', date('Y-m-d H:i:s'))
-        ->addValue('source_contact_id', $contactId)
-        ->addValue('target_contact_id', $contactId)
-        ->execute();
-    }
-    catch (\Exception $e) {
-      \Civi::log()->error("Engagement intent: error creating activity for contact $contactId. " . $e->getMessage());
-    }
   }
 
   /**
