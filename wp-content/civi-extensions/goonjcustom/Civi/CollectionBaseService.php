@@ -1245,7 +1245,14 @@ class CollectionBaseService extends AutoSubscriber {
    *
    */
   public static function setIndianStateOptions(string $entity, string $field, ?array &$options, array $params) {
-    if (!in_array($entity, ['Eck_Collection_Camp', 'Eck_Institution_Visit', 'Eck_Meetings_Sessions'])) {
+    $allowedEntities = [
+      'Eck_Collection_Camp',
+      'Eck_Institution_Visit',
+      'Eck_Meetings_Sessions',
+      'Eck_Engagement_Intent',
+    ];
+
+    if (!in_array($entity, $allowedEntities)) {
       return FALSE;
     }
 
@@ -1254,6 +1261,9 @@ class CollectionBaseService extends AutoSubscriber {
     }
     elseif ($entity == 'Eck_Meetings_Sessions') {
       $stateGroupNameMapper = self::getStateGroupNameMapperForMeeting();
+    }
+    elseif ($entity == 'Eck_Engagement_Intent') {
+      $stateGroupNameMapper = self::getStateGroupNameMapperForEngagementIntent();
     }
     else {
       $stateGroupNameMapper = self::getStateGroupNameMapper();
@@ -1326,6 +1336,15 @@ class CollectionBaseService extends AutoSubscriber {
   private static function getStateGroupNameMapperForMeeting() {
     return [
       'Meetings_Sessions' => 'Urban_Meetings',
+    ];
+  }
+
+  /**
+   * Maps the Engagement Intent Eck subtype to its state custom group.
+   */
+  private static function getStateGroupNameMapperForEngagementIntent() {
+    return [
+      'Engagement_Intent' => 'Engagement_Intent_Form',
     ];
   }
 
