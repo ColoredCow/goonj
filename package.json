@@ -6,7 +6,9 @@
   "directories": {
     "doc": "docs"
   },
-  "scripts": {},
+  "scripts": {
+    "qa": "node tests/qa/lib/run.js"
+  },
   "keywords": [],
   "author": "coloredcow",
   "license": "AGPL",

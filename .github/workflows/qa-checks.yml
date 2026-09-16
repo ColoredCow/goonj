@@ -1,0 +1,39 @@
+name: qa-checks
+
+# QA checks, generated from the cases in docs/qa/cases/.
+# Runs only the checks whose paths match what changed in the PR.
+
+on:
+  pull_request:
+    branches:
+      - dev
+    paths:
+      - 'wp-content/themes/goonj-crm/**'
+      - 'wp-content/plugins/goonj-blocks/**'
+      - 'wp-content/civi-extensions/goonjcustom/**'
+      - 'wp-content/civi-extensions/civirazorpay/**'
+      - 'tests/qa/**'
+      - 'docs/qa/**'
+
+jobs:
+  monetary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CIVI_BASE_URL: ${{ secrets.GOONJ_STAGING_SITE_URL }}
+      CIVI_API_KEY: ${{ secrets.CIVI_QA_API_KEY }}
+      CIVI_WEBHOOK_PATH: ${{ secrets.CIVI_WEBHOOK_PATH }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run QA checks for changed areas
+        run: npm run qa -- --changed
