@@ -96,7 +96,11 @@
           }
         }
 
-        fieldset > div:nth-last-child(3) .content .crm-multiple-checkbox-radio-options .crm-option-label-pair label {
+        // Lays out the tick and its wording on the confirm-your-details row.
+        // Stamped by goonjStampProfileRows(); this used to count back from the
+        // end of the profile, which moved to a different row as soon as the
+        // profile gained a field.
+        fieldset > div.goonj-confirm-field .content .crm-multiple-checkbox-radio-options .crm-option-label-pair label {
           position: relative;
           top: 0px;
           left: 13px;
@@ -106,7 +110,7 @@
           margin-left: 9px !important;
         }
 
-        fieldset > div:nth-last-child(3) .content .crm-multiple-checkbox-radio-options .crm-option-label-pair input {
+        fieldset > div.goonj-confirm-field .content .crm-multiple-checkbox-radio-options .crm-option-label-pair input {
           position: relative;
           top: 3px;
         }
@@ -274,6 +278,13 @@
 
 .crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options div label {
   align-self: center !important;
+  margin-left: 22px !important;
+}
+
+// The consent actions sit on a second line under the wording they belong to, so
+// they carry the same indent as the label above. Mirrored from the rule above —
+// change both together, or the two lines stop being flush.
+.crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options div .goonj-consent-actions {
   margin-left: 22px !important;
 }
 
@@ -471,17 +482,14 @@
       }      
       .crm-block {
         .crm-public-form-item {
-          fieldset > div:nth-last-child(-n+2) {
-            display: inline;
-          }
-
-          fieldset > div:nth-last-child(3) .label {
+          fieldset > div.goonj-autofill-field {
             display: inline !important;
           }
 
-          fieldset > div:nth-last-child(4) {
+          fieldset > div.goonj-labelless-field .label {
             display: inline !important;
-          }   
+          }
+
           div.crm-section.editrow_country-Primary-section.form-item {
             display: block !important;
           }
@@ -489,21 +497,25 @@
       }
     }
 
+    // These rows used to be picked out by counting back from the end of the
+    // profile with :nth-last-child(). That count is only correct for one exact
+    // profile layout, so adding the DPDP consent fields silently retargeted
+    // every rule — the consent checkbox was hidden, Office and Events were
+    // exposed, and the 80(G) toggle started hiding a required field. The
+    // classes below are stamped on by goonjStampProfileRows() in main.js,
+    // matched on the labels contributors see, so the profile can gain or lose
+    // fields without moving anything.
     &:not(.CRM_Event_Form_Registration_Register) {
       .crm-block {
         .crm-public-form-item {
-          fieldset > div:nth-last-child(-n+2) {
-            display: none;
-          }
-
-          fieldset > div:nth-last-child(3) .label {
+          // Filled in from the page the contributor arrived on, never typed.
+          fieldset > div.goonj-autofill-field {
             display: none !important;
           }
 
-          fieldset > div:nth-last-child(4) {
-            display: none !important;
-          }
-          fieldset > div:nth-last-child(6) .label {
+          // The field is shown, but its wording already sits in the option
+          // label beside the input, so the row label would just repeat it.
+          fieldset > div.goonj-labelless-field .label {
             display: none !important;
           }
         }
@@ -864,5 +876,220 @@
         }
       }
     }
+  }
+}
+
+// DPDP consent row — the one-line label carries a Details toggle for the full
+// notice and a link to the privacy policy. Both are built by
+// goonjSetUpConsentDetails() in main.js; the wording itself comes from
+// CiviCRM, so nothing here assumes a particular length of text.
+// The row label only repeats the field's name — the wording a contributor
+// actually reads is the option label beside the tick — so it is dropped and the
+// sentence stands on its own, as it already does for the 80(G) and confirm rows.
+#crm-main-content-wrapper .goonj-consent-field > .label {
+  display: none !important;
+}
+
+// CiviCRM lays the tick and its wording out as a two-column grid, `30px auto`.
+// Dropping the actions in without naming a column puts them in column one,
+// under the checkbox and hanging off the left of the sentence they belong to.
+// Column two lines them up with the text, reading as a second line of it.
+.goonj-consent-actions {
+  grid-column: 2;
+  display: block;
+  margin-top: 6px;
+  white-space: normal;
+}
+
+.goonj-consent-separator {
+  margin-right: 12px;
+  color: #888888;
+}
+
+.goonj-consent-chevron {
+  display: inline-block;
+  margin-left: 5px;
+  font-size: 11px;
+  text-decoration: none;
+  transition: transform 0.15s ease;
+}
+
+.goonj-consent-toggle.is-open .goonj-consent-chevron {
+  transform: rotate(180deg);
+}
+
+// CiviCRM styles every `button` inside `.crm-container` as a solid primary
+// button, and `.crm-container button` outranks a bare class — which rendered
+// the toggle as a blue call-to-action competing with Contribute. Repeating the
+// selector under `.crm-container` matches that specificity, so the toggle stays
+// a quiet text control sitting beside the consent line.
+.goonj-consent-toggle,
+.goonj-policy-link,
+.crm-container .goonj-consent-toggle,
+.crm-container .goonj-policy-link {
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
+  margin: 0 12px 0 0;
+  height: auto;
+  min-height: 0;
+  line-height: inherit;
+  font-family: "Proxima Nova", sans-serif;
+  // A step down from the 14px consent sentence: these are secondary to the
+  // decision being asked for, not competing with it.
+  font-size: 13px;
+  font-weight: 400;
+  text-transform: none;
+  text-decoration: underline;
+  cursor: pointer;
+  // CiviCRM's own `.crm-container a:link` outranks anything we can reasonably
+  // write for the anchor, so rather than fight it the toggle borrows the same
+  // link colour. The two controls sit side by side and should read as one pair.
+  color: #0071bd;
+}
+
+.goonj-consent-toggle:focus-visible,
+.goonj-policy-link:focus-visible,
+.goonj-policy-close:focus-visible {
+  outline: 2px solid #0071bd;
+  outline-offset: 2px;
+}
+
+// The notice is CiviCRM's own helprow block, a sibling of the field row rather
+// than a child of it. Once it holds several paragraphs it needs the full width.
+#crm-main-content-wrapper .goonj-consent-notice {
+  display: block;
+  // Without border-box the 14px padding and 3px rule are added to the 100%,
+  // which pushed the panel 7px past the viewport on a 390px phone and gave the
+  // whole page a horizontal scroll.
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  margin: 12px 0 0;
+  padding: 12px 14px;
+  border-left: 3px solid #d3202a;
+  background: #faf7f5;
+  font-family: "Proxima Nova", sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+  color: #333333;
+
+  p {
+    margin: 0 0 10px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  // CiviCRM paints `.description` help text a washed-out grey-lilac and sizes it
+  // at 16px. That is fine for a one-line hint; across seven paragraphs it reads
+  // as low-contrast filler, so the notice is brought back to the form's own body
+  // colour and size.
+  .description,
+  p,
+  strong,
+  li {
+    color: #333333;
+    font-size: 14px;
+    line-height: 20px;
+  }
+
+  // `display` above outranks the browser's own `[hidden] { display: none }`,
+  // so without this the panel stays on screen however often the toggle flips
+  // the attribute. Restate the hidden case at the same specificity.
+  &[hidden] {
+    display: none;
+  }
+}
+
+body.goonj-policy-open {
+  overflow: hidden;
+}
+
+.goonj-policy-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.goonj-policy-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 720px;
+  // Leaves the panel short enough that the body always has somewhere to
+  // scroll rather than pushing the close button off-screen.
+  max-height: 85vh;
+  padding: 24px;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.goonj-policy-close {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  background: none;
+  border: 0;
+  font-size: 28px;
+  line-height: 1;
+  color: #666666;
+  cursor: pointer;
+}
+
+.goonj-policy-heading {
+  margin: 0 32px 16px 0;
+  font-family: "Proxima Nova", sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.goonj-policy-body {
+  overflow-y: auto;
+  font-family: "Proxima Nova", sans-serif;
+  font-size: 14px;
+  line-height: 21px;
+  color: #333333;
+
+  h2 {
+    margin: 20px 0 8px;
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  p,
+  ul {
+    margin: 0 0 12px;
+  }
+
+  ul {
+    padding-left: 20px;
+    list-style: disc;
+  }
+}
+
+@media (max-width: 769px) {
+  .goonj-consent-actions {
+    display: block;
+    margin: 8px 0 0;
+    white-space: normal;
+  }
+
+  .goonj-policy-overlay {
+    padding: 12px;
+  }
+
+  .goonj-policy-panel {
+    max-height: 92vh;
+    padding: 20px 16px;
   }
 }

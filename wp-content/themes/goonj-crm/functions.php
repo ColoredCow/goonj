@@ -17,6 +17,23 @@ function goonj_enqueue_scripts() {
 		array(),
 		filemtime( get_template_directory() . '/main.js' )
 	);
+
+	// The DPDP consent row links out to the privacy policy. Resolve it from the
+	// page WordPress itself has been told is the privacy policy, rather than a
+	// slug: the slug differs per environment whenever the default draft page is
+	// already holding it, but this setting is the same everywhere. The REST
+	// route lets the overlay pull the text without the contributor leaving a
+	// half-filled form.
+	$privacy_policy_id = (int) get_option( 'wp_page_for_privacy_policy' );
+	wp_localize_script(
+		'goonj-script',
+		'goonjConsent',
+		array(
+			'policyUrl'     => get_privacy_policy_url(),
+			'policyRestUrl' => $privacy_policy_id ? rest_url( 'wp/v2/pages/' . $privacy_policy_id ) : '',
+			'policyTitle'   => $privacy_policy_id ? get_the_title( $privacy_policy_id ) : __( 'Privacy Policy', 'goonj-crm' ),
+		)
+	);
 	wp_enqueue_script(
 		'validation-script',
 		get_template_directory_uri() . '/validation.js',
