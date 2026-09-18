@@ -32,6 +32,7 @@ function goonj_enqueue_scripts() {
 			'policyUrl'     => get_privacy_policy_url(),
 			'policyRestUrl' => $privacy_policy_id ? rest_url( 'wp/v2/pages/' . $privacy_policy_id ) : '',
 			'policyTitle'   => $privacy_policy_id ? get_the_title( $privacy_policy_id ) : __( 'Privacy Policy', 'goonj-crm' ),
+			'noticeRestUrl' => goonj_get_consent_notice_rest_url(),
 		)
 	);
 	wp_enqueue_script(
@@ -982,3 +983,28 @@ add_filter('user_has_cap', function($allcaps, $cap, $args, $user) {
     return $allcaps;
 
 }, 10, 4);
+
+/**
+ * Where the shared DPDP consent notice is published.
+ *
+ * On the contribution pages the notice can live in the profile field's help
+ * text, because CiviCRM runs that through HTMLPurifier and renders the markup.
+ * Afform does not: it prints help as `{{:: help_post }}`, which Angular escapes,
+ * so the same HTML would appear on screen as tags.
+ *
+ * Keeping the notice in one WordPress page instead sidesteps that and means
+ * Goonj rewords it once rather than on every form — and, since the wording is
+ * still going through legal, that matters more than where it is stored.
+ *
+ * @return string
+ *   The REST URL of the notice page, or an empty string when it is absent.
+ */
+function goonj_get_consent_notice_rest_url() {
+	$page = get_page_by_path( 'consent-notice' );
+
+	if ( ! $page || 'publish' !== $page->post_status ) {
+		return '';
+	}
+
+	return rest_url( 'wp/v2/pages/' . $page->ID );
+}

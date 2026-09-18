@@ -249,6 +249,17 @@ function goonjStampProfileRows() {
       }
     });
   });
+
+  // Afform renders its own markup and has no `editrow_` rows, so its consent
+  // field is matched on the field name. That name is the same on every
+  // environment, unlike the generated ids. `$=` covers both the camp forms,
+  // where it hangs off the camp record, and the forms that hold the submitter
+  // as a person and bind it straight to them.
+  document
+    .querySelectorAll('af-field[name$=".Consent_Given"]')
+    .forEach(function (field) {
+      field.classList.add("goonj-consent-field");
+    });
 }
 
 // The DPDP notice is a long one — what we collect, why, how long we keep it,
@@ -268,22 +279,37 @@ function goonjSetUpConsentDetails() {
     if (row.dataset.goonjConsentReady) return;
 
     // The wording sits on the option label beside the tick, not on the row
-    // label, so that is what the controls attach to.
+    // label, so that is what the controls attach to. The last selector is
+    // Afform, which renders a checkbox through CiviCRM's option-list markup
+    // rather than the profile's.
     const optionLabel = row.querySelector(
-      ".crm-option-label-pair label, .content label"
+      ".crm-option-label-pair label, .content label, ul.crm-checkbox-list li label"
     );
     if (!optionLabel) return;
     row.dataset.goonjConsentReady = "1";
 
-    // CiviCRM does not nest the help text inside the field row — it prints it
-    // as a sibling `.helprow-<field>-section` block, before the row for Field
-    // Pre Help and after it for Field Post Help. Match on the field name so
-    // the notice is found wherever Goonj chose to put the wording.
+    // On a profile, CiviCRM does not nest the help text inside the field row —
+    // it prints it as a sibling `.helprow-<field>-section` block, before the row
+    // for Field Pre Help and after it for Field Post Help. Match on the field
+    // name so the notice is found wherever Goonj chose to put the wording.
     const fieldName = (row.className.match(/editrow_([a-z0-9_]+)-section/i) ||
       [])[1];
-    const notice = fieldName
+    let notice = fieldName
       ? document.querySelector(".helprow-" + fieldName + "-section")
       : null;
+    let pendingNoticeUrl = null;
+
+    // Afform has no equivalent: it prints help as `{{:: help_post }}`, which
+    // Angular escapes, so the same markup would show on screen as tags. The
+    // notice is published once as a WordPress page instead and pulled in here —
+    // which also means Goonj rewords it in one place rather than on every form.
+    // It is fetched on first open, so a form nobody expands costs no request.
+    if (!notice && config.noticeRestUrl) {
+      notice = document.createElement("div");
+      notice.className = "crm-section goonj-consent-notice-shared";
+      row.insertAdjacentElement("afterend", notice);
+      pendingNoticeUrl = config.noticeRestUrl;
+    }
 
     const actions = document.createElement("span");
     actions.className = "goonj-consent-actions";
@@ -314,6 +340,27 @@ function goonjSetUpConsentDetails() {
         notice.hidden = !open;
         toggle.setAttribute("aria-expanded", String(open));
         toggle.classList.toggle("is-open", open);
+
+        if (open && pendingNoticeUrl) {
+          const url = pendingNoticeUrl;
+          // Cleared before the request so a second click cannot start another.
+          pendingNoticeUrl = null;
+          notice.textContent = "Loading…";
+          fetch(url, { credentials: "same-origin" })
+            .then(function (response) {
+              if (!response.ok) throw new Error("HTTP " + response.status);
+              return response.json();
+            })
+            .then(function (page) {
+              notice.innerHTML = (page.content && page.content.rendered) || "";
+            })
+            .catch(function () {
+              // The policy link beside this still works, so point at it rather
+              // than leaving an empty panel open.
+              notice.textContent =
+                "We could not load this here — please see the privacy policy.";
+            });
+        }
       });
       actions.appendChild(toggle);
     }
@@ -437,6 +484,22 @@ function goonjOpenPolicyOverlay() {
 document.addEventListener("DOMContentLoaded", function () {
   goonjStampProfileRows();
   goonjSetUpConsentDetails();
+
+  // Afform builds its markup in Angular after this event, and rebuilds parts of
+  // it as the form is used, so the consent row is not there to be found on the
+  // first pass. Watch for it instead. Both functions skip anything they have
+  // already handled, so repeated calls are cheap.
+  if (!window.MutationObserver) return;
+  let scheduled = false;
+  new MutationObserver(function () {
+    if (scheduled) return;
+    scheduled = true;
+    window.setTimeout(function () {
+      scheduled = false;
+      goonjStampProfileRows();
+      goonjSetUpConsentDetails();
+    }, 100);
+  }).observe(document.body, { childList: true, subtree: true });
 });
 
 document.addEventListener("DOMContentLoaded", function () {

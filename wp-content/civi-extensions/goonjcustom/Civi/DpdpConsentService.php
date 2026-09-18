@@ -4,6 +4,7 @@ namespace Civi;
 
 use Civi\Api4\Contact;
 use Civi\Api4\CustomField;
+use Civi\Api4\EckEntity;
 use Civi\Core\Service\AutoSubscriber;
 
 /**
@@ -25,6 +26,22 @@ class DpdpConsentService extends AutoSubscriber {
   const CUSTOM_GROUP_NAME = 'DPDP_Consent';
   const FIELD_CONSENT_GIVEN = 'Consent_Given';
   const FIELD_CONSENT_DATE = 'Consent_Date';
+  const FIELD_AGE_DECLARED = 'Age_18_Declared';
+
+  /**
+   * The camp record's own core fields.
+   *
+   * The individual intent forms do not hold the person who submits them — the
+   * people listed on those forms are the other volunteers, and the submitter is
+   * only referenced by `Contact_Id` on the camp record. So consent is ticked on
+   * the camp and copied onto that contact here.
+   *
+   * This group carries no subtype restriction, so the one field serves every
+   * camp subtype — collection camp, dropping centre and Goonj activities alike.
+   */
+  const CAMP_GROUP_NAME = 'Collection_Camp_Core_Details';
+  const CAMP_FIELD_CONSENT_GIVEN = 'Consent_Given';
+  const CAMP_FIELD_INITIATOR = 'Contact_Id';
 
   /**
    * Stops the Contact::update() below from re-entering this hook.
@@ -41,14 +58,183 @@ class DpdpConsentService extends AutoSubscriber {
   private static $fields = NULL;
 
   /**
+   * Cached camp field metadata, keyed by field name.
+   *
+   * @var array|null
+   */
+  private static $campFields = NULL;
+
+  /**
+   * Whether this request is a contribution page.
+   *
+   * The wording beside the checkbox differs by surface. Everywhere except the
+   * monetary pages it covers both being over 18 and consenting, so one tick
+   * asserts both. On the monetary pages Goonj decided the checkbox is consent
+   * alone — a minor's contribution would need guardian consent and proof of the
+   * relationship, which is out of scope for now — so nothing may infer an age
+   * declaration from a tick made there.
+   *
+   * The custom hook is handed no clue about which form it is serving, so the
+   * surface is recorded while the form is being built and read back later.
+   *
+   * @var bool
+   */
+  private static $isContributionPage = FALSE;
+
+  /**
    * {@inheritDoc}
    */
   public static function getSubscribedEvents() {
     return [
+      '&hook_civicrm_buildForm' => [
+        ['noteContributionPage'],
+      ],
       '&hook_civicrm_custom' => [
         ['stampConsentDate'],
+        ['copyCampConsentToInitiator'],
       ],
     ];
+  }
+
+  /**
+   * Implements hook_civicrm_buildForm().
+   *
+   * Records that this request belongs to a contribution page, so the consent
+   * written later is not read as an age declaration.
+   *
+   * @param string $formName
+   *   The form being built.
+   * @param object $form
+   *   The form object.
+   */
+  public static function noteContributionPage($formName, &$form) {
+    if (strpos($formName, 'CRM_Contribute_Form_Contribution_') === 0) {
+      self::$isContributionPage = TRUE;
+    }
+  }
+
+  /**
+   * Implements hook_civicrm_custom().
+   *
+   * Moves the consent ticked on a camp record onto the person who submitted it.
+   *
+   * Writing it to the contact is what matters — consent belongs to the person,
+   * not to the camp they happened to create. The camp keeps its own tick as the
+   * record of which submission the consent arrived on, which is what an audit
+   * asks for.
+   *
+   * Only the submitter is touched. The other people named on these forms are
+   * entered by the submitter, and one person cannot consent for another; they
+   * are covered by the declaration the submitter makes instead.
+   *
+   * @param string $op
+   *   The operation being performed.
+   * @param int $groupID
+   *   The custom group being written.
+   * @param int $entityID
+   *   The camp record the values belong to.
+   * @param array $params
+   *   The custom values written.
+   */
+  public static function copyCampConsentToInitiator($op, $groupID, $entityID, &$params) {
+    if (!in_array($op, ['create', 'edit'], TRUE) || !$entityID) {
+      return;
+    }
+
+    $campFields = self::getCampFields();
+    $consent = $campFields[self::CAMP_FIELD_CONSENT_GIVEN] ?? NULL;
+    $initiator = $campFields[self::CAMP_FIELD_INITIATOR] ?? NULL;
+    if (!$consent || !$initiator || (int) $groupID !== (int) $consent['custom_group_id']) {
+      return;
+    }
+
+    if (!self::isConsentTicked($params, (int) $consent['id'])) {
+      return;
+    }
+
+    // The initiator is usually written in this same save, but a camp edited
+    // later will already have it on the record instead.
+    $contactId = self::findValue($params, (int) $initiator['id']);
+    if (!$contactId) {
+      $contactId = self::getStoredInitiator($entityID);
+    }
+
+    // Around a third of camp records carry no initiator at all — the ones
+    // created from the back office. There is nobody to record consent against,
+    // so leave it on the camp and stop.
+    if (!$contactId) {
+      return;
+    }
+
+    try {
+      Contact::update(FALSE)
+        ->addWhere('id', '=', (int) $contactId)
+        ->addValue(self::CUSTOM_GROUP_NAME . '.' . self::FIELD_CONSENT_GIVEN, ['1'])
+        ->execute();
+    }
+    catch (\Throwable $e) {
+      \Civi::log()->error('[DPDP] Could not copy camp consent to the initiator', [
+        'campId' => $entityID,
+        'contactId' => $contactId,
+        'message' => $e->getMessage(),
+      ]);
+    }
+  }
+
+  /**
+   * The initiator already stored against a camp record.
+   *
+   * @param int $entityID
+   *   The camp record.
+   *
+   * @return int|null
+   *   The contact id, or NULL when the camp has no initiator.
+   */
+  private static function getStoredInitiator($entityID) {
+    try {
+      $camp = EckEntity::get('Collection_Camp', FALSE)
+        ->addSelect(self::CAMP_GROUP_NAME . '.' . self::CAMP_FIELD_INITIATOR)
+        ->addWhere('id', '=', $entityID)
+        ->execute()
+        ->first();
+
+      return $camp[self::CAMP_GROUP_NAME . '.' . self::CAMP_FIELD_INITIATOR] ?? NULL;
+    }
+    catch (\Throwable $e) {
+      return NULL;
+    }
+  }
+
+  /**
+   * The camp fields this service reads, looked up by name.
+   *
+   * @return array
+   *   Field metadata keyed by field name, empty when the group is absent.
+   */
+  private static function getCampFields(): array {
+    if (self::$campFields !== NULL) {
+      return self::$campFields;
+    }
+
+    try {
+      $fields = CustomField::get(FALSE)
+        ->addSelect('id', 'name', 'custom_group_id')
+        ->addWhere('custom_group_id:name', '=', self::CAMP_GROUP_NAME)
+        ->addWhere('name', 'IN', [self::CAMP_FIELD_CONSENT_GIVEN, self::CAMP_FIELD_INITIATOR])
+        ->execute();
+
+      self::$campFields = [];
+      foreach ($fields as $field) {
+        self::$campFields[$field['name']] = $field;
+      }
+    }
+    catch (\Throwable $e) {
+      // The consent field is added by hand on each environment, so it may not
+      // exist yet. Stay quiet rather than erroring on every camp save.
+      self::$campFields = [];
+    }
+
+    return self::$campFields;
   }
 
   /**
@@ -87,33 +273,59 @@ class DpdpConsentService extends AutoSubscriber {
       return;
     }
 
-    // A date already in this same write is the team filling in a back-dated
-    // register entry. Theirs is the accurate one, so leave it alone.
-    if (self::hasValueFor($params, (int) $consentDate['id'])) {
-      return;
-    }
+    $ageDeclared = $fields[self::FIELD_AGE_DECLARED] ?? NULL;
+    $groupPrefix = self::CUSTOM_GROUP_NAME . '.';
 
     try {
       $existing = Contact::get(FALSE)
-        ->addSelect(self::CUSTOM_GROUP_NAME . '.' . self::FIELD_CONSENT_DATE)
+        ->addSelect(
+          $groupPrefix . self::FIELD_CONSENT_DATE,
+          $groupPrefix . self::FIELD_AGE_DECLARED
+        )
         ->addWhere('id', '=', $entityID)
         ->execute()
         ->first();
 
-      if (!empty($existing[self::CUSTOM_GROUP_NAME . '.' . self::FIELD_CONSENT_DATE])) {
+      $values = [];
+
+      // A date supplied in this same write is the team filling in a back-dated
+      // register entry, and a date already on the record is the first consent.
+      // Either way theirs is the accurate one, so only an empty date is filled.
+      if (!self::hasValueFor($params, (int) $consentDate['id'])
+        && empty($existing[$groupPrefix . self::FIELD_CONSENT_DATE])) {
+        $values[$groupPrefix . self::FIELD_CONSENT_DATE] = date('Y-m-d');
+      }
+
+      // Everywhere but the monetary pages the single checkbox is worded to
+      // cover both being over 18 and consenting, so ticking it asserts both.
+      // They stay two fields because they are two different facts to answer for
+      // in an audit, and the second is filled here rather than asking twice.
+      //
+      // On the monetary pages the tick is consent alone, so no age declaration
+      // may be inferred from it — recording one the contributor never made
+      // would be worse than having none at all.
+      if ($ageDeclared
+        && !self::$isContributionPage
+        && !self::hasValueFor($params, (int) $ageDeclared['id'])
+        && empty($existing[$groupPrefix . self::FIELD_AGE_DECLARED])) {
+        $values[$groupPrefix . self::FIELD_AGE_DECLARED] = ['1'];
+      }
+
+      if (!$values) {
         return;
       }
 
       self::$stamping = TRUE;
-      Contact::update(FALSE)
-        ->addWhere('id', '=', $entityID)
-        ->addValue(self::CUSTOM_GROUP_NAME . '.' . self::FIELD_CONSENT_DATE, date('Y-m-d'))
-        ->execute();
+      $update = Contact::update(FALSE)->addWhere('id', '=', $entityID);
+      foreach ($values as $field => $value) {
+        $update->addValue($field, $value);
+      }
+      $update->execute();
     }
     catch (\Throwable $e) {
-      // A contribution must never fail because we could not write the date.
+      // A contribution must never fail because we could not write these.
       // The tick is already saved; log it and let the payment finish.
-      \Civi::log()->error('[DPDP] Could not stamp consent date', [
+      \Civi::log()->error('[DPDP] Could not complete the consent record', [
         'contactId' => $entityID,
         'message' => $e->getMessage(),
       ]);
@@ -223,7 +435,11 @@ class DpdpConsentService extends AutoSubscriber {
       $fields = CustomField::get(FALSE)
         ->addSelect('id', 'name', 'custom_group_id')
         ->addWhere('custom_group_id:name', '=', self::CUSTOM_GROUP_NAME)
-        ->addWhere('name', 'IN', [self::FIELD_CONSENT_GIVEN, self::FIELD_CONSENT_DATE])
+        ->addWhere('name', 'IN', [
+          self::FIELD_CONSENT_GIVEN,
+          self::FIELD_CONSENT_DATE,
+          self::FIELD_AGE_DECLARED,
+        ])
         ->execute();
 
       self::$fields = [];
