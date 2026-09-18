@@ -290,6 +290,14 @@ function goonj_handle_user_identification_form() {
 
 	$found_contacts = $contactResult->first() ?? null;
 
+	// This handler ends in one of nineteen redirects, and the form at the far
+	// end of each needs to know whether this person has already consented so it
+	// can stop asking them again. Rather than thread a flag through every
+	// branch, note who they are here and let the redirect filter below add it.
+	if ( ! empty( $found_contacts['id'] ) ) {
+		goonj_set_checked_contact( (int) $found_contacts['id'] );
+	}
+
 		// If the user does not exist in the Goonj database
 		// redirect to the volunteer registration form.
 		$volunteer_registration_form_path = sprintf(
@@ -1007,4 +1015,88 @@ function goonj_get_consent_notice_rest_url() {
 	}
 
 	return rest_url( 'wp/v2/pages/' . $page->ID );
+}
+
+/**
+ * Remembers which contact the check-user step matched.
+ *
+ * @param int|null $contact_id
+ *   The matched contact, or NULL to read the current one.
+ *
+ * @return int|null
+ *   The contact matched on this request.
+ */
+function goonj_set_checked_contact( $contact_id = null ) {
+	static $matched = null;
+
+	if ( $contact_id !== null ) {
+		$matched = $contact_id;
+	}
+
+	return $matched;
+}
+
+/**
+ * Whether a contact has already given DPDP consent.
+ *
+ * @param int $contact_id
+ *   The contact to check.
+ *
+ * @return bool
+ *   TRUE when consent is already recorded against them.
+ */
+function goonj_contact_has_dpdp_consent( $contact_id ) {
+	if ( ! $contact_id || ! class_exists( 'Civi' ) ) {
+		return false;
+	}
+
+	try {
+		$contact = \Civi\Api4\Contact::get( false )
+			->addSelect( 'DPDP_Consent.Consent_Given' )
+			->addWhere( 'id', '=', (int) $contact_id )
+			->setLimit( 1 )
+			->execute()
+			->first();
+
+		return ! empty( $contact['DPDP_Consent.Consent_Given'] );
+	} catch ( \Throwable $e ) {
+		// The field is created by hand per environment, so it may not exist yet.
+		// Treat that as "not consented" — asking twice is the safe failure.
+		return false;
+	}
+}
+
+add_filter( 'wp_redirect', 'goonj_flag_existing_consent_on_redirect' );
+/**
+ * Tells the destination form that this person has already consented.
+ *
+ * The check-user step is the only place that knows who the visitor is — the
+ * forms it lands on are rendered in the browser and have no session to ask. So
+ * the answer travels with the redirect, and the form hides its consent block
+ * rather than asking someone to agree a second time.
+ *
+ * The flag only ever *hides* a question; it never records consent. Forging it
+ * results in not being asked, not in a consent Goonj did not receive.
+ *
+ * @param string $location
+ *   The URL being redirected to.
+ *
+ * @return string
+ *   The URL, with the flag added where it applies.
+ */
+function goonj_flag_existing_consent_on_redirect( $location ) {
+	$contact_id = goonj_set_checked_contact();
+
+	if ( ! $contact_id || ! goonj_contact_has_dpdp_consent( $contact_id ) ) {
+		return $location;
+	}
+
+	// These forms carry their prefill in the hash rather than the query string,
+	// so the flag has to join whichever part the URL already uses or the form
+	// will never see it.
+	if ( strpos( $location, '#' ) !== false ) {
+		return $location . ( substr( $location, -1 ) === '?' ? '' : '&' ) . 'goonjConsented=1';
+	}
+
+	return add_query_arg( 'goonjConsented', '1', $location );
 }

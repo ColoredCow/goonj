@@ -1042,6 +1042,13 @@
   max-width: 100%;
 }
 
+// Set when the check-user step has already recognised this person as having
+// consented. `!important` because the rows it lands on are laid out by
+// CiviCRM's own display rules, which are written from id selectors.
+.goonj-consent-hidden {
+  display: none !important;
+}
+
 body.goonj-policy-open {
   overflow: hidden;
 }

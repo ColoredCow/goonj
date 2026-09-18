@@ -272,11 +272,45 @@ function goonjStampProfileRows() {
 // CiviCRM prints as `.description` under the input — so Goonj can reword both
 // in the CiviCRM admin without a release, which matters while the text is
 // still going through legal.
+// Whether the check-user step recognised this person as having already
+// consented. These forms carry their prefill in the hash rather than the query
+// string, so both are read.
+function goonjAlreadyConsented() {
+  const fromHash = new URLSearchParams(
+    window.location.hash.replace(/^#\??/, "")
+  ).get("goonjConsented");
+  const fromQuery = new URLSearchParams(window.location.search).get(
+    "goonjConsented"
+  );
+
+  return fromHash === "1" || fromQuery === "1";
+}
+
 function goonjSetUpConsentDetails() {
   const config = window.goonjConsent || {};
 
+  // Someone who has already agreed should not be asked again every time they
+  // set up a camp. Their consent is on their contact record and the date of it
+  // is preserved, so there is nothing to collect here — the block is hidden
+  // rather than re-asked. Nothing is written either way: hiding the field only
+  // removes a question, it never records an answer.
+  const consentedAlready = goonjAlreadyConsented();
+
   document.querySelectorAll(".goonj-consent-field").forEach(function (row) {
     if (row.dataset.goonjConsentReady) return;
+
+    if (consentedAlready) {
+      row.dataset.goonjConsentReady = "1";
+      row.classList.add("goonj-consent-hidden");
+
+      const fieldName = (row.className.match(/editrow_([a-z0-9_]+)-section/i) ||
+        [])[1];
+      const help = fieldName
+        ? document.querySelector(".helprow-" + fieldName + "-section")
+        : null;
+      if (help) help.classList.add("goonj-consent-hidden");
+      return;
+    }
 
     // The wording sits on the option label beside the tick, not on the row
     // label, so that is what the controls attach to. The last selector is
