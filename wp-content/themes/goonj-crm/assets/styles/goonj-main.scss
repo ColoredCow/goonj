@@ -950,6 +950,17 @@
   color: #0071bd;
 }
 
+// `.crm-container button:hover` paints a solid dark-blue block behind the text
+// and outranks a plain class, so hovering the toggle turned it back into a
+// button. Restate it at a higher specificity and borrow the anchor's hover
+// colour, so the toggle and the policy link behave identically.
+.crm-container .goonj-consent-toggle:hover,
+.crm-container .goonj-consent-toggle:focus,
+.crm-container .goonj-consent-toggle:active {
+  background: none;
+  color: #005c99;
+}
+
 .goonj-consent-toggle:focus-visible,
 .goonj-policy-link:focus-visible,
 .goonj-policy-close:focus-visible {
@@ -968,9 +979,13 @@
   width: 100%;
   max-width: 100%;
   margin: 12px 0 0;
-  padding: 12px 14px;
-  border-left: 3px solid #d3202a;
-  background: #faf7f5;
+  padding: 14px 16px;
+  // A red rule down the side reads as an error or a warning. This is neither —
+  // it is the notice someone opened deliberately — so it sits in a quiet panel
+  // that groups the text without shouting at them.
+  border: 1px solid #e8e4df;
+  border-radius: 4px;
+  background: #faf9f7;
   font-family: "Proxima Nova", sans-serif;
   font-size: 14px;
   line-height: 20px;
