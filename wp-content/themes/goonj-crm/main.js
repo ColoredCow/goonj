@@ -196,15 +196,357 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 });
 
+// CiviCRM renders every profile row as `.crm-section.editrow_<field>-section`,
+// but the custom field IDs baked into those class names are generated per
+// environment, so the theme cannot target them directly. The rows used to be
+// found by counting from the end with :nth-last-child(), which breaks the
+// moment a field is added to or removed from the profile — adding the DPDP
+// consent fields shifted every count by two, hid the consent checkbox, exposed
+// the autofill fields, and left the 80(G) toggle hiding a *required* field.
+//
+// Stamp a semantic class on each row instead, matched on the label the
+// contributor sees. Those labels are identical on every environment.
+const GOONJ_ROW_CLASS_BY_LABEL = {
+  "Collection Source": "goonj-autofill-field",
+  Office: "goonj-autofill-field",
+  Events: "goonj-autofill-field",
+  Campaign: "goonj-autofill-field",
+  "Confirm that the data entered is correct":
+    "goonj-labelless-field goonj-confirm-field",
+  "PAN Card Number": "goonj-pan-field",
+  "Consent Given": "goonj-consent-field",
+  "Age 18+ Declared": "goonj-consent-field",
+};
+
+// The 80(G) row's profile label is empty, so it is matched on the option label
+// printed beside its checkbox rather than on the row label.
+const GOONJ_ROW_CLASS_BY_OPTION = { "80(G)": "goonj-labelless-field" };
+
+function goonjRowLabel(row) {
+  const label = row.querySelector(".label");
+  if (!label) return "";
+  // The required marker and CiviCRM's trailing whitespace are not part of the
+  // label a contributor reads.
+  return label.textContent.replace(/\*/g, "").trim();
+}
+
+// Safe to call more than once — adding a class that is already present is a
+// no-op, and each consumer calls it so none of them depends on listener order.
+function goonjStampProfileRows() {
+  const rows = document.querySelectorAll(
+    '#crm-main-content-wrapper form .crm-public-form-item .crm-section[class*="editrow_"]'
+  );
+  rows.forEach(function (row) {
+    const byLabel = GOONJ_ROW_CLASS_BY_LABEL[goonjRowLabel(row)];
+    if (byLabel) {
+      row.classList.add.apply(row.classList, byLabel.split(" "));
+      return;
+    }
+    const optionText = row.textContent;
+    Object.keys(GOONJ_ROW_CLASS_BY_OPTION).forEach(function (needle) {
+      if (optionText.indexOf(needle) !== -1) {
+        row.classList.add(GOONJ_ROW_CLASS_BY_OPTION[needle]);
+      }
+    });
+  });
+
+  // Afform renders its own markup and has no `editrow_` rows, so its consent
+  // field is matched on the field name. That name is the same on every
+  // environment, unlike the generated ids. `$=` covers both the camp forms,
+  // where it hangs off the camp record, and the forms that hold the submitter
+  // as a person and bind it straight to them.
+  document
+    .querySelectorAll('af-field[name$=".Consent_Given"]')
+    .forEach(function (field) {
+      field.classList.add("goonj-consent-field");
+    });
+}
+
+// The DPDP notice is a long one — what we collect, why, how long we keep it,
+// and how to withdraw. All of that beside a checkbox is a wall of text, so the
+// checkbox keeps a one-line label and the notice collapses behind a Details
+// toggle, with the full privacy policy a click further on.
+//
+// Neither piece of wording lives in this file. The line is the custom field's
+// option label and the notice is the profile field's Field Post Help, which
+// CiviCRM prints as `.description` under the input — so Goonj can reword both
+// in the CiviCRM admin without a release, which matters while the text is
+// still going through legal.
+// Whether the check-user step recognised this person as having already
+// consented. These forms carry their prefill in the hash rather than the query
+// string, so both are read.
+function goonjAlreadyConsented() {
+  const fromHash = new URLSearchParams(
+    window.location.hash.replace(/^#\??/, "")
+  ).get("goonjConsented");
+  const fromQuery = new URLSearchParams(window.location.search).get(
+    "goonjConsented"
+  );
+
+  return fromHash === "1" || fromQuery === "1";
+}
+
+function goonjSetUpConsentDetails() {
+  const config = window.goonjConsent || {};
+
+  // Someone who has already agreed should not be asked again every time they
+  // set up a camp. Their consent is on their contact record and the date of it
+  // is preserved, so there is nothing to collect here — the block is hidden
+  // rather than re-asked. Nothing is written either way: hiding the field only
+  // removes a question, it never records an answer.
+  const consentedAlready = goonjAlreadyConsented();
+
+  document.querySelectorAll(".goonj-consent-field").forEach(function (row) {
+    if (row.dataset.goonjConsentReady) return;
+
+    if (consentedAlready) {
+      row.dataset.goonjConsentReady = "1";
+      row.classList.add("goonj-consent-hidden");
+
+      const fieldName = (row.className.match(/editrow_([a-z0-9_]+)-section/i) ||
+        [])[1];
+      const help = fieldName
+        ? document.querySelector(".helprow-" + fieldName + "-section")
+        : null;
+      if (help) help.classList.add("goonj-consent-hidden");
+      return;
+    }
+
+    // The wording sits on the option label beside the tick, not on the row
+    // label, so that is what the controls attach to. The last selector is
+    // Afform, which renders a checkbox through CiviCRM's option-list markup
+    // rather than the profile's.
+    const optionLabel = row.querySelector(
+      ".crm-option-label-pair label, .content label, ul.crm-checkbox-list li label"
+    );
+    if (!optionLabel) return;
+    row.dataset.goonjConsentReady = "1";
+
+    // On a profile, CiviCRM does not nest the help text inside the field row —
+    // it prints it as a sibling `.helprow-<field>-section` block, before the row
+    // for Field Pre Help and after it for Field Post Help. Match on the field
+    // name so the notice is found wherever Goonj chose to put the wording.
+    const fieldName = (row.className.match(/editrow_([a-z0-9_]+)-section/i) ||
+      [])[1];
+    let notice = fieldName
+      ? document.querySelector(".helprow-" + fieldName + "-section")
+      : null;
+    let pendingNoticeUrl = null;
+
+    // Afform has no equivalent: it prints help as `{{:: help_post }}`, which
+    // Angular escapes, so the same markup would show on screen as tags. The
+    // notice is published once as a WordPress page instead and pulled in here —
+    // which also means Goonj rewords it in one place rather than on every form.
+    // It is fetched on first open, so a form nobody expands costs no request.
+    if (!notice && config.noticeRestUrl) {
+      notice = document.createElement("div");
+      notice.className = "crm-section goonj-consent-notice-shared";
+      row.insertAdjacentElement("afterend", notice);
+      pendingNoticeUrl = config.noticeRestUrl;
+    }
+
+    const actions = document.createElement("span");
+    actions.className = "goonj-consent-actions";
+
+    if (notice) {
+      notice.classList.add("goonj-consent-notice");
+      notice.hidden = true;
+
+      // "Details" says nothing about what is behind it. Naming the content is
+      // what makes someone open it, and it is the question they actually have
+      // at this point in the form.
+      const toggle = document.createElement("button");
+      toggle.type = "button";
+      toggle.className = "goonj-consent-toggle";
+      toggle.setAttribute("aria-expanded", "false");
+      toggle.appendChild(document.createTextNode("What we collect and why"));
+
+      // The chevron rotates rather than the wording changing, so the line does
+      // not reflow under the cursor as it is clicked.
+      const chevron = document.createElement("span");
+      chevron.className = "goonj-consent-chevron";
+      chevron.setAttribute("aria-hidden", "true");
+      chevron.textContent = "▾";
+      toggle.appendChild(chevron);
+
+      toggle.addEventListener("click", function () {
+        const open = notice.hidden;
+        notice.hidden = !open;
+        toggle.setAttribute("aria-expanded", String(open));
+        toggle.classList.toggle("is-open", open);
+
+        if (open && pendingNoticeUrl) {
+          const url = pendingNoticeUrl;
+          // Cleared before the request so a second click cannot start another.
+          pendingNoticeUrl = null;
+          notice.textContent = "Loading…";
+          fetch(url, { credentials: "same-origin" })
+            .then(function (response) {
+              if (!response.ok) throw new Error("HTTP " + response.status);
+              return response.json();
+            })
+            .then(function (page) {
+              notice.innerHTML = (page.content && page.content.rendered) || "";
+            })
+            .catch(function () {
+              // The policy link beside this still works, so point at it rather
+              // than leaving an empty panel open.
+              notice.textContent =
+                "We could not load this here — please see the privacy policy.";
+            });
+        }
+      });
+      actions.appendChild(toggle);
+    }
+
+    if (config.policyUrl) {
+      if (actions.childNodes.length) {
+        const separator = document.createElement("span");
+        separator.className = "goonj-consent-separator";
+        separator.setAttribute("aria-hidden", "true");
+        separator.textContent = "·";
+        actions.appendChild(separator);
+      }
+
+      const link = document.createElement("a");
+      link.className = "goonj-policy-link";
+      link.href = config.policyUrl;
+      link.textContent = config.policyTitle || "Privacy Policy";
+      // Opening the policy in the same tab would lose a half-filled form, so
+      // it is shown over the page instead. The href stays a real link so that
+      // middle-click, and any failure to fetch, still work.
+      link.addEventListener("click", function (event) {
+        if (event.metaKey || event.ctrlKey || event.shiftKey) return;
+        event.preventDefault();
+        goonjOpenPolicyOverlay();
+      });
+      actions.appendChild(link);
+    }
+
+    // Placed after the label, never inside it. That label is the consent
+    // checkbox's own `<label for>`, so anything within it can activate the
+    // checkbox — a contributor opening the notice would have ticked consent
+    // just by asking to read it.
+    if (actions.childNodes.length) {
+      optionLabel.insertAdjacentElement("afterend", actions);
+    }
+  });
+}
+
+function goonjOpenPolicyOverlay() {
+  const config = window.goonjConsent || {};
+  const previouslyFocused = document.activeElement;
+
+  const overlay = document.createElement("div");
+  overlay.className = "goonj-policy-overlay";
+  overlay.setAttribute("role", "dialog");
+  overlay.setAttribute("aria-modal", "true");
+  overlay.setAttribute("aria-label", config.policyTitle || "Privacy Policy");
+
+  const panel = document.createElement("div");
+  panel.className = "goonj-policy-panel";
+
+  const heading = document.createElement("h2");
+  heading.className = "goonj-policy-heading";
+  heading.textContent = config.policyTitle || "Privacy Policy";
+
+  const close = document.createElement("button");
+  close.type = "button";
+  close.className = "goonj-policy-close";
+  close.setAttribute("aria-label", "Close");
+  close.innerHTML = "&times;";
+
+  const body = document.createElement("div");
+  body.className = "goonj-policy-body";
+  body.textContent = "Loading…";
+
+  panel.appendChild(close);
+  panel.appendChild(heading);
+  panel.appendChild(body);
+  overlay.appendChild(panel);
+  document.body.appendChild(overlay);
+  document.body.classList.add("goonj-policy-open");
+
+  function dismiss() {
+    overlay.remove();
+    document.body.classList.remove("goonj-policy-open");
+    document.removeEventListener("keydown", onKeyDown);
+    if (previouslyFocused && previouslyFocused.focus) previouslyFocused.focus();
+  }
+
+  function onKeyDown(event) {
+    if (event.key === "Escape") dismiss();
+  }
+
+  close.addEventListener("click", dismiss);
+  overlay.addEventListener("click", function (event) {
+    if (event.target === overlay) dismiss();
+  });
+  document.addEventListener("keydown", onKeyDown);
+  close.focus();
+
+  if (!config.policyRestUrl) {
+    // No page has been set as the privacy policy, so there is nothing to show
+    // in place — send them to the link itself rather than an empty panel.
+    body.textContent = "";
+    const fallback = document.createElement("a");
+    fallback.href = config.policyUrl || "#";
+    fallback.textContent = "Open the privacy policy";
+    body.appendChild(fallback);
+    return;
+  }
+
+  fetch(config.policyRestUrl, { credentials: "same-origin" })
+    .then(function (response) {
+      if (!response.ok) throw new Error("HTTP " + response.status);
+      return response.json();
+    })
+    .then(function (page) {
+      body.innerHTML = (page.content && page.content.rendered) || "";
+    })
+    .catch(function () {
+      body.textContent = "";
+      const fallback = document.createElement("a");
+      fallback.href = config.policyUrl || "#";
+      fallback.target = "_blank";
+      fallback.rel = "noopener";
+      fallback.textContent = "We could not load the policy here. Open it in a new tab.";
+      body.appendChild(fallback);
+    });
+}
+
 document.addEventListener("DOMContentLoaded", function () {
+  goonjStampProfileRows();
+  goonjSetUpConsentDetails();
+
+  // Afform builds its markup in Angular after this event, and rebuilds parts of
+  // it as the form is used, so the consent row is not there to be found on the
+  // first pass. Watch for it instead. Both functions skip anything they have
+  // already handled, so repeated calls are cheap.
+  if (!window.MutationObserver) return;
+  let scheduled = false;
+  new MutationObserver(function () {
+    if (scheduled) return;
+    scheduled = true;
+    window.setTimeout(function () {
+      scheduled = false;
+      goonjStampProfileRows();
+      goonjSetUpConsentDetails();
+    }, 100);
+  }).observe(document.body, { childList: true, subtree: true });
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+  goonjStampProfileRows();
+
   const checkbox = document.querySelector(
     ".crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options .crm-option-label-pair input.crm-form-checkbox"
   );
   const panFieldContainer = document.querySelector(
-    ".crm-contribution-main-form-block .custom_pre_profile-group fieldset > div:nth-last-child(5)"
+    ".crm-contribution-main-form-block .goonj-pan-field"
   );
   const panInput = document.querySelector(
-    ".crm-contribution-main-form-block .custom_pre_profile-group fieldset > div:nth-last-child(5) .content input"
+    ".crm-contribution-main-form-block .goonj-pan-field .content input"
   );
   const form = document.querySelector(".crm-contribution-main-form-block");
 
