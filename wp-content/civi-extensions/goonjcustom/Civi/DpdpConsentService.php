@@ -2,6 +2,7 @@
 
 namespace Civi;
 
+use Civi\Api4\Activity;
 use Civi\Api4\Contact;
 use Civi\Api4\CustomField;
 use Civi\Api4\EckEntity;
@@ -44,6 +45,19 @@ class DpdpConsentService extends AutoSubscriber {
   const CAMP_FIELD_INITIATOR = 'Contact_Id';
 
   /**
+   * The material contribution activity's own fields.
+   *
+   * These forms hold no person at all — only the activity — and the contributor
+   * arrives as the activity's core `source_contact_id`. So, as with the camps,
+   * consent is ticked on the record and copied onto that contact here.
+   *
+   * All five material contribution forms share this one group, so a single
+   * field serves the lot.
+   */
+  const ACTIVITY_GROUP_NAME = 'Material_Contribution';
+  const ACTIVITY_FIELD_CONSENT_GIVEN = 'Consent_Given';
+
+  /**
    * Stops the Contact::update() below from re-entering this hook.
    *
    * @var bool
@@ -58,11 +72,11 @@ class DpdpConsentService extends AutoSubscriber {
   private static $fields = NULL;
 
   /**
-   * Cached camp field metadata, keyed by field name.
+   * Cached field metadata for the entity groups, keyed by group then field name.
    *
-   * @var array|null
+   * @var array
    */
-  private static $campFields = NULL;
+  private static $groupFields = [];
 
   /**
    * Whether this request is a contribution page.
@@ -92,6 +106,7 @@ class DpdpConsentService extends AutoSubscriber {
       '&hook_civicrm_custom' => [
         ['stampConsentDate'],
         ['copyCampConsentToInitiator'],
+        ['copyActivityConsentToContributor'],
       ],
     ];
   }
@@ -141,7 +156,7 @@ class DpdpConsentService extends AutoSubscriber {
       return;
     }
 
-    $campFields = self::getCampFields();
+    $campFields = self::getGroupFields(self::CAMP_GROUP_NAME, [self::CAMP_FIELD_CONSENT_GIVEN, self::CAMP_FIELD_INITIATOR]);
     $consent = $campFields[self::CAMP_FIELD_CONSENT_GIVEN] ?? NULL;
     $initiator = $campFields[self::CAMP_FIELD_INITIATOR] ?? NULL;
     if (!$consent || !$initiator || (int) $groupID !== (int) $consent['custom_group_id']) {
@@ -182,6 +197,83 @@ class DpdpConsentService extends AutoSubscriber {
   }
 
   /**
+   * Implements hook_civicrm_custom().
+   *
+   * Moves the consent ticked on a material contribution onto the contributor.
+   *
+   * These forms carry no person record at all, only the activity — the
+   * contributor was identified at the check-user step and arrives as the
+   * activity's source contact. That is the person the consent belongs to.
+   *
+   * @param string $op
+   *   The operation being performed.
+   * @param int $groupID
+   *   The custom group being written.
+   * @param int $entityID
+   *   The activity the values belong to.
+   * @param array $params
+   *   The custom values written.
+   */
+  public static function copyActivityConsentToContributor($op, $groupID, $entityID, &$params) {
+    if (!in_array($op, ['create', 'edit'], TRUE) || !$entityID) {
+      return;
+    }
+
+    $fields = self::getGroupFields(self::ACTIVITY_GROUP_NAME, [self::ACTIVITY_FIELD_CONSENT_GIVEN]);
+    $consent = $fields[self::ACTIVITY_FIELD_CONSENT_GIVEN] ?? NULL;
+    if (!$consent || (int) $groupID !== (int) $consent['custom_group_id']) {
+      return;
+    }
+
+    if (!self::isConsentTicked($params, (int) $consent['id'])) {
+      return;
+    }
+
+    $contactId = self::getActivitySourceContact($entityID);
+    if (!$contactId) {
+      return;
+    }
+
+    try {
+      Contact::update(FALSE)
+        ->addWhere('id', '=', (int) $contactId)
+        ->addValue(self::CUSTOM_GROUP_NAME . '.' . self::FIELD_CONSENT_GIVEN, ['1'])
+        ->execute();
+    }
+    catch (\Throwable $e) {
+      \Civi::log()->error('[DPDP] Could not copy contribution consent to the contributor', [
+        'activityId' => $entityID,
+        'contactId' => $contactId,
+        'message' => $e->getMessage(),
+      ]);
+    }
+  }
+
+  /**
+   * The contact recorded as the source of an activity.
+   *
+   * @param int $entityID
+   *   The activity.
+   *
+   * @return int|null
+   *   The contact id, or NULL when the activity has no source contact.
+   */
+  private static function getActivitySourceContact($entityID) {
+    try {
+      $activity = Activity::get(FALSE)
+        ->addSelect('source_contact_id')
+        ->addWhere('id', '=', $entityID)
+        ->execute()
+        ->first();
+
+      return $activity['source_contact_id'] ?? NULL;
+    }
+    catch (\Throwable $e) {
+      return NULL;
+    }
+  }
+
+  /**
    * The initiator already stored against a camp record.
    *
    * @param int $entityID
@@ -206,35 +298,43 @@ class DpdpConsentService extends AutoSubscriber {
   }
 
   /**
-   * The camp fields this service reads, looked up by name.
+   * Fields of a custom group, looked up by name and cached per group.
+   *
+   * Field ids are generated per environment, so everything here resolves from
+   * the names — which are the same everywhere — rather than hard-coded ids.
+   *
+   * @param string $groupName
+   *   The custom group.
+   * @param array $fieldNames
+   *   The fields wanted from it.
    *
    * @return array
    *   Field metadata keyed by field name, empty when the group is absent.
    */
-  private static function getCampFields(): array {
-    if (self::$campFields !== NULL) {
-      return self::$campFields;
+  private static function getGroupFields(string $groupName, array $fieldNames): array {
+    if (isset(self::$groupFields[$groupName])) {
+      return self::$groupFields[$groupName];
     }
 
     try {
       $fields = CustomField::get(FALSE)
         ->addSelect('id', 'name', 'custom_group_id')
-        ->addWhere('custom_group_id:name', '=', self::CAMP_GROUP_NAME)
-        ->addWhere('name', 'IN', [self::CAMP_FIELD_CONSENT_GIVEN, self::CAMP_FIELD_INITIATOR])
+        ->addWhere('custom_group_id:name', '=', $groupName)
+        ->addWhere('name', 'IN', $fieldNames)
         ->execute();
 
-      self::$campFields = [];
+      self::$groupFields[$groupName] = [];
       foreach ($fields as $field) {
-        self::$campFields[$field['name']] = $field;
+        self::$groupFields[$groupName][$field['name']] = $field;
       }
     }
     catch (\Throwable $e) {
-      // The consent field is added by hand on each environment, so it may not
-      // exist yet. Stay quiet rather than erroring on every camp save.
-      self::$campFields = [];
+      // These groups are created by hand on each environment, so one may
+      // legitimately not exist yet. Stay quiet rather than erroring on every save.
+      self::$groupFields[$groupName] = [];
     }
 
-    return self::$campFields;
+    return self::$groupFields[$groupName];
   }
 
   /**
