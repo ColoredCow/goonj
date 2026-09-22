@@ -776,10 +776,18 @@ function goonj_redirect_after_individual_creation() {
 	}
 
 	$individual = \Civi\Api4\Contact::get( false )
-		->addSelect( 'source', 'Individual_fields.Creation_Flow', 'Individual_fields.Source_Processing_Center' )
+		->addSelect( 'id', 'source', 'Individual_fields.Creation_Flow', 'Individual_fields.Source_Processing_Center' )
 		->addWhere( 'id', '=', absint( $_GET['individualId'] ) )
 		->setLimit( 1 )
 		->execute()->single();
+
+	// This is the second leg of the journey: the person has just been created by
+	// a registration form and is being sent on to the form they originally came
+	// for — a material contribution, an office visit, an attendee feedback. It
+	// runs on a fresh request, so the contact the check-user step matched is long
+	// gone. Note them again here, or someone who agreed on the registration form
+	// a moment ago is asked to agree a second time on the very next screen.
+	goonj_set_checked_contact( (int) $individual['id'] );
 
 	$creationFlow = $individual['Individual_fields.Creation_Flow'];
 	$source = $individual['source'];

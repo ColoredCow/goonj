@@ -1049,6 +1049,22 @@
   display: none !important;
 }
 
+// Shown when a filled date of birth contradicts the ticked age confirmation.
+// Sits under the date rather than the checkbox, because the date is the field
+// the person has to go back and change.
+.goonj-underage-error {
+  display: block;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid #e0b4b4;
+  border-radius: 4px;
+  background: #fdf5f5;
+  font-family: "Proxima Nova", sans-serif;
+  font-size: 13px;
+  line-height: 19px;
+  color: #9f3a38;
+}
+
 body.goonj-policy-open {
   overflow: hidden;
 }

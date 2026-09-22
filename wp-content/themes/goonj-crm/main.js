@@ -272,6 +272,103 @@ function goonjStampProfileRows() {
 // CiviCRM prints as `.description` under the input — so Goonj can reword both
 // in the CiviCRM admin without a release, which matters while the text is
 // still going through legal.
+// Goonj cannot take a minor's data on the public forms — that needs a guardian's
+// consent and proof of the relationship, which is a separate process run over
+// email. Date of birth stays optional, but where someone has filled it in and it
+// says they are under 18, it contradicts the box they ticked to say otherwise.
+// The form stops rather than recording a declaration that is not true.
+const GOONJ_MIN_CONSENT_AGE = 18;
+
+const GOONJ_UNDERAGE_MESSAGE =
+  "The date of birth entered is under " +
+  GOONJ_MIN_CONSENT_AGE +
+  ", but the box above confirms you are " +
+  GOONJ_MIN_CONSENT_AGE +
+  " or older. Please correct the date, or if you are under " +
+  GOONJ_MIN_CONSENT_AGE +
+  " ask a parent or guardian to write to us at mail@goonj.org.";
+
+// The visible control is a datepicker showing the local format; the input the
+// field is actually bound to carries the ISO value, which is the one to read.
+function goonjBirthDateValue(scope) {
+  const field = (scope || document).querySelector('af-field[name="birth_date"]');
+  if (!field) return null;
+
+  const inputs = field.querySelectorAll("input");
+  for (let i = 0; i < inputs.length; i++) {
+    const value = (inputs[i].value || "").trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  }
+
+  return null;
+}
+
+function goonjIsUnderAge(isoDate) {
+  const born = new Date(isoDate + "T00:00:00");
+  if (isNaN(born.getTime())) return false;
+
+  const today = new Date();
+  let age = today.getFullYear() - born.getFullYear();
+  const monthsApart = today.getMonth() - born.getMonth();
+
+  // Their birthday has not come round yet this year.
+  if (monthsApart < 0 || (monthsApart === 0 && today.getDate() < born.getDate())) {
+    age--;
+  }
+
+  return age < GOONJ_MIN_CONSENT_AGE;
+}
+
+function goonjShowUnderAgeError(scope) {
+  const field = scope.querySelector('af-field[name="birth_date"]');
+  if (!field) return;
+
+  let error = field.querySelector(".goonj-underage-error");
+  if (!error) {
+    error = document.createElement("div");
+    error.className = "goonj-underage-error";
+    error.setAttribute("role", "alert");
+    field.appendChild(error);
+  }
+  error.textContent = GOONJ_UNDERAGE_MESSAGE;
+  field.scrollIntoView({ block: "center" });
+}
+
+function goonjClearUnderAgeError(scope) {
+  const error = (scope || document).querySelector(".goonj-underage-error");
+  if (error) error.remove();
+}
+
+// Runs before the button's own handler, so the submit can be stopped rather
+// than undone after the fact.
+document.addEventListener(
+  "click",
+  function (event) {
+    const button = event.target.closest('button[ng-click*="submit"]');
+    if (!button) return;
+
+    const scope = button.closest("af-form");
+    if (!scope) return;
+
+    goonjClearUnderAgeError(scope);
+
+    // Only a ticked box makes an age claim. An unticked one says nothing, so
+    // there is nothing for the date to contradict.
+    const consent = scope.querySelector(
+      '.goonj-consent-field input[type="checkbox"]'
+    );
+    if (!consent || !consent.checked) return;
+
+    const birthDate = goonjBirthDateValue(scope);
+    if (!birthDate || !goonjIsUnderAge(birthDate)) return;
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    goonjShowUnderAgeError(scope);
+  },
+  true
+);
+
 // Whether the check-user step recognised this person as having already
 // consented. These forms carry their prefill in the hash rather than the query
 // string, so both are read.
