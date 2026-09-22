@@ -72,10 +72,22 @@ scope for now.
 
 | What | Step |
 |---|---|
-| Privacy policy | Publish the page, then `Settings → Privacy → select it`. The code reads the WordPress setting, not a slug, because WordPress's own draft squats on `/privacy-policy/`. |
-| Consent notice | Publish a page whose slug is exactly **`consent-notice`**, wording in a Custom HTML block. **Check the permalink** — a duplicate slug becomes `consent-notice-2` and the "What we collect and why" toggle silently never appears. |
+| Privacy policy | **Publish** the page, then `Settings → Privacy → select it`. The code reads the WordPress setting, not a slug, because WordPress's own draft squats on `/privacy-policy/`. |
+| Consent notice | **Publish** a page whose slug is exactly **`consent-notice`**, wording in a Custom HTML block. **Check the permalink** — a duplicate slug becomes `consent-notice-2` and the "What we collect and why" toggle silently never appears. |
 
 One notice page serves every form, so the wording is changed in one place.
+
+> **The privacy policy page must be Published, not just selected.** WordPress's
+> `get_privacy_policy_url()` returns an empty string unless the selected page's status is
+> `publish`, and an empty URL means **no Privacy Policy link renders anywhere** — not on the
+> forms, not on the check-user step. Staging is in exactly this state today: the setting
+> points at page 3, which is WordPress's own auto-created **draft**.
+
+### Profile and field ids differ per environment
+
+Always go by **name**, never by `custom_NNN` or a profile id. For example *MS Individual
+Contribution* is profile **31 on local** but **26 on staging**. The code resolves everything
+by machine name for this reason, and so should you when following these steps.
 
 ---
 
