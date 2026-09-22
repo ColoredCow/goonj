@@ -369,6 +369,43 @@ document.addEventListener(
   true
 );
 
+// CiviCRM marks a required custom checkbox with an asterisk and enforces it when
+// the page posts, but it never registers a rule with the form's own validator —
+// only text fields get one. So the consent box could be left unticked, the page
+// submitted, and the contributor bounced back by a server-side error after a
+// full round trip. Registering the rule here stops it at the box instead, and
+// keeps "the form cannot submit without it" true on the client as well.
+function goonjEnforceConsentRequired() {
+  const $ = window.CRM && CRM.$;
+  if (!$) return;
+
+  document.querySelectorAll(".goonj-consent-field").forEach(function (row) {
+    // Only where CiviCRM itself says the field is required — the asterisk is
+    // the same signal the server enforces on, so the two cannot drift apart.
+    if (!row.querySelector(".crm-marker")) return;
+
+    const box = row.querySelector('input[type="checkbox"]');
+    if (!box || box.dataset.goonjRequiredRule) return;
+
+    const form = $(box).closest("form");
+    if (!form.length || !form.data("validator")) return;
+
+    box.dataset.goonjRequiredRule = "1";
+    $(box).rules("add", {
+      required: true,
+      messages: {
+        required: "Please tick this to continue.",
+      },
+    });
+  });
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  // CiviCRM attaches its validator from its own ready callback, so wait a tick
+  // for it to exist before adding rules to it.
+  window.setTimeout(goonjEnforceConsentRequired, 0);
+});
+
 // Whether the check-user step recognised this person as having already
 // consented. These forms carry their prefill in the hash rather than the query
 // string, so both are read.
@@ -466,32 +503,66 @@ function goonjSetUpConsentDetails() {
       chevron.textContent = "▾";
       toggle.appendChild(chevron);
 
+      // The wording is the same on every form, so it is fetched once and held.
+      let noticeHtml = null;
+      let noticeRequest = null;
+
+      function loadNotice() {
+        if (noticeRequest || !pendingNoticeUrl) return noticeRequest;
+        noticeRequest = fetch(pendingNoticeUrl, { credentials: "same-origin" })
+          .then(function (response) {
+            if (!response.ok) throw new Error("HTTP " + response.status);
+            return response.json();
+          })
+          .then(function (page) {
+            noticeHtml = (page.content && page.content.rendered) || "";
+            return noticeHtml;
+          })
+          .catch(function (error) {
+            // Forgotten so that opening the panel tries again rather than
+            // inheriting a failure from a prefetch nobody saw.
+            noticeRequest = null;
+            throw error;
+          });
+        return noticeRequest;
+      }
+
+      // Asking for the wording the moment the cursor or keyboard focus reaches
+      // the toggle means the panel is filled by the time it opens, instead of
+      // opening on a loading line. Someone who never goes near it still costs
+      // no request. A prefetch that fails is swallowed here — nothing is on
+      // screen to report it against — and reported on the click instead.
+      function prefetchNotice() {
+        const request = loadNotice();
+        if (request) request.catch(function () {});
+      }
+      toggle.addEventListener("pointerenter", prefetchNotice);
+      toggle.addEventListener("focus", prefetchNotice);
+
       toggle.addEventListener("click", function () {
         const open = notice.hidden;
         notice.hidden = !open;
         toggle.setAttribute("aria-expanded", String(open));
         toggle.classList.toggle("is-open", open);
 
-        if (open && pendingNoticeUrl) {
-          const url = pendingNoticeUrl;
-          // Cleared before the request so a second click cannot start another.
-          pendingNoticeUrl = null;
-          notice.textContent = "Loading…";
-          fetch(url, { credentials: "same-origin" })
-            .then(function (response) {
-              if (!response.ok) throw new Error("HTTP " + response.status);
-              return response.json();
-            })
-            .then(function (page) {
-              notice.innerHTML = (page.content && page.content.rendered) || "";
-            })
-            .catch(function () {
-              // The policy link beside this still works, so point at it rather
-              // than leaving an empty panel open.
-              notice.textContent =
-                "We could not load this here — please see the privacy policy.";
-            });
+        if (!open || !pendingNoticeUrl) return;
+
+        if (noticeHtml !== null) {
+          notice.innerHTML = noticeHtml;
+          return;
         }
+
+        notice.textContent = "Loading…";
+        loadNotice()
+          .then(function (html) {
+            notice.innerHTML = html;
+          })
+          .catch(function () {
+            // The policy link beside this still works, so point at it rather
+            // than leaving an empty panel open.
+            notice.textContent =
+              "We could not load this here — please see the privacy policy.";
+          });
       });
       actions.appendChild(toggle);
     }
@@ -509,14 +580,6 @@ function goonjSetUpConsentDetails() {
       link.className = "goonj-policy-link";
       link.href = config.policyUrl;
       link.textContent = config.policyTitle || "Privacy Policy";
-      // Opening the policy in the same tab would lose a half-filled form, so
-      // it is shown over the page instead. The href stays a real link so that
-      // middle-click, and any failure to fetch, still work.
-      link.addEventListener("click", function (event) {
-        if (event.metaKey || event.ctrlKey || event.shiftKey) return;
-        event.preventDefault();
-        goonjOpenPolicyOverlay();
-      });
       actions.appendChild(link);
     }
 
@@ -529,6 +592,22 @@ function goonjSetUpConsentDetails() {
     }
   });
 }
+
+// Opening the policy in the same tab would lose a half-filled form, so it is
+// shown over the page instead. Delegated, because the same link is printed by
+// the check-user template as well as built here, and both should behave alike.
+// The href stays a real link so that middle-click, and any failure to fetch,
+// still work.
+document.addEventListener("click", function (event) {
+  const link = event.target.closest("a.goonj-policy-link");
+  if (!link) return;
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) {
+    return;
+  }
+
+  event.preventDefault();
+  goonjOpenPolicyOverlay();
+});
 
 function goonjOpenPolicyOverlay() {
   const config = window.goonjConsent || {};

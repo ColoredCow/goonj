@@ -79,21 +79,28 @@ class DpdpConsentService extends AutoSubscriber {
   private static $groupFields = [];
 
   /**
-   * Whether this request is a contribution page.
+   * Whether a tick on this request may be read as an age declaration too.
    *
-   * The wording beside the checkbox differs by surface. Everywhere except the
-   * monetary pages it covers both being over 18 and consenting, so one tick
-   * asserts both. On the monetary pages Goonj decided the checkbox is consent
-   * alone — a minor's contribution would need guardian consent and proof of the
-   * relationship, which is out of scope for now — so nothing may infer an age
-   * declaration from a tick made there.
+   * The wording beside the checkbox differs by surface. On the public forms it
+   * covers both being over 18 and consenting, so one tick asserts both and the
+   * second field is filled from it.
+   *
+   * Two surfaces must not infer anything:
+   *
+   * - The monetary pages, where Goonj decided the checkbox is consent alone. A
+   *   minor's contribution would need guardian consent and proof of the
+   *   relationship, which is out of scope for now.
+   * - The back-office contact screen, where the team sees both checkboxes and
+   *   sets each one itself. Inferring there would overrule what the staff
+   *   member chose and put a declaration on the record that the person never
+   *   made — for a signed register entry, the paper may say nothing about age.
    *
    * The custom hook is handed no clue about which form it is serving, so the
    * surface is recorded while the form is being built and read back later.
    *
    * @var bool
    */
-  private static $isContributionPage = FALSE;
+  private static $mayInferAge = TRUE;
 
   /**
    * {@inheritDoc}
@@ -101,7 +108,7 @@ class DpdpConsentService extends AutoSubscriber {
   public static function getSubscribedEvents() {
     return [
       '&hook_civicrm_buildForm' => [
-        ['noteContributionPage'],
+        ['noteConsentOnlyForm'],
       ],
       '&hook_civicrm_custom' => [
         ['stampConsentDate'],
@@ -114,17 +121,30 @@ class DpdpConsentService extends AutoSubscriber {
   /**
    * Implements hook_civicrm_buildForm().
    *
-   * Records that this request belongs to a contribution page, so the consent
-   * written later is not read as an age declaration.
+   * Records that this request is a surface where a tick means consent and
+   * nothing else, so the consent written later is not read as an age
+   * declaration.
    *
    * @param string $formName
    *   The form being built.
    * @param object $form
    *   The form object.
    */
-  public static function noteContributionPage($formName, &$form) {
-    if (strpos($formName, 'CRM_Contribute_Form_Contribution_') === 0) {
-      self::$isContributionPage = TRUE;
+  public static function noteConsentOnlyForm($formName, &$form) {
+    $consentOnly = [
+      // The public monetary pages.
+      'CRM_Contribute_Form_Contribution_',
+      // Adding or editing a contact in the back office — the full form and the
+      // inline edit on the custom field block are different classes, and both
+      // show the two checkboxes separately.
+      'CRM_Contact_Form_',
+    ];
+
+    foreach ($consentOnly as $prefix) {
+      if (strpos($formName, $prefix) === 0) {
+        self::$mayInferAge = FALSE;
+        return;
+      }
     }
   }
 
@@ -379,6 +399,7 @@ class DpdpConsentService extends AutoSubscriber {
     try {
       $existing = Contact::get(FALSE)
         ->addSelect(
+          'contact_type',
           $groupPrefix . self::FIELD_CONSENT_DATE,
           $groupPrefix . self::FIELD_AGE_DECLARED
         )
@@ -396,16 +417,19 @@ class DpdpConsentService extends AutoSubscriber {
         $values[$groupPrefix . self::FIELD_CONSENT_DATE] = date('Y-m-d');
       }
 
-      // Everywhere but the monetary pages the single checkbox is worded to
-      // cover both being over 18 and consenting, so ticking it asserts both.
-      // They stay two fields because they are two different facts to answer for
-      // in an audit, and the second is filled here rather than asking twice.
+      // On the public forms the single checkbox is worded to cover both being
+      // over 18 and consenting, so ticking it asserts both. They stay two
+      // fields because they are two different facts to answer for in an audit,
+      // and the second is filled here rather than asking twice.
       //
-      // On the monetary pages the tick is consent alone, so no age declaration
-      // may be inferred from it — recording one the contributor never made
-      // would be worse than having none at all.
+      // Where the tick is consent alone, no age declaration may be inferred
+      // from it — recording one the person never made would be worse than
+      // having none at all. An age declaration is also a statement only a
+      // person can make, so it is never put on an organisation, which consents
+      // through whoever signs for it.
       if ($ageDeclared
-        && !self::$isContributionPage
+        && self::$mayInferAge
+        && ($existing['contact_type'] ?? NULL) === 'Individual'
         && !self::hasValueFor($params, (int) $ageDeclared['id'])
         && empty($existing[$groupPrefix . self::FIELD_AGE_DECLARED])) {
         $values[$groupPrefix . self::FIELD_AGE_DECLARED] = ['1'];

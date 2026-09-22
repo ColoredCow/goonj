@@ -901,6 +901,22 @@
   white-space: normal;
 }
 
+// CiviCRM drops a validation message straight after the input it belongs to.
+// Inside this two-column pair that makes the message the second grid item, so
+// it takes the column the consent sentence was in and knocks the sentence onto
+// the next row, squashed into the 30px tick column. Ordering the message last
+// sends it to a row of its own under everything else, where a validation
+// message belongs, and leaves the tick and its wording side by side.
+// The 22px indent the rules above put on this pair's labels lines the consent
+// wording up with the tick; on the message it only pushes it out of line with
+// every other field's message, so it is cleared here. `!important` because the
+// indent it answers is written that way.
+#crm-main-content-wrapper .crm-section.goonj-consent-field .content .crm-multiple-checkbox-radio-options .crm-option-label-pair > label.crm-inline-error {
+  grid-column: 1 / -1;
+  order: 9;
+  margin: 6px 0 0 !important;
+}
+
 // Spacing sits on the separator rather than the controls either side, because
 // the button's own margin is zeroed by an id selector on the Afform pages and
 // this way the pair reads the same wherever it is used.
@@ -1065,6 +1081,22 @@
   color: #9f3a38;
 }
 
+// The notice on the check-user step. Smaller and quieter than the labels above
+// it — it is there to be found, not to compete with the fields — and centred
+// because that whole form is.
+.goonj-gate-notice {
+  margin: 4px 0 18px;
+  font-family: "Proxima Nova", sans-serif;
+  font-size: 13px;
+  line-height: 19px;
+  color: #666666;
+  text-align: center;
+}
+
+.goonj-gate-notice .goonj-policy-link {
+  white-space: nowrap;
+}
+
 body.goonj-policy-open {
   overflow: hidden;
 }
@@ -1144,10 +1176,19 @@ body.goonj-policy-open {
 }
 
 @media (max-width: 769px) {
+  // On a phone the two controls rarely fit on one line, and a wrapped line that
+  // opens with the separator reads as a stray bullet. They stack instead, and
+  // the separator that joined them goes with the single line it belonged to.
   .goonj-consent-actions {
-    display: block;
+    display: grid;
+    justify-items: start;
+    row-gap: 6px;
     margin: 8px 0 0;
     white-space: normal;
+  }
+
+  .goonj-consent-separator {
+    display: none;
   }
 
   .goonj-policy-overlay {
