@@ -369,43 +369,6 @@ document.addEventListener(
   true
 );
 
-// CiviCRM marks a required custom checkbox with an asterisk and enforces it when
-// the page posts, but it never registers a rule with the form's own validator —
-// only text fields get one. So the consent box could be left unticked, the page
-// submitted, and the contributor bounced back by a server-side error after a
-// full round trip. Registering the rule here stops it at the box instead, and
-// keeps "the form cannot submit without it" true on the client as well.
-function goonjEnforceConsentRequired() {
-  const $ = window.CRM && CRM.$;
-  if (!$) return;
-
-  document.querySelectorAll(".goonj-consent-field").forEach(function (row) {
-    // Only where CiviCRM itself says the field is required — the asterisk is
-    // the same signal the server enforces on, so the two cannot drift apart.
-    if (!row.querySelector(".crm-marker")) return;
-
-    const box = row.querySelector('input[type="checkbox"]');
-    if (!box || box.dataset.goonjRequiredRule) return;
-
-    const form = $(box).closest("form");
-    if (!form.length || !form.data("validator")) return;
-
-    box.dataset.goonjRequiredRule = "1";
-    $(box).rules("add", {
-      required: true,
-      messages: {
-        required: "Please tick this to continue.",
-      },
-    });
-  });
-}
-
-document.addEventListener("DOMContentLoaded", function () {
-  // CiviCRM attaches its validator from its own ready callback, so wait a tick
-  // for it to exist before adding rules to it.
-  window.setTimeout(goonjEnforceConsentRequired, 0);
-});
-
 // Whether the check-user step recognised this person as having already
 // consented. These forms carry their prefill in the hash rather than the query
 // string, so both are read.

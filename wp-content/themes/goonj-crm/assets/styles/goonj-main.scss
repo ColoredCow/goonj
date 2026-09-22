@@ -901,12 +901,15 @@
   white-space: normal;
 }
 
-// CiviCRM drops a validation message straight after the input it belongs to.
-// Inside this two-column pair that makes the message the second grid item, so
-// it takes the column the consent sentence was in and knocks the sentence onto
-// the next row, squashed into the 30px tick column. Ordering the message last
-// sends it to a row of its own under everything else, where a validation
-// message belongs, and leaves the tick and its wording side by side.
+// CiviCRM drops the "field is required" message straight after the input it
+// belongs to. Inside this two-column pair that makes the message the second
+// grid item, so it takes the column the consent sentence was in and knocks the
+// sentence onto the next row, squashed into the 30px tick column. Ordering the
+// message last sends it to a row of its own under everything else, where a
+// validation message belongs, and leaves the tick and its wording side by side.
+//
+// This is only about where CiviCRM's own message lands. The rule that produces
+// it is the Required tick on the profile field, set in the admin UI.
 // The 22px indent the rules above put on this pair's labels lines the consent
 // wording up with the tick; on the message it only pushes it out of line with
 // every other field's message, so it is cleared here. `!important` because the
