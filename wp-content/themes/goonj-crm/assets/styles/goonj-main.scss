@@ -896,9 +896,37 @@
 //
 // Scoped by block class: only the Confirm and Thank-You steps carry these, so
 // the row still shows normally on the form the contributor fills in.
-#crm-main-content-wrapper .crm-contribution-thankyou-form-block .goonj-consent-field,
-#crm-main-content-wrapper .crm-contribution-confirm-form-block .goonj-consent-field {
-  display: none !important;
+// The Confirm and Thank-You steps re-render the whole profile, so rows meant
+// for the form come back on the receipt. Hidden here by the same stamped
+// classes the form uses, rather than by counting positions, so the receipt
+// cannot change shape when a field is added to the profile.
+//
+//   - the autofill rows (Collection Source, Office, Events) are routing data
+//     filled in from the page the contributor arrived on. Campaign is the
+//     exception: it is filled in the same way, but it names what the
+//     contribution was for, so it stays on the receipt;
+//   - the consent row and the notice beside it are already recorded against
+//     the contact, and its own label is hidden, so it would read as a stray
+//     sentence among the contribution details;
+//   - the 80(G) request and the "data entered is correct" affirmation are
+//     things the contributor answered on the way through, not part of what
+//     they are being thanked for. They also read badly here: the 80(G) row
+//     prints its profile label, which is literally the string "null", and
+//     shows as an empty tick box when the certificate was not asked for.
+//
+// PAN stays. It is the one field here a contributor may need to read back,
+// since it is what an 80(G) certificate is issued against.
+#crm-main-content-wrapper .crm-contribution-thankyou-form-block,
+#crm-main-content-wrapper .crm-contribution-confirm-form-block {
+  // Campaign is excluded rather than re-shown, so it keeps whatever display the
+  // receipt gives every other row instead of having one guessed for it here.
+  .goonj-autofill-field:not(.goonj-campaign-field),
+  .goonj-consent-field,
+  .goonj-labelless-field,
+  .goonj-helprow-for-goonj-consent-field,
+  .goonj-helprow-for-goonj-autofill-field {
+    display: none !important;
+  }
 }
 
 #crm-main-content-wrapper .goonj-consent-field > .label {
