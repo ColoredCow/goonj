@@ -563,21 +563,8 @@
       }
       fieldset {
         fieldset {
-          > div:nth-of-type(2) {
-            display: none !important;
-          }
-          > div:nth-last-child(-n+2) {
-            display: none !important;
-          }
-          > div:nth-last-child(-n+3) {
-            display: none !important;
-          }
-          > div:nth-last-child(-n+4) {
-            display: none !important;
-          }
-          > div:nth-last-child(6) {
-            display: none !important;
-          }
+          // The positional hide rules that used to sit here have moved below,
+          // so that the Confirm and Thank-You steps can be excluded from them.
           legend {
             display: none !important;
           }
@@ -896,6 +883,31 @@
 //
 // Scoped by block class: only the Confirm and Thank-You steps carry these, so
 // the row still shows normally on the form the contributor fills in.
+// Hides rows by counting from the end of the profile, so which field disappears
+// depends on how many rows happen to be rendered — and that count is not stable.
+// Adding the consent field moves it by one, and giving any field help text moves
+// it again, because CiviCRM prints help as an extra row. On staging, where the
+// consent field has no help text, `nth-last-child(6)` lands on PAN Card Number
+// and hides it; locally, where it does have help text, the same rule lands on
+// Events instead. Two environments, same stylesheet, different field hidden.
+//
+// Left in place for the screens it was written for, which have not been
+// re-checked against it, but the Confirm and Thank-You steps are excluded: those
+// rows are hidden by name below, and a name does not move.
+#crm-main-content-wrapper
+  form
+  .crm-block:not(.crm-contribution-thankyou-form-block):not(.crm-contribution-confirm-form-block)
+  fieldset
+  fieldset {
+  > div:nth-of-type(2),
+  > div:nth-last-child(-n+2),
+  > div:nth-last-child(-n+3),
+  > div:nth-last-child(-n+4),
+  > div:nth-last-child(6) {
+    display: none !important;
+  }
+}
+
 // The Confirm and Thank-You steps re-render the whole profile, so rows meant
 // for the form come back on the receipt. Hidden here by the same stamped
 // classes the form uses, rather than by counting positions, so the receipt
@@ -922,6 +934,7 @@
   // receipt gives every other row instead of having one guessed for it here.
   .goonj-autofill-field:not(.goonj-campaign-field),
   .goonj-consent-field,
+  .goonj-form-only-field,
   .goonj-labelless-field,
   .goonj-helprow-for-goonj-consent-field,
   .goonj-helprow-for-goonj-autofill-field {
