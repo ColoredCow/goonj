@@ -896,9 +896,31 @@
 //
 // Scoped by block class: only the Confirm and Thank-You steps carry these, so
 // the row still shows normally on the form the contributor fills in.
-#crm-main-content-wrapper .crm-contribution-thankyou-form-block .goonj-consent-field,
-#crm-main-content-wrapper .crm-contribution-confirm-form-block .goonj-consent-field {
-  display: none !important;
+// The Confirm and Thank-You steps re-render the whole profile, so rows meant
+// for the form come back on the receipt. Hidden here by the same stamped
+// classes the form uses, rather than by counting positions, so the receipt
+// cannot change shape when a field is added to the profile.
+//
+//   - the autofill rows (Collection Source, Office, Events, Campaign) are
+//     routing data filled in from the page the contributor arrived on;
+//   - the consent row and the notice beside it are already recorded against
+//     the contact, and its own label is hidden, so it would read as a stray
+//     sentence among the contribution details;
+//   - the 80(G) row's profile label is literally the string "null", which is
+//     why "null" appears on the receipt today. Hiding the label leaves the
+//     option wording, which is the part that means anything.
+#crm-main-content-wrapper .crm-contribution-thankyou-form-block,
+#crm-main-content-wrapper .crm-contribution-confirm-form-block {
+  .goonj-autofill-field,
+  .goonj-consent-field,
+  .goonj-helprow-for-goonj-consent-field,
+  .goonj-helprow-for-goonj-autofill-field {
+    display: none !important;
+  }
+
+  .goonj-labelless-field > .label {
+    display: none !important;
+  }
 }
 
 #crm-main-content-wrapper .goonj-consent-field > .label {

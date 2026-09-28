@@ -233,13 +233,34 @@ function goonjRowLabel(row) {
 // Safe to call more than once — adding a class that is already present is a
 // no-op, and each consumer calls it so none of them depends on listener order.
 function goonjStampProfileRows() {
+  // The Main step wraps the profile in `.crm-public-form-item`; the Confirm and
+  // Thank-You steps render the same rows inside `.crm-profile` instead. Naming
+  // only the first meant nothing was stamped on the receipt, so every rule
+  // below silently did nothing there and the rows were left to whatever the
+  // older positional CSS happened to catch. Matching the row itself covers all
+  // three, and the maps below only fire on labels we have named anyway.
   const rows = document.querySelectorAll(
-    '#crm-main-content-wrapper form .crm-public-form-item .crm-section[class*="editrow_"]'
+    '#crm-main-content-wrapper form .crm-section[class*="editrow_"]'
   );
   rows.forEach(function (row) {
     const byLabel = GOONJ_ROW_CLASS_BY_LABEL[goonjRowLabel(row)];
     if (byLabel) {
       row.classList.add.apply(row.classList, byLabel.split(" "));
+
+      // CiviCRM prints a field's help text as a sibling `.helprow-<field>-`
+      // block rather than nesting it in the row, so hiding the row leaves the
+      // help behind. The field id in that class name is generated per
+      // environment, which is exactly what must never be written into CSS, so
+      // the sibling is found from the row's own class and marked here instead.
+      const fieldName = (row.className.match(/editrow_([a-z0-9_]+)-section/i) ||
+        [])[1];
+      if (fieldName) {
+        document
+          .querySelectorAll(".helprow-" + fieldName + "-section")
+          .forEach(function (help) {
+            help.classList.add("goonj-helprow-for-" + byLabel.split(" ")[0]);
+          });
+      }
       return;
     }
     const optionText = row.textContent;
