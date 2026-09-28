@@ -886,6 +886,21 @@
 // The row label only repeats the field's name — the wording a contributor
 // actually reads is the option label beside the tick — so it is dropped and the
 // sentence stands on its own, as it already does for the 80(G) and confirm rows.
+// The Confirm and Thank-You steps re-render the same profile through the same
+// template, so the consent row comes back on the receipt. Its own label is
+// hidden — the wording lives in the option label beside the tick — which leaves
+// the bare sentence floating among the contribution details with nothing to say
+// what it is. The tick is already recorded against the contact, so the receipt
+// does not need to restate it, and the autofill rows beside it are dropped on
+// these steps for the same reason.
+//
+// Scoped by block class: only the Confirm and Thank-You steps carry these, so
+// the row still shows normally on the form the contributor fills in.
+#crm-main-content-wrapper .crm-contribution-thankyou-form-block .goonj-consent-field,
+#crm-main-content-wrapper .crm-contribution-confirm-form-block .goonj-consent-field {
+  display: none !important;
+}
+
 #crm-main-content-wrapper .goonj-consent-field > .label {
   display: none !important;
 }
