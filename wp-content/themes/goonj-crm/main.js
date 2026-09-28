@@ -210,7 +210,9 @@ const GOONJ_ROW_CLASS_BY_LABEL = {
   "Collection Source": "goonj-autofill-field",
   Office: "goonj-autofill-field",
   Events: "goonj-autofill-field",
-  Campaign: "goonj-autofill-field",
+  // Also carries its own class: it is filled in from the page like the rest, so
+  // it stays hidden on the form, but Goonj want it readable on the receipt.
+  Campaign: "goonj-autofill-field goonj-campaign-field",
   "Confirm that the data entered is correct":
     "goonj-labelless-field goonj-confirm-field",
   "PAN Card Number": "goonj-pan-field",

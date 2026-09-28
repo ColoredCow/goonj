@@ -901,8 +901,10 @@
 // classes the form uses, rather than by counting positions, so the receipt
 // cannot change shape when a field is added to the profile.
 //
-//   - the autofill rows (Collection Source, Office, Events, Campaign) are
-//     routing data filled in from the page the contributor arrived on;
+//   - the autofill rows (Collection Source, Office, Events) are routing data
+//     filled in from the page the contributor arrived on. Campaign is the
+//     exception: it is filled in the same way, but it names what the
+//     contribution was for, so it stays on the receipt;
 //   - the consent row and the notice beside it are already recorded against
 //     the contact, and its own label is hidden, so it would read as a stray
 //     sentence among the contribution details;
@@ -916,7 +918,9 @@
 // since it is what an 80(G) certificate is issued against.
 #crm-main-content-wrapper .crm-contribution-thankyou-form-block,
 #crm-main-content-wrapper .crm-contribution-confirm-form-block {
-  .goonj-autofill-field,
+  // Campaign is excluded rather than re-shown, so it keeps whatever display the
+  // receipt gives every other row instead of having one guessed for it here.
+  .goonj-autofill-field:not(.goonj-campaign-field),
   .goonj-consent-field,
   .goonj-labelless-field,
   .goonj-helprow-for-goonj-consent-field,
