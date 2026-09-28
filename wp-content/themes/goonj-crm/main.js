@@ -207,6 +207,9 @@ document.addEventListener("DOMContentLoaded", function () {
 // Stamp a semantic class on each row instead, matched on the label the
 // contributor sees. Those labels are identical on every environment.
 const GOONJ_ROW_CLASS_BY_LABEL = {
+  // Answered on the form, not part of what the contributor is being thanked
+  // for, so it is dropped on the Confirm and Thank-You steps.
+  "Select contribution type": "goonj-form-only-field",
   "Collection Source": "goonj-autofill-field",
   Office: "goonj-autofill-field",
   Events: "goonj-autofill-field",
