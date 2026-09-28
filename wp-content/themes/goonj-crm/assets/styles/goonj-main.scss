@@ -1266,6 +1266,26 @@ af-field[name$=".Consent_Given"] {
     margin: 3px 0 0;
   }
 
+  // Afform leaves this as the browser's own 13px checkbox, which reads small
+  // beside 14px wording and noticeably smaller than the one on the contribution
+  // pages that Goonj were happy with. Nudged up to sit better against the text.
+  //
+  // Desktop only, as asked: a phone browser already draws a touch-sized control
+  // and enlarging it there would crowd the sentence. 770px is one past the
+  // file's own 769px mobile breakpoint, so the two never both apply.
+  @media (min-width: 770px) {
+    ul.crm-checkbox-list li input {
+      // `#bootstrap-theme input` sets `width: auto` from an id selector, so
+      // without this only the height grows and the tick renders as a squashed
+      // 13x18 rectangle. Height needs no such help — nothing else sets it.
+      width: 18px !important;
+      height: 18px;
+      // The bigger box grows downward from the same top edge, so the 3px that
+      // centred a 13px control against the first line now drops it too low.
+      margin-top: 1px;
+    }
+  }
+
   .goonj-consent-actions {
     grid-column: 2;
     margin-left: 0;
