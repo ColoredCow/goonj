@@ -1324,20 +1324,31 @@ af-field[name$=".Consent_Given"] {
 
   // Afform leaves this as the browser's own 13px checkbox, which reads small
   // beside 14px wording and noticeably smaller than the one on the contribution
-  // pages that Goonj were happy with. Nudged up to sit better against the text.
+  // pages that Goonj were happy with — and smaller still once the consent
+  // sentence next to it grew to a couple of lines.
   //
-  // Desktop only, as asked: a phone browser already draws a touch-sized control
-  // and enlarging it there would crowd the sentence. 770px is one past the
-  // file's own 769px mobile breakpoint, so the two never both apply.
+  // 20px on a phone, where it is a touch target and the extra 2px is worth
+  // having, and 18px from the tablet breakpoint up, where it is only ever
+  // clicked. `#bootstrap-theme input` sets `width: auto` from an id selector,
+  // so without `!important` only the height grows and the tick renders as a
+  // squashed rectangle; height needs no such help, nothing else sets it.
+  //
+  // The box grows downward from the same top edge, so the margin that centred
+  // a 13px control against the first line of the sentence is retuned to each
+  // size: the line is 20px, so a 20px box needs no offset and an 18px box
+  // needs one.
+  ul.crm-checkbox-list li input {
+    width: 20px !important;
+    height: 20px;
+    margin-top: 0;
+  }
+
+  // 770px is one past the file's own 769px mobile breakpoint, so the two never
+  // both apply.
   @media (min-width: 770px) {
     ul.crm-checkbox-list li input {
-      // `#bootstrap-theme input` sets `width: auto` from an id selector, so
-      // without this only the height grows and the tick renders as a squashed
-      // 13x18 rectangle. Height needs no such help — nothing else sets it.
       width: 18px !important;
       height: 18px;
-      // The bigger box grows downward from the same top edge, so the 3px that
-      // centred a 13px control against the first line now drops it too low.
       margin-top: 1px;
     }
   }
