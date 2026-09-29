@@ -1277,11 +1277,17 @@ body.goonj-policy-open {
 //
 // `#bootstrap-theme input[type="checkbox"]` pins `margin-top: 0 !important` from
 // an id selector, which outranks anything written for the element however many
-// classes it carries — so the offset that lifts the tick onto the first line of
-// the consent sentence has to bring an id of its own. Kept out of the block
-// below only because that block has no id to nest it under.
+// classes it carries — so the offset that places the tick against the consent
+// sentence has to bring an id of its own. Kept out of the block below only
+// because that block has no id to nest it under.
+//
+// The box is 29px against a 20px line, so it overhangs the text whatever is
+// done with it. Centring it on the first line put too much of that overhang
+// above the words and read as though the tick had floated off the top. Sitting
+// it a little lower keeps it level with the sentence as a whole, which is what
+// the eye reads once the wording runs to two lines.
 #bootstrap-theme af-field[name$=".Consent_Given"] ul.crm-checkbox-list li input {
-  margin-top: -5px !important;
+  margin-top: -1px !important;
 }
 
 // Matched on the field name rather than a class, because the name is the same
