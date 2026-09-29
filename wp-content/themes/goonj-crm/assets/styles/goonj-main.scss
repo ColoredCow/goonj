@@ -1275,6 +1275,21 @@ body.goonj-policy-open {
 // stray box around one sentence and flashes yellow at the moment someone
 // agrees, which reads like a warning rather than an acknowledgement.
 //
+// `#bootstrap-theme input[type="checkbox"]` pins `margin-top: 0 !important` from
+// an id selector, which outranks anything written for the element however many
+// classes it carries — so the offset that places the tick against the consent
+// sentence has to bring an id of its own. Kept out of the block below only
+// because that block has no id to nest it under.
+//
+// The box is 29px against a 20px line, so it overhangs the text whatever is
+// done with it. Centring it on the first line put too much of that overhang
+// above the words and read as though the tick had floated off the top. Sitting
+// it a little lower keeps it level with the sentence as a whole, which is what
+// the eye reads once the wording runs to two lines.
+#bootstrap-theme af-field[name$=".Consent_Given"] ul.crm-checkbox-list li input {
+  margin-top: 3px !important;
+}
+
 // Matched on the field name rather than a class, because the name is the same
 // on every environment while the generated ids are not. The `$=` covers both
 // `Collection_Camp_Core_Details.Consent_Given` on the camp forms and
@@ -1323,23 +1338,24 @@ af-field[name$=".Consent_Given"] {
   }
 
   // Afform leaves this as the browser's own 13px checkbox, which reads small
-  // beside 14px wording and noticeably smaller than the one on the contribution
-  // pages that Goonj were happy with. Nudged up to sit better against the text.
+  // beside the DPDP wording — a couple of lines of text next to a tiny box.
+  // Sized to match the contribution pages, which Goonj were happy with, so the
+  // consent tick looks the same wherever someone meets it. 26x29 rather than a
+  // square because that is what those pages render: `max-width: 22px` on the
+  // control and the theme's own `form input { height: 29px }`.
   //
-  // Desktop only, as asked: a phone browser already draws a touch-sized control
-  // and enlarging it there would crowd the sentence. 770px is one past the
-  // file's own 769px mobile breakpoint, so the two never both apply.
-  @media (min-width: 770px) {
-    ul.crm-checkbox-list li input {
-      // `#bootstrap-theme input` sets `width: auto` from an id selector, so
-      // without this only the height grows and the tick renders as a squashed
-      // 13x18 rectangle. Height needs no such help — nothing else sets it.
-      width: 18px !important;
-      height: 18px;
-      // The bigger box grows downward from the same top edge, so the 3px that
-      // centred a 13px control against the first line now drops it too low.
-      margin-top: 1px;
-    }
+  // Two of these need `!important`, both because `#bootstrap-theme` sets them
+  // from an id selector: `width: auto`, without which only the height grows and
+  // the tick renders as a squashed rectangle, and `margin-top: 0 !important`,
+  // which silently swallowed the offset below. Height needs no such help.
+  //
+  // The negative offset centres the box on the first line of the sentence: the
+  // line is 20px and the box is 29px, so it has to start above the text rather
+  // than level with it. Same at every width; there is no phone-sized variant
+  // because the contribution pages do not have one either.
+  ul.crm-checkbox-list li input {
+    width: 26px !important;
+    height: 29px;
   }
 
   .goonj-consent-actions {
