@@ -1287,7 +1287,7 @@ body.goonj-policy-open {
 // it a little lower keeps it level with the sentence as a whole, which is what
 // the eye reads once the wording runs to two lines.
 #bootstrap-theme af-field[name$=".Consent_Given"] ul.crm-checkbox-list li input {
-  margin-top: -1px !important;
+  margin-top: 3px !important;
 }
 
 // Matched on the field name rather than a class, because the name is the same
