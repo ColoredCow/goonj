@@ -24,14 +24,32 @@ function goonj_enqueue_scripts() {
 	// already holding it, but this setting is the same everywhere. The REST
 	// route lets the overlay pull the text without the contributor leaving a
 	// half-filled form.
-	$privacy_policy_id = (int) get_option( 'wp_page_for_privacy_policy' );
+	// The policy people are sent to is the one on goonj.org, not a copy kept in
+	// the CRM. Goonj maintain it there, so a copy here would drift the moment
+	// legal changed the original and nobody would notice.
+	//
+	// It is pulled in rather than linked out because goonj.org's REST API
+	// answers cross-origin requests, so the text can be shown over a
+	// half-filled form instead of sending someone away from it. If that ever
+	// stops being true the overlay falls back to opening the link in a new tab,
+	// so the policy is always reachable either way.
+	//
+	// Both are filterable so the address can be changed without editing the
+	// theme. `get_privacy_policy_url()` cannot serve here: WordPress stores that
+	// setting as a local page id and can only ever return a URL on this site.
+	$policy_url      = apply_filters( 'goonj_privacy_policy_url', 'https://goonj.org/privacy-policy/' );
+	$policy_rest_url = apply_filters(
+		'goonj_privacy_policy_rest_url',
+		'https://goonj.org/wp-json/wp/v2/pages?slug=privacy-policy'
+	);
+
 	wp_localize_script(
 		'goonj-script',
 		'goonjConsent',
 		array(
-			'policyUrl'     => get_privacy_policy_url(),
-			'policyRestUrl' => $privacy_policy_id ? rest_url( 'wp/v2/pages/' . $privacy_policy_id ) : '',
-			'policyTitle'   => $privacy_policy_id ? get_the_title( $privacy_policy_id ) : __( 'Privacy Policy', 'goonj-crm' ),
+			'policyUrl'     => $policy_url,
+			'policyRestUrl' => $policy_rest_url,
+			'policyTitle'   => __( 'Privacy Policy', 'goonj-crm' ),
 			'noticeRestUrl' => goonj_get_consent_notice_rest_url(),
 		)
 	);
