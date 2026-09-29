@@ -661,13 +661,22 @@ function goonjOpenPolicyOverlay() {
     return;
   }
 
-  fetch(config.policyRestUrl, { credentials: "same-origin" })
+  // `omit` rather than `same-origin`: this now reads goonj.org, and a
+  // cross-origin request that asks to send credentials is refused outright by
+  // a server that answers with a specific origin rather than a wildcard.
+  fetch(config.policyRestUrl, { credentials: "omit" })
     .then(function (response) {
       if (!response.ok) throw new Error("HTTP " + response.status);
       return response.json();
     })
-    .then(function (page) {
-      body.innerHTML = (page.content && page.content.rendered) || "";
+    .then(function (result) {
+      // Asking by slug returns a list; asking by id returns the page itself.
+      // Accept either, so the address can be changed to one or the other
+      // through the filter without the fetch having to change with it.
+      const page = Array.isArray(result) ? result[0] : result;
+      const html = page && page.content && page.content.rendered;
+      if (!html) throw new Error("empty policy");
+      body.innerHTML = html;
     })
     .catch(function () {
       body.textContent = "";
