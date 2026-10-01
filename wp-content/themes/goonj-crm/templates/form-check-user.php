@@ -65,7 +65,13 @@ $is_individual_collection_camp = ($purpose === 'individual-collection-camp');
         // carries a notice rather than a tick: there is nothing here to consent
         // to yet. Consent is asked for on the form this leads to, once we know
         // who the person is and what they are signing up for.
-        $privacy_policy_url = get_privacy_policy_url();
+        // Same source as the consent block on the forms this step leads to:
+        // goonj.org, where Goonj maintain the policy. `get_privacy_policy_url()`
+        // was used here before and returned an empty string on production,
+        // because WordPress stores that setting as a local page id and the page
+        // it points at is still a draft — so the link silently did not render on
+        // any of the 18 gates.
+        $privacy_policy_url = apply_filters( 'goonj_privacy_policy_url', 'https://goonj.org/privacy-policy/' );
         ?>
         <p class="goonj-gate-notice">
             We use these details only to check whether you are already registered with us. Nothing is saved at this step.
