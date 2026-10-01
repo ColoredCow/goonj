@@ -27,13 +27,24 @@ $queryParams = [
 	'Collection_Camp_Intent_Details.Pin_Code' => $recentCampData['Collection_Camp_Intent_Details.Pin_Code'] ?? '',
 ];
 
-$redirectUrl = $redirectBaseUrl . http_build_query($queryParams);
-$noDetailsRedirectUrl = get_home_url() . "/collection-camp/intent/#?" . http_build_query([
+$noDetailsParams = [
 	'Collection_Camp_Core_Details.Contact_Id' => $contactId,
 	'message' => 'collection-camp-page',
 	'Collection_Camp_Intent_Details.Name' => $displayName,
 	'Collection_Camp_Intent_Details.Contact_Number' => $contactNumber,
-]);
+];
+
+// This page sits between the check-user step and the intent form, and builds
+// both onward links from scratch — so without this the "already consented" flag
+// set on the way in is dropped here, and a volunteer who has agreed once would
+// be asked again on every camp they set up.
+if (goonj_contact_has_dpdp_consent($contactId)) {
+	$queryParams['goonjConsented'] = '1';
+	$noDetailsParams['goonjConsented'] = '1';
+}
+
+$redirectUrl = $redirectBaseUrl . http_build_query($queryParams);
+$noDetailsRedirectUrl = get_home_url() . "/collection-camp/intent/#?" . http_build_query($noDetailsParams);
 
 ?>
 

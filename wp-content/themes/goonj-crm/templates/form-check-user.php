@@ -60,6 +60,20 @@ $is_individual_collection_camp = ($purpose === 'individual-collection-camp');
             <input type="tel" id="phone" name="phone" required value="<?php echo isset($_POST['phone']) ? esc_attr(sanitize_text_field($_POST['phone'])) : ''; ?>">
         </div>
         <br>
+        <?php
+        // This step asks for personal details before anything is saved, so it
+        // carries a notice rather than a tick: there is nothing here to consent
+        // to yet. Consent is asked for on the form this leads to, once we know
+        // who the person is and what they are signing up for.
+        $privacy_policy_url = get_privacy_policy_url();
+        ?>
+        <p class="goonj-gate-notice">
+            We use these details only to check whether you are already registered with us. Nothing is saved at this step.
+            <?php if ($privacy_policy_url) : ?>
+                <a class="goonj-policy-link" href="<?php echo esc_url($privacy_policy_url); ?>">Privacy Policy</a>
+            <?php endif; ?>
+        </p>
+
         <p class="login-submit" data-test=submitButton>
             <input type="submit" class="button button-primary w-100p" value="Continue">
         </p>
