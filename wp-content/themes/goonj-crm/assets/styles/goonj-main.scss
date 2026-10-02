@@ -301,12 +301,17 @@
 //
 // `#crm-main-content-wrapper` is on the front of these selectors only to
 // outrank that `top: 4px !important` rule, which sits at (1 id, 4 classes).
-#crm-main-content-wrapper .crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options div.crm-option-label-pair {
+#crm-main-content-wrapper .crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section:not(.goonj-consent-field) .content .crm-multiple-checkbox-radio-options div.crm-option-label-pair {
   align-items: center !important;
 }
 
-#crm-main-content-wrapper .crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options div input[type="radio"],
-#crm-main-content-wrapper .crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options div input[type="checkbox"] {
+// The consent row is excluded from both: centring is right for the one-line
+// options beside it (80(G), the confirm radio), but the consent sentence runs
+// to several lines and centring parks the tick halfway down the paragraph
+// instead of beside the line it belongs to. It is aligned to the first line
+// further down, with the rest of its sizing.
+#crm-main-content-wrapper .crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section:not(.goonj-consent-field) .content .crm-multiple-checkbox-radio-options div input[type="radio"],
+#crm-main-content-wrapper .crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section:not(.goonj-consent-field) .content .crm-multiple-checkbox-radio-options div input[type="checkbox"] {
   top: 0 !important;
   align-self: center !important;
 }
@@ -719,8 +724,15 @@
     // the grid's baseline alignment for both single-line (Yes/No) and
     // multi-line options — so do NOT change align-items here, only the height.
     // Scoped to the event registration form so other forms are untouched.
+    //
+    // The consent row is excluded. Its wording runs to several lines and the
+    // box is sized explicitly below, so letting it fall back to its natural
+    // height left it 26px wide and 13px tall — a squashed rectangle. Chromium
+    // draws that as a flattened box; WebKit takes the forced non-square size
+    // and renders the control large and rounded, which is what Goonj saw on
+    // iOS and not on Android.
     form.CRM_Event_Form_Registration_Register {
-      .crm-option-label-pair {
+      .crm-section:not(.goonj-consent-field) .crm-option-label-pair {
         input[type="radio"],
         input[type="checkbox"] {
           height: auto !important;
@@ -1275,19 +1287,42 @@ body.goonj-policy-open {
 // stray box around one sentence and flashes yellow at the moment someone
 // agrees, which reads like a warning rather than an acknowledgement.
 //
-// `#bootstrap-theme input[type="checkbox"]` pins `margin-top: 0 !important` from
-// an id selector, which outranks anything written for the element however many
-// classes it carries — so the offset that places the tick against the consent
-// sentence has to bring an id of its own. Kept out of the block below only
-// because that block has no id to nest it under.
+// One size for the consent tick wherever it appears — contribution pages,
+// FormBuilder forms and the profile-driven forms such as event registration.
+// It was previously sized per surface, which let each one drift: 26x29 on the
+// contribution pages, 26x13 on mobile event registration, and the browser's
+// own 13px on anything not named. A forced non-square size is what made iOS
+// render it as a large rounded control while Android showed a flattened one,
+// so the fix is a square box rather than a per-engine tweak.
 //
-// The box is 29px against a 20px line, so it overhangs the text whatever is
-// done with it. Centring it on the first line put too much of that overhang
-// above the words and read as though the tick had floated off the top. Sitting
-// it a little lower keeps it level with the sentence as a whole, which is what
-// the eye reads once the wording runs to two lines.
-#bootstrap-theme af-field[name$=".Consent_Given"] ul.crm-checkbox-list li input {
-  margin-top: 3px !important;
+// Three declarations have to be forced, each against an id selector or an
+// `!important` already in the file:
+//   - `#bootstrap-theme input` sets `width: auto`
+//   - `form input` sets `height: 29px !important`, meant for text inputs
+//   - `#bootstrap-theme input[type="checkbox"]` pins `margin-top: 0 !important`
+//
+// Each selector carries an id and enough classes to outrank all of those,
+// including the event form's own `height: auto !important`.
+//
+// Two of them, because the surfaces sit under different roots: the profile
+// forms (contribution, event registration) render inside
+// `#crm-main-content-wrapper`, while FormBuilder renders outside it and only
+// `#bootstrap-theme` is common to both. Naming the wrong root is a silent
+// miss — the rule simply never applies and the browser's own 13px box shows.
+#crm-main-content-wrapper .goonj-consent-field .crm-option-label-pair input[type="checkbox"],
+#bootstrap-theme .goonj-consent-field ul.crm-checkbox-list li input[type="checkbox"] {
+  width: 24px !important;
+  height: 24px !important;
+  // Square, so the control keeps whatever shape the platform draws instead of
+  // being stretched into one.
+  min-height: 24px !important;
+  max-width: 24px !important;
+  flex: none !important;
+  // Sits level with the top of the sentence. The line is 20px and the box is
+  // 24px, so it overhangs slightly below, which reads as aligned once the
+  // wording runs to more than one line.
+  margin-top: 0 !important;
+  align-self: start !important;
 }
 
 // Matched on the field name rather than a class, because the name is the same
@@ -1335,27 +1370,6 @@ af-field[name$=".Consent_Given"] {
     // the box gone it can sit in the grid like any other checkbox.
     position: static;
     margin: 3px 0 0;
-  }
-
-  // Afform leaves this as the browser's own 13px checkbox, which reads small
-  // beside the DPDP wording — a couple of lines of text next to a tiny box.
-  // Sized to match the contribution pages, which Goonj were happy with, so the
-  // consent tick looks the same wherever someone meets it. 26x29 rather than a
-  // square because that is what those pages render: `max-width: 22px` on the
-  // control and the theme's own `form input { height: 29px }`.
-  //
-  // Two of these need `!important`, both because `#bootstrap-theme` sets them
-  // from an id selector: `width: auto`, without which only the height grows and
-  // the tick renders as a squashed rectangle, and `margin-top: 0 !important`,
-  // which silently swallowed the offset below. Height needs no such help.
-  //
-  // The negative offset centres the box on the first line of the sentence: the
-  // line is 20px and the box is 29px, so it has to start above the text rather
-  // than level with it. Same at every width; there is no phone-sized variant
-  // because the contribution pages do not have one either.
-  ul.crm-checkbox-list li input {
-    width: 26px !important;
-    height: 29px;
   }
 
   .goonj-consent-actions {
