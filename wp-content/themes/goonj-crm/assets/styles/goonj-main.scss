@@ -1348,6 +1348,15 @@ body.goonj-policy-open {
   margin: 0 !important;
   top: auto !important;
   align-self: start !important;
+  // This pair is the whole iOS difference, measured on an iPhone 18 Pro.
+  // The theme gives every input 7px of padding and a 1px border. Chromium
+  // throws both away on a native tick; WebKit keeps them and adds them to the
+  // size, so a box asking for 24px was laid out at 24 + 14 + 2 = 40. That is
+  // what made the control look oversized next to Android, and before the tick
+  // was put back in the flow it was also why the wording ran over it — the
+  // label was only clearing the 22px the old rule assumed, not 40.
+  padding: 0 !important;
+  box-sizing: border-box !important;
 }
 
 .goonj-consent-field .crm-option-label-pair > label,
