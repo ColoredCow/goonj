@@ -5,8 +5,8 @@ Template Name: Collection Landing Page
 ?>
 
 <div class="text-center ml-30 mr-30">
-	<h2 class="font-sans fz-20 fw-400 mb-6">Goonj Collection Camp</h2>
-	<p class="font-sans fz-16 fw-400 mt-0 mb-24">Please read the following before organizing collection camp/drives:</p>
+	<h2 class="font-sans fz-20 fw-400 mb-6">Goonj Sharing Camp</h2>
+	<p class="font-sans fz-16 fw-400 mt-0 mb-24">Please read the following before organizing sharing camp/drives:</p>
 	<ol>
 		<li class="font-sans mb-6 fz-16">
 			Review our guidelines here: <a href="https://rb.gy/mosfci" target="_blank">https://rb.gy/mosfci</a> to avoid any issues later.
