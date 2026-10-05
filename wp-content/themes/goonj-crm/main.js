@@ -463,7 +463,13 @@ function goonjSetUpConsentDetails() {
     // It is fetched on first open, so a form nobody expands costs no request.
     if (!notice && config.noticeRestUrl) {
       notice = document.createElement("div");
-      notice.className = "crm-section goonj-consent-notice-shared";
+      // No `crm-section` here. It was carried over to match the rows around
+      // it, but it also opts the panel into every form's own section rules —
+      // on event registration one of those sets `display: block !important`,
+      // which outranks the `hidden` attribute and left a block of empty space
+      // under the consent row once the panel had been created. The panel is
+      // styled entirely by its own class.
+      notice.className = "goonj-consent-notice-shared";
       row.insertAdjacentElement("afterend", notice);
       pendingNoticeUrl = config.noticeRestUrl;
     }

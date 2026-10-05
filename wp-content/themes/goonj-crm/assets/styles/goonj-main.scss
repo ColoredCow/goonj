@@ -276,15 +276,12 @@
   display: contents;
 }
 
-.crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options div label {
+// The 22px clears the absolutely positioned tick these rows still use. The
+// consent row is excluded because it no longer has one — it lays itself out
+// further down the file and sets its own gap, and this indent would push its
+// wording out of line with the box on this page only.
+.crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section:not(.goonj-consent-field) .content .crm-multiple-checkbox-radio-options div label {
   align-self: center !important;
-  margin-left: 22px !important;
-}
-
-// The consent actions sit on a second line under the wording they belong to, so
-// they carry the same indent as the label above. Mirrored from the rule above —
-// change both together, or the two lines stop being flush.
-.crm-contribution-main-form-block .custom_pre_profile-group fieldset .crm-section .content .crm-multiple-checkbox-radio-options div .goonj-consent-actions {
   margin-left: 22px !important;
 }
 
@@ -983,8 +980,11 @@
 // every other field's message, so it is cleared here. `!important` because the
 // indent it answers is written that way.
 #crm-main-content-wrapper .crm-section.goonj-consent-field .content .crm-multiple-checkbox-radio-options .crm-option-label-pair > label.crm-inline-error {
-  grid-column: 1 / -1;
-  order: 9;
+  // `!important` on all three: the consent row's own recipe forces every
+  // label in the pair into column two, and the message has to outrank it to
+  // keep its own row.
+  grid-column: 1 / -1 !important;
+  order: 9 !important;
   margin: 6px 0 0 !important;
 }
 
@@ -1065,8 +1065,13 @@
 .goonj-consent-notice-shared {
   display: block;
 
+  // `!important` because `hidden` is an attribute, and any stylesheet that
+  // gives this element a `display` outranks it — CiviCRM core has several
+  // such rules for form rows. A panel that keeps its box while hidden shows
+  // up as a band of empty space under the consent row, which is what was
+  // reported on iOS and only after a reload, once the panel had been built.
   &[hidden] {
-    display: none;
+    display: none !important;
   }
 }
 
@@ -1287,42 +1292,80 @@ body.goonj-policy-open {
 // stray box around one sentence and flashes yellow at the moment someone
 // agrees, which reads like a warning rather than an acknowledgement.
 //
-// One size for the consent tick wherever it appears — contribution pages,
-// FormBuilder forms and the profile-driven forms such as event registration.
-// It was previously sized per surface, which let each one drift: 26x29 on the
-// contribution pages, 26x13 on mobile event registration, and the browser's
-// own 13px on anything not named. A forced non-square size is what made iOS
-// render it as a large rounded control while Android showed a flattened one,
-// so the fix is a square box rather than a per-engine tweak.
+// The consent row lays itself out, the same way on every surface, instead of
+// inheriting whatever each form does with its option lists. It was patched per
+// surface before and they drifted apart — the contribution pages centred the
+// tick, event registration let it collapse to 26x13, and on iOS the wording
+// ran straight over the box.
 //
-// Three declarations have to be forced, each against an id selector or an
-// `!important` already in the file:
-//   - `#bootstrap-theme input` sets `width: auto`
-//   - `form input` sets `height: 29px !important`, meant for text inputs
-//   - `#bootstrap-theme input[type="checkbox"]` pins `margin-top: 0 !important`
+// That overlap is the part worth naming: CiviCRM positions the tick absolutely
+// and pads the label to clear it. The FormBuilder forms already undid both,
+// which is why they looked right and the others did not. Doing it here means
+// the row no longer depends on the form it happens to sit in.
 //
-// Each selector carries an id and enough classes to outrank all of those,
-// including the event form's own `height: auto !important`.
+// Both markup shapes are covered: profile forms render
+// `.crm-option-label-pair`, FormBuilder renders `ul.crm-checkbox-list li`.
+.goonj-consent-field .crm-option-label-pair,
+.goonj-consent-field ul.crm-checkbox-list li {
+  display: grid !important;
+  grid-template-columns: auto 1fr !important;
+  column-gap: 8px !important;
+  align-items: start !important;
+}
+
+// CiviCRM emits a hidden companion input before the tick so an unticked box
+// still posts a value. A hidden input draws nothing, but it is still an
+// element, and anything in the cascade that gives inputs a `display` turns it
+// into a grid item — it would then take column one and push the tick and its
+// wording out of place.
 //
-// Two of them, because the surfaces sit under different roots: the profile
-// forms (contribution, event registration) render inside
-// `#crm-main-content-wrapper`, while FormBuilder renders outside it and only
-// `#bootstrap-theme` is common to both. Naming the wrong root is a silent
-// miss — the rule simply never applies and the browser's own 13px box shows.
-#crm-main-content-wrapper .goonj-consent-field .crm-option-label-pair input[type="checkbox"],
-#bootstrap-theme .goonj-consent-field ul.crm-checkbox-list li input[type="checkbox"] {
+// Whether that is what WebKit was actually doing is not established: Chromium
+// reports no overlap on these pages even before this change, so the engine
+// that misbehaves is the one that could not be measured here. Taking the
+// element out of the grid removes the possibility either way, and costs
+// nothing if it was never the cause.
+.goonj-consent-field .crm-option-label-pair > input[type="hidden"],
+.goonj-consent-field ul.crm-checkbox-list li > input[type="hidden"] {
+  display: none !important;
+}
+
+.goonj-consent-field .crm-option-label-pair > input[type="checkbox"],
+.goonj-consent-field ul.crm-checkbox-list li > input[type="checkbox"] {
+  // Named explicitly rather than left to auto-placement, so nothing else that
+  // lands in this grid can shuffle the two apart.
+  grid-column: 1 !important;
+  // Back into the flow, so the label sits beside it rather than under it.
+  position: static !important;
+  // Square: a forced non-square size is what WebKit drew as a large rounded
+  // control while Chromium drew a flattened one.
   width: 24px !important;
   height: 24px !important;
-  // Square, so the control keeps whatever shape the platform draws instead of
-  // being stretched into one.
   min-height: 24px !important;
   max-width: 24px !important;
+  // `.crm-container input { flex: 1 }` otherwise lets the flex algorithm pick
+  // the size, and each engine picks a different one.
   flex: none !important;
-  // Sits level with the top of the sentence. The line is 20px and the box is
-  // 24px, so it overhangs slightly below, which reads as aligned once the
-  // wording runs to more than one line.
-  margin-top: 0 !important;
+  margin: 0 !important;
+  top: auto !important;
   align-self: start !important;
+}
+
+.goonj-consent-field .crm-option-label-pair > label,
+.goonj-consent-field ul.crm-checkbox-list li > label {
+  grid-column: 2 !important;
+  // The padding exists only to clear an absolutely positioned tick. With the
+  // tick back in the flow it just pushes the wording off its own column.
+  padding: 0 !important;
+  margin: 0 !important;
+  display: block !important;
+  word-break: normal;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.goonj-consent-field .goonj-consent-actions {
+  grid-column: 2 !important;
+  margin-left: 0 !important;
 }
 
 // Matched on the field name rather than a class, because the name is the same
