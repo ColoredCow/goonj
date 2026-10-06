@@ -219,22 +219,25 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
     $contributionDate,
   ) {
     $coordinatingPOCId = NULL;
+    $goonjOfficeName = '';
 
     if ($collectionCampId) {
       $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
-        ->addSelect('Institution_collection_camp_Review.Coordinating_POC')
+        ->addSelect('Institution_collection_camp_Review.Coordinating_POC', 'Institution_collection_camp_Review.Goonj_Office.display_name')
         ->addWhere('id', '=', $collectionCampId)
         ->execute()
         ->first();
       $coordinatingPOCId = $collectionCamp['Institution_collection_camp_Review.Coordinating_POC'] ?? NULL;
+      $goonjOfficeName = $collectionCamp['Institution_collection_camp_Review.Goonj_Office.display_name'] ?? '';
     }
     elseif ($droppingCenterId) {
       $collectionCamp = EckEntity::get('Collection_Camp', FALSE)
-        ->addSelect('Institution_Dropping_Center_Review.Coordinating_POC')
+        ->addSelect('Institution_Dropping_Center_Review.Coordinating_POC', 'Institution_Dropping_Center_Review.Goonj_Office.display_name')
         ->addWhere('id', '=', $droppingCenterId)
         ->execute()
         ->first();
       $coordinatingPOCId = $collectionCamp['Institution_Dropping_Center_Review.Coordinating_POC'] ?? NULL;
+      $goonjOfficeName = $collectionCamp['Institution_Dropping_Center_Review.Goonj_Office.display_name'] ?? '';
     }
 
     if (!$coordinatingPOCId) {
@@ -255,7 +258,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
     $goonjCoordinatorEmail = $contact['email.email'];
     $goonjCoordinatorPhone = $contact['phone.phone'];
 
-    $body = self::generateEmailBody($institutionName, $goonjCoordinatorEmail, $goonjCoordinatorPhone);
+    $body = self::generateEmailBody($institutionName, $goonjCoordinatorEmail, $goonjCoordinatorPhone, $goonjOfficeName);
     $html = self::generateAcknowledgedReceiptHtml(
       $institutionName,
       $address,
@@ -279,10 +282,11 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
   /**
    * Generates the email body for the acknowledgment.
    */
-  private static function generateEmailBody(?string $institutionPOCName, ?string $goonjCoordinatorEmail, ?string $goonjCoordinatorPhone): string {
+  private static function generateEmailBody(?string $institutionPOCName, ?string $goonjCoordinatorEmail, ?string $goonjCoordinatorPhone, string $goonjOfficeName): string {
     $institutionPOCName = $institutionPOCName ?? '';
     $goonjCoordinatorEmail = $goonjCoordinatorEmail ?? '';
     $goonjCoordinatorPhone = $goonjCoordinatorPhone ?? '';
+    $goonjOfficeLine = $goonjOfficeName ? "<br>({$goonjOfficeName})" : '';
 
     return "
       <html>
@@ -308,7 +312,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
           <p>
             Thank you once again for partnering with us and making a difference!
           </p>
-          <p>Warm Regards,<br>Team Goonj</p>
+          <p>Warm Regards,<br>Team Goonj{$goonjOfficeLine}</p>
         </body>
       </html>
     ";
