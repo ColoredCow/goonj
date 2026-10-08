@@ -43,6 +43,16 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
     $deliveredByContact = $activityData['Institution_Material_Contribution.Delivered_By_Contact_New'] ?? '';
     $organizationId = $activityData['source_contact_id'];
     $institutionPOCId = $activityData['Institution_Material_Contribution.Institution_POC'];
+    $goonjOfficeId = $activityData['Institution_Material_Contribution.Goonj_Office'] ?? NULL;
+
+    $goonjOfficeName = '';
+    if ($goonjOfficeId) {
+      $goonjOffice = Contact::get(FALSE)
+        ->addSelect('display_name')
+        ->addWhere('id', '=', $goonjOfficeId)
+        ->execute()->first();
+      $goonjOfficeName = $goonjOffice['display_name'] ?? '';
+    }
 
     $organizations = Organization::get(FALSE)
       ->addSelect('address_primary.street_address', 'display_name')
@@ -108,7 +118,8 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
             $description,
             $deliveredBy,
             $deliveredByContact,
-            $activityDate
+            $activityDate,
+            $goonjOfficeName
         );
     }
   }
@@ -133,7 +144,7 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
   /**
    *
    */
-  private static function sendInstitutionMaterialContributionEmails(string $institutionPOCId, string $organizationName, string $organizationAddress, array $contribution, string $description, string $deliveredBy, string $deliveredByContact, string $activityDate) {
+  private static function sendInstitutionMaterialContributionEmails(string $institutionPOCId, string $organizationName, string $organizationAddress, array $contribution, string $description, string $deliveredBy, string $deliveredByContact, string $activityDate, string $goonjOfficeName) {
     $contact = self::getContactDetails($institutionPOCId);
 
     if (!$contact || empty($contact['email'])) {
@@ -144,7 +155,7 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
     $phone = $contact['phone'];
 
     $subject = 'Acknowledgement for your material contribution to Goonj';
-    $body = self::generateEmailBody($name);
+    $body = self::generateEmailBody($name, $goonjOfficeName);
     $html = self::generateContributionReceiptHtml($organizationName, $organizationAddress, $contribution, $email, $phone, $description, $name, $deliveredBy, $deliveredByContact, $activityDate);
     $attachments = [\CRM_Utils_Mail::appendPDF('institution_material_contribution.pdf', $html)];
     $params = self::prepareEmailParams($subject, $body, $attachments, $email);
@@ -155,7 +166,9 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
   /**
    *
    */
-  private static function generateEmailBody(string $contactName) {
+  private static function generateEmailBody(string $contactName, string $goonjOfficeName) {
+    $goonjOfficeLine = $goonjOfficeName ? "<br>{$goonjOfficeName}" : '';
+
     return "
       <html>
           <head>
@@ -169,7 +182,7 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
               <p>With Material, Money Matters for sorting, packing, transportation to implementation. To contribute, click on this link - <a href='https://goonj.org/donate'>https://goonj.org/donate</a>. All financial contributions are tax exempted u/s 80G of IT Act.</p>
               <p>For more details on our work, please visit <a href='https://www.goonj.org'>www.goonj.org</a>.</p>
               <p>Please find attached your material contribution receipt.</p>
-              <p>Regards,<br>Team Goonj</p>
+              <p>Regards,<br>Team Goonj{$goonjOfficeLine}</p>
           </body>
       </html>
       ";
