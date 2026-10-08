@@ -20,7 +20,7 @@ class CRM_Goonjcustom_Token_MaterialContribution extends AbstractTokenSubscriber
   }
 
   /**
-   * Prints "(Goonj Mumbai)", or nothing when no office is found.
+   * Prints the office name, e.g. "Goonj Mumbai", or nothing when none is found.
    */
   public function evaluateToken(
     TokenRow $row,
@@ -31,7 +31,7 @@ class CRM_Goonjcustom_Token_MaterialContribution extends AbstractTokenSubscriber
     $activityId = $row->context['activityId'] ?? NULL;
     $officeName = $activityId ? MaterialContributionService::getGoonjOfficeName((int) $activityId) : '';
 
-    $row->format('text/plain')->tokens($entity, $field, $officeName ? "($officeName)" : '');
+    $row->format('text/plain')->tokens($entity, $field, $officeName);
   }
 
 }

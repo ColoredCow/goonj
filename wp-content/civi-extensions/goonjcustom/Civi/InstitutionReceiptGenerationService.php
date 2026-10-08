@@ -286,7 +286,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
     $institutionPOCName = $institutionPOCName ?? '';
     $goonjCoordinatorEmail = $goonjCoordinatorEmail ?? '';
     $goonjCoordinatorPhone = $goonjCoordinatorPhone ?? '';
-    $goonjOfficeLine = $goonjOfficeName ? "<br>({$goonjOfficeName})" : '';
+    $goonjOfficeLine = $goonjOfficeName ? "<br>{$goonjOfficeName}" : '';
 
     return "
       <html>
