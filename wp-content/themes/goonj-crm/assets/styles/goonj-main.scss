@@ -1324,6 +1324,21 @@ body.goonj-policy-open {
 // that misbehaves is the one that could not be measured here. Taking the
 // element out of the grid removes the possibility either way, and costs
 // nothing if it was never the cause.
+// On the contribution pages the other option rows — 80(G), the confirmation —
+// carry a 22px indent to clear their absolutely positioned tick, which puts
+// all their wording at one fixed offset. This row's tick sits in the grid and
+// needs no such clearance, but it still has to line up with the rows above it
+// or it hangs out to the left of them. The gap makes up the same total:
+// a 24px box + 28px gap lands the wording exactly where their 26px box + 22px
+// indent lands theirs.
+//
+// Scoped to the contribution block on purpose. Event registration and the
+// FormBuilder forms have no neighbouring option rows to match, so there the
+// plain 8px gap is the one that looks right.
+.crm-contribution-main-form-block .goonj-consent-field .crm-option-label-pair {
+  column-gap: 28px !important;
+}
+
 .goonj-consent-field .crm-option-label-pair > input[type="hidden"],
 .goonj-consent-field ul.crm-checkbox-list li > input[type="hidden"] {
   display: none !important;
