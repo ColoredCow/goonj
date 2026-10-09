@@ -167,7 +167,7 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
    *
    */
   private static function generateEmailBody(string $contactName, string $goonjOfficeName) {
-    $goonjOfficeLine = $goonjOfficeName ? "<br>{$goonjOfficeName}" : '';
+    $goonjOfficeLine = $goonjOfficeName ? "<br>({$goonjOfficeName})" : '';
 
     return "
       <html>
