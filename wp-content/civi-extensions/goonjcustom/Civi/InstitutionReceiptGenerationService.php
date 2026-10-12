@@ -321,17 +321,27 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
   /**
    * Prepares email parameters for sending.
    */
-  private static function prepareEmailParams(string $emailSubject, string $emailBody, array $attachments, string $recipientEmail, string $goonjCoordinatorEmail) {
+  private static function prepareEmailParams(string $emailSubject, string $emailBody, array $attachments, string $recipientEmail, ?string $goonjCoordinatorEmail = NULL) {
     $from = HelperService::getDefaultFromEmail();
 
-    return [
+    $params = [
       'subject' => $emailSubject,
       'from' => $from,
       'toEmail' => $recipientEmail,
       'html' => $emailBody,
-      'cc' => $goonjCoordinatorEmail,
       'attachments' => $attachments,
     ];
+
+    // The coordinator is only copied in, and the address is read over a LEFT
+    // join, so it is NULL whenever that contact has no email on record. Typed
+    // `string` it brought the whole acknowledgement down with a TypeError
+    // before anything was sent — the institution lost its receipt because
+    // someone else was missing an address. Copy them in when we have one.
+    if (!empty($goonjCoordinatorEmail)) {
+      $params['cc'] = $goonjCoordinatorEmail;
+    }
+
+    return $params;
   }
 
   /**

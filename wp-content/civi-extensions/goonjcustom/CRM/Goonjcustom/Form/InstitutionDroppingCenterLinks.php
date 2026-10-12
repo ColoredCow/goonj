@@ -38,6 +38,20 @@ class CRM_Goonjcustom_Form_InstitutionDroppingCenterLinks extends CRM_Core_Form 
   public $_processingCenterId;
 
   /**
+   * The institution that runs this dropping centre, or [] if none is recorded.
+   *
+   * @var array
+   */
+  public $_organization = [];
+
+  /**
+   * The institution's point of contact, or [] if none is recorded.
+   *
+   * @var array
+   */
+  public $_contact = [];
+
+  /**
    * Preprocess .
    */
   public function preProcess() {
@@ -45,25 +59,34 @@ class CRM_Goonjcustom_Form_InstitutionDroppingCenterLinks extends CRM_Core_Form 
     $this->_contactId = CRM_Utils_Request::retrieve('gcid', 'Positive', $this);
     $this->_processingCenterId = CRM_Utils_Request::retrieve('puid', 'Positive', $this);
 
+    // `single()` throws when a lookup comes back empty, and all three of these
+    // legitimately can: the id can be absent from the URL, the record can be
+    // one this user cannot see (the read is permission-checked), and a dropping
+    // centre is not obliged to have an organisation or a POC recorded yet. Any
+    // one of those took the whole tab down with "Expected to find one
+    // Eck_Collection_Camp record, but there were zero." The sibling
+    // InstitutionCollectionCampLinks reads the same shape with `first()`, which
+    // is why that tab stays up. Missing data should leave the links thin, not
+    // replace the page with an error.
     $collectionCamps = EckEntity::get('Collection_Camp', TRUE)
       ->addSelect('Institution_Dropping_Center_Intent.Organization_Name', 'Institution_Dropping_Center_Intent.Institution_POC')
       ->addWhere('id', '=', $this->_institutionDroppingCenterId)
-      ->execute()->single();
+      ->execute()->first() ?? [];
 
-    $organizationId = $collectionCamps['Institution_Dropping_Center_Intent.Organization_Name'];
-    $institutionPOCId = $collectionCamps['Institution_Dropping_Center_Intent.Institution_POC'];
+    $organizationId = $collectionCamps['Institution_Dropping_Center_Intent.Organization_Name'] ?? NULL;
+    $institutionPOCId = $collectionCamps['Institution_Dropping_Center_Intent.Institution_POC'] ?? NULL;
 
-    $this->_organization = Organization::get(FALSE)
+    $this->_organization = $organizationId ? (Organization::get(FALSE)
       ->addSelect('display_name', 'email_primary.email', 'phone_primary.phone', 'address_primary.street_address')
       ->addWhere('id', '=', $organizationId)
-      ->execute()->single();
+      ->execute()->first() ?? []) : [];
 
-    $this->_contact = Contact::get(FALSE)
+    $this->_contact = $institutionPOCId ? (Contact::get(FALSE)
       ->addSelect('email.email', 'phone.phone')
       ->addJoin('Email AS email', 'LEFT')
       ->addJoin('Phone AS phone', 'LEFT')
       ->addWhere('id', '=', $institutionPOCId)
-      ->execute()->single();
+      ->execute()->first() ?? []) : [];
 
     $this->setTitle('Institution Dropping Center Dispatch Link');
     parent::preProcess();
@@ -99,10 +122,14 @@ class CRM_Goonjcustom_Form_InstitutionDroppingCenterLinks extends CRM_Core_Form 
     $organization = $this->_organization;
     $contact = $this->_contact;
 
-    $nameOfInstitution = $organization['display_name'];
-    $address = $organization['address_primary.street_address'];
-    $pocEmail = $contact['email.email'];
-    $pocContactNumber = $contact['phone.phone'];
+    // Any of these can be absent — the organisation or POC may not be recorded
+    // yet, and the email and phone are read over LEFT joins. They are only
+    // prefills for the dispatch form, so an empty one leaves that field blank
+    // for whoever opens the link rather than stopping the link being built.
+    $nameOfInstitution = $organization['display_name'] ?? '';
+    $address = $organization['address_primary.street_address'] ?? '';
+    $pocEmail = $contact['email.email'] ?? '';
+    $pocContactNumber = $contact['phone.phone'] ?? '';
 
     // Generate dropping center links.
     $links = [
