@@ -618,7 +618,8 @@ class CollectionBaseService extends AutoSubscriber {
       $existing = EckEntity::get('Collection_Camp')
         ->addSelect(
         'Core_Contribution_Details.Total_online_monetary_contributions',
-        'Core_Contribution_Details.Total_cash_cheque_monetary_contributions'
+        'Core_Contribution_Details.Total_cash_cheque_monetary_contributions',
+        'Core_Contribution_Details.Total_Other_Monetary_Contributions'
         )
         ->addWhere('id', '=', $contributionId)
         ->execute()
@@ -626,22 +627,27 @@ class CollectionBaseService extends AutoSubscriber {
 
       $onlineCurrent = (float) ($existing['Core_Contribution_Details.Total_online_monetary_contributions'] ?? 0);
       $cashCurrent = (float) ($existing['Core_Contribution_Details.Total_cash_cheque_monetary_contributions'] ?? 0);
+      $otherCurrent = (float) ($existing['Core_Contribution_Details.Total_Other_Monetary_Contributions'] ?? 0);
 
       $onlineNew = $onlineCurrent;
       $cashNew = $cashCurrent;
+      $otherNew = $otherCurrent;
 
       if ($paymentMethod === 'Credit Card') {
         $onlineNew = max(0, $onlineCurrent - $amount);
       }
-
-      if (in_array($paymentMethod, ['Cash', 'Check'], TRUE)) {
+      elseif (in_array($paymentMethod, ['Cash', 'Check'], TRUE)) {
         $cashNew = max(0, $cashCurrent - $amount);
+      }
+      else {
+        $otherNew = max(0, $otherCurrent - $amount);
       }
 
       $update = EckEntity::update('Collection_Camp')
         ->addWhere('id', '=', $contributionId)
         ->addValue('Core_Contribution_Details.Total_online_monetary_contributions', $onlineNew)
-        ->addValue('Core_Contribution_Details.Total_cash_cheque_monetary_contributions', $cashNew);
+        ->addValue('Core_Contribution_Details.Total_cash_cheque_monetary_contributions', $cashNew)
+        ->addValue('Core_Contribution_Details.Total_Other_Monetary_Contributions', $otherNew);
 
       if (!$currentContactStillExists) {
         $update->addValue('Core_Contribution_Details.Number_of_unique_monetary_contributors', $uniqueMonetaryCount);
@@ -704,6 +710,7 @@ class CollectionBaseService extends AutoSubscriber {
 
     $onlineTotal = 0.0;
     $cashChequeTotal = 0.0;
+    $otherTotal = 0.0;
 
     foreach ($allCampContributions as $item) {
       $amount = (float) ($item['total_amount'] ?? 0);
@@ -715,6 +722,11 @@ class CollectionBaseService extends AutoSubscriber {
       elseif (in_array($method, ['Cash', 'Check'], TRUE)) {
         $cashChequeTotal += $amount;
       }
+      else {
+        // Any payment method that is not Razorpay or cash/cheque, including
+        // ones added in future (UPI, Wire Transfer, ...).
+        $otherTotal += $amount;
+      }
     }
 
     try {
@@ -722,6 +734,7 @@ class CollectionBaseService extends AutoSubscriber {
         ->addWhere('id', '=', $campId)
         ->addValue('Core_Contribution_Details.Total_online_monetary_contributions', $onlineTotal)
         ->addValue('Core_Contribution_Details.Total_cash_cheque_monetary_contributions', $cashChequeTotal)
+        ->addValue('Core_Contribution_Details.Total_Other_Monetary_Contributions', $otherTotal)
         ->execute();
     }
     catch (\Exception $e) {

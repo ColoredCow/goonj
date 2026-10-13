@@ -5,13 +5,14 @@
  * CLI Script to correct the Footfall & Contribution Details of collection
  * sources (camps, dropping centres and Goonj activities).
  *
- * Recalculates the five fields from the material contributions and the
+ * Recalculates the six fields from the material contributions and the
  * Completed monetary contributions linked to each collection source:
  * - Total Number of unique contributors
  * - Total Number of unique material contributors
  * - Total Number of unique monetary contributors
  * - Total online monetary contributions (Credit Card)
  * - Total cash/cheque monetary contributions (Cash, Check)
+ * - Total Other Monetary Contributions (every other payment method)
  *
  * Used to correct records whose totals missed CSV-imported or cancelled
  * contributions (ColoredCow/goonj-crm#392).
@@ -51,6 +52,7 @@ $fields = [
   'Core_Contribution_Details.Number_of_unique_monetary_contributors',
   'Core_Contribution_Details.Total_online_monetary_contributions',
   'Core_Contribution_Details.Total_cash_cheque_monetary_contributions',
+  'Core_Contribution_Details.Total_Other_Monetary_Contributions',
 ];
 
 // Goonj Activities have no material contribution field.
@@ -123,6 +125,7 @@ function calculateContributionStats(int $collectionSourceId, ?string $materialFi
   $monetaryContactIds = [];
   $onlineTotal = 0.0;
   $cashChequeTotal = 0.0;
+  $otherTotal = 0.0;
 
   $contributions = Contribution::get(FALSE)
     ->addSelect('contact_id', 'total_amount', 'payment_instrument_id:name')
@@ -144,6 +147,9 @@ function calculateContributionStats(int $collectionSourceId, ?string $materialFi
     elseif (in_array($method, ['Cash', 'Check'], TRUE)) {
       $cashChequeTotal += $amount;
     }
+    else {
+      $otherTotal += $amount;
+    }
   }
 
   return [
@@ -152,6 +158,7 @@ function calculateContributionStats(int $collectionSourceId, ?string $materialFi
     'Core_Contribution_Details.Number_of_unique_monetary_contributors' => count($monetaryContactIds),
     'Core_Contribution_Details.Total_online_monetary_contributions' => $onlineTotal,
     'Core_Contribution_Details.Total_cash_cheque_monetary_contributions' => $cashChequeTotal,
+    'Core_Contribution_Details.Total_Other_Monetary_Contributions' => $otherTotal,
   ];
 }
 
