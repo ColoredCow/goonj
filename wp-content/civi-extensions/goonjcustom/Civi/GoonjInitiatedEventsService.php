@@ -350,21 +350,25 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
     }
 
     $contributionId = $objectRef->id;
-    if (isset($processed[$contributionId])) {
-      return;
-    }
-    $processed[$contributionId] = TRUE;
 
     $contribution = Contribution::get(FALSE)
-      ->addSelect('contact_id', 'Contribution_Details.Events.id')
+      ->addSelect('contact_id', 'Contribution_Details.Events.id', 'contribution_status_id:name')
       ->addWhere('id', '=', $contributionId)
-      ->addWhere('contribution_status_id:name', '=', 'Completed')
       ->execute()
       ->first();
 
     if (!$contribution || empty($contribution['Contribution_Details.Events.id'])) {
       return;
     }
+
+    // Process each status of a contribution once, not just the first save:
+    // a CSV import saves it as Pending and completes it in a second save, and
+    // a cancellation must bring the count back down.
+    $status = $contribution['contribution_status_id:name'];
+    if (isset($processed[$contributionId][$status])) {
+      return;
+    }
+    $processed[$contributionId][$status] = TRUE;
 
     $eventId = $contribution['Contribution_Details.Events.id'];
 
@@ -406,10 +410,6 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
     }
 
     $contributionId = $objectRef->id;
-    if (isset($processed[$contributionId])) {
-      return;
-    }
-    $processed[$contributionId] = TRUE;
 
     $contribution = Contribution::get(FALSE)
       ->addSelect(
@@ -419,13 +419,21 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
         'payment_instrument_id:name'
       )
       ->addWhere('id', '=', $contributionId)
-      ->addWhere('contribution_status_id:name', '=', 'Completed')
       ->execute()
       ->first();
 
     if (!$contribution || empty($contribution['Contribution_Details.Events.id'])) {
       return;
     }
+
+    // Process each status of a contribution once, not just the first save:
+    // a CSV import saves it as Pending and completes it in a second save, and
+    // a cancellation must bring the totals back down.
+    $status = $contribution['contribution_status_id:name'];
+    if (isset($processed[$contributionId][$status])) {
+      return;
+    }
+    $processed[$contributionId][$status] = TRUE;
 
     $eventId = (int) $contribution['Contribution_Details.Events.id'];
 
