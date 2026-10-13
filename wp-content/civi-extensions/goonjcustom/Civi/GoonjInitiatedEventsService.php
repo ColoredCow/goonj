@@ -422,35 +422,34 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
       return;
     }
 
-    $eventId = $contribution['Contribution_Details.Events.id'];
-    $totalAmount = (float) $contribution['total_amount'];
-    $paymentMethod = $contribution['payment_instrument_id:name'];
+    $eventId = (int) $contribution['Contribution_Details.Events.id'];
 
-    $existing = Event::get(FALSE)
-      ->addSelect(
-        'Goonj_Events_Outcome.Online_Monetary_Contribution',
-        'Goonj_Events_Outcome.Cash_Contribution'
-      )
+    $allEventContributions = Contribution::get(FALSE)
+      ->addSelect('total_amount', 'payment_instrument_id:name')
+      ->addWhere('Contribution_Details.Events.id', '=', $eventId)
+      ->addWhere('contribution_status_id:name', '=', 'Completed')
+      ->execute();
+
+    $onlineTotal = 0.0;
+    $cashChequeTotal = 0.0;
+
+    foreach ($allEventContributions as $item) {
+      $amount = (float) ($item['total_amount'] ?? 0);
+      $method = $item['payment_instrument_id:name'] ?? '';
+
+      if ($method === 'Credit Card') {
+        $onlineTotal += $amount;
+      }
+      elseif (in_array($method, ['Cash', 'Check'], TRUE)) {
+        $cashChequeTotal += $amount;
+      }
+    }
+
+    Event::update(FALSE)
       ->addWhere('id', '=', $eventId)
-      ->execute()
-      ->first();
-
-    $onlineCurrent = (float) ($existing['Goonj_Events_Outcome.Online_Monetary_Contribution'] ?? 0);
-    $cashCurrent = (float) ($existing['Goonj_Events_Outcome.Cash_Contribution'] ?? 0);
-    $update = Event::update(FALSE)
-      ->addWhere('id', '=', $eventId);
-
-    if ($paymentMethod === 'Credit Card') {
-      $onlineNew = $onlineCurrent + $totalAmount;
-      $update->addValue('Goonj_Events_Outcome.Online_Monetary_Contribution', $onlineNew);
-    }
-
-    if (in_array($paymentMethod, ['Cash', 'Check'], TRUE)) {
-      $cashNew = $cashCurrent + $totalAmount;
-      $update->addValue('Goonj_Events_Outcome.Cash_Contribution', $cashNew);
-    }
-
-    $update->execute();
+      ->addValue('Goonj_Events_Outcome.Online_Monetary_Contribution', $onlineTotal)
+      ->addValue('Goonj_Events_Outcome.Cash_Contribution', $cashChequeTotal)
+      ->execute();
   }
 
   /**
