@@ -2,6 +2,7 @@
 
 namespace Civi;
 
+use Civi\Api4\CustomGroup;
 use Civi\Api4\Address;
 use Civi\Api4\Activity;
 use Civi\Api4\Contribution;
@@ -30,7 +31,7 @@ class CollectionBaseService extends AutoSubscriber {
   private static $generatePosterRequest = NULL;
 
   /**
-   * collectionSourceId => latest poster file id we just wrote to poster_202.
+   * CollectionSourceId => latest poster file id we just wrote to poster_202.
    *
    * Confirmed in CiviCRM 6.13.x via MySQL general log:
    *   1. maybeGeneratePoster's UPDATE sets poster_202 = <file_id> (lands).
@@ -47,6 +48,32 @@ class CollectionBaseService extends AutoSubscriber {
   private static $pendingPosterFileIds = [];
 
   /**
+   * Collection source id of each contribution being edited or deleted, keyed
+   * by contribution id. Set in the pre hook, read in the post hook.
+   */
+  private static $contributionSourceBeforeSave = [];
+
+  /**
+   * Collection source ids of each material contribution activity being edited
+   * or deleted, keyed by activity id. Set in the pre hook, read in the post hook.
+   */
+  private static $materialSourceBeforeSave = [];
+
+  private static $materialContributionActivityTypeId = NULL;
+
+  /**
+   * Material contribution field for each collection source subtype. Goonj
+   * Activities have no material contribution field, so they have no
+   * material contributors.
+   */
+  private const MATERIAL_CONTRIBUTION_FIELD_BY_SUBTYPE = [
+    'Collection_Camp' => 'Material_Contribution.Collection_Camp',
+    'Dropping_Center' => 'Material_Contribution.Dropping_Center',
+    'Institution_Collection_Camp' => 'Material_Contribution.Institution_Collection_Camp',
+    'Institution_Dropping_Center' => 'Material_Contribution.Institution_Dropping_Center',
+  ];
+
+  /**
    *
    */
   public static function getSubscribedEvents() {
@@ -59,16 +86,15 @@ class CollectionBaseService extends AutoSubscriber {
         ['handleAuthorizationEmails'],
         ['checkIfPosterNeedsToBeGenerated'],
         ['generateCollectionSourceCode'],
-        ['handleMaterialContributionDelete'],
-        ['handleMonetaryContributionDelete'],
+        ['rememberMaterialContributionSource'],
+        ['rememberContributionSource'],
 
       ],
       '&hook_civicrm_post' => [
         ['maybeGeneratePoster', 20],
         ['handleAuthorizationEmailsPost', 10],
-        ['updateMonetaryContributionTotalAmount'],
-        ['updateMatrialContributorsCount'],
-        ['updateMonetaryContributorsCount'],
+        ['refreshContributionSourceStats'],
+        ['refreshMaterialContributionSourceStats'],
       ],
       // Fires after CustomValueTable::store. Re-applies poster_202 if a
       // downstream save (e.g. AssignInitiator's EckEntity::update) just
@@ -93,7 +119,7 @@ class CollectionBaseService extends AutoSubscriber {
     static $targetGroupId = NULL;
     if ($targetGroupId === NULL) {
       try {
-        $row = \Civi\Api4\CustomGroup::get(FALSE)
+        $row = CustomGroup::get(FALSE)
           ->addSelect('id')
           ->addWhere('name', '=', 'Collection_Camp_Core_Details')
           ->execute()
@@ -140,7 +166,7 @@ class CollectionBaseService extends AutoSubscriber {
     $restrictedRoles = [
       'admin', 'urban_ops_admin', 'ho_account',
       'project_team_ho', 's2s_ho_team', 'njpc_ho_team', 'project_ho_and_accounts',
-      'communications_team'
+      'communications_team',
     ];
 
     if (\CRM_Core_Permission::checkAnyPerm($restrictedRoles)) {
@@ -227,479 +253,229 @@ class CollectionBaseService extends AutoSubscriber {
   }
 
   /**
-   *
+   * Remembers which collection sources a material contribution activity was
+   * linked to before it is edited or deleted, so the post hook can refresh
+   * them too (see refreshMaterialContributionSourceStats).
    */
-  public static function handleMaterialContributionDelete($op, $objectName, $objectId, &$params) {
-    if ($op !== 'delete' || $objectName !== 'Activity') {
+  public static function rememberMaterialContributionSource(string $op, string $objectName, $objectId, &$params) {
+    if ($objectName !== 'Activity' || !in_array($op, ['edit', 'delete'], TRUE) || empty($objectId)) {
       return;
     }
 
-    try {
-      $activity = Activity::get(FALSE)
-        ->addSelect('id', 'source_contact_id', 'custom.*')
-        ->addWhere('id', '=', $objectId)
-        ->setLimit(1)
-        ->execute()
-        ->first();
+    $sourceIds = self::getMaterialContributionSourceIds((int) $objectId);
+    if ($sourceIds !== NULL) {
+      self::$materialSourceBeforeSave[$objectId] = $sourceIds;
+    }
+  }
 
-      if (!$activity) {
-        \Civi::log()->warning("Activity $objectId not found during delete.");
-        return;
-      }
+  /**
+   * Refreshes the Footfall & Contribution Details of the collection source a
+   * material contribution belongs to, on every create, edit and delete.
+   *
+   * Covers material contributions added from the volunteer form as well as
+   * from the back end, since both save the same Material Contribution activity.
+   */
+  public static function refreshMaterialContributionSourceStats(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($objectName !== 'Activity' || !in_array($op, ['create', 'edit', 'delete'], TRUE) || empty($objectId)) {
+      return;
+    }
 
-      $fieldMapping = [
-        'Material_Contribution.Collection_Camp' => 'Collection_Camp',
-        'Material_Contribution.Institution_Collection_Camp' => 'Institution_Collection_Camp',
-        'Material_Contribution.Dropping_Center' => 'Dropping_Center',
-        'Material_Contribution.Institution_Dropping_Center' => 'Institution_Dropping_Center',
-      ];
+    $wasMaterialContribution = array_key_exists($objectId, self::$materialSourceBeforeSave);
+    $sourceIds = self::$materialSourceBeforeSave[$objectId] ?? [];
+    unset(self::$materialSourceBeforeSave[$objectId]);
 
-      $activeFieldName = NULL;
-      $contributionId = NULL;
+    $isNewMaterialContribution = $op === 'create'
+      && (int) ($objectRef->activity_type_id ?? 0) === self::getMaterialContributionActivityTypeId();
 
-      foreach ($fieldMapping as $fieldKey => $entityType) {
-        if (!empty($activity[$fieldKey])) {
-          $activeFieldName = $fieldKey;
-          $contributionId = $activity[$fieldKey];
-          break;
-        }
-      }
+    if ($op !== 'delete' && ($wasMaterialContribution || $isNewMaterialContribution)) {
+      $sourceIds = array_merge($sourceIds, self::getMaterialContributionSourceIds((int) $objectId) ?? []);
+    }
 
-      if (!$contributionId || !$activeFieldName || empty($activity['source_contact_id'])) {
-        return;
-      }
-
-      $currentContactId = (int) $activity['source_contact_id'];
-
-      $materialContactIds = [];
-      $currentContactStillExists = FALSE;
-
-      if (!in_array($activeFieldName, ['Material_Contribution.Institution_Goonj_Activities', 'Material_Contribution.Goonj_Activities'], TRUE)) {
-        $materialActivities = Activity::get(FALSE)
-          ->addSelect('id', 'source_contact_id')
-          ->addWhere($activeFieldName, '=', $contributionId)
-          ->addWhere('id', '!=', $objectId)
-          ->execute();
-
-        foreach ($materialActivities as $item) {
-          if (!empty($item['source_contact_id'])) {
-            $contactId = (int) $item['source_contact_id'];
-            $materialContactIds[] = $contactId;
-
-            if ($contactId === $currentContactId) {
-              $currentContactStillExists = TRUE;
-            }
-          }
-        }
-      }
-
-      $monetaryContactIds = [];
-      $monetaryContributions = Contribution::get(FALSE)
-        ->addSelect('contact_id')
-        ->addWhere('Contribution_Details.Source.id', '=', $contributionId)
-        ->addWhere('contribution_status_id:name', '=', 'Completed')
-        ->execute();
-
-      foreach ($monetaryContributions as $contribution) {
-        if (!empty($contribution['contact_id'])) {
-          $monetaryContactIds[] = (int) $contribution['contact_id'];
-        }
-      }
-
-      $allContactIds = array_unique(array_merge($materialContactIds, $monetaryContactIds));
-      $uniqueCount = count($allContactIds);
-      $uniqueMaterialCount = count(array_unique($materialContactIds));
-
+    foreach (array_unique($sourceIds) as $sourceId) {
       try {
-        $update = EckEntity::update('Collection_Camp', FALSE)
-          ->addWhere('id', '=', $contributionId)
-          ->addValue('Core_Contribution_Details.Number_of_unique_contributors', $uniqueCount);
-
-        if (!$currentContactStillExists) {
-          $update->addValue('Core_Contribution_Details.Number_of_unique_material_contributors', $uniqueMaterialCount);
-        }
-
-        $update->execute();
+        self::recalculateContributionStats($sourceId);
       }
       catch (\Exception $e) {
-        \Civi::log()->error("Failed to update contributor counts: " . $e->getMessage());
+        \Civi::log()->error('Failed to refresh contribution stats for collection source', [
+          'collection_source_id' => $sourceId,
+          'activity_id' => $objectId,
+          'message' => $e->getMessage(),
+        ]);
       }
     }
-    catch (\Exception $e) {
-      \Civi::log()->error("Error in pre delete activity hook: " . $e->getMessage());
+  }
+
+  /**
+   * Returns the collection source ids a Material Contribution activity is
+   * linked to, or NULL if the activity is not a Material Contribution.
+   */
+  private static function getMaterialContributionSourceIds(int $activityId): ?array {
+    $materialFields = array_values(self::MATERIAL_CONTRIBUTION_FIELD_BY_SUBTYPE);
+
+    $activity = Activity::get(FALSE)
+      ->addSelect(...$materialFields)
+      ->addWhere('id', '=', $activityId)
+      ->addWhere('activity_type_id', '=', self::getMaterialContributionActivityTypeId())
+      ->execute()
+      ->first();
+
+    if (!$activity) {
+      return NULL;
     }
+
+    $sourceIds = [];
+    foreach ($materialFields as $field) {
+      if (!empty($activity[$field])) {
+        $sourceIds[] = (int) $activity[$field];
+      }
+    }
+
+    return $sourceIds;
   }
 
   /**
    *
    */
-  public static function updateUniqueContributorsCount(int $contributionId, string $activeFieldName, int $currentContactId) {
-    $materialContactIds = [];
-
-    if (!in_array($activeFieldName, ['Material_Contribution.Institution_Goonj_Activities', 'Material_Contribution.Goonj_Activities'], TRUE)) {
-      $materialActivities = Activity::get(FALSE)
-        ->addSelect('source_contact_id')
-        ->addWhere($activeFieldName, '=', $contributionId)
-        ->execute();
-
-      foreach ($materialActivities as $activity) {
-        if (!empty($activity['source_contact_id'])) {
-          $materialContactIds[] = (int) $activity['source_contact_id'];
-        }
-      }
+  private static function getMaterialContributionActivityTypeId(): int {
+    if (self::$materialContributionActivityTypeId === NULL) {
+      self::$materialContributionActivityTypeId = (int) \CRM_Core_PseudoConstant::getKey('CRM_Activity_BAO_Activity', 'activity_type_id', 'Material Contribution');
     }
 
-    $monetaryContributions = Contribution::get(FALSE)
-      ->addSelect('contact_id')
-      ->addWhere('Contribution_Details.Source.id', '=', $contributionId)
-      ->addWhere('contribution_status_id:name', '=', 'Completed')
-      ->execute();
-
-    $monetaryContactIds = [];
-    foreach ($monetaryContributions as $contribution) {
-      if (!empty($contribution['contact_id'])) {
-        $monetaryContactIds[] = (int) $contribution['contact_id'];
-      }
-    }
-
-    $allContactIds = array_unique(array_merge($materialContactIds, $monetaryContactIds));
-    $uniqueCount = count($allContactIds);
-
-    $inMaterial = in_array($currentContactId, $materialContactIds, TRUE);
-    $inMoney    = in_array($currentContactId, $monetaryContactIds, TRUE);
-
-    if (!$inMaterial && !$inMoney) {
-      $uniqueCount++;
-    }
-
-    try {
-      EckEntity::update('Collection_Camp', FALSE)
-        ->addValue('Core_Contribution_Details.Number_of_unique_contributors', $uniqueCount)
-        ->addWhere('id', '=', $contributionId)
-        ->execute();
-    }
-    catch (\Exception $e) {
-    }
+    return self::$materialContributionActivityTypeId;
   }
 
   /**
+   * Remembers which collection source a contribution was linked to before
+   * it is edited or deleted.
    *
+   * The post hook needs this to refresh the old source too: when a
+   * contribution is deleted its custom values are already gone, and when its
+   * Collection Source is changed the old source would otherwise keep counting it.
    */
-  public static function updateMatrialContributorsCount(string $op, string $objectName, $objectId, &$objectRef) {
-    if ($op !== 'create' || $objectName !== 'AfformSubmission') {
+  public static function rememberContributionSource(string $op, string $objectName, $objectId, &$params) {
+    if ($objectName !== 'Contribution' || !in_array($op, ['edit', 'delete'], TRUE) || empty($objectId)) {
       return;
     }
-
-    $dataRaw = $objectRef->data ?? NULL;
-    if (!$dataRaw) {
-      return;
-    }
-
-    $dataDecoded = json_decode($dataRaw, TRUE);
-    if (!is_array($dataDecoded)) {
-      return;
-    }
-
-    $fields = $dataDecoded['Activity1'][0]['fields'] ?? [];
-    if (!$fields) {
-      return;
-    }
-
-    $fieldMapping = [
-      'Material_Contribution.Collection_Camp' => 'Collection_Camp',
-      'Material_Contribution.Institution_Collection_Camp' => 'Institution_Collection_Camp',
-      'Material_Contribution.Dropping_Center' => 'Dropping_Center',
-      'Material_Contribution.Institution_Dropping_Center' => 'Institution_Dropping_Center',
-    ];
-
-    $activeFieldName = NULL;
-    $activeEntityId = NULL;
-    $currentContactId = $fields['source_contact_id'] ?? NULL;
-
-    foreach ($fieldMapping as $fieldKey => $entityType) {
-      if (!empty($fields[$fieldKey])) {
-        $activeFieldName = $fieldKey;
-        $activeEntityId = $fields[$fieldKey];
-        break;
-      }
-    }
-
-    if (!$activeEntityId || !$currentContactId) {
-      return;
-    }
-
-    self::updateUniqueContributorsCount($activeEntityId, $activeFieldName, $currentContactId);
-
-    if (!$activeFieldName || !$activeEntityId || !$currentContactId) {
-      return;
-    }
-
-    $activities = Activity::get(FALSE)
-      ->addSelect('source_contact_id')
-      ->addWhere($activeFieldName, '=', $activeEntityId)
-      ->execute();
-
-    $uniqueContactIds = [];
-    foreach ($activities as $activity) {
-      if (!empty($activity['source_contact_id'])) {
-        $uniqueContactIds[$activity['source_contact_id']] = TRUE;
-      }
-    }
-
-    if (isset($uniqueContactIds[$currentContactId])) {
-      return;
-    }
-
-    $uniqueContactIds[$currentContactId] = TRUE;
-    $uniqueCount = count($uniqueContactIds);
-
-    try {
-      EckEntity::update('Collection_Camp', FALSE)
-        ->addValue('Core_Contribution_Details.Number_of_unique_material_contributors', $uniqueCount)
-        ->addWhere('id', '=', $activeEntityId)
-        ->execute();
-    }
-    catch (\Exception $e) {
-    }
-  }
-
-  /**
-   *
-   */
-  public static function updateMonetaryContributorsCount(string $op, string $objectName, $objectId, &$objectRef) {
-    static $processed = [];
-
-    if ($objectName !== 'Contribution' || empty($objectRef->id)) {
-      return;
-    }
-
-    $contributionId = $objectRef->id;
-    if (isset($processed[$contributionId])) {
-      return;
-    }
-    $processed[$contributionId] = TRUE;
 
     $contribution = Contribution::get(FALSE)
-      ->addSelect('contact_id', 'Contribution_Details.Source.id')
-      ->addWhere('id', '=', $contributionId)
-      ->addWhere('contribution_status_id:name', '=', 'Completed')
+      ->addSelect('Contribution_Details.Source')
+      ->addWhere('id', '=', $objectId)
       ->execute()
       ->first();
 
-    if (!$contribution || empty($contribution['Contribution_Details.Source.id'])) {
-      return;
+    if (!empty($contribution['Contribution_Details.Source'])) {
+      self::$contributionSourceBeforeSave[$objectId] = (int) $contribution['Contribution_Details.Source'];
     }
-
-    $contributionId = $contribution['Contribution_Details.Source.id'];
-
-    $collectionCamps = EckEntity::get('Collection_Camp', FALSE)
-      ->addSelect('subtype:name')
-      ->addWhere('id', '=', $contributionId)
-      ->execute()
-      ->first();
-
-    $subtype = $collectionCamps['subtype:name'] ?? NULL;
-
-    if ($subtype) {
-      $fieldName = "Material_Contribution.$subtype";
-      self::updateUniqueContributorsCount($contributionId, $fieldName, $contribution['contact_id']);
-    }
-
-    $allContributions = Contribution::get(FALSE)
-      ->addSelect('contact_id')
-      ->addWhere('Contribution_Details.Source.id', '=', $contributionId)
-      ->addWhere('contribution_status_id:name', '=', 'Completed')
-      ->execute();
-
-    if (!$allContributions) {
-      return;
-    }
-
-    $contactIds = array_column(iterator_to_array($allContributions), 'contact_id');
-    $uniqueContactIds = array_unique($contactIds);
-    $newCount = count($uniqueContactIds);
-
-    EckEntity::update('Collection_Camp', FALSE)
-      ->addValue('Core_Contribution_Details.Number_of_unique_monetary_contributors', $newCount)
-      ->addWhere('id', '=', $contributionId)
-      ->execute();
-
   }
 
   /**
+   * Refreshes the Footfall & Contribution Details of the collection source a
+   * contribution belongs to, on every create, edit and delete.
    *
+   * This runs whatever the contribution's status. A CSV import saves a
+   * contribution as Pending and completes it with a separate Payment save, and
+   * a cancellation or refund moves it away from Completed; the totals are
+   * recalculated from the database each time, so every one of these ends with
+   * the right numbers.
    */
-  public static function handleMonetaryContributionDelete(string $op, string $objectName, $objectId, &$params) {
-    if ($op !== 'delete' || $objectName !== 'Contribution') {
+  public static function refreshContributionSourceStats(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($objectName !== 'Contribution' || !in_array($op, ['create', 'edit', 'delete'], TRUE) || empty($objectId)) {
       return;
     }
 
-    static $processed = [];
+    $sourceIds = [];
 
-    if (isset($processed[$objectId])) {
-      return;
+    if (isset(self::$contributionSourceBeforeSave[$objectId])) {
+      $sourceIds[] = self::$contributionSourceBeforeSave[$objectId];
+      unset(self::$contributionSourceBeforeSave[$objectId]);
     }
-    $processed[$objectId] = TRUE;
 
-    try {
+    if ($op !== 'delete') {
       $contribution = Contribution::get(FALSE)
-        ->addSelect(
-        'id',
-        'contact_id',
-        'Contribution_Details.Source.id',
-        'contribution_status_id:name',
-        'total_amount',
-        'payment_instrument_id:name'
-        )
+        ->addSelect('Contribution_Details.Source')
         ->addWhere('id', '=', $objectId)
-        ->setLimit(1)
         ->execute()
         ->first();
 
-      if (
-        !$contribution ||
-        $contribution['contribution_status_id:name'] !== 'Completed' ||
-        empty($contribution['Contribution_Details.Source.id']) ||
-        empty($contribution['contact_id']) ||
-        !isset($contribution['total_amount']) ||
-        empty($contribution['payment_instrument_id:name'])
-      ) {
-        return;
+      if (!empty($contribution['Contribution_Details.Source'])) {
+        $sourceIds[] = (int) $contribution['Contribution_Details.Source'];
       }
+    }
 
-      $contactId = (int) $contribution['contact_id'];
-      $contributionId = (int) $contribution['Contribution_Details.Source.id'];
-      $amount = (float) $contribution['total_amount'];
-      $paymentMethod = $contribution['payment_instrument_id:name'];
-
-      $otherMonetaryContributions = Contribution::get(FALSE)
-        ->addSelect('contact_id')
-        ->addWhere('Contribution_Details.Source.id', '=', $contributionId)
-        ->addWhere('contribution_status_id:name', '=', 'Completed')
-        ->addWhere('id', '!=', $objectId)
-        ->execute();
-
-      $monetaryContactIds = [];
-      $currentContactStillExists = FALSE;
-
-      foreach ($otherMonetaryContributions as $c) {
-        if (!empty($c['contact_id'])) {
-          $cid = (int) $c['contact_id'];
-          $monetaryContactIds[] = $cid;
-
-          if ($cid === $contactId) {
-            $currentContactStillExists = TRUE;
-          }
-        }
+    foreach (array_unique($sourceIds) as $sourceId) {
+      try {
+        self::recalculateContributionStats($sourceId);
       }
-
-      $uniqueMonetaryCount = count(array_unique($monetaryContactIds));
-
-      $materialContactIds = [];
-
-      $materialActivities = Activity::get(FALSE)
-        ->addSelect('source_contact_id', 'custom.*')
-        ->addWhere('Material_Contribution.Collection_Camp', '=', $contributionId)
-        ->execute();
-
-      foreach ($materialActivities as $activity) {
-        if (!empty($activity['source_contact_id'])) {
-          $materialContactIds[] = (int) $activity['source_contact_id'];
-        }
+      catch (\Exception $e) {
+        \Civi::log()->error('Failed to refresh contribution stats for collection source', [
+          'collection_source_id' => $sourceId,
+          'contribution_id' => $objectId,
+          'message' => $e->getMessage(),
+        ]);
       }
+    }
+  }
 
-      $allContactIds = array_unique(array_merge($materialContactIds, $monetaryContactIds));
-      $totalUniqueContributors = count($allContactIds);
-
-      $existing = EckEntity::get('Collection_Camp')
-        ->addSelect(
+  /**
+   * Recalculates all five Footfall & Contribution Details fields of a
+   * collection source from its material contributions and its Completed
+   * monetary contributions, and saves them only if something changed.
+   *
+   * @return array|null
+   *   The calculated values keyed by field name, or NULL if the collection
+   *   source does not exist.
+   */
+  public static function recalculateContributionStats(int $collectionSourceId, bool $save = TRUE): ?array {
+    $collectionSource = EckEntity::get('Collection_Camp', FALSE)
+      ->addSelect(
+        'subtype:name',
+        'Core_Contribution_Details.Number_of_unique_contributors',
+        'Core_Contribution_Details.Number_of_unique_material_contributors',
+        'Core_Contribution_Details.Number_of_unique_monetary_contributors',
         'Core_Contribution_Details.Total_online_monetary_contributions',
         'Core_Contribution_Details.Total_cash_cheque_monetary_contributions'
-        )
-        ->addWhere('id', '=', $contributionId)
-        ->execute()
-        ->first();
-
-      $onlineCurrent = (float) ($existing['Core_Contribution_Details.Total_online_monetary_contributions'] ?? 0);
-      $cashCurrent = (float) ($existing['Core_Contribution_Details.Total_cash_cheque_monetary_contributions'] ?? 0);
-
-      $onlineNew = $onlineCurrent;
-      $cashNew = $cashCurrent;
-
-      if ($paymentMethod === 'Credit Card') {
-        $onlineNew = max(0, $onlineCurrent - $amount);
-      }
-
-      if (in_array($paymentMethod, ['Cash', 'Check'], TRUE)) {
-        $cashNew = max(0, $cashCurrent - $amount);
-      }
-
-      $update = EckEntity::update('Collection_Camp')
-        ->addWhere('id', '=', $contributionId)
-        ->addValue('Core_Contribution_Details.Total_online_monetary_contributions', $onlineNew)
-        ->addValue('Core_Contribution_Details.Total_cash_cheque_monetary_contributions', $cashNew);
-
-      if (!$currentContactStillExists) {
-        $update->addValue('Core_Contribution_Details.Number_of_unique_monetary_contributors', $uniqueMonetaryCount);
-      }
-
-      $isInMaterial = in_array($contactId, $materialContactIds, TRUE);
-      if (!$currentContactStillExists && !$isInMaterial) {
-        $update->addValue('Core_Contribution_Details.Number_of_unique_contributors', $totalUniqueContributors);
-      }
-
-      $update->execute();
-    }
-    catch (\Exception $e) {
-    }
-  }
-
-  /**
-   *
-   */
-  public static function updateMonetaryContributionTotalAmount(string $op, string $objectName, $objectId, &$objectRef) {
-    static $processed = [];
-
-    if ($objectName !== 'Contribution' || empty($objectRef->id)) {
-      return;
-    }
-
-    $contributionId = $objectRef->id;
-    if (isset($processed[$contributionId])) {
-      return;
-    }
-    $processed[$contributionId] = TRUE;
-
-    $contribution = Contribution::get(FALSE)
-      ->addSelect(
-        'contribution_status_id:name',
-        'total_amount',
-        'Contribution_Details.Source.id',
-        'payment_instrument_id:name'
       )
-      ->addWhere('id', '=', $contributionId)
-      ->addWhere('contribution_status_id:name', '=', 'Completed')
+      ->addWhere('id', '=', $collectionSourceId)
       ->execute()
       ->first();
 
-    if (!$contribution || empty($contribution['Contribution_Details.Source.id'])) {
-      return;
+    if (!$collectionSource) {
+      return NULL;
     }
 
-    $campId = (int) $contribution['Contribution_Details.Source.id'];
+    $materialContactIds = [];
+    $materialField = self::MATERIAL_CONTRIBUTION_FIELD_BY_SUBTYPE[$collectionSource['subtype:name']] ?? NULL;
 
-    $allCampContributions = Contribution::get(FALSE)
-      ->addSelect('total_amount', 'payment_instrument_id:name')
-      ->addWhere('Contribution_Details.Source.id', '=', $campId)
-      ->addWhere('contribution_status_id:name', '=', 'Completed')
-      ->execute();
+    if ($materialField) {
+      $materialActivities = Activity::get(FALSE)
+        ->addSelect('source_contact_id')
+        ->addWhere($materialField, '=', $collectionSourceId)
+        ->execute();
 
+      foreach ($materialActivities as $activity) {
+        if (!empty($activity['source_contact_id'])) {
+          $materialContactIds[(int) $activity['source_contact_id']] = TRUE;
+        }
+      }
+    }
+
+    $monetaryContactIds = [];
     $onlineTotal = 0.0;
     $cashChequeTotal = 0.0;
 
-    foreach ($allCampContributions as $item) {
-      $amount = (float) ($item['total_amount'] ?? 0);
-      $method = $item['payment_instrument_id:name'] ?? '';
+    $monetaryContributions = Contribution::get(FALSE)
+      ->addSelect('contact_id', 'total_amount', 'payment_instrument_id:name')
+      ->addWhere('Contribution_Details.Source', '=', $collectionSourceId)
+      ->addWhere('contribution_status_id:name', '=', 'Completed')
+      ->execute();
+
+    foreach ($monetaryContributions as $contribution) {
+      if (!empty($contribution['contact_id'])) {
+        $monetaryContactIds[(int) $contribution['contact_id']] = TRUE;
+      }
+
+      $amount = (float) ($contribution['total_amount'] ?? 0);
+      $method = $contribution['payment_instrument_id:name'] ?? '';
 
       if ($method === 'Credit Card') {
         $onlineTotal += $amount;
@@ -709,20 +485,31 @@ class CollectionBaseService extends AutoSubscriber {
       }
     }
 
-    try {
+    $stats = [
+      'Core_Contribution_Details.Number_of_unique_contributors' => count($materialContactIds + $monetaryContactIds),
+      'Core_Contribution_Details.Number_of_unique_material_contributors' => count($materialContactIds),
+      'Core_Contribution_Details.Number_of_unique_monetary_contributors' => count($monetaryContactIds),
+      'Core_Contribution_Details.Total_online_monetary_contributions' => $onlineTotal,
+      'Core_Contribution_Details.Total_cash_cheque_monetary_contributions' => $cashChequeTotal,
+    ];
+
+    $changed = FALSE;
+    foreach ($stats as $field => $value) {
+      $current = $collectionSource[$field];
+      if ($current === NULL || $current === '' || abs((float) $current - (float) $value) > 0.001) {
+        $changed = TRUE;
+        break;
+      }
+    }
+
+    if ($save && $changed) {
       EckEntity::update('Collection_Camp', FALSE)
-        ->addWhere('id', '=', $campId)
-        ->addValue('Core_Contribution_Details.Total_online_monetary_contributions', $onlineTotal)
-        ->addValue('Core_Contribution_Details.Total_cash_cheque_monetary_contributions', $cashChequeTotal)
+        ->addWhere('id', '=', $collectionSourceId)
+        ->setValues($stats)
         ->execute();
     }
-    catch (\Exception $e) {
-      \Civi::log()->error('Failed to update monetary contribution totals', [
-        'camp_id' => $campId,
-        'contribution_id' => $contributionId,
-        'message' => $e->getMessage(),
-      ]);
-    }
+
+    return $stats;
   }
 
   /**
