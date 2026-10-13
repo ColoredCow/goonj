@@ -245,7 +245,7 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
   /**
    *
    */
-  public static function updateUniqueContributorsCount(int $eventId) {
+  public static function updateUniqueContributorsCount(int $eventId, ?int $currentContactId = NULL) {
     $materialActivities = Activity::get(FALSE)
       ->addSelect('source_contact_id')
       ->addWhere('Material_Contribution.Event', '=', $eventId)
@@ -256,6 +256,12 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
       if (!empty($activity['source_contact_id'])) {
         $materialContactIds[] = $activity['source_contact_id'];
       }
+    }
+
+    // The contact whose material contribution is being saved right now; see
+    // updateEventMatrialContributorsCount.
+    if ($currentContactId) {
+      $materialContactIds[] = $currentContactId;
     }
 
     $monetaryContributions = Contribution::get(FALSE)
@@ -325,9 +331,17 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
       }
     }
 
+    // The form's submission is saved before its activity, so the material
+    // contribution being added is not in the list above yet; count its
+    // contact here (the camp hook does the same).
+    $currentContactId = (int) ($activityFields['source_contact_id'] ?? 0);
+    if ($currentContactId) {
+      $uniqueContactIds[$currentContactId] = TRUE;
+    }
+
     $uniqueCount = count($uniqueContactIds);
 
-    self::updateUniqueContributorsCount($eventId);
+    self::updateUniqueContributorsCount($eventId, $currentContactId ?: NULL);
 
     try {
       Event::update()
