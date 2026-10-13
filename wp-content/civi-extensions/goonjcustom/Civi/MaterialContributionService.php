@@ -353,4 +353,76 @@ class MaterialContributionService extends AutoSubscriber {
     return $html;
   }
 
+  /**
+   * Find the Goonj office a material contribution belongs to.
+   *
+   * Office entries (GCOC) store the office on the contribution itself. Camp,
+   * dropping center and event contributions store it on the linked record,
+   * in a different field for each type.
+   *
+   * @param int $activityId
+   *   The Material Contribution activity ID.
+   *
+   * @return string
+   *   The office name, or an empty string when no office is found.
+   */
+  public static function getGoonjOfficeName(int $activityId): string {
+    $contribution = Activity::get(FALSE)
+      ->addSelect('Material_Contribution.Goonj_Office.display_name', 'Material_Contribution.Collection_Camp', 'Material_Contribution.Dropping_Center', 'Material_Contribution.Institution_Collection_Camp', 'Material_Contribution.Institution_Dropping_Center', 'Material_Contribution.Event')
+      ->addWhere('id', '=', $activityId)
+      ->execute()->first();
+
+    if (!$contribution) {
+      return '';
+    }
+
+    if (!empty($contribution['Material_Contribution.Goonj_Office.display_name'])) {
+      return $contribution['Material_Contribution.Goonj_Office.display_name'];
+    }
+
+    $sourceId = $contribution['Material_Contribution.Collection_Camp']
+      ?? $contribution['Material_Contribution.Dropping_Center']
+      ?? $contribution['Material_Contribution.Institution_Collection_Camp']
+      ?? $contribution['Material_Contribution.Institution_Dropping_Center'];
+
+    if ($sourceId) {
+      // A dropping center can be linked through the Collection_Camp field too,
+      // so pick the office field by the record's own subtype.
+      $officeFieldBySubtype = [
+        'Collection_Camp' => 'Collection_Camp_Intent_Details.Goonj_Office',
+        'Dropping_Center' => 'Dropping_Centre.Goonj_Office',
+        'Institution_Collection_Camp' => 'Institution_collection_camp_Review.Goonj_Office',
+        'Institution_Dropping_Center' => 'Institution_Dropping_Center_Review.Goonj_Office',
+      ];
+
+      $source = EckEntity::get('Collection_Camp', FALSE)
+        ->addSelect('subtype:name')
+        ->addWhere('id', '=', $sourceId)
+        ->execute()->first();
+
+      $officeField = $officeFieldBySubtype[$source['subtype:name'] ?? ''] ?? NULL;
+      if (!$officeField) {
+        return '';
+      }
+
+      $source = EckEntity::get('Collection_Camp', FALSE)
+        ->addSelect($officeField . '.display_name')
+        ->addWhere('id', '=', $sourceId)
+        ->execute()->first();
+
+      return $source[$officeField . '.display_name'] ?? '';
+    }
+
+    if (!empty($contribution['Material_Contribution.Event'])) {
+      $event = Event::get(FALSE)
+        ->addSelect('Goonj_Events.Coordinating_Goonj_Office.display_name')
+        ->addWhere('id', '=', $contribution['Material_Contribution.Event'])
+        ->execute()->first();
+
+      return $event['Goonj_Events.Coordinating_Goonj_Office.display_name'] ?? '';
+    }
+
+    return '';
+  }
+
 }

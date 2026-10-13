@@ -32,6 +32,7 @@ function goonjcustom_civicrm_config(&$config): void {
   \Civi::dispatcher()->addSubscriber(new CRM_Goonjcustom_Token_InstitutionDroppingCenter());
   \Civi::dispatcher()->addSubscriber(new CRM_Goonjcustom_Token_InstitutionGoonjActivities());
   \Civi::dispatcher()->addSubscriber(new CRM_Goonjcustom_Token_IndividualGoonjActivities());
+  \Civi::dispatcher()->addSubscriber(new CRM_Goonjcustom_Token_MaterialContribution());
 
   // Forward CiviCRM API/cron exceptions to Sentry (the WP "Sentry for
   // WordPress" plugin already initialises the SDK). Many CiviCRM exceptions —
