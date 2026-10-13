@@ -126,7 +126,8 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
       $existing = Event::get(FALSE)
         ->addSelect(
         'Goonj_Events_Outcome.Online_Monetary_Contribution',
-        'Goonj_Events_Outcome.Cash_Contribution'
+        'Goonj_Events_Outcome.Cash_Contribution',
+        'Goonj_Events_Outcome.Total_Other_Monetary_Contributions'
         )
         ->addWhere('id', '=', $eventId)
         ->execute()
@@ -134,6 +135,7 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
 
       $onlineCurrent = (float) ($existing['Goonj_Events_Outcome.Online_Monetary_Contribution'] ?? 0);
       $cashCurrent = (float) ($existing['Goonj_Events_Outcome.Cash_Contribution'] ?? 0);
+      $otherCurrent = (float) ($existing['Goonj_Events_Outcome.Total_Other_Monetary_Contributions'] ?? 0);
 
       $update = Event::update()
         ->addWhere('id', '=', $eventId);
@@ -150,8 +152,11 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
         $update->addValue('Goonj_Events_Outcome.Online_Monetary_Contribution', max(0, $onlineCurrent - $amount));
       }
 
-      if (in_array($paymentMethod, ['Cash', 'Check'], TRUE)) {
+      elseif (in_array($paymentMethod, ['Cash', 'Check'], TRUE)) {
         $update->addValue('Goonj_Events_Outcome.Cash_Contribution', max(0, $cashCurrent - $amount));
+      }
+      else {
+        $update->addValue('Goonj_Events_Outcome.Total_Other_Monetary_Contributions', max(0, $otherCurrent - $amount));
       }
 
       $update->execute();
@@ -432,6 +437,7 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
 
     $onlineTotal = 0.0;
     $cashChequeTotal = 0.0;
+    $otherTotal = 0.0;
 
     foreach ($allEventContributions as $item) {
       $amount = (float) ($item['total_amount'] ?? 0);
@@ -443,12 +449,18 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
       elseif (in_array($method, ['Cash', 'Check'], TRUE)) {
         $cashChequeTotal += $amount;
       }
+      else {
+        // Any payment method that is not Razorpay or cash/cheque, including
+        // ones added in future (UPI, Wire Transfer, ...).
+        $otherTotal += $amount;
+      }
     }
 
     Event::update(FALSE)
       ->addWhere('id', '=', $eventId)
       ->addValue('Goonj_Events_Outcome.Online_Monetary_Contribution', $onlineTotal)
       ->addValue('Goonj_Events_Outcome.Cash_Contribution', $cashChequeTotal)
+      ->addValue('Goonj_Events_Outcome.Total_Other_Monetary_Contributions', $otherTotal)
       ->execute();
   }
 
