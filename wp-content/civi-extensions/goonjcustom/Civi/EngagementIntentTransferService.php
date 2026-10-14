@@ -5,6 +5,7 @@ namespace Civi;
 use Civi\Api4\Activity;
 use Civi\Api4\AfformSubmission;
 use Civi\Api4\Contact;
+use Civi\Api4\Country;
 use Civi\Api4\CustomField;
 use Civi\Api4\EckEntity;
 use Civi\Core\Service\AutoSubscriber;
@@ -49,20 +50,16 @@ class EngagementIntentTransferService extends AutoSubscriber {
   const INTENT_GOONJ_ACTIVITIES = 'goonj_activities';
 
   /**
-   * Engagement Intent statuses, by option value.
-   *
-   * These two options are added by hand on each site. The admin screen lets
-   * us type the value but not the machine name, so the value is the one key
-   * that comes out the same everywhere.
+   * Engagement Intent statuses set after a transfer (option names).
    */
-  const STATUS_TRANSFERRED = '8';
-  const STATUS_TRANSFERRED_TO_CAMP = '9';
+  const STATUS_TRANSFERRED = 'Intent_Transferred';
+  const STATUS_TRANSFERRED_TO_CAMP = 'Intent_Transferred_to_Collection_Camp';
 
   /**
-   * Intent Source options, by option value, for the same reason as above.
+   * Intent Source options (option names).
    */
-  const SOURCE_PUBLIC_FORM = '1';
-  const SOURCE_ENGAGEMENT_FORM = '2';
+  const SOURCE_PUBLIC_FORM = 'Public_Form';
+  const SOURCE_ENGAGEMENT_FORM = 'Engagement_Form';
 
   /**
    * Timing used for every auto-created intent that has a start and end.
@@ -71,97 +68,72 @@ class EngagementIntentTransferService extends AutoSubscriber {
   const INTENT_END_TIME = '13:00:00';
 
   /**
-   * Collection_Camp_Intent_Details option values, as the camp forms set them.
+   * Option names of the Yes / No questions on the intent forms.
    */
-  const CAMP_REGISTER_AS_INDIVIDUAL = '7';
-  const CAMP_OPEN_TO_PUBLIC_YES = 2;
-  const CAMP_CREATIVE_ACTIVITY_NO = 2;
+  const OPTION_YES = 'Yes';
+  const OPTION_NO = 'No';
 
   /**
-   * Dropping_Centre option values, as the dropping center form sets them.
+   * The "An individual" option of the individual intent forms' "register as".
    */
-  const DROPPING_CENTER_REGISTER_AS_INDIVIDUAL = '6';
-  const DROPPING_CENTER_NO = '2';
+  const REGISTER_AS_AN_INDIVIDUAL = 'An_individual';
+
   const DROPPING_CENTER_TIMING = '10:00 AM to 1:00 PM';
 
   /**
-   * Goonj_Activities "You wish to register as" value for An individual.
-   */
-  const GOONJ_ACTIVITIES_REGISTER_AS_INDIVIDUAL = '7';
-
-  /**
-   * Maps "Activities with Goonj" options to Goonj Activities engagement values.
+   * Maps "Activities with Goonj" options to Goonj Activities engagement ones.
    *
-   * Awareness Session has no option of its own on the Goonj Activities
-   * forms; Knowing Goonj Session is the closest match (agreed 14 Oct 2026).
+   * The individual and institution Goonj Activities forms use the same option
+   * names. Awareness Session has no option of its own there; Knowing Goonj
+   * Session is the closest match (agreed 14 Oct 2026).
    */
-  const GOONJ_ACTIVITY_VALUES = [
-    'Fundraising' => 'Fundraising Activity',
-    'Awarness_Session' => 'Organise a Knowing Goonj Session',
-    'Upcycled_Product_Stall' => 'Organise an Upcycled Product Stall',
-    'Book_Fair' => 'Organise a Book Fair',
-    'Disaster_Photo_Exhibition' => 'Organise a Goonj Disaster Photo Exhibition',
+  const GOONJ_ACTIVITY_OPTIONS = [
+    'Fundraising' => 'Fundraising_Activity',
+    'Awarness_Session' => 'Knowing_Goonj_Session',
+    'Upcycled_Product_Stall' => 'Upcycled_Product_Stall_GBG_Stal',
+    'Book_Fair' => 'Book_Fair',
+    'Disaster_Photo_Exhibition' => 'Goonj_Disaster_Photo_Exhibition',
   ];
 
   /**
-   * Maps the engagement form's "Register as" to institution intent values.
+   * Maps the engagement form's "Register as" to the institution intents' one.
    *
-   * All three institution intents share one "You wish to register as" option
-   * list. Values are used, not names: on production NGO and Foundation both
-   * carry the name "Foundation".
+   * By label, not name: the three institution intents share one option list
+   * where NGO and Foundation both carry the name "Foundation" (production
+   * too), and the existing coordinator mapping relies on that name.
    */
   const INSTITUTION_REGISTER_AS = [
-    'Corporate' => '1',
-    'School' => '2',
-    'Colleges_Universities' => '3',
-    'Association' => '4',
-    'NGO' => '6',
-    'Foundation' => '8',
-    'Other' => '5',
+    'Corporate' => 'Corporate',
+    'School' => 'School',
+    'Colleges_Universities' => 'College/University',
+    'Association' => 'Association',
+    'NGO' => 'NGO',
+    'Foundation' => 'Foundation',
+    'Other' => 'Other',
   ];
   const INSTITUTION_REGISTER_AS_OTHER = 'Other';
 
   /**
    * Institution intents filled through the engagement form come from outside.
    */
-  const INSTITUTION_INITIATED_BY_EXTERNAL = '1';
+  const INSTITUTION_INITIATED_BY_EXTERNAL = 'External';
 
   /**
-   * Institution_Collection_Camp_Intent option values (1 = Yes, 2 = No).
+   * The institution camp form keeps this country's id, as text, in Country.
    */
-  const INSTITUTION_CAMP_OPEN_TO_PUBLIC_NO = 2;
-  const INSTITUTION_CAMP_CREATIVE_ACTIVITY_NO = 2;
-  const COUNTRY_INDIA = '1101';
-
-  /**
-   * Institution_Dropping_Center_Intent option values (1 = Yes, 2 = No).
-   */
-  const INSTITUTION_DROPPING_CENTER_YES = '1';
-  const INSTITUTION_DROPPING_CENTER_NO = '2';
-
-  /**
-   * The same activities as Institution Goonj Activities engagement values.
-   */
-  const INSTITUTION_GOONJ_ACTIVITY_VALUES = [
-    'Fundraising' => '7',
-    'Awarness_Session' => '4',
-    'Upcycled_Product_Stall' => '2',
-    'Book_Fair' => '1',
-    'Disaster_Photo_Exhibition' => '5',
-  ];
+  const COUNTRY_INDIA = 'India';
 
   /**
    * Volunteer details the volunteer-with-intent form collects, defaulted here.
    *
-   * Values: 23 = Organize a Material Sharing Camp in Society/Residence/
-   * Office/Institution, 5 = Coordination, 2 = Give back to society,
-   * 5 = Support the cause, 81 = Indian (the form's hidden default).
+   * Option names: Organize a Material Sharing Camp, Coordination, Give back to
+   * society + Support the cause, and Indian (the form's hidden default).
    */
   const VOLUNTEER_DEFAULTS = [
-    'Volunteer_fields.Which_activities_are_you_interested_in_' => ['23'],
-    'Volunteer_fields.Volunteer_Skills' => ['5'],
-    'Volunteer_fields.Motivates_you_to_Volunteer' => ['2', '5'],
-    'Volunteer_fields.Nationality' => '81',
+    'Volunteer_fields.Which_activities_are_you_interested_in_:name' => ['Organise_Festival_of_Giving_in_'],
+    'Volunteer_fields.Volunteer_Skills:name' => ['Coordination'],
+    'Volunteer_fields.Motivates_you_to_Volunteer:name' => ['Give_back_to_society', 'Support the cause'],
+    'Volunteer_fields.Nationality:name' => 'Indian',
     'Individual_fields.Created_Date' => 'now',
   ];
 
@@ -214,7 +186,7 @@ class EngagementIntentTransferService extends AutoSubscriber {
 
     try {
       EckEntity::update('Collection_Camp', FALSE)
-        ->addValue('Collection_Camp_Core_Details.Intent_Source', self::SOURCE_PUBLIC_FORM)
+        ->addValue('Collection_Camp_Core_Details.Intent_Source:name', self::SOURCE_PUBLIC_FORM)
         ->addWhere('id', '=', $entityID)
         ->execute();
     }
@@ -441,14 +413,14 @@ class EngagementIntentTransferService extends AutoSubscriber {
     $campId = self::createIntentRecord('Collection Camp', 'Collection_Camp', $engagementIntent, [
       'Collection_Camp_Core_Details.Contact_Id' => $contactId,
       'Collection_Camp_Core_Details.Other_Activities' => self::getActivityLabels($engagementIntent, $details['other_activities']),
-      'Collection_Camp_Intent_Details.You_wish_to_register_as' => self::CAMP_REGISTER_AS_INDIVIDUAL,
+      'Collection_Camp_Intent_Details.You_wish_to_register_as:name' => self::REGISTER_AS_AN_INDIVIDUAL,
       'Collection_Camp_Intent_Details.Location_Area_of_camp' => $engagementIntent[self::JSM_FIELDS . '.Address'],
       'Collection_Camp_Intent_Details.State' => $engagementIntent[self::JSM_FIELDS . '.State'],
       'Collection_Camp_Intent_Details.City' => $engagementIntent[self::JSM_FIELDS . '.City'],
       'Collection_Camp_Intent_Details.Start_Date' => $date ? $date . ' ' . self::INTENT_START_TIME : NULL,
       'Collection_Camp_Intent_Details.End_Date' => $date ? $date . ' ' . self::INTENT_END_TIME : NULL,
-      'Collection_Camp_Intent_Details.Will_your_collection_drive_be_open_for_general_public' => self::CAMP_OPEN_TO_PUBLIC_YES,
-      'Collection_Camp_Intent_Details.Do_you_want_to_plan_a_creative_and_engaging_activity_where_resid' => self::CAMP_CREATIVE_ACTIVITY_NO,
+      'Collection_Camp_Intent_Details.Will_your_collection_drive_be_open_for_general_public:name' => self::OPTION_YES,
+      'Collection_Camp_Intent_Details.Do_you_want_to_plan_a_creative_and_engaging_activity_where_resid:name' => self::OPTION_NO,
     ]);
 
     self::sendCampInitiatorInductionEmail($contactId);
@@ -468,14 +440,14 @@ class EngagementIntentTransferService extends AutoSubscriber {
 
     return self::createIntentRecord('Dropping Center', 'Dropping_Center', $engagementIntent, [
       'Collection_Camp_Core_Details.Contact_Id' => $contactId,
-      'Dropping_Centre.You_wish_to_register_as' => self::DROPPING_CENTER_REGISTER_AS_INDIVIDUAL,
+      'Dropping_Centre.You_wish_to_register_as:name' => self::REGISTER_AS_AN_INDIVIDUAL,
       'Dropping_Centre.Where_do_you_wish_to_open_dropping_center_Address_' => $engagementIntent[self::JSM_FIELDS . '.Address'],
       'Dropping_Centre.State' => $engagementIntent[self::JSM_FIELDS . '.State'],
       'Dropping_Centre.District_City' => $engagementIntent[self::JSM_FIELDS . '.City'],
       'Dropping_Centre.When_do_you_wish_to_open_center_Date_' => self::getActivityDate($engagementIntent),
       'Dropping_Centre.Timing' => self::DROPPING_CENTER_TIMING,
-      'Dropping_Centre.Can_we_keep_donation_box_in_center_For_Monetary_Contribution_' => self::DROPPING_CENTER_NO,
-      'Dropping_Centre.Will_your_dropping_center_be_open_for_general_public_as_well_out' => self::DROPPING_CENTER_NO,
+      'Dropping_Centre.Can_we_keep_donation_box_in_center_For_Monetary_Contribution_:name' => self::OPTION_NO,
+      'Dropping_Centre.Will_your_dropping_center_be_open_for_general_public_as_well_out:name' => self::OPTION_NO,
       'Dropping_Centre.Name' => $contact['display_name'] ?? NULL,
       'Dropping_Centre.Contact_Number' => $contact['phone_primary.phone'] ?? NULL,
     ]);
@@ -493,8 +465,8 @@ class EngagementIntentTransferService extends AutoSubscriber {
 
     return self::createIntentRecord('Goonj Activities', 'Goonj_Activities', $engagementIntent, [
       'Collection_Camp_Core_Details.Contact_Id' => $contactId,
-      'Goonj_Activities.You_wish_to_register_as' => self::GOONJ_ACTIVITIES_REGISTER_AS_INDIVIDUAL,
-      'Goonj_Activities.How_do_you_want_to_engage_with_Goonj_' => self::getGoonjActivityValues($details['activities']),
+      'Goonj_Activities.You_wish_to_register_as:name' => self::REGISTER_AS_AN_INDIVIDUAL,
+      'Goonj_Activities.How_do_you_want_to_engage_with_Goonj_:name' => self::getGoonjActivityOptions($details['activities']),
       'Goonj_Activities.Where_do_you_wish_to_organise_the_activity_' => $engagementIntent[self::JSM_FIELDS . '.Address'],
       'Goonj_Activities.State' => $engagementIntent[self::JSM_FIELDS . '.State'],
       'Goonj_Activities.City' => $engagementIntent[self::JSM_FIELDS . '.City'],
@@ -520,19 +492,19 @@ class EngagementIntentTransferService extends AutoSubscriber {
 
     return self::createIntentRecord('Institution Collection Camp', 'Institution_Collection_Camp', $engagementIntent, [
       'Collection_Camp_Core_Details.Other_Activities' => self::getActivityLabels($engagementIntent, $details['other_activities']),
-      'Institution_collection_camp_Review.Initiated_By' => self::INSTITUTION_INITIATED_BY_EXTERNAL,
+      'Institution_collection_camp_Review.Initiated_By:name' => self::INSTITUTION_INITIATED_BY_EXTERNAL,
       'Institution_Collection_Camp_Intent.Institution_POC' => $contactId,
-      'Institution_Collection_Camp_Intent.You_wish_to_register_as' => self::getInstitutionRegisterAs($engagementIntent),
+      'Institution_Collection_Camp_Intent.You_wish_to_register_as:label' => self::getInstitutionRegisterAs($engagementIntent),
       'Institution_Collection_Camp_Intent.Other_Type' => self::getOtherInstitutionType($engagementIntent),
       'Institution_Collection_Camp_Intent.Initiator_Organization_Name' => $engagementIntent[self::JSM_FIELDS . '.Organisation_Institution_Name'],
       'Institution_Collection_Camp_Intent.Collection_Camp_Address' => $engagementIntent[self::JSM_FIELDS . '.Address'],
       'Institution_Collection_Camp_Intent.State' => $engagementIntent[self::JSM_FIELDS . '.State'],
       'Institution_Collection_Camp_Intent.District_City' => $engagementIntent[self::JSM_FIELDS . '.City'],
-      'Institution_Collection_Camp_Intent.Country' => self::COUNTRY_INDIA,
+      'Institution_Collection_Camp_Intent.Country' => self::getCountryId(self::COUNTRY_INDIA),
       'Institution_Collection_Camp_Intent.Collections_will_start_on_Date_' => $date ? $date . ' ' . self::INTENT_START_TIME : NULL,
       'Institution_Collection_Camp_Intent.Collections_will_end_on_Date_' => $date ? $date . ' ' . self::INTENT_END_TIME : NULL,
-      'Institution_Collection_Camp_Intent.Will_your_collection_drive_be_open_for_general_public_as_well' => self::INSTITUTION_CAMP_OPEN_TO_PUBLIC_NO,
-      'Institution_Collection_Camp_Intent.Do_you_want_to_plan_a_creative_and_engaging_activity_that_go_bey' => self::INSTITUTION_CAMP_CREATIVE_ACTIVITY_NO,
+      'Institution_Collection_Camp_Intent.Will_your_collection_drive_be_open_for_general_public_as_well:name' => self::OPTION_NO,
+      'Institution_Collection_Camp_Intent.Do_you_want_to_plan_a_creative_and_engaging_activity_that_go_bey:name' => self::OPTION_NO,
     ]);
   }
 
@@ -546,9 +518,9 @@ class EngagementIntentTransferService extends AutoSubscriber {
    */
   private static function createInstitutionDroppingCenter(array $engagementIntent, int $contactId) {
     return self::createIntentRecord('Institution Dropping Center', 'Institution_Dropping_Center', $engagementIntent, [
-      'Institution_Dropping_Center_Review.Initiated_By' => self::INSTITUTION_INITIATED_BY_EXTERNAL,
+      'Institution_Dropping_Center_Review.Initiated_By:name' => self::INSTITUTION_INITIATED_BY_EXTERNAL,
       'Institution_Dropping_Center_Intent.Institution_POC' => $contactId,
-      'Institution_Dropping_Center_Intent.You_wish_to_register_as' => self::getInstitutionRegisterAs($engagementIntent),
+      'Institution_Dropping_Center_Intent.You_wish_to_register_as:label' => self::getInstitutionRegisterAs($engagementIntent),
       'Institution_Dropping_Center_Intent.Other_Type' => self::getOtherInstitutionType($engagementIntent),
       'Institution_Dropping_Center_Intent.initiator_Organization_Name' => $engagementIntent[self::JSM_FIELDS . '.Organisation_Institution_Name'],
       'Institution_Dropping_Center_Intent.Dropping_Center_Address' => $engagementIntent[self::JSM_FIELDS . '.Address'],
@@ -556,9 +528,9 @@ class EngagementIntentTransferService extends AutoSubscriber {
       'Institution_Dropping_Center_Intent.District_City' => $engagementIntent[self::JSM_FIELDS . '.City'],
       'Institution_Dropping_Center_Intent.When_do_you_wish_to_open_center_Date_' => self::getActivityDate($engagementIntent),
       'Institution_Dropping_Center_Intent.Timing' => self::DROPPING_CENTER_TIMING,
-      'Institution_Dropping_Center_Intent.Will_your_dropping_center_be_open_for_general_public_as_well_out' => self::INSTITUTION_DROPPING_CENTER_YES,
-      'Institution_Dropping_Center_Intent.Can_we_keep_donation_box_in_center_' => self::INSTITUTION_DROPPING_CENTER_NO,
-      'Institution_Dropping_Center_Intent.Some_volunteers_require_permission_letters_from_Goonj_to_get_per' => self::INSTITUTION_DROPPING_CENTER_NO,
+      'Institution_Dropping_Center_Intent.Will_your_dropping_center_be_open_for_general_public_as_well_out:name' => self::OPTION_YES,
+      'Institution_Dropping_Center_Intent.Can_we_keep_donation_box_in_center_:name' => self::OPTION_NO,
+      'Institution_Dropping_Center_Intent.Some_volunteers_require_permission_letters_from_Goonj_to_get_per:name' => self::OPTION_NO,
     ]);
   }
 
@@ -574,12 +546,12 @@ class EngagementIntentTransferService extends AutoSubscriber {
     $date = self::getActivityDate($engagementIntent);
 
     return self::createIntentRecord('Institution Goonj Activities', 'Institution_Goonj_Activities', $engagementIntent, [
-      'Institution_Goonj_Activities.Initiated_By' => self::INSTITUTION_INITIATED_BY_EXTERNAL,
+      'Institution_Goonj_Activities.Initiated_By:name' => self::INSTITUTION_INITIATED_BY_EXTERNAL,
       'Institution_Goonj_Activities.Institution_POC' => $contactId,
-      'Institution_Goonj_Activities.You_wish_to_register_as' => self::getInstitutionRegisterAs($engagementIntent),
+      'Institution_Goonj_Activities.You_wish_to_register_as:label' => self::getInstitutionRegisterAs($engagementIntent),
       'Institution_Goonj_Activities.Other_Type' => self::getOtherInstitutionType($engagementIntent),
       'Institution_Goonj_Activities.Initiator_Organization_Name' => $engagementIntent[self::JSM_FIELDS . '.Organisation_Institution_Name'],
-      'Institution_Goonj_Activities.How_do_you_want_to_engage_with_Goonj_' => self::getGoonjActivityValues($details['activities'], self::INSTITUTION_GOONJ_ACTIVITY_VALUES),
+      'Institution_Goonj_Activities.How_do_you_want_to_engage_with_Goonj_:name' => self::getGoonjActivityOptions($details['activities']),
       'Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_' => $engagementIntent[self::JSM_FIELDS . '.Address'],
       'Institution_Goonj_Activities.State' => $engagementIntent[self::JSM_FIELDS . '.State'],
       'Institution_Goonj_Activities.City' => $engagementIntent[self::JSM_FIELDS . '.City'],
@@ -589,10 +561,22 @@ class EngagementIntentTransferService extends AutoSubscriber {
   }
 
   /**
-   * The institution intents' "You wish to register as" value.
+   * The institution intents' "You wish to register as" option label.
    */
   private static function getInstitutionRegisterAs(array $engagementIntent) {
     return self::INSTITUTION_REGISTER_AS[$engagementIntent[self::JSM_FIELDS . '.Register_as:name']] ?? NULL;
+  }
+
+  /**
+   * The id of a country, looked up by its name.
+   */
+  private static function getCountryId(string $countryName) {
+    $country = Country::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('name', '=', $countryName)
+      ->execute()->first();
+
+    return $country ? (string) $country['id'] : NULL;
   }
 
   /**
@@ -607,14 +591,11 @@ class EngagementIntentTransferService extends AutoSubscriber {
   }
 
   /**
-   * Goonj Activities engagement values for the given activity options.
-   *
-   * Individual and institution intents keep these in different option lists,
-   * so the map to use is passed in; it defaults to the individual one.
+   * Goonj Activities engagement option names for the given activity options.
    */
-  private static function getGoonjActivityValues(array $activityNames, array $valueMap = self::GOONJ_ACTIVITY_VALUES) {
-    $values = array_map(fn($name) => $valueMap[$name] ?? NULL, $activityNames);
-    return array_values(array_filter($values));
+  private static function getGoonjActivityOptions(array $activityNames) {
+    $options = array_map(fn($name) => self::GOONJ_ACTIVITY_OPTIONS[$name] ?? NULL, $activityNames);
+    return array_values(array_filter($options));
   }
 
   /**
@@ -629,7 +610,7 @@ class EngagementIntentTransferService extends AutoSubscriber {
       'title' => $title,
       'subtype:name' => $subtypeName,
       'Collection_Camp_Core_Details.Status' => 'under_authorization',
-      'Collection_Camp_Core_Details.Intent_Source' => self::SOURCE_ENGAGEMENT_FORM,
+      'Collection_Camp_Core_Details.Intent_Source:name' => self::SOURCE_ENGAGEMENT_FORM,
       'Collection_Camp_Core_Details.Engagement_Intent' => $engagementIntent['id'],
     ] + $values;
 
@@ -713,7 +694,7 @@ class EngagementIntentTransferService extends AutoSubscriber {
       $foldedActivities = isset($created[self::INTENT_COLLECTION_CAMP])
         && !empty($plan['intents'][self::INTENT_COLLECTION_CAMP]['other_activities']);
 
-      $update->addValue(self::JSM_FIELDS . '.Status', $foldedActivities ? self::STATUS_TRANSFERRED_TO_CAMP : self::STATUS_TRANSFERRED)
+      $update->addValue(self::JSM_FIELDS . '.Status:name', $foldedActivities ? self::STATUS_TRANSFERRED_TO_CAMP : self::STATUS_TRANSFERRED)
         ->addValue(self::JSM_FIELDS . '.Status_Updated_on', 'now');
       $hasChanges = TRUE;
     }
