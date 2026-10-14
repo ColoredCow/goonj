@@ -92,6 +92,36 @@ class EngagementIntentTransferService extends AutoSubscriber {
   ];
 
   /**
+   * Maps the engagement form's "Register as" to institution intent values.
+   *
+   * All three institution intents share one "You wish to register as" option
+   * list. Values are used, not names: on production NGO and Foundation both
+   * carry the name "Foundation".
+   */
+  const INSTITUTION_REGISTER_AS = [
+    'Corporate' => '1',
+    'School' => '2',
+    'Colleges_Universities' => '3',
+    'Association' => '4',
+    'NGO' => '6',
+    'Foundation' => '8',
+    'Other' => '5',
+  ];
+  const INSTITUTION_REGISTER_AS_OTHER = 'Other';
+
+  /**
+   * Institution intents filled through the engagement form come from outside.
+   */
+  const INSTITUTION_INITIATED_BY_EXTERNAL = '1';
+
+  /**
+   * Institution_Collection_Camp_Intent option values (1 = Yes, 2 = No).
+   */
+  const INSTITUTION_CAMP_OPEN_TO_PUBLIC_NO = 2;
+  const INSTITUTION_CAMP_CREATIVE_ACTIVITY_NO = 2;
+  const COUNTRY_INDIA = '1101';
+
+  /**
    * Volunteer details the volunteer-with-intent form collects, defaulted here.
    *
    * Values: 23 = Organize a Material Sharing Camp in Society/Residence/
@@ -293,6 +323,10 @@ class EngagementIntentTransferService extends AutoSubscriber {
       return self::createIndividualGoonjActivities($details, $engagementIntent, $contactId);
     }
 
+    if (!$isIndividual && $intentType === self::INTENT_COLLECTION_CAMP) {
+      return self::createInstitutionCollectionCamp($details, $engagementIntent, $contactId);
+    }
+
     \Civi::log()->info("[EngagementIntentTransfer] Creating $intentType intents is not built yet.");
     return NULL;
   }
@@ -375,6 +409,54 @@ class EngagementIntentTransferService extends AutoSubscriber {
       'Goonj_Activities.Name' => $contact['display_name'] ?? NULL,
       'Goonj_Activities.Contact_Number' => $contact['phone_primary.phone'] ?? NULL,
     ]);
+  }
+
+  /**
+   * Creates an Institution Collection Camp intent like the public form does.
+   *
+   * The person who filled the engagement form is the institution's point of
+   * contact. The organisation is kept as the typed name only: the team picks
+   * the Organization contact on the verification form, as for any public
+   * submission. Office, coordinator and IHC/PCC are set by the existing create
+   * hook from the state, "register as" and "open to public" values.
+   */
+  private static function createInstitutionCollectionCamp(array $details, array $engagementIntent, int $contactId) {
+    $date = self::getActivityDate($engagementIntent);
+
+    return self::createIntentRecord('Institution Collection Camp', 'Institution_Collection_Camp', $engagementIntent, [
+      'Collection_Camp_Core_Details.Other_Activities' => self::getActivityLabels($engagementIntent, $details['other_activities']),
+      'Institution_collection_camp_Review.Initiated_By' => self::INSTITUTION_INITIATED_BY_EXTERNAL,
+      'Institution_Collection_Camp_Intent.Institution_POC' => $contactId,
+      'Institution_Collection_Camp_Intent.You_wish_to_register_as' => self::getInstitutionRegisterAs($engagementIntent),
+      'Institution_Collection_Camp_Intent.Other_Type' => self::getOtherInstitutionType($engagementIntent),
+      'Institution_Collection_Camp_Intent.Initiator_Organization_Name' => $engagementIntent[self::JSM_FIELDS . '.Organisation_Institution_Name'],
+      'Institution_Collection_Camp_Intent.Collection_Camp_Address' => $engagementIntent[self::JSM_FIELDS . '.Address'],
+      'Institution_Collection_Camp_Intent.State' => $engagementIntent[self::JSM_FIELDS . '.State'],
+      'Institution_Collection_Camp_Intent.District_City' => $engagementIntent[self::JSM_FIELDS . '.City'],
+      'Institution_Collection_Camp_Intent.Country' => self::COUNTRY_INDIA,
+      'Institution_Collection_Camp_Intent.Collections_will_start_on_Date_' => $date ? $date . ' ' . self::INTENT_START_TIME : NULL,
+      'Institution_Collection_Camp_Intent.Collections_will_end_on_Date_' => $date ? $date . ' ' . self::INTENT_END_TIME : NULL,
+      'Institution_Collection_Camp_Intent.Will_your_collection_drive_be_open_for_general_public_as_well' => self::INSTITUTION_CAMP_OPEN_TO_PUBLIC_NO,
+      'Institution_Collection_Camp_Intent.Do_you_want_to_plan_a_creative_and_engaging_activity_that_go_bey' => self::INSTITUTION_CAMP_CREATIVE_ACTIVITY_NO,
+    ]);
+  }
+
+  /**
+   * The institution intents' "You wish to register as" value.
+   */
+  private static function getInstitutionRegisterAs(array $engagementIntent) {
+    return self::INSTITUTION_REGISTER_AS[$engagementIntent[self::JSM_FIELDS . '.Register_as:name']] ?? NULL;
+  }
+
+  /**
+   * The typed institution type, kept only when "Other" was picked.
+   */
+  private static function getOtherInstitutionType(array $engagementIntent) {
+    if ($engagementIntent[self::JSM_FIELDS . '.Register_as:name'] !== self::INSTITUTION_REGISTER_AS_OTHER) {
+      return NULL;
+    }
+
+    return $engagementIntent[self::JSM_FIELDS . '.Other_Institution'];
   }
 
   /**
