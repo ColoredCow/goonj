@@ -53,10 +53,10 @@ class EngagementIntentTransferService extends AutoSubscriber {
   const SOURCE_ENGAGEMENT_FORM = 'Engagement_Form';
 
   /**
-   * Camp timing used for every auto-created collection camp.
+   * Timing used for every auto-created intent that has a start and end.
    */
-  const CAMP_START_TIME = '10:00:00';
-  const CAMP_END_TIME = '13:00:00';
+  const INTENT_START_TIME = '10:00:00';
+  const INTENT_END_TIME = '13:00:00';
 
   /**
    * Collection_Camp_Intent_Details option values, as the camp forms set them.
@@ -71,6 +71,25 @@ class EngagementIntentTransferService extends AutoSubscriber {
   const DROPPING_CENTER_REGISTER_AS_INDIVIDUAL = '6';
   const DROPPING_CENTER_NO = '2';
   const DROPPING_CENTER_TIMING = '10:00 AM to 1:00 PM';
+
+  /**
+   * Goonj_Activities "You wish to register as" value for An individual.
+   */
+  const GOONJ_ACTIVITIES_REGISTER_AS_INDIVIDUAL = '7';
+
+  /**
+   * Maps "Activities with Goonj" options to Goonj Activities engagement values.
+   *
+   * Awareness Session has no option of its own on the Goonj Activities
+   * forms; Knowing Goonj Session is the closest match (agreed 14 Oct 2026).
+   */
+  const GOONJ_ACTIVITY_VALUES = [
+    'Fundraising' => 'Fundraising Activity',
+    'Awarness_Session' => 'Organise a Knowing Goonj Session',
+    'Upcycled_Product_Stall' => 'Organise an Upcycled Product Stall',
+    'Book_Fair' => 'Organise a Book Fair',
+    'Disaster_Photo_Exhibition' => 'Organise a Goonj Disaster Photo Exhibition',
+  ];
 
   /**
    * Volunteer details the volunteer-with-intent form collects, defaulted here.
@@ -270,6 +289,10 @@ class EngagementIntentTransferService extends AutoSubscriber {
       return self::createIndividualDroppingCenter($engagementIntent, $contactId);
     }
 
+    if ($isIndividual && $intentType === self::INTENT_GOONJ_ACTIVITIES) {
+      return self::createIndividualGoonjActivities($details, $engagementIntent, $contactId);
+    }
+
     \Civi::log()->info("[EngagementIntentTransfer] Creating $intentType intents is not built yet.");
     return NULL;
   }
@@ -293,8 +316,8 @@ class EngagementIntentTransferService extends AutoSubscriber {
       'Collection_Camp_Intent_Details.Location_Area_of_camp' => $engagementIntent[self::JSM_FIELDS . '.Address'],
       'Collection_Camp_Intent_Details.State' => $engagementIntent[self::JSM_FIELDS . '.State'],
       'Collection_Camp_Intent_Details.City' => $engagementIntent[self::JSM_FIELDS . '.City'],
-      'Collection_Camp_Intent_Details.Start_Date' => $date ? $date . ' ' . self::CAMP_START_TIME : NULL,
-      'Collection_Camp_Intent_Details.End_Date' => $date ? $date . ' ' . self::CAMP_END_TIME : NULL,
+      'Collection_Camp_Intent_Details.Start_Date' => $date ? $date . ' ' . self::INTENT_START_TIME : NULL,
+      'Collection_Camp_Intent_Details.End_Date' => $date ? $date . ' ' . self::INTENT_END_TIME : NULL,
       'Collection_Camp_Intent_Details.Will_your_collection_drive_be_open_for_general_public' => self::CAMP_OPEN_TO_PUBLIC_YES,
       'Collection_Camp_Intent_Details.Do_you_want_to_plan_a_creative_and_engaging_activity_where_resid' => self::CAMP_CREATIVE_ACTIVITY_NO,
     ]);
@@ -327,6 +350,39 @@ class EngagementIntentTransferService extends AutoSubscriber {
       'Dropping_Centre.Name' => $contact['display_name'] ?? NULL,
       'Dropping_Centre.Contact_Number' => $contact['phone_primary.phone'] ?? NULL,
     ]);
+  }
+
+  /**
+   * Creates one Individual Goonj Activities intent for all picked activities.
+   *
+   * Only reached for inducted volunteers, as on the website. The volunteer's
+   * name and number are filled the way the check-user page prefills them.
+   */
+  private static function createIndividualGoonjActivities(array $details, array $engagementIntent, int $contactId) {
+    $contact = self::getContactDetails($contactId);
+    $date = self::getActivityDate($engagementIntent);
+
+    return self::createIntentRecord('Goonj Activities', 'Goonj_Activities', $engagementIntent, [
+      'Collection_Camp_Core_Details.Contact_Id' => $contactId,
+      'Goonj_Activities.You_wish_to_register_as' => self::GOONJ_ACTIVITIES_REGISTER_AS_INDIVIDUAL,
+      'Goonj_Activities.How_do_you_want_to_engage_with_Goonj_' => self::getGoonjActivityValues($details['activities']),
+      'Goonj_Activities.Where_do_you_wish_to_organise_the_activity_' => $engagementIntent[self::JSM_FIELDS . '.Address'],
+      'Goonj_Activities.State' => $engagementIntent[self::JSM_FIELDS . '.State'],
+      'Goonj_Activities.City' => $engagementIntent[self::JSM_FIELDS . '.City'],
+      'Goonj_Activities.Start_Date' => $date ? $date . ' ' . self::INTENT_START_TIME : NULL,
+      'Goonj_Activities.End_Date' => $date ? $date . ' ' . self::INTENT_END_TIME : NULL,
+      'Goonj_Activities.Will_this_Goonj_Activity_be_open_for_general_public_as_well_' => TRUE,
+      'Goonj_Activities.Name' => $contact['display_name'] ?? NULL,
+      'Goonj_Activities.Contact_Number' => $contact['phone_primary.phone'] ?? NULL,
+    ]);
+  }
+
+  /**
+   * Goonj Activities engagement values for the given activity options.
+   */
+  private static function getGoonjActivityValues(array $activityNames) {
+    $values = array_map(fn($name) => self::GOONJ_ACTIVITY_VALUES[$name] ?? NULL, $activityNames);
+    return array_values(array_filter($values));
   }
 
   /**
