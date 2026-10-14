@@ -128,6 +128,17 @@ class EngagementIntentTransferService extends AutoSubscriber {
   const INSTITUTION_DROPPING_CENTER_NO = '2';
 
   /**
+   * The same activities as Institution Goonj Activities engagement values.
+   */
+  const INSTITUTION_GOONJ_ACTIVITY_VALUES = [
+    'Fundraising' => '7',
+    'Awarness_Session' => '4',
+    'Upcycled_Product_Stall' => '2',
+    'Book_Fair' => '1',
+    'Disaster_Photo_Exhibition' => '5',
+  ];
+
+  /**
    * Volunteer details the volunteer-with-intent form collects, defaulted here.
    *
    * Values: 23 = Organize a Material Sharing Camp in Society/Residence/
@@ -337,7 +348,10 @@ class EngagementIntentTransferService extends AutoSubscriber {
       return self::createInstitutionDroppingCenter($engagementIntent, $contactId);
     }
 
-    \Civi::log()->info("[EngagementIntentTransfer] Creating $intentType intents is not built yet.");
+    if (!$isIndividual && $intentType === self::INTENT_GOONJ_ACTIVITIES) {
+      return self::createInstitutionGoonjActivities($details, $engagementIntent, $contactId);
+    }
+
     return NULL;
   }
 
@@ -478,6 +492,32 @@ class EngagementIntentTransferService extends AutoSubscriber {
   }
 
   /**
+   * Creates one Institution Goonj Activities intent for all picked activities.
+   *
+   * Same split as the other institution intents: the engagement form's person
+   * is the point of contact and the organisation stays a typed name until the
+   * team picks the Organization contact on the review form. Office and
+   * coordinator are set by the existing create hook.
+   */
+  private static function createInstitutionGoonjActivities(array $details, array $engagementIntent, int $contactId) {
+    $date = self::getActivityDate($engagementIntent);
+
+    return self::createIntentRecord('Institution Goonj Activities', 'Institution_Goonj_Activities', $engagementIntent, [
+      'Institution_Goonj_Activities.Initiated_By' => self::INSTITUTION_INITIATED_BY_EXTERNAL,
+      'Institution_Goonj_Activities.Institution_POC' => $contactId,
+      'Institution_Goonj_Activities.You_wish_to_register_as' => self::getInstitutionRegisterAs($engagementIntent),
+      'Institution_Goonj_Activities.Other_Type' => self::getOtherInstitutionType($engagementIntent),
+      'Institution_Goonj_Activities.Initiator_Organization_Name' => $engagementIntent[self::JSM_FIELDS . '.Organisation_Institution_Name'],
+      'Institution_Goonj_Activities.How_do_you_want_to_engage_with_Goonj_' => self::getGoonjActivityValues($details['activities'], self::INSTITUTION_GOONJ_ACTIVITY_VALUES),
+      'Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_' => $engagementIntent[self::JSM_FIELDS . '.Address'],
+      'Institution_Goonj_Activities.State' => $engagementIntent[self::JSM_FIELDS . '.State'],
+      'Institution_Goonj_Activities.City' => $engagementIntent[self::JSM_FIELDS . '.City'],
+      'Institution_Goonj_Activities.Start_Date' => $date ? $date . ' ' . self::INTENT_START_TIME : NULL,
+      'Institution_Goonj_Activities.End_Date' => $date ? $date . ' ' . self::INTENT_END_TIME : NULL,
+    ]);
+  }
+
+  /**
    * The institution intents' "You wish to register as" value.
    */
   private static function getInstitutionRegisterAs(array $engagementIntent) {
@@ -497,9 +537,12 @@ class EngagementIntentTransferService extends AutoSubscriber {
 
   /**
    * Goonj Activities engagement values for the given activity options.
+   *
+   * Individual and institution intents keep these in different option lists,
+   * so the map to use is passed in; it defaults to the individual one.
    */
-  private static function getGoonjActivityValues(array $activityNames) {
-    $values = array_map(fn($name) => self::GOONJ_ACTIVITY_VALUES[$name] ?? NULL, $activityNames);
+  private static function getGoonjActivityValues(array $activityNames, array $valueMap = self::GOONJ_ACTIVITY_VALUES) {
+    $values = array_map(fn($name) => $valueMap[$name] ?? NULL, $activityNames);
     return array_values(array_filter($values));
   }
 
