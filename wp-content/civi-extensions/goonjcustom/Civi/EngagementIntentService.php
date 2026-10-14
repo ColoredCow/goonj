@@ -156,8 +156,8 @@ class EngagementIntentService extends AutoSubscriber {
    *
    * An existing contact keeps its primary address and only has the location
    * refreshed; a contact without one gets a home address created. The street
-   * address is only written when the form has one, so a blank field never
-   * clears the address already on the contact.
+   * address is only added where the contact has none: an address already on
+   * the contact is never replaced.
    */
   private static function setContactAddress($contactId, $stateProvinceId, $city, $countryId, $streetAddress = NULL) {
     $values = [
@@ -172,12 +172,16 @@ class EngagementIntentService extends AutoSubscriber {
 
     try {
       $address = Address::get(FALSE)
-        ->addSelect('id')
+        ->addSelect('id', 'street_address')
         ->addWhere('contact_id', '=', $contactId)
         ->addWhere('is_primary', '=', TRUE)
         ->execute()->first();
 
       if ($address) {
+        if (!empty($address['street_address'])) {
+          unset($values['street_address']);
+        }
+
         Address::update(FALSE)
           ->setValues($values)
           ->addWhere('id', '=', $address['id'])
