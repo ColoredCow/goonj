@@ -68,6 +68,7 @@ class EngagementIntentService extends AutoSubscriber {
     $fields = $data[self::AFFORM_ENTITY_NAME][0]['fields'] ?? [];
     $stateProvinceId = $fields[self::CUSTOM_GROUP_NAME . '.State'] ?? NULL;
     $city = $fields[self::CUSTOM_GROUP_NAME . '.City'] ?? NULL;
+    $streetAddress = $fields[self::CUSTOM_GROUP_NAME . '.Address'] ?? NULL;
     $countryId = $fields[self::CUSTOM_GROUP_NAME . '.Country'] ?: self::DEFAULT_COUNTRY_ID;
 
     if (!$stateProvinceId) {
@@ -88,7 +89,7 @@ class EngagementIntentService extends AutoSubscriber {
         continue;
       }
 
-      self::setContactAddress($contactId, $stateProvinceId, $city, $countryId);
+      self::setContactAddress($contactId, $stateProvinceId, $city, $countryId, $streetAddress);
 
       if ($groupId) {
         self::addContactToGroup($contactId, $groupId);
@@ -151,12 +152,24 @@ class EngagementIntentService extends AutoSubscriber {
   }
 
   /**
-   * Writes the intent state/city onto the contact.
+   * Writes the intent state/city, and the address when given, onto the contact.
    *
    * An existing contact keeps its primary address and only has the location
-   * refreshed; a contact without one gets a home address created.
+   * refreshed; a contact without one gets a home address created. The street
+   * address is only written when the form has one, so a blank field never
+   * clears the address already on the contact.
    */
-  private static function setContactAddress($contactId, $stateProvinceId, $city, $countryId) {
+  private static function setContactAddress($contactId, $stateProvinceId, $city, $countryId, $streetAddress = NULL) {
+    $values = [
+      'state_province_id' => $stateProvinceId,
+      'country_id' => $countryId,
+      'city' => $city,
+    ];
+
+    if (trim((string) $streetAddress) !== '') {
+      $values['street_address'] = $streetAddress;
+    }
+
     try {
       $address = Address::get(FALSE)
         ->addSelect('id')
@@ -166,9 +179,7 @@ class EngagementIntentService extends AutoSubscriber {
 
       if ($address) {
         Address::update(FALSE)
-          ->addValue('state_province_id', $stateProvinceId)
-          ->addValue('country_id', $countryId)
-          ->addValue('city', $city)
+          ->setValues($values)
           ->addWhere('id', '=', $address['id'])
           ->execute();
 
@@ -176,12 +187,11 @@ class EngagementIntentService extends AutoSubscriber {
       }
 
       Address::create(FALSE)
-        ->addValue('contact_id', $contactId)
-        ->addValue('state_province_id', $stateProvinceId)
-        ->addValue('country_id', $countryId)
-        ->addValue('city', $city)
-        ->addValue('location_type_id', 1)
-        ->addValue('is_primary', TRUE)
+        ->setValues($values + [
+          'contact_id' => $contactId,
+          'location_type_id' => 1,
+          'is_primary' => TRUE,
+        ])
         ->execute();
     }
     catch (\Exception $e) {
