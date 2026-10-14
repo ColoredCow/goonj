@@ -122,6 +122,12 @@ class EngagementIntentTransferService extends AutoSubscriber {
   const COUNTRY_INDIA = '1101';
 
   /**
+   * Institution_Dropping_Center_Intent option values (1 = Yes, 2 = No).
+   */
+  const INSTITUTION_DROPPING_CENTER_YES = '1';
+  const INSTITUTION_DROPPING_CENTER_NO = '2';
+
+  /**
    * Volunteer details the volunteer-with-intent form collects, defaulted here.
    *
    * Values: 23 = Organize a Material Sharing Camp in Society/Residence/
@@ -327,6 +333,10 @@ class EngagementIntentTransferService extends AutoSubscriber {
       return self::createInstitutionCollectionCamp($details, $engagementIntent, $contactId);
     }
 
+    if (!$isIndividual && $intentType === self::INTENT_DROPPING_CENTER) {
+      return self::createInstitutionDroppingCenter($engagementIntent, $contactId);
+    }
+
     \Civi::log()->info("[EngagementIntentTransfer] Creating $intentType intents is not built yet.");
     return NULL;
   }
@@ -438,6 +448,32 @@ class EngagementIntentTransferService extends AutoSubscriber {
       'Institution_Collection_Camp_Intent.Collections_will_end_on_Date_' => $date ? $date . ' ' . self::INTENT_END_TIME : NULL,
       'Institution_Collection_Camp_Intent.Will_your_collection_drive_be_open_for_general_public_as_well' => self::INSTITUTION_CAMP_OPEN_TO_PUBLIC_NO,
       'Institution_Collection_Camp_Intent.Do_you_want_to_plan_a_creative_and_engaging_activity_that_go_bey' => self::INSTITUTION_CAMP_CREATIVE_ACTIVITY_NO,
+    ]);
+  }
+
+  /**
+   * Creates an Institution Dropping Center intent like the institution form.
+   *
+   * Same split as the institution camp: the engagement form's person is the
+   * point of contact and the organisation stays a typed name until the team
+   * picks the Organization contact on the verification form. Office and
+   * coordinator are set by the existing create hook.
+   */
+  private static function createInstitutionDroppingCenter(array $engagementIntent, int $contactId) {
+    return self::createIntentRecord('Institution Dropping Center', 'Institution_Dropping_Center', $engagementIntent, [
+      'Institution_Dropping_Center_Review.Initiated_By' => self::INSTITUTION_INITIATED_BY_EXTERNAL,
+      'Institution_Dropping_Center_Intent.Institution_POC' => $contactId,
+      'Institution_Dropping_Center_Intent.You_wish_to_register_as' => self::getInstitutionRegisterAs($engagementIntent),
+      'Institution_Dropping_Center_Intent.Other_Type' => self::getOtherInstitutionType($engagementIntent),
+      'Institution_Dropping_Center_Intent.initiator_Organization_Name' => $engagementIntent[self::JSM_FIELDS . '.Organisation_Institution_Name'],
+      'Institution_Dropping_Center_Intent.Dropping_Center_Address' => $engagementIntent[self::JSM_FIELDS . '.Address'],
+      'Institution_Dropping_Center_Intent.State' => $engagementIntent[self::JSM_FIELDS . '.State'],
+      'Institution_Dropping_Center_Intent.District_City' => $engagementIntent[self::JSM_FIELDS . '.City'],
+      'Institution_Dropping_Center_Intent.When_do_you_wish_to_open_center_Date_' => self::getActivityDate($engagementIntent),
+      'Institution_Dropping_Center_Intent.Timing' => self::DROPPING_CENTER_TIMING,
+      'Institution_Dropping_Center_Intent.Will_your_dropping_center_be_open_for_general_public_as_well_out' => self::INSTITUTION_DROPPING_CENTER_YES,
+      'Institution_Dropping_Center_Intent.Can_we_keep_donation_box_in_center_' => self::INSTITUTION_DROPPING_CENTER_NO,
+      'Institution_Dropping_Center_Intent.Some_volunteers_require_permission_letters_from_Goonj_to_get_per' => self::INSTITUTION_DROPPING_CENTER_NO,
     ]);
   }
 
