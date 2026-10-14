@@ -48,11 +48,21 @@ class EngagementIntentTransferService extends AutoSubscriber {
   const INTENT_DROPPING_CENTER = 'dropping_center';
   const INTENT_GOONJ_ACTIVITIES = 'goonj_activities';
 
-  const STATUS_TRANSFERRED = 'Intent_Transferred';
-  const STATUS_TRANSFERRED_TO_CAMP = 'Intent_Transferred_to_Collection_Camp';
+  /**
+   * Engagement Intent statuses, by option value.
+   *
+   * These two options are added by hand on each site. The admin screen lets
+   * us type the value but not the machine name, so the value is the one key
+   * that comes out the same everywhere.
+   */
+  const STATUS_TRANSFERRED = '8';
+  const STATUS_TRANSFERRED_TO_CAMP = '9';
 
-  const SOURCE_ENGAGEMENT_FORM = 'Engagement_Form';
-  const SOURCE_PUBLIC_FORM = 'Public_Form';
+  /**
+   * Intent Source options, by option value, for the same reason as above.
+   */
+  const SOURCE_PUBLIC_FORM = '1';
+  const SOURCE_ENGAGEMENT_FORM = '2';
 
   /**
    * Timing used for every auto-created intent that has a start and end.
@@ -204,7 +214,7 @@ class EngagementIntentTransferService extends AutoSubscriber {
 
     try {
       EckEntity::update('Collection_Camp', FALSE)
-        ->addValue('Collection_Camp_Core_Details.Intent_Source:name', self::SOURCE_PUBLIC_FORM)
+        ->addValue('Collection_Camp_Core_Details.Intent_Source', self::SOURCE_PUBLIC_FORM)
         ->addWhere('id', '=', $entityID)
         ->execute();
     }
@@ -619,7 +629,7 @@ class EngagementIntentTransferService extends AutoSubscriber {
       'title' => $title,
       'subtype:name' => $subtypeName,
       'Collection_Camp_Core_Details.Status' => 'under_authorization',
-      'Collection_Camp_Core_Details.Intent_Source:name' => self::SOURCE_ENGAGEMENT_FORM,
+      'Collection_Camp_Core_Details.Intent_Source' => self::SOURCE_ENGAGEMENT_FORM,
       'Collection_Camp_Core_Details.Engagement_Intent' => $engagementIntent['id'],
     ] + $values;
 
@@ -703,7 +713,7 @@ class EngagementIntentTransferService extends AutoSubscriber {
       $foldedActivities = isset($created[self::INTENT_COLLECTION_CAMP])
         && !empty($plan['intents'][self::INTENT_COLLECTION_CAMP]['other_activities']);
 
-      $update->addValue(self::JSM_FIELDS . '.Status:name', $foldedActivities ? self::STATUS_TRANSFERRED_TO_CAMP : self::STATUS_TRANSFERRED)
+      $update->addValue(self::JSM_FIELDS . '.Status', $foldedActivities ? self::STATUS_TRANSFERRED_TO_CAMP : self::STATUS_TRANSFERRED)
         ->addValue(self::JSM_FIELDS . '.Status_Updated_on', 'now');
       $hasChanges = TRUE;
     }
