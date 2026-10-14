@@ -3,6 +3,7 @@
 namespace Civi;
 
 use Civi\Api4\Address;
+use Civi\Api4\Contact;
 use Civi\Api4\Group;
 use Civi\Api4\GroupContact;
 use Civi\Core\Service\AutoSubscriber;
@@ -21,6 +22,7 @@ class EngagementIntentService extends AutoSubscriber {
   const AFFORM_ENTITY_NAME = 'Eck_Engagement_Intent1';
   const CUSTOM_GROUP_NAME = 'Engagement_Intent_Form';
   const AFFORM_NAME = 'afformGoonjEngagementIntentForm';
+  const CONSENT_FIELD = 'DPDP_Consent.Consent_Given';
 
   /**
    * India.
@@ -34,6 +36,7 @@ class EngagementIntentService extends AutoSubscriber {
     return [
       '&hook_civicrm_pre' => [
         ['processEngagementIntentSubmission'],
+        ['saveConsentForExistingContact'],
       ],
     ];
   }
@@ -89,6 +92,60 @@ class EngagementIntentService extends AutoSubscriber {
 
       if ($groupId) {
         self::addContactToGroup($contactId, $groupId);
+      }
+    }
+  }
+
+  /**
+   * Saves the DPDP consent ticked on the form for an existing contact.
+   *
+   * The form matches a returning person to their existing contact without
+   * updating it, so the consent they tick would otherwise be dropped. A
+   * contact who already gave consent keeps their original record. The consent
+   * date is stamped by DpdpConsentService, the same as for any other form.
+   */
+  public static function saveConsentForExistingContact(string $op, string $objectName, $objectId, &$objectRef) {
+    if ($op !== 'edit' || $objectName !== 'AfformSubmission') {
+      return;
+    }
+
+    $afformName = $objectRef['afform_name'] ?? NULL;
+
+    if ($afformName !== NULL && $afformName !== self::AFFORM_NAME) {
+      return;
+    }
+
+    $data = $objectRef['data'] ?? [];
+
+    if (empty($data[self::AFFORM_ENTITY_NAME]) || empty($data['Individual1'])) {
+      return;
+    }
+
+    foreach ($data['Individual1'] as $individual) {
+      $contactId = $individual['id'] ?? NULL;
+      $consent = array_filter((array) ($individual['fields'][self::CONSENT_FIELD] ?? []));
+
+      if (!$contactId || !$consent) {
+        continue;
+      }
+
+      try {
+        $contact = Contact::get(FALSE)
+          ->addSelect(self::CONSENT_FIELD)
+          ->addWhere('id', '=', $contactId)
+          ->execute()->first();
+
+        if (!$contact || !empty($contact[self::CONSENT_FIELD])) {
+          continue;
+        }
+
+        Contact::update(FALSE)
+          ->addValue(self::CONSENT_FIELD, array_values($consent))
+          ->addWhere('id', '=', $contactId)
+          ->execute();
+      }
+      catch (\Exception $e) {
+        \Civi::log()->error("Engagement intent: error saving DPDP consent for contact $contactId. " . $e->getMessage());
       }
     }
   }
