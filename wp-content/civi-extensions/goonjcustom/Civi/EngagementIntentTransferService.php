@@ -668,16 +668,22 @@ class EngagementIntentTransferService extends AutoSubscriber {
    * once per contact; a contact who just became a volunteer already has it.
    */
   private static function sendCampInitiatorInductionEmail(int $contactId) {
-    $pendingInduction = Activity::get(FALSE)
-      ->addSelect('id')
-      ->addWhere('activity_type_id:name', '=', 'Induction')
-      ->addWhere('status_id:name', 'IN', self::INDUCTION_PENDING_STATUSES)
-      ->addWhere('target_contact_id', '=', $contactId)
-      ->setLimit(1)
-      ->execute()->first();
+    try {
+      $pendingInduction = Activity::get(FALSE)
+        ->addSelect('id')
+        ->addWhere('activity_type_id:name', '=', 'Induction')
+        ->addWhere('status_id:name', 'IN', self::INDUCTION_PENDING_STATUSES)
+        ->addWhere('target_contact_id', '=', $contactId)
+        ->setLimit(1)
+        ->execute()->first();
 
-    if ($pendingInduction) {
-      InductionService::sendInductionEmailToCollectionCampInitiator($contactId);
+      if ($pendingInduction) {
+        InductionService::sendInductionEmailToCollectionCampInitiator($contactId);
+      }
+    }
+    catch (\Throwable $e) {
+      // The camp is already created; a failed email must not undo that.
+      \Civi::log()->error("[EngagementIntentTransfer] Could not send the induction email to contact $contactId: " . $e->getMessage());
     }
   }
 
@@ -699,9 +705,12 @@ class EngagementIntentTransferService extends AutoSubscriber {
       $hasChanges = TRUE;
     }
 
-    if ($remarks) {
-      $existingRemark = trim((string) ($engagementIntent[self::JSM_FIELDS . '.Remark'] ?? ''));
-      $update->addValue(self::JSM_FIELDS . '.Remark', trim($existingRemark . "\n" . implode("\n", $remarks)));
+    $existingRemark = trim((string) ($engagementIntent[self::JSM_FIELDS . '.Remark'] ?? ''));
+    // A re-run of the same submission only adds remarks not on the record yet.
+    $newRemarks = array_diff($remarks, array_map('trim', explode("\n", $existingRemark)));
+
+    if ($newRemarks) {
+      $update->addValue(self::JSM_FIELDS . '.Remark', trim($existingRemark . "\n" . implode("\n", $newRemarks)));
       $hasChanges = TRUE;
     }
 
