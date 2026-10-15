@@ -6,7 +6,6 @@ use Civi\Api4\Activity;
 use Civi\Api4\AfformSubmission;
 use Civi\Api4\Contact;
 use Civi\Api4\Country;
-use Civi\Api4\CustomField;
 use Civi\Api4\EckEntity;
 use Civi\Core\Service\AutoSubscriber;
 
@@ -59,9 +58,11 @@ class EngagementIntentTransferService extends AutoSubscriber {
   const STATUS_TRANSFERRED_TO_CAMP = 'Intent_Transferred_to_collectio';
 
   /**
-   * Intent Source options (option names).
+   * Intent Source given to the intents the engagement form creates.
+   *
+   * Intents from every other form keep an empty Source; the intent lists show
+   * those as Public Form.
    */
-  const SOURCE_PUBLIC_FORM = 'Public_Form';
   const SOURCE_ENGAGEMENT_FORM = 'Engagement_Form';
 
   /**
@@ -153,66 +154,7 @@ class EngagementIntentTransferService extends AutoSubscriber {
       '&hook_civicrm_post' => [
         ['transferEngagementIntent'],
       ],
-      '&hook_civicrm_custom' => [
-        ['setPublicFormSource'],
-      ],
     ];
-  }
-
-  /**
-   * Marks an intent created from any other form as coming from a Public Form.
-   *
-   * Runs when an intent's Core Details are first saved, which every intent
-   * form does (it always sets the In Review status). An auto-created intent
-   * already carries "Engagement Form" in that same save and is left alone, as
-   * is any later edit.
-   */
-  public static function setPublicFormSource($op, $groupID, $entityID, &$params) {
-    if ($op !== 'create' || !$entityID) {
-      return;
-    }
-
-    $sourceField = self::getIntentSourceField();
-    if (!$sourceField || (int) $groupID !== (int) $sourceField['custom_group_id']) {
-      return;
-    }
-
-    foreach ($params as $param) {
-      if (($param['entity_table'] ?? NULL) !== 'civicrm_eck_collection_camp') {
-        return;
-      }
-
-      if ((int) ($param['custom_field_id'] ?? 0) === (int) $sourceField['id'] && !empty($param['value'])) {
-        return;
-      }
-    }
-
-    try {
-      EckEntity::update('Collection_Camp', FALSE)
-        ->addValue('Collection_Camp_Core_Details.Intent_Source:name', self::SOURCE_PUBLIC_FORM)
-        ->addWhere('id', '=', $entityID)
-        ->execute();
-    }
-    catch (\Throwable $e) {
-      \Civi::log()->error("[EngagementIntentTransfer] Could not set the intent source on $entityID: " . $e->getMessage());
-    }
-  }
-
-  /**
-   * The Intent Source custom field (id and group), looked up once.
-   */
-  private static function getIntentSourceField() {
-    static $field;
-
-    if (!isset($field)) {
-      $field = CustomField::get(FALSE)
-        ->addSelect('id', 'custom_group_id')
-        ->addWhere('custom_group_id:name', '=', 'Collection_Camp_Core_Details')
-        ->addWhere('name', '=', 'Intent_Source')
-        ->execute()->first() ?: FALSE;
-    }
-
-    return $field;
   }
 
   /**
