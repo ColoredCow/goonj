@@ -51,9 +51,12 @@ class EngagementIntentTransferService extends AutoSubscriber {
 
   /**
    * Engagement Intent statuses set after a transfer (option names).
+   *
+   * The names CiviCRM makes from the labels (cut at 31 characters) when the
+   * two choices are added on the Status field's Multiple Choice Options.
    */
   const STATUS_TRANSFERRED = 'Intent_Transferred';
-  const STATUS_TRANSFERRED_TO_CAMP = 'Intent_Transferred_to_Collection_Camp';
+  const STATUS_TRANSFERRED_TO_CAMP = 'Intent_Transferred_to_collectio';
 
   /**
    * Intent Source options (option names).
