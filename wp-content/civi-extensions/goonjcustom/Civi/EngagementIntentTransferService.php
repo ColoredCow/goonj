@@ -619,9 +619,11 @@ class EngagementIntentTransferService extends AutoSubscriber {
     try {
       $pendingInduction = Activity::get(FALSE)
         ->addSelect('id')
+        ->addJoin('ActivityContact AS activity_contact', 'INNER', ['id', '=', 'activity_contact.activity_id'])
+        ->addWhere('activity_contact.record_type_id:name', '=', 'Activity Targets')
+        ->addWhere('activity_contact.contact_id', '=', $contactId)
         ->addWhere('activity_type_id:name', '=', 'Induction')
         ->addWhere('status_id:name', 'IN', self::INDUCTION_PENDING_STATUSES)
-        ->addWhere('target_contact_id', '=', $contactId)
         ->setLimit(1)
         ->execute()->first();
 
@@ -703,13 +705,18 @@ class EngagementIntentTransferService extends AutoSubscriber {
 
   /**
    * Whether the contact's induction is Completed.
+   *
+   * The induction is found through its target row, as filtering on
+   * target_contact_id scans every induction activity.
    */
   private static function isInductionCompleted(int $contactId): bool {
     return (bool) Activity::get(FALSE)
       ->addSelect('id')
+      ->addJoin('ActivityContact AS activity_contact', 'INNER', ['id', '=', 'activity_contact.activity_id'])
+      ->addWhere('activity_contact.record_type_id:name', '=', 'Activity Targets')
+      ->addWhere('activity_contact.contact_id', '=', $contactId)
       ->addWhere('activity_type_id:name', '=', 'Induction')
       ->addWhere('status_id:name', '=', 'Completed')
-      ->addWhere('target_contact_id', '=', $contactId)
       ->setLimit(1)
       ->execute()->count();
   }
