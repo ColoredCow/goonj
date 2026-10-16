@@ -437,9 +437,12 @@ class InductionService extends AutoSubscriber {
     $placeholderActivityDate = self::getPlaceholderActivityDate();
 
     // Fetch induction activities for the target contact.
+    // Joined on the target, as target_contact_id scans every induction.
     $contactInductionExists = Activity::get(FALSE)
+      ->addJoin('ActivityContact AS activity_contact', 'INNER', ['id', '=', 'activity_contact.activity_id'])
+      ->addWhere('activity_contact.record_type_id:name', '=', 'Activity Targets')
+      ->addWhere('activity_contact.contact_id', '=', $targetContactId)
       ->addWhere('activity_type_id:name', '=', 'Induction')
-      ->addWhere('target_contact_id', '=', $targetContactId)
       ->execute();
 
     // Check if an induction activity already exists.
@@ -645,10 +648,13 @@ class InductionService extends AutoSubscriber {
       'cc' => self::$volunteerInductionAssigneeEmail,
     ];
 
+    // Joined on the target, as target_contact_id scans every induction.
     $inductionActivity = Activity::get(FALSE)
+      ->addJoin('ActivityContact AS activity_contact', 'INNER', ['id', '=', 'activity_contact.activity_id'])
+      ->addWhere('activity_contact.record_type_id:name', '=', 'Activity Targets')
+      ->addWhere('activity_contact.contact_id', '=', $volunteerId)
       ->addWhere('activity_type_id:name', '=', self::INDUCTION_ACTIVITY_TYPE_NAME)
       ->addWhere('status_id:name', 'IN', ['Scheduled', 'Completed', 'To be scheduled', 'Cancelled'])
-      ->addWhere('target_contact_id', '=', $volunteerId)
       ->setLimit(1)
       ->execute();
 
@@ -855,10 +861,13 @@ class InductionService extends AutoSubscriber {
    * Check if induction activity already exists for the contact.
    */
   private static function inductionExists($contactId) {
+    // Joined on the target, as target_contact_id scans every induction.
     $inductionActivity = Activity::get(FALSE)
+      ->addJoin('ActivityContact AS activity_contact', 'INNER', ['id', '=', 'activity_contact.activity_id'])
+      ->addWhere('activity_contact.record_type_id:name', '=', 'Activity Targets')
+      ->addWhere('activity_contact.contact_id', '=', $contactId)
       ->addWhere('activity_type_id:name', '=', self::INDUCTION_ACTIVITY_TYPE_NAME)
       ->addWhere('status_id:name', 'IN', ['Scheduled', 'Completed', 'To be scheduled', 'Cancelled'])
-      ->addWhere('target_contact_id', '=', $contactId)
       ->setLimit(1)
       ->execute();
 
@@ -1393,9 +1402,14 @@ class InductionService extends AutoSubscriber {
       return $inductionType;
     }
 
+    // Only whether an office exists matters; without the select and limit
+    // this scanned every contact and loaded their groups and tags.
     $officeContact = Contact::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('contact_type', '=', 'Organization')
       ->addWhere('contact_sub_type', 'CONTAINS', 'Goonj_Office')
       ->addClause('OR', ['Goonj_Office_Details.Other_Induction_Cities', 'CONTAINS', $contactCityFormatted], ['address_primary.city', 'CONTAINS', $contactCityFormatted])
+      ->setLimit(1)
       ->execute();
 
     // If no Goonj office exists, induction is online.
