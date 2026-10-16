@@ -32,6 +32,23 @@ function goonj_check_user_action($atts) {
 }
 
 /**
+ * Put a CRM path on the public donation domain when one is configured.
+ *
+ * Monetary buttons are shown on pages served from the CRM domain, so a
+ * root-relative path keeps the donor on the CRM. Where a public domain fronts
+ * the contribution pages, define GOONJ_PUBLIC_BASE_URL in wp-config.php and the
+ * donor is sent there instead. Without the constant the path is returned
+ * unchanged, so local and staging keep their current behaviour.
+ */
+function goonj_public_url($path) {
+  if (defined('GOONJ_PUBLIC_BASE_URL') && GOONJ_PUBLIC_BASE_URL) {
+    return rtrim(GOONJ_PUBLIC_BASE_URL, '/') . $path;
+  }
+
+  return $path;
+}
+
+/**
  *
  */
 function goonj_generate_button_html($button_url, $button_text) {
@@ -116,7 +133,8 @@ function goonj_generate_monetary_button($individualId, $collectionCampId) {
 
   if (strpos($requestUri, '/events/') !== FALSE) {
     $sourceFieldId = goonj_get_contribution_source_field_id_for_events();
-  } else {
+  }
+  else {
     $contact = Contact::get(FALSE)
       ->addSelect('contact_sub_type')
       ->addWhere('id', '=', $collectionCampId)
@@ -127,7 +145,8 @@ function goonj_generate_monetary_button($individualId, $collectionCampId) {
 
     if (in_array('Goonj_Processing_Center', $subtypes)) {
       $sourceFieldId = goonj_get_contribution_source_field_id_for_processing_unit();
-    } else {
+    }
+    else {
       $sourceFieldId = goonj_get_contribution_source_field_id();
     }
   }
@@ -137,12 +156,11 @@ function goonj_generate_monetary_button($individualId, $collectionCampId) {
   }
 
   $checksum = goonj_generate_checksum($individualId);
-  $monetaryUrl = "/contribute/?$sourceFieldId=$collectionCampId&cid=$individualId&cs=$checksum";
+  $monetaryUrl = goonj_public_url("/contribute/?$sourceFieldId=$collectionCampId&cid=$individualId&cs=$checksum");
   $buttonText = __('Monetary Contribution', 'goonj-crm');
 
   return goonj_generate_button_html($monetaryUrl, $buttonText);
 }
-
 
 /**
  *
@@ -289,7 +307,7 @@ function goonj_generate_event_monetary_button($individualId, $eventId) {
   }
 
   $checksum = goonj_generate_checksum($individualId);
-  $monetaryUrl = "/contribute/?$sourceFieldId=$eventId&cid=$individualId&cs=$checksum";
+  $monetaryUrl = goonj_public_url("/contribute/?$sourceFieldId=$eventId&cid=$individualId&cs=$checksum");
   $buttonText = __('Monetary Contribution', 'goonj-crm');
 
   return goonj_generate_button_html($monetaryUrl, $buttonText);
