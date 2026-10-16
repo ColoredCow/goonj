@@ -30,10 +30,10 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 function gb_goonj_donation_base_url() {
 	if ( defined( 'GOONJ_PUBLIC_BASE_URL' ) && GOONJ_PUBLIC_BASE_URL ) {
-		return rtrim( GOONJ_PUBLIC_BASE_URL, '/' ) . '/contribute';
+		return rtrim( GOONJ_PUBLIC_BASE_URL, '/' ) . '/contribute/';
 	}
 
-	return home_url( '/contribute' );
+	return home_url( '/contribute/' );
 }
 
 /**
