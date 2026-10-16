@@ -8,7 +8,6 @@ use Civi\Api4\Group;
 use Civi\Api4\GroupContact;
 use Civi\Api4\Organization;
 use Civi\Api4\Relationship;
-use Civi\Api4\StateProvince;
 use Civi\Core\Service\AutoSubscriber;
 use Civi\Traits\CollectionSource;
 use Civi\Api4\Address;
@@ -300,7 +299,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
 
       $contact = Contact::get(FALSE)
         ->addSelect('address.street_address', 'address.city')
-        ->addJoin('Address AS address', 'LEFT')
+        ->addJoin('Address AS address', 'LEFT', ['address.is_primary', '=', TRUE])
         ->addWhere('id', '=', $visitAtId)
         ->execute()->first();
 
@@ -359,6 +358,8 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     $dayOfWeek = $date->format('l');
     // Convert date format.
     $formattedVisitDate = (new \DateTime($visitDate))->format('d/m/Y');
+    // Encode the address so characters like & do not cut the Maps search short.
+    $visitMapQuery = urlencode($visitAddress ?? '');
 
     $html = "
     <p>Dear $externalCoordinatingGoonjPocName,</p>
@@ -371,7 +372,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     <ul>
         <li><strong>At:</strong> $visitAtName </li>
         <li><strong>Address:</strong> $visitAddress </li>
-        <li><strong>Directions:</strong> <a href='https://www.google.com/maps?q=$visitAddress' target='_blank'>View Directions on Google Maps</a></li>
+        <li><strong>Directions:</strong> <a href='https://www.google.com/maps?q=$visitMapQuery' target='_blank'>View Directions on Google Maps</a></li>
         <li><strong>On:</strong>  $formattedVisitDate , $dayOfWeek</li>
         <li><strong>From:</strong> $visitTime </li>
         <li><strong>Contact Point:</strong> $coordinatingGoonjPersonName</li>
@@ -716,8 +717,10 @@ class UrbanPlannedVisitService extends AutoSubscriber {
   /**
    * Assigns a contact to the state/province group of a given center.
    *
-   * @param int $contactId ID of the individual contact.
-   * @param int $centerProvinceId Contact ID of the center to get state/province.
+   * @param int $contactId
+   *   ID of the individual contact.
+   * @param int $centerProvinceId
+   *   Contact ID of the center to get state/province.
    */
   public static function assignCenterGroupToIndividual(string $op, string $objectName, $objectId, &$objectRef) {
     if ($op !== 'edit' || $objectName !== 'AfformSubmission') {
@@ -741,9 +744,9 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     }
 
     $addresses = Address::get(FALSE)
-    ->addSelect('state_province_id')
-    ->addWhere('contact_id', '=', $centerProvinceId)
-    ->execute()->first();
+      ->addSelect('state_province_id')
+      ->addWhere('contact_id', '=', $centerProvinceId)
+      ->execute()->first();
 
     $stateProvinceId = $addresses['state_province_id'] ?? NULL;
     $groupId = self::getChapterGroupForState($stateProvinceId);
@@ -757,53 +760,55 @@ class UrbanPlannedVisitService extends AutoSubscriber {
   /**
    * Assigns a contact/institute to the state/province group of a given center.
    *
-   * @param int $contactId ID of the individual contact.
-   * @param int $centerProvinceId Contact ID of the center to get state/province.
+   * @param int $contactId
+   *   ID of the individual contact.
+   * @param int $centerProvinceId
+   *   Contact ID of the center to get state/province.
    */
   public static function assignBackendCenterGroupToIndividualAndInstitute(string $op, string $objectName, $objectId, &$objectRef) {
     if ($op !== 'edit' || $objectName !== 'AfformSubmission') {
       return FALSE;
     }
-  
+
     if (empty($objectRef['data']['Eck_Institution_Visit1'][0]['fields'])) {
       return FALSE;
     }
-  
+
     $fields = $objectRef['data']['Eck_Institution_Visit1'][0]['fields'];
-  
-    // Collect all possible contacts
+
+    // Collect all possible contacts.
     $contactIds = array_filter([
       $fields['Urban_Planned_Visit.Select_Individual'] ?? NULL,
       $fields['Urban_Planned_Visit.Institution_POC'] ?? NULL,
       $fields['Urban_Planned_Visit.Institution'] ?? NULL,
     ]);
-  
+
     $centerContactId = $fields['Urban_Planned_Visit.Which_Goonj_Processing_Center_do_you_wish_to_visit_'] ?? NULL;
-  
+
     if (empty($contactIds) || !$centerContactId) {
       return FALSE;
     }
-  
-    // Fetch state of the processing center
+
+    // Fetch state of the processing center.
     $address = Address::get(FALSE)
       ->addSelect('state_province_id')
       ->addWhere('contact_id', '=', $centerContactId)
       ->execute()
       ->first();
-  
+
     $stateProvinceId = $address['state_province_id'] ?? NULL;
-  
+
     if (!$stateProvinceId) {
       return FALSE;
     }
-  
+
     $groupId = self::getChapterGroupForState($stateProvinceId);
-  
+
     if (!$groupId) {
       return FALSE;
     }
-  
-    // Assign group to each contact
+
+    // Assign group to each contact.
     foreach ($contactIds as $contactId) {
       self::ensureContactInGroup($contactId, $groupId);
     }
@@ -909,7 +914,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
 
     $contact = Contact::get(FALSE)
       ->addSelect('address.street_address', 'address.city')
-      ->addJoin('Address AS address', 'LEFT')
+      ->addJoin('Address AS address', 'LEFT', ['address.is_primary', '=', TRUE])
       ->addWhere('id', '=', $visitAtId)
       ->execute()->first();
 
@@ -938,6 +943,9 @@ class UrbanPlannedVisitService extends AutoSubscriber {
    *
    */
   private static function getReminderExtCoordPocEmailHtml($externalCoordinatingGoonjPocName, $coordinatingGoonjPersonName, $coordinatingGoonjPersonPhone, $visitTime, $visitAddress, $visitAtName) {
+    // Encode the address so characters like & do not cut the Maps search short.
+    $visitMapQuery = urlencode($visitAddress ?? '');
+
     $html = "
     <p>Dear $externalCoordinatingGoonjPocName,</p>
 
@@ -946,7 +954,7 @@ class UrbanPlannedVisitService extends AutoSubscriber {
     <ul>
         <li><strong>At:</strong> $visitAtName</li>
         <li><strong>Address:</strong> $visitAddress center</li>
-        <li><strong>Directions:</strong> <a href='https://www.google.com/maps?q=$visitAddress' target='_blank'>View Directions on Google Maps</a></li>
+        <li><strong>Directions:</strong> <a href='https://www.google.com/maps?q=$visitMapQuery' target='_blank'>View Directions on Google Maps</a></li>
     </ul>
 
     <p>For assistance, feel free to write back or call <strong>$coordinatingGoonjPersonName</strong> on <strong>$coordinatingGoonjPersonPhone</strong>.</p>
@@ -1445,16 +1453,16 @@ class UrbanPlannedVisitService extends AutoSubscriber {
         ->addWhere('id', '=', $address['id'])
         ->execute();
 
-    } else {
-    Address::create(FALSE)
-      ->addValue('contact_id', $individualId)
-      ->addValue('state_province_id', $stateProvinceId)
-      ->addValue('is_primary', TRUE)
-      ->addValue('location_type_id', 1)
-      ->addValue('city', $cityName)
-      ->execute();
     }
-
+    else {
+      Address::create(FALSE)
+        ->addValue('contact_id', $individualId)
+        ->addValue('state_province_id', $stateProvinceId)
+        ->addValue('is_primary', TRUE)
+        ->addValue('location_type_id', 1)
+        ->addValue('city', $cityName)
+        ->execute();
+    }
 
     $results = EckEntity::update('Institution_Visit', FALSE)
       ->addValue('Urban_Planned_Visit.External_Coordinating_PoC', $individualId)
