@@ -18,6 +18,28 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * Base URL for the contribution page used by the donation buttons.
+ *
+ * The buttons are rendered on pages served from the CRM domain, so home_url()
+ * keeps the donor there. Where a public domain fronts the contribution pages,
+ * define GOONJ_PUBLIC_BASE_URL in wp-config.php and the donor is sent there
+ * instead. Without the constant this returns home_url() as before, so local
+ * and staging are unchanged.
+ *
+ * The trailing slash matters: the public domain serves /contribute/ only and
+ * answers the slash-less form with the website's own 404.
+ *
+ * @return string
+ */
+function gb_goonj_donation_base_url() {
+	if ( defined( 'GOONJ_PUBLIC_BASE_URL' ) && GOONJ_PUBLIC_BASE_URL ) {
+		return rtrim( GOONJ_PUBLIC_BASE_URL, '/' ) . '/contribute/';
+	}
+
+	return home_url( '/contribute/' );
+}
+
+/**
  * Registers the block using the metadata loaded from the `block.json` file.
  * Behind the scenes, it registers also all assets so they can be enqueued
  * through the block editor in the corresponding context.
