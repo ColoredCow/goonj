@@ -36,6 +36,9 @@ class EngagementIntentTransferService extends AutoSubscriber {
 
   /**
    * Activities that are run as part of a collection camp when one is asked for.
+   *
+   * Option names as stored in CiviCRM: "Awarness_Session" is spelled that way
+   * in the database (production too), so it must not be corrected here.
    */
   const CAMP_CHILD_ACTIVITIES = [
     'Fundraising',
