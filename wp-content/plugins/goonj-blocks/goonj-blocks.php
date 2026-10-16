@@ -30,10 +30,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 function gb_goonj_donation_base_url() {
 	if ( defined( 'GOONJ_PUBLIC_BASE_URL' ) && GOONJ_PUBLIC_BASE_URL ) {
-		// The trailing slash is required: the public domain only serves
-		// /contribute/ and answers the slash-less form with its own 404,
-		// whereas the CRM domain redirects to add it.
-		return rtrim( GOONJ_PUBLIC_BASE_URL, '/' ) . '/contribute/';
+		return rtrim( GOONJ_PUBLIC_BASE_URL, '/' ) . '/contribute';
 	}
 
 	return home_url( '/contribute' );
