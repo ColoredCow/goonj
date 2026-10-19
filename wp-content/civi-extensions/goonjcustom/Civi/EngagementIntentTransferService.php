@@ -369,6 +369,7 @@ class EngagementIntentTransferService extends AutoSubscriber {
       'Collection_Camp_Intent_Details.End_Date' => $date ? $date . ' ' . self::INTENT_END_TIME : NULL,
       'Collection_Camp_Intent_Details.Will_your_collection_drive_be_open_for_general_public:name' => self::OPTION_YES,
       'Collection_Camp_Intent_Details.Do_you_want_to_plan_a_creative_and_engaging_activity_where_resid:name' => self::OPTION_NO,
+      'Collection_Camp_Intent_Details.Do_you_require_permission_letters_from_Goonj_to_get_permission_f:name' => self::OPTION_NO,
     ]);
 
     self::sendCampInitiatorInductionEmail($contactId);
@@ -396,6 +397,7 @@ class EngagementIntentTransferService extends AutoSubscriber {
       'Dropping_Centre.Timing' => self::DROPPING_CENTER_TIMING,
       'Dropping_Centre.Can_we_keep_donation_box_in_center_For_Monetary_Contribution_:name' => self::OPTION_NO,
       'Dropping_Centre.Will_your_dropping_center_be_open_for_general_public_as_well_out:name' => self::OPTION_NO,
+      'Dropping_Centre.Some_volunteers_require_permission_letters_from_Goonj_to_get_per:name' => self::OPTION_NO,
       'Dropping_Centre.Name' => $contact['display_name'] ?? NULL,
       'Dropping_Centre.Contact_Number' => $contact['phone_primary.phone'] ?? NULL,
     ]);
