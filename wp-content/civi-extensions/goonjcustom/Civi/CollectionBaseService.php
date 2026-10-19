@@ -333,7 +333,7 @@ class CollectionBaseService extends AutoSubscriber {
   /**
    *
    */
-  public static function updateUniqueContributorsCount(int $contributionId, string $activeFieldName, int $currentContactId) {
+  public static function updateUniqueContributorsCount(int $contributionId, string $activeFieldName, int $currentContactId, bool $countCurrentContact = TRUE) {
     $materialContactIds = [];
 
     if (!in_array($activeFieldName, ['Material_Contribution.Institution_Goonj_Activities', 'Material_Contribution.Goonj_Activities'], TRUE)) {
@@ -368,7 +368,7 @@ class CollectionBaseService extends AutoSubscriber {
     $inMaterial = in_array($currentContactId, $materialContactIds, TRUE);
     $inMoney    = in_array($currentContactId, $monetaryContactIds, TRUE);
 
-    if (!$inMaterial && !$inMoney) {
+    if ($countCurrentContact && !$inMaterial && !$inMoney) {
       $uniqueCount++;
     }
 
@@ -474,21 +474,25 @@ class CollectionBaseService extends AutoSubscriber {
     }
 
     $contributionId = $objectRef->id;
-    if (isset($processed[$contributionId])) {
-      return;
-    }
-    $processed[$contributionId] = TRUE;
 
     $contribution = Contribution::get(FALSE)
-      ->addSelect('contact_id', 'Contribution_Details.Source.id')
+      ->addSelect('contact_id', 'Contribution_Details.Source.id', 'contribution_status_id:name')
       ->addWhere('id', '=', $contributionId)
-      ->addWhere('contribution_status_id:name', '=', 'Completed')
       ->execute()
       ->first();
 
     if (!$contribution || empty($contribution['Contribution_Details.Source.id'])) {
       return;
     }
+
+    // Process each status of a contribution once, not just the first save:
+    // a CSV import saves it as Pending and completes it in a second save, and
+    // a cancellation must bring the count back down.
+    $status = $contribution['contribution_status_id:name'];
+    if (isset($processed[$contributionId][$status])) {
+      return;
+    }
+    $processed[$contributionId][$status] = TRUE;
 
     $contributionId = $contribution['Contribution_Details.Source.id'];
 
@@ -502,7 +506,7 @@ class CollectionBaseService extends AutoSubscriber {
 
     if ($subtype) {
       $fieldName = "Material_Contribution.$subtype";
-      self::updateUniqueContributorsCount($contributionId, $fieldName, $contribution['contact_id']);
+      self::updateUniqueContributorsCount($contributionId, $fieldName, $contribution['contact_id'], $status === 'Completed');
     }
 
     $allContributions = Contribution::get(FALSE)
@@ -614,7 +618,8 @@ class CollectionBaseService extends AutoSubscriber {
       $existing = EckEntity::get('Collection_Camp')
         ->addSelect(
         'Core_Contribution_Details.Total_online_monetary_contributions',
-        'Core_Contribution_Details.Total_cash_cheque_monetary_contributions'
+        'Core_Contribution_Details.Total_cash_cheque_monetary_contributions',
+        'Core_Contribution_Details.Total_Other_Monetary_Contributions'
         )
         ->addWhere('id', '=', $contributionId)
         ->execute()
@@ -622,22 +627,27 @@ class CollectionBaseService extends AutoSubscriber {
 
       $onlineCurrent = (float) ($existing['Core_Contribution_Details.Total_online_monetary_contributions'] ?? 0);
       $cashCurrent = (float) ($existing['Core_Contribution_Details.Total_cash_cheque_monetary_contributions'] ?? 0);
+      $otherCurrent = (float) ($existing['Core_Contribution_Details.Total_Other_Monetary_Contributions'] ?? 0);
 
       $onlineNew = $onlineCurrent;
       $cashNew = $cashCurrent;
+      $otherNew = $otherCurrent;
 
       if ($paymentMethod === 'Credit Card') {
         $onlineNew = max(0, $onlineCurrent - $amount);
       }
-
-      if (in_array($paymentMethod, ['Cash', 'Check'], TRUE)) {
+      elseif (in_array($paymentMethod, ['Cash', 'Check'], TRUE)) {
         $cashNew = max(0, $cashCurrent - $amount);
+      }
+      else {
+        $otherNew = max(0, $otherCurrent - $amount);
       }
 
       $update = EckEntity::update('Collection_Camp')
         ->addWhere('id', '=', $contributionId)
         ->addValue('Core_Contribution_Details.Total_online_monetary_contributions', $onlineNew)
-        ->addValue('Core_Contribution_Details.Total_cash_cheque_monetary_contributions', $cashNew);
+        ->addValue('Core_Contribution_Details.Total_cash_cheque_monetary_contributions', $cashNew)
+        ->addValue('Core_Contribution_Details.Total_Other_Monetary_Contributions', $otherNew);
 
       if (!$currentContactStillExists) {
         $update->addValue('Core_Contribution_Details.Number_of_unique_monetary_contributors', $uniqueMonetaryCount);
@@ -665,10 +675,6 @@ class CollectionBaseService extends AutoSubscriber {
     }
 
     $contributionId = $objectRef->id;
-    if (isset($processed[$contributionId])) {
-      return;
-    }
-    $processed[$contributionId] = TRUE;
 
     $contribution = Contribution::get(FALSE)
       ->addSelect(
@@ -678,13 +684,21 @@ class CollectionBaseService extends AutoSubscriber {
         'payment_instrument_id:name'
       )
       ->addWhere('id', '=', $contributionId)
-      ->addWhere('contribution_status_id:name', '=', 'Completed')
       ->execute()
       ->first();
 
     if (!$contribution || empty($contribution['Contribution_Details.Source.id'])) {
       return;
     }
+
+    // Process each status of a contribution once, not just the first save:
+    // a CSV import saves it as Pending and completes it in a second save, and
+    // a cancellation must bring the totals back down.
+    $status = $contribution['contribution_status_id:name'];
+    if (isset($processed[$contributionId][$status])) {
+      return;
+    }
+    $processed[$contributionId][$status] = TRUE;
 
     $campId = (int) $contribution['Contribution_Details.Source.id'];
 
@@ -696,6 +710,7 @@ class CollectionBaseService extends AutoSubscriber {
 
     $onlineTotal = 0.0;
     $cashChequeTotal = 0.0;
+    $otherTotal = 0.0;
 
     foreach ($allCampContributions as $item) {
       $amount = (float) ($item['total_amount'] ?? 0);
@@ -707,6 +722,11 @@ class CollectionBaseService extends AutoSubscriber {
       elseif (in_array($method, ['Cash', 'Check'], TRUE)) {
         $cashChequeTotal += $amount;
       }
+      else {
+        // Any payment method that is not Razorpay or cash/cheque, including
+        // ones added in future (UPI, Wire Transfer, ...).
+        $otherTotal += $amount;
+      }
     }
 
     try {
@@ -714,6 +734,7 @@ class CollectionBaseService extends AutoSubscriber {
         ->addWhere('id', '=', $campId)
         ->addValue('Core_Contribution_Details.Total_online_monetary_contributions', $onlineTotal)
         ->addValue('Core_Contribution_Details.Total_cash_cheque_monetary_contributions', $cashChequeTotal)
+        ->addValue('Core_Contribution_Details.Total_Other_Monetary_Contributions', $otherTotal)
         ->execute();
     }
     catch (\Exception $e) {

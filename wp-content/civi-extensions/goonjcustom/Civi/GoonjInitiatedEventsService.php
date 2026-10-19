@@ -126,7 +126,8 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
       $existing = Event::get(FALSE)
         ->addSelect(
         'Goonj_Events_Outcome.Online_Monetary_Contribution',
-        'Goonj_Events_Outcome.Cash_Contribution'
+        'Goonj_Events_Outcome.Cash_Contribution',
+        'Goonj_Events_Outcome.Total_Other_Monetary_Contributions'
         )
         ->addWhere('id', '=', $eventId)
         ->execute()
@@ -134,6 +135,7 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
 
       $onlineCurrent = (float) ($existing['Goonj_Events_Outcome.Online_Monetary_Contribution'] ?? 0);
       $cashCurrent = (float) ($existing['Goonj_Events_Outcome.Cash_Contribution'] ?? 0);
+      $otherCurrent = (float) ($existing['Goonj_Events_Outcome.Total_Other_Monetary_Contributions'] ?? 0);
 
       $update = Event::update()
         ->addWhere('id', '=', $eventId);
@@ -150,8 +152,11 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
         $update->addValue('Goonj_Events_Outcome.Online_Monetary_Contribution', max(0, $onlineCurrent - $amount));
       }
 
-      if (in_array($paymentMethod, ['Cash', 'Check'], TRUE)) {
+      elseif (in_array($paymentMethod, ['Cash', 'Check'], TRUE)) {
         $update->addValue('Goonj_Events_Outcome.Cash_Contribution', max(0, $cashCurrent - $amount));
+      }
+      else {
+        $update->addValue('Goonj_Events_Outcome.Total_Other_Monetary_Contributions', max(0, $otherCurrent - $amount));
       }
 
       $update->execute();
@@ -240,7 +245,7 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
   /**
    *
    */
-  public static function updateUniqueContributorsCount(int $eventId) {
+  public static function updateUniqueContributorsCount(int $eventId, ?int $currentContactId = NULL) {
     $materialActivities = Activity::get(FALSE)
       ->addSelect('source_contact_id')
       ->addWhere('Material_Contribution.Event', '=', $eventId)
@@ -251,6 +256,12 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
       if (!empty($activity['source_contact_id'])) {
         $materialContactIds[] = $activity['source_contact_id'];
       }
+    }
+
+    // The contact whose material contribution is being saved right now; see
+    // updateEventMatrialContributorsCount.
+    if ($currentContactId) {
+      $materialContactIds[] = $currentContactId;
     }
 
     $monetaryContributions = Contribution::get(FALSE)
@@ -320,9 +331,17 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
       }
     }
 
+    // The form's submission is saved before its activity, so the material
+    // contribution being added is not in the list above yet; count its
+    // contact here (the camp hook does the same).
+    $currentContactId = (int) ($activityFields['source_contact_id'] ?? 0);
+    if ($currentContactId) {
+      $uniqueContactIds[$currentContactId] = TRUE;
+    }
+
     $uniqueCount = count($uniqueContactIds);
 
-    self::updateUniqueContributorsCount($eventId);
+    self::updateUniqueContributorsCount($eventId, $currentContactId ?: NULL);
 
     try {
       Event::update()
@@ -345,21 +364,25 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
     }
 
     $contributionId = $objectRef->id;
-    if (isset($processed[$contributionId])) {
-      return;
-    }
-    $processed[$contributionId] = TRUE;
 
     $contribution = Contribution::get(FALSE)
-      ->addSelect('contact_id', 'Contribution_Details.Events.id')
+      ->addSelect('contact_id', 'Contribution_Details.Events.id', 'contribution_status_id:name')
       ->addWhere('id', '=', $contributionId)
-      ->addWhere('contribution_status_id:name', '=', 'Completed')
       ->execute()
       ->first();
 
     if (!$contribution || empty($contribution['Contribution_Details.Events.id'])) {
       return;
     }
+
+    // Process each status of a contribution once, not just the first save:
+    // a CSV import saves it as Pending and completes it in a second save, and
+    // a cancellation must bring the count back down.
+    $status = $contribution['contribution_status_id:name'];
+    if (isset($processed[$contributionId][$status])) {
+      return;
+    }
+    $processed[$contributionId][$status] = TRUE;
 
     $eventId = $contribution['Contribution_Details.Events.id'];
 
@@ -401,10 +424,6 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
     }
 
     $contributionId = $objectRef->id;
-    if (isset($processed[$contributionId])) {
-      return;
-    }
-    $processed[$contributionId] = TRUE;
 
     $contribution = Contribution::get(FALSE)
       ->addSelect(
@@ -414,7 +433,6 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
         'payment_instrument_id:name'
       )
       ->addWhere('id', '=', $contributionId)
-      ->addWhere('contribution_status_id:name', '=', 'Completed')
       ->execute()
       ->first();
 
@@ -422,35 +440,50 @@ class GoonjInitiatedEventsService extends AutoSubscriber {
       return;
     }
 
-    $eventId = $contribution['Contribution_Details.Events.id'];
-    $totalAmount = (float) $contribution['total_amount'];
-    $paymentMethod = $contribution['payment_instrument_id:name'];
+    // Process each status of a contribution once, not just the first save:
+    // a CSV import saves it as Pending and completes it in a second save, and
+    // a cancellation must bring the totals back down.
+    $status = $contribution['contribution_status_id:name'];
+    if (isset($processed[$contributionId][$status])) {
+      return;
+    }
+    $processed[$contributionId][$status] = TRUE;
 
-    $existing = Event::get(FALSE)
-      ->addSelect(
-        'Goonj_Events_Outcome.Online_Monetary_Contribution',
-        'Goonj_Events_Outcome.Cash_Contribution'
-      )
+    $eventId = (int) $contribution['Contribution_Details.Events.id'];
+
+    $allEventContributions = Contribution::get(FALSE)
+      ->addSelect('total_amount', 'payment_instrument_id:name')
+      ->addWhere('Contribution_Details.Events.id', '=', $eventId)
+      ->addWhere('contribution_status_id:name', '=', 'Completed')
+      ->execute();
+
+    $onlineTotal = 0.0;
+    $cashChequeTotal = 0.0;
+    $otherTotal = 0.0;
+
+    foreach ($allEventContributions as $item) {
+      $amount = (float) ($item['total_amount'] ?? 0);
+      $method = $item['payment_instrument_id:name'] ?? '';
+
+      if ($method === 'Credit Card') {
+        $onlineTotal += $amount;
+      }
+      elseif (in_array($method, ['Cash', 'Check'], TRUE)) {
+        $cashChequeTotal += $amount;
+      }
+      else {
+        // Any payment method that is not Razorpay or cash/cheque, including
+        // ones added in future (UPI, Wire Transfer, ...).
+        $otherTotal += $amount;
+      }
+    }
+
+    Event::update(FALSE)
       ->addWhere('id', '=', $eventId)
-      ->execute()
-      ->first();
-
-    $onlineCurrent = (float) ($existing['Goonj_Events_Outcome.Online_Monetary_Contribution'] ?? 0);
-    $cashCurrent = (float) ($existing['Goonj_Events_Outcome.Cash_Contribution'] ?? 0);
-    $update = Event::update(FALSE)
-      ->addWhere('id', '=', $eventId);
-
-    if ($paymentMethod === 'Credit Card') {
-      $onlineNew = $onlineCurrent + $totalAmount;
-      $update->addValue('Goonj_Events_Outcome.Online_Monetary_Contribution', $onlineNew);
-    }
-
-    if (in_array($paymentMethod, ['Cash', 'Check'], TRUE)) {
-      $cashNew = $cashCurrent + $totalAmount;
-      $update->addValue('Goonj_Events_Outcome.Cash_Contribution', $cashNew);
-    }
-
-    $update->execute();
+      ->addValue('Goonj_Events_Outcome.Online_Monetary_Contribution', $onlineTotal)
+      ->addValue('Goonj_Events_Outcome.Cash_Contribution', $cashChequeTotal)
+      ->addValue('Goonj_Events_Outcome.Total_Other_Monetary_Contributions', $otherTotal)
+      ->execute();
   }
 
   /**
