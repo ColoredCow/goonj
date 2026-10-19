@@ -23,8 +23,11 @@ if ( ! defined( 'ABSPATH' ) ) {
  * The buttons are rendered on pages served from the CRM domain, so home_url()
  * keeps the donor there. Where a public domain fronts the contribution pages,
  * define GOONJ_PUBLIC_BASE_URL in wp-config.php and the donor is sent there
- * instead. Without the constant this returns home_url() exactly as before, so
- * local and staging are unchanged.
+ * instead. Without the constant this returns home_url() as before, so local
+ * and staging are unchanged.
+ *
+ * The trailing slash matters: the public domain serves /contribute/ only and
+ * answers the slash-less form with the website's own 404.
  *
  * @return string
  */
