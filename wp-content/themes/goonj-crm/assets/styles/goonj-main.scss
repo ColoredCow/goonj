@@ -377,6 +377,15 @@
     min-width: 0;
   }
 
+  // The consent notice main.js builds when the profile has no Field Post Help
+  // of its own. It is deliberately not a `.crm-section`, so the rule above does
+  // not reach it, and it dropped into the left column alone — the notice opened
+  // at half the form's width beside an empty right half.
+  > .goonj-consent-notice-shared {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+
   > .crm-section[class*="editrow_first_name-"],
   > .crm-section[class*="editrow_last_name-"],
   > .crm-section[class*="editrow_email-"],
@@ -466,7 +475,8 @@
     // form altogether. A grid item is already exactly as wide as the column it
     // sits in, so take the width from there and let it cascade down the row.
     > .crm-section,
-    .crm-section div {
+    .crm-section div,
+    > .goonj-consent-notice-shared {
       width: 100% !important;
     }
   }
@@ -1022,7 +1032,10 @@
   border-radius: 0;
   box-shadow: none;
   padding: 0;
-  margin: 0 12px 0 0;
+  // The separator between the two carries the spacing. A margin here as well
+  // put 24px before the dot and 12px after it wherever nothing else zeroes it,
+  // such as the contribution pages.
+  margin: 0;
   height: auto;
   min-height: 0;
   line-height: inherit;
