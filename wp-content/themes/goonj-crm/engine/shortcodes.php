@@ -133,7 +133,8 @@ function goonj_generate_monetary_button($individualId, $collectionCampId) {
 
   if (strpos($requestUri, '/events/') !== FALSE) {
     $sourceFieldId = goonj_get_contribution_source_field_id_for_events();
-  } else {
+  }
+  else {
     $contact = Contact::get(FALSE)
       ->addSelect('contact_sub_type')
       ->addWhere('id', '=', $collectionCampId)
@@ -144,7 +145,8 @@ function goonj_generate_monetary_button($individualId, $collectionCampId) {
 
     if (in_array('Goonj_Processing_Center', $subtypes)) {
       $sourceFieldId = goonj_get_contribution_source_field_id_for_processing_unit();
-    } else {
+    }
+    else {
       $sourceFieldId = goonj_get_contribution_source_field_id();
     }
   }
@@ -159,7 +161,6 @@ function goonj_generate_monetary_button($individualId, $collectionCampId) {
 
   return goonj_generate_button_html($monetaryUrl, $buttonText);
 }
-
 
 /**
  *
