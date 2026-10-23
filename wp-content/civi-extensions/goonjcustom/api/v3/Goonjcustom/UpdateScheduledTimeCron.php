@@ -128,6 +128,14 @@ function updateJobScheduledTime($apiAction, $scheduledRunDate) {
 
   $scheduledRunDateFromDb = $job['scheduled_run_date'];
 
+  // A date that has already passed means the job is due but has not run yet
+  // (CiviCRM clears the date when it runs the job). Leave it alone: when a
+  // long scheduled-jobs run holds the cron lock past the due time, this job
+  // would otherwise move it to tomorrow and the job would skip a day.
+  if (!empty($scheduledRunDateFromDb) && strtotime($scheduledRunDateFromDb) <= time()) {
+    return;
+  }
+
   // Update the scheduled run time if it differs from the current value.
   if ($scheduledRunDateFromDb !== $scheduledRunDate) {
     Job::update(TRUE)
