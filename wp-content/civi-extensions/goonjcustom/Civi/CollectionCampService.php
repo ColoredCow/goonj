@@ -1761,6 +1761,7 @@ class CollectionCampService extends AutoSubscriber {
 
         $attendeeEmail = $campAttendedBy['email.email'];
         $attendeeName = $campAttendedBy['display_name'];
+        $pocEmailSendResult = FALSE;
 
         if ($selfManaged) {
           $emailHtml = self::getSelfLogisticsEmailHtml($campOrganiserattendeeName, $campId, $campOrganiser, $campOffice, $campCode, $campAddress, $displayDate, $campPocName, $campPocPhone);
@@ -1776,7 +1777,7 @@ class CollectionCampService extends AutoSubscriber {
             'replyTo' => self::getFromAddress(),
             'html' => $emailOutcomeHtml,
           ];
-          $emailSendResult = \CRM_Utils_Mail::send($mailParams);
+          $pocEmailSendResult = \CRM_Utils_Mail::send($mailParams);
         }
         else {
           $emailHtml = self::getLogisticsEmailHtml($attendeeName, $campId, $campAttendedById, $campOffice, $campCode, $campAddress);
@@ -1795,7 +1796,14 @@ class CollectionCampService extends AutoSubscriber {
 
         $emailSendResult = \CRM_Utils_Mail::send($mailParams);
 
-        if ($emailSendResult) {
+        // Self managed camp: once the POC mail has gone out, mark the camp as
+        // sent even if the organiser mail fails (e.g. organiser has no email),
+        // otherwise the cron re-sends the POC mail every day.
+        if (!$emailSendResult && $pocEmailSendResult) {
+          \Civi::log()->warning("Organiser logistics email not sent for self managed collection camp: $campId");
+        }
+
+        if ($emailSendResult || $pocEmailSendResult) {
           \Civi::log()->info("Logistics email sent for collection camp: $campId");
           EckEntity::update('Collection_Camp', FALSE)
             ->addValue('Logistics_Coordination.Email_Sent', 1)
