@@ -20,19 +20,24 @@ CiviCRM publishes every security release here:
 Each release post lists the advisories it fixes. We read that list, check which advisories
 affect our version, and take only those fixes.
 
-Two releases have been backported so far:
+Three releases have been backported so far:
 
 | Security release | Published | Advisories taken |
 |---|---|---|
 | [CiviCRM Security Release (6.15.3, 6.10-ESR)](https://civicrm.org/blog/dev-team/civicrm-security-release-6153-610-esr) | 2026-06-17 | CIVI-SA-2026-18 … 34 (17) |
 | [CiviCRM Security Release (6.17.2, 6.16.5, 6.10-ESR)](https://civicrm.org/blog/dev-team/civicrm-security-release-6172-6165-610-esr) | 2026-08-05 | CIVI-SA-2026-35, 36, 37 (3) |
+| [CiviCRM Security Release (6.19.3, 6.16-ESR)](https://civicrm.org/blog/dev-team/civicrm-security-release-6193-616-esr) | 2026-10-28 | CIVI-SA-2026-38 … 52 (15) |
 
-Applied in [ColoredCow/goonj PR #1762](https://github.com/ColoredCow/goonj/pull/1762).
+CIVI-SA-2026-18 … 37 were applied in [ColoredCow/goonj PR #1762](https://github.com/ColoredCow/goonj/pull/1762).
 Tracking issue: [ColoredCow/goonj-crm#369](https://github.com/ColoredCow/goonj-crm/issues/369).
+
+CIVI-SA-2026-38 … 52 were taken from the public commits between the 6.19.2 and 6.19.3 tags
+(none of these advisories links a patch, and the 6.16-ESR repository is not public).
+Tracking issue: [ColoredCow/goonj-crm#401](https://github.com/ColoredCow/goonj-crm/issues/401).
 
 ---
 
-## Status: all 20 advisories closed
+## Status: all 35 advisories closed
 
 ### From the 6.15.3 release (17 June 2026)
 
@@ -67,22 +72,58 @@ Tracking issue: [ColoredCow/goonj-crm#369](https://github.com/ColoredCow/goonj-c
 All 20 were verified present in the code and tested on a local environment before release.
 Per-commit detail is in PR #1762 — this file deliberately does not repeat it.
 
+### From the 6.19.3 / 6.16-ESR release (28 October 2026)
+
+| Advisory | Issue | Severity |
+|---|---|---|
+| CIVI-SA-2026-38 | APIv4 - Information Disclosure via Joined Writes | Moderately Critical |
+| CIVI-SA-2026-39 | Standalone - Cookie Security Downgrade *(Standalone only)* | Moderately Critical |
+| CIVI-SA-2026-40 | Groups - Access Bypass for Reserved Groups | Moderately Critical |
+| **CIVI-SA-2026-41** | **APIv4 - Access Bypass via EntitySet API** | **Critical** |
+| **CIVI-SA-2026-42** | **Standalone - Privilege Escalation via User API** *(Standalone only)* | **Critical** |
+| CIVI-SA-2026-43 | APIv4 - ACL Bypass via Join | Less Critical |
+| **CIVI-SA-2026-44** | **APIv3 - SQLI in RLIKE Operator** | **Critical** |
+| **CIVI-SA-2026-45** | **Backend Record Stealing** | **Critical** |
+| **CIVI-SA-2026-46** | **Frontend Record Stealing** | **Critical** |
+| CIVI-SA-2026-47 | CiviEvent - Session Overwrite via Confirmation Screen | Moderately Critical |
+| CIVI-SA-2026-48 | API - Access Bypass for Certain Billing Details | Moderately Critical |
+| **CIVI-SA-2026-49** | **AJAX - Multiple Vulnerabilities** | **Critical** |
+| CIVI-SA-2026-50 | Standalone - MFA Bypass *(Standalone only)* | Less Critical |
+| CIVI-SA-2026-51 | CiviContribute - ACL Bypass in Financial Entities | Moderately Critical |
+| CIVI-SA-2026-52 | Permissions - Erroneous Short-Circuit | Moderately Critical |
+
+The three Standalone-only advisories cannot be exploited on WordPress; they were applied anyway
+to keep core in line with the fixed release. 80 commits were taken: 69 applied as published and
+11 were placed by hand where the surrounding 6.13.3 code differs from 6.19 (the security lines
+themselves are upstream's). The release's non-security "Bugs resolved" fixes and its test-only
+commits were deliberately left out. Per-commit detail is in the PR.
+
+The CKEditor5 and Summernote extension fixes announced in the same release do not apply to us —
+neither extension is installed.
+
+**One deliberate difference from upstream:** `civicrm/ajax/attachment` is kept as
+`<is_ajax>false</is_ajax>` in `CRM/Core/xml/Menu/Misc.xml`. CIVI-SA-2026-49 marks it JavaScript-only,
+but CiviCRM's own attachment uploader (used by CiviMail and Mosaico) does not send the header that
+check needs, so every mailing attachment upload failed. The route keeps its own anti-forgery token
+check. This is the same fix upstream made for `civicrm/ajax/admin/search` in `4bbf60027`. At the
+November upgrade, check whether the target version has fixed the uploader before dropping it.
+
 ---
 
 ## When these backports become redundant
 
-**All of them go away the moment CiviCRM is upgraded to 6.17.2 or later**, because every one
-of these fixes is already in that release. Nothing here needs to be carried forward past
-that upgrade.
+**All of them go away the moment CiviCRM is upgraded to 6.19.3 or later (or 6.16.6 ESR)**,
+because every one of these fixes is already in that release. Nothing here needs to be carried
+forward past that upgrade.
 
 But there is a catch that must not be forgotten:
 
 > A WordPress CiviCRM upgrade **replaces the entire `wp-content/plugins/civicrm` directory**.
-> That silently deletes all 86 backported files. Nothing warns you.
+> That silently deletes every backported file. Nothing warns you.
 
 So at the next upgrade (planned for **November 2026**):
 
-1. Confirm the target version is **6.17.2 or higher** — anything lower reopens some of these advisories.
+1. Confirm the target version is **6.19.3 or higher** — anything lower reopens some of these advisories.
 2. Do **not** re-apply anything. The upgrade already contains all of it.
 3. Add a line at the top of the advisory tables below recording that they are now superseded —
    which version we upgraded to and on what date. **Do not delete the tables.** They are the
@@ -91,8 +132,18 @@ So at the next upgrade (planned for **November 2026**):
 4. Remove the manual `vendor/phlib` and autoloader entries noted at the end of this file — the
    upgrade brings its own copies, so ours are no longer needed.
 
-If for any reason the upgrade lands on a version **below 6.17.2**, the backports have to be
-re-applied. In that case, re-read the two release posts linked above.
+If for any reason the upgrade lands on a version **below 6.19.3**, the backports have to be
+re-applied. In that case, re-read the release posts linked above.
+
+---
+
+## Deploying the CIVI-SA-2026-38 … 52 backport: flush caches
+
+CIVI-SA-2026-49 protects AJAX routes through a new `is_ajax` flag on each menu route, and
+CIVI-SA-2026-45 registers its ownership checks in the service container. Both only take effect
+after CiviCRM rebuilds its menu and container. Our deploy is a `git reset --hard`, which does
+neither, so **run `cv flush` on every server (web and worker) after deploying** — otherwise the
+code looks deployed but these protections are not active.
 
 ---
 
