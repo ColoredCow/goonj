@@ -86,7 +86,7 @@
     <path>civicrm/ajax/attachment</path>
     <page_callback>CRM_Core_Page_AJAX_Attachment::attachFile</page_callback>
     <access_arguments>access CiviCRM;access AJAX API</access_arguments>
-    <is_ajax>true</is_ajax>
+    <is_ajax>false</is_ajax>
   </item>
   <item>
      <path>civicrm/api</path>

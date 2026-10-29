@@ -101,6 +101,13 @@ commits were deliberately left out. Per-commit detail is in the PR.
 The CKEditor5 and Summernote extension fixes announced in the same release do not apply to us —
 neither extension is installed.
 
+**One deliberate difference from upstream:** `civicrm/ajax/attachment` is kept as
+`<is_ajax>false</is_ajax>` in `CRM/Core/xml/Menu/Misc.xml`. CIVI-SA-2026-49 marks it JavaScript-only,
+but CiviCRM's own attachment uploader (used by CiviMail and Mosaico) does not send the header that
+check needs, so every mailing attachment upload failed. The route keeps its own anti-forgery token
+check. This is the same fix upstream made for `civicrm/ajax/admin/search` in `4bbf60027`. At the
+November upgrade, check whether the target version has fixed the uploader before dropping it.
+
 ---
 
 ## When these backports become redundant
