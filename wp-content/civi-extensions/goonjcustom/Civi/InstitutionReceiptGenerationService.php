@@ -85,7 +85,8 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
       $institutionEmail,
       $noOfBagsReceived,
       $contributionDate,
-      $recordId
+      $recordId,
+      $record['created_date'] ?? NULL
     );
   }
 
@@ -102,7 +103,8 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
         'Camp_Vehicle_Dispatch.Institution_Collection_Camp',
         'Camp_Vehicle_Dispatch.Institution_Dropping_Center',
         'Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office',
-        'Acknowledgement_For_Logistics.Contribution_Date'
+        'Acknowledgement_For_Logistics.Contribution_Date',
+        'created_date'
       )
       ->addClause('OR', ['Camp_Vehicle_Dispatch.Institution_Collection_Camp', '=', $entityId], ['Camp_Vehicle_Dispatch.Institution_Dropping_Center', '=', $entityId])
       ->addWhere('id', '=', $recordId)
@@ -121,6 +123,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
     $noOfBagsReceived,
     $contributionDate,
     $recordId,
+    $recordCreatedDate = NULL,
   ) {
     try {
       $html = self::generateAcknowledgedReceiptHtml(
@@ -129,7 +132,8 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
         $institutionContactNumber,
         $institutionEmail,
         $noOfBagsReceived,
-        $contributionDate
+        $contributionDate,
+        $recordCreatedDate
       );
       $pdfContent = \CRM_Utils_PDF_Utils::html2pdf($html, NULL, ['paper_size' => 'a4', 'orientation' => 'portrait']);
       $fileName = "acknowledgement_receipt.pdf";
@@ -178,7 +182,8 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
       $result['collectionCampId'] ?? NULL,
       $result['droppingCenterId'] ?? NULL,
       $result['description_of_material'] ?? NULL,
-      $result['contribution_date'] ?? NULL
+      $result['contribution_date'] ?? NULL,
+      $result['record_id'] ?? NULL
     );
 
     return $result;
@@ -200,6 +205,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
         'droppingCenterId' => $fields['Camp_Vehicle_Dispatch.Institution_Dropping_Center'],
         'description_of_material' => $fields['Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office'],
         'contribution_date' => $fields['Acknowledgement_For_Logistics.Contribution_Date'],
+        'record_id' => $fields['id'] ?? NULL,
       ]);
     }
     return $result;
@@ -217,6 +223,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
     $droppingCenterId,
     $descriptionOfMaterial,
     $contributionDate,
+    $recordId = NULL,
   ) {
     $coordinatingPOCId = NULL;
     $goonjOfficeName = '';
@@ -258,6 +265,16 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
     $goonjCoordinatorEmail = $contact['email.email'];
     $goonjCoordinatorPhone = $contact['phone.phone'];
 
+    $recordCreatedDate = NULL;
+    if ($recordId) {
+      $dispatchRecord = EckEntity::get('Collection_Source_Vehicle_Dispatch', FALSE)
+        ->addSelect('created_date')
+        ->addWhere('id', '=', $recordId)
+        ->execute()
+        ->first();
+      $recordCreatedDate = $dispatchRecord['created_date'] ?? NULL;
+    }
+
     $body = self::generateEmailBody($institutionName, $goonjCoordinatorEmail, $goonjCoordinatorPhone, $goonjOfficeName);
     $html = self::generateAcknowledgedReceiptHtml(
       $institutionName,
@@ -265,7 +282,8 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
       $contactNumber,
       $institutionEmail,
       $descriptionOfMaterial,
-      $contributionDate
+      $contributionDate,
+      $recordCreatedDate
     );
 
     $attachments = [\CRM_Utils_Mail::appendPDF('receipt.pdf', $html)];
@@ -347,7 +365,7 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
   /**
    * Generates the HTML content for the acknowledgment receipt PDF.
    */
-  private static function generateAcknowledgedReceiptHtml($institutionName, $address, $contactNumber, $institutionEmail, $descriptionOfMaterial, $contributionDate) {
+  private static function generateAcknowledgedReceiptHtml($institutionName, $address, $contactNumber, $institutionEmail, $descriptionOfMaterial, $contributionDate, $recordCreatedDate = NULL) {
     $baseDir = plugin_dir_path(__FILE__) . '../../../themes/goonj-crm/';
     $paths = [
       'logo' => $baseDir . 'images/goonj-logo.png',
@@ -364,6 +382,9 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
     $imageData = array_map(fn ($path) => base64_encode(file_get_contents($path)), $paths);
     $currentDate = date('F j, Y');
     $receivedOnDate = !empty($contributionDate) ? date("F j, Y", strtotime($contributionDate)) : $currentDate;
+
+    // Old or new registered office address, by the dispatch record's created date.
+    $office = RegisteredOfficeAddress::forReceipt($recordCreatedDate, '011-41401216');
 
     $html = <<<HTML
     <html>
@@ -443,12 +464,11 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
           <div style="font-size: 10px; margin-bottom: 20px;">
             <div style="position: relative; height: 24px;">
               <div style="font-size: 12px; float: left;">
-                Goonj, C-544, 1st Floor, C-Pocket, Sarita Vihar,<br>
-                New Delhi-110076
+                {$office['address']}
               </div>
               <div style="font-size: 12px; float: right;">
                 <img src="data:image/png;base64,{$imageData['callIcon']}" alt="Phone" style="width: 16px; height: 16px; margin-right: 5px;">
-                011-41401216
+                {$office['phone']}
               </div>
             </div>
           </div>

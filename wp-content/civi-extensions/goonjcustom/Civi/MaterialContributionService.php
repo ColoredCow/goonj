@@ -204,6 +204,9 @@ class MaterialContributionService extends AutoSubscriber {
     ? date("F j, Y", strtotime($contributionDate))
     : $activityDate;
 
+    // Old or new registered office address, by the activity's created date.
+    $office = RegisteredOfficeAddress::forReceipt($activity['created_date'] ?? NULL, '011-26972351/41401216');
+
     $baseDir = plugin_dir_path(__FILE__) . '../../../themes/goonj-crm/';
     $deliveredBy = !empty($activity['Material_Contribution.Delivered_By']) ? $activity['Material_Contribution.Delivered_By'] : '-';
 
@@ -318,12 +321,11 @@ class MaterialContributionService extends AutoSubscriber {
           <div style="font-size: 11px; margin-bottom: 20px;">
             <div style="position: relative; height: 24px;">
               <div style="font-size: 11px; float: left; color:">
-                Goonj, C-544, 1st Floor, C-Pocket, Sarita Vihar,<br>
-                New Delhi-110076
+                {$office['address']}
               </div>
               <div style="font-size: 11px; float: right;">
                 <img src="data:image/png;base64,{$imageData['callIcon']}" alt="Phone" style="width: 16px; height: 16px; margin-right: 5px;">
-                011-26972351/41401216
+                {$office['phone']}
               </div>
             </div>
           </div>
