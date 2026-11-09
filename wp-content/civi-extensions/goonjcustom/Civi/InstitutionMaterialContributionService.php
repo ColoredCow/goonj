@@ -156,7 +156,9 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
 
     $subject = 'Acknowledgement for your material contribution to Goonj';
     $body = self::generateEmailBody($name, $goonjOfficeName);
-    $html = self::generateContributionReceiptHtml($organizationName, $organizationAddress, $contribution, $email, $phone, $description, $name, $deliveredBy, $deliveredByContact, $activityDate, $contribution['created_date'] ?? NULL);
+    // This email goes out while the form is saved, before the new activity
+    // exists, so its created date is now.
+    $html = self::generateContributionReceiptHtml($organizationName, $organizationAddress, $contribution, $email, $phone, $description, $name, $deliveredBy, $deliveredByContact, $activityDate, date('Y-m-d H:i:s'));
     $attachments = [\CRM_Utils_Mail::appendPDF('institution_material_contribution.pdf', $html)];
     $params = self::prepareEmailParams($subject, $body, $attachments, $email);
 
