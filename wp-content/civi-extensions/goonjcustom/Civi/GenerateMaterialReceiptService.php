@@ -51,11 +51,12 @@ class GenerateMaterialReceiptService extends AutoSubscriber {
     $activityId = $data['Activity1'][0]['fields']['id'] ?? NULL;
 
     $activities = Activity::get(FALSE)
-      ->addSelect('Institution_Material_Contribution.Contribution_Date', 'campaign_id', 'Institution_Material_Contribution.Description_of_Material_No_of_Bags_Material_', 'Institution_Material_Contribution.Delivered_By_Name', 'Institution_Material_Contribution.Delivered_By_Contact_New', 'source_contact_id', 'Institution_Material_Contribution.Institution_POC')
+      ->addSelect('Institution_Material_Contribution.Contribution_Date', 'campaign_id', 'Institution_Material_Contribution.Description_of_Material_No_of_Bags_Material_', 'Institution_Material_Contribution.Delivered_By_Name', 'Institution_Material_Contribution.Delivered_By_Contact_New', 'source_contact_id', 'Institution_Material_Contribution.Institution_POC', 'created_date')
       ->addWhere('id', '=', $activityId)
       ->execute()->first();
 
     $activityDate = $activities['Institution_Material_Contribution.Contribution_Date'];
+    $activityCreatedDate = $activities['created_date'] ?? NULL;
     $campaignId = $activities['campaign_id'] ?? NULL;
     $description = $activities['Institution_Material_Contribution.Description_of_Material_No_of_Bags_Material_'] ?? '';
     $deliveredBy = $activities['Institution_Material_Contribution.Delivered_By_Name'] ?? '';
@@ -127,7 +128,7 @@ class GenerateMaterialReceiptService extends AutoSubscriber {
     $name = $contact['name'];
     $phone = $contact['phone'];
 
-    QrCodeable::generatePdfForEvent($organizationName, $organizationAddress, $contribution, $email, $phone, $description, $name, $deliveredBy, $deliveredByContact, $activityDate, $activityId);
+    QrCodeable::generatePdfForEvent($organizationName, $organizationAddress, $contribution, $email, $phone, $description, $name, $deliveredBy, $deliveredByContact, $activityDate, $activityId, $activityCreatedDate);
   }
 
   /**

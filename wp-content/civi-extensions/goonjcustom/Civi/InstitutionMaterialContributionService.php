@@ -156,7 +156,7 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
 
     $subject = 'Acknowledgement for your material contribution to Goonj';
     $body = self::generateEmailBody($name, $goonjOfficeName);
-    $html = self::generateContributionReceiptHtml($organizationName, $organizationAddress, $contribution, $email, $phone, $description, $name, $deliveredBy, $deliveredByContact, $activityDate);
+    $html = self::generateContributionReceiptHtml($organizationName, $organizationAddress, $contribution, $email, $phone, $description, $name, $deliveredBy, $deliveredByContact, $activityDate, $contribution['created_date'] ?? NULL);
     $attachments = [\CRM_Utils_Mail::appendPDF('institution_material_contribution.pdf', $html)];
     $params = self::prepareEmailParams($subject, $body, $attachments, $email);
 
@@ -212,7 +212,7 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
    * @return string
    *   The generated HTML.
    */
-  public static function generateContributionReceiptHtml($organizationName, $organizationAddress, $contribution, $email, $contactPhone, $description, $contactName, $deliveredBy, $deliveredByContact, $activityDate) {
+  public static function generateContributionReceiptHtml($organizationName, $organizationAddress, $contribution, $email, $contactPhone, $description, $contactName, $deliveredBy, $deliveredByContact, $activityDate, $activityCreatedDate = NULL) {
 
     $baseDir = plugin_dir_path(__FILE__) . '../../../themes/goonj-crm/';
 
@@ -233,6 +233,9 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
     $date = new \DateTime($activityDate);
 
     $formattedDate = $date->format('F j, Y');
+
+    // Old or new registered office address, by the activity's created date.
+    $office = RegisteredOfficeAddress::forReceipt($activityCreatedDate, '011-41401216');
 
     // Handle the "Delivered by" logic.
     $deliveredByName = $deliveredBy ? $deliveredBy : "-";
@@ -319,12 +322,11 @@ class InstitutionMaterialContributionService extends AutoSubscriber {
           <div style="font-size: 10px; margin-bottom: 20px;">
             <div style="position: relative; height: 24px;">
               <div style="font-size: 12px; float: left; color:">
-                Goonj, C-544, 1st Floor, C-Pocket, Sarita Vihar,<br>
-                New Delhi-110076
+                {$office['address']}
               </div>
               <div style="font-size: 12px; float: right;">
                 <img src="data:image/png;base64,{$imageData['callIcon']}" alt="Phone" style="width: 16px; height: 16px; margin-right: 5px;">
-                011-41401216
+                {$office['phone']}
               </div>
             </div>
           </div>
