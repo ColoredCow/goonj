@@ -45,13 +45,22 @@ class RegisteredOfficeAddress {
    * Whether a contribution entered on the given date shows the new address.
    */
   public static function isNewAddress(?string $createdDate): bool {
-    if (!defined('GOONJ_ADDRESS_CUTOFF_DATE') || !GOONJ_ADDRESS_CUTOFF_DATE || empty($createdDate)) {
+    if (!defined('GOONJ_ADDRESS_CUTOFF_DATE') || !GOONJ_ADDRESS_CUTOFF_DATE) {
+      return FALSE;
+    }
+
+    if (empty($createdDate)) {
+      \Civi::log()->warning('Registered office address: no created date for this receipt, showing the old address');
       return FALSE;
     }
 
     $createdTime = strtotime($createdDate);
     $cutoffTime = strtotime(GOONJ_ADDRESS_CUTOFF_DATE);
     if ($createdTime === FALSE || $cutoffTime === FALSE) {
+      \Civi::log()->warning('Registered office address: could not read a date, showing the old address', [
+        'created_date' => $createdDate,
+        'cutoff' => GOONJ_ADDRESS_CUTOFF_DATE,
+      ]);
       return FALSE;
     }
 
