@@ -463,10 +463,10 @@ class InstitutionReceiptGenerationService extends AutoSubscriber {
         <div style="width: 100%; margin-top: 15px; background-color: #f2f2f2; padding: 16px; font-weight: 300; color: #000000">
           <div style="font-size: 10px; margin-bottom: 20px;">
             <div style="position: relative; height: 24px;">
-              <div style="font-size: 12px; float: left;">
+              <div style="font-size: 11px; float: left;">
                 {$office['address']}
               </div>
-              <div style="font-size: 12px; float: right;">
+              <div style="font-size: 11px; float: right;">
                 <img src="data:image/png;base64,{$imageData['callIcon']}" alt="Phone" style="width: 16px; height: 16px; margin-right: 5px;">
                 {$office['phone']}
               </div>
