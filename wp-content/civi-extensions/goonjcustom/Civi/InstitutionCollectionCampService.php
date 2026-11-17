@@ -5,7 +5,6 @@ namespace Civi;
 use Civi\Afform\Event\AfformSubmitEvent;
 use Civi\Api4\Activity;
 use Civi\Api4\Contact;
-use Civi\Api4\Contribution;
 use Civi\Api4\CustomField;
 use Civi\Api4\EckEntity;
 use Civi\Api4\Email;
@@ -87,9 +86,9 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     $campFields = $dataArray['Eck_Collection_Camp1'][0]['fields'] ?? [];
 
     $fieldGroupMapping = [
-      'Institution_Collection_Camp_Intent' => 'Institution_Collection_Camp_Intent.You_wish_to_register_as:name',
-      'Institution_Dropping_Center_Intent' => 'Institution_Dropping_Center_Intent.You_wish_to_register_as:name',
-      'Institution_Goonj_Activities'       => 'Institution_Goonj_Activities.You_wish_to_register_as:name',
+      'Institution_Collection_Camp_Intent' => 'Institution_Collection_Camp_Intent.You_wish_to_register_as',
+      'Institution_Dropping_Center_Intent' => 'Institution_Dropping_Center_Intent.You_wish_to_register_as',
+      'Institution_Goonj_Activities'       => 'Institution_Goonj_Activities.You_wish_to_register_as',
     ];
 
     $registerAsField = NULL;
@@ -107,26 +106,36 @@ class InstitutionCollectionCampService extends AutoSubscriber {
     }
 
     try {
+      // Only fill an empty "Register as". The backend intent forms don't have
+      // the field, so it is empty when they create the intent. Public forms
+      // and reviewers set it themselves, and their choice must stay.
+      $camp = EckEntity::get('Collection_Camp', FALSE)
+        ->addSelect($registerAsField)
+        ->addWhere('id', '=', $eckCollectionCampId)
+        ->execute()->first();
+
+      if (!empty($camp[$registerAsField])) {
+        return;
+      }
+
       $organization = Organization::get(FALSE)
-        ->addSelect('Institute_Registration.Type_of_Institution:name')
+        ->addSelect('Institute_Registration.Type_of_Institution:label')
         ->addWhere('id', '=', $organizationId)
         ->execute()->first();
 
-      $orgType = $organization['Institute_Registration.Type_of_Institution:name'] ?? NULL;
+      // "Register as" takes the organisation's Type of Institution as is.
+      // Matched by label: NGO and Foundation share one option name in both
+      // lists.
+      $registerAs = $organization['Institute_Registration.Type_of_Institution:label'] ?? NULL;
 
-      $typeMapping = [
-        'Corporate'             => 'Corporate',
-        'Educational_Institute' => 'School',
-        'Association'           => 'Association',
-        'Foundation'            => 'Foundation',
-        'Other'                 => 'Other',
-      ];
+      $registerAsOptions = EckEntity::getFields('Collection_Camp', FALSE)
+        ->setLoadOptions(['id', 'label'])
+        ->addWhere('name', '=', $registerAsField)
+        ->execute()->first()['options'] ?? [];
 
-      $registerAs = $typeMapping[$orgType] ?? NULL;
-
-      if (!$registerAs) {
-        \Civi::log()->warning('updateRegisterAsField: No mapping found for org type', [
-          'orgType' => $orgType,
+      if (!$registerAs || !in_array($registerAs, array_column($registerAsOptions, 'label'), TRUE)) {
+        \Civi::log()->warning('updateRegisterAsField: No Register as option for org type', [
+          'orgType' => $registerAs,
           'organizationId' => $organizationId,
           'campId' => $eckCollectionCampId,
         ]);
@@ -134,7 +143,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       }
 
       EckEntity::update('Collection_Camp', FALSE)
-        ->addValue($registerAsField, $registerAs)
+        ->addValue($registerAsField . ':label', $registerAs)
         ->addWhere('id', '=', $eckCollectionCampId)
         ->execute();
 
@@ -152,6 +161,7 @@ class InstitutionCollectionCampService extends AutoSubscriber {
       ]);
     }
   }
+
   /**
    *
    */
@@ -318,6 +328,9 @@ class InstitutionCollectionCampService extends AutoSubscriber {
 
   }
 
+  /**
+   *
+   */
   public static function updateNameOfTheInstitution(string $op, string $objectName, int $objectId, &$objectRef) {
     if (!empty($objectRef->afform_name) && $objectRef->afform_name == "afformInstitutionCollectionCampIntentVerification") {
 
