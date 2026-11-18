@@ -983,13 +983,19 @@ class GoonjLegacyIndividualCampImport {
    * Returns the id of the camp this sheet row already created, if any.
    */
   private function findExistingCamp(array $row): ?int {
-    $camp = EckEntity::get('Collection_Camp', FALSE)
+    $get = EckEntity::get('Collection_Camp', FALSE)
       ->addSelect('id')
       ->addWhere('subtype:name', '=', 'Collection_Camp')
       ->addWhere('title', '=', $row[self::COL_CODE])
       ->addWhere('Collection_Camp_Intent_Details.Start_Date', '=', $this->parseDate($row[self::COL_START]))
-      ->addWhere('Collection_Camp_Intent_Details.Location_Area_of_camp', '=', $this->singleLine($row[self::COL_LOCATION]))
-      ->execute()->first();
+      ->addWhere('Collection_Camp_Intent_Details.Location_Area_of_camp', '=', $this->singleLine($row[self::COL_LOCATION]));
+    // A row without a camp code (title "Collection Camp") can share the title,
+    // start date and place with another camp: two organisers held camps at the
+    // same society on the same day. The sheet's Created Date tells them apart.
+    if (strpos($row[self::COL_CODE], '/') === FALSE) {
+      $get->addWhere('created_date', '=', $this->parseDate($row[self::COL_CREATED]));
+    }
+    $camp = $get->execute()->first();
     return $camp ? (int) $camp['id'] : NULL;
   }
 
