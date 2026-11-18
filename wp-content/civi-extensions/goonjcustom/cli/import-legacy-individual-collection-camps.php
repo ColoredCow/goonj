@@ -724,8 +724,9 @@ class GoonjLegacyIndividualCampImport {
    * 1. first name + email,
    * 2. else email + mobile,
    * 3. else email only.
-   * When the sheet has no email for the organiser (Goonj removed wrong emails
-   * and imported those contacts without one, coloredcow-admin/goonj-crm#234):
+   * When the sheet has no email for the organiser, or an email that no
+   * contact has and that is not a valid address (e.g. "name#gmail.com"; the
+   * contact import saved those contacts with a corrected email or none):
    * first name + mobile.
    * When a step finds several contacts, the first one (lowest contact id) is
    * used.
@@ -742,23 +743,7 @@ class GoonjLegacyIndividualCampImport {
     }
 
     if ($email === '') {
-      if ($firstName === '' || $mobile === '') {
-        return ['id' => NULL, 'method' => 'NO_EMAIL', 'note' => 'Organiser email is blank, and first name or mobile is blank too'];
-      }
-      $ids = Phone::get(FALSE)
-        ->addSelect('contact_id')
-        ->addJoin('Contact AS contact', 'INNER', ['contact_id', '=', 'contact.id'])
-        ->addWhere('phone_numeric', 'IN', [$mobile, '91' . $mobile, '0' . $mobile])
-        ->addWhere('contact.is_deleted', '=', FALSE)
-        ->addWhere('contact.contact_type', '=', 'Individual')
-        ->execute()->column('contact_id');
-      $ids = array_values(array_unique(array_map('intval', $ids)));
-      sort($ids);
-      $byName = $this->filterByFirstName($ids, $firstName);
-      if ($byName) {
-        return ['id' => $byName[0], 'method' => 'first_name+mobile', 'note' => 'No email in the sheet' . (count($byName) > 1 ? '; ' . count($byName) . ' contacts match: ' . implode(',', $byName) : '')];
-      }
-      return ['id' => NULL, 'method' => 'NOT_FOUND', 'note' => 'No email in the sheet, and no contact with this first name and mobile'];
+      return $this->matchByFirstNameAndMobile($firstName, $mobile, 'No email in the sheet');
     }
 
     $ids = Email::get(FALSE)
@@ -772,6 +757,11 @@ class GoonjLegacyIndividualCampImport {
     sort($ids);
 
     if (!$ids) {
+      // An email that is not a valid address (e.g. "name#gmail.com") was
+      // saved on the contact corrected, or not at all, by the contact import.
+      if (filter_var($email, FILTER_VALIDATE_EMAIL) === FALSE) {
+        return $this->matchByFirstNameAndMobile($firstName, $mobile, "Email in the sheet is not a valid address ($email)");
+      }
       return ['id' => NULL, 'method' => 'NOT_FOUND', 'note' => 'No contact has this email'];
     }
 
@@ -788,6 +778,29 @@ class GoonjLegacyIndividualCampImport {
     }
 
     return ['id' => $ids[0], 'method' => 'email', 'note' => $note];
+  }
+
+  /**
+   * Matches an organiser without a usable email by first name + mobile.
+   */
+  private function matchByFirstNameAndMobile(string $firstName, string $mobile, string $why): array {
+    if ($firstName === '' || $mobile === '') {
+      return ['id' => NULL, 'method' => 'NO_EMAIL', 'note' => "$why, and first name or mobile is blank"];
+    }
+    $ids = Phone::get(FALSE)
+      ->addSelect('contact_id')
+      ->addJoin('Contact AS contact', 'INNER', ['contact_id', '=', 'contact.id'])
+      ->addWhere('phone_numeric', 'IN', [$mobile, '91' . $mobile, '0' . $mobile])
+      ->addWhere('contact.is_deleted', '=', FALSE)
+      ->addWhere('contact.contact_type', '=', 'Individual')
+      ->execute()->column('contact_id');
+    $ids = array_values(array_unique(array_map('intval', $ids)));
+    sort($ids);
+    $byName = $this->filterByFirstName($ids, $firstName);
+    if ($byName) {
+      return ['id' => $byName[0], 'method' => 'first_name+mobile', 'note' => $why . (count($byName) > 1 ? '; ' . count($byName) . ' contacts match: ' . implode(',', $byName) : '')];
+    }
+    return ['id' => NULL, 'method' => 'NOT_FOUND', 'note' => "$why, and no contact with this first name and mobile"];
   }
 
   /**
@@ -923,7 +936,11 @@ class GoonjLegacyIndividualCampImport {
   }
 
   /**
-   * Returns a field's options as label => name.
+   * Returns a field's options keyed by the sheet text, as => option name.
+   *
+   * The sheet text is matched to the option's name first, then to its label:
+   * labels can be changed in the admin UI and differ per site (on prod the
+   * PCC camp type is labelled "PC").
    */
   private function optionsByLabel(string $group, string $field): array {
     $optionGroupId = CustomField::get(FALSE)
@@ -931,13 +948,18 @@ class GoonjLegacyIndividualCampImport {
       ->addWhere('custom_group_id:name', '=', $group)
       ->addWhere('name', '=', $field)
       ->execute()->single()['option_group_id'];
-    $options = [];
-    foreach (OptionValue::get(FALSE)
+    $all = OptionValue::get(FALSE)
       ->addSelect('name', 'label')
       ->addWhere('option_group_id', '=', $optionGroupId)
       ->addWhere('is_active', '=', TRUE)
-      ->execute() as $option) {
+      ->execute();
+    $options = [];
+    foreach ($all as $option) {
       $options[$option['label']] = $option['name'];
+    }
+    // Names win over labels.
+    foreach ($all as $option) {
+      $options[$option['name']] = $option['name'];
     }
     return $options;
   }
