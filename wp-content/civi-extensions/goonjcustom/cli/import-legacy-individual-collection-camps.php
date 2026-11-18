@@ -22,8 +22,14 @@
  * - a camp code used twice gets an extra 0 at the start of the number on
  *   the second camp (2021/MHR/Coll/066 -> 2021/MHR/Coll/0066);
  * - an organiser whose wrong email was removed is matched by first name +
- *   mobile.
- * Values that are not in the sheet are not filled in.
+ *   mobile;
+ * - fixed values on every camp: "You wish to register as" = An individual,
+ *   and "Self Managed By Camp Organiser" = No when "Camp attended by" is
+ *   filled;
+ * - fixed values on every dispatch: "Number of Bags loaded in vehicle" and
+ *   "No. of bags received at PU/Office" = "imported data" (as in the earlier
+ *   imports), "How much vehicle is filled" = Full.
+ * Other values that are not in the sheet are not filled in.
  *
  * No email may go out for these old camps:
  * - every "email sent" / "reminder sent" field that a scheduled job checks is
@@ -590,6 +596,7 @@ class GoonjLegacyIndividualCampImport {
    */
   private function createCamp(array $row): int {
     $endDate = $this->parseDate($row[self::COL_END]);
+    $attendedById = $this->staff[$this->staffKey($row)]['id'] ?? NULL;
 
     $values = [
       'subtype:name' => 'Collection_Camp',
@@ -603,7 +610,10 @@ class GoonjLegacyIndividualCampImport {
       'Collection_Camp_Intent_Details.State' => $this->states[$row[self::COL_CAMP_STATE]],
       'Collection_Camp_Intent_Details.City' => $this->singleLine($row[self::COL_CAMP_CITY]),
       'Collection_Camp_Intent_Details.Campaign' => (int) $this->campaigns[$row[self::COL_CAMPAIGN_ID]]['id'],
-      'Logistics_Coordination.Camp_to_be_attended_by' => $this->staff[$this->staffKey($row)]['id'] ?? NULL,
+      'Logistics_Coordination.Camp_to_be_attended_by' => $attendedById,
+      // Fixed values Goonj asked for (coloredcow-admin/goonj-crm#234).
+      'Collection_Camp_Intent_Details.You_wish_to_register_as:name' => 'An_individual',
+      'Logistics_Coordination.Self_Managed_By_Camp_Organiser' => $attendedById ? FALSE : NULL,
       'Logistics_Coordination.Support_person_details' => $row[self::COL_SUPPORT_PERSON],
       'Logistics_Coordination.Pickup_vehicle_info' => $row[self::COL_PICKUP_INFO],
       'Camp_Outcome.Rate_the_camp:name' => $this->rates[$row[self::COL_RATE]],
@@ -683,6 +693,11 @@ class GoonjLegacyIndividualCampImport {
       'Camp_Vehicle_Dispatch.Vehicle_Category:name' => $row[self::COL_VEHICLE_CATEGORY] !== '' ? $this->vehicleCategories[$row[self::COL_VEHICLE_CATEGORY]] : NULL,
       'Camp_Vehicle_Dispatch.Goonj_Office_Name' => $row[self::COL_OFFICE],
       'Camp_Vehicle_Dispatch.Collection_Camp_Address' => $this->singleLine($row[self::COL_LOCATION]),
+      // Fixed values Goonj asked for (coloredcow-admin/goonj-crm#234), same
+      // text as the earlier imports.
+      'Camp_Vehicle_Dispatch.Number_of_Bags_loaded_in_vehicle' => 'imported data',
+      'Acknowledgement_For_Logistics.No_of_bags_received_at_PU_Office' => 'imported data',
+      'Camp_Vehicle_Dispatch.How_much_vehicle_is_filled:name' => 'Full',
       // Marked as already emailed: acknowledgement email to the organiser.
       'Acknowledgement_For_Logistics.Ack_Email_Sent' => TRUE,
     ];
