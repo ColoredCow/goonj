@@ -411,7 +411,7 @@ public static function assignChapterGroupToContacts(string $op, string $objectNa
     $coordinatorId = $coordinator['contact_id_a'];
 
     if ($coordinatorId && self::$organizationId) {
-      Organization::update('Organization', FALSE)
+      Organization::update(FALSE)
         ->addValue('Review.Coordinating_POC', $coordinatorId)
         ->addWhere('id', '=', self::$organizationId)
         ->execute();
