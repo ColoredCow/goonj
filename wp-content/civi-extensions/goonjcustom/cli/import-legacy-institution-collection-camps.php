@@ -31,9 +31,11 @@
  *   attended by" is filled; on every dispatch: "Number of Bags loaded in
  *   vehicle" and "No. of bags received at PU/Office" = "imported data", "How
  *   much vehicle is filled" = Full;
- * - "You wish to register as" comes from the institution type in the sheet
- *   (the educational institute type for educational institutions); it stays
- *   empty when the sheet value is not one of the options.
+ * - "You wish to register as" comes from the sheet's "Register as" column,
+ *   which Goonj filled for every row;
+ * - the dispatch's institution section (name, address, email, contact number)
+ *   is filled from the sheet's Institution Name, Address, and the POC's email
+ *   and mobile.
  * Other values that are not in the sheet are not filled in.
  *
  * No email may go out for these old camps:
@@ -69,6 +71,9 @@
  *   Organisation for sheet lines whose institution name is not found as
  *   written (sheet line = organisation contact id, comma separated):
  *     ORG_FOR_LINES=45=596713,284=597199 CSV=... cv scr ...
+ *   Institution POC for sheet lines whose person cannot be matched (sheet
+ *   line = individual contact id, comma separated):
+ *     POC_FOR_LINES=788=532153 CSV=... cv scr ...
  *   Rows whose POC has details but is not found go to the issues sheet; to
  *   import those without a POC:
  *     ALLOW_NO_POC=1 APPLY=1 CSV=... cv scr ...
@@ -112,6 +117,7 @@ class GoonjLegacyInstitutionCampImport {
     'Mobile',
     'Email',
     'Contact ID',
+    'Register as',
     'Address',
     'Code/ Title',
     'Coordinating Goonj Office',
@@ -149,44 +155,39 @@ class GoonjLegacyInstitutionCampImport {
    */
   const ISSUE_COLUMNS = ['Import status', 'Reason'];
 
-  const COL_INSTITUTION_TYPE = 0;
-  const COL_EDUCATIONAL_TYPE = 1;
   const COL_INSTITUTION_NAME = 2;
   const COL_FIRST_NAME = 5;
   const COL_LAST_NAME = 6;
   const COL_MOBILE = 7;
   const COL_EMAIL = 8;
-  const COL_CODE = 11;
-  const COL_OFFICE = 12;
-  const COL_TYPE = 13;
-  const COL_CREATED = 14;
-  const COL_START = 15;
-  const COL_END = 16;
-  const COL_LOCATION = 17;
-  const COL_CAMP_STATUS = 18;
-  const COL_CAMP_STATE = 19;
-  const COL_CAMP_CITY = 20;
-  const COL_COUNTRY = 21;
-  const COL_CAMPAIGN_ID = 23;
-  const COL_CAMP_TYPE = 24;
-  const COL_WEIGHT = 25;
-  const COL_VEHICLES = 26;
-  const COL_VEHICLE_CATEGORY = 27;
-  const COL_ATTENDED_BY_EMAIL = 28;
-  const COL_ATTENDED_BY_NAME = 29;
-  const COL_SUPPORT_PERSON = 30;
-  const COL_PICKUP_INFO = 31;
-  const COL_CASH = 32;
-  const COL_PRODUCT_SALE = 33;
-  const COL_UNIQUE_EFFORTS = 34;
-  const COL_DIFFICULTY = 35;
-  const COL_RATE = 36;
-  const COL_REMARKS = 37;
-
-  /**
-   * Institution type whose register-as comes from the educational type.
-   */
-  const EDUCATIONAL_INSTITUTION = 'Educational Institution';
+  const COL_REGISTER_AS = 10;
+  const COL_ADDRESS = 11;
+  const COL_CODE = 12;
+  const COL_OFFICE = 13;
+  const COL_TYPE = 14;
+  const COL_CREATED = 15;
+  const COL_START = 16;
+  const COL_END = 17;
+  const COL_LOCATION = 18;
+  const COL_CAMP_STATUS = 19;
+  const COL_CAMP_STATE = 20;
+  const COL_CAMP_CITY = 21;
+  const COL_COUNTRY = 22;
+  const COL_CAMPAIGN_ID = 24;
+  const COL_CAMP_TYPE = 25;
+  const COL_WEIGHT = 26;
+  const COL_VEHICLES = 27;
+  const COL_VEHICLE_CATEGORY = 28;
+  const COL_ATTENDED_BY_EMAIL = 29;
+  const COL_ATTENDED_BY_NAME = 30;
+  const COL_SUPPORT_PERSON = 31;
+  const COL_PICKUP_INFO = 32;
+  const COL_CASH = 33;
+  const COL_PRODUCT_SALE = 34;
+  const COL_UNIQUE_EFFORTS = 35;
+  const COL_DIFFICULTY = 36;
+  const COL_RATE = 37;
+  const COL_REMARKS = 38;
 
   /**
    * First data line of the sheet (line 1 and 2 are headers).
@@ -206,6 +207,16 @@ class GoonjLegacyInstitutionCampImport {
    * Organisation contact id given for a sheet line (ORG_FOR_LINES).
    */
   private array $orgForLines = [];
+
+  /**
+   * Institution POC contact id given for a sheet line (POC_FOR_LINES).
+   */
+  private array $pocForLines = [];
+
+  /**
+   * The contacts given with POC_FOR_LINES, keyed by contact id.
+   */
+  private array $givenPocs = [];
 
   /**
    * The sheet's first header row (column groups), copied to the issues sheet.
@@ -261,21 +272,32 @@ class GoonjLegacyInstitutionCampImport {
       $this->toLine = isset($m[2]) ? (int) $m[2] : (int) $m[1];
     }
 
-    $orgForLines = trim((string) getenv('ORG_FOR_LINES'));
-    if ($orgForLines !== '') {
-      foreach (explode(',', $orgForLines) as $pair) {
-        if (!preg_match('/^\s*(\d+)\s*=\s*(\d+)\s*$/', $pair, $m)) {
-          $this->fail("ORG_FOR_LINES must look like 45=596713,284=597199, got: $orgForLines");
-        }
-        $this->orgForLines[(int) $m[1]] = (int) $m[2];
-      }
-    }
+    $this->orgForLines = $this->lineMap('ORG_FOR_LINES');
+    $this->pocForLines = $this->lineMap('POC_FOR_LINES');
 
     $base = preg_replace('/\.csv$/i', '', $this->csvPath);
     $report = trim((string) getenv('REPORT'));
     $this->reportPath = $report !== '' ? $report : $base . '-report-' . date('Ymd-His') . '.csv';
     $issues = trim((string) getenv('ISSUES'));
     $this->issuesPath = $issues !== '' ? $issues : $base . '-issues-' . date('Ymd-His') . '.csv';
+  }
+
+  /**
+   * Reads a "line=contactId,line=contactId" setting.
+   */
+  private function lineMap(string $name): array {
+    $value = trim((string) getenv($name));
+    $map = [];
+    if ($value === '') {
+      return $map;
+    }
+    foreach (explode(',', $value) as $pair) {
+      if (!preg_match('/^\s*(\d+)\s*=\s*(\d+)\s*$/', $pair, $m)) {
+        $this->fail("$name must look like 45=596713,284=597199, got: $value");
+      }
+      $map[(int) $m[1]] = (int) $m[2];
+    }
+    return $map;
   }
 
   /**
@@ -485,6 +507,26 @@ class GoonjLegacyInstitutionCampImport {
         $this->rowErrors[$line][] = 'organisation not found: ' . $this->organisations[$orgKey]['note'];
       }
 
+      if (isset($this->pocForLines[$line])) {
+        $pocId = $this->pocForLines[$line];
+        if (!array_key_exists($pocId, $this->givenPocs)) {
+          $this->givenPocs[$pocId] = Contact::get(FALSE)
+            ->addSelect('id', 'display_name')
+            ->addWhere('id', '=', $pocId)
+            ->addWhere('contact_type', '=', 'Individual')
+            ->addWhere('is_deleted', '=', FALSE)
+            ->execute()->first();
+        }
+        if (!$this->givenPocs[$pocId]) {
+          $this->rowErrors[$line][] = "POC_FOR_LINES contact $pocId is not an individual";
+        }
+      }
+
+      $registerAs = $row[self::COL_REGISTER_AS];
+      if ($registerAs !== '' && !isset($this->registerAs[$registerAs])) {
+        $this->rowErrors[$line][] = "'Register as' value not found: '$registerAs'";
+      }
+
       $office = $row[self::COL_OFFICE];
       if (!array_key_exists($office, $this->offices)) {
         $this->offices[$office] = $this->findOffice($office);
@@ -567,6 +609,9 @@ class GoonjLegacyInstitutionCampImport {
         echo '  Organisation ' . $this->singleLine($key) . ' => ' . ($organisation['id'] ?: 'NOT FOUND') . " {$organisation['name']} ({$organisation['note']})\n";
       }
     }
+    foreach ($this->pocForLines as $pocLine => $pocId) {
+      echo "  POC         line $pocLine => " . (!empty($this->givenPocs[$pocId]) ? "$pocId {$this->givenPocs[$pocId]['display_name']}" : "$pocId NOT AN INDIVIDUAL") . " (given with POC_FOR_LINES)\n";
+    }
     $found = count(array_filter($this->organisations, fn($o) => !empty($o['id'])));
     echo "  Organisations: $found of " . count($this->organisations) . " found\n\n";
 
@@ -585,7 +630,9 @@ class GoonjLegacyInstitutionCampImport {
     }
 
     $organisation = $this->organisations[$this->organisationKey($line, $row)];
-    $match = $this->matchPoc($row);
+    $match = isset($this->pocForLines[$line])
+      ? ['id' => $this->pocForLines[$line], 'method' => 'POC_FOR_LINES', 'note' => 'given with POC_FOR_LINES']
+      : $this->matchPoc($row);
     $result += [
       'organisation_id' => $organisation['id'],
       'contact_id' => $match['id'],
@@ -663,7 +710,6 @@ class GoonjLegacyInstitutionCampImport {
   private function createCamp(array $row, string $code, array $organisation, ?int $pocId): int {
     $endDate = $this->parseDate($row[self::COL_END]);
     $attendedById = $this->staff[$this->staffKey($row)]['id'] ?? NULL;
-    $registerAsText = $row[self::COL_INSTITUTION_TYPE] === self::EDUCATIONAL_INSTITUTION ? $row[self::COL_EDUCATIONAL_TYPE] : $row[self::COL_INSTITUTION_TYPE];
 
     $values = [
       'subtype:name' => 'Institution_Collection_Camp',
@@ -683,9 +729,8 @@ class GoonjLegacyInstitutionCampImport {
       'Institution_Collection_Camp_Intent.State' => $this->states[$row[self::COL_CAMP_STATE]],
       'Institution_Collection_Camp_Intent.District_City' => $this->singleLine($row[self::COL_CAMP_CITY]),
       'Institution_Collection_Camp_Intent.Country' => $row[self::COL_COUNTRY],
-      // From the institution type in the sheet; empty when the sheet value is
-      // not one of the options.
-      'Institution_Collection_Camp_Intent.You_wish_to_register_as:name' => $this->registerAs[$registerAsText] ?? NULL,
+      // From the sheet's "Register as" column (Goonj, #234).
+      'Institution_Collection_Camp_Intent.You_wish_to_register_as:name' => $this->registerAs[$row[self::COL_REGISTER_AS]] ?? NULL,
       'Institution_Collection_Camp_Logistics.Camp_to_be_attended_by' => $attendedById,
       // Fixed value Goonj asked for (coloredcow-admin/goonj-crm#234).
       'Institution_Collection_Camp_Logistics.Self_Managed_by_Institution' => $attendedById ? FALSE : NULL,
@@ -704,6 +749,8 @@ class GoonjLegacyInstitutionCampImport {
       // "Institution Camp Feedback" job: it reads this field even though the
       // field set belongs to the individual camps form.
       'Logistics_Coordination.Feedback_Email_Sent' => TRUE,
+      // "Volunteer Feedback Reminder" job, as on the individual camps.
+      'Logistics_Coordination.Feedback_Reminder_Sent' => TRUE,
       // Outcome reminder fields, as on the individual camps.
       'Camp_Outcome.Last_Reminder_Sent' => $endDate,
       'Camp_Outcome.Final_Reminder_Sent' => $endDate,
@@ -757,6 +804,12 @@ class GoonjLegacyInstitutionCampImport {
       'Acknowledgement_For_Logistics.Contribution_Date' => $endDate,
       'Camp_Vehicle_Dispatch.Material_weight_In_KGs_' => $row[self::COL_WEIGHT] !== '' ? (string) $this->parseNumber($row[self::COL_WEIGHT]) : NULL,
       'Camp_Vehicle_Dispatch.Vehicle_Category:name' => $row[self::COL_VEHICLE_CATEGORY] !== '' ? $this->vehicleCategories[$row[self::COL_VEHICLE_CATEGORY]] : NULL,
+      // Institution section, from the sheet as Goonj asked (#234): institution
+      // name and address, POC email and mobile.
+      'Camp_Institution_Data.Name_of_the_institution' => $this->singleLine($row[self::COL_INSTITUTION_NAME]),
+      'Camp_Institution_Data.Address' => $this->singleLine($row[self::COL_ADDRESS]),
+      'Camp_Institution_Data.Email' => $this->singleLine($row[self::COL_EMAIL]),
+      'Camp_Institution_Data.Contact_Number' => $this->singleLine($row[self::COL_MOBILE]),
       // Fixed values Goonj asked for (coloredcow-admin/goonj-crm#234), same
       // text as the earlier imports.
       'Camp_Vehicle_Dispatch.Number_of_Bags_loaded_in_vehicle' => 'imported data',
