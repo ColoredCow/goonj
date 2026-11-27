@@ -339,6 +339,12 @@ function goonj_monetary_contribution_button() {
     }
 
     if (!empty($activityId)) {
+      // PROTOTYPE: contributor ticked "support the transport" on the material
+      // form, so show the expanded ask instead of the plain button.
+      if (\Civi\MaterialMonetaryAskService::hasOptedIn($activityId)) {
+        return goonj_material_monetary_ask_card($activityId);
+      }
+
       $individualId = getIndividualIdFromActivity($activityId);
       if (empty($individualId)) {
         return;
@@ -355,6 +361,68 @@ function goonj_monetary_contribution_button() {
     return;
   }
   return;
+}
+
+/**
+ * PROTOTYPE: expanded monetary ask shown on the material thank-you page when
+ * the contributor ticked the opt-in checkbox. Amount chips rewrite ?amt= on
+ * the Contribute link, which the contribution page pre-selects.
+ */
+function goonj_material_monetary_ask_card($activityId) {
+  $baseUrl = \Civi\MaterialMonetaryAskService::getMonetaryUrl((int) $activityId, NULL, 'success_page');
+  if (empty($baseUrl)) {
+    return;
+  }
+
+  $default = \Civi\MaterialMonetaryAskService::DEFAULT_ASK_AMOUNT;
+  $amountParam = \Civi\MaterialMonetaryAskService::AMOUNT_PARAM;
+  $chips = '';
+  foreach (\Civi\MaterialMonetaryAskService::ASK_AMOUNTS as $amount) {
+    $chips .= sprintf(
+      '<button type="button" class="gma-chip%s" data-amt="%d">₹%s</button>',
+      $amount === $default ? ' is-on' : '',
+      $amount,
+      number_format($amount)
+    );
+  }
+  $chips .= '<button type="button" class="gma-chip" data-amt="">Other</button>';
+
+  $href = $baseUrl . '&' . $amountParam . '=' . $default;
+
+  ob_start();
+  ?>
+  <style>
+    .gma-card{max-width:440px;margin:8px auto 18px;padding:20px 18px 16px;text-align:left;background:#fff7f3;border:1px solid #f0d5ca;border-radius:10px}
+    .gma-card h3{font-size:19px;line-height:1.3;margin:0 0 6px;font-weight:800}
+    .gma-card p{margin:0 0 14px;font-size:14.5px;color:#3a3a3a}
+    .gma-chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}
+    .gma-chip{border:1.5px solid #d4472b;background:#fff;color:#d4472b;font-weight:700;font-size:15px;border-radius:999px;padding:9px 16px;cursor:pointer;min-height:44px}
+    .gma-chip.is-on{background:#d4472b;color:#fff}
+    .gma-cta{display:block;text-align:center;background:#d4472b;color:#fff !important;border-radius:3px;padding:14px;font-weight:600;font-size:16px;text-decoration:none}
+  </style>
+  <div class="gma-card" data-base="<?php echo esc_attr($baseUrl); ?>" data-param="<?php echo esc_attr($amountParam); ?>">
+    <h3>Your material is on its way. Help it reach the last mile.</h3>
+    <p>Sorting, packing and transport cost money. Even a small amount keeps your contribution moving.</p>
+    <div class="gma-chips"><?php echo $chips; ?></div>
+    <a class="gma-cta" href="<?php echo esc_url($href); ?>">Contribute ₹<?php echo number_format($default); ?></a>
+  </div>
+  <script>
+    (function () {
+      var card = document.currentScript.previousElementSibling;
+      var cta = card.querySelector('.gma-cta');
+      card.querySelectorAll('.gma-chip').forEach(function (chip) {
+        chip.addEventListener('click', function () {
+          card.querySelectorAll('.gma-chip').forEach(function (c) { c.classList.remove('is-on'); });
+          chip.classList.add('is-on');
+          var amt = chip.dataset.amt;
+          cta.href = card.dataset.base + (amt ? '&' + card.dataset.param + '=' + amt : '');
+          cta.textContent = amt ? 'Contribute ₹' + Number(amt).toLocaleString('en-IN') : 'Contribute';
+        });
+      });
+    })();
+  </script>
+  <?php
+  return ob_get_clean();
 }
 
 /**

@@ -836,7 +836,8 @@ function setUp80gRequirements() {
         return;
     }
 
-    var PROFILE_TITLE = 'MS Individual Contribution';
+    // PROTOTYPE: the material-journey profile leaves the address optional too.
+    var PROFILE_TITLES = ['MS Individual Contribution', 'Material Journey Contribution'];
 
     var ADDRESS_MESSAGE = 'To get the 80-G certificate, please enter your Address.';
     var PAN_MESSAGE = 'To get the 80-G certificate, please enter your PAN number.';
@@ -852,7 +853,7 @@ function setUp80gRequirements() {
     // environment.
     var profiles = form.find('fieldset.crm-profile');
     var microsite = profiles.filter(function() {
-        return $(this).children('legend').text().trim() === PROFILE_TITLE;
+        return PROFILE_TITLES.indexOf($(this).children('legend').text().trim()) !== -1;
     });
     var isMicrosite = microsite.length > 0;
     var scope = isMicrosite ? microsite : profiles;
