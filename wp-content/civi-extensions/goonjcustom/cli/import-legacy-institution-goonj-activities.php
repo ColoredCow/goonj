@@ -34,6 +34,17 @@
  * - "You wish to register as" comes from the sheet's "Register as" column;
  * - "Total Monetary Contributed" is saved as the total online monetary
  *   contributions, as the earlier activity import did.
+ * Goonj's answers for this sheet (coloredcow-admin/goonj-crm#234):
+ * - "Menstrual Hygiene Session (CTB)" is the "Chuppi Todo Baithak (CTB)"
+ *   activity type; "Gender Samwaad" is "Other" with "Gender Samwaad" as the
+ *   Other Activity Details;
+ * - a POC who is not in the CRM is left out: the record is imported without
+ *   POC and the sheet's POC email and phone are added to the organisation
+ *   (only those it does not have yet; nothing on the organisation changes);
+ * - a Goonj staff email (@goonj.org) as POC: the staff member acted as the
+ *   institution POC, so the staff contact is the POC;
+ * - an empty record from an earlier import with the row's code (no dates,
+ *   organisation or venue) is filled with the row instead of a new record.
  * Other values that are not in the sheet are not filled in.
  *
  * No email may go out for these old activities:
@@ -41,6 +52,10 @@
  *   act when an existing record becomes Authorized (authorization email, QR,
  *   activity rows, Organize activities) do not run; the script creates the
  *   activity rows and the Organize activities itself;
+ * - an empty record that is filled becomes Authorized in a save of its own,
+ *   with "Send Authorization Email" = No and before it has a POC or activity
+ *   types, so that save sends nothing, creates no activity rows or Organize
+ *   activities and keeps the code; the sheet values follow in a second save;
  * - "Email Sent" (logistics email to the Attended By person, sent by the
  *   daily outcome job) and "Feedback Email Sent" (POC feedback email) are
  *   saved, so the jobs treat these records as already emailed; "Feedback
@@ -69,12 +84,13 @@
  *   Organisation / Institution POC for sheet lines that cannot be matched
  *   (sheet line = contact id, comma separated):
  *     ORG_FOR_LINES=45=596713 POC_FOR_LINES=16=532153 CSV=... cv scr ...
- *   Goonj activity type for a sheet text that is not an option's name or
- *   label (sheet text = option name, separated by |):
- *     ACTIVITY_TYPES="Gender Samwaad=Other" CSV=... cv scr ...
+ *   Goonj activity type for another sheet text that is not an option's name
+ *   or label (sheet text = option name, separated by |; Goonj's two answers
+ *   are built in):
+ *     ACTIVITY_TYPES="Some Session=Other" CSV=... cv scr ...
  *   (an "Other" type keeps the sheet text as "Other Activity Details").
- *   Rows whose POC has details but is not found go to the issues sheet; to
- *   import those without a POC:
+ *   Rows whose POC email is a Goonj email that matches no staff contact go
+ *   to the issues sheet; to import those without a POC:
  *     ALLOW_NO_POC=1 APPLY=1 CSV=... cv scr ...
  *   Report (every row) and issues sheet (rows not imported) locations,
  *   default: next to the CSV:
@@ -146,6 +162,16 @@ class GoonjLegacyInstitutionActivityImport {
    * Columns added to the issues sheet.
    */
   const ISSUE_COLUMNS = ['Import status', 'Reason'];
+
+  /**
+   * Sheet activity types that are not an option's name or label, as Goonj
+   * mapped them (coloredcow-admin/goonj-crm#234): lower-case sheet text =>
+   * option name.
+   */
+  const GOONJ_ACTIVITY_TYPES = [
+    'menstrual hygiene session (ctb)' => 'Menstrual_Hygenie_Dialogue_CTB_',
+    'gender samwaad' => 'Other',
+  ];
 
   const COL_INSTITUTION_NAME = 2;
   const COL_FIRST_NAME = 3;
@@ -279,11 +305,12 @@ class GoonjLegacyInstitutionActivityImport {
     $this->orgForLines = $this->lineMap('ORG_FOR_LINES');
     $this->pocForLines = $this->lineMap('POC_FOR_LINES');
 
+    $this->typeMap = self::GOONJ_ACTIVITY_TYPES;
     $types = trim((string) getenv('ACTIVITY_TYPES'));
     if ($types !== '') {
       foreach (explode('|', $types) as $pair) {
         if (!preg_match('/^\s*(.+?)\s*=\s*(.+?)\s*$/', $pair, $m)) {
-          $this->fail("ACTIVITY_TYPES must look like Gender Samwaad=Other|..., got: $types");
+          $this->fail("ACTIVITY_TYPES must look like Some Session=Other|..., got: $types");
         }
         $this->typeMap[mb_strtolower($m[1])] = $m[2];
       }
@@ -650,16 +677,24 @@ class GoonjLegacyInstitutionActivityImport {
     // twice in the sheet. A record this row saved on an earlier run is found
     // under the code it was saved with.
     $code = $row[self::COL_CODE];
+    $emptyRecordId = NULL;
     while (TRUE) {
       $existing = $this->findExistingRecord($row, $code);
       if ($existing) {
         return ['status' => 'SKIPPED_ALREADY_IMPORTED', 'record_id' => $existing, 'code' => $code] + $result;
       }
       $sameCode = EckEntity::get('Collection_Camp', FALSE)
-        ->addSelect('id')
+        ->addSelect('id', 'subtype:name', 'Institution_Goonj_Activities.Start_Date', 'Institution_Goonj_Activities.Organization_Name', 'Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_')
         ->addWhere('title', '=', $code)
         ->execute()->first();
       if (!$sameCode) {
+        break;
+      }
+      // Goonj's answer: an empty record from an earlier import with the row's
+      // code is filled with the row.
+      if ($code === $row[self::COL_CODE] && $this->isEmptyRecord($sameCode)) {
+        $emptyRecordId = (int) $sameCode['id'];
+        $result['note'] = trim($result['note'] . " Record $emptyRecordId has this code and is empty (earlier import); it is filled with this row.");
         break;
       }
       $newCode = $this->addZero($code);
@@ -668,7 +703,16 @@ class GoonjLegacyInstitutionActivityImport {
     }
     $result['code'] = $code;
 
-    if (!$match['id'] && $match['method'] !== 'NO_POC_IN_SHEET' && !$this->allowNoPoc) {
+    // Goonj's answer: a POC who is not in the CRM is left out; the sheet's
+    // email and phone are added to the organisation instead.
+    $organisationDetails = [];
+    if (!$match['id'] && in_array($match['method'], ['NOT_FOUND', 'NO_EMAIL'], TRUE)) {
+      $organisationDetails = $this->newOrganisationDetails($row, $organisation['id']);
+      $result['note'] = trim($result['note'] . ' POC not in the CRM, imported without POC; ' . ($organisationDetails
+        ? 'added to the organisation: ' . implode(', ', array_column($organisationDetails, 'value'))
+        : 'the organisation already has the email and phone') . '.');
+    }
+    elseif (!$match['id'] && $match['method'] !== 'NO_POC_IN_SHEET' && !$this->allowNoPoc) {
       return ['status' => 'SKIPPED_POC_' . $match['method'], 'note' => trim($result['note'] . ' Institution POC not matched; set ALLOW_NO_POC=1 to import without POC')] + $result;
     }
 
@@ -678,8 +722,11 @@ class GoonjLegacyInstitutionActivityImport {
 
     $transaction = new \CRM_Core_Transaction();
     try {
-      $recordId = $this->createRecord($row, $code, $organisation, $match['id']);
+      $recordId = $emptyRecordId
+        ? $this->fillEmptyRecord($emptyRecordId, $row, $code, $organisation, $match['id'])
+        : $this->createRecord($row, $code, $organisation, $match['id']);
       $this->setSheetValuesAfterHooks($recordId, $row);
+      $this->addOrganisationDetails($organisation['id'], $organisationDetails);
       $activityRowId = $this->createActivityRow($recordId, $row, $match['id']);
       $activityIds = $this->createOrganizeActivities($row, $code, $match['id'], $organisation['id']);
       $transaction->commit();
@@ -705,6 +752,108 @@ class GoonjLegacyInstitutionActivityImport {
    * do not run.
    */
   private function createRecord(array $row, string $code, array $organisation, ?int $pocId): int {
+    $create = EckEntity::create('Collection_Camp', FALSE);
+    foreach ($this->recordValues($row, $code, $organisation, $pocId) as $field => $value) {
+      if ($value !== NULL && $value !== '') {
+        $create->addValue($field, $value);
+      }
+    }
+    return (int) $create->execute()->single()['id'];
+  }
+
+  /**
+   * Fills an empty record from an earlier import with the row.
+   *
+   * First save: Authorized only, with "Send Authorization Email" = No. The
+   * record has no POC and the save has no activity types or subtype yet, so
+   * the hooks that act when a record becomes Authorized send nothing, create
+   * no activity rows or Organize activities and keep the code. Second save:
+   * the row's values (the record already being Authorized, no hook acts on
+   * them).
+   */
+  private function fillEmptyRecord(int $recordId, array $row, string $code, array $organisation, ?int $pocId): int {
+    EckEntity::update('Collection_Camp', FALSE)
+      ->addWhere('id', '=', $recordId)
+      ->addValue('Collection_Camp_Core_Details.Status:name', 'Authorized')
+      ->addValue('Institution_Goonj_Activities.Send_Authorization_Email', FALSE)
+      ->execute();
+
+    $values = $this->recordValues($row, $code, $organisation, $pocId);
+    unset($values['subtype:name'], $values['Collection_Camp_Core_Details.Status:name']);
+    $update = EckEntity::update('Collection_Camp', FALSE)->addWhere('id', '=', $recordId);
+    foreach ($values as $field => $value) {
+      if ($value !== NULL && $value !== '') {
+        $update->addValue($field, $value);
+      }
+    }
+    $update->execute();
+    return $recordId;
+  }
+
+  /**
+   * An empty record: no start date, organisation or venue.
+   */
+  private function isEmptyRecord(array $record): bool {
+    return $record['subtype:name'] === 'Institution_Goonj_Activities'
+      && empty($record['Institution_Goonj_Activities.Start_Date'])
+      && empty($record['Institution_Goonj_Activities.Organization_Name'])
+      && empty($record['Institution_Goonj_Activities.Where_do_you_wish_to_organise_the_activity_']);
+  }
+
+  /**
+   * The sheet's POC email(s) and phone the organisation does not have yet.
+   */
+  private function newOrganisationDetails(array $row, int $organisationId): array {
+    $details = [];
+    $emails = Email::get(FALSE)->addSelect('email')->addWhere('contact_id', '=', $organisationId)->execute()->column('email');
+    $emails = array_map('strtolower', $emails);
+    foreach (preg_split('/[\s,;]+/', strtolower($row[self::COL_EMAIL])) as $email) {
+      if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL) && !in_array($email, $emails, TRUE)) {
+        $details[] = ['type' => 'email', 'value' => $email, 'primary' => !$emails];
+        $emails[] = $email;
+      }
+    }
+    $mobile = $this->lastTenDigits($row[self::COL_MOBILE]);
+    if ($mobile !== '') {
+      $phones = Phone::get(FALSE)->addSelect('phone_numeric')->addWhere('contact_id', '=', $organisationId)->execute()->column('phone_numeric');
+      $have = array_map(fn($p) => $this->lastTenDigits((string) $p), $phones);
+      if (!in_array($mobile, $have, TRUE)) {
+        $details[] = ['type' => 'phone', 'value' => $mobile, 'primary' => !$phones];
+      }
+    }
+    return $details;
+  }
+
+  /**
+   * Adds the POC email(s) and phone to the organisation.
+   *
+   * Only adds: the organisation's own details are not changed. The first email
+   * or phone of an organisation that has none becomes its primary one.
+   */
+  private function addOrganisationDetails(int $organisationId, array $details): void {
+    foreach ($details as $detail) {
+      if ($detail['type'] === 'email') {
+        Email::create(FALSE)
+          ->addValue('contact_id', $organisationId)
+          ->addValue('email', $detail['value'])
+          ->addValue('is_primary', $detail['primary'])
+          ->execute();
+      }
+      else {
+        Phone::create(FALSE)
+          ->addValue('contact_id', $organisationId)
+          ->addValue('phone', $detail['value'])
+          ->addValue('phone_type_id:name', 'Phone')
+          ->addValue('is_primary', $detail['primary'])
+          ->execute();
+      }
+    }
+  }
+
+  /**
+   * The record's values from the sheet row.
+   */
+  private function recordValues(array $row, string $code, array $organisation, ?int $pocId): array {
     $attendedById = $this->staff[$this->staffKey($row)]['id'] ?? NULL;
     $type = $this->engagementType($row);
     $monetary = $this->parseNumber($row[self::COL_MONETARY]);
@@ -750,14 +899,7 @@ class GoonjLegacyInstitutionActivityImport {
       // "Volunteer Feedback Reminder" job, as on the camps.
       'Logistics_Coordination.Feedback_Reminder_Sent' => TRUE,
     ];
-
-    $create = EckEntity::create('Collection_Camp', FALSE);
-    foreach ($values as $field => $value) {
-      if ($value !== NULL && $value !== '') {
-        $create->addValue($field, $value);
-      }
-    }
-    return (int) $create->execute()->single()['id'];
+    return $values;
   }
 
   /**
@@ -952,8 +1094,8 @@ class GoonjLegacyInstitutionActivityImport {
   /**
    * Matches the institution POC to an existing contact.
    *
-   * A Goonj email (@goonj.org) is a Goonj staff address, never the
-   * institution's POC: such rows are not matched. Otherwise, among the
+   * A Goonj email (@goonj.org) is matched to the staff contact (Goonj: the
+   * staff member acted as the institution POC). Otherwise, among the
    * contacts that have the sheet email (any of their emails):
    * 1. first name + email,
    * 2. else email + mobile,
@@ -972,8 +1114,13 @@ class GoonjLegacyInstitutionActivityImport {
       return ['id' => NULL, 'method' => 'NO_POC_IN_SHEET', 'note' => 'No POC details in the sheet; imported without POC'];
     }
 
+    // Goonj's answer: a Goonj staff member given as POC acted as the
+    // institution POC.
     if (str_ends_with($email, '@goonj.org')) {
-      return ['id' => NULL, 'method' => 'GOONJ_EMAIL', 'note' => "POC email $email is a Goonj staff address"];
+      $staff = $this->findStaff($email, $row[self::COL_FIRST_NAME]);
+      return $staff['id']
+        ? ['id' => $staff['id'], 'method' => 'goonj_staff_email', 'note' => "Goonj staff as POC: {$staff['name']} ({$staff['note']})"]
+        : ['id' => NULL, 'method' => 'GOONJ_EMAIL', 'note' => "POC email $email is a Goonj email that matches no staff contact ({$staff['note']})"];
     }
 
     if ($email === '') {
