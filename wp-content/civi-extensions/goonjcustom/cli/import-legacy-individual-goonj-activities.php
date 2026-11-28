@@ -25,8 +25,13 @@
  * - Coordinating Urban POC = the "Attended By" person;
  * - an activity code used twice (in the sheet, or already by another record
  *   in the CRM) gets an extra 0 at the start of the number;
- * - "Total Monetary Contributed" is saved as the total online monetary
- *   contributions, as on the institution activities.
+ * Goonj's answers for this sheet (coloredcow-admin/goonj-crm#234):
+ * - "Menstrual Hygiene Session (CTB)" is the "Chuppi Todo Baithak (CTB)"
+ *   activity type;
+ * - "You wish to register as" = "An individual" (as on the individual
+ *   camps);
+ * - "Total Monetary Contributed" is the activity outcome's "Cash
+ *   Contribution".
  * Other values that are not in the sheet are not filled in.
  *
  * No email may go out for these old activities:
@@ -64,9 +69,10 @@
  *   Organiser for sheet lines whose person cannot be matched (sheet line =
  *   individual contact id, comma separated):
  *     ORGANISER_FOR_LINES=16=532153 CSV=... cv scr ...
- *   Goonj activity type for a sheet text that is not an option's name or
- *   label (sheet text = option name, separated by |):
- *     ACTIVITY_TYPES="Menstrual Hygiene Session (CTB)=Menstrual_Hygenie_Dialogue_CTB_" CSV=... cv scr ...
+ *   Goonj activity type for another sheet text that is not an option's name
+ *   or label (sheet text = option name, separated by |; Goonj's answer for
+ *   the CTB session is built in):
+ *     ACTIVITY_TYPES="Some Session=Other" CSV=... cv scr ...
  *   (an "Other" type keeps the sheet text as "Other Activity Details").
  *   Rows whose organiser has details but is not found go to the issues sheet;
  *   to import those without an organiser:
@@ -138,6 +144,15 @@ class GoonjLegacyIndividualActivityImport {
    * Columns added to the issues sheet.
    */
   const ISSUE_COLUMNS = ['Import status', 'Reason'];
+
+  /**
+   * Sheet activity types that are not an option's name or label, as Goonj
+   * mapped them (coloredcow-admin/goonj-crm#234): lower-case sheet text =>
+   * option name.
+   */
+  const GOONJ_ACTIVITY_TYPES = [
+    'menstrual hygiene session (ctb)' => 'Menstrual_Hygenie_Dialogue_CTB_',
+  ];
 
   const COL_FIRST_NAME = 1;
   const COL_LAST_NAME = 2;
@@ -291,6 +306,7 @@ class GoonjLegacyIndividualActivityImport {
 
     $this->organiserForLines = $this->lineMap('ORGANISER_FOR_LINES');
 
+    $this->typeMap = self::GOONJ_ACTIVITY_TYPES;
     $types = trim((string) getenv('ACTIVITY_TYPES'));
     if ($types !== '') {
       foreach (explode('|', $types) as $pair) {
@@ -693,6 +709,9 @@ class GoonjLegacyIndividualActivityImport {
       'title' => $code,
       'created_date' => $this->parseDate($row[self::COL_CREATED]),
       'Collection_Camp_Core_Details.Status:name' => 'Authorized',
+      // Goonj's answer (coloredcow-admin/goonj-crm#234), as on the individual
+      // camps.
+      'Goonj_Activities.You_wish_to_register_as:name' => 'An_individual',
       'Goonj_Activities.How_do_you_want_to_engage_with_Goonj_' => [$type['value']],
       'Goonj_Activities.Other_Activity_Details' => $type['name'] === 'Other' ? $this->singleLine($row[self::COL_TYPE]) : NULL,
       'Goonj_Activities.Where_do_you_wish_to_organise_the_activity_' => $this->singleLine($row[self::COL_VENUE]),
@@ -711,7 +730,8 @@ class GoonjLegacyIndividualActivityImport {
       'Goonj_Activities_Outcome.Did_you_face_any_challenges_' => $this->singleLine($row[self::COL_DIFFICULTY]),
       'Goonj_Activities_Outcome.Rate_the_activity' => $row[self::COL_RATE] !== '' ? $this->rates[mb_strtolower($row[self::COL_RATE])] : NULL,
       'Goonj_Activities_Outcome.Remarks' => $this->singleLine($row[self::COL_REMARKS]),
-      'Core_Contribution_Details.Total_online_monetary_contributions' => $monetary === NULL ? NULL : (string) $monetary,
+      // Goonj's answer: the outcome's "Cash Contribution".
+      'Goonj_Activities_Outcome.Cash_Contribution' => $monetary,
 
       // Marked as already emailed, so the scheduled jobs skip these records.
       // "Goonj Activities" job (logistics email to the Attended By person).
