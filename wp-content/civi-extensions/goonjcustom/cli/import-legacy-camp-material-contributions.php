@@ -14,6 +14,11 @@
  *   date; "Goonj Office" = the sheet's office.
  * Contacts are never created or changed.
  *
+ * Contribution date (Goonj's answers):
+ * - not a date (00-01-1900): the sheet's Create Date is used;
+ * - more than 7 days before the camp's start date: the camp's end date is
+ *   used.
+ *
  * The contributor is the contact with the sheet's "Contact ID" as external
  * identifier (the old system's id, saved on every migrated contact). When no
  * such contact exists, the contributor is matched by email (first name +
@@ -29,13 +34,24 @@
  *   contributions whose activity date is within the last day (CiviCRM's
  *   reminder rule); the activity date is the old contribution date, and the
  *   script refuses a date in the last 7 days;
- * - the receipt PDF and the contributor counts are made by the live
- *   contribution forms, not by API saves.
+ * - the receipt PDF is made by the live contribution form, not by API saves.
  *
- * A row that is an exact copy of an earlier row (same contributor, camp and
- * date) is not imported twice. Every row that is not imported (contributor or
- * camp not found, a bad date, an error while saving) is written to an issues
- * sheet: the sheet's own columns plus "Import status" and "Reason".
+ * A contributor is imported once per camp (Goonj's answer): a row with the
+ * same contributor and camp as an earlier row, or as a contribution already
+ * in the CRM, is not imported again. Every row that is not imported
+ * (contributor or camp not found, a bad date, an error while saving) is
+ * written to an issues sheet: the sheet's own columns plus "Import status"
+ * and "Reason".
+ *
+ * After the rows, the "Number of unique material contributors" and "Number of
+ * unique contributors" of every camp in the run are set from the CRM, the way
+ * the live contribution form and the camp totals script
+ * (backfill-collection-source-contribution-stats.php) count them: the
+ * different contacts of the camp's material contributions, and those plus
+ * the contacts of its Completed monetary contributions. Only the two values
+ * are saved (CustomValue API), so the camp's own save hooks (QR code images)
+ * do not run. The camps and their counts (before and after) are listed in a
+ * counts CSV.
  *
  * Runs as a dry run by default: nothing is saved, and every row is listed in a
  * CSV report with the matches and what would be created. Contributions
@@ -50,16 +66,16 @@
  *     APPLY=1 CSV=... cv scr ...
  *   Only some sheet lines (line numbers as in the spreadsheet, data starts on 3):
  *     ROWS=3-12 CSV=... cv scr ...
- *   Rows whose contribution date is not a date (00-01-1900): use the sheet's
- *   Create Date instead:
- *     DATE_FALLBACK=create CSV=... cv scr ...
- *   Report (every row) and issues sheet (rows not imported) locations,
- *   default: next to the CSV:
+ *   Report (every row), issues sheet (rows not imported) and camp counts
+ *   locations, default: next to the CSV:
  *     REPORT=/path/to/report.csv ISSUES=/path/to/issues.csv
+ *     COUNTS=/path/to/counts.csv
  */
 
 use Civi\Api4\Activity;
 use Civi\Api4\Contact;
+use Civi\Api4\Contribution;
+use Civi\Api4\CustomField;
 use Civi\Api4\EckEntity;
 use Civi\Api4\Email;
 use Civi\Api4\Phone;
@@ -117,6 +133,11 @@ class GoonjLegacyCampMaterialContributionImport {
   const MIN_AGE_DAYS = 7;
 
   /**
+   * A date more than this many days before the camp's start gets its end date.
+   */
+  const DAYS_BEFORE_START = 7;
+
+  /**
    * Sheet path.
    */
   private string $csvPath;
@@ -125,11 +146,6 @@ class GoonjLegacyCampMaterialContributionImport {
    * Save (TRUE) or dry run.
    */
   private bool $apply;
-
-  /**
-   * Use the Create Date when the contribution date is not a date.
-   */
-  private bool $createDateFallback;
 
   /**
    * Stop after this many contributions.
@@ -157,6 +173,11 @@ class GoonjLegacyCampMaterialContributionImport {
   private string $issuesPath;
 
   /**
+   * Camp counts CSV path.
+   */
+  private string $countsPath;
+
+  /**
    * The sheet's first header row (column groups), copied to the issues sheet.
    */
   private array $groupHeader = [];
@@ -177,9 +198,17 @@ class GoonjLegacyCampMaterialContributionImport {
   private array $byExternalId = [];
 
   /**
-   * First line of each contributor + camp + date already seen in this run.
+   * First line of each contributor + camp already seen in this run.
    */
   private array $seen = [];
+
+  /**
+   * The camps in this run, by id.
+   *
+   * Each has its field and title and, in a dry run, the contributors the run
+   * would add.
+   */
+  private array $runCamps = [];
 
   /**
    * Reads the settings from the environment.
@@ -187,7 +216,6 @@ class GoonjLegacyCampMaterialContributionImport {
   public function __construct() {
     $this->csvPath = (string) getenv('CSV');
     $this->apply = getenv('APPLY') === '1';
-    $this->createDateFallback = getenv('DATE_FALLBACK') === 'create';
 
     $limit = trim((string) getenv('LIMIT'));
     if ($limit !== '') {
@@ -211,6 +239,8 @@ class GoonjLegacyCampMaterialContributionImport {
     $this->reportPath = $report !== '' ? $report : $base . '-report-' . date('Ymd-His') . '.csv';
     $issues = trim((string) getenv('ISSUES'));
     $this->issuesPath = $issues !== '' ? $issues : $base . '-issues-' . date('Ymd-His') . '.csv';
+    $counts = trim((string) getenv('COUNTS'));
+    $this->countsPath = $counts !== '' ? $counts : $base . '-counts-' . date('Ymd-His') . '.csv';
   }
 
   /**
@@ -225,6 +255,7 @@ class GoonjLegacyCampMaterialContributionImport {
     echo "CSV: {$this->csvPath}\n";
     echo "Report: {$this->reportPath}\n";
     echo "Issues sheet: {$this->issuesPath}\n";
+    echo "Camp counts: {$this->countsPath}\n";
     if ($this->limit) {
       echo "LIMIT: stop after {$this->limit} contribution(s)\n";
     }
@@ -299,6 +330,96 @@ class GoonjLegacyCampMaterialContributionImport {
       echo sprintf("  %-30s %d\n", $status, $count);
     }
     echo "\nRows not imported: $issueCount, listed with the reason in {$this->issuesPath}\n";
+
+    $this->updateCampCounts();
+  }
+
+  /**
+   * Sets the contributor counts of the camps in this run from the CRM.
+   *
+   * In a dry run nothing is saved; the counts include the contributions the
+   * run would create.
+   */
+  private function updateCampCounts(): void {
+    $handle = fopen($this->countsPath, 'w');
+    if (!$handle) {
+      $this->fail('Cannot write the camp counts CSV next to the CSV.');
+    }
+    fputcsv($handle, [
+      'camp_id', 'camp_title', 'material_contributors_before', 'material_contributors_after',
+      'unique_contributors_before', 'unique_contributors_after', 'status', 'note',
+    ], ',', '"', '\\');
+
+    $fieldIds = CustomField::get(FALSE)
+      ->addSelect('name', 'id')
+      ->addWhere('custom_group_id:name', '=', 'Core_Contribution_Details')
+      ->addWhere('name', 'IN', ['Number_of_unique_material_contributors', 'Number_of_unique_contributors'])
+      ->execute()->column('id', 'name');
+    if (count($fieldIds) !== 2) {
+      $this->fail('The camp contributor count fields were not found.');
+    }
+
+    $changed = 0;
+    $errors = 0;
+    foreach ($this->runCamps as $campId => $camp) {
+      set_time_limit(0);
+      $stored = EckEntity::get('Collection_Camp', FALSE)
+        ->addSelect('Core_Contribution_Details.Number_of_unique_material_contributors', 'Core_Contribution_Details.Number_of_unique_contributors')
+        ->addWhere('id', '=', $campId)
+        ->execute()->single();
+      $materialBefore = $stored['Core_Contribution_Details.Number_of_unique_material_contributors'];
+      $uniqueBefore = $stored['Core_Contribution_Details.Number_of_unique_contributors'];
+
+      $material = $camp['adding'];
+      foreach (Activity::get(FALSE)->addSelect('source_contact_id')->addWhere($camp['field'], '=', $campId)->execute() as $activity) {
+        if (!empty($activity['source_contact_id'])) {
+          $material[(int) $activity['source_contact_id']] = TRUE;
+        }
+      }
+      $all = $material;
+      $monetary = Contribution::get(FALSE)
+        ->addSelect('contact_id')
+        ->addWhere('Contribution_Details.Source.id', '=', $campId)
+        ->addWhere('contribution_status_id:name', '=', 'Completed')
+        ->execute();
+      foreach ($monetary as $contribution) {
+        if (!empty($contribution['contact_id'])) {
+          $all[(int) $contribution['contact_id']] = TRUE;
+        }
+      }
+
+      $status = 'UNCHANGED';
+      $note = '';
+      if ((string) $materialBefore !== (string) count($material) || (string) $uniqueBefore !== (string) count($all)) {
+        $status = $this->apply ? 'UPDATED' : 'DRY_RUN_WOULD_UPDATE';
+        if ($this->apply) {
+          try {
+            civicrm_api3('CustomValue', 'create', [
+              'entity_id' => $campId,
+              'custom_' . $fieldIds['Number_of_unique_material_contributors'] => count($material),
+              'custom_' . $fieldIds['Number_of_unique_contributors'] => count($all),
+            ]);
+          }
+          catch (\Throwable $e) {
+            $status = 'ERROR';
+            $note = $e->getMessage();
+            $errors++;
+          }
+        }
+        if ($status !== 'ERROR') {
+          $changed++;
+        }
+      }
+      fputcsv($handle, [
+        $campId, $camp['title'], $materialBefore, count($material),
+        $uniqueBefore, count($all), $status, $note,
+      ], ',', '"', '\\');
+    }
+    fclose($handle);
+
+    echo "\nCamp contributor counts: " . count($this->runCamps) . ' camp(s) in this run, '
+      . $changed . ($this->apply ? ' updated' : ' would be updated') . ($errors ? ", $errors ERROR(S)" : '')
+      . ", listed in {$this->countsPath}\n";
   }
 
   /**
@@ -389,33 +510,45 @@ class GoonjLegacyCampMaterialContributionImport {
     if ($row[self::COL_EVENT_TYPE] !== 'Collection Camp') {
       $errors[] = "Event Type is '{$row[self::COL_EVENT_TYPE]}', this script only imports 'Collection Camp'";
     }
+    // Goonj's answer: no contribution date (00-01-1900) -> the Create Date.
     $date = $this->parseDate($row[self::COL_DATE]);
-    if (!$date && $this->createDateFallback) {
+    if (!$date) {
       $date = $this->parseDate(substr($row[self::COL_CREATED], 0, 10));
       if ($date) {
         $result['note'] = "Contribution date '{$row[self::COL_DATE]}' is not a date; the Create Date is used.";
       }
     }
     if (!$date) {
-      $errors[] = "Contribution date is not a date: '{$row[self::COL_DATE]}'";
+      $errors[] = "Contribution date is not a date: '{$row[self::COL_DATE]}', nor the Create Date: '{$row[self::COL_CREATED]}'";
     }
-    elseif ($date > date('Y-m-d', strtotime('-' . self::MIN_AGE_DAYS . ' days'))) {
-      $errors[] = "Contribution date $date is in the last " . self::MIN_AGE_DAYS . ' days: the receipt reminder would email it';
-    }
-    $result['date'] = $date;
     if (empty($this->offices[$row[self::COL_OFFICE]])) {
       $errors[] = "Goonj office not found: '{$row[self::COL_OFFICE]}'";
     }
     $camp = $date ? $this->pickCamp($row[self::COL_CODE], $date) : NULL;
-    if (!$camp) {
+    if ($date && !$camp) {
       $errors[] = "No camp with the code '{$row[self::COL_CODE]}'";
     }
-    else {
+    elseif ($camp) {
       $result += ['camp_id' => $camp['id'], 'camp_title' => $camp['title']];
       if ($camp['note']) {
         $result['note'] = trim($result['note'] . ' ' . $camp['note']);
       }
+      // Goonj's answer: a date more than a week before the camp's start ->
+      // the camp's end date.
+      if ($camp['start'] && $date < date('Y-m-d', strtotime($camp['start'] . ' -' . self::DAYS_BEFORE_START . ' days'))) {
+        if ($camp['end']) {
+          $result['note'] = trim($result['note'] . " Contribution date $date is more than " . self::DAYS_BEFORE_START . " days before the camp's start ({$camp['start']}); the camp's end date {$camp['end']} is used.");
+          $date = $camp['end'];
+        }
+        else {
+          $result['note'] = trim($result['note'] . " Contribution date $date is more than " . self::DAYS_BEFORE_START . " days before the camp's start ({$camp['start']}); the camp has no end date, so the sheet date is kept.");
+        }
+      }
     }
+    if ($date && $date > date('Y-m-d', strtotime('-' . self::MIN_AGE_DAYS . ' days'))) {
+      $errors[] = "Contribution date $date is in the last " . self::MIN_AGE_DAYS . ' days: the receipt reminder would email it';
+    }
+    $result['date'] = $date;
 
     $match = $this->matchContributor($row);
     $result += ['contact_id' => $match['id'], 'match' => $match['method'], 'match_note' => $match['note']];
@@ -427,18 +560,21 @@ class GoonjLegacyCampMaterialContributionImport {
       return ['status' => 'SKIPPED_BAD_DATA', 'note' => trim($result['note'] . ' ' . implode('; ', $errors))] + $result;
     }
 
-    $key = $match['id'] . '|' . $camp['id'] . '|' . $date;
+    // Goonj's answer: one contribution per contributor and camp.
+    $this->runCamps[$camp['id']] ??= ['field' => $camp['field'], 'title' => $camp['title'], 'adding' => []];
+    $key = $match['id'] . '|' . $camp['id'];
     if (isset($this->seen[$key])) {
-      return ['status' => 'SKIPPED_SAME_AS_EARLIER_ROW', 'note' => "Same contributor, camp and date as line {$this->seen[$key]}"] + $result;
+      return ['status' => 'SKIPPED_SAME_AS_EARLIER_ROW', 'note' => trim($result['note'] . " Same contributor and camp as line {$this->seen[$key]}.")] + $result;
     }
     $this->seen[$key] = $line;
 
-    $existing = $this->findExistingContribution($match['id'], $camp, $date);
+    $existing = $this->findExistingContribution($match['id'], $camp);
     if ($existing) {
-      return ['status' => 'SKIPPED_ALREADY_IMPORTED', 'activity_id' => $existing] + $result;
+      return ['status' => 'SKIPPED_ALREADY_IMPORTED', 'activity_id' => $existing, 'note' => trim($result['note'] . " The contributor already has contribution $existing at this camp.")] + $result;
     }
 
     if (!$this->apply) {
+      $this->runCamps[$camp['id']]['adding'][$match['id']] = TRUE;
       return ['status' => 'DRY_RUN_OK'] + $result;
     }
 
@@ -620,16 +756,16 @@ class GoonjLegacyCampMaterialContributionImport {
   }
 
   /**
-   * The contribution this row saved on an earlier run, if any.
+   * The contributor's contribution at the camp already in the CRM, if any.
    */
-  private function findExistingContribution(int $contactId, array $camp, string $date): ?int {
+  private function findExistingContribution(int $contactId, array $camp): ?int {
     $activity = Activity::get(FALSE)
       ->addSelect('id')
       ->addWhere('activity_type_id:name', '=', 'Material Contribution')
       ->addWhere('source_contact_id', '=', $contactId)
       ->addWhere($camp['field'], '=', $camp['id'])
-      ->addWhere('Material_Contribution.Contribution_Date', '=', $date . ' 00:00:00')
       ->addWhere('is_deleted', '=', FALSE)
+      ->addOrderBy('id')
       ->execute()->first();
     return $activity ? (int) $activity['id'] : NULL;
   }
